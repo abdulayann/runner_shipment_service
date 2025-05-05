@@ -73,17 +73,16 @@ class EventV3ServiceTest extends CommonMocks {
         TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
         trackingEventsRequest.setShipmentId(shipmentId);
         List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(EventsResponse.builder().build());
 
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
-        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         mockShipmentSettings();
 
-        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), any());
-
-        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), null);
 
         assertNotNull(httpResponse);
-        assertEquals(expectedResponse, httpResponse);
+        assertEquals(eventsResponseList, httpResponse);
     }
 
     @Test
@@ -93,17 +92,16 @@ class EventV3ServiceTest extends CommonMocks {
         TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
         trackingEventsRequest.setShipmentId(shipmentId);
         List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(EventsResponse.builder().build());
 
         when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
-        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         mockShipmentSettings();
 
         var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
 
-        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
-
         assertNotNull(httpResponse);
-        assertEquals(expectedResponse, httpResponse);
+        assertEquals(eventsResponseList, httpResponse);
     }
 
     @Test
@@ -113,17 +111,15 @@ class EventV3ServiceTest extends CommonMocks {
         TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
         trackingEventsRequest.setConsolidationId(consolidation);
         List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(EventsResponse.builder().build());
 
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
-        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
         mockShipmentSettings();
-
-        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), any());
-
-        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), null);
 
         assertNotNull(httpResponse);
-        assertEquals(expectedResponse, httpResponse);
+        assertEquals(eventsResponseList, httpResponse);
     }
 
     @Test
@@ -133,17 +129,16 @@ class EventV3ServiceTest extends CommonMocks {
         TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
         trackingEventsRequest.setConsolidationId(consolidation);
         List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(EventsResponse.builder().build());
 
         when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
-        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         mockShipmentSettings();
 
         var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
 
-        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
-
         assertNotNull(httpResponse);
-        assertEquals(expectedResponse, httpResponse);
+        assertEquals(eventsResponseList, httpResponse);
     }
 
     @Test
