@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -30,8 +31,9 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
@@ -49,8 +51,10 @@ import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
+import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -61,7 +65,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -106,6 +109,10 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IAuditLogService auditLogService;
+
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
 
     @Autowired
     private KafkaProducer producer;
@@ -158,8 +165,8 @@ public class ContainerV3Service implements IContainerV3Service {
             "chargeableUnit", "grossVolume", "grossVolumeUnit", "commodityCode", "hsCode", "customsReleaseCode", "pacrNumber",
             "containerComments"
     );
-    private List<String> defaultIncludeColumns = new ArrayList<>();
 
+    private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Override
     @Transactional
@@ -438,18 +445,17 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) {
+    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) throws RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        Pair<Specification<Containers>, Pageable> pair = fetchData(request, Containers.class);
-        Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
+        ContainerListResponse containerListResponse = list(request, true);
 
         log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        ContainerListResponse containerListResponse = new ContainerListResponse();
-        containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
+        //ContainerListResponse containerListResponse = new ContainerListResponse();
+      //  containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
         //set assigned container to yes/no, if any package is assigned to container or not
         setAssignedContainer(containerListResponse);
-        containerListResponse.setTotalPages(containersPage.getTotalPages());
-        containerListResponse.setTotalCount(containersPage.getTotalElements());
+        containerListResponse.setTotalPages(containerListResponse.getTotalPages());
+        containerListResponse.setNumberOfRecords(containerListResponse.getNumberOfRecords());
 
         return containerListResponse;
 
@@ -464,10 +470,11 @@ public class ContainerV3Service implements IContainerV3Service {
             List<Packing> packs = packingDao.findByContainerIdIn(containersId);
             Set<Long> uniqueContainers = packs.stream().map(Packing::getContainerId).collect(Collectors.toSet());
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
-                if (uniqueContainers.contains(containerBaseResponse.getId())) {
-                    containerBaseResponse.setAssignedContainer(Constants.YES);
+                ContainerBaseResponse baseResponse = containerBaseResponse;
+                if (uniqueContainers.contains(baseResponse.getId())) {
+                    baseResponse.setAssignedContainer(Constants.YES);
                 } else {
-                    containerBaseResponse.setAssignedContainer(Constants.NO);
+                    baseResponse.setAssignedContainer(Constants.NO);
                 }
             });
         }
@@ -476,6 +483,14 @@ public class ContainerV3Service implements IContainerV3Service {
     private List<ContainerBaseResponse> convertEntityListToDtoList(List<Containers> lst) {
         List<ContainerBaseResponse> responseList = new ArrayList<>();
         lst.forEach(containers -> responseList.add(convertEntityToDto(containers)));
+        return responseList;
+    }
+
+    private List<ContainerBaseResponse> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
+        List<ContainerBaseResponse> responseList = new ArrayList<>();
+        long start = System.currentTimeMillis();
+        lst.forEach(containers -> responseList.add((ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns.stream().collect(Collectors.toSet()), new ContainerBaseResponse())));
+        log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
         return responseList;
     }
 
@@ -724,9 +739,58 @@ public class ContainerV3Service implements IContainerV3Service {
         containerV3Util.downloadContainers(response, request);
     }
 
+    @Override
+    public ContainerListResponse list(ListCommonRequest request, boolean getMasterData) throws RunnerException {
+        try {
+            if (request == null) {
+                log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            }
+
+            // construct specifications for filter request
+            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Containers list for get containers retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            List<String> includeColumns;
+            if (CollectionUtils.isEmpty(request.getIncludeColumns())) {
+                includeColumns = defaultIncludeColumns;
+            } else {
+                includeColumns = request.getIncludeColumns();
+            }
+
+           List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+           this.getMasterDataForList(responseList, getMasterData);
+           return ContainerListResponse.builder()
+               .containers(responseList)
+               .numberOfRecords(containersPage.getTotalElements())
+               .totalPages(containersPage.getTotalPages())
+               .build();
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private void getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONTAINER_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONTAINER_LIST, ex.getLocalizedMessage());
+            }
+        }
+    }
+
+
     @PostConstruct
     private void setDefaultIncludeColumns() {
         defaultIncludeColumns = FieldUtils.getNonRelationshipFields(Containers.class);
-        defaultIncludeColumns.addAll(List.of("id", "guid", "tenantId"));
+        defaultIncludeColumns.addAll(List.of("id","guid","tenantId"));
     }
+
 }

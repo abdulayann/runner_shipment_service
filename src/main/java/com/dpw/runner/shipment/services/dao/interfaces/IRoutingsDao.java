@@ -23,6 +23,8 @@ public interface IRoutingsDao {
     Optional<Routings> findByGuid(UUID id);
 
     void delete(Routings routings);
+    List<Routings> findByIdIn(List<Long> routingIds);
+    void deleteByIdIn(List<Long> routingIds);
 
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException;
     List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId, Map<Long, Routings> oldEntityMap);

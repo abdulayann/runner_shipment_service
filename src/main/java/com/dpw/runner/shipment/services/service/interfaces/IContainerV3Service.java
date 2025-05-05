@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
@@ -22,10 +23,8 @@ public interface IContainerV3Service {
     BulkContainerResponse deleteBulk(List<ContainerRequest> request);
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId) throws RunnerException;
-
-    ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel);
-
+    ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) throws RunnerException;
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
-
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
+    ContainerListResponse list(ListCommonRequest listCommonRequest, boolean isMasterData) throws RunnerException;
 }

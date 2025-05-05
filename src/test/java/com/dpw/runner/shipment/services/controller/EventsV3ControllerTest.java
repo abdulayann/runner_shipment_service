@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import org.junit.jupiter.api.Test;
@@ -35,13 +34,13 @@ class EventsV3ControllerTest {
 
 
     @Test
-    void listEventsV2() throws RunnerException {
+    void listEventsV2() {
         TrackingEventsRequest request = new TrackingEventsRequest();
         request.setShipmentId(123L);
         // Mock
         when(eventService.listV2(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         // Test
-        var responseEntity = eventsController.listEventsV2(request, any());
+        var responseEntity = eventsController.listEventsV2(request, null);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -53,7 +52,7 @@ class EventsV3ControllerTest {
         // Mock
         when(eventService.listV2(any(), any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = eventsController.listEventsV2(request, any());
+        var responseEntity = eventsController.listEventsV2(request, null);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -65,7 +64,7 @@ class EventsV3ControllerTest {
         // Mock
         when(eventService.listV2(any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = eventsController.listEventsV2(request, any());
+        var responseEntity = eventsController.listEventsV2(request, null);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
