@@ -122,7 +122,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
-        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList);
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, false);
         assertNotNull(containerSummaryResponse);
     }
 
@@ -136,7 +136,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
-        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList);
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, false);
         assertNotNull(containerSummaryResponse);
     }
 
