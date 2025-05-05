@@ -603,33 +603,32 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_frob")
     private Boolean isFrob;
 
-    @Column(name = "origin_branch")
-    @TenantIdData
-    private Long originBranch;
+    @Column(name = "is_reefer")
+    private Boolean isReefer = false;
 
     @Column(name = "incoterms_location")
+    @Size(max = 64)
     private String incotermsLocation;
+
+    @Column(name = "cargo_readiness_date")
+    private LocalDateTime cargoReadinessDate;
 
     @Column(name = "controlled")
     private String controlled;
 
     @Column(name = "controlled_reference_number")
+    @Size(max = 64)
     private String controlledReferenceNumber;
 
     @Column(name = "partner")
     private String partner;
 
+    @Column(name = "booking_agent")
+    private Long bookingAgent;
+
     @Column(name = "co_load_bkg_number")
+    @Size(max = 64)
     private String coLoadBkgNumber;
-
-    @Column(name = "carrier_bkg_number")
-    private String carrierBkgNumber;
-
-    @Column(name = "carrier_bl_number")
-    private String carrierBlNumber;
-
-    @Column(name = "fmc_number")
-    private String fmcNumber;
 
     @Column(name = "pickup_at_origin_type")
     private String pickupAtOriginType;
@@ -655,35 +654,38 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "brokerage_at_destination")
     private Long brokerageAtDestination;
 
-    @Column(name = "pickup_at_origin_date")
-    private LocalDateTime pickupAtOriginDate;
-
-    @Column(name = "delivery_at_destination_date")
-    private LocalDateTime deliveryAtDestinationDate;
-
     @Column(name = "brokerage_at_origin_date")
     private LocalDateTime brokerageAtOriginDate;
 
     @Column(name = "brokerage_at_destination_date")
     private LocalDateTime brokerageAtDestinationDate;
 
-    @Column(name = "terminal_date")
-    private LocalDateTime terminalDate;
+    @Column(name = "terminal_cut_off")
+    private LocalDateTime terminalCutoff;
 
-    @Column(name = "vgm_date")
-    private LocalDateTime vgmDate;
+    @Column(name = "verified_gross_mass_cut_off")
+    private LocalDateTime verifiedGrossMassCutoff;
 
-    @Column(name = "si_date")
-    private LocalDateTime siDate;
+    @Column(name = "shipping_instruction_cutoff")
+    private LocalDateTime shippingInstructionCutoff;
 
-    @Column(name = "ear_epy_eq_pickup_date")
-    private LocalDateTime earEpyEqPickupDate;
+    @Column(name = "dg_cut_off")
+    private LocalDateTime dgCutoff;
 
-    @Column(name = "lat_full_eq_delivery_date")
-    private LocalDateTime latFullEqDeliveryDate;
+    @Column(name = "reefer_cut_off")
+    private LocalDateTime reeferCutoff;
 
-    @Column(name = "ear_drop_off_date")
-    private LocalDateTime earDropOffDate;
+    @Column(name = "earliest_empty_equipment_pickup")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+
+    @Column(name = "latest_full_equipment_delivered_to_carrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equipment_to_carrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
+    @Column(name = "latest_arrival_time")
+    private LocalDateTime latestArrivalTime;
 
 
     @Override
