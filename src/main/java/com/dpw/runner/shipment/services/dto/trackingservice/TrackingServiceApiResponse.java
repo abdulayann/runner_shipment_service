@@ -46,6 +46,7 @@ public class TrackingServiceApiResponse {
         private Object lineCode;
         private String serviceType;
         private String carrierName;
+        private String scacCode;
         private Object placeOfOrigin;
         private Integer portOfDeparture;
         private Integer portOfArrival;
@@ -137,6 +138,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
+    @SuppressWarnings("java:S1700") // A field should not duplicate the name of its containing class
     public static class Source
     {
         private LocalDateTime dateTime;

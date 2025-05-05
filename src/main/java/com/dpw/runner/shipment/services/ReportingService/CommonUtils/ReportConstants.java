@@ -428,6 +428,10 @@ public class ReportConstants {
     public static final String TENANT_CURRENCY = "TenantCurrency";
     public static final String TENANT_URL = "TenantUrl" ;
     public static final String TENANT_VATREGNUMBER = "VatRegNumber" ;
+    public static final String TENANT_NAME_IN_CAPS = "TenantNameInCaps" ;
+    public static final String TENANT_ADDRESS_IN_CAPS = "TenantAddressInCaps" ;
+    public static final String TENANT_VAT_REG_NUMBER_IN_CAPS = "VATNumberInCaps" ;
+    public static final String TENANT_EMAIL_IN_CAPS = "TenantEmailInCaps";
 
         /*
             User fields
@@ -875,8 +879,6 @@ public class ReportConstants {
 
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
     public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
-//    public static final String SERVICE_MODE = "ServiceMode";
-//    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
 
     public static final String SHIPPER = "Shipper";
     public static final String SHIPPER_WC = "ShipperWC";
@@ -945,8 +947,6 @@ public class ReportConstants {
     public static final String FPOD_IN_CAPS = "FPODInCaps";
     public static final String POD_IN_CAPS = "PODInCaps";
     public static final String POR_COUNTRY_NAME_IN_CAPS = "PORCountryNameInCaps";
-    //public static final String POLCountryNameInCaps = "POLCountryNameInCaps";
-    //public static final String PODCountryNameInCaps = "PODCountryNameInCaps";
     public static final String FPOD_COUNTRY_NAME_IN_CAPS = "FPODCountryNameInCaps";
     public static final String WEIGHTS = "weights";
     public static final String CARRIER_IATACODE = "IATACode";
@@ -1368,4 +1368,20 @@ public class ReportConstants {
     public static final String TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA = "Time taken to get Shipment Console Data for shipmentId :{} is  {}";
 
     public static final String USA_LOC_CODE_PREFIX = "US";
+    public static final String DPW_DATE_FORMAT_OR_DEFAULT_STRING = "MM/dd/yyyy";
+    public static final String HTML_BREAK = "<br/>";
+
+
+    public static final String ATA_OR_ETA = "ATAOrETA";
+
+    // Party Tags for Caps
+    public static final String SHIPPER_NAME_IN_CAPS = "ShipperNameInCaps";
+    public static final String SHIPPER_ADDRESS_IN_CAPS = "ShipperAddressInCaps";
+    public static final String CONSIGNEE_NAME_IN_CAPS = "ConsigneeNameInCaps";
+    public static final String CONSIGNEE_ADDRESS_IN_CAPS = "ConsigneeAddressInCaps";
+    public static final String ORIGIN_AGENT_NAME_IN_CAPS = "OriginAgentNameInCaps";
+    public static final String ORIGIN_AGENT_ADDRESS_IN_CAPS = "OriginAgentAddressInCaps";
+    public static final String DESTINATION_AGENT_NAME_IN_CAPS = "DestinationAgentNameInCaps";
+    public static final String DESTINATION_AGENT_ADDRESS_IN_CAPS = "DestinationAgentAddressInCaps";
+
 }

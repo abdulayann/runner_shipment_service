@@ -206,4 +206,6 @@ public interface IV1Service {
     V1DataResponse listOrgs(Object request);
     V1DataResponse listBranchesByDefaultOrgAndAddress(Object request);
     List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request);
+
+    V1DataResponse fetchActiveUnlocation(Object request);
 }

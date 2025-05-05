@@ -72,6 +72,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
+import com.dpw.runner.shipment.services.service.impl.UserServiceV1;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -94,10 +95,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -169,6 +167,9 @@ class V1ServiceImplTest {
     @MockBean
     private UserContext userContext;
 
+    @MockBean
+    UserServiceV1 userServiceV1;
+
     private V1UsersEmailRequest request;
     private UsersRoleListResponse userRole;
 
@@ -212,9 +213,6 @@ class V1ServiceImplTest {
                 new V1TenantResponse("Tenant 2", "Tenant 1", "T2", 2L)
         );
 
-        HttpHeaders headers = new HttpHeaders();
-        HttpEntity<CommonV1ListRequest> requestEntity = new HttpEntity<>(expectedRequest, V1AuthHelper.getHeaders());
-
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(tenantNameResponse));
 
@@ -249,9 +247,6 @@ class V1ServiceImplTest {
                 new V1TenantResponse("Tenant 1", "Tenant 1", "T1", 1L),
                 new V1TenantResponse("Tenant 2", "Tenant 2", "T2", 2L)
         );
-
-        HttpHeaders headers = new HttpHeaders();
-        HttpEntity<CommonV1ListRequest> requestEntity = new HttpEntity<>(expectedRequest, V1AuthHelper.getHeaders());
 
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(tenantNameResponse));
@@ -518,7 +513,7 @@ class V1ServiceImplTest {
         assertEquals("RuntimeException", throwable.getMessage());
     }
 
-//    TODO fetchCarrierMasterData
+//    LATER fetchCarrierMasterData
 
     /**
      * Method under test: {@link V1ServiceImpl#createCarrierMasterData(Object)} (Object)}
@@ -3802,11 +3797,9 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchTransportInstructionList() throws RestClientException {
-        var mock = mock(ResponseEntity.class);
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
-//        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
         // Act
         var responseEntity = v1ServiceImpl.fetchTransportInstructionList(CheckCreditLimitResponse.builder().build());
 
@@ -3851,11 +3844,9 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchContainersListForTI() throws RestClientException {
-        var mock = mock(ResponseEntity.class);
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
-//        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
         // Act
         var responseEntity = v1ServiceImpl.fetchContainersListForTI(CheckCreditLimitResponse.builder().build());
 
@@ -3900,7 +3891,6 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchConsolidationBookingData() throws RestClientException {
-        var mock = mock(ResponseEntity.class);
         var mockResponse = new ConsoleBookingListResponse();
         var hashMap = new HashMap<UUID, ConsoleBookingListResponse.BookingData>();
         hashMap.put(UUID.randomUUID(), new ConsoleBookingListResponse.BookingData());
@@ -3952,7 +3942,6 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchShipmentBillingData() throws RestClientException {
-        var mock = mock(ResponseEntity.class);
         var mockResponse = new ShipmentBillingListResponse();
         var hashMap = new HashMap<String, ShipmentBillingListResponse.BillingData>();
         hashMap.put(UUID.randomUUID().toString(), new ShipmentBillingListResponse.BillingData());
@@ -4775,7 +4764,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         var mockResponse = V1DataResponse.builder().entityId(87L).build();
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
@@ -4819,7 +4807,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData4() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setType(Constants.CONSOLIDATION_TYPE_AGT);
         request.setIsList(true);
@@ -4836,7 +4823,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData5() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setListObject("Criteria");
         request.setType(Constants.CONSOLIDATION_TYPE_AGT);
@@ -4854,7 +4840,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData6() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setListObject("Criteria");
         request.setType(Constants.SHIPMENT_TYPE_DRT);
@@ -4872,7 +4857,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData7() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setListObject("Criteria");
         request.setIsList(true);
@@ -4889,7 +4873,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData8() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setIsList(false);
         var mockResponse = V1DataResponse.builder().entityId(87L).build();
@@ -4905,7 +4888,6 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData9() throws RestClientException {
         // Arrange
-        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setType(Constants.CONSOLIDATION_TYPE_CLD);
         request.setIsList(true);
@@ -5062,7 +5044,6 @@ class V1ServiceImplTest {
 
     @Test
     void testGetMaxConsolidationId3() throws RestClientException {
-        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
         // Arrange
         when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -5110,7 +5091,6 @@ class V1ServiceImplTest {
 
     @Test
     void testGetShipmentSerialNumber3() throws RestClientException {
-        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
         // Arrange
         when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -5158,7 +5138,6 @@ class V1ServiceImplTest {
 
     @Test
     void testGetMaxShipmentId3() throws RestClientException {
-        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
         // Arrange
         when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -5193,7 +5172,6 @@ class V1ServiceImplTest {
 
     @Test
     void testGetCoLoadingStationsThrowsError() {
-        var mockResponse = V1DataResponse.builder().build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
             (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
@@ -5206,7 +5184,6 @@ class V1ServiceImplTest {
 
     @Test
     void testGetCoLoadingStationsThrowsError2() {
-        var mockResponse = V1DataResponse.builder().build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
             (Object[]) any())).thenThrow(new RuntimeException());
@@ -5643,7 +5620,6 @@ class V1ServiceImplTest {
     void testSetAuthContext() {
         // Mocking dependencies
         String token = "Bearer sampleToken";
-        String tenantId = "tenant123";
         String username = "user1";
         UsersDto user = mock(UsersDto.class);
         Map<String, Boolean> permissionsMap = new HashMap<>();
@@ -5742,7 +5718,6 @@ class V1ServiceImplTest {
     @Test
     void testGenerateTokenReturnsNullCache() {
         // Mock the token generation API response
-        String token = "sampleToken";
 
         Cache mockCache = null;
         when(cacheManager.getCache(anyString())).thenReturn(mockCache);
@@ -5803,7 +5778,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testSetAuthContext_Success2() {
+    void testSetAuthContext_Success2() {
         // Mock token and user details
         String token = "Bearer sampleToken";
         String username = "testUser";
@@ -5840,7 +5815,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testSetAuthContextWithEmptyPermissions2() {
+    void testSetAuthContextWithEmptyPermissions2() {
         // Mock dependencies
         String token = "Bearer sampleToken";
         String username = "user1";
@@ -5882,7 +5857,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    public void testGetAuthorities() {
+    void testGetAuthorities() {
         // Prepare mock permissions
         List<String> permissions = List.of("READ", "WRITE");
 
@@ -6023,6 +5998,33 @@ class V1ServiceImplTest {
     }
 
     @Test
+    void testGetUsersWithGivenPermissions_Success2() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_Success3() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        V1DataResponse mockResponse = V1DataResponse.builder().entities(null).build();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
     void testGetUsersWithGivenPermissions_ClientError() {
         UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
         HttpClientErrorException exception = HttpClientErrorException.create(
@@ -6060,5 +6062,62 @@ class V1ServiceImplTest {
         );
 
         assertEquals("Unexpected error", thrown.getMessage());
+    }
+
+    @Test
+    void testSetAuthContext1(){
+        String token = "sampleToken";
+
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+        when(mockCache.get(anyString())).thenReturn(() -> token);
+        when(getUserServiceFactory.returnUserService()).thenReturn(userServiceV1);
+        when(userServiceV1.getUserByToken(token)).thenReturn(UsersDto.builder().build());
+        v1ServiceImpl.setAuthContext();
+        verify(userServiceV1, times(1)).getUserByToken(any());
+    }
+
+    @Test
+    void testFetchActiveUnlocation() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+
+        var responseEntity = v1ServiceImpl.fetchActiveUnlocation("Request");
+
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchActiveUnlocation2() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchActiveUnlocation3() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchActiveUnlocation4() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals("RuntimeException", throwable.getMessage());
     }
 }

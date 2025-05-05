@@ -40,6 +40,7 @@ public class ShipmentConstants {
     public static final String ORIGIN = "origin";
     public static final String DESTINATION = "destination";
     public static final String DESTINATION_PORT_LOC_CODE = "destinationPortLocCode";
+    public static final String CONSOLIDATION_NUMBER = "consolidationNumber";
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(Constants.CLIENT_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
             Map.entry(Constants.CONSIGNER_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CONSIGNER).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
@@ -120,7 +121,7 @@ public class ShipmentConstants {
             Map.entry("containerNumber", RunnerEntityMapping.builder().tableName(Constants.CONTAINERS_LIST).dataType(String.class).fieldName("containerNumber").build()),
             Map.entry("containerCode", RunnerEntityMapping.builder().tableName(Constants.CONTAINERS_LIST).dataType(String.class).fieldName("containerCode").build()),
             Map.entry("id", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Long.class).fieldName("id").build()),
-            Map.entry("consolidationNumber", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(String.class).fieldName("consolidationNumber").build()),
+            Map.entry(CONSOLIDATION_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(String.class).fieldName(CONSOLIDATION_NUMBER).build()),
             Map.entry(Constants.ORDER_NUMBER, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_NUMBER).build()),
             Map.entry(Constants.ORDER_MANAGEMENT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_MANAGEMENT_NUMBER).build()),
             Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("referenceNumbersList").dataType(String.class).fieldName("referenceNumber").build()),
@@ -261,6 +262,7 @@ public class ShipmentConstants {
     public static final String SHIPMENT_RETRIEVE_NULL_REQUEST = "Request Id is null for Shipment retrieve with Request Id {}";
 
     public static final String FETCH_MATCHING_RULES_SUCCESS = "Matching Rules Fetched Successfully";
+    public static final String FETCH_MATCHING_RULES_WITH_EXECUTION_STATE_SUCCESS = "Matching Rules Fetched Successfully with Execution state";
     public static final String FULL_NAME = "FullName";
     public static final String SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE = "Request Id and Guid are null for Shipment retrieve with Request Id {}";
     public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";

@@ -1,32 +1,27 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.NotificationConstants;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
+import com.dpw.runner.shipment.services.dto.DeclineNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
-import com.dpw.runner.shipment.services.exception.NotificationServiceException;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -39,6 +34,8 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -55,6 +52,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -82,6 +80,7 @@ public class NotificationService implements INotificationService {
     private final V1ServiceUtil v1ServiceUtil;
 
     private final IConsolidationDetailsDao consolidationDetailsDao;
+    private final CommonUtils commonUtils;
 
     private final INetworkTransferDao networkTransferDao;
 
@@ -90,7 +89,7 @@ public class NotificationService implements INotificationService {
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   MasterDataKeyUtils masterDataKeyUtils, IShipmentService shipmentService,
                                   IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
-                                  IConsolidationDetailsDao consolidationDetailsDao) {
+                                  IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
         this.masterDataUtils = masterDataUtils;
@@ -102,6 +101,7 @@ public class NotificationService implements INotificationService {
         this.v1ServiceUtil = v1ServiceUtil;
         this.networkTransferDao = networkTransferDao;
         this.consolidationDetailsDao = consolidationDetailsDao;
+        this.commonUtils = commonUtils;
     }
 
     private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
@@ -252,6 +252,125 @@ public class NotificationService implements INotificationService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> rejectNotification(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            DeclineNotificationRequest declineNotificationRequest = (DeclineNotificationRequest) commonRequestModel.getData();
+            Long id = declineNotificationRequest.getId();
+            if(id == null) {
+                log.error("Id is null for Notification reject with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("Notification reject failed because Id is null.");
+            }
+            Optional<Notification> notification = notificationDao.findById(id);
+            if(!notification.isPresent()) {
+                log.debug(NotificationConstants.NOTIFICATION_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            StringBuilder entityNumber = new StringBuilder();
+            changeNetworkTransferStatus(notification.get(), entityNumber);
+            triggerCancellationEmail(notification.get(), declineNotificationRequest.getReason(), entityNumber.toString());
+            notificationDao.delete(notification.get());
+            log.info("Notification rejection successful for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse();
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : NotificationConstants.NOTIFICATION_REJECT_ERROR;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void changeNetworkTransferStatus(Notification notification, StringBuilder entityNumber) {
+        Optional< NetworkTransfer > optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(notification.getRequestedBranchId()), notification.getEntityId(), notification.getEntityType());
+        if(optionalNetworkTransfer.isPresent()){
+            NetworkTransferStatus status = optionalNetworkTransfer.get().getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
+            optionalNetworkTransfer.get().setStatus(status);
+            networkTransferDao.save(optionalNetworkTransfer.get());
+            entityNumber.append(optionalNetworkTransfer.get().getEntityNumber());
+        }
+    }
+    private void triggerCancellationEmail(Notification notification, String reason, String entityNumber) {
+        try {
+            List<String> emailList = new ArrayList<>();
+            Map<String, String> usernameEmailsMap = new HashMap<>();
+            commonUtils.getUserDetails(new HashSet<>(Set.of(notification.getRequestedUser())), usernameEmailsMap);
+            if (usernameEmailsMap.containsKey(notification.getRequestedUser()))
+                emailList.add(usernameEmailsMap.get(notification.getRequestedUser()));
+            EmailTemplatesRequest template = new EmailTemplatesRequest();
+            if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REASSIGN) && !emailList.isEmpty()) {
+                template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
+            } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
+                ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+                if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled()))
+                    template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
+            }
+            if(!emailList.isEmpty() && template.getBody() != null) {
+                commonUtils.sendEmailNotification(template, emailList, Arrays.asList(UserContext.getUser().getEmail()));
+            }
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
+        }
+    }
+
+    private EmailTemplatesRequest createReassignmentCancellationEmailBody(Notification notification, String reason, String entityNumber){
+        UsersDto user = UserContext.getUser();
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant(), notification.getReassignedToBranchId())));
+        String body = "";
+        String subject = "";
+        if(SHIPMENT.equals(notification.getEntityType())) {
+            body = NotificationConstants.EMAIL_TEMPLATE_REASSIGNMENT_CANCELLATION_SHIPMENT_BODY;
+            subject = NotificationConstants.EMAIL_TEMPLATE_REASSIGNMENT_CANCELLATION_SHIPMENT_SUBJECT;
+            subject = subject.replace(NotificationConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(NotificationConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+        } else if (CONSOLIDATION.equals(notification.getEntityType())){
+            body = NotificationConstants.EMAIL_TEMPLATE_REASSIGNMENT_CANCELLATION_CONSOLIDATION_BODY;
+            subject = NotificationConstants.EMAIL_TEMPLATE_REASSIGNMENT_CANCELLATION_CONSOLIDATION_SUBJECT;
+            subject = subject.replace(NotificationConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(NotificationConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+        }
+        body = body.replace(NotificationConstants.USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(NotificationConstants.BRANCH_NAME_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
+        body = body.replace(NotificationConstants.CANCELLATION_REASON_PLACEHOLDER, reason);
+        body = body.replace(NotificationConstants.CANCELLED_USER_EMAIL_PLACEHOLDER, user.getEmail());
+        body = body.replace(NotificationConstants.ASSIGN_TO_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(notification.getReassignedToBranchId()).tenantName));
+        return EmailTemplatesRequest.builder().body(body).subject(subject).build();
+    }
+
+    private EmailTemplatesRequest createRequestToTranferCancellationEmailBody(Notification notification, String reason, String entityNumber){
+        UsersDto user = UserContext.getUser();
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
+        String body = "";
+        String subject = "";
+        if(SHIPMENT.equals(notification.getEntityType())) {
+            body = NotificationConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CANCELLATION_SHIPMENT_BODY;
+            subject = NotificationConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CANCELLATION_SHIPMENT_SUBJECT;
+            subject = subject.replace(NotificationConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(NotificationConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+        } else if (CONSOLIDATION.equals(notification.getEntityType())){
+            body = NotificationConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CANCELLATION_CONSOLIDATION_BODY;
+            subject = NotificationConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CANCELLATION_CONSOLIDATION_SUBJECT;
+            subject = subject.replace(NotificationConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(NotificationConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+        }
+        body = body.replace(NotificationConstants.USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(NotificationConstants.BRANCH_NAME_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
+        body = body.replace(NotificationConstants.CANCELLATION_REASON_PLACEHOLDER, reason);
+        body = body.replace(NotificationConstants.CANCELLED_USER_EMAIL_PLACEHOLDER, user.getEmail());
+        return EmailTemplatesRequest.builder().body(body).subject(subject).build();
+    }
+
+    private Map<Integer, TenantModel> convertToTenantModel(Map<Integer, Object> map) {
+        var response = new HashMap<Integer, TenantModel>();
+
+        for (var entry : map.entrySet())
+            response.put(entry.getKey(), modelMapper.map(entry.getValue(), TenantModel.class));
+
+        return response;
+    }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> confirmationMessage(Long id) {

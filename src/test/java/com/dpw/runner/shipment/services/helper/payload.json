@@ -409,6 +409,11 @@
       "carrier": "carrier for mawb from master",
       "executedOn": "2024-03-07T09:36:38"
     },
+    "ociInfo": {
+      "shipper": {
+        "contactPersonName": "ABCD"
+      }
+    },
     "awbGoodsDescriptionInfo": [
       {
         "entityId": 1,
@@ -9678,6 +9683,17 @@
         "commodityGroup": "FAK",
         "isDimension": true
       }
+    ],
+    "referenceNumbersList": [
+      {
+      "id": 123,
+      "consolidationId": 123456,
+      "countryOfIssue": "IND",
+      "type": "CRR",
+      "referenceNumber": "RefNum",
+      "shipmentId": 98765,
+      "isPortalEnable": false
+    }
     ],
     "routingList": [
       {

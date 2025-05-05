@@ -128,4 +128,6 @@ public interface IMasterDataService {
     DependentServiceResponse fetchChargeType(Object request);
     DependentServiceResponse getDefaultOrg(Object request);
 
+    DependentServiceResponse fetchAllUnlocationData(Object request);
+
 }

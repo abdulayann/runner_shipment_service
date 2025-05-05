@@ -37,6 +37,8 @@ public interface INetworkTransferDao {
 
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
 
+    void updateStatus(Long id, String status);
+
     List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType);
 
     String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId);

@@ -350,22 +350,6 @@ public class ShipmentDao implements IShipmentDao {
         // Shipment restricted unlocations validation
         addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);
 
-//        // Shipment Lock validation error
-//        if(oldEntity != null && oldEntity.getIsLocked()) {
-//            List <Object> criteria = Arrays.asList(
-//                    Arrays.asList("Username"),
-//                    "=",
-//                    oldEntity.getLockedBy()
-//            );
-//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
-//            V1DataResponse v1DataResponse = v1Service.fetchUsersData(commonV1ListRequest);
-//            List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
-//            String username = "";
-//            if(usersDtos != null && usersDtos.size() > 0)
-//                username = usersDtos.get(0).Username;
-//            errors.add("Shipment is Locked By User " + username + ". Please unlock for any Updation.");
-//        }
-
         // BL# and Reference No can not be repeated
         addBlValidationErrors(request, errors);
         addBookingReferenceValidationErrors(request, errors);
@@ -395,7 +379,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addRoutingValidationsErrors(ShipmentDetails request, Set<String> errors) {
-        if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
+        if (request.getRoutingsList() != null && !request.getRoutingsList().isEmpty()) {
             HashSet<Long> hashSet = new HashSet<>();
             for (Routings routingsRequest : request.getRoutingsList()) {
                 if (routingsRequest.getLeg() != null) {
@@ -410,13 +394,13 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addOriginDestinationValidationsError(ShipmentDetails request, Set<String> errors) {
-        if(request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestination()))
+        if(request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || isStringNullOrEmpty(request.getCarrierDetails().getDestination()))
             errors.add("Origin and Destination fields are mandatory.");
     }
 
     private void addPolPodValidationsErrors(ShipmentDetails request, Set<String> errors) {
         if( ( Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) ) &&
-                (request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestinationPort()) ))
+                (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort()) ))
             errors.add("POL and POD fields are mandatory.");
     }
 
@@ -424,7 +408,7 @@ public class ShipmentDao implements IShipmentDao {
         if (request.getContainersList() != null && !request.getContainersList().isEmpty()) {
             HashSet<String> hashSet = new HashSet<>();
             for (Containers containers : request.getContainersList()) {
-                if (!IsStringNullOrEmpty(containers.getContainerNumber())) {
+                if (!isStringNullOrEmpty(containers.getContainerNumber())) {
                     if (hashSet.contains(containers.getContainerNumber())) {
                         errors.add("Container Number cannot be same for two different containers");
                         break;
@@ -456,7 +440,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addMasterBillValidationErrors(ShipmentDetails request, Set<String> errors) {
-        if (!IsStringNullOrEmpty(request.getMasterBill())) {
+        if (!isStringNullOrEmpty(request.getMasterBill())) {
             var consoleList = consolidationDetailsDao.findByBol(request.getMasterBill());
             if (!consoleList.isEmpty()) {
                 ConsolidationDetails console = consoleList.get(0);
@@ -491,7 +475,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addBlValidationErrors(ShipmentDetails request, Set<String> errors) {
-        if(!IsStringNullOrEmpty(request.getHouseBill())) {
+        if(!isStringNullOrEmpty(request.getHouseBill())) {
             List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), TenantContext.getCurrentTenant());
             if(shipmentDetails != null && !shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
@@ -503,7 +487,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addBookingReferenceValidationErrors(ShipmentDetails request, Set<String> errors) {
-        if(!IsStringNullOrEmpty(request.getBookingReference())) {
+        if(!isStringNullOrEmpty(request.getBookingReference())) {
             List<ShipmentDetails> shipmentDetails = findByBookingReference(request.getBookingReference(), TenantContext.getCurrentTenant());
             if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Shipment with ReferenceNo " + request.getBookingReference() + " already exists.");
@@ -513,7 +497,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private void setMawbStock(ShipmentDetails shipmentDetails) {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(shipmentDetails.getMasterBill());
-        if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
+        if(mawbStocksLinks != null && !mawbStocksLinks.isEmpty()) {
             MawbStocksLink res = mawbStocksLinks.get(0);
             if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals(CONSUMED)) {
                 res.setEntityId(shipmentDetails.getId());
@@ -645,23 +629,23 @@ public class ShipmentDao implements IShipmentDao {
             entryForMawbStocksLinkRow.setSeqNumber(shipmentRequest.getMasterBill().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(shipmentRequest.getMasterBill());
             entryForMawbStocksLinkRow.setStatus(UNUSED);
-            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+            mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }
 
     private Boolean isMAWBNumberValid(String masterBill) {
-        Boolean MAWBNumberValidity = true;
+        boolean mAWBNumberValidity = true;
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
             String checkDigit = masterBill.substring(11, 12);
             if (areAllCharactersDigits(masterBill, 4, 12)) { // masterBill.substring(4, 12).matches("\\d+")
-                Long imawbSeqNum = Long.valueOf(mawbSeqNum);
-                Long icheckDigit = Long.valueOf(checkDigit);
+                long imawbSeqNum = Long.parseLong(mawbSeqNum);
+                long icheckDigit = Long.parseLong(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
-                    MAWBNumberValidity = false;
-            } else MAWBNumberValidity = false;
-        } else MAWBNumberValidity = false;
-        return MAWBNumberValidity;
+                    mAWBNumberValidity = false;
+            } else mAWBNumberValidity = false;
+        } else mAWBNumberValidity = false;
+        return mAWBNumberValidity;
     }
 
     private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
@@ -692,7 +676,7 @@ public class ShipmentDao implements IShipmentDao {
              && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
             V1DataResponse v1DataResponse = fetchCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
             List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
-            if (carrierDetails == null || carrierDetails.size()==0 || StringUtility.isEmpty(carrierDetails.get(0).iATACode))
+            if (carrierDetails == null || carrierDetails.isEmpty() || StringUtility.isEmpty(carrierDetails.get(0).iATACode))
                 throw new ValidationException("Please add the IATA code in the Carrier Master for " + shipmentDetails.getCarrierDetails().getShippingLine());
         }
     }
@@ -703,8 +687,7 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
-        return response;
+        return v1Service.fetchCarrierMasterData(carrierListObject, true);
     }
     @Transactional
     public void saveJobStatus(Long id, String jobStatus) {

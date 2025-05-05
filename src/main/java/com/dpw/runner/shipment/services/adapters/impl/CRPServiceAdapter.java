@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -37,7 +38,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
 
     public ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPRetrieveRequest request = (CRPRetrieveRequest) requestModel.getData();
-        String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", ""));
+        String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? Constants.EMPTY_STRING : request.getSearchString().replace(" ", ""));
         log.info("Retrieve CRP: with request: {}", request.toString());
         ResponseEntity<?> responseEntity;
         try {
@@ -52,7 +53,7 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
     public ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPListRequest request = (CRPListRequest) requestModel.getData();
         log.info("List CRP: with request: {}", request.toString());
-        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : StringUtility.getEmptyString());
+        String url = crpServiceListUrl + (Objects.isNull(request.getSearchString()) ? Constants.EMPTY_STRING : request.getSearchString().replace(" ", "%20")) + (request.isBillable() ? CustomerBookingConstants.BILLABLE_IDENTIFIER : Constants.EMPTY_STRING);
         log.info("List CRP: To Url: {}", url);
         ResponseEntity<?> responseEntity;
         try {

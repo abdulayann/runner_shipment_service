@@ -103,8 +103,8 @@ public class CSDReport extends IReport{
         dictionary.put(ReportConstants.CONSIGNMENT_STATUS, securityStatus);
         dictionary.put(ReportConstants.DEFAULT_RA_NUMBER, getDefaultRANumber());
 
-        dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), DATE_FORMAT, true)));
-        dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), TIME_FORMAT, true)));
+        dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(convertToDPWDateFormat(LocalDateTime.now(), DATE_FORMAT, true)));
+        dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(convertToDPWDateFormat(LocalDateTime.now(), TIME_FORMAT, true)));
 
         if (Objects.nonNull(csdModel.getAwb())) {
             dictionary.put(RA_CSD, geteCSDInfo(csdModel.getAwb()));
@@ -115,7 +115,7 @@ public class CSDReport extends IReport{
 
     private String getMainCarriageAirPorts(List<RoutingsModel> routingsModelList, String pol, String pod) {
         if (CollectionUtils.isEmpty(routingsModelList))
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
         var airMainCarriageRouting = routingsModelList.stream().filter(i -> ReportConstants.AIR.equalsIgnoreCase(i.getMode()))
                 .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
         List<String> airPorts = new ArrayList<>();

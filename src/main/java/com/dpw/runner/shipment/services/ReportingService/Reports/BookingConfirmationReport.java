@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -27,13 +28,11 @@ public class BookingConfirmationReport extends IReport{
     @Autowired
     private HblReport hblReport;
 
-    private Long id;
     public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) getDocumentModel(id);
-        this.id = id;
         return populateDictionary(bookingConfirmationModel);
     }
 
@@ -60,7 +59,7 @@ public class BookingConfirmationReport extends IReport{
             List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -89,8 +88,14 @@ public class BookingConfirmationReport extends IReport{
         }
 
         dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, bookingConfirmationModel.hblModel.tenant);
         return dictionary;
     }
 

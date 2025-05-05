@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -133,7 +134,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 shipmentSettingsDetails.setTenantProducts(tenantProductsDao.saveEntityFromSettings(shipmentSettingsDetails.getTenantProducts(), shipmentSettingsDetails.getId()));
             }
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
-                if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
+                if(!shipmentSettingsDetails.getProductSequenceConfig().isEmpty()) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                         ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, productSequenceConfig.getTenantProducts().getProductType(), "=");
                         Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
@@ -144,20 +145,24 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
             }
 
-            try{
-                shipmentSettingsSync.sync(shipmentSettingsDetails);
-            } catch (Exception e) {
-                log.error("Error Syncing Tenant Settings");
-            }
+            shipmentSettingsSync(shipmentSettingsDetails);
 
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
+    }
+
+    private void shipmentSettingsSync(ShipmentSettingsDetails shipmentSettingsDetails) {
+        try{
+            shipmentSettingsSync.sync(shipmentSettingsDetails);
+        } catch (Exception e) {
+            log.error("Error Syncing Tenant Settings");
+        }
     }
 
     @Transactional
@@ -179,7 +184,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Optional<ShipmentSettingsDetails> oldEntity = getOldEntityShipmentSettingsDetails(request);
-        if(!oldEntity.isPresent()) {
+        if(oldEntity.isEmpty()) {
             log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -212,18 +217,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             processListUpdates(hblTermsConditionTemplateList, response, oldHblTermsConditionTemplateList, hblHawbBackPrintTemplateList, oldHblHawbBackPrintTemplateList, tenantProductsList, oldTenantProductsList, productSequenceConfigList, oldProductSequenceConfigList, shipmentSettingsDetails);
             processProductSequenceConfigList(productSequenceConfigList, shipmentSettingsDetails, response);
 
-            try{
-                shipmentSettingsSync.sync(shipmentSettingsDetails);
-            } catch (Exception e) {
-                log.error("Error Syncing Tenant Settings");
-            }
+            shipmentSettingsSync(shipmentSettingsDetails);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -236,7 +237,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             newRequest.setFilterCriteria(new ArrayList<>());
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
+            if(shipmentSettingsPage.get().toList() != null && !shipmentSettingsPage.get().toList().isEmpty())
                 oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
         else {
@@ -291,7 +292,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     private void processProductSequenceConfigList(List<ProductSequenceConfigRequest> productSequenceConfigList, ShipmentSettingsDetails shipmentSettingsDetails, ShipmentSettingsDetailsResponse response) throws RunnerException {
         if(productSequenceConfigList != null) {
-            if(productSequenceConfigList.size() > 0) {
+            if(!productSequenceConfigList.isEmpty()) {
                 for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                     if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                         ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -326,12 +327,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         Optional<ShipmentSettingsDetails> oldEntity = getSettingsDetailsOptional(request);
         if(!oldEntity.isPresent()) {
             try{
-                return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
+                return completeCreateFromV1(commonRequestModel);
             } catch (Exception e) {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         else {
@@ -341,7 +342,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
     }
@@ -385,7 +386,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -394,7 +395,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if(shipmentSettingsDetails.getProductSequenceConfig() == null) {
             return;
         }
-        if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
+        if(!shipmentSettingsDetails.getProductSequenceConfig().isEmpty()) {
             for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                 if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -435,6 +436,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getIsAutomaticTransferEnabled() == null)
                 request.setIsAutomaticTransferEnabled(oldEntity.get().getIsAutomaticTransferEnabled());
 
+            setNteAdditionalEmailsFlag(oldEntity, request);
+
             if(request.getEventsRevampEnabled() == null) {
                 request.setEventsRevampEnabled(oldEntity.get().getEventsRevampEnabled());
             }
@@ -457,8 +460,13 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
+    }
+
+    private void setNteAdditionalEmailsFlag(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request) {
+        if(request.getIsNteAdditionalEmailsEnabled() == null)
+            request.setIsNteAdditionalEmailsEnabled(oldEntity.get().getIsNteAdditionalEmailsEnabled()); //NOSONAR
     }
 
     private ResponseEntity<IRunnerResponse> getfuncResponseEntity(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
@@ -467,7 +475,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         List<TenantProductsRequest> tenantProductsList = request.getTenantProducts();
         List<ProductSequenceConfigRequest> productSequenceConfigList = request.getProductSequenceConfig();
 
-        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate();
+        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate(); //NOSONAR
         List<HblTermsConditionTemplate> oldHblHawbBackPrintTemplateList = oldEntity.get().getHblHawbBackPrintTemplate();
         List<TenantProducts> oldTenantProductsList = oldEntity.get().getTenantProducts();
         List<ProductSequenceConfig> oldProductSequenceConfigList = oldEntity.get().getProductSequenceConfig();
@@ -535,7 +543,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private void processProductSequenceConfigListForV1Update(List<ProductSequenceConfigRequest> productSequenceConfigList, ShipmentSettingsDetails shipmentSettingsDetails, List<ProductSequenceConfig> oldProductSequenceConfigList, ShipmentSettingsDetailsResponse response) throws RunnerException {
         ListCommonRequest listCommonRequest;
         List<ProductSequenceConfigRequest> productSequenceConfigRequests = new ArrayList<>();
-        if(productSequenceConfigList.size() > 0) {
+        if(!productSequenceConfigList.isEmpty()) {
             for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                 if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                     listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -713,7 +721,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
                 && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
                 && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
-            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(x -> x.toString()).toList());
+            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(Object::toString).toList());
         }
         Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
         List<TenantModel> listOfColoadStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
@@ -785,12 +793,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled() != null) && shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled().orElse(false);
             Boolean newNetworkTransferFlag = (shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled() != null) && shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled().orElse(false);
             Boolean newAutomaticTransferFlag = (shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled() != null) && shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled().orElse(false);
+            Boolean newNteAdditionalEmailsFlag = (shipmentSettingsPatchRequest.getIsNteAdditionalEmailsEnabled() != null) && shipmentSettingsPatchRequest.getIsNteAdditionalEmailsEnabled().orElse(false);
             Boolean newAwbRevampFlag = (shipmentSettingsPatchRequest.getIsAwbRevampEnabled() !=null) && shipmentSettingsPatchRequest.getIsAwbRevampEnabled().orElse(false);
             LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabledDate();
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
             oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(newEntityTransferFlag);
             oldShipmentSettingsDetails.setIsNetworkTransferEntityEnabled(newNetworkTransferFlag);
             oldShipmentSettingsDetails.setIsAutomaticTransferEnabled(newAutomaticTransferFlag);
+            oldShipmentSettingsDetails.setIsNteAdditionalEmailsEnabled(newNteAdditionalEmailsFlag);
             oldShipmentSettingsDetails.setIsAwbRevampEnabled(newAwbRevampFlag);
             setIsEntityTransferPrerequisiteEnabledDate(newEntityTransferFlag, oldShipmentSettingsDetails, oldEntityTransferFlag, oldEntityTransferEnabledDate);
             ShipmentSettingsDetails newShipmentSettingsDetails = shipmentSettingsDao.save(oldShipmentSettingsDetails);
@@ -799,7 +809,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 

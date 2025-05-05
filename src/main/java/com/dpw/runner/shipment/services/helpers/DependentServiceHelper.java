@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -13,13 +15,14 @@ import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 @Component
 @Slf4j
 public class DependentServiceHelper {
@@ -54,10 +57,10 @@ public class DependentServiceHelper {
         try {
             if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())
                     && trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getMasterBill()))) {
-                UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+                UniversalTrackingPayload utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
                 List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                if(_utPayload != null) {
-                    trackingPayloads.add(_utPayload);
+                if(utPayload != null) {
+                    trackingPayloads.add(utPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
                     log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
@@ -84,6 +87,8 @@ public class DependentServiceHelper {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
+            if (isStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
+                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
             ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
             if (shipmentDetails.getStatus() != null && shipmentDetails.getStatus() < ShipmentStatus.values().length)

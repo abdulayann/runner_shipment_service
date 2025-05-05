@@ -1253,6 +1253,24 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
+    void calculateWeightVolume2() {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(containerRequest)
+                .oldPack(null)
+                .newPack(packingRequest)
+                .oldContainer(containerRequest).build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+        mockShipmentSettings();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
+    }
+
+    @Test
     void calculateWeightVolumne_NewPackNull() throws RunnerException {
         ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
         packingRequest.setShipmentId(1L);
@@ -1267,6 +1285,24 @@ class PackingServiceTest extends CommonMocks {
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateWeightVolume_NewPackNull2() {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(null)
+                .oldPack(packingRequest)
+                .newPack(null)
+                .oldContainer(containerRequest).build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+        mockShipmentSettings();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
     }
 
     @Test
@@ -1418,7 +1454,7 @@ class PackingServiceTest extends CommonMocks {
         when(packingDao.findByGuid(any())).thenReturn(Optional.of(testPacking));
         when(modelMapper.map(any(), any())).thenReturn(testPacking);
 
-        ResponseEntity<IRunnerResponse> responseEntity = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.v1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -1427,7 +1463,7 @@ class PackingServiceTest extends CommonMocks {
         Field field = SyncConfig.class.getField("IS_REVERSE_SYNC_ACTIVE");
         field.setAccessible(true);
         field.set(syncConfig, false);
-        ResponseEntity<IRunnerResponse> responseEntity = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), true);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.v1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), true);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -1439,7 +1475,7 @@ class PackingServiceTest extends CommonMocks {
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(packingDao.save(any())).thenReturn(testPacking);
         when(objectMapper.convertValue(any(), eq(PackingResponse.class))).thenReturn(packingResponse);
-        ResponseEntity<IRunnerResponse> responseEntity = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.v1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), false);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -1451,7 +1487,7 @@ class PackingServiceTest extends CommonMocks {
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(packingDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(testPackingRequestV2);
-        var e  = assertThrows(RuntimeException.class, () -> packingService.V1PackingCreateAndUpdate(commonRequestModel, false));
+        var e  = assertThrows(RuntimeException.class, () -> packingService.v1PackingCreateAndUpdate(commonRequestModel, false));
         assertNotNull(e);
     }
 
@@ -1462,7 +1498,7 @@ class PackingServiceTest extends CommonMocks {
                 .ConsolidationId(1L)
                 .ShipmentId(1L)
                 .build();
-        ResponseEntity<IRunnerResponse> responseEntity = packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(bulkPackingRequestV2));
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.v1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(bulkPackingRequestV2));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -1474,9 +1510,9 @@ class PackingServiceTest extends CommonMocks {
                 .ShipmentId(1L)
                 .build();
         PackingService spyService = spy(packingService);
-        doThrow(new RuntimeException()).when(spyService).V1PackingCreateAndUpdate(any(), anyBoolean());
+        doThrow(new RuntimeException()).when(spyService).v1PackingCreateAndUpdate(any(), anyBoolean());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(bulkPackingRequestV2);
-        var e = assertThrows(RuntimeException.class, () -> spyService.V1BulkPackingCreateAndUpdate(commonRequestModel));
+        var e = assertThrows(RuntimeException.class, () -> spyService.v1BulkPackingCreateAndUpdate(commonRequestModel));
         assertNotNull(e);
     }
 

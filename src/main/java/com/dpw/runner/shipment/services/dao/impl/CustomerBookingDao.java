@@ -226,4 +226,9 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber) {
         return customerBookingRepository.findByBookingNumberQuery(bookingNumber);
     }
+
+    @Override
+    public Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber) {
+        return customerBookingRepository.findByShipmentReferenceNumber(shipmentReferenceNumber);
+    }
 }

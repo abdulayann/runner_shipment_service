@@ -8,11 +8,14 @@ import com.dpw.runner.shipment.services.ReportingService.Models.PreAlertModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,12 +25,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.JOB_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
+@Slf4j
 public class PreAlertReport extends IReport {
 
     public static final String COMMODITY = "Commodity";
@@ -74,9 +76,9 @@ public class PreAlertReport extends IReport {
         List<String> orgWithoutTranslation = new ArrayList<>();
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(preAlertModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(preAlertModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
-        JsonDateFormat(dictionary);
+        jsonDateFormat(dictionary);
         addTenantDetails(dictionary, preAlertModel.tenantDetails);
         populateShipmentFields(preAlertModel.shipmentDetails, dictionary);
         populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary, orgWithoutTranslation);
@@ -104,17 +106,17 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DELIVERY_AGENT, null);
         dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
         dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
         addDeliveryAgentTag(preAlertModel, dictionary);
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.ETD, convertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.ETA, convertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.getShipmentContainers());
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.getShipmentContainers()));
@@ -126,7 +128,7 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.FLIGHT_NUMBER, preAlertModel.shipmentDetails.getCarrierDetails().getFlightNumber());
         dictionary.put(ReportConstants.FLIGHT_NAME, preAlertModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(ReportConstants.MARKS_NO, preAlertModel.shipmentDetails.getMarksNum());
-//        dictionary.put(ReportConstants.CMS_REMARKS, preAlertModel.shipmentDetails.) TODO- Where is Remarks Field in Shipment?
+//        dictionary.put(ReportConstants.CMS_REMARKS, preAlertModel.shipmentDetails.) LATER- Where is Remarks Field in Shipment?
         processWeightVolumeTags(preAlertModel, dictionary, v1TenantSettingsResponse);
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(preAlertModel.shipmentDetails);
@@ -157,7 +159,15 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.PPCC, null);
         processShipmentPackingList(preAlertModel, dictionary);
         populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
+        // Add Party Details in Caps
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, preAlertModel.tenantDetails);
 
         return dictionary;
     }
@@ -166,13 +176,13 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getVolumetricWeight() != null)
             dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S, twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S, convertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S, convertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.TOTAL_VOLUME, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.TOTAL_VOLUME, String.format(REGEX_S_S, convertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.TOTAL_WEIGHT, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.TOTAL_WEIGHT, String.format(REGEX_S_S, convertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
     }
 
     private void addOriginDestinationTag(PreAlertModel preAlertModel, Map<String, Object> dictionary) {
@@ -239,7 +249,9 @@ public class PreAlertReport extends IReport {
             }
             try {
                 dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, consigneeFullName);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
     }
 
@@ -256,7 +268,9 @@ public class PreAlertReport extends IReport {
             }
             try {
                 dictionary.put(ReportConstants.CONSIGNER_FULL_NAME, consignerFullName);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
     }
 
@@ -286,12 +300,15 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getPackingList() != null && !preAlertModel.shipmentDetails.getPackingList().isEmpty()) {
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : preAlertModel.shipmentDetails.getPackingList()) {
-                String packJson = jsonHelper.convertToJson(pack);
-                packDictionary.add(jsonHelper.convertJsonToMap(packJson));
+                processPackingMasterData(pack);
+                Map<String, Object> packMap =  jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
+                packMap.put(SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION, getMasterListItemDesc(pack.getPacksType(), MasterDataType.PACKS_UNIT.name(), false));
+                packDictionary.add(packMap);
             }
+
             if(!packDictionary.isEmpty()) {
                 for(Map<String, Object> v: packDictionary) {
-                    JsonDateFormat(v);
+                    jsonDateFormat(v);
                     processCommodity(dictionary, v);
                     //
                 }

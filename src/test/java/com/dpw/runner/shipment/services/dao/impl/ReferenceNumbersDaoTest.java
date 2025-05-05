@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
@@ -412,5 +413,134 @@ class ReferenceNumbersDaoTest {
         when(referenceNumbersRepository.save(any())).thenReturn(referenceNumbers1);
 
         assertEquals(referenceNumbersList, referenceNumbersDao.updateEntityFromConsole(referenceNumbersList, 1L, oldList));
+    }
+
+    @Test
+    void testUpdateEntityFromBooking() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        referenceNumbersList.get(0).setId(1L);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_NullPackings() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(null, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(new ArrayList<>(), referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_EmptyPackings() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(new ArrayList<>(), 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(new ArrayList<>(), referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_NullId() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_Failure() {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromBooking(referenceNumbersList, 1L));
+    }
+
+    @Test
+    void testSaveEntityFromBooking() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        referenceNumbersList.get(0).setId(1L);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testData).when(spyService).save(any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testSaveEntityFromBooking_hashMap() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        referenceNumbersList.get(0).setId(1L);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromBooking(referenceNumbersList, 1L));
+    }
+
+    @Test
+    void testSaveEntityFromBooking_NullId() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testData).when(spyService).save(any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testSaveEntityFromBooking_AuditLogFailure() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testData).when(spyService).save(any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_JsonParseFailure() throws Exception {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setReferenceNumber("qwerty");
+        referenceNumbers.setId(1234L);
+        referenceNumbers.setBookingId(2321L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(List.of(testData))).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        when(jsonHelper.convertToJson(any())).thenThrow(RuntimeException.class);
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_AuditLogFailure() throws Exception {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setReferenceNumber("qwerty");
+        referenceNumbers.setId(1234L);
+        referenceNumbers.setBookingId(2321L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(List.of(testData))).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
     }
 }

@@ -1,15 +1,13 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
@@ -34,8 +32,8 @@ import java.util.Optional;
 public class NetworkTransferController {
     private INetworkTransferService networkTransferService;
 
-    private class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
+    private static class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
+    private static class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
 
     @Autowired
     public NetworkTransferController(INetworkTransferService networkTransferService){
@@ -94,5 +92,22 @@ public class NetworkTransferController {
     public ResponseEntity<IRunnerResponse> fetchEntityStatus(@ApiParam(value = NetworkTransferConstants.ENTITY_GUID) @RequestParam(required = true) String guid) {
         CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
         return networkTransferService.fetchEntityStatus(request);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ConsolidationConstants.CREATE_SUCCESSFUL, response = MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(NetworkTransferConstants.NETWORK_TRANSFER_CREATE_EXTERNAL)
+    public ResponseEntity<IRunnerResponse> createExternal(@RequestBody @Valid NetworkTransferRequest networkTransferRequest) {
+        String responseMessage;
+        try {
+            return networkTransferService.createExternal(CommonRequestModel.buildRequest(networkTransferRequest));
+        } catch (Exception e) {
+            responseMessage = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMessage, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMessage);
     }
 }

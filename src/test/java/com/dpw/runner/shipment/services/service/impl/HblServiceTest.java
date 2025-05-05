@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -209,7 +210,7 @@ class HblServiceTest extends CommonMocks {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
-        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getEmptyString()).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(Constants.EMPTY_STRING).build());
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, null);
         // Assert
@@ -1275,9 +1276,9 @@ class HblServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.singletonList(completeShipment)));
         when(hblDao.findByShipmentId(anyLong())).thenThrow(new RuntimeException());
 
-        Exception e = assertThrows(RuntimeException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
+        Exception e = assertThrows(GenericException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
         // Test
-        assertEquals(RuntimeException.class.getSimpleName(), e.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
     @Test
@@ -1289,9 +1290,9 @@ class HblServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.singletonList(completeShipment)));
         when(hblDao.findByShipmentId(anyLong())).thenThrow(new RuntimeException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
 
-        Exception e = assertThrows(RuntimeException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
+        Exception e = assertThrows(GenericException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
         // Test
-        assertEquals(RuntimeException.class.getSimpleName(), e.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
     @Test

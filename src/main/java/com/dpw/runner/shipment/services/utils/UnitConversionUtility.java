@@ -15,7 +15,7 @@ import javax.measure.quantity.Mass;
 import javax.measure.quantity.Volume;
 import java.math.BigDecimal;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -26,7 +26,7 @@ public class UnitConversionUtility {
         try {
             if(value == null)
                 return 0;
-            if(IsStringNullOrEmpty(fromUnit) || IsStringNullOrEmpty(toUnit)) {
+            if(isStringNullOrEmpty(fromUnit) || isStringNullOrEmpty(toUnit)) {
                 return value;
             }
             Unit<?> sourceUnit = getUnitType(type, fromUnit);
@@ -152,8 +152,7 @@ public class UnitConversionUtility {
                 return MetricPrefix.KILO(Units.GRAM).multiply(1016.047);
             case Constants.WEIGHT_UNIT_TN:
                 return MetricPrefix.KILO(Units.GRAM).multiply(907.1847);
-            case Constants.WEIGHT_UNIT_TM:
-            case Constants.WEIGHT_UNIT_T:
+            case Constants.WEIGHT_UNIT_TM, Constants.WEIGHT_UNIT_T:
                 return MetricPrefix.KILO(Units.GRAM).multiply(1000);
             case Constants.WEIGHT_UNIT_HG:
                 return MetricPrefix.KILO(Units.GRAM).multiply(0.10);
@@ -168,9 +167,7 @@ public class UnitConversionUtility {
 
     static Unit<Volume> getVolumeUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
-            case Constants.VOLUME_UNIT_M3:
-            case Constants.VOLUME_UNIT_STERE:
-            case Constants.VOLUME_UNIT_CBM:
+            case Constants.VOLUME_UNIT_M3, Constants.VOLUME_UNIT_STERE, Constants.VOLUME_UNIT_CBM:
                 return Units.CUBIC_METRE;
             case Constants.VOLUME_UNIT_LITRE:
                 return Units.LITRE;
@@ -188,9 +185,8 @@ public class UnitConversionUtility {
                 return Units.CUBIC_METRE.multiply(0.03523907);
             case Constants.VOLUME_UNIT_CUP:
                 return Units.CUBIC_METRE.multiply(0.0002365882);
-            case Constants.VOLUME_UNIT_FLUID_OUNCE_US:
-            case Constants.VOLUME_UNIT_OUNCE_US_FLD:
-                return Units.CUBIC_METRE.multiply(0.00002957353);
+            case Constants.VOLUME_UNIT_FLUID_OUNCE_US, Constants.VOLUME_UNIT_OUNCE_US_FLD, Constants.VOLUME_UNIT_OUNCE_UK_FLD:  // Combined with the above cases
+                return Units.CUBIC_METRE.multiply(unitSymbol.equals(Constants.VOLUME_UNIT_OUNCE_UK_FLD) ? 0.00002841305 : 0.00002957353);
             case Constants.VOLUME_UNIT_CF:
                 return Units.CUBIC_METRE.multiply(0.02831685);
             case Constants.VOLUME_UNIT_GI:
@@ -207,8 +203,6 @@ public class UnitConversionUtility {
                 return Units.CUBIC_METRE.multiply(0.00001638706);
             case Constants.VOLUME_UNIT_LITER_OLD:
                 return Units.CUBIC_METRE.multiply(0.001000028);
-            case Constants.VOLUME_UNIT_OUNCE_UK_FLD:
-                return Units.CUBIC_METRE.multiply(0.00002841305);
             case Constants.VOLUME_UNIT_PECK_US:
                 return Units.CUBIC_METRE.multiply(8.8097680E-03);
             case Constants.VOLUME_UNIT_PINT_US_DRY:

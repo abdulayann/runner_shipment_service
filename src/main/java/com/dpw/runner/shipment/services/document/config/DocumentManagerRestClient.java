@@ -26,6 +26,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -347,13 +348,17 @@ public class DocumentManagerRestClient {
 
     }
 
-    public DocumentManagerResponse<T> list(Object object) {
+    public DocumentManagerResponse<T> list(Object object, Long page, Long size) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | list request: {}", this.documentList, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            String url = this.documentList;
+            if (Objects.nonNull(page) && Objects.nonNull(size))
+                url += "?page=" + page + "&size=" + size;
+
+            log.info("{} | URL: {} | list request: {}", url, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
-                    this.documentList,
+                    url,
                     HttpMethod.POST,
                     httpEntity,
                     new ParameterizedTypeReference<>() {}

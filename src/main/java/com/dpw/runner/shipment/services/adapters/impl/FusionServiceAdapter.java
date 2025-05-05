@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapte
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.FusionServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -42,7 +43,7 @@ public class FusionServiceAdapter implements IFusionServiceAdapter {
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         } catch (Exception ex) {
             log.error("Fusion credit check failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
-            throw new RuntimeException("Error from Fusion while fetching credit limit: " + ex.getMessage());
+            throw new FusionServiceException("Error from Fusion while fetching credit limit: " + ex.getMessage(), ex);
         }
     }
 }

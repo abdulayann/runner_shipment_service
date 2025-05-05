@@ -72,7 +72,7 @@ public class DocumentService {
         body.set(FILE, file.getResource());
         body.set(PATH, path);
 
-        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+        HttpEntity<Object> request = new HttpEntity<>(body, headers);
 
         return restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
     }
@@ -128,12 +128,12 @@ public class DocumentService {
         body.set(APPLICATION_ID, templateApplicationId);
         body.set(TEMPLATE_NAME, templateRequest.getFile().getOriginalFilename());
         body.set(META_DATA, "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
-        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+        HttpEntity<Object> request = new HttpEntity<>(body, headers);
 
         return restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
     }
     public ResponseEntity<byte[]> downloadDocumentTemplate(Object json, String templateId){
-        // TODO Provide json object with proper format
+        // Later: Provide json object with proper format
         String url = templateBaseUrl+templateId+"/document";
 
         HttpHeaders headers = new HttpHeaders();

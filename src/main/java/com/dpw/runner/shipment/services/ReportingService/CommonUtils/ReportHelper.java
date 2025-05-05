@@ -2,12 +2,15 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -17,7 +20,9 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
+@Slf4j
 public class ReportHelper {
+    private ReportHelper(){}
     public static String getCityCountry(String city, String country)
     {
         if (city == null)
@@ -53,7 +58,7 @@ public class ReportHelper {
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
 
-        if (!CommonUtils.IsStringNullOrEmpty(temp)) {
+        if (!CommonUtils.isStringNullOrEmpty(temp)) {
             if (response == null) {
                 response = temp;
             } else {
@@ -67,7 +72,7 @@ public class ReportHelper {
 
     public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
-        if(!CommonUtils.IsStringNullOrEmpty(x)){
+        if(!CommonUtils.isStringNullOrEmpty(x)){
             if(response == null)
                 response = x;
             else
@@ -78,7 +83,7 @@ public class ReportHelper {
 
     public static String getCommaSeparatedAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
-        if(!CommonUtils.IsStringNullOrEmpty(x)){
+        if(!CommonUtils.isStringNullOrEmpty(x)){
             if(response == null)
                 response = x;
             else
@@ -87,17 +92,17 @@ public class ReportHelper {
         return response;
     }
 
-    public static List<String> getOrgAddressWithPhoneEmail(String name, String address1, String address2, String city_country, String email, String phone, String pincode)
+    public static List<String> getOrgAddressWithPhoneEmail(String name, String address1, String address2, String cityCountry, String email, String phone, String pincode)
     {
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         if(name != null)
             list.add(name);
         if(address1 != null)
             list.add(address1);
         if(address2 != null)
             list.add(address2);
-        if(city_country != null)
-            list.add(city_country);
+        if(cityCountry != null)
+            list.add(cityCountry);
         if(email != null)
             list.add(email);
         if(phone != null)
@@ -152,7 +157,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -170,7 +175,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -192,7 +197,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -213,7 +218,7 @@ public class ReportHelper {
         return list;
     }
 
-    public static List<String> getOrgAddress(String name, String address1, String address2, String city_country, String city_zipcode, String state_country)
+    public static List<String> getOrgAddress(String name, String address1, String address2, String cityCountry, String cityZipcode, String stateCountry)
     {
         List<String> list = new ArrayList<>();
         if(name != null)
@@ -222,17 +227,17 @@ public class ReportHelper {
             list.add(address1);
         if(address2 != null)
             list.add(address2);
-        if(city_country != null)
-            list.add(city_country);
-        if(city_zipcode != null)
-            list.add(city_zipcode);
-        if(state_country != null)
-            list.add(state_country);
+        if(cityCountry != null)
+            list.add(cityCountry);
+        if(cityZipcode != null)
+            list.add(cityZipcode);
+        if(stateCountry != null)
+            list.add(stateCountry);
         return list;
 
     }
 
-    public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String state_country, String pincode)
+    public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String stateCountry, String pincode)
     {
         List<String> list = new ArrayList<>();
         if(StringUtility.isNotEmpty(address1))
@@ -248,8 +253,8 @@ public class ReportHelper {
             sb.append(state).append(" ");
         if (StringUtility.isNotEmpty(pincode))
             sb.append(pincode).append(" ");
-        if (StringUtility.isNotEmpty(state_country))
-            sb.append(state_country).append(" ");
+        if (StringUtility.isNotEmpty(stateCountry))
+            sb.append(stateCountry).append(" ");
 
         if (StringUtility.isNotEmpty(sb.toString()))
             list.add(sb.toString());
@@ -262,7 +267,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<String>();
+        List<String> list = new ArrayList<>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -306,24 +311,33 @@ public class ReportHelper {
     }
 
     public static void addTenantDetails(Map<String, Object> dictionary, TenantModel tenantModel) {
-        dictionary.put(ReportConstants.TENANT_NAME, tenantModel.tenantName);
-        dictionary.put(ReportConstants.TENANT_ADDRESS_1, tenantModel.address1);
-        dictionary.put(ReportConstants.TENANT_ADDRESS_2, tenantModel.address2);
-        dictionary.put(ReportConstants.TENANT_EMAIL, tenantModel.email);
-        dictionary.put(ReportConstants.TENANT_CITY, tenantModel.city);
-        dictionary.put(ReportConstants.TENANT_STATE, tenantModel.state);
-        dictionary.put(ReportConstants.TENANT_COUNTRY, tenantModel.country);
-        dictionary.put(ReportConstants.TENANT_COUNTRY_PHONE, tenantModel.phone);
-        dictionary.put(ReportConstants.TENANT_MOBILE, tenantModel.mobile);
-        dictionary.put(ReportConstants.TENANT_ZIP_POST_CODE, tenantModel.zipPostCode);
-        dictionary.put(ReportConstants.TENANT_URL, tenantModel.websiteUrl);
+
+        if (Objects.nonNull(tenantModel)) {
+            dictionary.put(ReportConstants.TENANT_NAME, tenantModel.tenantName);
+            dictionary.put(ReportConstants.TENANT_ADDRESS_1, tenantModel.address1);
+            dictionary.put(ReportConstants.TENANT_ADDRESS_2, tenantModel.address2);
+            dictionary.put(ReportConstants.TENANT_EMAIL, tenantModel.email);
+            dictionary.put(ReportConstants.TENANT_CITY, tenantModel.city);
+            dictionary.put(ReportConstants.TENANT_STATE, tenantModel.state);
+            dictionary.put(ReportConstants.TENANT_COUNTRY, tenantModel.country);
+            dictionary.put(ReportConstants.TENANT_COUNTRY_PHONE, tenantModel.phone);
+            dictionary.put(ReportConstants.TENANT_MOBILE, tenantModel.mobile);
+            dictionary.put(ReportConstants.TENANT_ZIP_POST_CODE, tenantModel.zipPostCode);
+            dictionary.put(ReportConstants.TENANT_URL, tenantModel.websiteUrl);
+            dictionary.put(TENANT_NAME_IN_CAPS, StringUtility.toUpperCase(tenantModel.tenantName));
+            dictionary.put(TENANT_VAT_REG_NUMBER_IN_CAPS, StringUtility.toUpperCase(tenantModel.vatRegNumber));
+            dictionary.put(TENANT_EMAIL_IN_CAPS, StringUtility.toUpperCase(tenantModel.email));
+
+            List<String> tenantAddress = getOrgAddressForLesserLines(tenantModel.getAddress1(), tenantModel.getAddress2(), tenantModel.getState(), tenantModel.getCity(), tenantModel.getCountry(), tenantModel.getZipPostCode());
+            dictionary.put(TENANT_ADDRESS_IN_CAPS, CommonUtils.listIsNullOrEmpty(tenantAddress) ? tenantAddress : tenantAddress.stream().filter(Objects::nonNull).map(StringUtility::toUpperCase).toList());
+        }
     }
 
     public static String getValueFromMap(Map<String, Object> dataMap, String key) {
         if (dataMap == null)
             return null;
         Object value = dataMap.get(key);
-        if (value == null || !(value instanceof String)) {
+        if (!(value instanceof String)) {
             return null;
         }
         return value.toString();
@@ -336,17 +350,14 @@ public class ReportHelper {
     }
 
     public static List<String> getListOfStrings(String... strings) {
-        List<String> stringList = new ArrayList<>();
-        stringList.addAll(Arrays.asList(strings));
-        return stringList;
+        return new ArrayList<>(Arrays.asList(strings));
     }
 
     public static String combineStringsWithComma(String str1, String str2)
     {
         if (str1 == null)
         {
-            if (str2 == null) return null;
-            else return str2;
+            return str2;
         }
         else
         {
@@ -364,7 +375,7 @@ public class ReportHelper {
         return df.format(Double.valueOf(value));
     }
 
-    public static String GenerateFormattedDate(LocalDateTime localDateTime, String pattern){
+    public static String generateFormattedDate(LocalDateTime localDateTime, String pattern){
         if(localDateTime == null || pattern == null)
             return null;
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
@@ -415,44 +426,44 @@ public class ReportHelper {
     }
 
     public static String concatGroupedContainerCount(Map<String, Long> containerCountGrouped) {
-        String containerCount = "";
+        StringBuilder containerCount = new StringBuilder();
         if (Objects.isNull(containerCountGrouped))
             return "0";
         for (Map.Entry<String, Long> entry : containerCountGrouped.entrySet()) {
             if (!containerCount.isEmpty()) {
-                containerCount += " & ";
+                containerCount.append(" & ");
             }
-            containerCount += entry.getValue() + " X " + entry.getKey();
+            containerCount.append(entry.getValue()).append(" X ").append(entry.getKey());
         }
-        return containerCount.isEmpty() ? "0" : containerCount;
+        return containerCount.isEmpty() ? "0" : containerCount.toString();
     }
 
     public static String concatGroupedFieldValues(Map<String, Double> fieldValuesGrouped, int decimalPlaces) {
-        String fieldValue = "";
+        StringBuilder fieldValue = new StringBuilder();
         if (Objects.isNull(fieldValuesGrouped))
             return "0";
         for (Map.Entry<String, Double> entry : fieldValuesGrouped.entrySet()) {
             double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
             if (!fieldValue.isEmpty()) {
-                fieldValue += " & ";
+                fieldValue.append(" & ");
             }
-            fieldValue += value + " X " + entry.getKey();
+            fieldValue.append(value).append(" X ").append(entry.getKey());
         }
-        return fieldValue.isEmpty() ? "0" : fieldValue;
+        return fieldValue.isEmpty() ? "0" : fieldValue.toString();
     }
 
     public static String concatGroupedFields(Map<String, Double> fieldMap, int decimalPlaces) {
-        String fieldValue = "";
+        StringBuilder fieldValue = new StringBuilder();
         if (Objects.isNull(fieldMap))
             return "0";
         for (Map.Entry<String, Double> entry : fieldMap.entrySet()) {
             double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
             if (!fieldValue.isEmpty()) {
-                fieldValue += " & ";
+                fieldValue.append(" & ");
             }
-            fieldValue += value + " " + entry.getKey();
+            fieldValue.append(value).append(" ").append(entry.getKey());
         }
-        return fieldValue.isEmpty() ? "0" : fieldValue;
+        return fieldValue.isEmpty() ? "0" : fieldValue.toString();
     }
 
     public static String addCommaWithoutDecimal(BigDecimal amount)
@@ -468,7 +479,7 @@ public class ReportHelper {
             if(decimalPlaces == null)
                 decimalPlaces = 2;
             try {
-                BigDecimal roundedNumber = number.setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP);
+                BigDecimal roundedNumber = CommonUtils.roundBigDecimal(number, decimalPlaces, RoundingMode.HALF_UP);
                 Locale customLocale = Locale.US;
                 NumberFormat numberInstance = NumberFormat.getNumberInstance(customLocale);
                 numberInstance.setMinimumFractionDigits(decimalPlaces);
@@ -476,11 +487,37 @@ public class ReportHelper {
 
                 return numberInstance.format(roundedNumber);
             } catch (Exception e) {
-                e.printStackTrace();  // Handle the exception appropriately
+                log.error("An error occurred: {}", e.getMessage(), e);
             }
         }
 
         return number != null ? number.toString() : null;
+    }
+
+    public static void addPartyNameAndAddressInCaps(PartiesModel partiesModel, Map<String, Object> dictionary, String nameKey, String addressKey) {
+        try {
+            if (Objects.nonNull(partiesModel)) {
+                if (Objects.nonNull(partiesModel.getOrgData())) {
+                    dictionary.put(nameKey, StringUtility.toUpperCase(StringUtility.convertToString(partiesModel.getOrgData().get(PartiesConstants.FULLNAME))));
+                }
+
+                if (Objects.nonNull(partiesModel.getAddressData())) {
+
+                    List<String> address = getOrgAddressForLesserLines(
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.ADDRESS1)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.ADDRESS2)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.STATE)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.CITY)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.COUNTRY)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.ZIP_POST_CODE)));
+
+                    dictionary.put(addressKey, CommonUtils.listIsNullOrEmpty(address) ? address : address.stream().filter(Objects::nonNull).map(StringUtility::toUpperCase).toList());
+                }
+            }
+        } catch (Exception e) {
+            log.error("An error occurred in addPartyNameAndAddressInCaps: for keys: {} -- {} --- With exception {}", nameKey, addressKey, e.getMessage(), e);
+        }
+
     }
 
 }

@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ConsolidationConstants {
     private ConsolidationConstants(){}
-    public static List<String> CONSOLIDATION_HEADER = Arrays.asList(
+    public static final List<String> CONSOLIDATION_HEADER = Arrays.asList(
             "Consolidation Type", "Consolidation Number", "Transport Mode", "Cargo Type",
             "ETA", "ATA", "ETD", "ATD", "Domestic", "Created By", "Voyage/Flight No",
             "Payment Terms", "Carrier", "Cutoff Date", "HBL / HAWB", "Estimated Terminal Cutoff",

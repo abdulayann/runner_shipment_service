@@ -55,10 +55,10 @@ public class CustomsInstructionsReport extends IReport{
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         CustomsInstructionsModel customsInstructionsModel = (CustomsInstructionsModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(customsInstructionsModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(customsInstructionsModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(((CustomsInstructionsModel) documentModel).shipmentDetails, dictionary);
-        JsonDateFormat(dictionary);
+        jsonDateFormat(dictionary);
         List<String> consigner = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsigner());
         List<String> consignee = getOrgAddress(customsInstructionsModel.shipmentDetails.getConsignee());
         List<String> exportBroker = getOrgAddress(customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null ?
@@ -80,18 +80,18 @@ public class CustomsInstructionsReport extends IReport{
             if(vesselsResponse != null)
                 dictionary.put(ReportConstants.VESSEL_NAME, vesselsResponse.getName());
         }
-        // TODO- Logo Path
+        // LATER- Logo Path
         if (customsInstructionsModel.shipmentDetails.getPackingList() != null && !customsInstructionsModel.shipmentDetails.getPackingList().isEmpty()) {
             dictionary.put(ReportConstants.HAS_PACKAGES, true);
             dictionary.put(ReportConstants.PACKING_LIST, getPackingDetails(customsInstructionsModel.shipmentDetails, dictionary));
         }
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         if (customsInstructionsModel.shipmentDetails.getCarrierDetails() != null)
-            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.ETD, convertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (customsInstructionsModel.shipmentDetails.getCarrierDetails() != null)
-            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.ETA, convertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null)
-            dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.DATE_OF_ISSUE, convertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, v1TenantSettingsResponse));
         processShipmentContainers(customsInstructionsModel, dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
@@ -110,16 +110,16 @@ public class CustomsInstructionsReport extends IReport{
 
     private void processValuesContainer(V1TenantSettingsResponse v1TenantSettingsResponse, List<Map<String, Object>> valuesContainer) {
         for (Map<String, Object> v : valuesContainer) {
-            updateValue(v, ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.TARE_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.TARE_WEIGHT), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.VGM_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.VGM_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.GROSS_VOLUME, convertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.GROSS_WEIGHT, convertToVolumeNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.NET_WEIGHT, convertToVolumeNumberFormat(v.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.TARE_WEIGHT, convertToVolumeNumberFormat(v.get(ReportConstants.TARE_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.VGM_WEIGHT, convertToVolumeNumberFormat(v.get(ReportConstants.VGM_WEIGHT), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.SHIPMENT_PACKS) && v.get(ReportConstants.SHIPMENT_PACKS) != null)
                 updateValue(v, ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
-            updateValue(v, ReportConstants.MIN_TEMP, ConvertToWeightNumberFormat(v.get(ReportConstants.MIN_TEMP), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.MAX_TEMP, ConvertToWeightNumberFormat(v.get(ReportConstants.MAX_TEMP), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(v.get(ReportConstants.NO_OF_PACKAGES))), 0, v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.MIN_TEMP, convertToWeightNumberFormat(v.get(ReportConstants.MIN_TEMP), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.MAX_TEMP, convertToWeightNumberFormat(v.get(ReportConstants.MAX_TEMP), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.NO_OF_PACKAGES, getDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(v.get(ReportConstants.NO_OF_PACKAGES))), 0, v1TenantSettingsResponse));
         }
     }
 

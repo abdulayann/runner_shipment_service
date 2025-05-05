@@ -70,7 +70,7 @@ public class PickupOrderReport extends IReport {
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -80,7 +80,15 @@ public class PickupOrderReport extends IReport {
 
         dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
         populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
+        // Add Party Details in Caps
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
 
         return dictionary;
     }

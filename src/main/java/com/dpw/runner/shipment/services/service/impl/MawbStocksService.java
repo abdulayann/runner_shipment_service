@@ -261,12 +261,12 @@ public class MawbStocksService implements IMawbStocksService {
         String startingNum = mawbStocksRequest.getMawbNumber();
         for (int i = 0; i < count; i++) {
             int val = (Integer.parseInt(startingNum) + i) % 7;
-            String stNum = Integer.parseInt(startingNum) + i + "" + val;
+            StringBuilder stNum = new StringBuilder(Integer.parseInt(startingNum) + i + "" + val);
             int appendLeadingZeros = 8 - stNum.length();
             for (int ind = 0; ind < appendLeadingZeros; ind++) {
-                stNum = "0" + stNum;
+                stNum = new StringBuilder("0" + stNum);
             }
-            nums.add(stNum);
+            nums.add(stNum.toString());
         }
         List<String> mawbNumbers = new ArrayList<>();
         for (int i = 0; i < count; i++) {
@@ -338,7 +338,7 @@ public class MawbStocksService implements IMawbStocksService {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
         }
-        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
     private void beforeSave(MawbStocksRequest mawbStocks, List<String> mawbNumbers) throws ValidationException {
@@ -351,17 +351,9 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     private boolean isValidMawb(String mawb) {
+        boolean isMawbValid = false;
         if(!StringUtility.isEmpty(mawb) && mawb.contains("-") && (mawb.length() - mawb.indexOf("-") == 9))
-            return true;
-        return false;
+            isMawbValid =  true;
+        return isMawbValid;
     }
-
-//    private void setManyToOneRelationships(MawbStocks mawbStocks){
-//        if(mawbStocks.getMawbStocksLinkRows() !=null){
-//            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows();
-//            for (MawbStocksLink mawbStocksLink: mawbStocksLinks) {
-//                mawbStocksLink.setMawbStocks(mawbStocks);
-//            }
-//        }
-//    }
 }
