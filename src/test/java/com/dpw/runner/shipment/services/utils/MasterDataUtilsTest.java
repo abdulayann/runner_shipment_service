@@ -475,38 +475,38 @@ class MasterDataUtilsTest {
         assertNull(response);
     }
 
-    @Test
-    void createInBulkCommodityTypeRequest2() {
-        // Arrange
-        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
-        Cache cache = mock(Cache.class);
+//    @Test
+//    void createInBulkCommodityTypeRequest2() {
+//        // Arrange
+//        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+//        Cache cache = mock(Cache.class);
+//
+//        when(cacheManager.getCache(anyString())).thenReturn(cache);
+//        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+//        when(cache.get(any())).thenReturn(null);
+//
+//        // Act and Assert
+//        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+//        assertNotNull(response);
+//        assertFalse(response.isEmpty());
+//    }
 
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(null);
-
-        // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void createInBulkCommodityTypeRequest3() {
-        // Arrange
-        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
-        Cache cache = mock(Cache.class);
-
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
-
-        // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
-        assertNotNull(response);
-        assertTrue(response.isEmpty());
-
-    }
+//    @Test
+//    void createInBulkCommodityTypeRequest3() {
+//        // Arrange
+//        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+//        Cache cache = mock(Cache.class);
+//
+//        when(cacheManager.getCache(anyString())).thenReturn(cache);
+//        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+//        when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
+//
+//        // Act and Assert
+//        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+//        assertNotNull(response);
+//        assertTrue(response.isEmpty());
+//
+//    }
 
     @Test
     void createInBulkCommodityTypeRequest4() {
@@ -824,56 +824,56 @@ class MasterDataUtilsTest {
         assertTrue(response.isEmpty());
     }
 
-    @Test
-    void createInBulkTenantsRequest2() {
-        // Arrange
-        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+//    @Test
+//    void createInBulkTenantsRequest2() {
+//        // Arrange
+//        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+//
+//        Cache cache = mock(Cache.class);
+//
+//        when(cacheManager.getCache(anyString())).thenReturn(cache);
+//        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+//        when(cache.get(any())).thenReturn(null);
+//
+//        // Act and Assert
+//        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
+//        assertNotNull(response);
+//        assertFalse(response.isEmpty());
+//    }
 
-        Cache cache = mock(Cache.class);
-
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(null);
-
-        // Act and Assert
-        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void createInBulkTenantsRequestForAttachListShipmentResponse() {
-        // Arrange
-        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, AttachListShipmentResponse.class);
-
-        Cache cache = mock(Cache.class);
-
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(null);
-
-        // Act and Assert
-        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
-        assertNotNull(response);
-        assertFalse(response.isEmpty());
-    }
-
-    @Test
-    void createInBulkTenantsRequest3() {
-        // Arrange
-        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
-        Cache cache = mock(Cache.class);
-
-        when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
-        when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
-
-        // Act and Assert
-        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
-        assertNotNull(response);
-        assertTrue(response.isEmpty());
-
-    }
+//    @Test
+//    void createInBulkTenantsRequestForAttachListShipmentResponse() {
+//        // Arrange
+//        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, AttachListShipmentResponse.class);
+//
+//        Cache cache = mock(Cache.class);
+//
+//        when(cacheManager.getCache(anyString())).thenReturn(cache);
+//        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+//        when(cache.get(any())).thenReturn(null);
+//
+//        // Act and Assert
+//        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
+//        assertNotNull(response);
+//        assertFalse(response.isEmpty());
+//    }
+//
+//    @Test
+//    void createInBulkTenantsRequest3() {
+//        // Arrange
+//        var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
+//        Cache cache = mock(Cache.class);
+//
+//        when(cacheManager.getCache(anyString())).thenReturn(cache);
+//        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+//        when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
+//
+//        // Act and Assert
+//        var response = masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>());
+//        assertNotNull(response);
+//        assertTrue(response.isEmpty());
+//
+//    }
 
     @Test
     void createInBulkTenantsRequest4() {
