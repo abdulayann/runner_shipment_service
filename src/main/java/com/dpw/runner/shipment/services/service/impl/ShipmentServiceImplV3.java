@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
@@ -1169,6 +1170,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentPendingNotificationResponse shipmentResponse = (ShipmentPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalShipmentDetails.get(), includeColumns, new ShipmentPendingNotificationResponse());
         shipmentMasterDataHelper.getMasterDataForEntity(shipmentResponse);
         return shipmentResponse;
+    }
+
+    @Override
+    public Optional<ShipmentDetails> findById(Long shipmentId) {
+        return shipmentDao.findById(shipmentId);
+    }
+
+    @Override
+    public void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse) {
+        shipmentDao.updateCargoDetailsInShipment(shipmentId,
+                cargoDetailsResponse.getNoOfPacks(),
+                cargoDetailsResponse.getPacksUnit(),
+                cargoDetailsResponse.getVolume(),
+                cargoDetailsResponse.getVolumeUnit(),
+                cargoDetailsResponse.getWeight(),
+                cargoDetailsResponse.getWeightUnit(),
+                cargoDetailsResponse.getVolumetricWeight(),
+                cargoDetailsResponse.getVolumetricWeightUnit(),
+                cargoDetailsResponse.getChargable(),
+                cargoDetailsResponse.getChargeableUnit());
     }
 
     @Override
