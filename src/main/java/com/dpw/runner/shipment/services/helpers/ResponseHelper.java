@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.helpers;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
@@ -128,6 +130,12 @@ public class ResponseHelper {
                 .header("X-CSD-Document-Status",
                     String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
+    }
+    public static ResponseEntity<IRunnerResponse> buildListSuccessContainerResponse(List<ContainerBaseResponse> data, Integer totalPages, Long totalCount) {
+        IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
+                .requestId(LoggerHelper.getRequestIdFromMDC())
+                .data(data).numberOfRecords(totalCount).totalPages(totalPages).build();
+        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
 }
 

@@ -131,4 +131,5 @@ public class ContainerResponse implements IRunnerResponse {
     private ContainerPraStatus praStatus;
     private BigDecimal humidity;
     private BigDecimal vents;
+    private String assignedContainer;
 }

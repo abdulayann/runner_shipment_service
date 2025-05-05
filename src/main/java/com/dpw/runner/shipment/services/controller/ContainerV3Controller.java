@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -84,9 +85,17 @@ public class ContainerV3Controller {
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(CommonRequestModel.buildRequest(listCommonRequest));
-        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getTotalCount());
+        return ResponseHelper.buildListSuccessContainerResponse(containerListResponse.getContainers(), containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})
+    @PostMapping(ContainerConstants.GET_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest)
+        throws RunnerException {
+        ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, true);
+        return ResponseHelper.buildSuccessResponse(containerListResponse,
+            containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
+    }
 }
