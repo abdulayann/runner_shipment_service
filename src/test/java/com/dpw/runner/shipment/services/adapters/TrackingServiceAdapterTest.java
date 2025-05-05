@@ -28,7 +28,9 @@ import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Journey;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -365,7 +367,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole("someRole");
         event.setEventType(EventConstants.FLIGHT_ARRIVAL);
         event.setDescription("Flight Arrival");
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals(EventConstants.FLAR, result);
     }
@@ -376,7 +381,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole("someRole");
         event.setEventType(EventConstants.FLIGHT_DEPARTURE);
         event.setDescription("Flight Departure");
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals(EventConstants.FLDR, result);
     }
@@ -387,7 +395,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole("someRole");
         event.setEventType(EventConstants.LITERAL);
         event.setDescription("Received from Flight");
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals(EventConstants.TRCF, result);
     }
@@ -398,7 +409,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole("someRole");
         event.setEventType(EventConstants.LITERAL);
         event.setDescription("Consignee notified");
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals(EventConstants.TNFD, result);
     }
@@ -409,7 +423,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole(EventConstants.ORIGIN);
         event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
         event.setDescription("some description");
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals(EventConstants.ECPK, result);
     }
@@ -420,7 +437,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole("someRole");
         event.setEventType("UNKNOWN_EVENT");
         event.setDescription("some description");
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals("UNKNOWN_EVENT", result);
     }
@@ -433,9 +453,28 @@ class TrackingServiceAdapterTest {
         event.setEventType(EventConstants.LITERAL);
         event.setDescription("Received from Shipper");
 
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         assertEquals(EventConstants.TRCS, result);
+    }
+
+    @Test
+    void convertTrackingEventCodeToShortCode_VSDP() {
+        Event event = new Event();
+        event.setEventType(EventConstants.LOAD_ON_VESSEL);
+        event.setDescriptionFromSource(EventConstants.EXPORT_LOADED_ON_VESSEL);
+        event.setLocationRole(EventConstants.ORIGIN_PORT);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode(EventConstants.MSCU).build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        // Expect VSDP to be returned
+        assertEquals(EventConstants.VSDP, result);
     }
 
     @Test
@@ -445,8 +484,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole("destinationPort");
         event.setEventType(EventConstants.GATE_OUT_WITH_CONTAINER_FULL);
         event.setDescription("");
-
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         // Expect FUGO to be returned
         assertEquals(EventConstants.FUGO, result);
@@ -459,8 +500,10 @@ class TrackingServiceAdapterTest {
         event.setLocationRole(EventConstants.DESTINATION);
         event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
         event.setDescription("");
-
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode("").build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         // Expect EMCR to be returned
         assertEquals(EventConstants.EMCR, result);

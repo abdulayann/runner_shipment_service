@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -41,6 +40,8 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
@@ -49,6 +50,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -2055,130 +2058,66 @@ class CommonUtilsTest {
 
     @Test
     void testChangeShipmentDGStatusToReqd1() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build(),
-                true);
-            assertTrue(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build(), true);
+        assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd2() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED)
-                    .build(),
-                true
-            );
-            assertTrue(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_ACCEPTED).build(), true);
+        assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd3() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED)
-                    .build(),
-                true
-            );
-            assertFalse(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build(), true);
+        assertFalse(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd4() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED)
-                    .build(),
-                true
-            );
-            assertFalse(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED).build(), true);
+        assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd5() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED)
-                    .build(),
-                true
-            );
-            assertFalse(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build(), true);
+        assertFalse(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd6() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED)
-                    .build(),
-                true
-            );
-            assertFalse(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED).build(), true);
+        assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd7() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED)
-                    .build(),
-                true
-            );
-            assertTrue(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build(), true);
+        assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd8() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder()
-                    .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED)
-                    .build(),
-                true
-            );
-            assertTrue(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, false);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build(), true);
+        assertTrue(response);
     }
 
     @Test
     void testChangeShipmentDGStatusToReqd9() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-            UserContext.getUser().getPermissions().put(OCEAN_DG_COMMERCIAL_APPROVER, true);
-            boolean response = commonUtils.changeShipmentDGStatusToReqd(
-                ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED)
-                    .build(), true);
-            assertFalse(response);
-        }
+        UserContext.getUser().getPermissions().put(OCEAN_DG_APPROVER, true);
+        UserContext.getUser().getPermissions().put(OCEAN_DG_COMMERCIAL_APPROVER, true);
+        boolean response = commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED).build(), true);
+        assertFalse(response);
     }
 
     @Test
@@ -4422,6 +4361,20 @@ class CommonUtilsTest {
         assertNull(dictionary.get(HAWB_NUMBER));
     }
 
+    @Test
+    void testSendExcelFileViaEmail_Success() throws Exception {
+        // Arrange
+        Workbook workbook = new XSSFWorkbook();
+        String filename = "export_test_2025.xlsx";
+
+        UserContext.getUser().setEmail("him@gmail.com");
+
+        lenient().when(notificationService.sendEmail(any())).thenReturn(new NotificationServiceResponse());
+
+        commonUtils.sendExcelFileViaEmail(workbook, filename);
+        assertEquals("him@gmail.com", UserContext.getUser().getEmail());
+
+    }
 
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();

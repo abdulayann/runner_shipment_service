@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -3804,7 +3803,7 @@ public abstract class IReport {
         List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
         if (partiesAddressData != null) {
             for (Map<String, Object> addressData : partiesAddressData) {
-                if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), party.getAddressCode())) {
+                if (Objects.nonNull(addressData) && Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), party.getAddressCode())) {
                     return addressData;
                 }
             }
@@ -4031,11 +4030,11 @@ public abstract class IReport {
     }
 
     private static boolean isAirDgUser() {
-        return  LicenseContext.isDgAirLicense();
+        return UserContext.isAirDgUser();
     }
 
     private static boolean isAirSecurityUser() {
-        return LicenseContext.isAirSecurityLicense();
+        return UserContext.isAirSecurityUser();
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {

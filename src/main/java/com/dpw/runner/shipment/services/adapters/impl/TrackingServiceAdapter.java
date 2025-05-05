@@ -22,9 +22,11 @@ import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRequest;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Journey;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -570,12 +572,13 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 //    }
 
     @Override
-    public String convertTrackingEventCodeToShortCode(Event event) {
+    public String convertTrackingEventCodeToShortCode(Event event, Container container) {
 
         String safeEventType = StringUtils.defaultString(event.getEventType());
         String safeLocationRole = StringUtils.defaultString(event.getLocationRole());
         String safeDescription = StringUtils.defaultString(event.getDescription());
         String safeDescriptionFromSource = StringUtils.defaultString(event.getDescriptionFromSource());
+        String safeJourneyScacCode = StringUtils.defaultString(Optional.ofNullable(container.getJourney()).map(Journey::getScacCode).orElse(""));
 
         log.info("Converting event code '{}' with location role '{}'", safeEventType, safeLocationRole);
 
@@ -606,7 +609,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return fcgi;
         }
 
-        String vsdp = getVSDPEventCode(safeEventType, safeLocationRole, safeDescriptionFromSource);
+        String vsdp = getVSDPEventCode(safeEventType, safeLocationRole, safeDescriptionFromSource, safeJourneyScacCode);
         if (vsdp != null) {
             return vsdp;
         }
@@ -668,18 +671,26 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return null;
     }
 
-    private String getVSDPEventCode(String safeEventType, String safeLocationRole, String safeDescriptionFromSource) {
-        boolean isVesselDepartureFromOrigin =
-                EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventType) &&
-                        EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
+    private String getVSDPEventCode(String safeEventType, String safeLocationRole, String safeDescriptionFromSource, String safeJourneyScacCode) {
+        boolean isMscuScac = EventConstants.MSCU.equalsIgnoreCase(safeJourneyScacCode);
 
-        boolean isExportLoadOnVessel =
-                EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType) &&
-                        EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource);
+        if (isMscuScac) {
+            boolean isExportLoadOnVessel = EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType)
+                    && EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource)
+                    && EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
 
-        if (isVesselDepartureFromOrigin || isExportLoadOnVessel) {
-            log.info("Matched conditions for VSDP. Returning short code: {}", EventConstants.VSDP);
-            return EventConstants.VSDP;
+            if (isExportLoadOnVessel) {
+                log.info("Matched condition: Export Load On Vessel (MSCU). Returning short code: {}", EventConstants.VSDP);
+                return EventConstants.VSDP;
+            }
+        } else {
+            boolean isVesselDepartureFromOrigin = EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventType) &&
+                    EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
+
+            if (isVesselDepartureFromOrigin) {
+                log.info("Matched condition: Vessel Departure From Origin (Non-MSCU). Returning short code: {}", EventConstants.VSDP);
+                return EventConstants.VSDP;
+            }
         }
 
         return null;
@@ -761,7 +772,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .map(DateAndSources::getDateTime).orElse(null))
                                                 .estimated(Optional.ofNullable(event.getProjectedEventTime())
                                                         .map(DateAndSources::getDateTime).orElse(null))
-                                                .eventCode(convertTrackingEventCodeToShortCode(event))
+                                                .eventCode(convertTrackingEventCodeToShortCode(event, container))
                                                 .description(event.getDescription())
                                                 .containerNumber(container.getContainerNumber())
                                                 .locationRole(event.getLocationRole());

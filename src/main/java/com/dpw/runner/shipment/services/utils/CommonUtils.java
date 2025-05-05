@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -19,6 +18,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -71,6 +72,7 @@ import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.jetbrains.annotations.Nullable;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
@@ -118,6 +120,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
@@ -1517,7 +1520,7 @@ public class CommonUtils {
         }
 
         if (Objects.isNull(shipmentDetails.getOceanDGStatus()) ||
-                (!LicenseContext.isOceanDGLicense() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
+                (!UserContext.isOceanDgUser() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
                         OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) ||
                         OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) ||
                         OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))))
@@ -2405,28 +2408,28 @@ public class CommonUtils {
 
     public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
-            return LicenseContext.isAirSecurityLicense();
+            return UserContext.isAirSecurityUser();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForConsolidation(ConsolidationDetails consolidationDetails) {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationDetails.getShipmentType().equals(DIRECTION_EXP)) {
-            return LicenseContext.isAirSecurityLicense();
+            return UserContext.isAirSecurityUser();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return LicenseContext.isAirSecurityLicense();
+            return UserContext.isAirSecurityUser();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBookingRequest(CustomerBookingRequest customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return LicenseContext.isAirSecurityLicense();
+            return UserContext.isAirSecurityUser();
         }
         return true;
     }
@@ -2719,4 +2722,25 @@ public class CommonUtils {
         }
     }
 
+
+    public void sendExcelFileViaEmail(Workbook workbook, String filenameWithTimestamp) {
+        try {
+            SendEmailBaseRequest request = new SendEmailBaseRequest();
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            workbook.write(out);
+            out.close();
+
+            MultipartFile multipartFile = new WorkbookMultipartFile(workbook, filenameWithTimestamp);
+
+            request.setTo(UserContext.getUser().getEmail());
+            request.setSubject("Export Excel");
+            request.setFile(multipartFile);
+
+
+            notificationService.sendEmail(request);
+            log.info("Email sent with Excel attachment");
+        } catch (Exception e) {
+            log.error("Error sending email: " + e.getMessage());
+        }
+    }
 }

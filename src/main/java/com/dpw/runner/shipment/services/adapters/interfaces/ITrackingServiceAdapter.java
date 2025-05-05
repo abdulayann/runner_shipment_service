@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.interfaces;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -23,7 +24,7 @@ public interface ITrackingServiceAdapter {
     UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events);
     TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException;
 
-    String convertTrackingEventCodeToShortCode(Event event);
+    String convertTrackingEventCodeToShortCode(Event event, Container container);
     TrackingEventsResponse getTrackingEventsResponse(String referenceNumber) throws RunnerException;
     List<Events> generateEventsFromTrackingResponse(TrackingServiceApiResponse trackingServiceApiResponse);
 }

@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
@@ -16,6 +17,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CREAT
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
@@ -74,7 +76,6 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
@@ -282,6 +283,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -406,6 +408,9 @@ public class ShipmentService implements IShipmentService {
     ExecutorService executorServiceMasterData;
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -824,7 +829,7 @@ public class ShipmentService implements IShipmentService {
 
         // Determine DPS status based on HOLD events with PER_BLOCKED or HOLD state
         boolean isOnDpsHold = dpsEvents.stream().anyMatch(event ->
-                DpsWorkflowType.HOLD.equals(event.getWorkflowType()) &&
+                DpsWorkflowType.DPS_HOLD.equals(event.getWorkflowType()) &&
                         (DpsWorkflowState.PER_BLOCKED.equals(event.getState()) || DpsWorkflowState.HOLD.equals(event.getState()))
         );
 
@@ -4177,14 +4182,23 @@ public class ShipmentService implements IShipmentService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
+            String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+            if (shipmentListResponseData.size() > exportExcelLimit) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            } else {
+                // Download it
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                    "attachment; filename=" + filenameWithTimestamp);
 
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
-
-            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
-                workbook.write(outputStream);
-            } catch (IOException e) {
-                log.error("Time out " + e.getMessage());
+                try (OutputStream outputStream = new BufferedOutputStream(
+                    response.getOutputStream(), 8192 * 10)) {
+                    workbook.write(outputStream);
+                } catch (IOException e) {
+                    log.error("Time out " + e.getMessage());
+                }
             }
         }
 
@@ -6744,7 +6758,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isAirDgUser() {
-        return  LicenseContext.isDgAirLicense();
+        return UserContext.isAirDgUser();
     }
 
     private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
@@ -8378,7 +8392,7 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildSuccessResponseWithWarning("DG approval not required for Import Shipment");
         }
 
-        boolean isOceanDgUser = LicenseContext.isOceanDGLicense();
+        boolean isOceanDgUser = UserContext.isOceanDgUser();
         OceanDGStatus dgStatus = shipmentDetails.getOceanDGStatus();
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
         DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
