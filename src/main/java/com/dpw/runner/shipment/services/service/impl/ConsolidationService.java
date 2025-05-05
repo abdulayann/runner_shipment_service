@@ -5380,7 +5380,7 @@ public class ConsolidationService implements IConsolidationService {
 
     @Override
     public Optional<ConsolidationDetails> findById(Long consolidationId) {
-        return Optional.empty();
+        return consolidationDetailsDao.findById(consolidationId);
     }
 
     private boolean isCarrierDetailsInvalid(ConsolidationDetails consolidationDetails, QuartzJobInfo quartzJobInfo) {
