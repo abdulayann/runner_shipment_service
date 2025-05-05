@@ -8,7 +8,6 @@ import io.swagger.annotations.ApiModel;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
-import java.util.UUID;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -133,4 +132,5 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private String minimumFlashPointUnit;
   private Boolean marinePollutant = false;
   private ContainerPraStatus praStatus;
+  private Boolean openForAttachment;
 }

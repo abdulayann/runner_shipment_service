@@ -9,10 +9,9 @@ import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 public interface IPackingV3Service {
     PackingResponse create(PackingV3Request packingRequest, String module);
@@ -24,5 +23,6 @@ public interface IPackingV3Service {
     PackingResponse retrieveById(CommonRequestModel commonRequestModel);
     RunnerListResponse<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
 
+    List<PackingResponse> fetchPacksAttachedToContainers(List<Long> containerIds);
     PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel);
 }
