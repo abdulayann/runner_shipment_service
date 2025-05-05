@@ -76,6 +76,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
+    public Optional<NetworkTransfer> findByIdWithQuery(Long id) {
+        return networkTransferRepository.findByIdWithQuery(id);
+    }
+
+    @Override
     public Optional<NetworkTransfer> findByGuid(UUID id) {
         return networkTransferRepository.findByGuid(id);
     }
