@@ -28,7 +28,6 @@ public class ReportRequest implements IRunnerRequest {
     Boolean displayOtherAmount;
     String inLocalCurrency = null;
     String transportMode = null;
-    String shipmentType = null;
     String multiTemplateCode = null;
     String requestSource = null;
     String noOfCopies = null;
