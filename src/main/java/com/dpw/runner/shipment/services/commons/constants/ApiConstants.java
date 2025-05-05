@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ApiConstants {
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
     public static final String BOOKING_API_UPDATE_CONTAINERS = "/update/booking/containers";
-    public static final String API_LIST_BOOKING_CONTAINERS = "/list/booking/containers";
-    public static final String API_DELETE_BOOKING_CONTAINERS = "/delete/booking/container";
+    public static final String BOOKING_API_LIST_CONTAINERS = "/list/booking/containers";
+    public static final String BOOKING_API_DELETE_CONTAINERS = "/delete/booking/container";
 
     private ApiConstants(){}
     public static final String API_CREATE = "/create";

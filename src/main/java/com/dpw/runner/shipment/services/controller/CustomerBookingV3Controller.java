@@ -60,14 +60,14 @@ public class CustomerBookingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
-    @GetMapping(ApiConstants.API_LIST_BOOKING_CONTAINERS)
+    @GetMapping(ApiConstants.BOOKING_API_LIST_CONTAINERS)
     public ResponseEntity<IRunnerResponse> listBookingContainers(@RequestBody CommonRequestModel commonRequestModel) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.list((ListCommonRequest) commonRequestModel.getData(), true);
         return new ResponseEntity(containerListResponse, HttpStatus.OK);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
-    @DeleteMapping(ApiConstants.API_DELETE_BOOKING_CONTAINERS)
+    @DeleteMapping(ApiConstants.BOOKING_API_DELETE_CONTAINERS)
     public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<ContainerV3Request> containerV3Requests) {
         BulkContainerResponse bulkContainerResponse = containerV3Service.deleteBulk(containerV3Requests, BOOKING);
         return new ResponseEntity(bulkContainerResponse, HttpStatus.OK);
