@@ -22,6 +22,14 @@ public class ApiConstants {
     public static final String API_CLONE = "/clone";
     public static final String EXPORT_LIST = "/export-list";
 
+    // Shipment endpoints
+    public static final String SHIPMENT_API_CREATE = "shipment/create";
+    public static final String SHIPMENT_API_UPDATE = "shipment/update";
+    public static final String SHIPMENT_API_DELETE = "shipment/delete";
+    public static final String SHIPMENT_API_LIST = "shipment-routing";
+    public static final String SHIPMENT_API_UPDATE_BULK = "shipment/update/bulk";
+    public static final String SHIPMENT_API_DELETE_BULK = "shipment/delete/bulk";
+
 
     public static final String API_RETRIEVE_BY_ID_PARTIAL="/retrieve/partial/id";
     public static final String API_COMPLETE_RETRIEVE_BY_ID = "/retrieve/complete/id";

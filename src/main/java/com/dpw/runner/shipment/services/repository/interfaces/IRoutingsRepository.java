@@ -33,4 +33,6 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     }
 
     List<Routings> findByConsolidationId(Long consolidationId);
+
+    List<Routings> findByIdIn(List<Long> routingIds);
 }

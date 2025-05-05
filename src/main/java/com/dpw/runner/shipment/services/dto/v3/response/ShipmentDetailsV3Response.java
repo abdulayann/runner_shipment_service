@@ -215,4 +215,43 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private UUID customerBookingGuid;
     private Boolean isFrob;
     private String consolidationNumber;
+    private Boolean isReefer;
+    private String incotermsLocation;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReadinessDate;
+    private String controlled;
+    private String controlledReferenceNumber;
+    private String partner;
+    private Long bookingAgent;
+    private String coLoadBkgNumber;
+    private String pickupAtOriginType;
+    private String deliveryAtDestinationType;
+    private String brokerageAtOriginType;
+    private String brokerageAtDestinationType;
+    private Long pickupAtOrigin;
+    private Long deliveryAtDestination;
+    private Long brokerageAtOrigin;
+    private Long brokerageAtDestination;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime brokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime brokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime terminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime verifiedGrossMassCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shippingInstructionCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dgCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime reeferCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime latestArrivalTime;
 }

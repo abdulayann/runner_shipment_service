@@ -96,6 +96,14 @@ public class RoutingsDao implements IRoutingsDao {
         routingsRepository.delete(routings);
     }
 
+    public List<Routings> findByIdIn(List<Long> routingIds) {
+        return routingsRepository.findByIdIn(routingIds);
+    }
+
+    public void deleteByIdIn(List<Long> routingIds) {
+        routingsRepository.deleteAllById(routingIds);
+    }
+
     @Override
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException {
         String responseMsg;
