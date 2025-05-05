@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -28,6 +33,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -51,21 +57,6 @@ import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import javax.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,11 +73,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.ModelAttribute;
 
 @Service
 @Slf4j
@@ -782,6 +782,46 @@ public class ContainerV3Service implements IContainerV3Service {
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONTAINER_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
             } catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONTAINER_LIST, ex.getLocalizedMessage());
+            }
+        }
+    }
+
+    @Override
+    public void processContainersAfterShipmentAttachment(
+            Long consolidationId,
+            List<ShipmentDetails> shipmentDetailsList,
+            Set<Long> attachedShipmentIds,
+            Set<Long> interBranchRequestedShipIds) {
+
+        log.info("Processing container updates for consolidationId: {}", consolidationId);
+
+        shipmentDetailsList.stream()
+                // Filter eligible shipments:
+                // - Must be attached
+                // - Must not be part of inter-branch shipment request
+                // - Must have containers to process
+                .filter(shipment -> attachedShipmentIds.contains(shipment.getId()) &&
+                        !interBranchRequestedShipIds.contains(shipment.getId()) &&
+                        shipment.getContainersList() != null)
+                .map(shipment -> new ArrayList<>(shipment.getContainersList()))
+                .forEach(containers -> {
+                    // Set consolidationId for each container
+                    containers.forEach(container -> container.setConsolidationId(consolidationId));
+
+                    // Save updated containers
+                    List<Containers> saved = containerDao.saveAll(containers);
+
+                    // Perform post-save actions
+                    afterSaveList(saved, false);
+
+                    log.info("Updated and saved {} containers for consolidationId: {}", saved.size(), consolidationId);
+                });
+    }
+
+    public void afterSaveList(List<Containers> containers, boolean isCreate) {
+        if(containers != null && !containers.isEmpty()) {
+            for (Containers container : containers) {
+                afterSave(container, isCreate);
             }
         }
     }

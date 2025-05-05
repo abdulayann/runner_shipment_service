@@ -10,8 +10,10 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
+import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
@@ -27,4 +29,10 @@ public interface IContainerV3Service {
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
     ContainerListResponse list(ListCommonRequest listCommonRequest, boolean isMasterData) throws RunnerException;
+
+    void processContainersAfterShipmentAttachment(
+            Long consolidationId,
+            List<ShipmentDetails> shipmentDetailsList,
+            Set<Long> attachedShipmentIds,
+            Set<Long> interBranchRequestedShipIds);
 }
