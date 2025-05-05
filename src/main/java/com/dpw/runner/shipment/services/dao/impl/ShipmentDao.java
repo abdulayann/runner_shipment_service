@@ -44,6 +44,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.persistence.EntityManager;
 import javax.validation.ConstraintViolationException;
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -819,6 +820,11 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Integer findReceivingByGuid(UUID guid) {
         return shipmentRepository.findReceivingByGuid(guid);
+    }
+
+    @Override
+    public void updateCargoDetailsInShipment(Long shipmentId, Integer noOfPacks, String packsUnit, BigDecimal volume, String volumeUnit, BigDecimal weight, String weightUnit, BigDecimal volumetricWeight, String volumetricWeightUnit, BigDecimal chargable, String chargeableUnit) {
+        shipmentRepository.updateCargoDetailsInShipment(shipmentId, noOfPacks, packsUnit, volume, volumeUnit, weight, weightUnit, volumetricWeight, volumetricWeightUnit, chargable, chargeableUnit);
     }
 
     private boolean checkContainsDGPackage(ShipmentDetails request) {
