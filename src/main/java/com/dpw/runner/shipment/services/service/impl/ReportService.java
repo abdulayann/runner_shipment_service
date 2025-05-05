@@ -2413,7 +2413,7 @@ public class ReportService implements IReportService {
 
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
-            case Constants.SHIPMENTS_WITH_SQ_BRACKETS:
+            case Constants.SHIPMENT:
                 ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
                 transportMode = shipmentDetails.getTransportMode();
                 shipmentType = shipmentDetails.getDirection();
@@ -2421,7 +2421,7 @@ public class ReportService implements IReportService {
                 entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
                 break;
 
-            case Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS:
+            case Constants.CONSOLIDATION:
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
                 transportMode = consolidationDetails.getTransportMode();
                 shipmentType = consolidationDetails.getShipmentType();

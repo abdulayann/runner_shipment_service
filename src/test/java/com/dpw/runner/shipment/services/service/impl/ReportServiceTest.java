@@ -3584,7 +3584,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS, Constants.SHIPMENT})  // Runs test for both true and false cases
+    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATION, Constants.SHIPMENT})  // Runs test for both true and false cases
     void testPushFileToDocumentMasterForTO(String entityName) {
         reportRequest.setReportInfo(ReportConstants.TRANSPORT_ORDER);
         reportRequest.setEntityName(entityName);
@@ -3607,7 +3607,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(Constants.SHIPMENT);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
@@ -3624,7 +3624,7 @@ class ReportServiceTest extends CommonMocks {
     void testPushFileToDocumentMasterForSeawayBill() {
         reportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityName(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(Constants.CONSOLIDATION);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
@@ -3658,7 +3658,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.MAWB);
         reportRequest.setPrintType(ReportConstants.DRAFT);
         reportRequest.setReportId("123");
-        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(Constants.SHIPMENT);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
@@ -3685,7 +3685,7 @@ class ReportServiceTest extends CommonMocks {
 
 
     @ParameterizedTest
-    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS})
+    @ValueSource(strings = {Constants.SHIPMENT, Constants.CONSOLIDATION})
     void testPushFileToDocumentMasterForDefault(String entityName) {
         reportRequest.setReportInfo(ReportConstants.CSD_INFO);
         reportRequest.setReportId("123");
@@ -3711,7 +3711,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {Constants.SHIPMENT})
+    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS})
     void testPushFileToDocumentMasterForInvalidEntityType(String entityName) {
         reportRequest.setReportInfo(ReportConstants.CSD_INFO);
         reportRequest.setReportId("123");
