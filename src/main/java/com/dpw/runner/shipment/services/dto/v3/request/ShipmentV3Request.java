@@ -11,6 +11,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import javax.persistence.Column;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -178,5 +181,32 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String oceanBlNumber;
     private UUID customerBookingGuid;
     private Boolean isFrob;
+    private Boolean isReefer;
+    private String incotermsLocation;
+    private LocalDateTime cargoReadinessDate;
+    private String controlled;
+    private String controlledReferenceNumber;
+    private String partner;
+    private Long bookingAgent;
+    private String coLoadBkgNumber;
+    private String pickupAtOriginType;
+    private String deliveryAtDestinationType;
+    private String brokerageAtOriginType;
+    private String brokerageAtDestinationType;
+    private Long pickupAtOrigin;
+    private Long deliveryAtDestination;
+    private Long brokerageAtOrigin;
+    private Long brokerageAtDestination;
+    private LocalDateTime brokerageAtOriginDate;
+    private LocalDateTime brokerageAtDestinationDate;
+    private LocalDateTime terminalCutoff;
+    private LocalDateTime verifiedGrossMassCutoff;
+    private LocalDateTime shippingInstructionCutoff;
+    private LocalDateTime dgCutoff;
+    private LocalDateTime reeferCutoff;
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+    private LocalDateTime latestArrivalTime;
 
 }
