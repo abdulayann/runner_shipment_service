@@ -950,8 +950,6 @@ public class ReportService implements IReportService {
                 reportRequest.setSelfCall(true);
                 List<byte[]> dataByteList = getDataByteList(reportRequest, consolidationDetails);
                 reportRequest.setSelfCall(false);
-                reportRequest.setTransportMode(consolidationDetails.getTransportMode());
-                reportRequest.setShipmentType(consolidationDetails.getShipmentType());
                 return CommonUtils.concatAndAddContent(dataByteList);
             }
         }
