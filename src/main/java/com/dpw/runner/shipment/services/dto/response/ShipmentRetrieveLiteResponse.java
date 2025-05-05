@@ -200,4 +200,5 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isFrob;
     private String consolidationNumber;
     private Boolean isReefer;
+    private Boolean isPacksAvailable = Boolean.FALSE;
 }
