@@ -342,20 +342,15 @@ public class ConsolidationDetails extends MultiTenancy {
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
     @OrganizationData
-    private Parties coLoadWith; // Coloader
+    private Parties coLoadWith;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_agent_id", referencedColumnName = "id")
-    @OrganizationData
-    private Parties bookingAgent;
+    @Column(name = "co_load_carrier_name")
+    @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64, message = "max size is 64 for coload carrier name")
+    private String coLoadCarrierName; // Coloader
 
-    @Column(name = "booking_agent_number")
-    @Size(max=50, message = "max size is 50 for booking_agent_number")
-    private String bookingAgentNumber;
-
-    @Column(name = "booking_agent_bl_number")
-    @Size(max=50, message = "max size is 50 for booking_agent_bl_number")
-    private String bookingAgentBlNumber;
+    @Column(name = "booking_agent_id")
+    private Long bookingAgent;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)

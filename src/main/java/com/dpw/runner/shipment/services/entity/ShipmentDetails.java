@@ -687,6 +687,8 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "latest_arrival_time")
     private LocalDateTime latestArrivalTime;
 
+    @Column(name = "container_assigned_to_shipment_cargo")
+    private Long containerAssignedToShipmentCargo;
 
     @Override
     public boolean equals(Object o) {
