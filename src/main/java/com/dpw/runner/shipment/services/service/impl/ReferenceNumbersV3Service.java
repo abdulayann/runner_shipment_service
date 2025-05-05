@@ -152,33 +152,6 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         return ReferenceNumbersResponse.builder().message("Reference number deleted successfully!").build();
     }
 
-//    @Override
-//    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
-//        String responseMsg;
-//        try {
-//            CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-//            if(request.getId() == null) {
-//                log.error("Request Id is null for Notes retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-//            }
-//            Long id = request.getId();
-//            Optional<Notes> notes = notesDao.findById(id);
-//            if (notes.isEmpty()) {
-//                log.debug(NotesConstants.NOTES_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-//                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-//            }
-//            log.info("Notes details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-//            NotesResponse response = convertEntityToDto(notes.get());
-//            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
-//                return ResponseHelper.buildSuccessResponse(response);
-//            else return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            return ResponseHelper.buildFailedResponse(responseMsg);
-//        }
-//    }
-
     private ReferenceNumbersResponse convertEntityToDto(ReferenceNumbers referenceNumbers) {
         return jsonHelper.convertValue(referenceNumbers, ReferenceNumbersResponse.class);
     }

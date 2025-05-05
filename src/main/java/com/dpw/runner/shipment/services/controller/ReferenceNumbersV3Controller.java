@@ -68,13 +68,6 @@ public class ReferenceNumbersV3Controller {
         return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.delete(request));
     }
 
-//    @ApiResponses(value = {@ApiResponse(code = 200, message = NotesConstants.NOTES_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
-//    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-//    public ResponseEntity<IRunnerResponse> retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
-//        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-//        return partiesService.retrieveById(CommonRequestModel.buildRequest(request));
-//    }
-
     @ApiResponses(value = {
             @ApiResponse(code = 200, response = MyListResponseClass.class, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL, responseContainer = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
