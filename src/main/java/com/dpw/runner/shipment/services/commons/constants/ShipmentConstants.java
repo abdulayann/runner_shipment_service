@@ -267,4 +267,6 @@ public class ShipmentConstants {
     public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
 
+    public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
+
 }

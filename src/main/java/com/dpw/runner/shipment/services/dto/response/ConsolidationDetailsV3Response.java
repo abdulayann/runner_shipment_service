@@ -112,9 +112,8 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private PartiesResponse borrowedFrom;
     private PartiesResponse creditor;
     private PartiesResponse coLoadWith;
-    private PartiesResponse bookingAgent;
-    private String bookingAgentNumber;
-    private String bookingAgentBlNumber;
+    private Long bookingAgent;
+    private String coLoadCarrierName;
     private String createdBy;
     private List<String> houseBills;
     private List<String> shipmentIds;
@@ -165,4 +164,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private String partner;
 }

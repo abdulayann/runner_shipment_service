@@ -582,10 +582,6 @@ public class NetworkTransferService implements INetworkTransferService {
                     assignedTo = shipmentDetails.get().getAssignedTo();
                     entityNumber = shipmentDetails.get().getShipmentId();
                 }
-            } else if (CONSOLIDATION.equals(entityType)) {
-                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findConsolidationByIdWithQuery(entityId);
-                if (consolidationDetails.isPresent())
-                    entityNumber = consolidationDetails.get().getConsolidationNumber();
             }
             if (CommonUtils.isStringNullOrEmpty(assignedTo))
                 return;

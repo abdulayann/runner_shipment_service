@@ -68,6 +68,7 @@ public class ApiConstants {
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
     public static final String DETACH_SHIPMENTS = "detach-shipments";
+    public static final String ATTACH_CONSOLIDATION = "attach-consolidation";
     public static final String SAVE_FROM_V1 = "save/from/v1";
     public static final String API_GET_CUSTOM_REQ = "getCustomReq";
     public static final String API_SYNC_PRODUCT_SEQ = "getCustomProdSeqSync";
