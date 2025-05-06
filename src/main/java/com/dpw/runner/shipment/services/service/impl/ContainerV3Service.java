@@ -347,6 +347,8 @@ public class ContainerV3Service implements IContainerV3Service {
         } else if (containerRequest.getShipmentsIds() != null && containerRequest.getShipmentsIds().size() == 1) {
             Long shipmentId = containerRequest.getShipmentsIds().iterator().next();
             return containerDao.findByShipmentId(shipmentId);
+        } else if (containerRequest.getBookingId() != null) {
+            return containerDao.findByBookingIdIn(List.of(containerRequest.getBookingId()));
         }
         return new ArrayList<>();
     }

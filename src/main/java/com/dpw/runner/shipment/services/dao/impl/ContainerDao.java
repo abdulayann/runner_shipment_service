@@ -469,6 +469,11 @@ public class ContainerDao implements IContainerDao {
     public List<Containers> findByConsolidationIdIn(List<Long> consolidationIds) {
         return containerRepository.findByConsolidationIdIn(consolidationIds);
     }
+
+    @Override
+    public List<Containers> findByBookingIdIn(List<Long> bookingIds) {
+        return containerRepository.findByBookingIdIn(bookingIds);
+    }
     @Override
     public List<Containers> findByIdIn(List<Long> containerIds) {
         return containerRepository.findByIdIn(containerIds);

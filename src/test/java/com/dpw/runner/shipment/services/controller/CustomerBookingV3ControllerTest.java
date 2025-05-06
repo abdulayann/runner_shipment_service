@@ -69,7 +69,7 @@ public class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void addBookingPackages(){
+    void addBookingPackages() throws RunnerException {
         when(packingV3Service.create(any(), any())).thenReturn(new PackingResponse());
         var responseEntity = customerBookingV3Controller.createBookingPackages(new PackingV3Request());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -84,7 +84,7 @@ public class CustomerBookingV3ControllerTest {
 
     @Test
     void getBookingPackages() {
-        when(packingV3Service.list(any(), anyBoolean())).thenReturn(new RunnerListResponse<>());
+        when(packingV3Service.list(any(), anyBoolean())).thenReturn(new PackingListResponse());
         var responseEntity = customerBookingV3Controller.listBookingPackages(CommonRequestModel.builder().build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

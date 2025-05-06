@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -40,7 +39,7 @@ public class CustomerBookingV3Controller {
     private IPackingV3Service packingV3Service;
 
     @Autowired
-    private CustomerBookingV3Controller(IPackingV3Service packingV3Service, IContainerV3Service containerV3Service){
+    public CustomerBookingV3Controller(IPackingV3Service packingV3Service, IContainerV3Service containerV3Service) {
         this.containerV3Service = containerV3Service;
         this.packingV3Service = packingV3Service;
     }
@@ -75,7 +74,7 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = PackingResponse.class)})
     @PostMapping(ApiConstants.BOOKING_API_CREATE_PACKAGES)
-    public ResponseEntity<IRunnerResponse> createBookingPackages(@RequestBody @Valid PackingV3Request packingV3Request) {
+    public ResponseEntity<IRunnerResponse> createBookingPackages(@RequestBody @Valid PackingV3Request packingV3Request) throws RunnerException {
         PackingResponse packingResponse = packingV3Service.create(packingV3Request, BOOKING);
         return new ResponseEntity(packingResponse, HttpStatus.OK);
     }
@@ -90,7 +89,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL)})
     @GetMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
     public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody CommonRequestModel commonRequestModel) {
-        RunnerListResponse<IRunnerResponse> packingListResponse = packingV3Service.list(commonRequestModel, true);
+        PackingListResponse packingListResponse = packingV3Service.list(commonRequestModel, true);
         return new ResponseEntity(packingListResponse, HttpStatus.OK);
     }
 
