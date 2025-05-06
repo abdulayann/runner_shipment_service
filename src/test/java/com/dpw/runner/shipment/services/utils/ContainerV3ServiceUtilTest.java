@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.Containers;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,9 +25,9 @@ public class ContainerV3ServiceUtilTest {
 
   @Test
   void testValidateUpdateBulkRequest_withValidRequests_shouldPass() {
-    List<ContainerRequest> requests = List.of(
-        ContainerRequest.builder().id(1L).build(),
-        ContainerRequest.builder().id(2L).build()
+    List<ContainerV3Request> requests = List.of(
+        ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).build(),
+        ContainerV3Request.builder().id(2L).containerCode("Code").commodityGroup("FCR").containerCount(2L).build()
     );
 
     assertDoesNotThrow(() -> containerValidationUtil.validateUpdateBulkRequest(requests));
@@ -50,9 +51,9 @@ public class ContainerV3ServiceUtilTest {
 
   @Test
   void testValidateUpdateBulkRequest_withNullId_shouldThrowException() {
-    List<ContainerRequest> requests = List.of(
-        ContainerRequest.builder().id(1L).build(),
-        ContainerRequest.builder().id(null).build()
+    List<ContainerV3Request> requests = List.of(
+        ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).build(),
+        ContainerV3Request.builder().id(null).containerCode("Code").commodityGroup("FCR").containerCount(2L).build()
     );
 
     Exception exception = assertThrows(IllegalArgumentException.class,

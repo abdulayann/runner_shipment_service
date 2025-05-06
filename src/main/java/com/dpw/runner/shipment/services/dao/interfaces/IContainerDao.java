@@ -35,6 +35,7 @@ public interface IContainerDao {
     List<Containers> findByShipmentId(Long shipmentId);
     List<Containers> findByConsolidationId(Long consolidationId);
     List<Containers> findByConsolidationIdIn(List<Long> consolidationIds);
+    List<Containers> findByBookingIdIn(List<Long> bookingIds);
     void deleteAllById(List<Long> containerIdList);
     void deleteById(Long id);
     List<Containers> findByIdIn(List<Long> containerIds);
