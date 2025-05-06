@@ -176,7 +176,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Test
     void testContainerCreate(){
-        ContainerV3Request containerV3Request = ContainerV3Request.builder().consolidationId(1L).containerNumber("12345678910").build();
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
         doNothing().when(containerValidationUtil).validateContainerNumberUniqueness(anyString(), anyList());
@@ -190,7 +190,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         doNothing().when(shipmentsContainersMappingDao)
             .assignShipments(any(), any(), eq(false));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
-        ContainerResponse response = containerV3Service.create(containerV3Request);
+        ContainerResponse response = containerV3Service.create(containerV3Request, "SHIPMENT");
         assertNotNull(response);
     }
 

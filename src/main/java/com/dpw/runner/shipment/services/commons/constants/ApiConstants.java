@@ -1,6 +1,11 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ApiConstants {
+    public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
+    public static final String BOOKING_API_UPDATE_CONTAINERS = "/update/booking/containers";
+    public static final String BOOKING_API_LIST_CONTAINERS = "/list/booking/containers";
+    public static final String BOOKING_API_DELETE_CONTAINERS = "/delete/booking/containers";
+
     private ApiConstants(){}
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
@@ -29,6 +34,10 @@ public class ApiConstants {
     public static final String SHIPMENT_API_LIST = "shipment-routing";
     public static final String SHIPMENT_API_UPDATE_BULK = "shipment/update/bulk";
     public static final String SHIPMENT_API_DELETE_BULK = "shipment/delete/bulk";
+    public static final String BOOKING_API_CREATE_PACKAGES = "/create/booking/packages";
+    public static final String BOOKING_API_UPDATE_PACKAGES = "/update/booking/packages";
+    public static final String BOOKING_API_LIST_PACKAGES = "/list/booking/packages";
+    public static final String BOOKING_API_DELETE_PACKAGES = "/delete/booking/packages";
 
 
     public static final String API_RETRIEVE_BY_ID_PARTIAL="/retrieve/partial/id";

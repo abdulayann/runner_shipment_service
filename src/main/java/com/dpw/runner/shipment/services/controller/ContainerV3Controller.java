@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+
 @RestController
 @RequestMapping(ContainerConstants.CONTAINER_V3_API_HANDLE)
 @Slf4j
@@ -52,19 +54,19 @@ public class ContainerV3Controller {
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@Valid @RequestBody ContainerV3Request containerRequest) {
         log.info("Received Container Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
-        return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest, SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PutMapping(value = ApiConstants.API_UPDATE_BULK)
-    public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ContainerRequest> request) {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.updateBulk(request));
+    public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ContainerV3Request> request) {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.updateBulk(request, SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerRequest> request) {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request));
+    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request) {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
