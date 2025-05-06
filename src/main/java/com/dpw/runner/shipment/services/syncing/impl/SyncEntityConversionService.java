@@ -104,18 +104,18 @@ public class SyncEntityConversionService {
         packing.setOrigin(packingRequestV2.getOriginName());
         packing.setCommodity(packingRequestV2.getCommodityCode());
         if(packingRequestV2.getConsolidationGuid() != null) {
-            try {
-                packing.setConsolidationId(consolidationDetailsDao.findByGuid(packingRequestV2.getConsolidationGuid()).get().getId());
-            } catch (Exception ignored) {
-                packing.setConsolidationId(null);
-            }
+            packing.setConsolidationId(
+                    consolidationDetailsDao.findByGuid(packingRequestV2.getConsolidationGuid())
+                            .map(ConsolidationDetails::getId)
+                            .orElse(null)
+            );
         }
         if(packingRequestV2.getShipmentGuid() != null) {
-            try {
-                packing.setShipmentId(shipmentDao.findByGuid(packingRequestV2.getShipmentGuid()).get().getId());
-            } catch (Exception ignored) {
-                packing.setShipmentId(null);
-            }
+            packing.setShipmentId(
+                    shipmentDao.findByGuid(packingRequestV2.getShipmentGuid())
+                            .map(ShipmentDetails::getId)
+                            .orElse(null)
+            );
         }
 
         return packing;
@@ -314,8 +314,11 @@ public class SyncEntityConversionService {
     public MawbStocks mawbStocksV1ToV2(MawbStocksV2 mawbStocks) {
         MawbStocks response = modelMapper.map(mawbStocks, MawbStocks.class);
         if(mawbStocks.getConsolidationGuid() != null) {
-            ConsolidationDetails consolidationDetails = consolidationDetailsDao.findByGuid(mawbStocks.getConsolidationGuid()).get();
-            response.setConsolidationId(consolidationDetails.getId());
+            Optional<ConsolidationDetails> consolidationOptional = consolidationDetailsDao.findByGuid(mawbStocks.getConsolidationGuid());
+            if (consolidationOptional.isPresent()) {
+                ConsolidationDetails consolidationDetails = consolidationOptional.get();
+                response.setConsolidationId(consolidationDetails.getId());
+            }
         }
 
         if(mawbStocks.getMawbStocksLinkRows() != null && !mawbStocks.getMawbStocksLinkRows().isEmpty()) {

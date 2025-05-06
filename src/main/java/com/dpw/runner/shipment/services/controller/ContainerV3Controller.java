@@ -9,10 +9,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -35,6 +33,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_CONTAINERS;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_SUCCESS;
 
 @RestController
 @RequestMapping(ContainerConstants.CONTAINER_V3_API_HANDLE)
@@ -91,9 +92,9 @@ public class ContainerV3Controller {
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+    public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(CommonRequestModel.buildRequest(listCommonRequest));
-        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getTotalCount());
+        return ResponseHelper.buildListSuccessContainerResponse(containerListResponse.getContainers(), containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})
@@ -102,6 +103,13 @@ public class ContainerV3Controller {
         throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, true);
         return ResponseHelper.buildSuccessResponse(containerListResponse,
-            containerListResponse.getTotalPages() , containerListResponse.getTotalCount());
+            containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponse.class)})
+    @PostMapping(ASSIGN_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request));
+    }
+
 }

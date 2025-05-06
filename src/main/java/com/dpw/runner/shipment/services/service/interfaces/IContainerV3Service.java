@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.util.List;
 import javax.servlet.http.HttpServletResponse;
@@ -21,8 +22,9 @@ public interface IContainerV3Service {
     BulkContainerResponse deleteBulk(List<ContainerV3Request> request);
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId) throws RunnerException;
-    ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel);
+    ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) throws RunnerException;
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
     ContainerListResponse list(ListCommonRequest listCommonRequest, boolean isMasterData) throws RunnerException;
+    ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException;
 }

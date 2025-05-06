@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_parties_id_is_deleted ON parties(id, is_deleted);

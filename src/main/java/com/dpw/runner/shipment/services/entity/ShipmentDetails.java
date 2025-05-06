@@ -603,6 +603,93 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_frob")
     private Boolean isFrob;
 
+    @Column(name = "is_reefer")
+    private Boolean isReefer = false;
+
+    @Column(name = "incoterms_location")
+    @Size(max = 64)
+    private String incotermsLocation;
+
+    @Column(name = "cargo_readiness_date")
+    private LocalDateTime cargoReadinessDate;
+
+    @Column(name = "controlled")
+    private String controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 64)
+    private String controlledReferenceNumber;
+
+    @Column(name = "partner")
+    private String partner;
+
+    @Column(name = "booking_agent")
+    private Long bookingAgent;
+
+    @Column(name = "co_load_bkg_number")
+    @Size(max = 64)
+    private String coLoadBkgNumber;
+
+    @Column(name = "pickup_at_origin_type")
+    private String pickupAtOriginType;
+
+    @Column(name = "delivery_at_destination_type")
+    private String deliveryAtDestinationType;
+
+    @Column(name = "brokerage_at_origin_type")
+    private String brokerageAtOriginType;
+
+    @Column(name = "brokerage_at_destination_type")
+    private String brokerageAtDestinationType;
+
+    @Column(name = "pickup_at_origin")
+    private Long pickupAtOrigin;
+
+    @Column(name = "delivery_at_destination")
+    private Long deliveryAtDestination;
+
+    @Column(name = "brokerage_at_origin")
+    private Long brokerageAtOrigin;
+
+    @Column(name = "brokerage_at_destination")
+    private Long brokerageAtDestination;
+
+    @Column(name = "brokerage_at_origin_date")
+    private LocalDateTime brokerageAtOriginDate;
+
+    @Column(name = "brokerage_at_destination_date")
+    private LocalDateTime brokerageAtDestinationDate;
+
+    @Column(name = "terminal_cut_off")
+    private LocalDateTime terminalCutoff;
+
+    @Column(name = "verified_gross_mass_cut_off")
+    private LocalDateTime verifiedGrossMassCutoff;
+
+    @Column(name = "shipping_instruction_cutoff")
+    private LocalDateTime shippingInstructionCutoff;
+
+    @Column(name = "dg_cut_off")
+    private LocalDateTime dgCutoff;
+
+    @Column(name = "reefer_cut_off")
+    private LocalDateTime reeferCutoff;
+
+    @Column(name = "earliest_empty_equipment_pickup")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+
+    @Column(name = "latest_full_equipment_delivered_to_carrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equipment_to_carrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
+    @Column(name = "latest_arrival_time")
+    private LocalDateTime latestArrivalTime;
+
+    @Column(name = "container_assigned_to_shipment_cargo")
+    private Long containerAssignedToShipmentCargo;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -371,6 +371,7 @@ public class Constants {
     public static final String CONSIGNEE = "consignee";
     public static final String SHIPMENT_DETAILS = "ShipmentDetails";
     public static final String ADDITIONAL_DETAILS = "additionalDetails";
+    public static final String ROUTINGS = "routings";
     public static final String STATUS = "status";
     public static final String JOB_TYPE = "jobType";
     public static final String INCOTERMS = "incoterms";
@@ -635,6 +636,11 @@ public class Constants {
     public static final String EMPTY_STRING = "";
     public static final String YES = "Yes";
     public static final String NO = "No";
+    public static final String APP_CONFIG_ID_NOT_VALID = "Application config id is not valid";
+    public static final String APPLICATION_CONFIG_ID_EMPTY_ERROR_MESSAGE = "Application config id can not be empty";
+
+    public static final String TESLA = "Tesla";
+    public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
 
     private Constants() {
     }

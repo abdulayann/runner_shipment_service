@@ -1382,7 +1382,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Override
     @Transactional
-    public String attachShipments(ShipmentAttachDetachV3Request request) throws RunnerException {
+    public String attachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
 
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         HashSet<Long> attachedShipmentIds = new HashSet<>();
@@ -1399,6 +1399,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Fetch the corresponding consolidation record from the database
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
+
+        if(!Boolean.TRUE.equals(consolidationDetails.getOpenForAttachment()))
+            throw new RunnerException("Attach/Detach not allowed");
 
         // Set inter-branch context if type is not explicitly provided
         setContextIfNeeded(shipmentRequestedType, consolidationDetails);
@@ -1996,8 +1999,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setMasterBill(console.getBol());
         shipmentDetails.setDirection(console.getShipmentType());
         shipmentDetails.setTransportMode(console.getTransportMode());
-        shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
-        shipmentDetails.setOceanBlNumber(console.getBol());
+        shipmentDetails.setCoLoadCarrierName(console.getCoLoadCarrierName());
+        shipmentDetails.setPartner(console.getPartner());
+        shipmentDetails.setBookingAgent(console.getBookingAgent());
+        shipmentDetails.setCoLoadBkgNumber(console.getCoLoadMBL());
+        shipmentDetails.setCoLoadBlNumber(console.getCoLoadBookingReference());
+        shipmentDetails.setBookingNumber(console.getCarrierBookingRef());
 
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();

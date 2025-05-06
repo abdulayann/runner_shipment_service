@@ -32,7 +32,7 @@ public interface IDocumentManagerService {
     byte[] downloadDocument(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request);
-    ResponseEntity<IRunnerResponse> list(CommonRequestModel request);
+    ResponseEntity<IRunnerResponse> list(CommonRequestModel request, Long page, Long size);
     ResponseEntity<IRunnerResponse> listDocTypes(CommonRequestModel request);
     void pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest);
 }

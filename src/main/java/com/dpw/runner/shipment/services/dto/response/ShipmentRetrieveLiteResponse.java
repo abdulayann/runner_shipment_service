@@ -199,4 +199,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private UUID customerBookingGuid;
     private Boolean isFrob;
     private String consolidationNumber;
+    private Boolean isReefer;
+    private Boolean isPacksAvailable = Boolean.FALSE;
 }

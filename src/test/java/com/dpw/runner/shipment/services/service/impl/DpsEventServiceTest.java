@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
@@ -95,6 +96,51 @@ class DpsEventServiceTest {
     @Test
     void fetchMatchingRulesByGuid_Exception1() {
         assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(null));
+    }
+
+    @Test
+    void getShipmentMatchingRulesByGuidAndExecutionState_Success() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        DpsEvent dpsEvent = new DpsEvent().setWorkflowType(DpsWorkflowType.HOLD).setEntityType(DpsEntityType.SHIPMENT);
+        List<DpsEvent> dpsEvents = new ArrayList<>();
+        dpsEvents.add(dpsEvent);
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionStateIn(any(), any())).thenReturn(dpsEvents);
+
+        var responseEntity = dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getShipmentMatchingRulesByGuidAndExecutionStatus_Success1() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionStateIn(any(), any())).thenReturn(null);
+        assertEquals(HttpStatus.OK, dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest).getStatusCode());
+    }
+
+    @Test
+    void getShipmentMatchingRulesByGuidAndExecutionState_Exception() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        when(dpsEventRepository.findDpsEventByGuidAndExecutionStateIn(any(), any())).thenThrow(new DpsException());
+
+        assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest));
+    }
+
+    @Test
+    void getShipmentMatchingRulesByGuidAndExecutionState_GuidException() {
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+
+        assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest));
     }
 
     @Test

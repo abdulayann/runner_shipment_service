@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -55,4 +56,6 @@ public interface IShipmentDao {
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
     Integer findReceivingByGuid(UUID guid);
+    void updateCargoDetailsInShipment(Long shipmentId, Integer noOfPacks, String packsUnit, BigDecimal volume, String volumeUnit, BigDecimal weight, String weightUnit, BigDecimal volumetricWeight, String volumetricWeightUnit, BigDecimal chargable, String chargeableUnit);
+    void setShipmentIdsToContainer(List<Long> shipmentIds, Long containerId);
 }

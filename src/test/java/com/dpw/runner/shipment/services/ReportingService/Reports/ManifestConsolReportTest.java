@@ -424,7 +424,7 @@ class ManifestConsolReportTest extends CommonMocks {
     private void mockUnloc() {
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
-        when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
+        when(v1MasterData.fetchAllUnlocationData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
     }
 

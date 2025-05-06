@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -19,6 +21,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -75,6 +78,8 @@ class NetworkTransferServiceTest extends CommonMocks{
     private IShipmentDao shipmentDao;
     @Mock
     private IConsolidationDetailsDao consolidationDao;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -108,8 +113,30 @@ class NetworkTransferServiceTest extends CommonMocks{
     void requestForTransfer() {
         RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
-        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().isInterBranchEntity(false).build()));
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).entityType(Constants.SHIPMENT).isInterBranchEntity(false).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForTransfer2() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).entityType(Constants.SHIPMENT).isInterBranchEntity(false).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().shipmentId("entityNumber").assignedTo("abc").build()));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = networkTransferService.requestForTransfer(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -505,6 +532,15 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails1.setReceivingBranch(2L);
         networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
         verify(networkTransferDao, times(1)).saveAll(any());
+    }
+
+    @Test
+    void testCreateExternal() {
+        NetworkTransferRequest networkTransferRequest = NetworkTransferRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(networkTransferRequest);
+        when(jsonHelper.convertCreateValue(any(), eq(NetworkTransfer.class))).thenReturn(NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build());
+        var response = networkTransferService.createExternal(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }

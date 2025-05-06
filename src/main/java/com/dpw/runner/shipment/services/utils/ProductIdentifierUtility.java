@@ -300,9 +300,9 @@ public class ProductIdentifierUtility {
         Integer numberOfCharactersToRetain = 0;
         switch (regexKey.toLowerCase()) {
           case "branchcode" ->
-            result = getSequenceNumberForBranchCode(format, numberOfCharactersToRetain, result);
+            result = getSequenceNumberForBranchCode(format, result);
           case "transportmode" ->
-            result = getSequenceNumberForTransportMode(transportMode, numberOfCharactersToRetain, format, result);
+            result = getSequenceNumberForTransportMode(transportMode, format, result);
           case "date" -> result =
               Optional.of(
                       result
@@ -338,7 +338,7 @@ public class ProductIdentifierUtility {
             ? 1
             : (productSequence.getSerialCounter() + 1));
     Integer numberOfDigits = 0;
-    numberOfDigits = tryParse(format, numberOfCharactersToRetain);
+    numberOfDigits = tryParse(format);
     if (numberOfDigits == null) {
       numberOfDigits = 3;
     }
@@ -348,20 +348,21 @@ public class ProductIdentifierUtility {
     return result;
   }
 
-  private StringBuilder getSequenceNumberForTransportMode(String transportMode, Integer numberOfCharactersToRetain, String format, StringBuilder result) {
-    numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+  private StringBuilder getSequenceNumberForTransportMode(String transportMode, String format, StringBuilder result) {
+    Integer numberOfCharactersToRetain = tryParse(format);
     if (numberOfCharactersToRetain != null) {
       result = getAppendedResult(result, transportMode.substring(0, Math.min(numberOfCharactersToRetain, transportMode.length())));
     }
     return result;
   }
 
-  private StringBuilder getSequenceNumberForBranchCode(String format, Integer numberOfCharactersToRetain, StringBuilder result) {
+  private StringBuilder getSequenceNumberForBranchCode(String format, StringBuilder result) {
     var user = UserContext.getUser();
     String tenantCode = user.getCode();
+    Integer numberOfCharactersToRetain;
     if (format.contains("L")) {
       format = format.replace("L", "");
-      numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+      numberOfCharactersToRetain = tryParse(format);
       if (numberOfCharactersToRetain != null)
         result =
             (result == null ? new StringBuilder("null") : result)
@@ -372,7 +373,7 @@ public class ProductIdentifierUtility {
                         : tenantCode);
 
     } else {
-      numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+      numberOfCharactersToRetain = tryParse(format);
       if (numberOfCharactersToRetain != null) {
         result = getAppendedResult(result, tenantCode.substring(0, Math.min(numberOfCharactersToRetain, tenantCode.length())));
       }
@@ -613,10 +614,9 @@ public class ProductIdentifierUtility {
             .anyMatch(p -> p.getProductType() == ProductType.Shipment_Sea_TransShip);
   }
 
-  private Integer tryParse(String in, int out) {
+  private Integer tryParse(String in) {
     try {
-      out = Integer.parseInt(in);
-      return out;
+        return Integer.parseInt(in);
     } catch (Exception e) {
       return null;
     }

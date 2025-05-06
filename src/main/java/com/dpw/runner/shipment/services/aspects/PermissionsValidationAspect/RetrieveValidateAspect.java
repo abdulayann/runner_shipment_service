@@ -26,7 +26,9 @@ public class RetrieveValidateAspect {
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_RETRIEVE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        String transportMode = null, direction = null, shipmentType = null;
+        String transportMode = null;
+        String direction = null;
+        String shipmentType = null;
         Boolean domesticType = null;
         if (shipmentResponse.getTransportMode() != null)
             transportMode = shipmentResponse.getTransportMode().toLowerCase();
@@ -73,7 +75,9 @@ public class RetrieveValidateAspect {
         List<String> userPermissions = PermissionsContext.getPermissions(CONSOLIDATION_RETRIEVE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        String transportMode = null, direction = null, shipmentType = null;
+        String transportMode = null;
+        String direction = null;
+        String shipmentType = null;
         Boolean domesticType = null;
         if (consolidationResponse.getTransportMode() != null)
             transportMode = consolidationResponse.getTransportMode().toLowerCase();

@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import java.util.EnumSet;
+import java.util.Set;
+
 public class EntityTransferConstants {
     private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
+    public static final String SEND_ENTITY_TO_EXTERNAL_SYSTEM = "/send-file-to-external";
     public static final String CHECK_RETRANSFER_ACCEPTED = "/check-retransfer-accepted";
     public static final String SEND_SHIPMENT_VALIDATION = "/send-shipment-validation";
     public static final String CHECK_TASK_EXIST = "/check-task-exist";
@@ -86,4 +91,6 @@ public class EntityTransferConstants {
     public static final String EMAIL_TEMPLATE_REASSIGN_SHIPMENT_SUBJECT_TRIANGULATION_BRANCH = "{#SHIPMENT_NUMBER} Triangulation Branch Reassignment Request";
     public static final String EMAIL_TEMPLATE_REASSIGN_CONSOLIDATION_BODY_TRIANGULATION_BRANCH = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>AThe consolidation with number {#CONSOLIDATION_NUMBER} has been requested to be reassigned to the triangulation branch {#ASSIGNED_TO_BRANCH} by {#USER_NAME}. The reason for reassignment request is: “{#TRANSFER_REASON}”.</p> <p>&nbsp;</p> <p>Please take the necessary action by reviewing the transfer requests at the consolidation – {#CONSOLIDATION_NUMBER}.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#REASSIGNED_USER_EMAIL_ID}.</p> <p>Thanks,<br/>Cargoes Runner</p>";
     public static final String EMAIL_TEMPLATE_REASSIGN_CONSOLIDATION_SUBJECT_TRIANGULATION_BRANCH = "{#CONSOLIDATION_NUMBER} Triangulation Branch Reassignment Request";
+
+    public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 }
