@@ -490,6 +490,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private Boolean isTransferredToReceivingBranch;
 
     @Column(name = "partner")
+    @Size(max = 64, message = "max size is 64 for partner")
     private String partner;
 
     @Override
