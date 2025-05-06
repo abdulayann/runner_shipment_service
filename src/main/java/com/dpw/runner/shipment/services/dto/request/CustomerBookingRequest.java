@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
@@ -84,4 +85,5 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private String shipmentReferenceNumber;
     private String integrationSource;
+    private List<Parties> additionalParties;
 }
