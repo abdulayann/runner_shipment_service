@@ -18,6 +18,7 @@ public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long entityId;
     private String entityType;
+    private String country;
     private String type;
     private String orgCode;
     private Integer tenantId;

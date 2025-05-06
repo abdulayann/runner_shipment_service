@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -166,6 +166,10 @@ public class ShipmentDao implements IShipmentDao {
             }
             oldShipment = oldEntity.get();
             shipmentDetails.setCreatedBy(oldShipment.getCreatedBy());
+            if (UserContext.getUser() != null){
+                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
+            }
+            shipmentDetails.setUpdatedAt(LocalDateTime.now());
         }
         onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
         return shipmentDetails;
@@ -371,7 +375,7 @@ public class ShipmentDao implements IShipmentDao {
         }
 
         // Non dg user cannot save dg shipment
-        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && ! LicenseContext.isDgAirLicense())
+        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
             errors.add("You don't have permission to update DG Shipment");
     }
 
@@ -836,5 +840,10 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
         return false;
+    }
+
+    @Override
+    public void setShipmentIdsToContainer(List<Long> shipmentIds, Long containerId) {
+        shipmentRepository.setShipmentIdsToContainer(shipmentIds, containerId);
     }
 }

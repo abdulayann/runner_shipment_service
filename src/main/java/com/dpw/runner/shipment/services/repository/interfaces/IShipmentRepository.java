@@ -172,4 +172,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             @Param("chargable") BigDecimal chargable,
             @Param("chargeableUnit") String chargeableUnit
     );
+
+    @Modifying
+    @Query("UPDATE ShipmentDetails s SET s.containerAssignedToShipmentCargo = :containerId WHERE s.id IN :shipmentIds")
+    void setShipmentIdsToContainer(@Param("shipmentIds") List<Long> shipmentIds, @Param("containerId") Long containerId);
 }

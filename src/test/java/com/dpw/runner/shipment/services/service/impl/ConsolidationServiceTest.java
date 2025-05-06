@@ -61,6 +61,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
@@ -109,6 +110,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -131,6 +133,8 @@ import static org.mockito.Mockito.*;
     private PartialFetchUtils partialFetchUtils;
     @Mock
     private IDpsEventService dpsEventService;
+    @Mock
+    private IApplicationConfigService applicationConfigService;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Mock
@@ -3742,6 +3746,7 @@ import static org.mockito.Mockito.*;
         when(objectMapper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(new ConsolidationDetails());
         when(containerDao.findAllLiteContainer(anyList())).thenReturn(new ArrayList<>());
         when(consolidationDetailsDao.findIShipmentsByConsolidationIds(anyList())).thenReturn(new ArrayList<>());
+        when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
 
         assertEquals(200,response.getStatus());
@@ -6955,6 +6960,39 @@ import static org.mockito.Mockito.*;
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCalculateAchievedAllocatedForSameUnit_WhenUnitsDiffer_ShouldConvertUnits() {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        Allocations allocations = new Allocations();
+        allocations.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        allocations.setWeight(BigDecimal.valueOf(100));
+        allocations.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        allocations.setVolume(BigDecimal.valueOf(10));
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        achievedQuantities.setConsolidatedWeight(BigDecimal.valueOf(220.46)); // in LB
+        achievedQuantities.setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG); // different than KG
+        achievedQuantities.setConsolidatedVolume(BigDecimal.valueOf(1000)); // in CF
+        achievedQuantities.setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3); // different than M3
+
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(123L);
+        request.setTransportMode("AIR");
+        request.setContainerCategory("STANDARD");
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(new AllocationsResponse());
+        response.setAchievedQuantities(new AchievedQuantitiesResponse());
+
+        when(consolidationDetailsDao.findById(123L)).thenReturn(Optional.of(consolidationDetails1));
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantities.class))).thenReturn(achievedQuantities);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateAchievedAllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

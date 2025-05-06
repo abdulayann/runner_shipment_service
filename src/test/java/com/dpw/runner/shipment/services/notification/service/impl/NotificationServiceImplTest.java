@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -47,7 +48,7 @@ class NotificationServiceImplTest {
     private JsonHelper jsonHelper;
 
     @Test
-    void testSendEmail() throws UnsupportedEncodingException {
+    void testSendEmail() throws IOException {
         // Arrange
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
 
@@ -83,7 +84,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testSendEmail2() throws UnsupportedEncodingException {
+    void testSendEmail2() throws IOException {
         // Arrange
         UserContext.setUser(UsersDto.builder().Email("email").build());
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
@@ -114,7 +115,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testSendEmail3() throws UnsupportedEncodingException {
+    void testSendEmail3() throws IOException {
         // Arrange
         UserContext.setUser(UsersDto.builder().Email("email").build());
         NotificationServiceResponse notificationServiceResponse = new NotificationServiceResponse();
@@ -168,7 +169,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testSendEmail5() throws UnsupportedEncodingException {
+    void testSendEmail5() throws IOException {
         // Arrange
         UserContext.setUser(UsersDto.builder().build());
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");

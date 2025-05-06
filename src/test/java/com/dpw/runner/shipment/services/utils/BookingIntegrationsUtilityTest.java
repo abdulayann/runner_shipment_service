@@ -1,18 +1,23 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.EventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
@@ -32,6 +37,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -98,13 +104,33 @@ class BookingIntegrationsUtilityTest {
     @Mock
     private IV1Service iv1Service;
 
+    @Mock
+    private CommonUtils commonUtils;
+
+    @Mock
+    private EventDao eventDao;
+
+    @Mock
+    private IOrderManagementAdapter orderManagementAdapter;
+
     private static JsonTestUtility jsonTestUtility;
 
     @BeforeAll
     static void setup() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
     }
+
+    @BeforeEach
+    void beforeEachConfig() {
+        UserContext.setUser(UsersDto.builder().build());
+    }
+
 
     @Test
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {
@@ -263,6 +289,16 @@ class BookingIntegrationsUtilityTest {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setBookingReference("12345");
+        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
+        verify(platformServiceAdapter, times((1))).createAtPlatform(any());
+    }
+
+    @Test
+    void testUpdateBookingInPlatform_fromShipment_throwsException1() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        doThrow(new RuntimeException()).when(orderManagementAdapter).getOrdersByShipmentId(shipment.getShipmentId());
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times((1))).createAtPlatform(any());
     }
@@ -574,6 +610,7 @@ class BookingIntegrationsUtilityTest {
         ).build();
 
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
+        mockShipment.setEventsList(Collections.singletonList(Events.builder().source(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER).build()));
         when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
         when(platformServiceAdapter.updateAtPlaform(any())).thenReturn(ResponseHelper.buildSuccessResponse());
 
@@ -587,7 +624,7 @@ class BookingIntegrationsUtilityTest {
     void testDocumentUploadEvent2() throws RunnerException {
         var entityId = UUID.randomUUID();
         var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
-                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+                DocumentDto.Document.builder().customerPortalVisibility(true).eventCode(EventConstants.DNMU).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
         ).build();
 
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).bookingReference(UUID.randomUUID().toString()).build();
@@ -604,10 +641,11 @@ class BookingIntegrationsUtilityTest {
     void testDocumentUploadEvent3() {
         var entityId = UUID.randomUUID();
         var documentDto = DocumentDto.builder().action(Constants.KAFKA_EVENT_CREATE).data(
-                DocumentDto.Document.builder().customerPortalVisibility(true).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
+                DocumentDto.Document.builder().customerPortalVisibility(true).eventCode(EventConstants.DNMU).entityType(Constants.SHIPMENTS_CAPS).entityId(entityId.toString()).build()
         ).build();
 
         var mockShipment = ShipmentDetails.builder().bookingType(CustomerBookingConstants.ONLINE).build();
+        mockShipment.setId(1L);
         when(shipmentDao.findShipmentsByGuids(any())).thenReturn(List.of(mockShipment));
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);

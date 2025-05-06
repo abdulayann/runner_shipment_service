@@ -28,4 +28,6 @@ public interface ICustomerBookingDao {
 
     Optional<CustomerBooking> findByOrderManagementId(String orderManagementId);
     Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
+
+    Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
 }

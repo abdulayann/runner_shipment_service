@@ -6,22 +6,13 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -32,7 +23,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.nimbusds.jose.util.Pair;
-import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -48,13 +38,17 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -286,4 +280,45 @@ public class ContainerV3Util {
             CompletableFuture.completedFuture(null);
         }
     }
+
+    public BigDecimal getAddedWeight(BigDecimal initialWeight, String initialWeightUnit, BigDecimal addedWeight, String addedWeightUnit) throws RunnerException {
+        if(isStringNullOrEmpty(initialWeightUnit)) {
+            initialWeightUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
+        }
+        if(Objects.isNull(initialWeight)) {
+            initialWeight = BigDecimal.ZERO;
+        }
+        if(Objects.isNull(addedWeight) || BigDecimal.ZERO.equals(addedWeight) || isStringNullOrEmpty(addedWeightUnit)) {
+            return initialWeight;
+        }
+        return initialWeight.add(new BigDecimal(convertUnit(Constants.MASS, addedWeight, addedWeightUnit, initialWeightUnit).toString()));
+    }
+
+    public BigDecimal getAddedVolume(BigDecimal initialVolume, String initialVolumeUnit, BigDecimal addedVolume, String addedVolumeUnit) throws RunnerException {
+        if(isStringNullOrEmpty(initialVolumeUnit)) {
+            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
+        }
+        if(Objects.isNull(initialVolume)) {
+            initialVolume = BigDecimal.ZERO;
+        }
+        if(Objects.isNull(addedVolume) || BigDecimal.ZERO.equals(addedVolume) || isStringNullOrEmpty(addedVolumeUnit)) {
+            return initialVolume;
+        }
+        return initialVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, addedVolume, addedVolumeUnit, initialVolumeUnit).toString()));
+    }
+
+    public void setContainerGrossWeight(Containers container) throws RunnerException {
+        if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO) && !isStringNullOrEmpty(container.getTareWeightUnit())) {
+            if(container.getGrossWeight() == null)
+                container.setGrossWeight(BigDecimal.ZERO);
+            if(isStringNullOrEmpty(container.getGrossWeightUnit())) {
+                container.setGrossWeightUnit(
+                        isStringNullOrEmpty(container.getNetWeightUnit()) ?
+                                commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getNetWeightUnit());
+            }
+            container.setGrossWeight(getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
+            container.setGrossWeight(getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), container.getNetWeight(), container.getNetWeightUnit()));
+        }
+    }
+
 }

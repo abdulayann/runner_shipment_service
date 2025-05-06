@@ -26,6 +26,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -34,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
 public class DocumentManagerRestClient {
 
     public static final String UN_AUTHORIZED_EXCEPTION_STRING = "UnAuthorizedException";
-
+    public static final String LOG_ERROR = "{} | Error in operation: {} | Response Message: {} | Request: {}";
     @Value("${document-manager.baseUrl}")
     private String baseUrl;
 
@@ -123,20 +124,27 @@ public class DocumentManagerRestClient {
 
     public DocumentManagerResponse<DocumentManagerDataResponse> saveFile(DocumentManagerSaveFileRequest request) {
 
-        HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+        try {
+            HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
-        String url = baseUrl + "/files-management/v2/saveFile";
-        log.info("{} | URL: {} | downloadDocument request: {}", url, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requestEntity));
+            String url = baseUrl + "/files-management/v2/saveFile";
+            log.info("{} | URL: {} | saveFile request: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(requestEntity));
 
-        ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
-                url,
-                HttpMethod.POST,
-                requestEntity,
-                new ParameterizedTypeReference<>() {
-                }
-        );
+            ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
+            log.info("{} | URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(responseEntity.getBody()));
+            return responseEntity.getBody();
+        }
+        catch (Exception ex) {
+            this.logError("saveFile", request, ex);
+            throw new DocumentClientException(ex.getMessage());
+        }
 
-        return responseEntity.getBody();
     }
 
     public DocumentManagerResponse<DocumentManagerDataResponse> getFileById(String token, Long id) {
@@ -240,7 +248,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | deleteFile request: {}", this.documentDelete, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDelete, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentDelete,
                     HttpMethod.PUT,
@@ -249,6 +257,7 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            this.logError("deleteFile", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -262,7 +271,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | getFileHistory request: {}", this.documentHistory + "/" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentHistory + "/" + object, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentHistory + "/" + object,
                     HttpMethod.GET,
@@ -271,6 +280,7 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            this.logError("getFileHistory", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -285,7 +295,7 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
 
-            log.info("{} | URL: {} | downloadDocument request: {}", this.documentDownload + "?id=" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentDownload + "?id=" + object, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentDownload + "?id=" + object,
                     HttpMethod.GET,
@@ -294,6 +304,7 @@ public class DocumentManagerRestClient {
             );
             return ResponseEntity.ok(response.getBody());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            this.logError("downloadDocument", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -307,7 +318,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | bulkSaveFiles request: {}", this.documentBulkSave, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentBulkSave, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentBulkSave,
                     HttpMethod.POST,
@@ -316,6 +327,7 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            this.logError("bulkSaveFiles", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -329,7 +341,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | temporaryUpload request: {}", this.documentTemporaryUpload, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | temporaryUpload request: {}", LoggerHelper.getRequestIdFromMDC(), this.documentTemporaryUpload, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentTemporaryUpload,
                     HttpMethod.POST,
@@ -347,13 +359,17 @@ public class DocumentManagerRestClient {
 
     }
 
-    public DocumentManagerResponse<T> list(Object object) {
+    public DocumentManagerResponse<T> list(Object object, Long page, Long size) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | list request: {}", this.documentList, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            String url = this.documentList;
+            if (Objects.nonNull(page) && Objects.nonNull(size))
+                url += "?page=" + page + "&size=" + size;
+
+            log.info("{} | URL: {} | list request: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
-                    this.documentList,
+                    url,
                     HttpMethod.POST,
                     httpEntity,
                     new ParameterizedTypeReference<>() {}
@@ -373,7 +389,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | list request: {}", this.docTypeList, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | list request: {}", LoggerHelper.getRequestIdFromMDC(), this.docTypeList, jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.docTypeList,
                     HttpMethod.POST,
@@ -389,5 +405,9 @@ public class DocumentManagerRestClient {
             throw new DocumentClientException(var7.getMessage());
         }
 
+    }
+
+    private void logError(String method, Object object, Exception ex) {
+        log.error(LOG_ERROR, LoggerHelper.getRequestIdFromMDC(), method, ex.getMessage(), jsonHelper.convertToJson(object));
     }
 }

@@ -184,6 +184,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isEntityTransferPrerequisiteEnabled;
     private Boolean isNetworkTransferEntityEnabled;
     private Boolean isAutomaticTransferEnabled;
+    private Boolean isNteAdditionalEmailsEnabled;
     private Boolean eventsRevampEnabled;
     private Boolean isAlwaysUtilization;
     private Boolean isUtilizationForContainerQuoted;
@@ -196,4 +197,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean countryAirCargoSecurity;
     private Boolean preAlertEmailAndLogs;
     private Boolean isAmrAirFreightEnabled;
+    private Boolean isExternalFileTransferEnabled;
 }

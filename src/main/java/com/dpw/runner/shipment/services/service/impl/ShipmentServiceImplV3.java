@@ -1211,13 +1211,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<ShipmentsContainersMapping> shipmentsContainersMappingsList = shipmentsContainersMappingDao.findByContainerId(containerId);
         List<Long> assignedShipmentsList = shipmentsContainersMappingsList.stream().map(e -> e.getShipmentId()).toList();
         response.setIsFCLShipmentAssigned(false);
-        for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
-            if (assignedShipmentsList.contains(shipments.getId())) {
-                shipments.setAssigned(true);
-                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
+        for(ShipmentPacksAssignContainerTrayDto.Shipments shipments: response.getShipmentsList()) {
+            if(assignedShipmentsList.contains(shipments.getId())) {
+                shipments.setSelectedContainerAssigned(true);
+                if(CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
                     response.setIsFCLShipmentAssigned(true);
             } else {
-                shipments.setAssigned(false);
+                shipments.setSelectedContainerAssigned(false);
             }
         }
         return response;

@@ -152,4 +152,10 @@ public class ShipmentListResponse implements IRunnerResponse {
     private List<ShipmentOrderResponse> shipmentOrders;
     @JsonIgnore
     private List<ReferenceNumbersResponse> referenceNumbersList;
+
+    // dps items
+    private String dpsStatus;
+    private String cgsStatus;
+    
+    private Boolean isFrob;
 }

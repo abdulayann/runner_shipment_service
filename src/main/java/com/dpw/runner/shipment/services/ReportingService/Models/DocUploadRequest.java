@@ -18,6 +18,8 @@ public class DocUploadRequest implements IDocumentModel{
     private String transportMode;
     private String templateCode;
     private Boolean isTransferEnabled;
+    private String shipmentType;
+    private String fileName;
 
     // Copy Constructor
     public DocUploadRequest(DocUploadRequest other) {
@@ -31,6 +33,8 @@ public class DocUploadRequest implements IDocumentModel{
         this.transportMode = other.transportMode;
         this.templateCode = other.templateCode;
         this.isTransferEnabled = other.isTransferEnabled;
+        this.shipmentType = other.shipmentType;
+        this.fileName = other.fileName;
     }
 
     public DocUploadRequest(){

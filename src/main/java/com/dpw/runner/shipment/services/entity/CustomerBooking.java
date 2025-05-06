@@ -64,6 +64,9 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "is_notify_party_free_text")
     private Boolean isNotifyPartyFreeText;
 
+    @Transient
+    private List<Parties> additionalParties;
+
     @Column(name = "customer_email")
     private String customerEmail;
 
@@ -143,6 +146,10 @@ public class CustomerBooking extends MultiTenancy {
     @OrderBy("leg ASC")
     @BatchSize(size = 50)
     private List<Routings> routingList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
+    private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'BOOKING'")
@@ -260,6 +267,9 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "rejection_remarks")
     private String rejectionRemarks;
+
+    @Column(name = "shipment_reference_number")
+    private String shipmentReferenceNumber;
 
     @Column(name = "etd")
     private LocalDateTime etd;

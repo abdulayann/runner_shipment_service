@@ -5,7 +5,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.io.Serializable;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -23,5 +23,5 @@ public class CustomerAccountInfo implements Serializable {
     private String shippingFrequencyOrVolume;
     private String knownConsignorIndicator;
     private String billingType;
-    private LocalDate establishmentDate;
+    private LocalDateTime establishmentDate;
 }

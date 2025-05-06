@@ -20,4 +20,5 @@ public class ReferenceNumbersRequest extends CommonRequest implements IRunnerReq
     private String referenceNumber;
     private Long shipmentId;
     private Boolean isPortalEnable;
+    private Long bookingId;
 }
