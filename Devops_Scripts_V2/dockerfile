@@ -1,0 +1,16 @@
+# Set base image
+FROM maven:3.8.1-openjdk-17-slim
+
+# Set app directory
+WORKDIR /app
+
+# Copy file with dependencies
+COPY target/runner-shipment-services-0.0.1.jar .
+
+# Copy newrelic files for Java application
+RUN mkdir -p /usr/local/newrelic
+
+COPY newrelic/* /usr/local/newrelic/
+
+# Open port for server
+EXPOSE 8080

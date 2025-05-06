@@ -1,0 +1,205 @@
+## This file will be used to deploy the service repo
+
+# General application info
+organization: dpwhotfsonline
+productName: runner
+azureProject: DTLP
+appName: runner-shipment-service
+repoName: runner_shipment_service
+repoId: cdeb2aab-0be8-4566-bbba-421a13f55ec5
+serviceType: backend
+language: JAVA
+buildTool: maven
+branching: Release
+infra: K8s
+containerRegistryURL: acrcargoesrunner.azurecr.io
+libraryVariableGroupName: runner_runner_shipment_service
+libraryVariableGroupId: 342
+allEnvironments: ['dev', 'qa', 'staging', 'prod','dr']
+bluegreen: True
+artifactAliasName: _config
+artifactVstsFeedPublish: 23a36ede-eaaf-42ed-b849-690d3430f272/fbd15528-c4b5-49c1-beea-5b436be8317c
+CONFIG_FOLDER_PATH: src/main/resources
+containerRegistrySC: ACR_Cargoes Runner
+artifactsFeeds: runner-artifactory
+jdkVersion: 1.17
+mavenOptions: -Xmx3072m $(MAVEN_OPTIONS)
+POM_XML_PATH : pom.xml
+
+# Service configuration
+service:
+  name: runner-shipment-service
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+# ConfigMap configuration
+configMap:
+  name: runner-shipment-service-cm
+  data:
+    NEW_RELIC_ENABLED: true
+    NEW_RELIC_LOG_ENABLED: true
+    NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: true
+    NEW_RELIC_LOG_LEVEL: info
+    SPRING_CONFIG_LOCATION: file:///app/
+
+# Horizontal Pod Autoscaler (HPA) configuration
+hpa:
+  name: runner-shipment-service-hpa
+  enabled: true
+  avgCpuUtil: 80
+  stableSec: 300
+  scaleUpCount: 1
+  scaleUpSec: 60
+
+# Deployment configuration
+deployment:
+  name: runner-shipment-service-deployment
+  imageName: runner-shipment-service
+  imageTag: latest
+  port: 8080
+  healthCheck: /shipment-service/actuator/health
+  initialDelaySeconds: 60
+  
+# Ingress configuration
+ingress:
+  name: runner-shipment-service-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: 'false'
+    nginx.ingress.kubernetes.io/proxy-body-size: '40m'
+    nginx.org/client-max-body-size: '40m'
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+  rules:
+    - paths:
+        - path: /shipment-service
+          pathType: ImplementationSpecific
+          serviceName: runner-shipment-service
+          servicePort: 80
+
+# SecretProvider configuration
+secretprovider:
+  name: runner-shipment-service-secretproviderclass
+  nonProdUserAssignedIdentityID: c91d1283-5c7c-40f7-8259-ca222695a9f8
+  nonProdKeyVaultName: cargoesrunner-nonprod-kv
+  prodUserAssignedIdentityID: d50883f6-2c0a-4fdb-b659-6176f5fb0be5
+  prodKeyVaultName: kv-cargorunner-prod
+  drUserAssignedIdentityID: 64b39da5-ace2-4052-9950-620d247d5a06
+  drKeyVaultName: kv-cargorunner-proddr
+  tenantId: 2bd16c9b-7e21-4274-9c06-7919f7647bbb
+
+dev:
+  cicd: Full
+  envName: dev
+  namespace: runner-shipment-service-dev
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+  hostUrlList: 
+  - dev-runner.cargoes.com
+  configMap:
+    data:
+      APP_ENV: dev
+      props_profile: dev
+      SPRING_PROFILES_ACTIVE: dev
+      NEW_RELIC_APP_NAME: runner-shipment-service-dev
+  secretName: shipment-service-dev-SECRET
+  deployment:
+    replicaCount: 1
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dev-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1g -XX:+UseG1GC -XX:InitiatingHeapOccupancyPercent=70 -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 300m
+    maxCpu: 500m
+    minMem: 1.2Gi
+    maxMem: 1.5Gi
+
+qa:
+  cicd: Full
+  envName: qa
+  namespace: runner-shipment-service-qa-ns
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+  hostUrlList: 
+  - dummy-qa-runner-shipment-service.dpworld.com
+  configMap:
+    data:
+      APP_ENV: qa
+      props_profile: qa
+      NEW_RELIC_APP_NAME: runner-shipment-service-qa
+  secretName: shipment-service-qa-SECRET
+  deployment:
+    replicaCount: 1
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 300m
+    maxCpu: 500m
+    minMem: 512Mi
+    maxMem: 1Gi
+
+staging:
+  cicd: Full
+  envName: staging
+  namespace: runner-shipment-service-staging-ns
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+  hostUrlList: 
+  -  dummy-staging-runner-shipment-service.dpworld.com
+  configMap:
+    data:
+      APP_ENV: staging
+      props_profile: staging
+      NEW_RELIC_APP_NAME: runner-shipment-service-staging
+  secretName: shipment-service-staging-SECRET
+  deployment:
+    replicaCount: 1
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 300m
+    maxCpu: 500m
+    minMem: 512Mi
+    maxMem: 1Gi
+
+prod:
+  cicd: Full
+  envName: prod
+  namespace: runner-shipment-service-prod-ns
+  hpa:
+    minReplicas: 2
+    maxReplicas: 5
+  hostUrlList: 
+  - dummy-runner-shipment-service.dpworld.com
+  configMap:
+    data:
+      APP_ENV: prod
+      props_profile: prod
+      NEW_RELIC_APP_NAME: runner-shipment-service-prod
+  secretName: shipment-service-prod-SECRET
+  deployment:
+    replicaCount: 1
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && sleep 10000s
+    minCpu: 300m
+    maxCpu: 500m
+    minMem: 512Mi
+    maxMem: 1Gi
+
+dr:
+  cicd: Full
+  envName: dr
+  namespace: runner-shipment-service-dr-ns
+  hpa:
+    minReplicas: 1
+    maxReplicas: 5
+  hostUrlList: 
+  - dummy-runner-shipment-service.dpworld.com
+  configMap:
+    data:
+      APP_ENV: dr
+      props_profile: dr
+      NEW_RELIC_APP_NAME: runner-shipment-service-dr
+  secretName: shipment-service-dr-SECRET
+  deployment:
+    replicaCount: 0
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 300m
+    maxCpu: 500m
+    minMem: 512Mi
+    maxMem: 1Gi
