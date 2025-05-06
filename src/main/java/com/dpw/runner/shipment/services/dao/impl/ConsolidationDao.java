@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -120,11 +120,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
-            ConsolidationDetails oldEntity = findById(id).get();
-            if(consolidationDetails.getShipmentsList() == null) {
-                consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
+            Optional<ConsolidationDetails> optional = findById(id);
+            if (optional.isPresent()) {
+                ConsolidationDetails oldEntity = optional.get();
+                if (consolidationDetails.getShipmentsList() == null) {
+                    consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
+                }
+                oldConsole = oldEntity;
             }
-            oldConsole = oldEntity;
         }
         onSave(consolidationDetails, errors, oldConsole, fromV1Sync, updatingFromDgShipment);
         return consolidationDetails;
@@ -403,7 +406,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
             // Non dg user cannot save dg consolidation
-            if (! LicenseContext.isDgAirLicense())
+            if (!UserContext.isAirDgUser())
                 errors.add("You don't have permission to update DG Consolidation");
 
             // Dg consolidation must have at least one dg shipment
@@ -858,7 +861,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
             // Non dg user cannot save dg consolidation
-            if (! LicenseContext.isDgAirLicense())
+            if (! UserContext.isAirDgUser())
                 errors.add("You don't have permission to update DG Consolidation");
 
             // Dg consolidation must have at least one dg shipment

@@ -79,7 +79,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
-@SuppressWarnings("java:S1444")
+@SuppressWarnings({"java:S1444", "java:S3008"})
 public class AuditLogService implements IAuditLogService {
     private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class, ExcludeAuditLog.class));
 

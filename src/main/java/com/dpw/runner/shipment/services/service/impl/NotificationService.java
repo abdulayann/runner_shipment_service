@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
@@ -17,10 +18,7 @@ import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerRespons
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
@@ -38,6 +36,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -85,13 +84,14 @@ public class NotificationService implements INotificationService {
     private final CommonUtils commonUtils;
 
     private final INetworkTransferDao networkTransferDao;
+    private final IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Autowired
     public NotificationService(ModelMapper modelMapper, JsonHelper jsonHelper, INotificationDao notificationDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   MasterDataKeyUtils masterDataKeyUtils, IShipmentService shipmentService,
                                   IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
-                                  IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils) {
+                                  IConsolidationDetailsDao consolidationDetailsDao, CommonUtils commonUtils, IConsoleShipmentMappingDao consoleShipmentMappingDao) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
         this.masterDataUtils = masterDataUtils;
@@ -104,6 +104,7 @@ public class NotificationService implements INotificationService {
         this.networkTransferDao = networkTransferDao;
         this.consolidationDetailsDao = consolidationDetailsDao;
         this.commonUtils = commonUtils;
+        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
     }
 
     private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
@@ -285,29 +286,81 @@ public class NotificationService implements INotificationService {
     }
 
     private void changeNetworkTransferStatus(Notification notification, StringBuilder entityNumber) {
-        Optional< NetworkTransfer > optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
-                Math.toIntExact(notification.getRequestedBranchId()), notification.getEntityId(), notification.getEntityType());
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByIdWithQuery(notification.getNetworkTransferId());
         if(optionalNetworkTransfer.isPresent()){
-            NetworkTransferStatus status = optionalNetworkTransfer.get().getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
-            optionalNetworkTransfer.get().setStatus(status);
-            networkTransferDao.save(optionalNetworkTransfer.get());
-            entityNumber.append(optionalNetworkTransfer.get().getEntityNumber());
+            NetworkTransfer networkTransfer = optionalNetworkTransfer.get();
+            NetworkTransferStatus status = networkTransfer.getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
+            networkTransfer.setStatus(status);
+            // Revert Status for each console and shipment in case of interbranch
+            List<NetworkTransfer> networkTransferList = new ArrayList<>();
+            networkTransferList.add(networkTransfer);
+            // Overarching Shipment and console update for request to tranfer case
+            overArchingCaseForRequestToTransfer(networkTransfer, notification, networkTransferList);
+            networkTransferDao.saveAll(networkTransferList);
+            entityNumber.append(networkTransfer.getEntityNumber());
+        } else {
+            log.error("No network transfer entity found for given notification");
+            throw new DataRetrievalFailureException("No network transfer entity found for given notification");
+        }
+    }
+
+    void overArchingCaseForRequestToTransfer(NetworkTransfer networkTransfer, Notification notification, List<NetworkTransfer> networkTransferList) {
+        if(Boolean.TRUE.equals(networkTransfer.getIsInterBranchEntity()) && Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER)
+                && Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)) {
+            var consoleShipmentMapping = consoleShipmentMappingDao.findByShipmentId(networkTransfer.getEntityId());
+            if(!CommonUtils.listIsNullOrEmpty(consoleShipmentMapping)) {
+                Long entityId = consoleShipmentMapping.get(0).getConsolidationId();
+                var consoleNTE = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(List.of(entityId), Constants.CONSOLIDATION, true, List.of(NetworkTransferStatus.REQUESTED_TO_TRANSFER.name()), Constants.DIRECTION_CTS);
+                if (!CommonUtils.listIsNullOrEmpty(consoleNTE)) {
+                    NetworkTransferStatus consoleStatus = consoleNTE.get(0).getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
+                    consoleNTE.get(0).setStatus(consoleStatus);
+                    networkTransferList.add(consoleNTE.get(0));
+                }
+                this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, entityId, networkTransfer.getEntityId());
+            }
+        } else if(Boolean.TRUE.equals(networkTransfer.getIsInterBranchEntity()) && Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER)
+                && Objects.equals(networkTransfer.getEntityType(), Constants.CONSOLIDATION)) {
+            this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, networkTransfer.getEntityId(), null);
+        }
+    }
+
+    void fetchOverarchingConsoleAndShipmentNTE(List<NetworkTransfer> networkTransferList, Long consoleId, Long shipId) {
+        var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        if(!consoleShipMappingList.isEmpty()){
+            List<Long> shipmentIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).filter(shipmentId ->!Objects.equals(shipmentId, shipId)).toList();
+            List<NetworkTransfer> shipmentsNte = new ArrayList<>();
+            if(!CommonUtils.listIsNullOrEmpty(shipmentIds))
+                shipmentsNte = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(shipmentIds, Constants.SHIPMENT, true, List.of(NetworkTransferStatus.REQUESTED_TO_TRANSFER.name()), Constants.DIRECTION_CTS);
+
+            if(!CommonUtils.listIsNullOrEmpty(shipmentsNte)){
+                shipmentsNte.forEach(nte -> {
+                    NetworkTransferStatus status = nte.getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
+                    nte.setStatus(status);
+                    networkTransferList.add(nte);
+                });
+            }
         }
     }
     private void triggerCancellationEmail(Notification notification, String reason, String entityNumber) {
-        List<String> emailList = new ArrayList<>();
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        commonUtils.getUserDetails(new HashSet<>(Set.of(notification.getRequestedUser())), usernameEmailsMap);
-        if (usernameEmailsMap.containsKey(notification.getRequestedUser()))
-            emailList.add(usernameEmailsMap.get(notification.getRequestedUser()));
-        EmailTemplatesRequest template = new EmailTemplatesRequest();
-        if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REASSIGN) && !emailList.isEmpty()) {
-            template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
-        } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
-            template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
-        }
-        if(!emailList.isEmpty() && template.getBody() != null) {
-            commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+        try {
+            List<String> emailList = new ArrayList<>();
+            Map<String, String> usernameEmailsMap = new HashMap<>();
+            commonUtils.getUserDetails(new HashSet<>(Set.of(notification.getRequestedUser())), usernameEmailsMap);
+            if (usernameEmailsMap.containsKey(notification.getRequestedUser()))
+                emailList.add(usernameEmailsMap.get(notification.getRequestedUser()));
+            EmailTemplatesRequest template = new EmailTemplatesRequest();
+            if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REASSIGN) && !emailList.isEmpty()) {
+                template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
+            } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
+                ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+                if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled()))
+                    template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
+            }
+            if(!emailList.isEmpty() && template.getBody() != null) {
+                commonUtils.sendEmailNotification(template, emailList, Arrays.asList(UserContext.getUser().getEmail()));
+            }
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
         }
     }
 
@@ -337,7 +390,7 @@ public class NotificationService implements INotificationService {
 
     private EmailTemplatesRequest createRequestToTranferCancellationEmailBody(Notification notification, String reason, String entityNumber){
         UsersDto user = UserContext.getUser();
-        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant(), notification.getReassignedToBranchId())));
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
         String body = "";
         String subject = "";
         if(SHIPMENT.equals(notification.getEntityType())) {

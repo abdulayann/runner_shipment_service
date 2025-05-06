@@ -9684,6 +9684,17 @@
         "isDimension": true
       }
     ],
+    "referenceNumbersList": [
+      {
+      "id": 123,
+      "consolidationId": 123456,
+      "countryOfIssue": "IND",
+      "type": "CRR",
+      "referenceNumber": "RefNum",
+      "shipmentId": 98765,
+      "isPortalEnable": false
+    }
+    ],
     "routingList": [
       {
         "id": 103537,

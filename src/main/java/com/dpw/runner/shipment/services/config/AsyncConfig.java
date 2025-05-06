@@ -33,9 +33,9 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean
     @Primary
     public ExecutorService executorService() {
-        int corePoolSize = 50; // Min threads
+        int corePoolSize = 20; // Min threads
         int maximumPoolSize = 50; // Adjusted max pool size
-        long keepAliveTime = 60; // Keep alive time for idle threads
+        long keepAliveTime = 1800; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
         int queueCapacity = 250; // Define queue capacity
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(queueCapacity);
@@ -55,9 +55,9 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean
     public ExecutorService executorServiceMasterData() {
-        int corePoolSize = 50; // Min threads
+        int corePoolSize = 20; // Min threads
         int maximumPoolSize = 50; // Adjusted max pool size
-        long keepAliveTime = 60; // Keep alive time for idle threads
+        long keepAliveTime = 1800; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
         int queueCapacity = 250; // Define queue capacity
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(queueCapacity);
@@ -76,9 +76,9 @@ public class AsyncConfig implements AsyncConfigurer {
     }
     @Bean
     public ExecutorService executorServiceRouting() {
-        int corePoolSize = 10; // Min threads
+        int corePoolSize = 5; // Min threads
         int maximumPoolSize = 10; // Adjusted max pool size
-        long keepAliveTime = 60; // Keep alive time for idle threads
+        long keepAliveTime = 1800; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
         int queueCapacity = 100; // Define queue capacity
         BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(queueCapacity);

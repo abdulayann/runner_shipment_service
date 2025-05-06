@@ -139,8 +139,8 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel request) {
-        var response = restClient.list(request.getDependentData());
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel request, Long page, Long size) {
+        var response = restClient.list(request.getDependentData(), page, size);
         return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
     }
 
@@ -158,9 +158,11 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
             if (Boolean.FALSE.equals(uploadResponse.getSuccess()))
                 throw new IOException(FILE_UPLOAD_TO_TEMP_FAILED);
 
-            this.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+            this.saveFile(DocumentManagerSaveFileRequest.builder()
+                    .fileName(filename)
                     .entityType(uploadRequest.getEntityType())
                     .entityKey(uploadRequest.getKey())
+                    .entityId(uploadRequest.getKey())
                     .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
                     .fileSize(uploadResponse.getData().getFileSize())
                     .fileType(uploadResponse.getData().getFileType())
@@ -169,7 +171,9 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
                     .docType(uploadRequest.getDocType())
                     .docName(uploadRequest.getDocType())
                     .childType(uploadRequest.getChildType())
-                    .build());
+                    .transportMode(uploadRequest.getTransportMode())
+                    .shipmentType(uploadRequest.getShipmentType())
+                .build());
             log.info("Time take to pushSystemGeneratedDocumentToDocMaster: {}ms", System.currentTimeMillis() - start);
         } catch (Exception ex) {
             log.error("Request: {} | Error while uploading file to document service: Error: {}", LoggerHelper.getRequestIdFromMDC(), ex.getMessage());

@@ -52,4 +52,7 @@ public class Notification extends MultiTenancy {
     @Column(name = "reassigned_from_branch_id")
     @TenantIdData
     private Integer reassignedFromBranchId;
+
+    @Column(name = "network_transfer_id")
+    private Long networkTransferId;
 }

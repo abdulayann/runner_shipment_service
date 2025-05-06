@@ -2,9 +2,12 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
-import java.util.List;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Slf4j
 @Component
@@ -45,6 +48,14 @@ public class ContainerValidationUtil {
 
         if(exists){
             throw new IllegalArgumentException("Container number '" + containerNumber + "' already exists.");
+        }
+    }
+
+    public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) throws RunnerException {
+        if(shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
+            throw new RunnerException(String.format(
+                    "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
+                    shipmentDetails.getShipmentId()));
         }
     }
 

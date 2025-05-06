@@ -428,6 +428,10 @@ public class ReportConstants {
     public static final String TENANT_CURRENCY = "TenantCurrency";
     public static final String TENANT_URL = "TenantUrl" ;
     public static final String TENANT_VATREGNUMBER = "VatRegNumber" ;
+    public static final String TENANT_NAME_IN_CAPS = "TenantNameInCaps" ;
+    public static final String TENANT_ADDRESS_IN_CAPS = "TenantAddressInCaps" ;
+    public static final String TENANT_VAT_REG_NUMBER_IN_CAPS = "VATNumberInCaps" ;
+    public static final String TENANT_EMAIL_IN_CAPS = "TenantEmailInCaps";
 
         /*
             User fields
@@ -494,6 +498,7 @@ public class ReportConstants {
     public static final String SHIPMENT_IDS = "shipmentIds";
     public static final String SHIPMENT_ID = "ShipmentId";
     public static final String SHIPMENT_TYPE = "ShipmentType";
+    public static final String DIRECTION = "Direction";
     public static final String CUSTOM_SHIPMENT_TYPE = "CustomShipmentType";
     public static final String BL_WITH_UNDERSCORE_COMMENTS = "Bl_Comments";
     public static final String BL_DELIVERY_AGENT = "BL_DeliveryAgent";
@@ -1365,4 +1370,19 @@ public class ReportConstants {
 
     public static final String USA_LOC_CODE_PREFIX = "US";
     public static final String DPW_DATE_FORMAT_OR_DEFAULT_STRING = "MM/dd/yyyy";
+    public static final String HTML_BREAK = "<br/>";
+
+
+    public static final String ATA_OR_ETA = "ATAOrETA";
+
+    // Party Tags for Caps
+    public static final String SHIPPER_NAME_IN_CAPS = "ShipperNameInCaps";
+    public static final String SHIPPER_ADDRESS_IN_CAPS = "ShipperAddressInCaps";
+    public static final String CONSIGNEE_NAME_IN_CAPS = "ConsigneeNameInCaps";
+    public static final String CONSIGNEE_ADDRESS_IN_CAPS = "ConsigneeAddressInCaps";
+    public static final String ORIGIN_AGENT_NAME_IN_CAPS = "OriginAgentNameInCaps";
+    public static final String ORIGIN_AGENT_ADDRESS_IN_CAPS = "OriginAgentAddressInCaps";
+    public static final String DESTINATION_AGENT_NAME_IN_CAPS = "DestinationAgentNameInCaps";
+    public static final String DESTINATION_AGENT_ADDRESS_IN_CAPS = "DestinationAgentAddressInCaps";
+
 }

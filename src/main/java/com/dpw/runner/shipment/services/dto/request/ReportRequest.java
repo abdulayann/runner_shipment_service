@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -45,6 +46,7 @@ public class ReportRequest implements IRunnerRequest {
     PartiesRequest fcrShipper;
     List<Long> packIds;
     String placeOfIssue;
+    @ExcludeTimeZone
     LocalDateTime dateOfIssue;
     String consolAirline;
     String destination;
@@ -54,8 +56,8 @@ public class ReportRequest implements IRunnerRequest {
     String hawbNumber;
     Integer totalHawbPieces;
     List<HawbInfo> hawbInfo;
-    String entityGuid;
     String entityName;
+    boolean isSelfCall = false;
 
     @Getter
     @Setter

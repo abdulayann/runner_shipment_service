@@ -239,8 +239,8 @@ public class ContainerService implements IContainerService {
         Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < containersList.size(); row++) {
             Containers containersRow = containersList.get(row);
-            if (Boolean.TRUE.equals(containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
-                    && containersRow.getIsOwnContainer()) && Boolean.TRUE.equals(containersRow.getIsShipperOwned())) {
+            if (containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
+                    && Boolean.TRUE.equals(containersRow.getIsOwnContainer()) && Boolean.TRUE.equals(containersRow.getIsShipperOwned())) {
                 String errorMessagePart1 = "Multiple container ownership is selected at row ";
                 String errorMessagePart2 = " - Kindly change and try re-uploading.";
                 throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
@@ -266,7 +266,7 @@ public class ContainerService implements IContainerService {
         boolean isPartValue = containersRow.getIsPart() != null && containersRow.getIsPart();
         if (isPartValue) {
             var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
-            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
+            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType())) {
                 throw new ValidationException("Shipment cargo type is FCL, Part containers are not allowed to be attached with FCL Shipment");
             }
         }
@@ -438,31 +438,37 @@ public class ContainerService implements IContainerService {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
             if (request.getShipmentId() != null) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
-                request.setTransportMode(shipmentDetails.getTransportMode());
-                request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-                List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
+                Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(Long.valueOf(request.getShipmentId()));
+                if (shipmentDetailsOptional.isPresent()) {
+                    ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+                    request.setTransportMode(shipmentDetails.getTransportMode());
+                    request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
+                    mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+                    List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
 
-                ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                List<Containers> containersList = containers.getContent();
-                result.addAll(containersList);
+                    ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
+                    Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+                    Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+                    List<Containers> containersList = containers.getContent();
+                    result.addAll(containersList);
+                }
             }
 
             if (request.getConsolidationId() != null) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
-                request.setTransportMode(consolidationDetails.getTransportMode());
-                request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                List<Containers> containersList = containers.getContent();
-                if (result.isEmpty()) {
-                    result.addAll(containersList);
-                } else {
-                    result = result.stream().filter(result::contains).toList();
+                Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));
+                if (consolidationDetailsOptional.isPresent()) {
+                    ConsolidationDetails consolidationDetails = consolidationDetailsOptional.get();
+                    request.setTransportMode(consolidationDetails.getTransportMode());
+                    request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
+                    ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
+                    Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
+                    Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+                    List<Containers> containersList = containers.getContent();
+                    if (result.isEmpty()) {
+                        result.addAll(containersList);
+                    } else {
+                        result = result.stream().filter(result::contains).toList();
+                    }
                 }
             }
             LocalDateTime currentTime = LocalDateTime.now();
@@ -640,14 +646,12 @@ public class ContainerService implements IContainerService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> attachPacks(Long containerId, List<Long> packsId) {
-        Containers containers = containerDao.findById(containerId).get();
-
-        if (containers != null) {
+        Optional<Containers> optional = containerDao.findById(containerId);
+        if (optional.isPresent()) {
+            Containers containers = optional.get();
             for (Long packid : packsId) {
                 Optional<Packing> packing = packingDao.findById(packid);
-                if (packing.isPresent() && packing.get() != null) {
-                    containers.getPacksList().add(packing.get());
-                }
+                packing.ifPresent(value -> containers.getPacksList().add(value));
             }
             Containers entity = containerDao.save(containers);
             afterSave(entity, false);
@@ -927,7 +931,7 @@ public class ContainerService implements IContainerService {
         try {
             // Convert moduleGuid to UUID (throws IllegalArgumentException if invalid)
             UUID guid = UUID.fromString(moduleGuid);
-            List<ContainerResponse> containerResponseList = switch (moduleType.toUpperCase()) {
+            List<IRunnerResponse> containerResponseList = switch (moduleType.toUpperCase()) {
                 case Constants.SHIPMENT -> getContainerResponsesFromShipment(guid);
                 case Constants.CONSOLIDATION -> getContainerResponsesFromConsolidation(guid);
                 default -> throw new ValidationException("Invalid moduleType: " + moduleType);
@@ -949,12 +953,12 @@ public class ContainerService implements IContainerService {
      * @return List of container responses.
      * @throws DataRetrievalFailureException if no shipment data is found.
      */
-    private List<ContainerResponse> getContainerResponsesFromShipment(UUID guid) {
+    private List<IRunnerResponse> getContainerResponsesFromShipment(UUID guid) {
         ShipmentDetails shipmentDetails = shipmentDao.findByGuid(guid)
                 .orElseThrow(() -> new DataRetrievalFailureException("Data not available for provided shipment request"));
 
         // Convert shipment's container list to List<ContainerResponse>
-        return jsonHelper.convertValueToList(shipmentDetails.getContainersList().stream().toList(), ContainerResponse.class);
+        return convertEntityListToDtoList(shipmentDetails.getContainersList().stream().toList(), defaultIncludeColumns);
     }
 
     /**
@@ -964,12 +968,12 @@ public class ContainerService implements IContainerService {
      * @return List of container responses.
      * @throws DataRetrievalFailureException if no consolidation data is found.
      */
-    private List<ContainerResponse> getContainerResponsesFromConsolidation(UUID guid) {
+    private List<IRunnerResponse> getContainerResponsesFromConsolidation(UUID guid) {
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findByGuid(guid)
                 .orElseThrow(() -> new DataRetrievalFailureException("Data not available for provided consolidation request"));
 
         // Convert consolidation's container list to List<ContainerResponse>
-        return jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerResponse.class);
+        return convertEntityListToDtoList(consolidationDetails.getContainersList(), defaultIncludeColumns);
     }
 
     public void changeContainerWtVolForSeaFCLDetach(Containers container) {
@@ -1516,7 +1520,7 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<IRunnerResponse> v1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return ResponseHelper.buildSuccessResponse();
             }
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
@@ -1555,7 +1559,7 @@ public class ContainerService implements IContainerService {
             ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-            if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
+            if (shipmentDetails.get().findAny().isPresent()) {
                 shipIds = shipmentDetails.get().map(e -> e.getId()).collect(Collectors.toSet());
             }
         }
@@ -1673,7 +1677,7 @@ public class ContainerService implements IContainerService {
 
 
     private IRunnerResponse convertEntityToDto(Containers container) {
-        return jsonHelper.convertValue(container, ContainerResponse.class);
+        return (IRunnerResponse) commonUtils.setIncludedFieldsToResponse(container,new HashSet<>(defaultIncludeColumns), new ContainerResponse());
     }
 
     private Containers convertRequestToEntity(ContainerRequest request) {
@@ -1692,11 +1696,9 @@ public class ContainerService implements IContainerService {
         });
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
-        if (!Objects.isNull(responseList)) {
-            for (IRunnerResponse containerResponse : responseList) {
-                ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
-                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY, cacheMap));
-            }
+        for (IRunnerResponse containerResponse : responseList) {
+            ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
+            containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY, cacheMap));
         }
         return responseList;
     }
@@ -1775,18 +1777,9 @@ public class ContainerService implements IContainerService {
             containerBoomiUniversalJson.setHazardousGoodType(containers.getDgClass());
         }
         details.setBookingRef(bookingRef);
+        containerBoomiUniversalJson.setAllocationDate(commonUtils.getUserZoneTime(containerBoomiUniversalJson.getAllocationDate()));
         details.setContainer(containerBoomiUniversalJson);
         return details;
-    }
-
-    private String getRefNum(Containers containers) {
-        if(containers.getConsolidationId() != null) {
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(containers.getConsolidationId());
-            if(consolidationDetails.isPresent()) {
-                return consolidationDetails.get().getReferenceNumber();
-            }
-        }
-        return null;
     }
 
     @PostConstruct
