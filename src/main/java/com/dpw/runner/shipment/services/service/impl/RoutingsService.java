@@ -157,7 +157,7 @@ public class RoutingsService implements IRoutingsService {
             // Update routings based on tracking data
             updateRoutingsBasedOnTracking(shipmentId, routings);
 
-        } catch (RuntimeException | RunnerException | ExecutionException | InterruptedException e) {
+        } catch (RuntimeException | RunnerException | ExecutionException | InterruptedException e) { //NOSONAR - Ignoring interrupt intentionally
             log.error("Error updating routings: {}", e.getMessage(), e);
             throw new RoutingException("Failed to update routings", e);
         }

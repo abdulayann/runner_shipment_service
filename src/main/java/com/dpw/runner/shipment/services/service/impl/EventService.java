@@ -394,7 +394,7 @@ public class EventService implements IEventService {
             }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
             Events events = modelMapper.map(eventsRequestV2, Events.class);
-            if (existingEvent != null && existingEvent.isPresent()) {
+            if (existingEvent.isPresent()) {
                 events.setId(existingEvent.get().getId());
             }
             if (eventsRequestV2.getShipmentGuid() != null) {
@@ -847,7 +847,11 @@ public class EventService implements IEventService {
             event.setId(existingEvent.getId());
             event.setGuid(existingEvent.getGuid());
             event.setTenantId(existingEvent.getTenantId());
-            log.info("Event already exists. Updated ID and GUID from existing event. messageId {}", messageId);
+            event.setCreatedAt(existingEvent.getCreatedAt());
+            event.setCreatedBy(existingEvent.getCreatedBy());
+            event.setDirection(existingEvent.getDirection());
+            event.setDescription(existingEvent.getDescription());
+            log.info("Event already exists. Updated details from existing event. messageId {}", messageId);
         } else {
             event.setTenantId(tenantId);
             log.info("Event is new. No existing event found. messageId {}", messageId);
@@ -933,8 +937,7 @@ public class EventService implements IEventService {
         Map<String, Event> containerEventMapFromTracking = trackingContainer.getEvents().stream()
                 .filter(Objects::nonNull)
                 .map(event -> {
-                    String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                            event.getLocationRole(), event.getEventType(), event.getDescription());
+                    String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, trackingContainer);
                     String placeName = Optional.ofNullable(trackingContainer.getPlaces()).orElse(Collections.emptyList()).stream()
                             .filter(place -> Objects.equals(place.getId(), event.getLocation()))
                             .map(Place::getCode).map(StringUtils::defaultString).findFirst()

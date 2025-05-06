@@ -5998,6 +5998,33 @@ class V1ServiceImplTest {
     }
 
     @Test
+    void testGetUsersWithGivenPermissions_Success2() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_Success3() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        V1DataResponse mockResponse = V1DataResponse.builder().entities(null).build();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
     void testGetUsersWithGivenPermissions_ClientError() {
         UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
         HttpClientErrorException exception = HttpClientErrorException.create(
@@ -6048,5 +6075,49 @@ class V1ServiceImplTest {
         when(userServiceV1.getUserByToken(token)).thenReturn(UsersDto.builder().build());
         v1ServiceImpl.setAuthContext();
         verify(userServiceV1, times(1)).getUserByToken(any());
+    }
+
+    @Test
+    void testFetchActiveUnlocation() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+
+        var responseEntity = v1ServiceImpl.fetchActiveUnlocation("Request");
+
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchActiveUnlocation2() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchActiveUnlocation3() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchActiveUnlocation4() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals("RuntimeException", throwable.getMessage());
     }
 }

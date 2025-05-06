@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_DETAILS_NULL;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
@@ -19,6 +20,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
@@ -219,6 +221,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -263,7 +266,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -298,6 +300,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -313,7 +316,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.util.CollectionUtils;
 
-@SuppressWarnings("ALL")
+@SuppressWarnings({"ALL", "java:S2111"})
 @Service
 @Slf4j
 public class ConsolidationService implements IConsolidationService {
@@ -381,6 +384,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IShipmentSync shipmentSync;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
@@ -1280,7 +1286,9 @@ public class ConsolidationService implements IConsolidationService {
 
     private ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequestsModel) {
 
-        var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
+        var emailTemplateModel = (emailTemplatesRequestsModel != null)
+                ? emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest())
+                : new EmailTemplatesRequest();
         List<String> toEmailsList = new ArrayList<>();
         List<String> ccEmailsList = new ArrayList<>();
         if(shipmentDetails.getCreatedBy() != null)
@@ -1713,7 +1721,7 @@ public class ConsolidationService implements IConsolidationService {
             if (mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(),
                     AwbConstants.T1)) {
                 if (!shipIdList.isEmpty()) {
-                    processNonEmptyShipIdList(shipIdList, mawb, consol);
+                    processNonEmptyShipIdList(shipIdList, mawb, consol.get());
                 } else {
                     mawb.getAwbCargoInfo().setSci(null);
                     mawb.setAirMessageResubmitted(false);
@@ -1725,7 +1733,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void processNonEmptyShipIdList(List<Long> shipIdList, Awb mawb, Optional<ConsolidationDetails> consol) throws RunnerException {
+    private void processNonEmptyShipIdList(List<Long> shipIdList, Awb mawb, ConsolidationDetails consol) throws RunnerException {
         List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
         if (awbs != null && !awbs.isEmpty()) {
             var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
@@ -1733,8 +1741,8 @@ public class ConsolidationService implements IConsolidationService {
                 mawb.setAirMessageResubmitted(false);
                 mawb.getAwbCargoInfo().setSci(null);
                 awbDao.save(mawb);
-                consol.get().setSci(null);
-                consolidationDetailsDao.save(consol.get(), false);
+                consol.setSci(null);
+                consolidationDetailsDao.save(consol, false);
             }
         }
     }
@@ -2045,7 +2053,7 @@ public class ConsolidationService implements IConsolidationService {
             i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
             i.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             i.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
-            if(fromAttachShipment != null && fromAttachShipment){
+            if(Boolean.TRUE.equals(fromAttachShipment)){
                 i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
                 i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
                 i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
@@ -2339,12 +2347,12 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setAllocations(new Allocations());
             if(consolidationDetails.getAchievedQuantities() == null)
                 consolidationDetails.setAchievedQuantities(new AchievedQuantities());
-            if (consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit() != consolidationDetails.getAllocations().getWeightUnit()) {
+            if (!Objects.equals(consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), consolidationDetails.getAllocations().getWeightUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), consolidationDetails.getAllocations().getWeightUnit()).toString());
                 consolidationDetails.getAchievedQuantities().setConsolidatedWeight(val);
                 consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(consolidationDetails.getAllocations().getWeightUnit());
             }
-            if (consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != consolidationDetails.getAllocations().getVolumeUnit()) {
+            if (!Objects.equals(consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), consolidationDetails.getAllocations().getVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), consolidationDetails.getAllocations().getVolumeUnit()).toString());
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolume(val);
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(consolidationDetails.getAllocations().getVolumeUnit());
@@ -2375,7 +2383,7 @@ public class ConsolidationService implements IConsolidationService {
             if (weightUnit != null && volumeUnit != null) {
                 VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
                 consolidationDetails.getAllocations().setChargable(vwOb.getChargeable());
-                if (transportMode == Constants.TRANSPORT_MODE_AIR) {
+                if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR)) {
                     BigDecimal charge = consolidationDetails.getAllocations().getChargable();
                     BigDecimal half = new BigDecimal("0.50");
                     BigDecimal floor = CommonUtils.roundBigDecimal(charge, 0, RoundingMode.FLOOR);
@@ -2708,7 +2716,8 @@ public class ConsolidationService implements IConsolidationService {
     private Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
         Object cache = null;
         if(cacheMap.isEmpty()) {
-            var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
+            Optional<Cache> masterDataCacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));
+            Cache.ValueWrapper resp = masterDataCacheOptional.map(cache1 -> cache1.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()))).orElse(null);
             if(!Objects.isNull(resp)) cache = resp.get();
         } else {
             cache = cacheMap.get(containers.getContainerCode());
@@ -3272,7 +3281,7 @@ public class ConsolidationService implements IConsolidationService {
             containers = map.get(id);
         else {
             Optional<Containers> containers1 = containerDao.findById(id);
-            if(containers1 != null && containers1.isPresent()) {
+            if(containers1.isPresent()) {
                 containers = containers1.get();
                 map.put(containers.getId(), containers);
             }
@@ -4257,7 +4266,10 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
+        Optional<ConsolidationDetails> optional = consolidationDetailsDao.findById(id);
+        if (optional.isEmpty())
+            return ResponseHelper.buildSuccessResponse();
+        ConsolidationDetails consolidationDetails = optional.get();
         String lockingUser = consolidationDetails.getLockedBy();
         String currentUser = UserContext.getUser().getUsername();
 
@@ -4559,12 +4571,7 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-        }
-        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
-            return;
-        }
+        if (invalidateExcel(commonRequestModel, request)) return;
 
         applyPermissionFilter(commonRequestModel);
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
@@ -4650,14 +4657,37 @@ public class ConsolidationService implements IConsolidationService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Consolidations_" + timestamp + Constants.XLSX;
 
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            Integer exportExcelLimit = getExportExcelLimit();
+            if (consoleResponse.size() > exportExcelLimit) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            }else {
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                    "attachment; filename=" + filenameWithTimestamp);
 
-            try (OutputStream outputStream = response.getOutputStream()) {
-                workbook.write(outputStream);
+                try (OutputStream outputStream = response.getOutputStream()) {
+                    workbook.write(outputStream);
+                }
             }
         }
 
+    }
+
+  private boolean invalidateExcel(CommonRequestModel commonRequestModel, ListCommonRequest request) {
+    if (request == null) {
+      log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+    }
+    boolean isInvalidateExcel = false;
+    if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+      isInvalidateExcel = true;
+    }
+    return isInvalidateExcel;
+  }
+
+    private Integer getExportExcelLimit(){
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        return StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT : Integer.parseInt(configuredLimitValue);
     }
 
     private void addPolPodItemRow(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {
@@ -5241,8 +5271,11 @@ public class ConsolidationService implements IConsolidationService {
         Long consolidationReceivingBranch = consolidationDetails.getReceivingBranch();
 
         if (existingNteNotValid(consolidationReceivingBranch, shipmentNetworkTransferMap)) {
-            List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
-                    .flatMap(innerMap -> innerMap.values().stream()).toList();
+            List<NetworkTransfer> allNetworkTransfers = Optional.ofNullable(shipmentNetworkTransferMap)
+                    .map(map -> map.values().stream()
+                            .flatMap(innerMap -> innerMap.values().stream()))
+                    .orElseGet(Stream::empty)
+                    .toList();
             nteToDelete.addAll(allNetworkTransfers);
         }
 
@@ -6483,7 +6516,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-            Map<Long, Boolean> containerIdDgAllowedMap = getContainerIdDgAllowedMap(consolidationDetails);
+            Map<Long, Boolean> containerIdDgAllowedMap = getContainerIdDgAllowedMap(consolidationDetails.get());
             return ResponseHelper.buildSuccessResponse(containerIdDgAllowedMap);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -6494,11 +6527,11 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    private Map<Long, Boolean> getContainerIdDgAllowedMap(Optional<ConsolidationDetails> consolidationDetails) {
+    private Map<Long, Boolean> getContainerIdDgAllowedMap(ConsolidationDetails consolidationDetails) {
         Map<Long, Boolean> containerIdDgAllowedMap = new HashMap<>();
-        if(consolidationDetails.get().getContainersList() != null)
+        if(consolidationDetails.getContainersList() != null)
         {
-            for(Containers containers: consolidationDetails.get().getContainersList()) {
+            for(Containers containers: consolidationDetails.getContainersList()) {
                 boolean allowEdit = true;
                 if(containers.getShipmentsList() != null)
                 {

@@ -6,11 +6,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderPartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementResponse;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.QuantityPair;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.ReferencesResponse;
+import com.dpw.runner.shipment.services.dto.request.platform.OrderListResponse;
+import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -30,6 +28,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
@@ -45,6 +44,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -540,6 +540,51 @@ class OrderManagementAdapterTest {
         assertNotNull(shipmentDetails);
         assertEquals(guid.toString(), shipmentDetails.getOrderManagementId());
     }
+
+    @Test
+    void getOrdersUsingShipmentId() throws RunnerException {
+        OrderListResponse response = new OrderListResponse();
+        OrderManagementDTO orderManagementDTO1 = OrderManagementDTO.builder().orderId("abc").orderNumber("ord1").build();
+        response.setData(List.of(orderManagementDTO1));
+        HttpHeaders headers = new HttpHeaders();
+        Map<String, Object> criteria = new HashMap<>();
+        criteria.put("shipmentId", "SHP000125865");
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("criteria", criteria);
+        requestBody.put("pageNumber", 1);
+        requestBody.put("pageSize", 10000);
+        requestBody.put("orderQtyNeeded", true);
+        when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
+        HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, headers);
+
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull", HttpMethod.POST, httpEntity, OrderListResponse.class);
+
+        List<PurchaseOrdersResponse> responses = orderManagementAdapter.getOrdersByShipmentId("SHP000125865");
+        assertNotNull(responses);
+        assertEquals(orderManagementDTO1.getOrderId(), responses.get(0).getOrderId());
+    }
+
+    @Test
+    void getOrdersUsingShipmentIdException() {
+        OrderListResponse response = new OrderListResponse();
+        OrderManagementDTO orderManagementDTO1 = OrderManagementDTO.builder().orderId("abc").orderNumber("ord1").build();
+        response.setData(List.of(orderManagementDTO1));
+        HttpHeaders headers = new HttpHeaders();
+        Map<String, Object> criteria = new HashMap<>();
+        criteria.put("shipmentId", "SHP000125865");
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("criteria", criteria);
+        requestBody.put("pageNumber", 1);
+        requestBody.put("pageSize", 10000);
+        requestBody.put("orderQtyNeeded", true);
+        when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
+
+        doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull", HttpMethod.POST, null, OrderListResponse.class);
+        assertThrows(RunnerException.class, () -> {
+            orderManagementAdapter.getOrdersByShipmentId("SHP000125865");
+        });
+    }
+
 
     @Test
     void getOrderUsingGuidException() throws RunnerException {

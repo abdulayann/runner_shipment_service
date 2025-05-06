@@ -150,7 +150,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
-                                .prevData(oldEntityJson != null ? jsonHelper.readFromJson(oldEntityJson, Packing.class) : null)
+                                .prevData(oldEntityJson != null ? jsonHelper.readFromJson(oldEntityJson, ReferenceNumbers.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
                                 .parentId(bookingId)
                                 .operation(dbOperation).build()
@@ -168,7 +168,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Override
     public List<ReferenceNumbers> updateEntityFromBooking(List<ReferenceNumbers> referenceNumbersList, Long bookingId) throws RunnerException {
         String responseMsg;
-        List<ReferenceNumbers> responsePackings = new ArrayList<>();
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             Map<Long, ReferenceNumbers> hashMap = referenceNumberMap(bookingId);
             List<ReferenceNumbers> referernceNumbersRequestList = new ArrayList<>();
@@ -180,14 +180,46 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     }
                     referernceNumbersRequestList.add(request);
                 }
-                responsePackings = saveEntityFromBooking(referernceNumbersRequestList, bookingId);
+                responseReferenceNumbers = saveEntityFromBooking(referernceNumbersRequestList, bookingId);
             }
-            return responsePackings;
+            deleteReferenceNumber(hashMap, "CustomerBooking", bookingId);
+            return responseReferenceNumbers;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private void deleteReferenceNumber(Map<Long, ReferenceNumbers> hashMap, String entity, Long entityId) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(referenceNumber -> {
+                String json = jsonHelper.convertToJson(referenceNumber);
+                delete(referenceNumber);
+                if(entity != null)
+                {
+                    try {
+                        logService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, ReferenceNumbers.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
         }
     }
 

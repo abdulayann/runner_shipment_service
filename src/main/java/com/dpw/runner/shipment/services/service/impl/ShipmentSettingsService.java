@@ -184,7 +184,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Optional<ShipmentSettingsDetails> oldEntity = getOldEntityShipmentSettingsDetails(request);
-        if(!oldEntity.isPresent()) {
+        if(oldEntity.isEmpty()) {
             log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -436,6 +436,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getIsAutomaticTransferEnabled() == null)
                 request.setIsAutomaticTransferEnabled(oldEntity.get().getIsAutomaticTransferEnabled());
 
+            setNteAdditionalEmailsFlag(oldEntity, request);
+
             if(request.getEventsRevampEnabled() == null) {
                 request.setEventsRevampEnabled(oldEntity.get().getEventsRevampEnabled());
             }
@@ -462,13 +464,18 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         }
     }
 
+    private void setNteAdditionalEmailsFlag(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request) {
+        if(request.getIsNteAdditionalEmailsEnabled() == null)
+            request.setIsNteAdditionalEmailsEnabled(oldEntity.get().getIsNteAdditionalEmailsEnabled()); //NOSONAR
+    }
+
     private ResponseEntity<IRunnerResponse> getfuncResponseEntity(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
         List<HblTermsConditionTemplateRequest> hblTermsConditionTemplateList = request.getHblTermsConditionTemplate();
         List<HblTermsConditionTemplateRequest> hblHawbBackPrintTemplateList = request.getHblHawbBackPrintTemplate();
         List<TenantProductsRequest> tenantProductsList = request.getTenantProducts();
         List<ProductSequenceConfigRequest> productSequenceConfigList = request.getProductSequenceConfig();
 
-        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate();
+        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate(); //NOSONAR
         List<HblTermsConditionTemplate> oldHblHawbBackPrintTemplateList = oldEntity.get().getHblHawbBackPrintTemplate();
         List<TenantProducts> oldTenantProductsList = oldEntity.get().getTenantProducts();
         List<ProductSequenceConfig> oldProductSequenceConfigList = oldEntity.get().getProductSequenceConfig();
@@ -786,12 +793,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled() != null) && shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled().orElse(false);
             Boolean newNetworkTransferFlag = (shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled() != null) && shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled().orElse(false);
             Boolean newAutomaticTransferFlag = (shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled() != null) && shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled().orElse(false);
+            Boolean newNteAdditionalEmailsFlag = (shipmentSettingsPatchRequest.getIsNteAdditionalEmailsEnabled() != null) && shipmentSettingsPatchRequest.getIsNteAdditionalEmailsEnabled().orElse(false);
             Boolean newAwbRevampFlag = (shipmentSettingsPatchRequest.getIsAwbRevampEnabled() !=null) && shipmentSettingsPatchRequest.getIsAwbRevampEnabled().orElse(false);
             LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabledDate();
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
             oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(newEntityTransferFlag);
             oldShipmentSettingsDetails.setIsNetworkTransferEntityEnabled(newNetworkTransferFlag);
             oldShipmentSettingsDetails.setIsAutomaticTransferEnabled(newAutomaticTransferFlag);
+            oldShipmentSettingsDetails.setIsNteAdditionalEmailsEnabled(newNteAdditionalEmailsFlag);
             oldShipmentSettingsDetails.setIsAwbRevampEnabled(newAwbRevampFlag);
             setIsEntityTransferPrerequisiteEnabledDate(newEntityTransferFlag, oldShipmentSettingsDetails, oldEntityTransferFlag, oldEntityTransferEnabledDate);
             ShipmentSettingsDetails newShipmentSettingsDetails = shipmentSettingsDao.save(oldShipmentSettingsDetails);

@@ -1426,6 +1426,36 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
+    void downloadContainers2(){
+        HttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        request.setConsolidationId("3");
+        request.setShipmentId("6");
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        assertDoesNotThrow(() -> containerService.downloadContainers(response, request));
+    }
+
+    @Test
+    void downloadContainers3(){
+        HttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        request.setConsolidationId("3");
+        request.setShipmentId("6");
+        ShipmentDetails shipmentDetails1 = testShipment;
+        shipmentDetails1.setDirection(null);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidation();
+        consolidationDetails.setShipmentType(null);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails1));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
+        assertDoesNotThrow(() -> containerService.downloadContainers(response, request));
+    }
+
+    @Test
     void downloadContainerEvents(){
         HttpServletResponse response = new MockHttpServletResponse();
         BulkDownloadRequest request = new BulkDownloadRequest();
@@ -1525,10 +1555,10 @@ class ContainerServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setContainersList(Set.of(new Containers()));
 
-        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+       ContainerResponse containerResponse = new ContainerResponse();
 
         when(shipmentDao.findByGuid(validGuid)).thenReturn(Optional.of(shipmentDetails));
-        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(containerResponse);
 
         // When
         ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
@@ -1548,10 +1578,10 @@ class ContainerServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setContainersList(List.of(new Containers()));
 
-        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+        ContainerResponse containerResponse = new ContainerResponse();
 
         when(consolidationDetailsDao.findByGuid(validGuid)).thenReturn(Optional.of(consolidationDetails));
-        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(containerResponse);
 
         // When
         ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);

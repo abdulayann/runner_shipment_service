@@ -130,17 +130,7 @@ import com.nimbusds.jose.util.Pair;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -1399,7 +1389,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && Objects.equals(consolidationDetails.get().getShipmentType(), Constants.DIRECTION_EXP)) {
-            processNTEValidations(consolidationDetails);
+            processNTEValidations(consolidationDetails.get());
         }
         else {
             if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1562,14 +1552,14 @@ public class EntityTransferService implements IEntityTransferService {
         return hblGenerationError;
     }
 
-    private void processNTEValidations(Optional<ConsolidationDetails> consolidationDetails) {
+    private void processNTEValidations(ConsolidationDetails consolidationDetails) {
         SendConsoleValidationResponse response;
-        if(Objects.equals(consolidationDetails.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails.get(), false);
-        else if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_SEA))
-            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails.get(), false);
+        if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails, false);
+        else if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_SEA))
+            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails, false);
         else
-            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails.get(), false);
+            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails, false);
         if(Boolean.TRUE.equals(response.getIsError())) {
             throw new ValidationException(response.getConsoleErrorMessage());
         }
@@ -1630,7 +1620,7 @@ public class EntityTransferService implements IEntityTransferService {
     public SendConsoleValidationResponse automaticTransferConsoleValidation(CommonRequestModel commonRequestModel) {
         ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
-        if (!consolidationDetails.isPresent()) {
+        if (consolidationDetails.isEmpty()) {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -2635,6 +2625,7 @@ public class EntityTransferService implements IEntityTransferService {
         return tenantIds;
     }
 
+    @SuppressWarnings("java:S2259")
     private Set<Integer> retrieveTaskFromNte(Long entityId, String entityType, List<Integer> tenantIds) {
         List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
@@ -2664,6 +2655,11 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private List<ShipmentDetails> findShipmentsFromLogsHistory(List<UUID> guids, LocalDateTime timeStamp) throws RunnerException {
+        guids = Optional.ofNullable(guids).orElse(Collections.emptyList());
+        guids = guids.stream().filter(Objects::nonNull).toList();
+        if(CollectionUtils.isEmpty(guids) || timeStamp == null) {
+            return Collections.emptyList();
+        }
         List<LogHistoryResponse> logHistoryResponses = logsHistoryService.findByEntityGuidsAndTimeStamp(guids, timeStamp);
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         Set<UUID> remainingGuids = new HashSet<>(guids);

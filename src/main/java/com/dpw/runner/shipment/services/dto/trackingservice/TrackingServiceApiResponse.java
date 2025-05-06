@@ -46,6 +46,7 @@ public class TrackingServiceApiResponse {
         private Object lineCode;
         private String serviceType;
         private String carrierName;
+        private String scacCode;
         private Object placeOfOrigin;
         private Integer portOfDeparture;
         private Integer portOfArrival;
