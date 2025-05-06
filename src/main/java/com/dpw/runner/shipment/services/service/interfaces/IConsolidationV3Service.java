@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
@@ -25,7 +25,7 @@ public interface IConsolidationV3Service {
     ConsolidationDetailsResponse completeUpdate(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException;
     ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException;
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
-    String attachShipments(ShipmentAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
+    String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
     void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;

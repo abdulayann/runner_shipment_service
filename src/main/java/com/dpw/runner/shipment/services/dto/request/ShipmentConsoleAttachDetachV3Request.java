@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentAttachDetachV3Request implements IRunnerRequest {
+public class ShipmentConsoleAttachDetachV3Request implements IRunnerRequest {
 
     private ShipmentRequestedType shipmentRequestedType;
     private Long consolidationId;
