@@ -1,12 +1,12 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Set;
 
 public interface IShipmentsContainersMappingDao {
 
@@ -23,5 +23,7 @@ public interface IShipmentsContainersMappingDao {
     void detachShipments(Long containerId, List<Long> shipIds, boolean fromV1);
     void detachListShipments(List<Long> containerId, List<Long> shipIds, boolean fromV1);
     void updateShipmentsMappings(Long containerId, List<Long> shipIds);
+    ShipmentsContainersMapping save(ShipmentsContainersMapping shipmentsContainersMapping);
+    List<ShipmentsContainersMapping> saveAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList);
 
 }
