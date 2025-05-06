@@ -81,8 +81,13 @@ public class RoutingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_DELETE_SUCCESSFUL, response = BulkRoutingResponse.class)})
     @DeleteMapping(value = ApiConstants.SHIPMENT_API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> shipmentDeleteBulk(@RequestBody List<RoutingsRequest> request) throws RunnerException {
-        ;
         return ResponseHelper.buildSuccessResponse(routingService.deleteBulk(request, Constants.SHIPMENT));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long routingId) {
+        return ResponseHelper.buildSuccessResponse(routingService.getAllMasterData(CommonRequestModel.buildRequest(routingId)));
     }
 
 

@@ -48,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -424,5 +425,32 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
 
         return message;
+    }
+
+    @Override
+    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel){
+        Long id = commonRequestModel.getId();
+        Optional<Routings> routings = routingsDao.findById(id);
+        if(routings.isEmpty()) {
+            log.debug("Routing is null for the input id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        RoutingsResponse response = jsonHelper.convertValue(routings, RoutingsResponse.class);
+        return getAllMasterDataForRoute(response);
+    }
+
+    public Map<String, Object> getAllMasterDataForRoute(RoutingsResponse response) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        try {
+            double startTime = System.currentTimeMillis();
+            var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllMasterDataInSingleCall(response, masterDataResponse)), executorServiceMasterData);
+            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllUnlocationInSingleCall(response, masterDataResponse)), executorServiceMasterData);
+            var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllVesselInSingleCall(response, masterDataResponse)), executorServiceMasterData);
+            CompletableFuture.allOf(locationDataFuture, masterDataFuture, vesselDataFuture).join();
+            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.ROUTING_RETRIEVE_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception ex) {
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_ROUTING_RETRIEVE, ex.getLocalizedMessage());
+        }
+        return masterDataResponse;
     }
 }
