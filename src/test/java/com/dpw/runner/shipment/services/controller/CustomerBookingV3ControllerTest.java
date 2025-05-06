@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -57,7 +58,7 @@ public class CustomerBookingV3ControllerTest {
     @Test
     void getBookingContainers() throws RunnerException {
         when(containerV3Service.list(any(), anyBoolean())).thenReturn(new ContainerListResponse());
-        var responseEntity = customerBookingV3Controller.listBookingContainers(CommonRequestModel.builder().build());
+        var responseEntity = customerBookingV3Controller.listBookingContainers(new ListCommonRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -85,7 +86,7 @@ public class CustomerBookingV3ControllerTest {
     @Test
     void getBookingPackages() {
         when(packingV3Service.list(any(), anyBoolean())).thenReturn(new PackingListResponse());
-        var responseEntity = customerBookingV3Controller.listBookingPackages(CommonRequestModel.builder().build());
+        var responseEntity = customerBookingV3Controller.listBookingPackages(new ListCommonRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

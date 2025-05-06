@@ -60,8 +60,8 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @GetMapping(ApiConstants.BOOKING_API_LIST_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> listBookingContainers(@RequestBody CommonRequestModel commonRequestModel) throws RunnerException {
-        ContainerListResponse containerListResponse = containerV3Service.list((ListCommonRequest) commonRequestModel.getData(), true);
+    public ResponseEntity<IRunnerResponse> listBookingContainers(@RequestBody ListCommonRequest listCommonRequest) throws RunnerException {
+        ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, true);
         return new ResponseEntity(containerListResponse, HttpStatus.OK);
     }
 
@@ -88,8 +88,8 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL)})
     @GetMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
-    public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody CommonRequestModel commonRequestModel) {
-        PackingListResponse packingListResponse = packingV3Service.list(commonRequestModel, true);
+    public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody ListCommonRequest listCommonRequest) {
+        PackingListResponse packingListResponse = packingV3Service.list(CommonRequestModel.buildRequest(listCommonRequest), true);
         return new ResponseEntity(packingListResponse, HttpStatus.OK);
     }
 

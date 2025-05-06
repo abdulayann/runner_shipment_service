@@ -209,7 +209,7 @@ public class ContainerV3Service implements IContainerV3Service {
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
-        runAsyncPostSaveOperations(updatedContainers);
+        runAsyncPostSaveOperations(updatedContainers, module);
 
         // Add audit logs for all updated containers
         recordAuditLogs(originalContainers, updatedContainers, DBOperationType.UPDATE);
@@ -771,7 +771,8 @@ public class ContainerV3Service implements IContainerV3Service {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
-    private void runAsyncPostSaveOperations(List<Containers> containers) {
+    private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
+        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
         CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
         CompletableFuture.allOf(afterSaveFuture, syncFuture).join();

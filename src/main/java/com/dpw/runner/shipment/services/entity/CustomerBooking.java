@@ -259,4 +259,8 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "rejection_remarks")
     private String rejectionRemarks;
+
+    @Column(name = "payment_terms")
+    @MasterData(type = MasterDataType.PAYMENT)
+    private String paymentTerms;
 }
