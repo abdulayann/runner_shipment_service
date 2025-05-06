@@ -165,11 +165,12 @@ public class AWBLabelReport extends IReport{
 
     private void processNonCustomLabel(AWbLabelModel awbLabelModel, ConsolidationDetails consolidationDetails, Long consoleId) throws RunnerException {
         if(!isCustomLabel) {
-            awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
+            if (consolidationDetails != null)
+                awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
             awbLabelModel.setAwb(getMawb(consoleId, true));
             awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
             awbLabelModel.setShipmentModels(new ArrayList<>());
-            if (!setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+            if (consolidationDetails != null && !setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
                 for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                     awbLabelModel.getShipmentModels().add(getShipment(shipmentDetails));
                 }

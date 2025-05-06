@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -230,48 +229,36 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadPacking_FlashNotNull() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGSubstanceId(null);
-            packingList.get(0).setFlashPoint("flashPoint");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(),
-                anyMap(), anyMap())).thenReturn(packingList);
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+    void uploadPacking_FlashNotNull() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGSubstanceId(null);
+        packingList.get(0).setFlashPoint("flashPoint");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_UndgContactInvalid() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGSubstanceId(null);
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(),
-                anyMap(), anyMap())).thenReturn(packingList);
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+    void uploadPacking_UndgContactInvalid() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGSubstanceId(null);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
@@ -471,27 +458,21 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadPacking_VolWtNull() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setVolumeWeightUnit("");
-            packingList.get(0).setVolumeWeight(null);
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(),
-                anyMap(), anyMap())).thenReturn(packingList);
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("567"));
-            volumeWeightChargeable.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KT);
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+    void uploadPacking_VolWtNull() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setVolumeWeightUnit("");
+        packingList.get(0).setVolumeWeight(null);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("567"));
+        volumeWeightChargeable.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KT);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
@@ -512,52 +493,40 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadPacking_NullVolWt_VolumetricFunctionTest() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setVolumeWeight(null);
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(),
-                anyMap(), anyMap())).thenReturn(packingList);
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("567"));
-            volumeWeightChargeable.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KT);
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+    void uploadPacking_NullVolWt_VolumetricFunctionTest() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setVolumeWeight(null);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("567"));
+        volumeWeightChargeable.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KT);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_NullWtVol_vwob_VolumetricFunctionTest() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setWeight(null);
-            packingList.get(0).setWeightUnit(null);
-            packingList.get(0).setVolume(null);
-            packingList.get(0).setVolumeUnit(null);
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(),
-                anyMap(), anyMap())).thenReturn(packingList);
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(null);
-            volumeWeightChargeable.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KT);
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+    void uploadPacking_NullWtVol_vwob_VolumetricFunctionTest() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setWeight(null);
+        packingList.get(0).setWeightUnit(null);
+        packingList.get(0).setVolume(null);
+        packingList.get(0).setVolumeUnit(null);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(null);
+        volumeWeightChargeable.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KT);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
@@ -622,84 +591,65 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadPacking_NullHDgClassMasterData() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass1");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(), anyMap(), anyMap(),
-                anyMap()))
+    void uploadPacking_NullHDgClassMasterData() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass1");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), anyMap(), anyMap(), anyMap()))
                 .thenAnswer(invocation -> {
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
                     masterDataMap.clear();
                     masterDataMap.putAll(new HashMap<>());
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_DiffDgClass() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass1");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(), anyMap(), anyMap(),
-                anyMap()))
+    void uploadPacking_DiffDgClass() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass1");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), anyMap(), anyMap(), anyMap()))
                 .thenAnswer(invocation -> {
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
                     masterDataMap.clear();
                     masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            packingList.get(0).setFlashPoint("23");
-            packingList.get(0).setDGSubstanceId(null);
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(),
-                (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(),
-                anyMap()))
+    void uploadPacking_() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("23");
+        packingList.get(0).setDGSubstanceId(null);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
                 .thenAnswer(invocation -> {
 
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
@@ -716,35 +666,27 @@ class PackingServiceTest extends CommonMocks {
 
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_UndgEmpty() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            packingList.get(0).setFlashPoint("23");
-            packingList.get(0).setUNDGContact("");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(),
-                (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(),
-                anyMap()))
+    void uploadPacking_UndgEmpty() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("23");
+        packingList.get(0).setUNDGContact("");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
                 .thenAnswer(invocation -> {
 
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
@@ -761,36 +703,29 @@ class PackingServiceTest extends CommonMocks {
 
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
-            packingService.uploadPacking(bulkUploadRequest);
-            verify(packingDao, times(1)).saveAll(any());
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
+        packingService.uploadPacking(bulkUploadRequest);
+        verify(packingDao, times(1)).saveAll(any());
     }
 
     @Test
-    void uploadPacking_UndgEmpty_DgPermissionError() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(false);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            packingList.get(0).setFlashPoint("23");
-            packingList.get(0).setUNDGContact("");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(),
-                (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(),
-                anyMap()))
+    void uploadPacking_UndgEmpty_DgPermissionError() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("23");
+        packingList.get(0).setUNDGContact("");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
                 .thenAnswer(invocation -> {
 
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
@@ -807,34 +742,26 @@ class PackingServiceTest extends CommonMocks {
 
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_Exception() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            packingList.get(0).setFlashPoint("23");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(),
-                (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(),
-                anyMap()))
+    void uploadPacking_Exception() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("23");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
                 .thenAnswer(invocation -> {
 
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
@@ -851,34 +778,26 @@ class PackingServiceTest extends CommonMocks {
 
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_ErrorFlashPointDifferent() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            packingList.get(0).setFlashPoint("flashPoint");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(),
-                (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(),
-                anyMap()))
+    void uploadPacking_ErrorFlashPointDifferent() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("flashPoint");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
                 .thenAnswer(invocation -> {
 
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
@@ -895,32 +814,25 @@ class PackingServiceTest extends CommonMocks {
 
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_FlashPointError() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            packingList.get(0).setFlashPoint("flashPoint");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(),
-                (Map<Long, Long>) captor2.capture(), anyMap(), anyMap()))
+    void uploadPacking_FlashPointError() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("flashPoint");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), anyMap(), anyMap()))
                 .thenAnswer(invocation -> {
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
                     masterDataMap.clear();
@@ -930,65 +842,49 @@ class PackingServiceTest extends CommonMocks {
                     dgsubstance.putAll(jsonTestUtility.getDgSubstanceContactMap());
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_DgClassMasterData() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            packingList.get(0).setDGClass("dgClass");
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
-            when(parser.parseExcelFile(any(), any(), any(),
-                (Map<String, Set<String>>) captor.capture(), any(), any(), anyMap(), anyMap(),
-                anyMap()))
+    void uploadPacking_DgClassMasterData() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), anyMap(), anyMap(), anyMap()))
                 .thenAnswer(invocation -> {
                     Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
                     masterDataMap.clear();
                     masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
                     return packingList;
                 });
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
-    void uploadPacking_InvalidDG() throws Exception {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
-            List<Packing> packingList = List.of(testCsvPacking);
-            BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
-            bulkUploadRequest.setConsolidationId(1L);
-            bulkUploadRequest.setShipmentId(2L);
-            bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-            when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(),
-                anyMap(), anyMap())).thenReturn(packingList);
-            VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
-            volumeWeightChargeable.setChargeable(new BigDecimal(434));
-            volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
-            when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(),
-                any())).thenReturn(volumeWeightChargeable);
-            assertThrows(ValidationException.class,
-                () -> packingService.uploadPacking(bulkUploadRequest));
-        }
+    void uploadPacking_InvalidDG() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
@@ -1357,6 +1253,24 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
+    void calculateWeightVolume2() {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(containerRequest)
+                .oldPack(null)
+                .newPack(packingRequest)
+                .oldContainer(containerRequest).build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+        mockShipmentSettings();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
+    }
+
+    @Test
     void calculateWeightVolumne_NewPackNull() throws RunnerException {
         ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
         packingRequest.setShipmentId(1L);
@@ -1371,6 +1285,24 @@ class PackingServiceTest extends CommonMocks {
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateWeightVolume_NewPackNull2() {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(null)
+                .oldPack(packingRequest)
+                .newPack(null)
+                .oldContainer(containerRequest).build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+        mockShipmentSettings();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
     }
 
     @Test

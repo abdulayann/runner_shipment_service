@@ -55,4 +55,6 @@ public interface IPackingDao {
     void deleteByIdIn(List<Long> deletePackingIds);
 
     PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId);
+
+    List<Packing> findByShipmentId(Long shipmentId);
 }

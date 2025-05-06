@@ -28,18 +28,12 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -64,9 +58,11 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.bridgeService.BridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
@@ -87,25 +83,10 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
-import com.dpw.runner.shipment.services.entity.enums.PrintType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskType;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.AcceptedFileRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckEntityExistRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckTaskExistRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.PostArValidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.AcceptedFileResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ArValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckEntityExistResponse;
@@ -149,17 +130,7 @@ import com.nimbusds.jose.util.Pair;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -223,11 +194,12 @@ public class EntityTransferService implements IEntityTransferService {
     private INetworkTransferDao networkTransferDao;
     private INotificationDao notificationDao;
     private DependentServiceHelper dependentServiceHelper;
+    private IBridgeServiceAdapter bridgeServiceAdapter;
 
     @Autowired
     public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService
             , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao,
-                                 DependentServiceHelper dependentServiceHelper) {
+                                 DependentServiceHelper dependentServiceHelper, IBridgeServiceAdapter bridgeServiceAdapter) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -260,6 +232,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.notificationDao = notificationDao;
         this.eventService = eventService;
         this.dependentServiceHelper = dependentServiceHelper;
+        this.bridgeServiceAdapter = bridgeServiceAdapter;
     }
 
     @Transactional
@@ -328,11 +301,12 @@ public class EntityTransferService implements IEntityTransferService {
                 Math.toIntExact(tenant), shipment.getId(), SHIPMENT);
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(taskPayload);
         if(optionalNetworkTransfer.isPresent()) {
-            if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
                 oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
+                oldNetworkTransfer.setTransferredDate(LocalDateTime.now());
                 networkTransferDao.save(oldNetworkTransfer);
             } else {
                 networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
@@ -461,6 +435,70 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
 
+    public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
+        SendFileToExternalRequest sendFileToExternalRequest = (SendFileToExternalRequest) commonRequestModel.getData();
+        if(Objects.equals(sendFileToExternalRequest.getEntityType(), SHIPMENT)){
+            sendShipmentToExternalSystem(sendFileToExternalRequest);
+        } else if(Objects.equals(sendFileToExternalRequest.getEntityType(), CONSOLIDATION)){
+            sendConsolidationToExternalSystem(sendFileToExternalRequest);
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void sendShipmentToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
+        Long shipId = sendFileToExternalRequest.getEntityId();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+        if (shipmentDetails.isEmpty()) {
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, shipId, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentDetails shipment = shipmentDetails.get();
+        var entityTransferPayload = prepareShipmentPayload(shipment);
+        entityTransferPayload.setDirection(Constants.IMP);
+        Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
+
+    }
+    private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
+        Long consoleId = sendFileToExternalRequest.getEntityId();
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        if (consolidationDetails.isEmpty()) {
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consoleId, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ConsolidationDetails console = consolidationDetails.get();
+
+        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, new SendConsolidationRequest());
+        entityTransferPayload.setShipmentType(Constants.IMP);
+        if(!entityTransferPayload.getShipmentsList().isEmpty()) {
+            for (var ship : console.getShipmentsList()) {
+                ship.setDirection(Constants.IMP);
+            }
+        }
+        Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest);
+    }
+
+    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
+        NetworkTransfer networkTransfer = new NetworkTransfer();
+        networkTransfer.setEntityPayload(entityPayload);
+        networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+        networkTransfer.setEntityType(entityType);
+        networkTransfer.setEntityNumber(entityNumber);
+        networkTransfer.setTransportMode(transportMode);
+        networkTransfer.setJobType(jobType);
+
+        BridgeRequest request = BridgeRequest.builder()
+                .requestCode(sendFileToExternalRequest.getSendToBranch())
+                .transactionId(UUID.randomUUID().toString())
+                .payload(networkTransfer)
+                .build();
+        log.info("OutBound File Transfer Bridge Service Request: {}", jsonHelper.convertToJson(request));
+        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestOutBoundFileTransfer(CommonRequestModel.buildRequest(request));
+        log.info("OutBound File Transfer Bridge Service Response: {}", jsonHelper.convertToJson(bridgeServiceResponse));
+    }
+
     private boolean shouldSaveShipment(ShipmentDetails shipment) {
         return Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP);
     }
@@ -555,11 +593,12 @@ public class EntityTransferService implements IEntityTransferService {
         boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole());
 
         if (optionalNetworkTransfer.isPresent()) {
-            if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
                 oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
+                oldNetworkTransfer.setTransferredDate(LocalDateTime.now());
                 networkTransferDao.save(oldNetworkTransfer);
             }else {
                 networkTransferService.updateNetworkTransferTransferred(
@@ -725,7 +764,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(isNetworkTransferFeatureEnabled) {
             networkTransferService.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
             var nte = networkTransferDao.findById(importShipmentRequest.getTaskId());
-            if(nte.isPresent()) {
+            if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL)) {
                 Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
                 if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
                     shipmentDao.saveIsTransferredToReceivingBranch(nte.get().getEntityId(), Boolean.TRUE);
@@ -799,7 +838,7 @@ public class EntityTransferService implements IEntityTransferService {
             if (isNetworkTransferFeatureEnabled) {
                 networkTransferService.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
                 var nte = networkTransferDao.findById(importConsolidationRequest.getTaskId());
-                if(nte.isPresent()) {
+                if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL)) {
                     updateNteStatus(nte.get(), consolidationDetailsResponse, oldVsNewShipIds);
                 }
             } else {
@@ -1082,6 +1121,9 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
         var tenantId = UserContext.getUser().getTenantId();
         shipmentRequest.setDepartment(department);
+        if(entityTransferShipmentDetails.getSendToBranch() == null) {
+            entityTransferShipmentDetails.setSendToBranch(tenantId);
+        }
         // Set Inter Branch TenantId in TenantContext for inter branch Shipment
         if(Objects.equals(shipmentRequest.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(shipmentRequest.getJobType(), Constants.SHIPMENT_TYPE_DRT) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
             commonUtils.setInterBranchContextForHub();
@@ -1349,7 +1391,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && Objects.equals(consolidationDetails.get().getShipmentType(), Constants.DIRECTION_EXP)) {
-            processNTEValidations(consolidationDetails);
+            processNTEValidations(consolidationDetails.get());
         }
         else {
             if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1512,14 +1554,14 @@ public class EntityTransferService implements IEntityTransferService {
         return hblGenerationError;
     }
 
-    private void processNTEValidations(Optional<ConsolidationDetails> consolidationDetails) {
+    private void processNTEValidations(ConsolidationDetails consolidationDetails) {
         SendConsoleValidationResponse response;
-        if(Objects.equals(consolidationDetails.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails.get(), false);
-        else if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_SEA))
-            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails.get(), false);
+        if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails, false);
+        else if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_SEA))
+            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails, false);
         else
-            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails.get(), false);
+            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails, false);
         if(Boolean.TRUE.equals(response.getIsError())) {
             throw new ValidationException(response.getConsoleErrorMessage());
         }
@@ -1580,7 +1622,7 @@ public class EntityTransferService implements IEntityTransferService {
     public SendConsoleValidationResponse automaticTransferConsoleValidation(CommonRequestModel commonRequestModel) {
         ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
-        if (!consolidationDetails.isPresent()) {
+        if (consolidationDetails.isEmpty()) {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -2138,12 +2180,13 @@ public class EntityTransferService implements IEntityTransferService {
 
         List<ShipmentDetails> shipmentDetailsList = findShipmentsFromLogsHistory(requestGuids.stream().toList(), request.getTimestamp());
 
-        Map<UUID, ConsolidationDetails> consolidationDetailsMap;
+        Map<UUID, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
         if (!shipmentDetailsList.isEmpty()){
             Set<UUID> consoleGuids = getConsoleGuids(shipmentDetailsList);
-
-            List<ConsolidationDetails> consolidationDetailsList = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), request.getTimestamp());
-            consolidationDetailsMap = consolidationDetailsList.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
+            if (!CollectionUtils.isEmpty(consoleGuids)) {
+                List<ConsolidationDetails> consolidationDetailsList = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), request.getTimestamp());
+                consolidationDetailsMap = consolidationDetailsList.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
+            }
 
             Set<UUID> sourceGuids = new HashSet<>();
             Set<UUID> shipmentGuids = new HashSet<>();
@@ -2584,6 +2627,7 @@ public class EntityTransferService implements IEntityTransferService {
         return tenantIds;
     }
 
+    @SuppressWarnings("java:S2259")
     private Set<Integer> retrieveTaskFromNte(Long entityId, String entityType, List<Integer> tenantIds) {
         List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
@@ -2613,6 +2657,11 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private List<ShipmentDetails> findShipmentsFromLogsHistory(List<UUID> guids, LocalDateTime timeStamp) throws RunnerException {
+        guids = Optional.ofNullable(guids).orElse(Collections.emptyList());
+        guids = guids.stream().filter(Objects::nonNull).toList();
+        if(CollectionUtils.isEmpty(guids) || timeStamp == null) {
+            return Collections.emptyList();
+        }
         List<LogHistoryResponse> logHistoryResponses = logsHistoryService.findByEntityGuidsAndTimeStamp(guids, timeStamp);
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         Set<UUID> remainingGuids = new HashSet<>(guids);
@@ -2721,7 +2770,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
             networkTransfers.stream().filter(
-                    networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus())
+                    networkTransfer -> EntityTransferConstants.RETRANSFER_SET.contains(networkTransfer.getStatus()))
                 .toList() : Collections.emptyList();
 
         String acceptedBranches = "";

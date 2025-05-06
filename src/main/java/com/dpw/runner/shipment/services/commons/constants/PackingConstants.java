@@ -15,5 +15,6 @@ public class PackingConstants {
     public static final String PACKS_NOT_VALID = "Packs is not valid at row: ";
     public static final String FAILURE_EXECUTING_REQUEST = "failure executing request ";
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Packing Data Retrieval By Id";
-    public static final String PACKING_RETRIEVE_BY_ID_ERROR = "Notification is null for Id {} with Request Id {}";
+    public static final String PACKING_RETRIEVE_BY_ID_ERROR = "Packing is null for Id {} with Request Id {}";
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
 }

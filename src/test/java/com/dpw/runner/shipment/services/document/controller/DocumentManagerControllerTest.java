@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Optional;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -172,9 +174,9 @@ class DocumentManagerControllerTest {
     @Test
     void testListDocuments() {
         // Mock
-        when(documentManagerService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(documentManagerService.list(any(), any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = documentManagerController.listDocuments(new Object());
+        var responseEntity = documentManagerController.listDocuments(new Object(), Optional.of(1L),  Optional.of(1L));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -182,9 +184,9 @@ class DocumentManagerControllerTest {
     @Test
     void testListDocuments2() {
         // Mock
-        when(documentManagerService.list(any())).thenThrow(new RuntimeException());
+        when(documentManagerService.list(any(), any(), any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = documentManagerController.listDocuments(new Object());
+        var responseEntity = documentManagerController.listDocuments(new Object(), Optional.of(1L), Optional.of(1L));
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -192,9 +194,9 @@ class DocumentManagerControllerTest {
     @Test
     void testListDocuments3() {
         // Mock
-        when(documentManagerService.list(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(documentManagerService.list(any(), any(), any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = documentManagerController.listDocuments(new Object());
+        var responseEntity = documentManagerController.listDocuments(new Object(), Optional.of(1L), Optional.of(1L));
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

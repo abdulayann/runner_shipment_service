@@ -118,9 +118,8 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<PartiesRequest> borrowedFrom;
     private JsonNullable<PartiesRequest> creditor;
     private JsonNullable<PartiesRequest> coLoadWith;
-    private JsonNullable<PartiesRequest> bookingAgent;
-    private JsonNullable<String> bookingAgentNumber;
-    private JsonNullable<String> bookingAgentBlNumber;
+    private JsonNullable<Long> bookingAgent;
+    private JsonNullable<String> coLoadCarrierName;
     private List<PackingRequest> packingList;
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private List<RoutingsRequest> routingsList;

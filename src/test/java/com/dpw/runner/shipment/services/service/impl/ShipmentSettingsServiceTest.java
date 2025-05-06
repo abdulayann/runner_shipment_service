@@ -610,6 +610,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsNteAdditionalEmailsEnabled(JsonNullable.of(true));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
@@ -624,6 +625,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(false));
+        shipmentSettingsPatchRequest.setIsNteAdditionalEmailsEnabled(JsonNullable.of(false));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
@@ -638,8 +640,10 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(false));
+        shipmentSettingsPatchRequest.setIsNteAdditionalEmailsEnabled(JsonNullable.of(false));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(false);
+        testShipmentSettingsDetails.setIsNteAdditionalEmailsEnabled(false);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
@@ -653,8 +657,10 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsNteAdditionalEmailsEnabled(JsonNullable.of(true));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(true);
+        testShipmentSettingsDetails.setIsNteAdditionalEmailsEnabled(true);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
@@ -668,6 +674,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(1L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsNteAdditionalEmailsEnabled(JsonNullable.of(true));
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
@@ -714,9 +721,11 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         shipmentSettingsPatchRequest.setId(2L);
         shipmentSettingsPatchRequest.setTenantId(1L);
         shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsNteAdditionalEmailsEnabled(JsonNullable.of(true));
         shipmentSettingsPatchRequest.setIsAwbRevampEnabled(JsonNullable.of(true));
         ShipmentSettingsService spyService = spy(shipmentSettingsService);
         testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(true);
+        testShipmentSettingsDetails.setIsNteAdditionalEmailsEnabled(true);
         testShipmentSettingsDetails.setIsAwbRevampEnabled(true);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);

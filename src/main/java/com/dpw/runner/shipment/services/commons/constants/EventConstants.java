@@ -74,7 +74,12 @@ public class EventConstants {
     public static final String VGMS  = "VGMS";
     public static final String BBCK  = "BBCK";
     public static final String DORC  = "DORC";
+    public static final String PUED = "PUED";
+    public static final String TRED = "TRED";
+    public static final String BKAC = "BKAC";
     // ~~~~~~ end runner event short codes
+
+    public static final String BKAC_DESCRIPTION = "Booking Acknowledged";
     public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
 
@@ -114,5 +119,9 @@ public class EventConstants {
     public static final String ERROR_FETCHING_EVENTS_MSG = "Error fetching Events";
     public static final String ENTITY_ID = "entityId";
     public static final String ENTITY_TYPE = "entityType";
+    public static final String ORIGIN_PORT = "originPort";
+    public static final String LOAD_ON_VESSEL = "loadOnVessel";
+    public static final String MSCU = "MSCU";
+    public static final String EXPORT_LOADED_ON_VESSEL = "Export Loaded on Vessel";
     public static final String EVENT_CODE_MATCHES_FCL = "Event code {} matches FCL shipment criteria. messageId {}";
 }
