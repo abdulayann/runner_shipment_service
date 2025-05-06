@@ -147,4 +147,5 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean isNetworkFile;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private String partner;
 }
