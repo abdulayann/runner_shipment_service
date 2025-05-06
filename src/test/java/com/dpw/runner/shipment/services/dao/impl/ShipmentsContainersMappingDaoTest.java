@@ -12,8 +12,8 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContaine
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,8 +31,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -154,7 +152,7 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByContainerId(shipmentsContainersMapping.getContainerId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        assertDoesNotThrow(() ->spyService.assignShipments(shipmentsContainersMapping.getContainerId(), Set.of(shipmentsContainersMapping.getShipmentId(), shipmentsContainersMapping1.getShipmentId()), false));
+        assertDoesNotThrow(() ->spyService.assignShipments(shipmentsContainersMapping.getContainerId(), new HashSet<>(Set.of(shipmentsContainersMapping.getShipmentId(), shipmentsContainersMapping1.getShipmentId())), false));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
 
@@ -168,7 +166,7 @@ class ShipmentsContainersMappingDaoTest {
         var spyService = Mockito.spy(shipmentsContainersMappingDao);
         doReturn(List.of(shipmentsContainersMapping)).when(spyService).findByContainerId(shipmentsContainersMapping.getContainerId());
         when(shipmentsContainersMappingRepository.save(any(ShipmentsContainersMapping.class))).thenReturn(shipmentsContainersMapping1);
-        assertDoesNotThrow(() ->spyService.assignShipments(shipmentsContainersMapping.getContainerId(), Set.of(shipmentsContainersMapping.getShipmentId(), shipmentsContainersMapping1.getShipmentId()), false));
+        assertDoesNotThrow(() ->spyService.assignShipments(shipmentsContainersMapping.getContainerId(), new HashSet<>(Set.of(shipmentsContainersMapping.getShipmentId(), shipmentsContainersMapping1.getShipmentId())), false));
         verify(shipmentsContainersMappingRepository, times(1)).save(any(ShipmentsContainersMapping.class));
     }
 

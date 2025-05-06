@@ -94,6 +94,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
+    private Long originBranch;
     private Boolean intraBranch = Boolean.FALSE;
     private Integer prevShipmentStatus;
     @JsonProperty("isShipmentReadOnly")
