@@ -261,6 +261,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "rejection_remarks")
     private String rejectionRemarks;
 
+    @Column(name = "etd")
+    private LocalDateTime etd;
+
+    @Column(name = "eta")
+    private LocalDateTime eta;
+
     @Column(name = "is_reefer")
     private Boolean isReefer = false;
 

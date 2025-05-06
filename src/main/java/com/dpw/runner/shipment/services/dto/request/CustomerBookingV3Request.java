@@ -80,6 +80,8 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String orderManagementNumber;
     private Boolean isDg;
     private String rejectionRemarks;
+    private LocalDateTime etd;
+    private LocalDateTime eta;
     private Boolean isReefer;
     private String incotermsLocation;
     private LocalDateTime cargoReadinessDate;

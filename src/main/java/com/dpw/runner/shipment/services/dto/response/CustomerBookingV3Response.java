@@ -96,6 +96,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     private String rejectionRemarks;
+    private LocalDateTime etd;
+    private LocalDateTime eta;
     private Boolean isReefer;
     private String incotermsLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)

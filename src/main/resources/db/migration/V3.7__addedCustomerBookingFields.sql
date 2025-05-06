@@ -19,6 +19,8 @@ ALTER TABLE IF EXISTS customer_booking
     ADD COLUMN IF NOT EXISTS verified_gross_mass_cut_off timestamp,
     ADD COLUMN IF NOT EXISTS shipping_instruction_cutoff timestamp,
     ADD COLUMN IF NOT EXISTS dg_cut_off timestamp,
+    ADD COLUMN IF NOT EXISTS eta timestamp,
+    ADD COLUMN IF NOT EXISTS etd timestamp,
     ADD COLUMN IF NOT EXISTS reefer_cut_off timestamp,
     ADD COLUMN IF NOT EXISTS earliest_empty_equipment_pickup timestamp,
     ADD COLUMN IF NOT EXISTS latest_full_equipment_delivered_to_carrier timestamp,
