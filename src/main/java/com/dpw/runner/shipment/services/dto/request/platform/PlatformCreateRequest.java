@@ -63,4 +63,5 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     @JsonProperty(value = "reference_numbers")
     private List<ReferenceNumbersRequest> referenceNumbers;
     private List<Map<String, Object>> addresses;
+    private List<PurchaseOrdersResponse> purchaseOrders;
 }

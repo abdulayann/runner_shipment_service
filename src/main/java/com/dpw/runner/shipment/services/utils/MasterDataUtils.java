@@ -85,6 +85,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@SuppressWarnings("java:S2259")
 public class MasterDataUtils{
 
     private static class ContainerCounts {
@@ -1891,7 +1892,7 @@ public class MasterDataUtils{
     private boolean isAddressAbsent(Map<String, Object> cacheResponse, String addressCode) {
         Object orgAddressObj = cacheResponse.get(Constants.ORG_ADDRESS);
         if (orgAddressObj instanceof List<?>) {
-            return ((List<Map<String, Object>>) orgAddressObj).stream()
+            return ((List<Map<String, Object>>) orgAddressObj).stream().filter(Objects::nonNull)
                     .noneMatch(address -> Objects.equals(address.get(Constants.ADDRESS_SHORT_CODE), addressCode));
         }
         return true;
@@ -1924,7 +1925,7 @@ public class MasterDataUtils{
         List<Map<String, Object>> addressList = existingAddresses instanceof List<?>
                 ? new ArrayList<>((List<Map<String, Object>>) existingAddresses)
                 : new ArrayList<>();
-        if (addressList.stream().noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
+        if (addressList.stream().filter(Objects::nonNull).noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
             addressList.add(newAddress);
         }
         return addressList;

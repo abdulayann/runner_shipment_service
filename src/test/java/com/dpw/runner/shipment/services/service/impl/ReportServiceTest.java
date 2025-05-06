@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -62,7 +64,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -3565,8 +3569,11 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testPushFileToDocumentMasterForFCR() {
         reportRequest.setReportInfo(ReportConstants.FCR_DOCUMENT);
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
         Map<String, Object> dataRetrieved = new HashMap<>();
         dataRetrieved.put(ReportConstants.FCR_NO, "FCR_SHP00001004");
+        dataRetrieved.put(ReportConstants.TRANSPORT_MODE, "AIR");
+        dataRetrieved.put(ReportConstants.DIRECTION, "EXP");
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -3576,11 +3583,16 @@ class ReportServiceTest extends CommonMocks {
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
-    @Test
-    void testPushFileToDocumentMasterForTO() {
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATION, Constants.SHIPMENT})  // Runs test for both true and false cases
+    void testPushFileToDocumentMasterForTO(String entityName) {
         reportRequest.setReportInfo(ReportConstants.TRANSPORT_ORDER);
+        reportRequest.setEntityName(entityName);
         Map<String, Object> dataRetrieved = new HashMap<>();
         dataRetrieved.put(ReportConstants.REFERENCE_NO, "FCR_SHP00001004");
+        dataRetrieved.put(ReportConstants.TRANSPORT_MODE, "AIR");
+        dataRetrieved.put(ReportConstants.SHIPMENT_TYPE, "EXP");
+        dataRetrieved.put(ReportConstants.DIRECTION, "EXP");
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -3595,8 +3607,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
-        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(Constants.SHIPMENT);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
@@ -3613,8 +3624,7 @@ class ReportServiceTest extends CommonMocks {
     void testPushFileToDocumentMasterForSeawayBill() {
         reportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
-        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(Constants.CONSOLIDATION);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
@@ -3631,7 +3641,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.HAWB);
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
         reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
@@ -3649,8 +3658,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.MAWB);
         reportRequest.setPrintType(ReportConstants.DRAFT);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
-        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(Constants.SHIPMENT);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
@@ -3662,19 +3670,66 @@ class ReportServiceTest extends CommonMocks {
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
-
     @Test
-    void testPushFileToDocumentMasterForDefault() {
+    void testPushFileToDocumentMasterWithSelfCaller() {
+
+        reportRequest.setSelfCall(true);
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.SHIPMENT, Constants.CONSOLIDATION})
+    void testPushFileToDocumentMasterForDefault(String entityName) {
         reportRequest.setReportInfo(ReportConstants.CSD_INFO);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
-        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+        reportRequest.setEntityName(entityName);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
+        Runnable mockRunnable = mock(Runnable.class);
+
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(1)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS})
+    void testPushFileToDocumentMasterForInvalidEntityType(String entityName) {
+        reportRequest.setReportInfo(ReportConstants.CSD_INFO);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityName(entityName);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        Runnable mockRunnable = mock(Runnable.class);
+
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
 
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
@@ -3880,6 +3935,127 @@ class ReportServiceTest extends CommonMocks {
         assertNotNull(data);
     }
 
+    @Test
+    void testAddHouseBillToRepo() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+        uploadRequest.setDocType("HB");
+        uploadRequest.setId(456L);
+
+        HblDataDto hblData = new HblDataDto();
+        hblData.setVersion(2);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(List.of(hbl));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        byte[] document = "dummy".getBytes();
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", document, new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        assertEquals(3, hbl.getHblData().getVersion());
+        verify(hblDao).save(hbl);
+    }
+
+    @Test
+    void testAddHouseBillToRepo2() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+        uploadRequest.setDocType("HB");
+        uploadRequest.setId(456L);
+
+        HblDataDto hblData = new HblDataDto();
+        hblData.setVersion(null);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(List.of(hbl));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        byte[] document = "dummy".getBytes();
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", document, new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        assertNull(hbl.getHblData().getVersion());
+        verify(hblDao, never()).save(any());
+    }
+
+    @Test
+    void testAddHouseBillToRepo3() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(null);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(List.of(hbl));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        byte[] document = "dummy".getBytes();
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", document, new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        verify(hblDao, never()).save(any());
+    }
+
+    @Test
+    void testAddHouseBillToRepo4() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+
+        List<Hbl> hblListWithNulls = new ArrayList<>();
+        hblListWithNulls.add(null);
+        hblListWithNulls.add(null);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(hblListWithNulls);
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", "doc".getBytes(), new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        verify(hblDao, never()).save(any());
+    }
+    @Test
+    void testPrintForPartiesAndBarcode_success() throws Exception {
+        reportRequest.setPrintingFor_str("1,2");
+        reportRequest.setPrintBarcode(true);
+        when(docPages.getMainPageId()).thenReturn("main-page-id");
+        // Sample byte arrays
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        URL resource = classLoader.getResource("test.pdf");
+
+        if (resource == null) {
+            throw new RuntimeException("PDF file not found in test resources!");
+        }
+
+        // Convert URL to Path
+        Path path = Paths.get(resource.toURI());
+
+        // Read all bytes
+        byte[] sampleDoc = Files.readAllBytes(path);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(new ResponseEntity<>(sampleDoc, HttpStatus.OK));
+
+        Map<String, Object> data = new HashMap<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        byte[] result = reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages);
+
+        assertNotNull(result);
+        assertEquals(2, pdfBytes.size());
+    }
+    @Test
+    void testPrintForPartiesAndBarcode_Failure() throws Exception {
+        reportRequest.setPrintingFor_str("1,2");
+        reportRequest.setPrintBarcode(true);
+        when(docPages.getMainPageId()).thenReturn("main-page-id");
+        // Read all bytes
+        doThrow(new RuntimeException()).when(documentService).downloadDocumentTemplate(any(), any());
+        Map<String, Object> data = new HashMap<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
+        assertThrows(GenericException.class,() -> reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages));
+    }
     private Runnable mockRunnable() {
         return null;
     }

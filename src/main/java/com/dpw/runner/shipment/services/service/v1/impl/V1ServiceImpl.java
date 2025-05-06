@@ -430,6 +430,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.getUserWithGivenPermission}")
     private String getUserWithGivenPermission;
 
+    @Value("${v1service.url.base}${v1service.url.unlocationListAllByIdentifiers}")
+    private String unlocationListAllUrl;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -1321,6 +1324,24 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            locationResponse = this.restTemplate.postForEntity(this.unlocationListAllUrl, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
+            return locationResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            log.error("HTTP Error: Status Code={}, Raw Status Code={}, Response Body={}", ex.getStatusCode().value(), ex.getRawStatusCode(), ex.getResponseBodyAsString(), ex);
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchActiveUnlocation(Object request) {
+        ResponseEntity<V1DataResponse> locationResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return locationResponse.getBody();
@@ -1331,6 +1352,7 @@ public class V1ServiceImpl implements IV1Service {
             throw new V1ServiceException(var7.getMessage());
         }
     }
+
     @Override
     public V1DataResponse stateBasedList(Object request) {
         ResponseEntity<V1DataResponse> locationResponse = null;
@@ -1454,92 +1476,19 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public V1DataResponse listCousinBranches(Object request) {
-        String cacheKeyTenantId = keyGenerator.customCacheKey(UserContext.getUser().getTenantId());
-        Cache cache = cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE);
-
-        if(!(request instanceof CommonV1ListRequest etRequest && etRequest.getContainsText() != null)) {
-            V1DataResponse cachedResponse = getFromCache(cache, cacheKeyTenantId);
-            if (cachedResponse != null) {
-                return cachedResponse;
-            }
-        }
-
-        V1DataResponse responseBody = callCousinBranchAPI(request, cacheKeyTenantId);
-
-        putInCache(cache, cacheKeyTenantId, responseBody);
-
-        return responseBody;
-    }
-
-    private V1DataResponse getFromCache(Cache cache, String key) {
-        if (cache == null) {
-            log.warn("Cache '{}' not available. Proceeding with API call.", CacheConstants.COUSIN_BRANCHES_CACHE);
-            return null;
-        }
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
 
         try {
-            V1DataResponse cached = cache.get(key, V1DataResponse.class);
-            if (cached != null) {
-                log.info("Returning cached cousin branches for cache tenant key: {}", key);
-            } else {
-                log.info("No cached cousin branches found for cache tenant key: {}", key);
-            }
-            return cached;
-        } catch (Exception e) {
-            log.warn("Failed to read from cache for cache tenant key {}: {}", key, e.getMessage());
-            return null;
-        }
-    }
-
-    private void putInCache(Cache cache, String key, V1DataResponse responseBody) {
-        if (cache == null) return;
-        try {
-            cache.put(key, responseBody);
-            log.info("Cached cousin branches for cache tenant key: {}", key);
-        } catch (Exception e) {
-            log.warn("Failed to write to cache for cache tenant key {}: {}", key, e.getMessage());
-        }
-    }
-
-    private V1DataResponse callCousinBranchAPI(Object request, String cacheKeyTenantId) {
-        try {
-            long startTime = System.currentTimeMillis();
+            long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-
-            ResponseEntity<V1DataResponse> response = restTemplate.postForEntity(
-                    LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class
-            );
-
-            long elapsed = System.currentTimeMillis() - startTime;
-            log.info("API call to listCousinBranches took {} ms for cache tenant key: {}", elapsed, cacheKeyTenantId);
-
-            V1DataResponse body = response.getBody();
-            if (body == null) {
-                log.error("Received null response from cousin branch service for cache tenant key: {}", cacheKeyTenantId);
-                throw new V1ServiceException("Received null response from cousin branch service.");
-            }
-
-            return body;
-
+            masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class);
+            log.info("Token time taken in listCousinBranches() function: {} ms", System.currentTimeMillis() - time);
+            return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(parseError(ex, cacheKeyTenantId));
-        } catch (Exception e) {
-            log.error("Unexpected error in listCousinBranches for cache tenant key {}: {}", cacheKeyTenantId, e.getMessage(), e);
-            throw new V1ServiceException("Unexpected error occurred while fetching cousin branches.");
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
         }
-    }
-
-    private String parseError(HttpStatusCodeException ex, String cacheKeyTenantId) {
-        try {
-            V1ErrorResponse errorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class);
-            if (errorResponse != null && errorResponse.getError() != null) {
-                return errorResponse.getError().getMessage();
-            }
-        } catch (Exception parseEx) {
-            log.error("Failed to parse error response for cache tenant key {}: {}", cacheKeyTenantId, parseEx.getMessage());
-        }
-        log.error("HTTP error while fetching cousin branches for cache tenant key {}: {}", cacheKeyTenantId, ex.getMessage());
-        return "Unknown error";
     }
 
     @Override
@@ -2745,7 +2694,11 @@ public class V1ServiceImpl implements IV1Service {
             response = this.restTemplate.postForEntity(this.getUserWithGivenPermission, entity, V1DataResponse.class);
 
             log.info("Token time taken in getUsersWithGivenPermissions() function {} ms", (System.currentTimeMillis() - time));
-            return jsonHelper.convertValueToList(response.getBody().getEntities(), UsersDto.class);
+            var body = response.getBody();
+            if (body != null && body.getEntities() != null) {
+                return jsonHelper.convertValueToList(body.getEntities(), UsersDto.class);
+            }
+            return new ArrayList<>();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

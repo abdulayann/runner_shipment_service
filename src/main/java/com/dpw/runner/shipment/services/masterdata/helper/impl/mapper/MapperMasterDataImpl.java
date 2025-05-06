@@ -379,4 +379,8 @@ public class MapperMasterDataImpl implements IMasterDataService {
         return null;
     }
 
+    @Override
+    public DependentServiceResponse fetchAllUnlocationData(Object request) {
+        return null;
+    }
 }

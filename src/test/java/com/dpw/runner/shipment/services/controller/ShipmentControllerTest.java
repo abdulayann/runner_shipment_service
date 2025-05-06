@@ -27,11 +27,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateShipment
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -42,6 +38,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -1385,6 +1382,32 @@ class ShipmentControllerTest {
         when(shipmentService.fetchBillChargesShipmentList(any())).thenThrow(new RuntimeException());
         var responseEntity = shipmentController.listBillChargesShipments("guid", any(), null, null );
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuidAndDpsExecutionState() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuidAndDpsExecutionState_Failure() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest)).thenThrow(new DpsException());
+        // Test
+        assertThrows(DpsException.class, () -> shipmentController.getMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest));
     }
 
     @Test
