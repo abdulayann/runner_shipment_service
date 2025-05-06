@@ -796,9 +796,9 @@ public class ShipmentService implements IShipmentService {
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
         List<ShipmentListResponse> shipmentListResponses = ShipmentMapper.INSTANCE.toShipmentListResponses(lst);
+        shipmentListResponses = setDpsData(shipmentListResponses);
         shipmentListResponses.forEach(response -> {
             setEventData(response);
-            setDpsData(response);
             setShipperReferenceNumber(response);
             if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
@@ -813,52 +813,60 @@ public class ShipmentService implements IShipmentService {
     }
 
     /**
-     * Sets the DPS and CGS status on the given {@link ShipmentListResponse} based on associated {@link DpsEvent}s retrieved using the shipment GUID.
-     * <p>
-     * - DPS status is set to "On Hold" if any event is of type HOLD and state is either PER_BLOCKED or HOLD. - CGS status is set based on the presence of HOLD or WARNING type
-     * events.
+     * Enriches a list of {@link ShipmentListResponse} objects with DPS and CGS status information.
      *
-     * @param response the shipment response object on which statuses are to be set
+     * @param responses list of shipment response objects to be updated
+     * @return the same list with updated DPS and CGS statuses
      */
-    public void setDpsData(ShipmentListResponse response) {
-        String guid = response.getGuid().toString();
-
-        // Fetch all DPS events for the given shipment GUID
-        List<DpsEvent> dpsEvents = dpsEventService.findDpsEventByGuidAndExecutionState(guid);
-        log.info("Fetched {} DPS events for shipment GUID: {}", dpsEvents.size(), guid);
-
-        // Determine DPS status based on HOLD events with PER_BLOCKED or HOLD state
-        boolean isOnDpsHold = dpsEvents.stream().anyMatch(event ->
-                DpsWorkflowType.DPS_HOLD.equals(event.getWorkflowType()) &&
-                        (DpsWorkflowState.PER_BLOCKED.equals(event.getState()) || DpsWorkflowState.HOLD.equals(event.getState()))
-        );
-
-        if (isOnDpsHold) {
-            response.setDpsStatus("On Hold");
-            log.info("DPS status set to 'On Hold' for shipment GUID: {}", guid);
-        } else {
-            response.setDpsStatus("No Hold");
-            log.info("DPS status set to 'No Hold' for shipment GUID: {}", guid);
+    public List<ShipmentListResponse> setDpsData(List<ShipmentListResponse> responses) {
+        if (responses == null || responses.isEmpty()) {
+            return Collections.emptyList();
         }
 
-        // Determine CGS status based on HOLD or WARNING events
-        boolean hasHoldEvent = dpsEvents.stream().anyMatch(event ->
-                DpsWorkflowType.HOLD.equals(event.getWorkflowType())
-        );
-        boolean hasWarningEvent = dpsEvents.stream().anyMatch(event ->
-                DpsWorkflowType.WARNING.equals(event.getWorkflowType())
-        );
+        // Extract all GUIDs
+        List<String> guids = responses.stream()
+                .map(resp -> resp.getGuid().toString())
+                .collect(Collectors.toList());
 
-        if (hasHoldEvent) {
-            response.setCgsStatus("On Hold");
-            log.info("CGS status set to 'On Hold' for shipment GUID: {}", guid);
-        } else if (hasWarningEvent) {
-            response.setCgsStatus("On Warning");
-            log.info("CGS status set to 'On Warning' for shipment GUID: {}", guid);
-        } else {
-            response.setCgsStatus("No Hold");
-            log.info("CGS status set to 'No Hold' for shipment GUID: {}", guid);
+        // Fetch all DPS events for the given GUIDs
+        Map<String, List<DpsEvent>> eventsByGuid = dpsEventService.findDpsEventByGuidIn(guids);
+        log.info("Fetched DPS events for {} shipment GUIDs", eventsByGuid.size());
+
+        for (ShipmentListResponse response : responses) {
+            String guid = response.getGuid().toString();
+            List<DpsEvent> dpsEvents = eventsByGuid.getOrDefault(guid, Collections.emptyList());
+            log.info("Processing {} DPS events for shipment GUID: {}", dpsEvents.size(), guid);
+
+            // Check DPS Hold status
+            boolean isOnDpsHold = dpsEvents.stream().anyMatch(event ->
+                    DpsWorkflowType.DPS_HOLD.equals(event.getWorkflowType()) &&
+                            (DpsWorkflowState.PER_BLOCKED.equals(event.getState()) ||
+                                    DpsWorkflowState.HOLD.equals(event.getState()))
+            );
+
+            response.setDpsStatus(isOnDpsHold ? "On Hold" : "No Hold");
+            log.info("DPS status set to '{}' for shipment GUID: {}", response.getDpsStatus(), guid);
+
+            // Check CGS status
+            boolean hasHoldEvent = dpsEvents.stream().anyMatch(event ->
+                    DpsWorkflowType.HOLD.equals(event.getWorkflowType())
+            );
+            boolean hasWarningEvent = dpsEvents.stream().anyMatch(event ->
+                    DpsWorkflowType.WARNING.equals(event.getWorkflowType())
+            );
+
+            if (hasHoldEvent) {
+                response.setCgsStatus("On Hold");
+            } else if (hasWarningEvent) {
+                response.setCgsStatus("On Warning");
+            } else {
+                response.setCgsStatus("No Hold");
+            }
+
+            log.info("CGS status set to '{}' for shipment GUID: {}", response.getCgsStatus(), guid);
         }
+
+        return responses;
     }
 
     private List<IRunnerResponse> convertEntityListToDtoListForAttachListShipment(List<ShipmentDetails> lst, boolean getMasterData) {

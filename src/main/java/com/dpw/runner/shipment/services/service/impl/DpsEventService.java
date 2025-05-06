@@ -27,8 +27,10 @@ import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -292,7 +294,7 @@ public class DpsEventService implements IDpsEventService {
         if (Strings.isNullOrEmpty(shipmentGuid)) {
             throw new DpsException("GUID can't be null. Please provide guid!");
         }
-        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid);
+        List<DpsEvent> dpsEventList = findDpsEventByGuid(shipmentGuid);
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
@@ -329,8 +331,30 @@ public class DpsEventService implements IDpsEventService {
      * @return a list of active {@link DpsEvent} objects linked to the specified shipment GUID
      */
     @Override
-    public List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid) {
+    public List<DpsEvent> findDpsEventByGuid(String shipmentGuid) {
         return dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
+    }
+
+    @Override
+    public Map<String, List<DpsEvent>> findDpsEventByGuidIn(List<String> shipmentGuids) {
+        // Fetch all active DPS events matching any of the provided shipment GUIDs
+        List<DpsEvent> allEvents = dpsEventRepository.findDpsEventsByGuidInAndExecutionState(
+                shipmentGuids,
+                DpsExecutionStatus.ACTIVE.name()
+        );
+
+        // Initialize the result map to group events by shipment GUID
+        Map<String, List<DpsEvent>> eventsGroupedByGuid = new HashMap<>();
+
+        // Iterate over each event and group them under their respective GUID
+        for (DpsEvent event : allEvents) {
+            eventsGroupedByGuid
+                    .computeIfAbsent(event.getEntityId(), k -> new ArrayList<>()) // Create a new list if none exists
+                    .add(event); // Add the current event to the corresponding list
+        }
+
+        // Return the map of GUID -> list of corresponding DPS events
+        return eventsGroupedByGuid;
     }
 
     @Override

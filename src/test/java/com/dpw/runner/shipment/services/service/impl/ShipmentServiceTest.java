@@ -10612,64 +10612,89 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSetDpsData_OnHoldAndWarning() {
-        // given
-        String guid = UUID.randomUUID().toString();
-        ShipmentListResponse response = new ShipmentListResponse();
-        response.setGuid(UUID.fromString(guid));
+    void testSetDpsData_MultipleShipments_OnHoldAndWarning() {
+        String guid1 = UUID.randomUUID().toString();
+        String guid2 = UUID.randomUUID().toString();
 
-        List<DpsEvent> events = List.of(
-                createEvent(DpsWorkflowType.HOLD, DpsWorkflowState.PER_BLOCKED),
-                createEvent(DpsWorkflowType.DPS_HOLD, DpsWorkflowState.PER_BLOCKED),
-                createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
-        );
+        ShipmentListResponse s1 = new ShipmentListResponse();
+        s1.setGuid(UUID.fromString(guid1));
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
+        ShipmentListResponse s2 = new ShipmentListResponse();
+        s2.setGuid(UUID.fromString(guid2));
 
-        // when
-        shipmentService.setDpsData(response);
+        List<ShipmentListResponse> input = List.of(s1, s2);
 
-        // then
-        assertEquals("On Hold", response.getDpsStatus());
-        assertEquals("On Hold", response.getCgsStatus());
+        Map<String, List<DpsEvent>> mockMap = new HashMap<>();
+        mockMap.put(guid1, List.of(
+                createEvent(DpsWorkflowType.DPS_HOLD, DpsWorkflowState.HOLD, guid1),
+                createEvent(DpsWorkflowType.HOLD, DpsWorkflowState.PER_BLOCKED, guid1)
+        ));
+        mockMap.put(guid2, List.of(
+                createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD, guid2)
+        ));
+
+        when(dpsEventService.findDpsEventByGuidIn(List.of(guid1, guid2)))
+                .thenReturn(mockMap);
+
+        List<ShipmentListResponse> result = shipmentService.setDpsData(input);
+
+        ShipmentListResponse r1 = result.get(0);
+        ShipmentListResponse r2 = result.get(1);
+
+        assertEquals("On Hold", r1.getDpsStatus());
+        assertEquals("On Hold", r1.getCgsStatus());
+
+        assertEquals("No Hold", r2.getDpsStatus());
+        assertEquals("On Warning", r2.getCgsStatus());
     }
 
     @Test
-    void testSetDpsData_OnlyWarning() {
-        String guid = UUID.randomUUID().toString();
-        ShipmentListResponse response = new ShipmentListResponse();
-        response.setGuid(UUID.fromString(guid));
+    void testSetDpsData_MultipleShipments_NoEvents() {
+        String guid1 = UUID.randomUUID().toString();
+        String guid2 = UUID.randomUUID().toString();
 
-        List<DpsEvent> events = List.of(
-                createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
-        );
+        ShipmentListResponse s1 = new ShipmentListResponse();
+        s1.setGuid(UUID.fromString(guid1));
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
+        ShipmentListResponse s2 = new ShipmentListResponse();
+        s2.setGuid(UUID.fromString(guid2));
 
-        shipmentService.setDpsData(response);
+        List<ShipmentListResponse> input = List.of(s1, s2);
 
-        assertEquals("No Hold", response.getDpsStatus());
-        assertEquals("On Warning", response.getCgsStatus());
+        when(dpsEventService.findDpsEventByGuidIn(List.of(guid1, guid2)))
+                .thenReturn(Collections.emptyMap());
+
+        List<ShipmentListResponse> result = shipmentService.setDpsData(input);
+
+        result.forEach(r -> {
+            assertEquals("No Hold", r.getDpsStatus());
+            assertEquals("No Hold", r.getCgsStatus());
+        });
     }
 
     @Test
-    void testSetDpsData_NoEvents() {
+    void testSetDpsData_OnlyWarningEvent() {
         String guid = UUID.randomUUID().toString();
         ShipmentListResponse response = new ShipmentListResponse();
         response.setGuid(UUID.fromString(guid));
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(Collections.emptyList());
+        Map<String, List<DpsEvent>> mockMap = Map.of(
+                guid, List.of(createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.HOLD, guid))
+        );
 
-        shipmentService.setDpsData(response);
+        when(dpsEventService.findDpsEventByGuidIn(List.of(guid))).thenReturn(mockMap);
 
-        assertEquals("No Hold", response.getDpsStatus());
-        assertEquals("No Hold", response.getCgsStatus());
+        List<ShipmentListResponse> result = shipmentService.setDpsData(List.of(response));
+
+        assertEquals("No Hold", result.get(0).getDpsStatus());
+        assertEquals("On Warning", result.get(0).getCgsStatus());
     }
 
-    private DpsEvent createEvent(DpsWorkflowType type, DpsWorkflowState state) {
+    private DpsEvent createEvent(DpsWorkflowType type, DpsWorkflowState state, String guid) {
         DpsEvent event = new DpsEvent();
         event.setWorkflowType(type);
         event.setState(state);
+        event.setEntityId(guid);
         return event;
     }
 

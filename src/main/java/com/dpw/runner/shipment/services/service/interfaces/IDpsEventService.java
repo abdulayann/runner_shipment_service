@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.http.ResponseEntity;
 
@@ -27,7 +28,9 @@ public interface IDpsEventService {
 
     ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuidAndExecutionState(GetMatchingRulesRequest getMatchingRulesRequest);
 
-    List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid);
+    List<DpsEvent> findDpsEventByGuid(String shipmentGuid);
+
+    Map<String, List<DpsEvent>> findDpsEventByGuidIn(List<String> shipmentGuids);
 
     List<DpsEvent> findDpsEventByGuidAndExecutionStateIn(String shipmentGuid, List<DpsExecutionStatus> dpsExecutionStatusList);
 
