@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.shipment_console_dtos;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,10 +14,11 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ShipmentPacksAssignContainerTrayDto {
+public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
 
     private List<Shipments> shipmentsList;
     private Boolean isFCLShipmentAssigned;
+    private Long assignedFCLShipment;
 
     @Data
     @Builder
@@ -34,7 +36,7 @@ public class ShipmentPacksAssignContainerTrayDto {
         private BigDecimal volume;
         private String volumeUnit;
         private List<Packages> packingList;
-        private boolean assigned;
+        private boolean selectedContainerAssigned;
         private String shipmentType;
 
         @Data

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 
 public interface IPackingV3Service {
     PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException;
@@ -25,9 +26,11 @@ public interface IPackingV3Service {
 
     void downloadPacking(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException;
 
-    PackingResponse retrieveById(CommonRequestModel commonRequestModel);
+    PackingResponse retrieveById(Long id, String guid);
 
     PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData);
 
     PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel);
+    Map<String, Object> getAllMasterData(Long id);
+    Map<String, Object> fetchAllMasterDataByKey(PackingResponse packingResponse);
 }

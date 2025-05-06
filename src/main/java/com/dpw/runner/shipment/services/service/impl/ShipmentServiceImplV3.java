@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
@@ -171,6 +172,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ShipmentValidationV3Util shipmentValidationV3Util;
     private final IDpsEventService dpsEventService;
     private final ModelMapper modelMapper;
+    private final ConsolidationV3Service consolidationV3Service;
 
     @Autowired
     public ShipmentServiceImplV3(
@@ -203,7 +205,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             EventsV3Util eventsV3Util,
             ShipmentValidationV3Util shipmentValidationV3Util,
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
-            IDpsEventService dpsEventService, ModelMapper modelMapper) {
+            IDpsEventService dpsEventService, ModelMapper modelMapper,
+            ConsolidationV3Service consolidationV3Service) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -235,6 +238,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.eventsV3Util = eventsV3Util;
         this.shipmentValidationV3Util = shipmentValidationV3Util;
         this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
+        this.consolidationV3Service = consolidationV3Service;
     }
 
     @Override
@@ -1193,6 +1197,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
+    public String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException{
+        return consolidationV3Service.attachShipments(shipmentAttachDetachRequest);
+    }
+
+    @Override
     public ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId) {
         ListCommonRequest listCommonRequest = constructListCommonRequest(CONSOLIDATION_ID, consolidationId, "=");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentService.tableNames);
@@ -1202,13 +1211,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<ShipmentsContainersMapping> shipmentsContainersMappingsList = shipmentsContainersMappingDao.findByContainerId(containerId);
         List<Long> assignedShipmentsList = shipmentsContainersMappingsList.stream().map(e -> e.getShipmentId()).toList();
         response.setIsFCLShipmentAssigned(false);
-        for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
-            if (assignedShipmentsList.contains(shipments.getId())) {
-                shipments.setAssigned(true);
-                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
+        for(ShipmentPacksAssignContainerTrayDto.Shipments shipments: response.getShipmentsList()) {
+            if(assignedShipmentsList.contains(shipments.getId())) {
+                shipments.setSelectedContainerAssigned(true);
+                if(CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
                     response.setIsFCLShipmentAssigned(true);
             } else {
-                shipments.setAssigned(false);
+                shipments.setSelectedContainerAssigned(false);
             }
         }
         return response;

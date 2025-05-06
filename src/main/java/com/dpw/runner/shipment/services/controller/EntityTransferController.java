@@ -71,6 +71,22 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @PostMapping(EntityTransferConstants.SEND_ENTITY_TO_EXTERNAL_SYSTEM)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.SEND_SHIPMENT_SUCCESSFUL, response = SendShipmentResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(@RequestBody @Valid SendFileToExternalRequest request) {
+        String responseMsg;
+        try {
+            return entityTransferService.sendFileToExternalSystem(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponse.class)
     })

@@ -23,6 +23,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 @EnableCaching
 @Generated
+@SuppressWarnings("java:S2259")
 public class RedisConfig {
 
     @Value("${redis.host}")

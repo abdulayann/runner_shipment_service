@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 import java.util.List;
+import java.util.Map;
 
 
 public interface IRoutingsV3Service{
@@ -23,4 +24,5 @@ public interface IRoutingsV3Service{
     RoutingsResponse retrieveById(CommonRequestModel commonRequestModel) throws RunnerException;
     BulkRoutingResponse updateBulk(List<RoutingsRequest> request, String module) throws RunnerException;
     BulkRoutingResponse deleteBulk(List<RoutingsRequest> request, String module) throws RunnerException;
+    Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel);
 }

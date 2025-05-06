@@ -175,6 +175,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isEntityTransferPrerequisiteEnabled;
     private Boolean isNetworkTransferEntityEnabled;
     private Boolean isAutomaticTransferEnabled;
+    private Boolean isNteAdditionalEmailsEnabled;
     private Boolean eventsRevampEnabled;
     private Boolean isAlwaysUtilization;
     private Boolean isUtilizationForContainerQuoted;
@@ -188,4 +189,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean countryAirCargoSecurity;
     private Boolean preAlertEmailAndLogs;
     private Boolean isAmrAirFreightEnabled;
+    private Boolean isExternalFileTransferEnabled;
 }

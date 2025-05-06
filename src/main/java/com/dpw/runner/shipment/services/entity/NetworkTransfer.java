@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -77,5 +78,9 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Column(name = "transferred_date")
     private LocalDateTime transferredDate;
+
+    @Column(name = "source")
+    @Enumerated(EnumType.STRING)
+    private NetworkTransferSource source;
 
 }

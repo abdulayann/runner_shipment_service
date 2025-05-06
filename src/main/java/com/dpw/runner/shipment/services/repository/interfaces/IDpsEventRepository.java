@@ -13,6 +13,9 @@ public interface IDpsEventRepository extends JpaRepository<DpsEvent, Long> {
     @Query(value = "SELECT * FROM dps_event WHERE entity_id = ?1 AND status = ?2", nativeQuery = true)
     List<DpsEvent> findDpsEventByGuidAndExecutionState(String guid, String dpsExecutionStatus);
 
+    @Query(value = "SELECT * FROM dps_event WHERE entity_id = ?1 AND status IN (?2)", nativeQuery = true)
+    List<DpsEvent> findDpsEventByGuidAndExecutionStateIn(String guid, List<String> dpsExecutionStatusList);
+
     DpsEvent findByExecutionId(UUID executionId);
 
     @Query(value = """

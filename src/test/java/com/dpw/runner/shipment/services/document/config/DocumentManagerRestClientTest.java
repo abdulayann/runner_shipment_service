@@ -307,7 +307,7 @@ class DocumentManagerRestClientTest {
         boolean isSuccess = true;
         when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
-        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.list(new Object());
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.list(new Object(), 1L, 1L);
         assertNull(actualResponse);
         assertTrue(isSuccess);
     }
@@ -318,7 +318,7 @@ class DocumentManagerRestClientTest {
         ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
-        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.list(new Object()));
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.list(new Object(), 1L, 1L));
         assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 }

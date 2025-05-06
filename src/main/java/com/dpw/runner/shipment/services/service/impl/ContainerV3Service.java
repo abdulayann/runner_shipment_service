@@ -11,11 +11,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -23,12 +19,10 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -44,13 +38,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
-import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,19 +53,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -809,6 +790,146 @@ public class ContainerV3Service implements IContainerV3Service {
     private void setDefaultIncludeColumns() {
         defaultIncludeColumns = FieldUtils.getNonRelationshipFields(Containers.class);
         defaultIncludeColumns.addAll(List.of("id","guid","tenantId"));
+    }
+
+    @Override
+    @Transactional
+    public ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException {
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        Map<Long, Packing> packingListMap = new HashMap<>();
+        List<Packing> assignedPacks = new ArrayList<>();
+        List<ShipmentsContainersMapping> shipmentsContainersMappings = new ArrayList<>();
+
+        // fetch data
+        Containers container = fetchDataForAssignContainer(request, shipmentDetailsList,
+                                                                packingListMap, assignedPacks, shipmentsContainersMappings);
+
+        List<Long> assignedShipIds = shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList();
+        List<Long> shipmentIdsToSetContainerCargo = new ArrayList<>();
+
+        // Do calculations/logic implementation
+        List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsList, assignedShipIds, request,
+                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
+
+        // Save the data
+        container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container, shipmentIdsForAttachment);
+
+        return jsonHelper.convertValue(container, ContainerResponse.class);
+    }
+
+    private Containers fetchDataForAssignContainer(AssignContainerRequest request,
+                                             List<ShipmentDetails> shipmentDetailsList, Map<Long, Packing> packingListMap,
+                                             List<Packing> assignedPacks, List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+        // Identify requests
+        Long containerId = request.getContainerId();
+        Set<Long> shipmentIdsRequestedList = request.getShipmentPackIds().keySet();
+        List<Long> packIdsRequestedList = request.getShipmentPackIds().values()
+                .stream()
+                .filter(Objects::nonNull)
+                .flatMap(List::stream)
+                .filter(Objects::nonNull).toList();
+
+        // Fetch data to be assigned
+        Containers container = containerDao.findById(containerId)
+                .orElseThrow(() -> new EntityNotFoundException("Container not found with ID: " + containerId));
+        shipmentDetailsList.addAll(shipmentDao.findShipmentsByIds(shipmentIdsRequestedList));
+        if(!listIsNullOrEmpty(packIdsRequestedList)) {
+            packingListMap.putAll(packingDao.findByIdIn(packIdsRequestedList).stream().collect(Collectors.toMap(Packing::getId, Function.identity())));
+        }
+
+        // assigning zero to weight and volume as it will be freshly recalculated
+        container.setNetWeight(BigDecimal.ZERO);
+        container.setGrossVolume(BigDecimal.ZERO);
+
+        // Fetch data already assigned
+        assignedPacks.addAll(packingDao.findByContainerIdIn(List.of(containerId)).stream().toList());
+        shipmentsContainersMappings.addAll(shipmentsContainersMappingDao.findByContainerId(containerId));
+
+        return container;
+    }
+
+    private List<Long> assignContainerCalculationsAndLogic(List<ShipmentDetails> shipmentDetailsList, List<Long> assignedShipIds,
+                                                           AssignContainerRequest request, List<Long> shipmentIdsToSetContainerCargo,
+                                                           Containers container, Map<Long, Packing> packingListMap,
+                                                           List<Packing> assignedPacks) throws RunnerException {
+        List<Long> shipmentIdsForAttachment = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
+            Long id = shipmentDetails.getId();
+            if(!assignedShipIds.contains(id)) {
+                shipmentIdsForAttachment.add(id); // need to assign this shipment
+            }
+            if(listIsNullOrEmpty(request.getShipmentPackIds().get(id))) { // zero packages came for this shipment
+                assignContainerOnlyToShipment(shipmentDetails, container, shipmentIdsToSetContainerCargo);
+            } else { // assigning some packages
+                assignContainerToShipmentAndPackages(shipmentDetails, request, container, packingListMap);
+            }
+        }
+        if(!listIsNullOrEmpty(assignedPacks)) { // adding weight/volume of already assigned packs
+            for(Packing assignedPack: assignedPacks) {
+                addPackageWeightVolumeToContainer(container, assignedPack);
+            }
+        }
+        containerV3Util.setContainerGrossWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        return shipmentIdsForAttachment;
+    }
+
+    private void assignContainerOnlyToShipment(ShipmentDetails shipmentDetails, Containers container,
+                                               List<Long> shipmentIdsToSetContainerCargo) throws RunnerException {
+        if(shipmentDetails.getContainerAssignedToShipmentCargo() == null &&
+                !checkIfAnyPackIsAssignedToContainer(shipmentDetails)) { // if both cargo summary and package not attached to any container
+            shipmentIdsToSetContainerCargo.add(shipmentDetails.getId()); // assign container to shipment cargo
+            addShipmentCargoToContainer(container, shipmentDetails);
+        }
+    }
+
+    private void addShipmentCargoToContainer(Containers container, ShipmentDetails shipmentDetails) throws RunnerException {
+        container.setNetWeight(containerV3Util.getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), shipmentDetails.getWeight(), shipmentDetails.getWeightUnit()));
+        container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit()));
+    }
+
+    private void assignContainerToShipmentAndPackages(ShipmentDetails shipmentDetails, AssignContainerRequest request, Containers container,
+                                                      Map<Long, Packing> packingListMap) throws RunnerException {
+        containerValidationUtil.validateCanAssignPackageToContainer(shipmentDetails);
+        for(Long packingId: request.getShipmentPackIds().get(shipmentDetails.getId())) { // assigning new packs and adding its weight/volume
+            Packing packing = packingListMap.get(packingId);
+            packing.setContainerId(container.getId());
+            addPackageWeightVolumeToContainer(container, packing);
+        }
+    }
+
+    private void addPackageWeightVolumeToContainer(Containers container, Packing packing) throws RunnerException {
+        container.setNetWeight(containerV3Util.getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
+        container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), packing.getVolume(), packing.getVolumeUnit()));
+    }
+
+    private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
+                                                  Containers container, List<Long> shipmentIdsForAttachment) {
+        if(!listIsNullOrEmpty(shipmentIdsToSetContainerCargo))
+            shipmentDao.setShipmentIdsToContainer(shipmentIdsToSetContainerCargo, container.getId());
+        if(!packingListMap.isEmpty() && !listIsNullOrEmpty(packingListMap.values().stream().toList()))
+            packingDao.saveAll(packingListMap.values().stream().toList());
+        container = containerDao.save(container);
+
+        // assign shipment to containers
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
+        for (Long id : shipmentIdsForAttachment) {
+            ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
+            entity.setShipmentId(id);
+            entity.setContainerId(container.getId());
+            shipmentsContainersMappingList.add(entity);
+        }
+        if(!listIsNullOrEmpty(shipmentsContainersMappingList))
+            shipmentsContainersMappingDao.saveAll(shipmentsContainersMappingList);
+        return container;
+    }
+
+    private boolean checkIfAnyPackIsAssignedToContainer(ShipmentDetails shipmentDetails) {
+        for(Packing packing: shipmentDetails.getPackingList()) {
+            if(packing.getContainerId() != null)
+                return true;
+        }
+        return false;
     }
 
 }

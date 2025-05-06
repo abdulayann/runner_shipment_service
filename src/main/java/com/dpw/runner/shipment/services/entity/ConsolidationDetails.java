@@ -94,11 +94,11 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "co_load_mbl")
     @Size(max=64, message = "max size is 64 for co_load_mbl")
-    private String coLoadMBL; // Coloader BL No.
+    private String coLoadMBL; // Coloader BL No., booking agent bl no
 
     @Column(name = "co_load_booking_reference")
     @Size(max=64, message = "max size is 64 for co_load_booking_reference")
-    private String coLoadBookingReference; // Coloader Booking Number
+    private String coLoadBookingReference; // Coloader Booking Number, booking agent booking number
 
     @Column(name = "manifest_print")
     @MasterData(type = MasterDataType.PRINT_OPTIONS)
@@ -350,7 +350,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String coLoadCarrierName; // Coloader
 
     @Column(name = "booking_agent_id")
-    private Long bookingAgent;
+    private Long bookingAgent; //booking agent
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
@@ -488,6 +488,10 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "is_transferred_to_receiving_branch")
     private Boolean isTransferredToReceivingBranch;
+
+    @Column(name = "partner")
+    @Size(max = 64, message = "max size is 64 for partner")
+    private String partner;
 
     @Override
     public boolean equals(Object o) {

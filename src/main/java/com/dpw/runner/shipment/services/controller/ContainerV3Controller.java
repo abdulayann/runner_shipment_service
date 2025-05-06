@@ -10,10 +10,8 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -29,6 +27,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
+
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_CONTAINERS;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_SUCCESS;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
@@ -100,4 +101,11 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerListResponse,
             containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponse.class)})
+    @PostMapping(ASSIGN_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request));
+    }
+
 }

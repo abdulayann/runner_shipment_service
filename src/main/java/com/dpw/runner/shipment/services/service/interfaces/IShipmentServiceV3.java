@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
@@ -36,4 +39,6 @@ public interface IShipmentServiceV3 {
     Optional<ShipmentDetails> findById(Long shipmentId);
 
     void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse);
+
+    String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 }

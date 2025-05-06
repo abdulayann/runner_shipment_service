@@ -75,6 +75,7 @@ public class AttachListShipmentResponse implements IRunnerResponse {
     private long sourceTenantId;
     private long documentationPartner;
     private Long triangulationPartner;
+    private Long originBranch;
     private long receivingBranch;
     private boolean intraBranch;
     private Integer prevShipmentStatus;
