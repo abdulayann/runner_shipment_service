@@ -837,4 +837,9 @@ public class ShipmentDao implements IShipmentDao {
         }
         return false;
     }
+
+    @Override
+    public void setShipmentIdsToContainer(List<Long> shipmentIds, Long containerId) {
+        shipmentRepository.setShipmentIdsToContainer(shipmentIds, containerId);
+    }
 }
