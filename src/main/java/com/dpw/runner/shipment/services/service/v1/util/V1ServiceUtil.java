@@ -250,7 +250,7 @@ public class V1ServiceUtil {
                     .shipmentGuid(StringUtility.convertToString(shipmentGuid))
                     .taskCreation(taskCreation)
                     .build());
-            if (!response.getIsValid()){
+            if (!Boolean.TRUE.equals(response.getIsValid())){
                 if(response.getTaskRequiredMessage() != null){
                     creditLimitResponse.setIsValid(response.getIsValid());
                     creditLimitResponse.setTaskRequiredMessage(response.getTaskRequiredMessage());

@@ -61,4 +61,5 @@ public class ShipmentContainers implements IRunnerResponse {
     public String PackingGroup;
     public String FlashPointAndUnit;
     public String MarinePollutant;
+    public String PacksUnitDesc;
 }

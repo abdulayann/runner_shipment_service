@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.request.TagsData;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -53,7 +54,7 @@ class NotificationRestClientTest {
     private JsonHelper jsonHelper;
 
     @Test
-    void testSendEmail() throws UnsupportedEncodingException, RestClientException {
+    void testSendEmail() throws IOException, RestClientException {
         // Arrange
         UserContext.setUser(UsersDto.builder().Id(1).Username("a").TenantId(1).build());
         when(restTemplate.exchange(Mockito.<String>any(), Mockito.<HttpMethod>any(), Mockito.<HttpEntity<Object>>any(),
@@ -85,7 +86,7 @@ class NotificationRestClientTest {
     }
 
     @Test
-    void testSendEmail2() throws UnsupportedEncodingException, RestClientException {
+    void testSendEmail2() throws IOException, RestClientException {
         // Arrange
         when(restTemplate.exchange(Mockito.<String>any(), Mockito.<HttpMethod>any(), Mockito.<HttpEntity<Object>>any(),
                 Mockito.<Class<Object>>any(), (Object[]) any())).thenReturn(new ResponseEntity<>(HttpStatus.CONTINUE));

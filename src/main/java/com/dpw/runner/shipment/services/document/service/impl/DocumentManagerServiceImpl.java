@@ -139,8 +139,8 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel request) {
-        var response = restClient.list(request.getDependentData());
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel request, Long page, Long size) {
+        var response = restClient.list(request.getDependentData(), page, size);
         return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
     }
 
