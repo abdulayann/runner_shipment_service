@@ -254,4 +254,5 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
+    private Long containerAssignedToShipmentCargo;
 }

@@ -2,11 +2,13 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.http.ResponseEntity;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public interface ICustomerBookingService {
@@ -28,4 +30,6 @@ public interface ICustomerBookingService {
     ResponseEntity<IRunnerResponse> cloneBooking(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> retrieveByOrderId(String orderId) throws RunnerException;
+
+    Optional<CustomerBooking> findById(Long bookingId);
 }

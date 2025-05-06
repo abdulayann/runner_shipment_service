@@ -12,9 +12,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -142,4 +144,32 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @ExcludeTenantFilter
     @Query(value = "SELECT receiving_branch FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Integer findReceivingByGuid(UUID guid);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ShipmentDetails s SET " +
+            "s.noOfPacks = :noOfPacks, " +
+            "s.packsUnit = :packsUnit, " +
+            "s.volume = :volume, " +
+            "s.volumeUnit = :volumeUnit, " +
+            "s.weight = :weight, " +
+            "s.weightUnit = :weightUnit, " +
+            "s.volumetricWeight = :volumetricWeight, " +
+            "s.volumetricWeightUnit = :volumetricWeightUnit, " +
+            "s.chargable = :chargable, " +
+            "s.chargeableUnit = :chargeableUnit " +
+            "WHERE s.id = :shipmentId")
+    int updateCargoDetailsInShipment(
+            @Param("shipmentId") Long shipmentId,
+            @Param("noOfPacks") Integer noOfPacks,
+            @Param("packsUnit") String packsUnit,
+            @Param("volume") BigDecimal volume,
+            @Param("volumeUnit") String volumeUnit,
+            @Param("weight") BigDecimal weight,
+            @Param("weightUnit") String weightUnit,
+            @Param("volumetricWeight") BigDecimal volumetricWeight,
+            @Param("volumetricWeightUnit") String volumetricWeightUnit,
+            @Param("chargable") BigDecimal chargable,
+            @Param("chargeableUnit") String chargeableUnit
+    );
 }

@@ -1661,6 +1661,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
+    @Override
+    public Optional<CustomerBooking> findById(Long bookingId) {
+        return customerBookingDao.findById(bookingId);
+    }
+
     public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {
         try {
             OrderManageDto.OrderManagement orderManagement = OrderManageDto.OrderManagement.builder().orderManagementId(customerBooking.getOrderManagementId()).orderManagementNumber(customerBooking.getOrderManagementNumber()).moduleId(customerBooking.getBookingNumber()).moduleGuid(customerBooking.getGuid().toString()).tenantId(TenantContext.getCurrentTenant()).build();
