@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 
 @RestController
@@ -136,11 +137,11 @@ public class DocumentManagerController {
     })
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> listDocuments(@RequestBody @Valid Object request,
-                                                         @ApiParam(value = "page") @RequestParam Long page,
-                                                         @ApiParam(value = "size") @RequestParam Long size) {
+                                                         @ApiParam(value = "page") @RequestParam(required = false) Optional<Long> page,
+                                                         @ApiParam(value = "size") @RequestParam(required = false) Optional<Long> size) {
         String responseMsg;
         try {
-            return documentManagerService.list(CommonRequestModel.buildDependentDataRequest(request), page, size);
+            return documentManagerService.list(CommonRequestModel.buildDependentDataRequest(request), page.orElse(null), size.orElse(null));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
