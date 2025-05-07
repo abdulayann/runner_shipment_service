@@ -1,0 +1,38 @@
+trigger: none
+
+resources:
+  repositories:
+  - repository: baseline_project_repo
+    name: DevOps/_git/devops-common-utils
+    type: git
+    ref: main
+
+pool:
+  vmImage: ubuntu-latest
+
+name: $(mybuildID)
+
+variables:
+- group: runner_runner_shipment_service
+- name: containerRegistrySC
+  value: ACR_Cargoes Runner
+- name: MAVEN_CACHE_FOLDER
+  value: $(Pipeline.Workspace)/.m2/repository
+- name: MAVEN_OPTS
+  value: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
+- name: POM_XML_PATH
+  value: pom.xml
+
+
+- name: mybuildID
+  value: $[variables.buildID]
+
+steps:
+  - checkout: self #my_current_repo 
+    path: s
+    displayName: 'Checking out my_current_repo'
+  
+  - checkout: baseline_project_repo
+    displayName: Cheking baseline_project_repo
+
+  - template: /pipelines/ci_build_promotion.yaml@baseline_project_repo

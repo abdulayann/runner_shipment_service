@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import java.util.HashMap;
@@ -115,6 +116,10 @@ public class MasterDataKeyUtils {
                             case CacheConstants.COUNTRIES:
                                 EntityTransferUnLocations obj13 = (EntityTransferUnLocations) cache;
                                 response.put(value, obj13.Country);
+                                break;
+                            case CacheConstants.ORGANIZATIONS:
+                                EntityTransferOrganizations obj14 = (EntityTransferOrganizations) cache;
+                                response.put(value, obj14.getFullName());
                                 break;
                             default:
                         }
