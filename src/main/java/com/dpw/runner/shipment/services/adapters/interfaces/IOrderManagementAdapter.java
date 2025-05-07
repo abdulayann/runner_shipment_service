@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.adapters.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
@@ -16,4 +17,6 @@ public interface IOrderManagementAdapter {
     List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException;
 
     CustomerBookingResponse getOrderForBooking(String orderId) throws RunnerException;
+
+    CustomerBookingV3Response getOrderForBookingV3(String orderId) throws RunnerException;
 }

@@ -13,7 +13,7 @@ public interface INPMServiceAdapter {
 
     ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> fetchOffers(CommonRequestModel commonRequestModel) throws RunnerException;
 
