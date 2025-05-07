@@ -15,6 +15,7 @@ public class ConsolidationConstants {
             "Origin", "Destination"
     );
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "containersList", "routingsList", "PackingList", "triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "triangulationPartnerList");
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
     public static final String CONSOLIDATION_V3_API_HANDLE = "/api/v3/consolidation";
     public static final String MBL_NUMBER = "MBL Number";

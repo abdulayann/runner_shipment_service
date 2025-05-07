@@ -34,6 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
 @Slf4j
@@ -71,20 +73,21 @@ public class ConsolidationV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Long id,
-                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam String guid,
-                                                        @RequestParam(required = false, defaultValue = "false") boolean getMasterData,
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam (required = false) Long id,
+                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam (required = false) String guid,
                                                         @RequestHeader(value = "x-source", required = false) String xSource
     ) throws RunnerException, AuthenticationException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).guid(guid).build();
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveById(request, getMasterData, xSource));
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveById(request, xSource));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long consolidationId) {
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getAllMasterData(CommonGetRequest.builder().id(consolidationId).build()));
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long consolidationId,
+                                                            @RequestHeader(value = "x-source", required = false) String xSource
+    ) throws RunnerException, AuthenticationException{
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getAllMasterData(consolidationId, xSource));
     }
 
     /**
