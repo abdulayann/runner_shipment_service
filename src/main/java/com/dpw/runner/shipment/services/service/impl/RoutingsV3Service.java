@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -52,6 +53,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +61,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -85,7 +86,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Autowired
     private RoutingV3Util routingV3Util;
     @Autowired
-    private IShipmentServiceV3 shipmentServiceImplV3;
+    private IShipmentServiceV3 shipmentServiceV3;
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
     @Autowired
@@ -125,8 +126,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
             // Create Audit logs for route
             createAuditLogs(routings, null, DBOperationType.CREATE.name());
-            if(routings.getCarriage().equals(RoutingCarriage.MAIN_CARRIAGE))
-                afterSave(routings.getShipmentId());
+            // afterSave
+            afterSave(Arrays.asList(routings), module);
             log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -148,24 +149,52 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         );
     }
 
-    public void afterSave(Long shipmentId) {
-        if(shipmentId==null)
+    public void afterSave(List<Routings> routingList, String module) {
+        boolean hasMainCarriage = routingList.stream()
+                .anyMatch(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+        if (hasMainCarriage && Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            Long shipmentId = routingList.get(0).getShipmentId();
+            updateShipmentCarrierDetailsFromMainCarriage(shipmentId);
+        }
+    }
+
+    /**
+     * Updates shipment's carrier details from main carriage routing legs based on tenantSettings
+     */
+    private void updateShipmentCarrierDetailsFromMainCarriage(Long shipmentId) {
+        if (shipmentId == null)
             return;
-        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceImplV3.findById(shipmentId);
+        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(shipmentId);
         if(shipmentDetailsOptional.isEmpty())
             return;
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
-        List<Routings> routingsList = shipmentDetails.getRoutingsList();
-        List<Routings> mainCarriageRoutings = (routingsList != null ? routingsList.stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList() : Collections.emptyList());
-        boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && !mainCarriageRoutings.isEmpty()) {
-            shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
-            shipmentDetails.getCarrierDetails().setAtd(mainCarriageRoutings.get(0).getAtd());
-            shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
-            shipmentDetails.getCarrierDetails().setAta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getAta());
-        }
+        List<Routings> mainCarriageRoutings = routingsDao.findByShipmentIdAndCarriage(shipmentDetails.getId(), RoutingCarriage.MAIN_CARRIAGE);
+        if (mainCarriageRoutings.isEmpty()) return;
 
-        carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
+        boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
+
+        if (isRouteMasterEnabled) {
+            updateCarrierDetails(shipmentDetails.getCarrierDetails(), mainCarriageRoutings);
+            carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
+        }
+    }
+
+    /**
+     * Updates the CarrierDetails fields using first and last main carriage legs.
+     */
+    private void updateCarrierDetails(CarrierDetails carrierDetails, List<Routings> mainCarriageRoutings) {
+        Routings firstLeg = mainCarriageRoutings.get(0);
+        Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
+
+        carrierDetails.setEtd(firstLeg.getEtd());
+        carrierDetails.setAtd(firstLeg.getAtd());
+        carrierDetails.setOriginPort(firstLeg.getPol());
+        carrierDetails.setOriginLocCode(firstLeg.getOriginPortLocCode());
+
+        carrierDetails.setEta(lastLeg.getEta());
+        carrierDetails.setAta(lastLeg.getAta());
+        carrierDetails.setDestinationPort(lastLeg.getPod());
+        carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
     }
 
     @Override
@@ -184,8 +213,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
             // Create Audit logs for route
             createAuditLogs(routings, oldEntityData, DBOperationType.CREATE.name());
-            if(routings.getCarriage().equals(RoutingCarriage.MAIN_CARRIAGE))
-                afterSave(routings.getShipmentId());
+            // afterSave operations
+            afterSave(Arrays.asList(routings), module);
             log.info("Routing updated successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -339,8 +368,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         // Convert to response
         List<RoutingsResponse> routingResponses = jsonHelper.convertValueToList(allSavedRouting, RoutingsResponse.class);
 
-        Long shipmentId = routingListRequest.get(0).getShipmentId();
-        afterSave(shipmentId);
+        afterSave(allSavedRouting, module);
 
         return BulkRoutingResponse.builder()
                 .routingsResponseList(routingResponses)

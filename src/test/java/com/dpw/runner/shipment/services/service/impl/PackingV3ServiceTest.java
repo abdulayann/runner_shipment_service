@@ -244,7 +244,6 @@ class PackingV3ServiceTest extends CommonMocks {
         PackingV3Request newRequest = new PackingV3Request();
         List<PackingV3Request> requestList = List.of(newRequest, newRequest);
 
-        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
         when(jsonHelper.convertValueToList(anyList(), eq(Packing.class))).thenReturn(List.of(packing));
         when(packingDao.saveAll(anyList())).thenReturn(List.of(packing));
         when(jsonHelper.convertValueToList(anyList(), eq(PackingResponse.class))).thenReturn(List.of(response, response));

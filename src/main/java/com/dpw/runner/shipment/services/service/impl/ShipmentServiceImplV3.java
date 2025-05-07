@@ -165,7 +165,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private DependentServiceHelper dependentServiceHelper;
     private IEventDao eventDao;
-    private IEventsV3Service eventService;
+    private IEventsV3Service eventsV3Service;
     private IAwbDao awbDao;
     private IShipmentSync shipmentSync;
     private IConsolidationSync consolidationSync;
@@ -200,7 +200,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             BookingIntegrationsUtility bookingIntegrationsUtility,
             DependentServiceHelper dependentServiceHelper,
             IEventDao eventDao,
-            IEventsV3Service eventService,
+            IEventsV3Service eventsV3Service,
             IAwbDao awbDao,
             IShipmentSync shipmentSync,
             IConsolidationSync consolidationSync,
@@ -231,7 +231,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.bookingIntegrationsUtility = bookingIntegrationsUtility;
         this.dependentServiceHelper = dependentServiceHelper;
         this.eventDao = eventDao;
-        this.eventService = eventService;
+        this.eventsV3Service = eventsV3Service;
         this.awbDao = awbDao;
         this.shipmentSync = shipmentSync;
         this.consolidationSync = consolidationSync;
@@ -797,7 +797,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 commonUtils.updateEventWithMasterData(eventsList);
                 List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
                 shipmentDetails.setEventsList(updatedEvents);
-                eventService.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
+                eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
             }
         }
         log.info("shipment afterSave eventDao.updateEntityFromOtherEntity.... ");

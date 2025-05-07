@@ -162,8 +162,6 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-
-
     @Override
     @Transactional
     public PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException {
@@ -218,6 +216,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
+        packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -225,7 +224,10 @@ public class PackingV3Service implements IPackingV3Service {
                 .distinct()
                 .toList();
 
-        List<Packing> existingPackings = packingDao.findByIdIn(incomingIds);
+        List<Packing> existingPackings = new ArrayList<>();
+        if (!CommonUtils.listIsNullOrEmpty(incomingIds)) {
+            existingPackings = packingDao.findByIdIn(incomingIds);
+        }
 
         // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
@@ -277,6 +279,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Transactional
     public BulkPackingResponse deleteBulk(List<PackingV3Request> packingRequestList, String module) {
         packingValidationV3Util.validateDeleteBulkRequest(packingRequestList);
+        packingValidationV3Util.validateSameParentId(packingRequestList, module);
         // Extract unique packing IDs from the request
         List<Long> packingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -469,7 +472,6 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     public Map<String, Object> getAllMasterData(Long id) {
-        String responseMsg;
         try {
             Optional<Packing> packingOptional = packingDao.findById(id);
             if (packingOptional.isEmpty()) {
@@ -482,7 +484,7 @@ public class PackingV3Service implements IPackingV3Service {
             log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
             return fetchAllMasterDataByKey(packingResponse);
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
+            String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
             log.error(responseMsg, e);
             return new HashMap<>();

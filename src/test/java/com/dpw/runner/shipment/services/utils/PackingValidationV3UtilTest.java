@@ -26,6 +26,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("java:S5778")
 @ExtendWith({MockitoExtension.class})
 @Execution(CONCURRENT)
 class PackingValidationV3UtilTest {
@@ -79,10 +81,10 @@ class PackingValidationV3UtilTest {
 
     @Test
     void validateUpdateRequest_shouldPassWhenIdPresent() {
-        PackingV3Request request = new PackingV3Request();
-        request.setId(100L);
+        PackingV3Request request1 = new PackingV3Request();
+        request1.setId(100L);
 
-        assertDoesNotThrow(() -> packingValidationV3Util.validateUpdateRequest(request));
+        assertDoesNotThrow(() -> packingValidationV3Util.validateUpdateRequest(request1));
     }
 
     @Test
@@ -93,8 +95,6 @@ class PackingValidationV3UtilTest {
 
     @Test
     void validateUpdateRequest_shouldThrowWhenIdIsNull() {
-        PackingV3Request request = new PackingV3Request(); // no ID set
-
         RunnerException ex = assertThrows(RunnerException.class, () -> packingValidationV3Util.validateUpdateRequest(request));
         assertEquals("Packing Id cannot be null or empty.", ex.getMessage());
     }
@@ -230,6 +230,88 @@ class PackingValidationV3UtilTest {
     @Test
     void testValidateModule_invalidEntity() {
         assertDoesNotThrow(() -> packingValidationV3Util.validateModule(request, null));
+    }
+
+    @Test
+    void testValidateSameParentId_withNullList_shouldPass() {
+        packingValidationV3Util.validateSameParentId(null, "SHIPMENT");
+    }
+
+    @Test
+    void testValidateSameParentId_withEmptyList_shouldPass() {
+        packingValidationV3Util.validateSameParentId(List.of(), "SHIPMENT");
+    }
+
+    @Test
+    void testValidateSameParentId_withSameShipmentId_shouldPass() {
+        PackingV3Request req1 = new PackingV3Request();
+        req1.setShipmentId(100L);
+
+        PackingV3Request req2 = new PackingV3Request();
+        req2.setShipmentId(100L);
+
+        packingValidationV3Util.validateSameParentId(List.of(req1, req2), "SHIPMENT");
+    }
+
+    @Test
+    void testValidateSameParentId_withDifferentShipmentIds_shouldFail() {
+        PackingV3Request req1 = new PackingV3Request();
+        req1.setShipmentId(100L);
+
+        PackingV3Request req2 = new PackingV3Request();
+        req2.setShipmentId(101L);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                packingValidationV3Util.validateSameParentId(List.of(req1, req2), "SHIPMENT")
+        );
+
+        assertTrue(ex.getMessage().contains("same shipmentId"));
+    }
+
+    @Test
+    void testValidateSameParentId_withDifferentModuleType_shouldFail() {
+        PackingV3Request req = new PackingV3Request();
+        req.setShipmentId(100L);
+
+        assertThatThrownBy(() -> packingValidationV3Util.validateSameParentId(List.of(req), "UNKNOWN"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported module type");
+    }
+
+    @Test
+    void testValidateSameParentId_withSameBookingId_shouldPass() {
+        PackingV3Request req1 = new PackingV3Request();
+        req1.setBookingId(200L);
+
+        PackingV3Request req2 = new PackingV3Request();
+        req2.setBookingId(200L);
+
+        packingValidationV3Util.validateSameParentId(List.of(req1, req2), "BOOKING");
+    }
+
+    @Test
+    void testValidateSameParentId_withDifferentConsolidationIds_shouldFail() {
+        PackingV3Request req1 = new PackingV3Request();
+        req1.setConsolidationId(300L);
+
+        PackingV3Request req2 = new PackingV3Request();
+        req2.setConsolidationId(301L);
+
+        assertThatThrownBy(() -> packingValidationV3Util.validateSameParentId(List.of(req1, req2), "CONSOLIDATION"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("same consolidationId");
+    }
+
+    @Test
+    void testValidateSameParentId_withNullIds_shouldPass() {
+        PackingV3Request req1 = new PackingV3Request();
+        PackingV3Request req2 = new PackingV3Request();
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                packingValidationV3Util.validateSameParentId(List.of(req1, req2), "SHIPMENT")
+        );
+
+        assertTrue(ex.getMessage().contains("have the shipmentId"));
     }
 
 }
