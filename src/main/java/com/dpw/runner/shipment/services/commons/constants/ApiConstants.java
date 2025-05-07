@@ -6,6 +6,16 @@ public class ApiConstants {
     public static final String BOOKING_API_LIST_CONTAINERS = "/list/booking/containers";
     public static final String BOOKING_API_DELETE_CONTAINERS = "/delete/booking/containers";
 
+    public static final String BOOKING_API_CREATE_REFERENCES = "/create/booking/references";
+    public static final String BOOKING_API_UPDATE_REFERENCES = "/update/booking/references";
+    public static final String BOOKING_API_LIST_REFERENCES = "/list/booking/references";
+    public static final String BOOKING_API_DELETE_REFERENCES = "/delete/booking/references";
+
+    public static final String BOOKING_API_CREATE_PARTIES = "/create/booking/parties";
+    public static final String BOOKING_API_UPDATE_PARTIES = "/update/booking/parties";
+    public static final String BOOKING_API_LIST_PARTIES = "/list/booking/parties";
+    public static final String BOOKING_API_DELETE_PARTIES = "/delete/booking/parties";
+
     private ApiConstants(){}
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";

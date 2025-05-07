@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
@@ -56,6 +57,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;
     private List<FileRepoRequest> fileRepoList;
+    private List<ReferenceNumbersRequest> referenceNumbersList;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private Boolean isPackageManual;
@@ -80,6 +82,10 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String orderManagementNumber;
     private Boolean isDg;
     private String rejectionRemarks;
+    private String shipmentReferenceNumber;
+    private String integrationSource;
+    private List<Parties> additionalParties;
+    private String paymentTerms;
     private LocalDateTime etd;
     private LocalDateTime eta;
     private Boolean isReefer;
