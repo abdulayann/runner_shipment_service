@@ -498,6 +498,7 @@ public class ReportConstants {
     public static final String SHIPMENT_IDS = "shipmentIds";
     public static final String SHIPMENT_ID = "ShipmentId";
     public static final String SHIPMENT_TYPE = "ShipmentType";
+    public static final String DIRECTION = "Direction";
     public static final String CUSTOM_SHIPMENT_TYPE = "CustomShipmentType";
     public static final String BL_WITH_UNDERSCORE_COMMENTS = "Bl_Comments";
     public static final String BL_DELIVERY_AGENT = "BL_DeliveryAgent";

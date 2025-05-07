@@ -27,7 +27,6 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -60,7 +59,6 @@ import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -186,7 +184,10 @@ public class ReportService implements IReportService {
         validateOriginalAwbPrintForLinkedShipment(reportRequest);
 
         byte[] dataByteList = getCombinedDataForCargoManifestAir(reportRequest);
-        if (dataByteList != null) return dataByteList;
+        if (dataByteList != null) {
+            pushFileToDocumentMaster(reportRequest, dataByteList, new HashMap<>());
+            return dataByteList;
+        }
 
         ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
 
@@ -237,7 +238,9 @@ public class ReportService implements IReportService {
             List<byte[]> pdfBytes = new ArrayList<>();
             DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), null, false);
             generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-            return CommonUtils.concatAndAddContent(pdfBytes);
+            var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
+            pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
+            return byteContent;
         }
         else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB))
         {
@@ -293,6 +296,7 @@ public class ReportService implements IReportService {
         processPreAlert(reportRequest, pdfByteContent, dataRetrived);
 
         triggerAutomaticTransfer(report, reportRequest);
+        // Push document to document master
         pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return pdfByteContent;
     }
@@ -396,6 +400,9 @@ public class ReportService implements IReportService {
         byte[] pdfByteContent = getFromDocumentService(dataRetrived, pages.getMainPageId());
         if(pdfByteContent == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
 
+        // Push document to document master
+        pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
+
         return pdfByteContent;
     }
 
@@ -448,6 +455,9 @@ public class ReportService implements IReportService {
         addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
         triggerAutomaticTransfer(report, reportRequest);
+
+        // Push document to document master
+        pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
 
         //Update shipment issue date
         return pdfByteContent;
@@ -577,7 +587,7 @@ public class ReportService implements IReportService {
         addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
 
         triggerAutomaticTransfer(report, reportRequest);
-
+        pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
         return pdfByteContentForMawb;
     }
 
@@ -937,7 +947,9 @@ public class ReportService implements IReportService {
             Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
             if(optionalConsolidationDetails.isPresent()) {
                 ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+                reportRequest.setSelfCall(true);
                 List<byte[]> dataByteList = getDataByteList(reportRequest, consolidationDetails);
+                reportRequest.setSelfCall(false);
                 return CommonUtils.concatAndAddContent(dataByteList);
             }
         }
@@ -2343,8 +2355,8 @@ public class ReportService implements IReportService {
 
     public void pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
-        // If Shipment V3 is enabled
-        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+        // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
+        if (shipmentSettings != null  && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
@@ -2379,13 +2391,52 @@ public class ReportService implements IReportService {
                     childType = reportRequest.getPrintType();
             }
 
-            DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(reportRequest.getEntityName());
-            docUploadRequest.setKey(reportRequest.getEntityGuid());
-            docUploadRequest.setDocType(docType);
-            docUploadRequest.setChildType(childType);
-
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
+            try {
+                DocUploadRequest docUploadRequest = new DocUploadRequest();
+                docUploadRequest.setDocType(docType);
+                docUploadRequest.setChildType(childType);
+                docUploadRequest.setFileName(filename);
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
+            } catch (Exception e) {
+                log.error("{} | {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), "pushFileToDocumentMaster", e.getMessage());
+            }
         }
+    }
+
+    private void setDocumentServiceParameters(ReportRequest reportRequest,  DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
+        String transportMode;
+        String shipmentType;
+        String entityGuid;
+        String entityType;
+
+        // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
+        switch (reportRequest.getEntityName()) {
+            case Constants.SHIPMENT:
+                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
+                transportMode = shipmentDetails.getTransportMode();
+                shipmentType = shipmentDetails.getDirection();
+                entityGuid = StringUtility.convertToString(shipmentDetails.getGuid());
+                entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+                break;
+
+            case Constants.CONSOLIDATION:
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
+                transportMode = consolidationDetails.getTransportMode();
+                shipmentType = consolidationDetails.getShipmentType();
+                entityGuid = StringUtility.convertToString(consolidationDetails.getGuid());
+                entityType = Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
+                break;
+
+            default:
+                log.warn("{} | {} | Invalid Module Type: {}", LoggerHelper.getRequestIdFromMDC(), "setDocumentServiceParameters", reportRequest.getEntityName());
+                return;
+        }
+
+        docUploadRequest.setEntityType(entityType);
+        docUploadRequest.setKey(entityGuid);
+        docUploadRequest.setTransportMode(transportMode);
+        docUploadRequest.setShipmentType(shipmentType);
+
+        documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
     }
 }
