@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -71,6 +73,13 @@ class ShipmentControllerV3Test {
         ShipmentPendingNotificationResponse shipmentPendingNotificationResponse = new ShipmentPendingNotificationResponse();
         when(shipmentService.getPendingNotificationData(any())).thenReturn(shipmentPendingNotificationResponse);
         var responseEntity = shipmentControllerV3.pendingNotificationsData(1L);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void attachConsolidationTest() throws RunnerException {
+        when(shipmentService.attachConsolidation(ShipmentConsoleAttachDetachV3Request.builder().build())).thenReturn(null);
+        var responseEntity = shipmentControllerV3.attachConsolidation(ShipmentConsoleAttachDetachV3Request.builder().build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

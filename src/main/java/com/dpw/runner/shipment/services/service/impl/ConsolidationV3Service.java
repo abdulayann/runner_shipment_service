@@ -3269,4 +3269,24 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             containerNumber.add(container.getContainerNumber());
         }
     }
+
+    public ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
+        AutoAttachConsolidationV3Request request = (AutoAttachConsolidationV3Request) commonRequestModel.getData();
+        ListCommonRequest consolListRequest = request.getFilterCriteria() != null ? request : null;
+
+        consolListRequest = CommonUtils.andCriteria("transportMode", request.getTransportMode(), "=", consolListRequest);
+        if(!Objects.isNull(request.getDirection()))
+            consolListRequest = CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, request.getDirection(), "=", consolListRequest);
+        if(request.getShipId()!=null) {
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentIdAll(request.getShipId());
+            List<Long> excludeConsolidation = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
+            if (excludeConsolidation != null && !excludeConsolidation.isEmpty())
+                consolListRequest = CommonUtils.andCriteria("id", excludeConsolidation, "NOTIN", consolListRequest);
+        }
+        if(request.getBranchIds()!=null){
+            consolListRequest = CommonUtils.andCriteria("tenantId", request.getBranchIds(), "IN", consolListRequest);
+        }
+
+        return this.list(consolListRequest, true);
+    }
 }
