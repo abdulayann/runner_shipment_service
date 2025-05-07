@@ -159,6 +159,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Map<String, String> textData;
     private List<NotesResponse> customerBookingNotesList;
     private Map<String, Long> containerData;
+    private Map<String, String> organizationsMasterData;
     private Long containerCount;
     private BigDecimal teuCount;
     private Integer packCount;

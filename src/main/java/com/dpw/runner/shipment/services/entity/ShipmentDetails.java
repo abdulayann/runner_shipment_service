@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -624,6 +625,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String partner;
 
     @Column(name = "booking_agent")
+    @OrganizationMasterData
     private Long bookingAgent;
 
     @Column(name = "co_load_bkg_number")
@@ -643,15 +645,19 @@ public class ShipmentDetails extends MultiTenancy {
     private String brokerageAtDestinationType;
 
     @Column(name = "pickup_at_origin")
+    @OrganizationMasterData
     private Long pickupAtOrigin;
 
     @Column(name = "delivery_at_destination")
+    @OrganizationMasterData
     private Long deliveryAtDestination;
 
     @Column(name = "brokerage_at_origin")
+    @OrganizationMasterData
     private Long brokerageAtOrigin;
 
     @Column(name = "brokerage_at_destination")
+    @OrganizationMasterData
     private Long brokerageAtDestination;
 
     @Column(name = "brokerage_at_origin_date")

@@ -408,6 +408,7 @@ public class Constants {
     public static final String GROSS_WEIGHT = "grossWeight";
     public static final String PACKS = "packs";
     public static final String UNLOCATIONS = "Unlocations";
+    public static final String ORGANIZATIONS = "Organizations";
     public static final String CONTAINER_TYPES = "ContainerTypes";
     public static final String FLASH_POINT = "flashpoint";
     public static final String BRANCH = "branch";

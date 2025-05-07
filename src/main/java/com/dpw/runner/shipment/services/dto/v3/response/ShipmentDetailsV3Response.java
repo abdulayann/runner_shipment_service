@@ -183,6 +183,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
 
     private String currentPartyForQuote;
     private Map<String, Object> masterDataMap;
+    private Map<String, String> organizationsMasterData;
     private Boolean entityTransfer;
     private String destinationSalesBranch;
     private String destinationPrimarySalesAgentEmail;
