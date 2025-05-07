@@ -148,4 +148,6 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private String partner;
+    private Long borrowedFromId;
+    private Boolean borrowed;
 }
