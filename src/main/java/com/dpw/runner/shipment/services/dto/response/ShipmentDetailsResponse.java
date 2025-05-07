@@ -274,4 +274,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
+    private Boolean isBorrowed;
 }

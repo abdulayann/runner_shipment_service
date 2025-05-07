@@ -595,4 +595,9 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> findRoutingsByConsolidationId(Long consolidationId) {
         return routingsRepository.findByConsolidationId(consolidationId);
     }
+
+    @Override
+    public List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage) {
+        return routingsRepository.findByShipmentIdAndCarriage(shipmentId, routingCarriage);
+    }
 }

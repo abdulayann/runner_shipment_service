@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
@@ -45,7 +44,6 @@ import java.util.List;
 public class PackingV3Controller {
 
     private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
-    private static class MyListResponseClass extends RunnerListResponse<PackingResponse> {}
 
     private JsonHelper jsonHelper;
     private IPackingV3Service packingV3Service;
@@ -173,7 +171,7 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID, required = true) @RequestParam Long id) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.getAllMasterData(id));
     }
 

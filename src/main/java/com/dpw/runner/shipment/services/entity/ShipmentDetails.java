@@ -696,6 +696,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "container_assigned_to_shipment_cargo")
     private Long containerAssignedToShipmentCargo;
 
+    @Column(name = "is_borrowed")
+    private Boolean isBorrowed;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
