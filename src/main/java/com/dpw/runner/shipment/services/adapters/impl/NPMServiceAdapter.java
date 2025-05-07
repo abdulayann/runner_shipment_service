@@ -190,36 +190,12 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
             NPMContractsResponse npmContractsResponse = response.getBody();
-            if(npmContractsResponse != null)
-            {
-                List<NPMContractsResponse.NPMContractResponse> list = npmContractsResponse.getContracts();
-                if(list != null && !list.isEmpty())
-                {
-                    list = list.stream().filter(c -> c.getValidTill() != null && LocalDateTime.now().isBefore(c.getValidTill())).toList();
-                    if(listContractsWithFilterRequest.getCargoType() != null)
-                    {
-                        list = list.stream().filter(c -> listContractsWithFilterRequest.getCargoType().equals(c.getProduct_type())).toList();
-                    }
-                    if(listContractsWithFilterRequest.getOrigin() != null)
-                    {
-                        list = list.stream().filter(c -> listContractsWithFilterRequest.getOrigin().equals(c.getOrigin())).toList();
-                    }
-                    if(listContractsWithFilterRequest.getDestination() != null)
-                    {
-                        list = list.stream().filter(c -> listContractsWithFilterRequest.getDestination().equals(c.getDestination())).toList();
-                    }
-                    if (Boolean.TRUE.equals(listContractsWithFilterRequest.getIsDgEnabled())) {
-                        list = list.stream()
-                                .filter(c -> c.getDgClass() != null && !c.getDgClass().isEmpty()
-                                        && !(c.getDgClass().size() == 1 && "NULL".equalsIgnoreCase(c.getDgClass().get(0)))
-                                )
-                                .toList();
-                    }
-                    npmContractsResponse.setContracts(list);
-                }
+            List<NPMContractsResponse.NPMContractResponse> filteredContracts = filterContracts(npmContractsResponse, listContractsWithFilterRequest);
+            if (npmContractsResponse != null) {
+                npmContractsResponse.setContracts(filteredContracts);
             }
             List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
-            return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
+            return ResponseHelper.buildDependentServiceResponse(listResponse, 0, 0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -962,5 +938,34 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             containerList.add(containerResponse);
         }
         return containerList;
+    }
+
+    private List<NPMContractsResponse.NPMContractResponse> filterContracts(NPMContractsResponse response, ListContractsWithFilterRequest filterRequest) {
+        if (response == null || response.getContracts() == null || response.getContracts().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return response.getContracts().stream().filter(c -> isValidContract(c, filterRequest)).toList();
+    }
+
+    private boolean isValidContract(NPMContractsResponse.NPMContractResponse contract,
+                                    ListContractsWithFilterRequest filter) {
+        if (contract.getValidTill() == null || LocalDateTime.now().isAfter(contract.getValidTill())) {
+            return false;
+        }
+        if (filter.getCargoType() != null && !filter.getCargoType().equals(contract.getProduct_type())) {
+            return false;
+        }
+        if (filter.getOrigin() != null && !filter.getOrigin().equals(contract.getOrigin())) {
+            return false;
+        }
+        if (filter.getDestination() != null && !filter.getDestination().equals(contract.getDestination())) {
+            return false;
+        }
+        if (Boolean.TRUE.equals(filter.getIsDgEnabled())) {
+            List<String> dgClass = contract.getDgClass();
+            return dgClass != null && !dgClass.isEmpty() &&
+                    !(dgClass.size() == 1 && "NULL".equalsIgnoreCase(dgClass.get(0)));
+        }
+        return true;
     }
 }
