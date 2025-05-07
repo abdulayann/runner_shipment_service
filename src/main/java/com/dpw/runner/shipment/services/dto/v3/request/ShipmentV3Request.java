@@ -184,7 +184,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isReefer;
     private String incotermsLocation;
     private LocalDateTime cargoReadinessDate;
-    private String controlled;
+    private Boolean controlled;
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;

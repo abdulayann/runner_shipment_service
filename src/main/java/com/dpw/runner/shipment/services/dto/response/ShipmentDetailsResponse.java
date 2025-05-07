@@ -160,6 +160,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Map<String, String> textData;
     private List<NotesResponse> customerBookingNotesList;
     private Map<String, Long> containerData;
+    private Map<String, String> organizationsMasterData;
     private Long containerCount;
     private BigDecimal teuCount;
     private Integer packCount;
@@ -234,4 +235,43 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean isFrob;
     private String consolidationNumber;
     private Long containerAssignedToShipmentCargo;
+    private Boolean isReefer;
+    private String incotermsLocation;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReadinessDate;
+    private Boolean controlled;
+    private String controlledReferenceNumber;
+    private String partner;
+    private Long bookingAgent;
+    private String coLoadBkgNumber;
+    private String pickupAtOriginType;
+    private String deliveryAtDestinationType;
+    private String brokerageAtOriginType;
+    private String brokerageAtDestinationType;
+    private Long pickupAtOrigin;
+    private Long deliveryAtDestination;
+    private Long brokerageAtOrigin;
+    private Long brokerageAtDestination;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime brokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime brokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime terminalCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime verifiedGrossMassCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shippingInstructionCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dgCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime reeferCutoff;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime latestArrivalTime;
 }
