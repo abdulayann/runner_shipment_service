@@ -615,7 +615,7 @@ public class ShipmentDetails extends MultiTenancy {
     private LocalDateTime cargoReadinessDate;
 
     @Column(name = "controlled")
-    private String controlled;
+    private Boolean controlled;
 
     @Column(name = "controlled_reference_number")
     @Size(max = 64)

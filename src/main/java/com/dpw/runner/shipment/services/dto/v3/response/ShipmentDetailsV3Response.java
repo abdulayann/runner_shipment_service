@@ -220,7 +220,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private String incotermsLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadinessDate;
-    private String controlled;
+    private Boolean controlled;
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
