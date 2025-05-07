@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
@@ -84,7 +85,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Autowired
     private RoutingV3Util routingV3Util;
     @Autowired
-    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    private IShipmentServiceV3 shipmentServiceImplV3;
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
     @Autowired
@@ -147,7 +148,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         );
     }
 
-    public void afterSave(Long shipmentId) throws RunnerException {
+    public void afterSave(Long shipmentId) {
         if(shipmentId==null)
             return;
         Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceImplV3.findById(shipmentId);
