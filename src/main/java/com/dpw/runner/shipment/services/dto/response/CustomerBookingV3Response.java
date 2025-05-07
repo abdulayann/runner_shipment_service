@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -66,6 +68,7 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private List<RoutingsResponse> routingList;
     private List<BookingChargesResponse> bookingCharges;
     private List<FileRepoResponse> fileRepoList;
+    private List<ReferenceNumbersResponse> referenceNumbersList;
     private Map<String, String> masterData;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
@@ -96,6 +99,10 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     private String rejectionRemarks;
+    private String shipmentReferenceNumber;
+    private String integrationSource;
+    private List<Parties> additionalParties;
+    private String paymentTerms;
     private LocalDateTime etd;
     private LocalDateTime eta;
     private Boolean isReefer;
