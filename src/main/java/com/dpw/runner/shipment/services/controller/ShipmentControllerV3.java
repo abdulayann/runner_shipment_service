@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -42,7 +41,8 @@ import java.util.Optional;
 @Slf4j
 public class ShipmentControllerV3 {
 
-    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {}
+    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {
+    }
 
     private IShipmentServiceV3 shipmentService;
     private JsonHelper jsonHelper;
@@ -117,8 +117,14 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(shipmentPendingNotificationResponse);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+        return (ResponseEntity<?>) shipmentService.getAllMasterData(shipmentId);
+    }
+
     @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)
-    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId)  {
+    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
     }
 

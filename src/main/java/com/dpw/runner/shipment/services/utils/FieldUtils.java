@@ -61,7 +61,8 @@ public class FieldUtils {
 
     private static boolean isMasterDataField(Field field) {
         return field.isAnnotationPresent(MasterData.class) ||
-                field.isAnnotationPresent(DedicatedMasterData.class) || field.isAnnotationPresent(UnlocationData.class);
+                field.isAnnotationPresent(DedicatedMasterData.class) || field.isAnnotationPresent(UnlocationData.class) ||
+                field.isAnnotationPresent(OrganizationMasterData.class);
     }
 
     public static List<String> getTenantIdAnnotationFields(List<FieldClassDto> classes) {
