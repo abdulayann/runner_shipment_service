@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
@@ -483,4 +484,20 @@ public class ContainerDao implements IContainerDao {
     public void deleteByIdIn(List<Long> containerIds) {
         containerRepository.deleteAllById(containerIds);
     }
+
+    @Override
+    public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds) {
+        return containerRepository.filterContainerIdsAttachedToShipmentCargo(containerIds);
+    }
+
+    @Override
+    public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds) {
+        return containerRepository.filterContainerIdsAttachedToPacking(containerIds);
+    }
+
+    @Override
+    public List<ContainerDeleteInfoProjection> findContainersAttachedToBothPackingAndCargo(List<Long> containerIds) {
+        return containerRepository.findContainersAttachedToBothPackingAndCargo(containerIds);
+    }
+
 }

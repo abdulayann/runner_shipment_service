@@ -1,18 +1,30 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class ContainerValidationUtil {
+
+    @Autowired
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Autowired
+    private IPackingV3Service packingService;
+
+    @Autowired
+    private IShipmentServiceV3 shipmentService;
 
 
     /**
@@ -40,20 +52,32 @@ public class ContainerValidationUtil {
         }
     }
 
-    public void validateContainerNumberUniqueness(String containerNumber, List<Containers> containersList){
-        if(StringUtility.isEmpty(containerNumber) || containerNumber.length() < 10) return;
+    public void validateDeleteBulkRequest(List<ContainerV3Request> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new IllegalArgumentException("Bulk update request cannot be null or empty.");
+        }
+
+        if (requests.stream().anyMatch(cr -> !Boolean.TRUE.equals(cr.getOpenForAttachment()))) {
+            throw new IllegalArgumentException("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off");
+        }
+    }
+
+    public void validateContainerNumberUniqueness(String containerNumber, List<Containers> containersList) {
+        if (StringUtility.isEmpty(containerNumber) || containerNumber.length() < 10) {
+            return;
+        }
 
         boolean exists = containersList.stream()
-             .map(Containers::getContainerNumber)
-             .anyMatch(existingNumber -> existingNumber.equals(containerNumber));
+                .map(Containers::getContainerNumber)
+                .anyMatch(existingNumber -> existingNumber.equals(containerNumber));
 
-        if(exists){
+        if (exists) {
             throw new IllegalArgumentException("Container number '" + containerNumber + "' already exists.");
         }
     }
 
     public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) throws RunnerException {
-        if(shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
+        if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
             throw new RunnerException(String.format(
                     "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
                     shipmentDetails.getShipmentId()));
