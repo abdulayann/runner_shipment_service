@@ -6,10 +6,12 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -24,6 +26,8 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javax.validation.Valid;
+
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -122,5 +126,14 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
             consolidationListV3Response.getNumberOfRecords());
 
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Console Details Data List Retrieval")})
+    @PostMapping(value = ApiConstants.AUTO_ATTACH_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(@Valid @RequestBody @NonNull AutoAttachConsolidationV3Request request) {
+        log.info("Received console list v3 for shipment request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        ConsolidationListV3Response consolidationListV3Response =   consolidationV3Service.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
+                consolidationListV3Response.getNumberOfRecords());
     }
 }

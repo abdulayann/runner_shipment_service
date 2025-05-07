@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -10,22 +11,26 @@ import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -41,13 +46,15 @@ public class EventV3Service implements IEventsV3Service {
     private JsonHelper jsonHelper;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
+    private IDateTimeChangeLogService dateTimeChangeLogService;
 
     @Autowired
-    public EventV3Service(IEventDao eventDao, JsonHelper jsonHelper, IV1Service v1Service, CommonUtils commonUtils) {
+    public EventV3Service(IEventDao eventDao, JsonHelper jsonHelper, IV1Service v1Service, IDateTimeChangeLogService dateTimeChangeLogService, CommonUtils commonUtils) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.v1Service = v1Service;
         this.commonUtils = commonUtils;
+        this.dateTimeChangeLogService = dateTimeChangeLogService;
     }
 
     @Override
@@ -228,5 +235,28 @@ public class EventV3Service implements IEventsV3Service {
             // Log the error message for debugging purposes
             log.error("Error fetching or processing event codes master data: {}", e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
+        if (ObjectUtils.isNotEmpty(events)) {
+            Events lastEvent = events.get(events.size() - 1);
+            if (tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true) && lastEvent.getActual() != null) {
+                shipmentDetails.setCarrierDetails(shipmentDetails.getCarrierDetails() == null ? new CarrierDetails() : shipmentDetails.getCarrierDetails());
+                if (EventConstants.ATA_EVENT_CODES.contains(lastEvent.getEventCode())) {
+                    shipmentDetails.getCarrierDetails().setAta(lastEvent.getActual());
+                    createDateTimeChangeLog(DateType.ATA, lastEvent.getActual(), shipmentDetails.getId());
+                }
+                if (EventConstants.ATD_EVENT_CODES.contains(lastEvent.getEventCode())) {
+                    shipmentDetails.getCarrierDetails().setAtd(lastEvent.getActual());
+                    createDateTimeChangeLog(DateType.ATD, lastEvent.getActual(), shipmentDetails.getId());
+                }
+            }
+
+        }
+    }
+
+    private void createDateTimeChangeLog(DateType dateType, LocalDateTime localDateTime, Long shipmentId) {
+        dateTimeChangeLogService.saveDateTimeChangeLog(dateType, localDateTime, shipmentId, DateTimeChangeLogConstants.EVENT_SOURCE);
     }
 }

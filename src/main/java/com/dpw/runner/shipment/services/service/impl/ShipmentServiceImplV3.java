@@ -66,12 +66,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
@@ -160,7 +155,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private DependentServiceHelper dependentServiceHelper;
     private IEventDao eventDao;
-    private IEventService eventService;
+    private IEventsV3Service eventService;
     private IAwbDao awbDao;
     private IShipmentSync shipmentSync;
     private IConsolidationSync consolidationSync;
@@ -194,7 +189,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             BookingIntegrationsUtility bookingIntegrationsUtility,
             DependentServiceHelper dependentServiceHelper,
             IEventDao eventDao,
-            IEventService eventService,
+            IEventsV3Service eventService,
             IAwbDao awbDao,
             IShipmentSync shipmentSync,
             IConsolidationSync consolidationSync,
