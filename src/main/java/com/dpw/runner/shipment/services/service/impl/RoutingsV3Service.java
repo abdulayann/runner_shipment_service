@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
@@ -23,10 +24,12 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
@@ -55,6 +58,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -79,6 +83,12 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     private MasterDataUtils masterDataUtils;
     @Autowired
     private RoutingV3Util routingV3Util;
+    @Autowired
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    @Autowired
+    private ICarrierDetailsDao carrierDetailsDao;
+    @Autowired
+    private CommonUtils commonUtils;
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
@@ -114,6 +124,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
             // Create Audit logs for route
             createAuditLogs(routings, null, DBOperationType.CREATE.name());
+            if(routings.getCarriage().equals(RoutingCarriage.MAIN_CARRIAGE))
+                afterSave(routings.getShipmentId());
             log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -135,6 +147,26 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         );
     }
 
+    public void afterSave(Long shipmentId) throws RunnerException {
+        if(shipmentId==null)
+            return;
+        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceImplV3.findById(shipmentId);
+        if(shipmentDetailsOptional.isEmpty())
+            return;
+        ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+        List<Routings> routingsList = shipmentDetails.getRoutingsList();
+        List<Routings> mainCarriageRoutings = (routingsList != null ? routingsList.stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList() : Collections.emptyList());
+        boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && !mainCarriageRoutings.isEmpty()) {
+            shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
+            shipmentDetails.getCarrierDetails().setAtd(mainCarriageRoutings.get(0).getAtd());
+            shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
+            shipmentDetails.getCarrierDetails().setAta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getAta());
+        }
+
+        carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
+    }
+
     @Override
     public RoutingsResponse update(CommonRequestModel commonRequestModel,  String module) throws RunnerException {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
@@ -151,7 +183,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
             // Create Audit logs for route
             createAuditLogs(routings, oldEntityData, DBOperationType.CREATE.name());
-            log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
+            if(routings.getCarriage().equals(RoutingCarriage.MAIN_CARRIAGE))
+                afterSave(routings.getShipmentId());
+            log.info("Routing updated successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -251,13 +285,12 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         // Add master data if required
         this.getMasterDataForList(routingsListResponses);
 
-        List<IRunnerResponse> responseList = new ArrayList<>(routingsListResponses);
-        return responseList;
+        return new ArrayList<>(routingsListResponses);
     }
 
     @Override
     @Transactional
-    public BulkRoutingResponse updateBulk(List<RoutingsRequest> routingListRequest, String module) {
+    public BulkRoutingResponse updateBulk(List<RoutingsRequest> routingListRequest, String module) throws RunnerException {
         // Separate IDs and determine existing routing
         List<Long> incomingIds = routingListRequest.stream()
                 .map(RoutingsRequest::getId)
@@ -304,6 +337,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
         // Convert to response
         List<RoutingsResponse> routingResponses = jsonHelper.convertValueToList(allSavedRouting, RoutingsResponse.class);
+
+        Long shipmentId = routingListRequest.get(0).getShipmentId();
+        afterSave(shipmentId);
 
         return BulkRoutingResponse.builder()
                 .routingsResponseList(routingResponses)
