@@ -10,12 +10,8 @@ import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.UUID;
 import javax.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+
+import lombok.*;
 
 @Getter
 @Setter
@@ -31,6 +27,7 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private Set<Long> shipmentsIds;
   private Long bookingId;
   private Long loggingId;
+  @NonNull
   private String containerCode;
   private String containerNumber;
   private String sealNumber;
@@ -46,6 +43,7 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private String hsCode;
   private Boolean isShipperOwned;
   private Boolean isEmpty;
+  @NonNull
   private Long containerCount;
   private String carrierSealNumber;
   private String shipperSealNumber;
@@ -112,6 +110,7 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private String achievedVolumeUnit;
   private String weightUtilization;
   private String volumeUtilization;
+  @NonNull
   private String commodityGroup;
   private Boolean isContractEnforced;
   private Long contractEnforcedQuantityLimit;

@@ -2,16 +2,19 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import javax.validation.Valid;
 import org.apache.http.auth.AuthenticationException;
 
 import java.util.List;
@@ -33,4 +36,5 @@ public interface IConsolidationV3Service {
     ConsolidationDetailsV3Response retrieveById(CommonGetRequest commonGetRequest, boolean getMasterData, String source) throws RunnerException, AuthenticationException;
     Map<String, Object> getAllMasterData(CommonGetRequest commonGetRequest);
     ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
+    ConsolidationListV3Response list(ListCommonRequest listCommonRequest, boolean getMasterData);
 }
