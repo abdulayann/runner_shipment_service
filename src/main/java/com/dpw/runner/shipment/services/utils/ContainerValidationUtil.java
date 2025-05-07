@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import java.util.List;
 import java.util.stream.Collectors;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,46 +61,46 @@ public class ContainerValidationUtil {
         }
 
         List<Long> containerIds = requests.stream().map(ContainerV3Request::getId).distinct().toList();
+        List<PackingResponse> packingResponses = packingService.fetchPacksAttachedToContainers(containerIds);
 
         if (requests.size() == 1) {
-            List<PackingResponse> packingResponses = packingService.fetchPacksAttachedToContainers(containerIds);
             if (ObjectUtils.isNotEmpty(packingResponses)) {
                 PackingResponse packingResponse = packingResponses.get(0);
                 throw new IllegalArgumentException(
-                        String.format("Selected container is attached with Packs with Shipment Number - %s, Please unassign packs to delete further",
-                                packingResponse.getShipmentNumber()));
+                        String.format(
+                                "Selected Container is assigned to Packages as below, Please unassign the same to delete\nContainer Number: %s - Shipment Number: %s - Packages: %s",
+                                packingResponse.getContainerNumber(), packingResponse.getShipmentNumber(), packingResponse.getPacks()));
             }
         } else {
-            List<PackingResponse> packingResponses = packingService.fetchPacksAttachedToContainers(containerIds);
             if (ObjectUtils.isNotEmpty(packingResponses)) {
                 String details = packingResponses.stream()
-                        .map(m -> String.format("Container Number %s - Shipment Number %s", m.getContainerNumber(), m.getShipmentNumber()))
+                        .map(m -> String.format("Container Number: %s - Shipment Number: %s - Packages: %s", m.getContainerNumber(), m.getShipmentNumber(), m.getPacks()))
                         .collect(Collectors.joining("\n"));
 
-                String message = "Selected containers cannot be deleted as Containers are attached with following Shipment Packs:\n" +
+                String message = "Selected Containers are assigned to Packages as below, Please unassign the same to delete:\n" +
                         details;
 
                 throw new IllegalArgumentException(message);
             }
         }
-
-
     }
 
-    public void validateContainerNumberUniqueness(String containerNumber, List<Containers> containersList){
-        if(StringUtility.isEmpty(containerNumber) || containerNumber.length() < 10) return;
+    public void validateContainerNumberUniqueness(String containerNumber, List<Containers> containersList) {
+        if (StringUtility.isEmpty(containerNumber) || containerNumber.length() < 10) {
+            return;
+        }
 
         boolean exists = containersList.stream()
-             .map(Containers::getContainerNumber)
-             .anyMatch(existingNumber -> existingNumber.equals(containerNumber));
+                .map(Containers::getContainerNumber)
+                .anyMatch(existingNumber -> existingNumber.equals(containerNumber));
 
-        if(exists){
+        if (exists) {
             throw new IllegalArgumentException("Container number '" + containerNumber + "' already exists.");
         }
     }
 
     public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) throws RunnerException {
-        if(shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
+        if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
             throw new RunnerException(String.format(
                     "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
                     shipmentDetails.getShipmentId()));

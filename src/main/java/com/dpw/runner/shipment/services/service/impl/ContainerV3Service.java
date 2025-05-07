@@ -16,10 +16,13 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
@@ -46,6 +49,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -54,29 +58,25 @@ import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -149,6 +149,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private ContainerV3Util containerV3Util;
+
+    @Autowired
+    private IPackingV3Service packingService;
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -268,37 +271,41 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList) {
-        // Validate that all necessary container IDs are present in the request
+        // Ensure the request contains all necessary and valid container IDs
         containerValidationUtil.validateDeleteBulkRequest(containerRequestList);
 
-        // Extract unique container IDs from the request
+        // Extract distinct container IDs from the incoming request
         List<Long> containerIds = containerRequestList.stream()
-                .map(ContainerV3Request::getId)
-                .distinct()
-                .toList();
+                .map(ContainerV3Request::getId).distinct().toList();
 
-        // Fetch containers from DB to ensure they exist before deletion
+        // Retrieve container entities from the database for validation and further processing
         List<Containers> containersToDelete = containerDao.findByIdIn(containerIds);
 
+        // Collect distinct shipment IDs associated with the containers
+        List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
+                .flatMap(Set::stream).map(ShipmentDetails::getId).distinct().toList();
+
+        // If no containers were found for the given IDs, abort the operation
         if (containersToDelete.isEmpty()) {
             throw new IllegalArgumentException("No containers found for the given IDs.");
         }
 
-        // Remove associations with packings (if any)
-        packingDao.removeContainersFromPacking(containerIds);
+        // Remove any packing associations linked to the containers
+        packingService.removeContainersFromPacking(containerIds);
 
-        // Delete containers from DB
+        // Detach container-to-shipment mappings before deletion
+        shipmentsContainersMappingDao.detachListShipments(containerIds, shipmentIds, false);
+
+        // Proceed with permanent deletion of the container records
         containerDao.deleteAllById(containerIds);
 
-        // Record audit logs for the deletion operation
+        // Record audit logs for tracking the deletion activity
         recordAuditLogs(containersToDelete, null, DBOperationType.DELETE);
 
-        // Return the response with status message
-        return BulkContainerResponse.builder()
-                .message(prepareBulkDeleteMessage(containersToDelete))
-                .build();
+        // Build and return a summary response for the bulk delete operation
+        return BulkContainerResponse.builder().message(prepareBulkDeleteMessage(containersToDelete)).build();
     }
 
     private void recordAuditLogs(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
