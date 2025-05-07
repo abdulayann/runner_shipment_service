@@ -3,15 +3,13 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,6 +22,9 @@ public class ContainerValidationUtil {
 
     @Autowired
     private IPackingV3Service packingService;
+
+    @Autowired
+    private IShipmentServiceV3 shipmentService;
 
 
     /**
@@ -58,30 +59,6 @@ public class ContainerValidationUtil {
 
         if (requests.stream().anyMatch(cr -> !Boolean.TRUE.equals(cr.getOpenForAttachment()))) {
             throw new IllegalArgumentException("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off");
-        }
-
-        List<Long> containerIds = requests.stream().map(ContainerV3Request::getId).distinct().toList();
-        List<PackingResponse> packingResponses = packingService.fetchPacksAttachedToContainers(containerIds);
-
-        if (requests.size() == 1) {
-            if (ObjectUtils.isNotEmpty(packingResponses)) {
-                PackingResponse packingResponse = packingResponses.get(0);
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Selected Container is assigned to Packages as below, Please unassign the same to delete\nContainer Number: %s - Shipment Number: %s - Packages: %s",
-                                packingResponse.getContainerNumber(), packingResponse.getShipmentNumber(), packingResponse.getPacks()));
-            }
-        } else {
-            if (ObjectUtils.isNotEmpty(packingResponses)) {
-                String details = packingResponses.stream()
-                        .map(m -> String.format("Container Number: %s - Shipment Number: %s - Packages: %s", m.getContainerNumber(), m.getShipmentNumber(), m.getPacks()))
-                        .collect(Collectors.joining("\n"));
-
-                String message = "Selected Containers are assigned to Packages as below, Please unassign the same to delete:\n" +
-                        details;
-
-                throw new IllegalArgumentException(message);
-            }
         }
     }
 

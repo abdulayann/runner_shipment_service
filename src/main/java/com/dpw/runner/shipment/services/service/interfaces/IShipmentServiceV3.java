@@ -3,10 +3,8 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
@@ -14,9 +12,9 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksA
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import org.springframework.http.ResponseEntity;
-
+import java.util.List;
 import java.util.Optional;
+import org.springframework.http.ResponseEntity;
 
 public interface IShipmentServiceV3 {
 
@@ -41,4 +39,6 @@ public interface IShipmentServiceV3 {
     void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse);
 
     String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
+
+    List<Long> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds);
 }

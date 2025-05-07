@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
@@ -16,7 +18,11 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -27,7 +33,11 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -38,13 +48,19 @@ import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -67,6 +83,7 @@ import javax.annotation.PostConstruct;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -78,9 +95,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 @Service
 @Slf4j
@@ -143,6 +157,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IPackingV3Service packingService;
+
+    @Autowired
+    private IShipmentServiceV3 shipmentService;
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -223,39 +240,105 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList, String module) {
-        // Ensure the request contains all necessary and valid container IDs
+        // Validate that the request contains valid and necessary container IDs
         containerValidationUtil.validateDeleteBulkRequest(containerRequestList);
 
-        // Extract distinct container IDs from the incoming request
+        // Extract a distinct list of container IDs from the incoming request
         List<Long> containerIds = containerRequestList.stream()
                 .map(ContainerV3Request::getId).distinct().toList();
 
-        // Retrieve container entities from the database for validation and further processing
+        // Retrieve the corresponding container entities from the database for validation and further processing
         List<Containers> containersToDelete = containerDao.findByIdIn(containerIds);
 
-        // Collect distinct shipment IDs associated with the containers
-        List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
-                .flatMap(Set::stream).map(ShipmentDetails::getId).distinct().toList();
-
-        // If no containers were found for the given IDs, abort the operation
+        // If no containers were found for the provided IDs, throw an exception to stop the process
         if (containersToDelete.isEmpty()) {
             throw new IllegalArgumentException("No containers found for the given IDs.");
         }
 
-        // Remove any packing associations linked to the containers
-        packingService.removeContainersFromPacking(containerIds);
+        // Validate that the containers are not assigned to any active shipment or packing before deletion
+        validateNoAssignments(containerIds);
 
-        // Detach container-to-shipment mappings before deletion
-        shipmentsContainersMappingDao.detachListShipments(containerIds, shipmentIds, false);
+        // Collect all unique shipment IDs that are associated with the containers to delete
+        List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
+                .flatMap(Set::stream).map(ShipmentDetails::getId).distinct().toList();
 
-        // Proceed with permanent deletion of the container records
-        containerDao.deleteAllById(containerIds);
+        // Proceed with the deletion of the containers and any related associations (shipment, packing, etc.)
+        deleteContainerAndAssociations(containerIds, shipmentIds, containersToDelete);
 
-        // Record audit logs for tracking the deletion activity
+        // Log the deletion activity for auditing and tracking purposes
         recordAuditLogs(containersToDelete, null, DBOperationType.DELETE);
 
-        // Build and return a summary response for the bulk delete operation
-        return BulkContainerResponse.builder().message(prepareBulkDeleteMessage(containersToDelete)).build();
+        // Return a response indicating the result of the bulk delete operation
+        return BulkContainerResponse.builder()
+                .message(prepareBulkDeleteMessage(containersToDelete))
+                .build();
+    }
+
+    // Validate that containers are not assigned to both packing and cargo before deletion
+    private void validateNoAssignments(List<Long> containerIds) {
+        // Check if any containers are attached to both shipment cargo and packages
+        List<ContainerDeleteInfoProjection> bothPackingAndCargo =
+                containerDao.findContainersAttachedToBothPackingAndCargo(containerIds);
+
+        // If containers are found with both packing and cargo assignments, throw an exception with details
+        if (ObjectUtils.isNotEmpty(bothPackingAndCargo)) {
+            throw new IllegalArgumentException(
+                    "Selected Containers are assigned to Shipment Cargo and Packages as below, Please unassign the same to delete:\n" +
+                            formatPackingAndCargoInfo(bothPackingAndCargo) // Format and display the details of affected containers
+            );
+        }
+
+        // Check if any containers are attached to packing only
+        List<ContainerDeleteInfoProjection> packingOnly =
+                containerDao.filterContainerIdsAttachedToPacking(containerIds);
+
+        // If containers are found with packing-only assignments, throw an exception with details
+        if (ObjectUtils.isNotEmpty(packingOnly)) {
+            throw new IllegalArgumentException(
+                    "Selected Containers are assigned to Packages as below, Please unassign the same to delete:\n" +
+                            formatPackingAndCargoInfo(packingOnly) // Format and display the details of affected containers
+            );
+        }
+
+        // Check if any containers are attached to shipment cargo only
+        List<ContainerDeleteInfoProjection> shipmentOnly =
+                containerDao.filterContainerIdsAttachedToShipmentCargo(containerIds);
+
+        // If containers are found with shipment cargo-only assignments, throw an exception with details
+        if (ObjectUtils.isNotEmpty(shipmentOnly)) {
+            throw new IllegalArgumentException(
+                    "Selected Containers are assigned to Shipment Cargo as below, Please unassign the same to delete:\n" +
+                            formatCargoOnlyInfo(shipmentOnly) // Format and display the details of affected containers
+            );
+        }
+    }
+
+    // Helper method to format the information about containers attached to both packing and cargo
+    private String formatPackingAndCargoInfo(List<ContainerDeleteInfoProjection> projections) {
+        return projections.stream()
+                .map(p -> String.format("Container Number: %s - Shipment Number: %s - Packages: %s",
+                        p.getContainerNumber(), p.getShipmentId(), p.getPacks())) // Format each container's details
+                .collect(Collectors.joining("\n")); // Join all container details with a newline for display
+    }
+
+    // Helper method to format the information about containers attached only to shipment cargo
+    private String formatCargoOnlyInfo(List<ContainerDeleteInfoProjection> projections) {
+        return projections.stream()
+                .map(p -> String.format("Container Number: %s - Shipment Number: %s",
+                        p.getContainerNumber(), p.getShipmentId())) // Format each container's details without packages
+                .collect(Collectors.joining("\n")); // Join all container details with a newline for display
+    }
+
+    // Method to handle the deletion of containers and their associated entities
+    private void deleteContainerAndAssociations(List<Long> containerIds, List<Long> shipmentIds, List<Containers> containersToDelete) {
+        // Remove containers from packing associations
+        packingService.removeContainersFromPacking(containerIds);
+
+        // Detach the containers from any associated shipments
+        shipmentsContainersMappingDao.detachListShipments(containerIds, shipmentIds, false);
+
+        // Delete the containers from the database
+        containerDao.deleteAllById(containerIds);
     }
 
     private void recordAuditLogs(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {

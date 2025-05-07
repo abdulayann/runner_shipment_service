@@ -1,6 +1,20 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -27,9 +41,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
@@ -85,22 +99,6 @@ import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -118,20 +116,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 @SuppressWarnings("ALL")
 @Service
@@ -1199,6 +1198,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException{
         return consolidationV3Service.attachShipments(shipmentAttachDetachRequest);
+    }
+
+    @Override
+    public List<Long> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds) {
+        return List.of();
     }
 
     @Override

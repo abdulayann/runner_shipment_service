@@ -510,6 +510,11 @@ public class PackingV3Service implements IPackingV3Service {
         return masterDataResponse;
     }
 
+    @Override
+    public List<Long> filterContainerIdsAttachedToPacking(List<Long> containerIds) {
+        return List.of();
+    }
+
     private PackingResponse convertEntityToDto(Packing packing) {
         return jsonHelper.convertValue(packing, PackingResponse.class);
     }

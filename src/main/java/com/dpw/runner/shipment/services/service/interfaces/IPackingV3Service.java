@@ -36,4 +36,6 @@ public interface IPackingV3Service {
     PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel);
     Map<String, Object> getAllMasterData(Long id);
     Map<String, Object> fetchAllMasterDataByKey(PackingResponse packingResponse);
+
+    List<Long> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 }
