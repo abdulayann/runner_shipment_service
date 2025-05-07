@@ -195,7 +195,7 @@ public class PackingV3Util {
         return fields;
     }
 
-    public void addAllMasterDataInSingleCallList(List<PackingResponse> packingListResponse) {
+    public void addAllMasterDataInSingleCallList(List<PackingResponse> packingListResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -212,7 +212,11 @@ public class PackingV3Util {
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
-            packingListResponse.forEach(pack -> pack.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + pack.getId()), CacheConstants.MASTER_LIST, cacheMap)));
+            if (masterDataResponse == null) {
+                packingListResponse.forEach(pack -> pack.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + pack.getId()), CacheConstants.MASTER_LIST, cacheMap)));
+            } else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+            }
 
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
@@ -221,7 +225,7 @@ public class PackingV3Util {
         }
     }
 
-    public void addAllUnlocationInSingleCallList(List<PackingResponse> packingListResponse) {
+    public void addAllUnlocationInSingleCallList(List<PackingResponse> packingListResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -232,8 +236,11 @@ public class PackingV3Util {
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
 
-            packingListResponse.forEach(pack -> pack.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + pack.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
-
+            if (masterDataResponse == null) {
+                packingListResponse.forEach(pack -> pack.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + pack.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
+            } else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+            }
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -241,7 +248,7 @@ public class PackingV3Util {
         }
     }
 
-    public void addAllCommodityTypesInSingleCallList(List<PackingResponse> packingListResponse) {
+    public void addAllCommodityTypesInSingleCallList(List<PackingResponse> packingListResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -251,8 +258,11 @@ public class PackingV3Util {
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
             masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
 
-            packingListResponse.forEach(pack -> pack.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + pack.getId()), CacheConstants.COMMODITY, cacheMap)));
-
+            if (masterDataResponse == null) {
+                packingListResponse.forEach(pack -> pack.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + pack.getId()), CacheConstants.COMMODITY, cacheMap)));
+            } else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
+            }
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());

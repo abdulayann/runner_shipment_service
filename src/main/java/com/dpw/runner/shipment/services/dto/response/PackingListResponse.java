@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @ApiModel(value = "Packing response model")
@@ -20,5 +21,6 @@ public class PackingListResponse implements IRunnerResponse {
     private Integer totalPages = 0;
     @JsonIgnore
     private Long totalCount = 0L;
+    private Map<String, Object> masterData;
 }
 
