@@ -275,12 +275,6 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "shipment_reference_number")
     private String shipmentReferenceNumber;
 
-    @Column(name = "etd")
-    private LocalDateTime etd;
-
-    @Column(name = "eta")
-    private LocalDateTime eta;
-
     @Column(name = "is_reefer")
     private Boolean isReefer = false;
 
@@ -292,7 +286,7 @@ public class CustomerBooking extends MultiTenancy {
     private LocalDateTime cargoReadinessDate;
 
     @Column(name = "controlled")
-    private String controlled;
+    private Boolean controlled;
 
     @Column(name = "controlled_reference_number")
     @Size(max = 64)
