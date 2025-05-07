@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Map;
 import java.util.Optional;
 
 public interface IShipmentServiceV3 {
@@ -39,4 +40,6 @@ public interface IShipmentServiceV3 {
     void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse);
 
     String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
+
+    Map<String, Object>  getAllMasterData(Long shipmentId);
 }
