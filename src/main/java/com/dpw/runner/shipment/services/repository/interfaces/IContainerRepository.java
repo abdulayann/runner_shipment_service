@@ -36,6 +36,8 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
 
     List<Containers> findByConsolidationIdIn(List<Long> consolidationIds);
 
+    List<Containers> findByBookingIdIn(List<Long> bookingIds);
+
     List<Containers> findByIdIn(List<Long> containerIds);
 
     @Query(value = "SELECT c.consolidation_id AS consolidationId, c.container_code AS containerCode, c.container_number AS containerNumber, c.container_count AS containerCount " +

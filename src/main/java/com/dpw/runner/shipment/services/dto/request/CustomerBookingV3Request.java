@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import io.swagger.annotations.ApiModel;
@@ -15,11 +14,11 @@ import java.util.UUID;
 
 @Data
 @Builder
-@ApiModel("Customer Booking Request Model")
+@ApiModel("Customer Booking V3 Request Model")
 @ToString
 @AllArgsConstructor
 @NoArgsConstructor
-public class CustomerBookingRequest extends CommonRequest implements IRunnerRequest {
+public class CustomerBookingV3Request extends CommonRequest implements IRunnerRequest {
     private Long id;
     private BookingStatus bookingStatus;
     private String serviceMode;
@@ -57,7 +56,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;
     private List<FileRepoRequest> fileRepoList;
-    private List<NotesRequest> notesList;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private Boolean isPackageManual;
@@ -82,9 +80,33 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String orderManagementNumber;
     private Boolean isDg;
     private String rejectionRemarks;
-    private List<ReferenceNumbersRequest> referenceNumbersList;
-    private String shipmentReferenceNumber;
-    private String integrationSource;
-    private List<Parties> additionalParties;
-    private String paymentTerms;
+    private LocalDateTime etd;
+    private LocalDateTime eta;
+    private Boolean isReefer;
+    private String incotermsLocation;
+    private LocalDateTime cargoReadinessDate;
+    private String controlled;
+    private String controlledReferenceNumber;
+    private String partner;
+    private Long bookingAgent;
+    private String coLoadBkgNumber;
+    private String pickupAtOriginType;
+    private String deliveryAtDestinationType;
+    private String brokerageAtOriginType;
+    private String brokerageAtDestinationType;
+    private Long pickupAtOrigin;
+    private Long deliveryAtDestination;
+    private Long brokerageAtOrigin;
+    private Long brokerageAtDestination;
+    private LocalDateTime brokerageAtOriginDate;
+    private LocalDateTime brokerageAtDestinationDate;
+    private LocalDateTime terminalCutoff;
+    private LocalDateTime verifiedGrossMassCutoff;
+    private LocalDateTime shippingInstructionCutoff;
+    private LocalDateTime dgCutoff;
+    private LocalDateTime reeferCutoff;
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+    private LocalDateTime latestArrivalTime;
 }

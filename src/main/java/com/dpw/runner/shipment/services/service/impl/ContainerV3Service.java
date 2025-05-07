@@ -16,11 +16,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -31,11 +27,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -52,11 +44,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -90,6 +78,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 @Service
 @Slf4j
@@ -176,7 +167,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional
-    public ContainerResponse create(ContainerV3Request containerRequest) {
+    public ContainerResponse create(ContainerV3Request containerRequest, String module) {
         List<Containers> containersList = getSiblingContainers(containerRequest);
         containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
         String requestId = LoggerHelper.getRequestIdFromMDC();
@@ -190,26 +181,7 @@ public class ContainerV3Service implements IContainerV3Service {
         // Save to DB
         Containers savedContainer = containerDao.save(container);
         log.info("Saved container entity to DB | Container ID: {} | Request ID: {}", savedContainer.getId(), requestId);
-
-        // Post-save logic
-        // Run afterSave and assignShipments in parallel
-        CompletableFuture<Void> afterSaveFuture = CompletableFuture.runAsync(
-                masterDataUtils.withMdc(() -> afterSave(savedContainer, true)),
-                executorService
-        );
-
-        CompletableFuture<Void> assignShipmentsFuture = CompletableFuture.runAsync(
-                masterDataUtils.withMdc(() ->
-                        shipmentsContainersMappingDao.assignShipments(
-                                savedContainer.getId(),
-                                containerRequest.getShipmentsIds(),
-                                false)
-                ),
-                executorService
-        );
-
-        // Wait for both async operations to complete
-        CompletableFuture.allOf(afterSaveFuture, assignShipmentsFuture).join();
+        handlePostSaveActions(savedContainer, containerRequest, module);
 
         // Audit logging
         recordAuditLogs(null, List.of(savedContainer), DBOperationType.CREATE);
@@ -223,7 +195,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional
-    public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList) {
+    public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) {
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
@@ -233,29 +205,7 @@ public class ContainerV3Service implements IContainerV3Service {
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
-        // Execute post-save processing for each container asynchronously
-        CompletableFuture<Void> afterSaveFuture = CompletableFuture.allOf(
-                updatedContainers.stream()
-                        .map(container -> CompletableFuture.runAsync(masterDataUtils.withMdc(() ->
-                                        afterSave(container, false)),
-                                executorService)
-                        ).toArray(CompletableFuture[]::new)
-        );
-
-        // Run container sync operations in parallel for each updated container
-        CompletableFuture<Void> containerSyncFuture = CompletableFuture.allOf(
-                updatedContainers.stream()
-                        .map(container -> CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
-                                            Long containerId = container.getId();
-                                            List<ShipmentsContainersMapping> mappings = shipmentsContainersMappingDao.findByContainerIdIn(List.of(containerId));
-                                            containersSync.sync(List.of(containerId), new PageImpl<>(mappings));
-                                        }),
-                                        executorService)
-                        ).toArray(CompletableFuture[]::new)
-        );
-
-        // Wait for both async operations to complete
-        CompletableFuture.allOf(afterSaveFuture, containerSyncFuture).join();
+        runAsyncPostSaveOperations(updatedContainers, module);
 
         // Add audit logs for all updated containers
         recordAuditLogs(originalContainers, updatedContainers, DBOperationType.UPDATE);
@@ -272,7 +222,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList) {
+    public BulkContainerResponse deleteBulk(List<ContainerV3Request> containerRequestList, String module) {
         // Ensure the request contains all necessary and valid container IDs
         containerValidationUtil.validateDeleteBulkRequest(containerRequestList);
 
@@ -397,6 +347,8 @@ public class ContainerV3Service implements IContainerV3Service {
         } else if (containerRequest.getShipmentsIds() != null && containerRequest.getShipmentsIds().size() == 1) {
             Long shipmentId = containerRequest.getShipmentsIds().iterator().next();
             return containerDao.findByShipmentId(shipmentId);
+        } else if (containerRequest.getBookingId() != null) {
+            return containerDao.findByBookingIdIn(List.of(containerRequest.getBookingId()));
         }
         return new ArrayList<>();
     }
@@ -795,6 +747,62 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
+    private void handlePostSaveActions(Containers container, ContainerV3Request request, String module) {
+        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        futures.add(CompletableFuture.runAsync(
+                masterDataUtils.withMdc(() -> afterSave(container, true)),
+                executorService
+        ));
+
+        Optional.of(module)
+                .filter(SHIPMENT::equals)
+                .map(m -> CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() -> shipmentsContainersMappingDao.assignShipments(
+                                container.getId(), request.getShipmentsIds(), false
+                        )),
+                        executorService
+                ))
+                .ifPresent(futures::add);
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    }
+
+    private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
+        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
+        CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
+        CompletableFuture.allOf(afterSaveFuture, syncFuture).join();
+    }
+
+    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers) {
+        return CompletableFuture.allOf(
+                containers.stream()
+                        .map(container -> CompletableFuture.runAsync(
+                                masterDataUtils.withMdc(() -> afterSave(container, false)),
+                                executorService
+                        ))
+                        .toArray(CompletableFuture[]::new)
+        );
+    }
+
+    private CompletableFuture<Void> runContainerSyncAsync(List<Containers> containers) {
+        return CompletableFuture.allOf(
+                containers.stream()
+                        .map(container -> CompletableFuture.runAsync(
+                                masterDataUtils.withMdc(() -> {
+                                    Long containerId = container.getId();
+                                    List<ShipmentsContainersMapping> mappings =
+                                            shipmentsContainersMappingDao.findByContainerIdIn(List.of(containerId));
+                                    containersSync.sync(List.of(containerId), new PageImpl<>(mappings));
+                                }),
+                                executorService
+                        ))
+                        .toArray(CompletableFuture[]::new)
+        );
+    }
 
     @PostConstruct
     private void setDefaultIncludeColumns() {

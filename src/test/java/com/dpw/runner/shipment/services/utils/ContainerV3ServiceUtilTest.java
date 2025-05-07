@@ -25,8 +25,8 @@ public class ContainerV3ServiceUtilTest {
   @Test
   void testValidateUpdateBulkRequest_withValidRequests_shouldPass() {
     List<ContainerV3Request> requests = List.of(
-            ContainerV3Request.builder().id(1L).build(),
-            ContainerV3Request.builder().id(2L).build()
+        ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).build(),
+        ContainerV3Request.builder().id(2L).containerCode("Code").commodityGroup("FCR").containerCount(2L).build()
     );
 
     assertDoesNotThrow(() -> containerValidationUtil.validateUpdateBulkRequest(requests));
@@ -51,8 +51,8 @@ public class ContainerV3ServiceUtilTest {
   @Test
   void testValidateUpdateBulkRequest_withNullId_shouldThrowException() {
     List<ContainerV3Request> requests = List.of(
-            ContainerV3Request.builder().id(1L).build(),
-            ContainerV3Request.builder().id(null).build()
+        ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).build(),
+        ContainerV3Request.builder().id(null).containerCode("Code").commodityGroup("FCR").containerCount(2L).build()
     );
 
     Exception exception = assertThrows(IllegalArgumentException.class,

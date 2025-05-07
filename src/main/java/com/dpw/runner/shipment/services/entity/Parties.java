@@ -42,6 +42,9 @@ public class Parties extends MultiTenancy {
     @Column(name = "party_type")
     private String type;
 
+    @Column(name = "party_country")
+    private String country;
+
     @Column(name = "org_code")
     private String orgCode;
 

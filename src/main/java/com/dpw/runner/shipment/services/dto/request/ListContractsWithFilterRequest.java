@@ -13,5 +13,6 @@ public class ListContractsWithFilterRequest implements IRunnerRequest {
     private String cargoType;
     private String origin;
     private String destination;
+    private Boolean isDgEnabled = false;
     private ListContractRequest listContractRequest;
 }

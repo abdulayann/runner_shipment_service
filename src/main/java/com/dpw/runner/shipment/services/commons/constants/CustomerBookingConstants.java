@@ -6,6 +6,7 @@ public class CustomerBookingConstants {
     public static final String DATE_FORMAT = "yyyy/MM/dd";
     public static final String ONE = "1";
     public static final String CUSTOMER_BOOKING_API_HANDLE = "/api/v2/customer-booking";
+    public static final String CUSTOMER_BOOKING_API_HANDLE_V3 = "/api/v3/customer-booking";
     public static final String PLATFORM_CREATE_BOOKING = "/platform-create-update";
     public static final String PLATFORM_UPDATE_BOOKING = "/platform-update";
     public static final String CREATE_SUCCESSFUL = "Successful Customer Booking Data Creation";
