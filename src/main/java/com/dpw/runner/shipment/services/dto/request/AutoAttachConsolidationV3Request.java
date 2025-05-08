@@ -15,5 +15,5 @@ public class AutoAttachConsolidationV3Request extends ListCommonRequest {
     private String transportMode;
     private String direction;
     private Long shipId;
-    private ArrayList<Long> branchIds;
+    private ArrayList<Integer> branchIds;
 }
