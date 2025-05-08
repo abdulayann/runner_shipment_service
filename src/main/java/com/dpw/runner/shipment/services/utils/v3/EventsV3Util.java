@@ -144,6 +144,7 @@ public class EventsV3Util {
 
     private void processCADEEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
+                Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
                         oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
 
@@ -162,6 +163,7 @@ public class EventsV3Util {
 
     private void processCACOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
+                Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                         oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
@@ -316,19 +318,19 @@ public class EventsV3Util {
     }
 
     private void processECCCEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted(),
-                        oldEntity.getAdditionalDetails().getIsExportCustomClearanceCompleted(), isNewShipment)) {
+        if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                isEventChanged(shipmentDetails.getBrokerageAtOriginDate(),
+                        oldEntity.getBrokerageAtOriginDate(), isNewShipment)) {
 
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.ECCC))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
                 for (Events event : dbEvents) {
-                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
-                        commonUtils.getUserZoneTime(LocalDateTime.now()), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()), null));
             }
         }
     }
