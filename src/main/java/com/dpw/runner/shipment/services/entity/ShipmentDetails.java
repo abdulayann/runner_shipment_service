@@ -699,6 +699,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_borrowed")
     private Boolean isBorrowed;
 
+    @Column(name = "borrowed_from")
+    @OrganizationMasterData
+    private Long borrowedFrom;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

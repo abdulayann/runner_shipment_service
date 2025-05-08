@@ -178,10 +178,9 @@ class PackingV3UtilTest {
 
         doNothing().when(masterDataUtils).pushToCache(any(), any(), any(), any(), any());
 
-        when(masterDataUtils.setMasterData(any(), any(), any()))
-                .thenReturn(Map.of("dummy", "data"));
+        doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), anyString(), any(), any());
 
-        assertDoesNotThrow(() -> packingV3Util.addAllMasterDataInSingleCallList(packingResponses));
+        assertDoesNotThrow(() -> packingV3Util.addAllMasterDataInSingleCallList(packingResponses, new HashMap<>()));
     }
 
     @Test
@@ -196,14 +195,13 @@ class PackingV3UtilTest {
 
         doNothing().when(masterDataUtils).pushToCache(any(), any(), any(), any(), any());
 
-        when(masterDataUtils.setMasterData(any(), any(), any()))
-                .thenReturn(Map.of("dummy", "data"));
+        doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), anyString(), any(), any());
 
-        assertDoesNotThrow(() -> packingV3Util.addAllUnlocationInSingleCallList(packingResponses));
+        assertDoesNotThrow(() -> packingV3Util.addAllUnlocationInSingleCallList(packingResponses, new HashMap<>()));
     }
 
     @Test
-    void testAddAllCommodityTypesInSingleCall_success() {
+    void testAddAllCommodityTypesInSingleCallList_success() {
         List<PackingResponse> packingResponses = List.of(sampleResponse);
 
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any()))
@@ -214,44 +212,65 @@ class PackingV3UtilTest {
 
         doNothing().when(masterDataUtils).pushToCache(any(), any(), any(), any(), any());
 
-        when(masterDataUtils.setMasterData(any(), any(), any()))
-                .thenReturn(Map.of("dummy", "data"));
+        doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), anyString(), any(), any());
 
-        assertDoesNotThrow(() -> packingV3Util.addAllCommodityTypesInSingleCallList(packingResponses));
+        assertDoesNotThrow(() -> packingV3Util.addAllCommodityTypesInSingleCallList(packingResponses, new HashMap<>()));
     }
 
     @Test
     void testAddAllMasterDataInSingleCallList_shouldHandleException() {
-        List<PackingResponse> packingResponses = List.of(new PackingResponse());
+        List<PackingResponse> packingResponses = List.of(sampleResponse);
+        List<MasterListRequest> mockRequests = List.of(new MasterListRequest());
 
         when(masterDataUtils.createInBulkMasterListRequest(any(), any(), any(), any(), any()))
-                .thenThrow(new RuntimeException("Master list fetch failed"));
+                .thenReturn(mockRequests);
 
-        assertDoesNotThrow(() -> packingV3Util.addAllMasterDataInSingleCallList(packingResponses));
+        when(masterDataUtils.fetchInBulkMasterList(any()))
+                .thenReturn(Map.of("key", new EntityTransferMasterLists()));
+
+        doNothing().when(masterDataUtils).pushToCache(any(), any(), any(), any(), any());
+
+        when(masterDataUtils.setMasterData(any(), any(), any())).thenThrow(new RuntimeException("Simulated Exception"));
+
+        assertDoesNotThrow(() -> packingV3Util.addAllMasterDataInSingleCallList(packingResponses, null));
 
         verify(masterDataUtils, times(1)).createInBulkMasterListRequest(any(), any(), any(), any(), any());
     }
 
     @Test
     void testAddAllUnlocationInSingleCallList_shouldHandleException() {
-        List<PackingResponse> packingResponses = List.of(new PackingResponse());
+        List<PackingResponse> packingResponses = List.of(sampleResponse);
 
         when(masterDataUtils.createInBulkUnLocationsRequest(any(), any(), any(), any(), any()))
-                .thenThrow(new RuntimeException("Unlocation fetch error"));
+                .thenReturn(List.of("loc1"));
 
-        assertDoesNotThrow(() -> packingV3Util.addAllUnlocationInSingleCallList(packingResponses));
+        when(masterDataUtils.fetchInBulkUnlocations(anySet(), anyString()))
+                .thenReturn(Map.of("loc1", new EntityTransferUnLocations()));
+
+        doNothing().when(masterDataUtils).pushToCache(any(), any(), any(), any(), any());
+
+        when(masterDataUtils.setMasterData(any(), any(), any())).thenThrow(new RuntimeException("Simulated Exception"));
+
+        assertDoesNotThrow(() -> packingV3Util.addAllUnlocationInSingleCallList(packingResponses, null));
 
         verify(masterDataUtils, times(1)).createInBulkUnLocationsRequest(any(), any(), any(), any(), any());
     }
 
     @Test
-    void testAddAllCommodityTypesInSingleCall_shouldHandleException() {
-        List<PackingResponse> packingResponses = List.of(new PackingResponse());
+    void testAddAllCommodityTypesInSingleCallList_shouldHandleException() {
+        List<PackingResponse> packingResponses = List.of(sampleResponse);
 
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any()))
-                .thenThrow(new RuntimeException("Commodity fetch failed"));
+                .thenReturn(List.of("commodity1"));
 
-        assertDoesNotThrow(() -> packingV3Util.addAllCommodityTypesInSingleCallList(packingResponses));
+        when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
+                .thenReturn(Map.of("commodity1", new EntityTransferCommodityType()));
+
+        doNothing().when(masterDataUtils).pushToCache(any(), any(), any(), any(), any());
+
+        when(masterDataUtils.setMasterData(any(), any(), any())).thenThrow(new RuntimeException("Simulated Exception"));
+
+        assertDoesNotThrow(() -> packingV3Util.addAllCommodityTypesInSingleCallList(packingResponses, null));
 
         verify(masterDataUtils, times(1)).createInBulkCommodityTypeRequest(any(), any(), any(), any(), any());
     }
