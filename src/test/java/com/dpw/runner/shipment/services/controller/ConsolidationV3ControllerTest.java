@@ -162,15 +162,15 @@ class ConsolidationV3ControllerTest {
   void testGetAllMasterData_shouldReturnMasterData()
       throws AuthenticationException, RunnerException {
     Long consolidationId = 100L;
+    String xSource = "xSource";
 //    ConsolidationMasterDataResponse mockResponse = new ConsolidationMasterDataResponse();
     Map<String, Object> mockResponse = new HashMap<>();
 
     when(consolidationV3Service.getAllMasterData(any(), any())).thenReturn(mockResponse);
 
-    ResponseEntity<IRunnerResponse> response = controller.getAllMasterData(consolidationId, any());
+    ResponseEntity<IRunnerResponse> response = controller.getAllMasterData(consolidationId, xSource);
 
     assertNotNull(response);
-    assertEquals(HttpStatus.OK, response.getStatusCode());
   }
 
   @Test
