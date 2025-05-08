@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
@@ -52,8 +53,8 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String contractId;
     private String contractStatus;
     private String businessCode;
-    private List<ContainerRequest> containersList;
-    private List<PackingRequest> packingList;
+    private List<ContainerV3Request> containersList;
+    private List<PackingV3Request> packingList;
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;
     private List<FileRepoRequest> fileRepoList;
@@ -86,12 +87,10 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String integrationSource;
     private List<Parties> additionalParties;
     private String paymentTerms;
-    private LocalDateTime etd;
-    private LocalDateTime eta;
     private Boolean isReefer;
     private String incotermsLocation;
     private LocalDateTime cargoReadinessDate;
-    private String controlled;
+    private Boolean controlled;
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
