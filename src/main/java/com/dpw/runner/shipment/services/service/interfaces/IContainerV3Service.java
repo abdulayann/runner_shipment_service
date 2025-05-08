@@ -28,7 +28,6 @@ public interface IContainerV3Service {
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
     ContainerListResponse list(ListCommonRequest listCommonRequest, boolean isMasterData, String xSource) throws RunnerException;
-    ContainerListResponse list(ListCommonRequest listCommonRequest, boolean isMasterData) throws RunnerException;
 
     void processContainersAfterShipmentAttachment(
             Long consolidationId,
