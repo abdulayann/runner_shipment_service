@@ -2129,10 +2129,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * screen (`fromAttachShipment` is true), additional fields like ETA, ETD, and flight number are copied.
      *
      * @param console            The consolidation from which carrier details are sourced
-     * @param fromAttachShipment Boolean flag indicating if shipment was attached via UI
      * @param shipmentDetails    The shipment to update
      */
-    private void updateCarrierDetailsForLinkedShipments(ConsolidationDetails console, Boolean fromAttachShipment, ShipmentDetails shipmentDetails) {
+    private void updateCarrierDetailsForLinkedShipments(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
         if (console.getCarrierDetails() != null) {
             // Basic carrier detail updates from consolidation to shipment
             shipmentDetails.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
@@ -2141,19 +2140,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
             shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            shipmentDetails.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
+            shipmentDetails.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
+            shipmentDetails.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
+            shipmentDetails.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
+            shipmentDetails.getCarrierDetails().setOrigin(console.getCarrierDetails().getOrigin());
+            shipmentDetails.getCarrierDetails().setDestination(console.getCarrierDetails().getDestination());
 
-            // Only update ETA, ETD, and flight number if attached from shipment screen
-            if (fromAttachShipment != null && fromAttachShipment) {
-                shipmentDetails.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
-                shipmentDetails.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
-                shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
-            }
-
-            // If transport mode is air, update air-specific fields like ATD, ATA, flight number
+            // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
-                shipmentDetails.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
-                shipmentDetails.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
             }
         }
     }
@@ -2187,6 +2183,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setCoLoadBkgNumber(console.getCoLoadBookingReference());
         shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
         shipmentDetails.setBookingNumber(console.getCarrierBookingRef());
+        shipmentDetails.setShipmentType(console.getContainerCategory());
+        shipmentDetails.getAdditionalDetails().setDeliveryMode(console.getDeliveryMode());
 
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();
@@ -2214,7 +2212,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Update carrier details if required
-        updateCarrierDetailsForLinkedShipments(console, fromAttachShipment, shipmentDetails);
+        updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
         // Perform CFS cut-off date validation if enabled and required
         if (consolidationV3Util.checkConsolidationEligibleForCFSValidation(console)
