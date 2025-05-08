@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
@@ -24,19 +25,23 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -46,7 +51,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -56,8 +63,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -84,9 +93,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Autowired
     private IShipmentServiceV3 shipmentServiceV3;
     @Autowired
+    private IConsolidationV3Service consolidationV3Service;
+    @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
     @Autowired
     private CommonUtils commonUtils;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
@@ -102,14 +115,14 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
     @Transactional
     @Override
-    public RoutingsResponse create(CommonRequestModel commonRequestModel,  String module) throws RunnerException {
+    public RoutingsResponse create(CommonRequestModel commonRequestModel, String module) throws RunnerException {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
-        if(request == null){
+        if (request == null) {
             String resp = "Request is null for Routing Create";
             log.error("Request is null for Routing Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException(resp);
         }
-
+        routingValidationUtil.validateModule(request, module);
         Routings routings = convertRequestToEntity(request);
         try {
             routings = routingsDao.save(routings);
@@ -128,34 +141,117 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return convertEntityToDto(routings);
     }
 
-    public void afterSave(List<Routings> routingList, String module) {
-        boolean hasMainCarriage = routingList.stream()
-                .anyMatch(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-        if (hasMainCarriage && Constants.SHIPMENT.equalsIgnoreCase(module)) {
-            Long shipmentId = routingList.get(0).getShipmentId();
-            updateShipmentCarrierDetailsFromMainCarriage(shipmentId);
+    private void createAuditLogs(Routings routings, Routings oldRoutings, String operation) throws RunnerException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException, JsonProcessingException, InvocationTargetException {
+        auditLogService.addAuditLog(
+                AuditLogMetaData.builder()
+                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                        .newData(routings)
+                        .prevData(oldRoutings)
+                        .parent(Routings.class.getSimpleName())
+                        .parentId(routings.getId())
+                        .operation(operation).build()
+        );
+    }
+
+    public void afterSave(List<Routings> routingList, String module) throws RunnerException {
+        List<Routings> mainCarriageList = routingList.stream()
+                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+        if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList);
+        } else if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
+            //updates routings to attached shipments
+            Long consolidationId = mainCarriageList.get(0).getConsolidationId();
+            ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
+            Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
+            for (ShipmentDetails shipmentDetails : shipmentsList) {
+                List<Routings> originalRoutings = shipmentDetails.getRoutingsList();
+                List<Routings> updatedRoutings = new ArrayList<>(originalRoutings);
+
+                // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
+                List<Integer> inheritedIndexes = new ArrayList<>();
+                for (int i = 0; i < updatedRoutings.size(); i++) {
+                    Routings routing = updatedRoutings.get(i);
+                    if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                            Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
+                        inheritedIndexes.add(i);
+                    }
+                }
+
+                // Step 2: Remove those inherited MAIN_CARRIAGE entries
+                updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                        Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+
+                // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
+                List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
+                        .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                        .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
+                        .toList();
+
+                // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
+                int offset = 0;
+                for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
+                    int insertAt = i < inheritedIndexes.size()
+                            ? inheritedIndexes.get(i)
+                            : offset; // append to end if more than removed
+                    if (insertAt >= updatedRoutings.size()) {
+                        updatedRoutings.add(consolidatedMainCarriages.get(i));
+                    } else {
+                        updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
+                    }
+                    offset = insertAt + 1;
+                }
+
+                // Step 5: Push to update
+                updateBulk(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class), Constants.SHIPMENT);
+            }
         }
+    }
+
+    private Routings cloneRoutingForConsolidation(Routings source, Long consolidationId) {
+        Routings cloned = new Routings();
+        cloned.setConsolidationId(consolidationId);
+        cloned.setBookingId(null);
+        cloned.setCarriage(source.getCarriage());
+        cloned.setLeg(source.getLeg());
+        cloned.setMode(source.getMode());
+        cloned.setRoutingStatus(source.getRoutingStatus());
+        cloned.setVesselName(source.getVesselName());
+        cloned.setPol(source.getPol());
+        cloned.setPod(source.getPod());
+        cloned.setDomestic(source.getIsDomestic());
+        cloned.setEta(source.getEta());
+        cloned.setEtd(source.getEtd());
+        cloned.setAta(source.getAta());
+        cloned.setAtd(source.getAtd());
+        // shipment should be null for the cloned routing being assigned to cnsole
+        cloned.setShipmentId(null);
+        cloned.setIsLinked(source.getIsLinked());
+        cloned.setIsSelectedForDocument(source.getIsSelectedForDocument());
+        cloned.setVoyage(source.getVoyage());
+        cloned.setAircraftRegistration(source.getAircraftRegistration());
+        cloned.setFlightNumber(source.getFlightNumber());
+        cloned.setAircraftType(source.getAircraftType());
+        cloned.setVehicleNumber(source.getVehicleNumber());
+        cloned.setRouteLegId(source.getRouteLegId());
+        cloned.setTransitDays(source.getTransitDays());
+        cloned.setCarrier(source.getCarrier());
+        cloned.setTruckReferenceNumber(source.getTruckReferenceNumber());
+        cloned.setCarrierCountry(source.getCarrierCountry());
+        cloned.setOriginPortLocCode(source.getOriginPortLocCode());
+        cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
+        cloned.setInheritedFromConsolidation(false);
+        return cloned;
     }
 
     /**
      * Updates shipment's carrier details from main carriage routing legs based on tenantSettings
      */
-    private void updateShipmentCarrierDetailsFromMainCarriage(Long shipmentId) {
-        if (shipmentId == null)
-            return;
-        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(shipmentId);
-        if(shipmentDetailsOptional.isEmpty())
-            return;
+    private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
+        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(mainCarriageRoutings.get(0).getShipmentId());
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
-        List<Routings> mainCarriageRoutings = routingsDao.findByShipmentIdAndCarriage(shipmentDetails.getId(), RoutingCarriage.MAIN_CARRIAGE);
-        if (mainCarriageRoutings.isEmpty()) return;
-
-        boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
-
-        if (isRouteMasterEnabled) {
-            updateCarrierDetails(shipmentDetails.getCarrierDetails(), mainCarriageRoutings);
-            carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
-        }
+        updateCarrierDetails(shipmentDetails.getCarrierDetails(), mainCarriageRoutings);
+        carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
     }
 
     /**
@@ -177,11 +273,12 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     @Override
-    public RoutingsResponse update(CommonRequestModel commonRequestModel,  String module) throws RunnerException {
+    public RoutingsResponse update(CommonRequestModel commonRequestModel, String module) throws RunnerException {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         routingValidationUtil.validateUpdateRequest(request);
+        routingValidationUtil.validateModule(request, module);
         Optional<Routings> oldEntity = routingsDao.findById(request.getId());
-        if(oldEntity.isEmpty()){
+        if (oldEntity.isEmpty()) {
             log.debug(RoutingConstants.ROUTING_NULL_FOR_ID_ERROR, request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -252,7 +349,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         routingValidationUtil.validateDeleteRequest(request);
         Optional<Routings> routing = routingsDao.findById(request.getId());
-        if(routing.isEmpty()){
+        if (routing.isEmpty()) {
             log.debug(RoutingConstants.ROUTING_NULL_FOR_ID_ERROR, request.getId());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -274,7 +371,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     public RoutingsResponse retrieveById(CommonRequestModel commonRequestModel, String xSource) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error(RoutingConstants.ROUTING_ID_NULL_FOR_RETRIEVE, LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException(RoutingConstants.ID_GUID_NULL_ERROR);
         }
@@ -309,50 +406,49 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
     @Override
     @Transactional
-    public BulkRoutingResponse updateBulk(List<RoutingsRequest> routingListRequest, String module) throws RunnerException {
+    public BulkRoutingResponse updateBulk(List<RoutingsRequest> incomingRoutings, String module) throws RunnerException {
+        //validate if list has same shipment id in all and shipment id and consol id should not be present at a time
+        routingValidationUtil.validateRoutingsRequest(incomingRoutings, module);
+        routingValidationUtil.validateMainCarriageAdjacencyInIncoming(incomingRoutings);
         // Separate IDs and determine existing routing
-        List<Long> incomingIds = routingListRequest.stream()
-                .map(RoutingsRequest::getId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
+        List<Long> incomingIds = getIncomingRoutingsIds(incomingRoutings);
 
-        List<Routings> existingRoutings = routingsDao.findByIdIn(incomingIds);
-
-        // Validate incoming request
-        routingValidationUtil.validateUpdateBulkRequest(routingListRequest, existingRoutings);
-
-        // Separate into create and update requests
-        List<RoutingsRequest> updateRequests = new ArrayList<>();
-        List<RoutingsRequest> createRequests = new ArrayList<>();
-
-        for (RoutingsRequest request : routingListRequest) {
-            if (request.getId() != null && incomingIds.contains(request.getId())) {
-                updateRequests.add(request);
-            } else {
-                createRequests.add(request);
-            }
+        List<Routings> existingRoutings = new ArrayList<>();
+        List<Routings> oldConvertedRouting = null;
+        if (!CollectionUtils.isEmpty(incomingIds)) {
+            existingRoutings = routingsDao.findByIdIn(incomingIds);
+            // Validate incoming request
+            routingValidationUtil.validateUpdateBulkRequest(incomingRoutings, existingRoutings);
+            oldConvertedRouting = jsonHelper.convertValueToList(existingRoutings, Routings.class);
         }
+        List<Routings> oldRoutingsForDeletion = deleteOrphanRoutings(incomingRoutings, module);
 
-        // Convert and process updates
-        List<Routings> oldConvertedRouting = jsonHelper.convertValueToList(existingRoutings, Routings.class);
-        List<Routings> updatedRouting = jsonHelper.convertValueToList(updateRequests, Routings.class);
-        List<Routings> savedUpdatedRouting = routingsDao.saveAll(updatedRouting);
+        List<Routings> routingsList = reOrderRoutings(jsonHelper.convertValueToList(incomingRoutings, Routings.class), existingRoutings);
+        // Separate into create and update requests
 
-        // Convert and process creates
-        List<Routings> newRouting = jsonHelper.convertValueToList(createRequests, Routings.class);
-        List<Routings> savedNewRouting = routingsDao.saveAll(newRouting);
-
-        // Combine results for parent calculation and auditing
-        List<Routings> allSavedRouting = new ArrayList<>();
-        allSavedRouting.addAll(savedNewRouting);
-        allSavedRouting.addAll(savedUpdatedRouting);
+        List<Routings> allSavedRouting = routingsDao.saveAll(routingsList);
 
         ParentResult parentResult = getParentDetails(allSavedRouting, module);
+        List<Routings> matchedIncomingRoutings = new ArrayList<>();
+        List<Routings> newRoutings = new ArrayList<>();
 
+        for (Routings routing : allSavedRouting) {
+            if (incomingIds.contains(routing.getId())) {
+                matchedIncomingRoutings.add(routing);
+            } else {
+                newRoutings.add(routing);
+            }
+        }
         // Audit logs
-        recordAuditLogs(oldConvertedRouting, savedUpdatedRouting, DBOperationType.UPDATE, parentResult);
-        recordAuditLogs(null, savedNewRouting, DBOperationType.CREATE, parentResult);
+        if (!CollectionUtils.isEmpty(oldConvertedRouting)) {
+            recordAuditLogs(oldConvertedRouting, matchedIncomingRoutings, DBOperationType.UPDATE, parentResult);
+        }
+        if (!CollectionUtils.isEmpty(newRoutings)) {
+            recordAuditLogs(null, newRoutings, DBOperationType.CREATE, parentResult);
+        }
+        if (!CollectionUtils.isEmpty(oldRoutingsForDeletion)) {
+            recordAuditLogs(oldRoutingsForDeletion, null, DBOperationType.DELETE, parentResult);
+        }
 
         // Convert to response
         List<RoutingsResponse> routingResponses = jsonHelper.convertValueToList(allSavedRouting, RoutingsResponse.class);
@@ -363,6 +459,38 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 .routingsResponseList(routingResponses)
                 .message(prepareBulkUpdateMessage(routingResponses))
                 .build();
+    }
+
+    @NotNull
+    private static List<Long> getIncomingRoutingsIds(List<RoutingsRequest> incomingRoutings) {
+        return incomingRoutings.stream()
+                .map(RoutingsRequest::getId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    private List<Routings> deleteOrphanRoutings(List<RoutingsRequest> incomingRoutings, String module) {
+        List<Long> incomingRoutingsIds = getIncomingRoutingsIds(incomingRoutings);
+        List<Routings> existingRoutingsForDeletion = getExistingRoutingByModule(incomingRoutings, module);
+        List<Routings> routingsToDelete = existingRoutingsForDeletion.stream()
+                .filter(routing -> !incomingRoutingsIds.contains(routing.getId()))
+                .toList();
+        if (!CollectionUtils.isEmpty(routingsToDelete)) {
+            List<Routings> oldRoutingsForDeletion = jsonHelper.convertValueToList(routingsToDelete, Routings.class);
+            routingsDao.deleteAll(routingsToDelete);
+            return oldRoutingsForDeletion;
+        }
+        return new ArrayList<>();
+    }
+
+    private List<Routings> getExistingRoutingByModule(List<RoutingsRequest> incomingRoutings, String module) {
+        if (Constants.SHIPMENT.equals(module)) {
+            return routingsDao.findByShipmentId(incomingRoutings.get(0).getShipmentId());
+        } else if (Constants.CONSOLIDATION.equals(module)) {
+            return routingsDao.findByConsolidationId(incomingRoutings.get(0).getConsolidationId());
+        }
+        return new ArrayList<>();
     }
 
     private void recordAuditLogs(List<Routings> oldRouting, List<Routings> newRouting, DBOperationType operationType, ParentResult parentResult) {
@@ -434,9 +562,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
         return message;
     }
+
     @Override
     @Transactional
-    public BulkRoutingResponse deleteBulk(List<RoutingsRequest> routingListRequest,  String module) throws RunnerException {
+    public BulkRoutingResponse deleteBulk(List<RoutingsRequest> routingListRequest, String module) throws RunnerException {
         routingValidationUtil.validateDeleteBulkRequest(routingListRequest);
         // Extract unique routing IDs from the request
         List<Long> routingIds = routingListRequest.stream()
@@ -497,6 +626,11 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return getAllMasterDataForRoute(response);
     }
 
+    @Override
+    public List<Routings> getRoutingsByShipmentId(Long id) {
+        return routingsDao.findByShipmentId(id);
+    }
+
     public Map<String, Object> getAllMasterDataForRoute(RoutingsResponse response) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         try {
@@ -510,5 +644,231 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_ROUTING_RETRIEVE, ex.getLocalizedMessage());
         }
         return masterDataResponse;
+    }
+
+    public List<Routings> reOrderRoutings(List<Routings> incomingRoutings, List<Routings> existingRoutings) {
+        Set<UUID> existingGuids = existingRoutings.stream()
+                .map(Routings::getGuid)
+                .collect(Collectors.toSet());
+
+        // First validate main carriage for inheritedFromConsolidation rules
+        validateMainCarriage(incomingRoutings);
+
+        // Reorder PRE and ON carriage to move violations to end of their blocks
+        List<Routings> reorderedList = reorderPreAndOnCarriage(incomingRoutings);
+
+        // Now separate based on carriage type after reordering
+        List<Routings> preCarriage = new ArrayList<>();
+        List<Routings> mainCarriage = new ArrayList<>();
+        List<Routings> onCarriage = new ArrayList<>();
+
+        for (Routings routing : reorderedList) {
+            switch (routing.getCarriage().name()) {
+                case "PRE_CARRIAGE" -> preCarriage.add(routing);
+                case "MAIN_CARRIAGE" -> mainCarriage.add(routing);
+                case "ON_CARRIAGE" -> onCarriage.add(routing);
+                default -> throw new ValidationException("Invalid routing carriage");
+            }
+        }
+
+        List<Routings> orderedPreCarriage = processCarriage(preCarriage, existingGuids);
+        List<Routings> orderedMainCarriage = processMainCarriage(mainCarriage, existingGuids);
+        List<Routings> orderedOnCarriage = processCarriage(onCarriage, existingGuids);
+
+        AtomicLong legCount = new AtomicLong(1);
+        List<Routings> finalOrderedRoutings = new ArrayList<>();
+        mergeRoutingList(orderedPreCarriage, finalOrderedRoutings, legCount);
+        mergeRoutingList(orderedMainCarriage, finalOrderedRoutings, legCount);
+        mergeRoutingList(orderedOnCarriage, finalOrderedRoutings, legCount);
+
+        return finalOrderedRoutings;
+    }
+
+    // ✅ Rule: No routing allowed between two inherited MAIN_CARRIAGE
+    private void validateMainCarriage(List<Routings> routings) {
+        boolean inInheritedBlock = false;
+        int index = 0;
+        int mainCarriageIndex = index;
+        for (Routings routing : routings) {
+            index++;
+            if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                    Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
+                inInheritedBlock = true;
+                mainCarriageIndex = index;
+            } else if (inInheritedBlock) {
+                // Found a non-inherited routing after inherited block started
+                for (Routings remaining : routings.subList(mainCarriageIndex, routings.size())) {
+                    if (remaining.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                            Boolean.TRUE.equals(remaining.getInheritedFromConsolidation())) {
+                        throw new ValidationException("Invalid routing placement: inherited MAIN_CARRIAGE routing appears non-contiguously. Routing GUID: " + remaining.getGuid());
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    // ✅ Rule: Move out-of-place routings in same-type blocks to the end
+    private List<Routings> reorderPreAndOnCarriage(List<Routings> inputList) {
+        List<Routings> result = new ArrayList<>();
+        List<Routings> preBuffer = new ArrayList<>();
+        List<Routings> onBuffer = new ArrayList<>();
+        boolean inPreBlock = false;
+        boolean inOnBlock = false;
+
+        for (Routings routing : inputList) {
+            RoutingCarriage type = routing.getCarriage();
+
+            if (type == RoutingCarriage.PRE_CARRIAGE) {
+                if (!inPreBlock) {
+                    inPreBlock = true;
+                    inOnBlock = false;
+                }
+                result.add(routing);
+            } else if (type == RoutingCarriage.ON_CARRIAGE) {
+                if (!inOnBlock) {
+                    inOnBlock = true;
+                    inPreBlock = false;
+                }
+                result.add(routing);
+            } else {
+                if (inPreBlock) {
+                    preBuffer.add(routing);
+                } else if (inOnBlock) {
+                    onBuffer.add(routing);
+                } else {
+                    result.add(routing);
+                }
+            }
+        }
+
+        // Append misplaced routings after their block
+        int preInsertIndex = findLastIndexOfType(result, RoutingCarriage.PRE_CARRIAGE);
+        result.addAll(preInsertIndex + 1, preBuffer);
+
+        int onInsertIndex = findLastIndexOfType(result, RoutingCarriage.ON_CARRIAGE);
+        result.addAll(onInsertIndex + 1, onBuffer);
+
+        return result;
+    }
+
+    private int findLastIndexOfType(List<Routings> list, RoutingCarriage type) {
+        for (int i = list.size() - 1; i >= 0; i--) {
+            if (list.get(i).getCarriage() == type) return i;
+        }
+        return list.size() - 1;
+    }
+
+    // No change needed in these unless further optimization is desired
+    private List<Routings> processMainCarriage(List<Routings> mainCarriage, Set<UUID> existingGuids) {
+        List<Routings> result = new ArrayList<>();
+        List<Routings> newToAppendAtEnd = new ArrayList<>();
+        List<Routings> buffer = new ArrayList<>();
+        boolean existingSeen = false;
+
+        for (Routings current : mainCarriage) {
+            boolean isExisting = existingGuids.contains(current.getGuid());
+
+            if (isExisting) {
+                if (!buffer.isEmpty()) {
+                    int lastIndex = result.size() - 1;
+                    boolean canInsert = true;
+
+                    if (lastIndex >= 0) {
+                        Routings prev = result.get(lastIndex);
+                        if (Boolean.TRUE.equals(prev.getInheritedFromConsolidation()) &&
+                                Boolean.TRUE.equals(current.getInheritedFromConsolidation())) {
+                            canInsert = false;
+                        }
+                    }
+
+                    if (canInsert) result.addAll(buffer);
+                    else newToAppendAtEnd.addAll(buffer);
+
+                    buffer.clear();
+                }
+
+                result.add(current);
+                existingSeen = true;
+            } else {
+                if (existingSeen) result.add(current);
+                else buffer.add(current);
+            }
+        }
+
+        result.addAll(buffer);
+        result.addAll(newToAppendAtEnd);
+        return result;
+    }
+
+    private List<Routings> processCarriage(List<Routings> carriage, Set<UUID> existingGuids) {
+        List<Routings> result = new ArrayList<>();
+        List<Routings> buffer = new ArrayList<>();
+        boolean existingSeen = false;
+
+        for (Routings current : carriage) {
+            boolean isExisting = existingGuids.contains(current.getGuid());
+
+            if (isExisting) {
+                if (!buffer.isEmpty()) {
+                    result.addAll(buffer);
+                    buffer.clear();
+                }
+                result.add(current);
+                existingSeen = true;
+            } else {
+                if (existingSeen) result.add(current);
+                else buffer.add(current);
+            }
+        }
+
+        result.addAll(buffer);
+        return result;
+    }
+
+    private void mergeRoutingList(List<Routings> carriageRoute, List<Routings> routings, AtomicLong legCount) {
+        if (carriageRoute.isEmpty()) return;
+
+        carriageRoute.forEach(route -> {
+            route.setLeg(legCount.get());
+            legCount.incrementAndGet();
+            routings.add(route);
+        });
+    }
+
+    private Routings cloneRoutingForShipment(Routings source, Long shipmentId) {
+        Routings cloned = new Routings();
+        cloned.setShipmentId(shipmentId);
+        cloned.setBookingId(null);
+        cloned.setCarriage(source.getCarriage());
+        cloned.setLeg(source.getLeg());
+        cloned.setMode(source.getMode());
+        cloned.setRoutingStatus(source.getRoutingStatus());
+        cloned.setVesselName(source.getVesselName());
+        cloned.setPol(source.getPol());
+        cloned.setPod(source.getPod());
+        cloned.setDomestic(source.getIsDomestic());
+        cloned.setEta(source.getEta());
+        cloned.setEtd(source.getEtd());
+        cloned.setAta(source.getAta());
+        cloned.setAtd(source.getAtd());
+        // consolidationId should be null for the cloned routing being assigned to shipment
+        cloned.setConsolidationId(null);
+        cloned.setIsLinked(source.getIsLinked());
+        cloned.setIsSelectedForDocument(source.getIsSelectedForDocument());
+        cloned.setVoyage(source.getVoyage());
+        cloned.setAircraftRegistration(source.getAircraftRegistration());
+        cloned.setFlightNumber(source.getFlightNumber());
+        cloned.setAircraftType(source.getAircraftType());
+        cloned.setVehicleNumber(source.getVehicleNumber());
+        cloned.setRouteLegId(source.getRouteLegId());
+        cloned.setTransitDays(source.getTransitDays());
+        cloned.setCarrier(source.getCarrier());
+        cloned.setTruckReferenceNumber(source.getTruckReferenceNumber());
+        cloned.setCarrierCountry(source.getCarrierCountry());
+        cloned.setOriginPortLocCode(source.getOriginPortLocCode());
+        cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
+        cloned.setInheritedFromConsolidation(true); // Mark as inherited
+        return cloned;
     }
 }

@@ -52,4 +52,10 @@ public interface IRoutingsDao {
     List<Routings> generateDefaultRouting(CarrierDetails carrierDetails, String transportMode);
     List<Routings> findRoutingsByConsolidationId(Long consolidationId);
     List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage);
+
+    List<Routings> findByShipmentId(Long shipmentId);
+
+    List<Routings> findByConsolidationId(Long consolidationId);
+
+    void deleteAll(List<Routings> existingRoutingsForDeletion);
 }
