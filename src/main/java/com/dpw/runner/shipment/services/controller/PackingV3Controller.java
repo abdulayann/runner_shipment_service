@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -159,20 +160,24 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, response = PackingV3Controller.MyResponseClass.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam Long id, @ApiParam(value = Constants.GUID) @RequestParam String guid) {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid));
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam Long id,
+                                                        @ApiParam(value = Constants.GUID) @RequestParam String guid,
+                                                        @RequestHeader(value = "x-source", required = false) String xSource) {
+        return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid, xSource));
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ApiConstants.SHIPMENT_PACKINGS)
-    public ResponseEntity<IRunnerResponse> fetchShipmentPackages(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        PackingListResponse packingListResponse = packingV3Service.fetchShipmentPackages(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> fetchShipmentPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
+                                                                 @RequestHeader(value = "x-source", required = false) String xSource) {
+        PackingListResponse packingListResponse = packingV3Service.fetchShipmentPackages(CommonRequestModel.buildRequest(listCommonRequest), xSource);
         return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID, required = true) @RequestParam Long id) {
-        return ResponseHelper.buildSuccessResponse(packingV3Service.getAllMasterData(id));
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID, required = true) @RequestParam Long id,
+                                                            @RequestHeader(value = "x-source", required = false) String xSource) {
+        return ResponseHelper.buildSuccessResponse(packingV3Service.getAllMasterData(id, xSource));
     }
 
 }

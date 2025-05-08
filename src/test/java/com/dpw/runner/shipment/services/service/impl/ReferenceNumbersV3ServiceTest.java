@@ -179,7 +179,7 @@ class ReferenceNumbersV3ServiceTest {
         ReferenceNumbersV3Service spyService = spy(referenceNumbersV3Service);
         doReturn(new PageImpl<>(referenceNumbers)).when(referenceNumbersDao).findAll(any(), any());
         when(jsonHelper.convertValue(any(), eq(ReferenceNumbersResponse.class))).thenReturn(response);
-        List<ReferenceNumbersResponse> referenceNumbers1 = spyService.list(listRequest);
+        List<ReferenceNumbersResponse> referenceNumbers1 = spyService.list(listRequest, null);
         assertNotNull(referenceNumbers1);
     }
 

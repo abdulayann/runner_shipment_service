@@ -55,6 +55,11 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     }
 
     @Override
+    public Page<ReferenceNumbers> findAllWithoutTenantFilter(Specification<ReferenceNumbers> spec, Pageable pageable) {
+        return referenceNumbersRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Override
     public Optional<ReferenceNumbers> findById(Long id) {
         return referenceNumbersRepository.findById(id);
     }

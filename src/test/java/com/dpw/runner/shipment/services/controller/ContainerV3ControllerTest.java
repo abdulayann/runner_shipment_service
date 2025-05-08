@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
@@ -115,9 +116,9 @@ class ContainerV3ControllerTest {
     Long consolidationId = null;
     ContainerSummaryResponse mockResponse = new ContainerSummaryResponse();
 
-    Mockito.when(containerV3Service.calculateContainerSummary(shipmentId, consolidationId)).thenReturn(mockResponse);
+    Mockito.when(containerV3Service.calculateContainerSummary(shipmentId, consolidationId, null)).thenReturn(mockResponse);
 
-    ResponseEntity<IRunnerResponse> result = containerV3Controller.calculateContainerSummary(shipmentId, consolidationId);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.calculateContainerSummary(shipmentId, consolidationId, null);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }
@@ -142,10 +143,10 @@ class ContainerV3ControllerTest {
     containerListResponse.setTotalPages(1);
     containerListResponse.setNumberOfRecords(1L);
 
-    Mockito.when(containerV3Service.fetchShipmentContainers(Mockito.any()))
+    Mockito.when(containerV3Service.fetchShipmentContainers(Mockito.any(), eq(null)))
         .thenReturn(containerListResponse);
 
-    ResponseEntity<IRunnerResponse> result = containerV3Controller.fetchShipmentContainers(listCommonRequest);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.fetchShipmentContainers(listCommonRequest, null);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
 
@@ -164,11 +165,11 @@ class ContainerV3ControllerTest {
     mockResponse.setTotalPages(2);
     mockResponse.setNumberOfRecords(50L);
 
-    Mockito.when(containerV3Service.list(Mockito.eq(listCommonRequest), Mockito.eq(true)))
+    Mockito.when(containerV3Service.list(eq(listCommonRequest), eq(true), eq(null)))
         .thenReturn(mockResponse);
 
     // Act
-    ResponseEntity<IRunnerResponse> response = containerV3Controller.list(listCommonRequest);
+    ResponseEntity<IRunnerResponse> response = containerV3Controller.list(listCommonRequest, null);
 
     // Assert
     assertNotNull(response);
@@ -178,7 +179,6 @@ class ContainerV3ControllerTest {
   @Test
   void downloadCSV() throws RunnerException {
     boolean isSuccess = true;
-    //doNothing().when(containerV3Service).downloadContainers(any(), any());
     containerV3Controller.downloadCSV(new MockHttpServletResponse(), new BulkDownloadRequest());
     assertTrue(isSuccess);
   }

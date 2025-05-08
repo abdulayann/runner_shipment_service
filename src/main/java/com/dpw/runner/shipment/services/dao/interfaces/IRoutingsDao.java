@@ -23,6 +23,12 @@ public interface IRoutingsDao {
 
     Optional<Routings> findByGuid(UUID id);
 
+    Optional<Routings> findByIdWithQuery(Long id);
+
+    Optional<Routings> findByGuidWithQuery(UUID id);
+
+    Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable);
+
     void delete(Routings routings);
     List<Routings> findByIdIn(List<Long> routingIds);
     void deleteByIdIn(List<Long> routingIds);

@@ -194,6 +194,11 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     }
 
     @Override
+    public List<ShipmentsContainersMapping> findByContainerIdInWithoutTenantFilter(List<Long> containerIds) {
+        return shipmentsContainersMappingRepository.findByContainerIdInWithoutTenantFilter(containerIds);
+    }
+
+    @Override
     public void updateShipmentsMappings(Long containerId, List<Long> shipIds) {
         List<ShipmentsContainersMapping> mappings = Optional.ofNullable(findByContainerId(containerId)).orElse(Collections.emptyList());
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);

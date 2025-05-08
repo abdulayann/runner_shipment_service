@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -109,14 +110,19 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
     }
 
     @Override
-    public List<ReferenceNumbersResponse> list(ListCommonRequest request) {
+    public List<ReferenceNumbersResponse> list(ListCommonRequest request, String xSource) {
         String requestId = LoggerHelper.getRequestIdFromMDC();
         log.info("Starting reference number listing | Request ID: {} | Request Body: {}", requestId, request);
 
         Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class);
 
+        Page<ReferenceNumbers> referenceNumbersPage;
+
         //Fetch all party list from db
-        Page<ReferenceNumbers> referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+        if(Objects.equals(xSource, NETWORK_TRANSFER))
+            referenceNumbersPage = referenceNumbersDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+        else
+            referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
 
         log.info("Reference numbers list retrieved successfully for Request Id: {} | List content: {}", LoggerHelper.getRequestIdFromMDC(), referenceNumbersPage.getContent());
         return convertEntityListToDtoList(referenceNumbersPage.getContent());
