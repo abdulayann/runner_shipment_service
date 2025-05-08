@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
@@ -28,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_CONTAINERS;
 import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_SUCCESS;
 
@@ -52,10 +52,18 @@ public class ContainerV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
-    @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@Valid @RequestBody ContainerV3Request containerRequest) {
-        log.info("Received Container Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
+    @PostMapping(ApiConstants.SHIPMENT + ApiConstants.API_CREATE)
+    public ResponseEntity<IRunnerResponse> createFromShipment(@Valid @RequestBody ContainerV3Request containerRequest) {
+        log.info("Received Container Create request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
         return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest, SHIPMENT));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
+        @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.CONSOLIDATION + ApiConstants.API_CREATE)
+    public ResponseEntity<IRunnerResponse> createFromConsolidation(@Valid @RequestBody ContainerV3Request containerRequest) {
+        log.info("Received Container Create request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest, CONSOLIDATION));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
