@@ -921,6 +921,46 @@ public class ContainerV3Service implements IContainerV3Service {
                         .toArray(CompletableFuture[]::new)
         );
     }
+    @Override
+    public void processContainersAfterShipmentAttachment(
+            Long consolidationId,
+            List<ShipmentDetails> shipmentDetailsList,
+            Set<Long> attachedShipmentIds,
+            Set<Long> interBranchRequestedShipIds) {
+
+        log.info("Processing container updates for consolidationId: {}", consolidationId);
+
+        shipmentDetailsList.stream()
+                // Filter eligible shipments:
+                // - Must be attached
+                // - Must not be part of inter-branch shipment request
+                // - Must have containers to process
+                .filter(shipment -> attachedShipmentIds.contains(shipment.getId()) &&
+                        !interBranchRequestedShipIds.contains(shipment.getId()) &&
+                        shipment.getContainersList() != null)
+                .map(shipment -> new ArrayList<>(shipment.getContainersList()))
+                .forEach(containers -> {
+                    // Set consolidationId for each container
+                    containers.forEach(container -> container.setConsolidationId(consolidationId));
+
+                    // Save updated containers
+                    List<Containers> saved = containerDao.saveAll(containers);
+
+                    // Perform post-save actions
+                    afterSaveList(saved, false);
+
+                    log.info("Updated and saved {} containers for consolidationId: {}", saved.size(), consolidationId);
+                });
+    }
+
+    public void afterSaveList(List<Containers> containers, boolean isCreate) {
+        if(containers != null && !containers.isEmpty()) {
+            for (Containers container : containers) {
+                afterSave(container, isCreate);
+            }
+        }
+    }
+
 
     @PostConstruct
     private void setDefaultIncludeColumns() {
@@ -928,8 +968,8 @@ public class ContainerV3Service implements IContainerV3Service {
         defaultIncludeColumns.addAll(List.of("id","guid","tenantId"));
     }
 
-    @Override
     @Transactional
+    @Override
     public ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();

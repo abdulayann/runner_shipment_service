@@ -1,17 +1,23 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DateTimeChangeLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -23,20 +29,29 @@ import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -236,6 +251,126 @@ public class EventV3Service implements IEventsV3Service {
             log.error("Error fetching or processing event codes master data: {}", e.getMessage(), e);
         }
     }
+
+    @Override
+    public void processEventsAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getEventsList() != null) {
+            List<Events> eventsList = shipmentDetails.getEventsList();
+            for (Events event : eventsList) {
+                // Update only if event qualifies for shipment-to-consolidation transfer
+                if (eventDao.shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                    event.setConsolidationId(consolidationId);
+                }
+            }
+            eventDao.saveAll(eventsList);
+        }
+    }
+
+    @Transactional
+    @Override
+    public void saveAllEvent(List<EventsRequest> eventsRequests) {
+        if (CommonUtils.listIsNullOrEmpty(eventsRequests))
+            return;
+        List<Events> entities = jsonHelper.convertValueToList(eventsRequests, Events.class);
+
+        commonUtils.updateEventWithMasterData(entities);
+        eventDao.updateAllEventDetails(entities);
+
+        for (Events event: entities) {
+            handleDuplicationForExistingEvents(event);
+        }
+
+        eventDao.saveAll(entities);
+    }
+
+    private void handleDuplicationForExistingEvents(Events event) {
+        Specification<Events> duplicateEventSpecification = buildDuplicateEventSpecification(event);
+        Page<Events> duplicateEventPage = eventDao.findAll(duplicateEventSpecification, Pageable.unpaged());
+
+        if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
+            // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
+            // these events are irrelevant as we found a replacement : current event | Delete all rest events excluding the current one
+            List<Events> eventsToDelete = new ArrayList<>();
+            duplicateEventPage.getContent().stream()
+                    .filter(dupEvent -> !dupEvent.getId().equals(event.getId()))
+                    .forEach(dupEvent -> {
+                                dupEvent.setIsDeleted(true);
+                                eventsToDelete.add(dupEvent);
+                            }
+                    );
+            if (ObjectUtils.isNotEmpty(eventsToDelete)) {
+                eventDao.saveAll(eventsToDelete);
+            }
+        }
+    }
+
+    public Specification<Events> buildDuplicateEventSpecification(Events event) {
+        return (root, query, cb) -> {
+            Predicate predicate = cb.conjunction();
+
+            if (event.getEventCode() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("eventCode"), event.getEventCode()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("eventCode")));
+            }
+
+            if (event.getShipmentNumber() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("shipmentNumber"), event.getShipmentNumber()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("shipmentNumber")));
+            }
+
+            if (event.getContainerNumber() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("containerNumber"), event.getContainerNumber()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("containerNumber")));
+            }
+
+            if (event.getSource() != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("source"), event.getSource()));
+            } else {
+                predicate = cb.and(predicate, cb.isNull(root.get("source")));
+            }
+
+            predicate = getPredicateForPlaceName(event, root, cb, predicate);
+
+            predicate = getPredicateForEntityId(event, root, cb, predicate);
+
+            predicate = getPredicateForEventType(event, root, cb, predicate);
+
+            predicate = cb.and(predicate, cb.equal(root.get("isDeleted"), false));
+
+            return predicate;
+        };
+    }
+
+    private Predicate getPredicateForPlaceName(Events event, Root<Events> root, CriteriaBuilder cb, Predicate predicate) {
+        if (event.getPlaceName() != null) {
+            predicate = cb.and(predicate, cb.equal(root.get("placeName"), event.getPlaceName()));
+        } else {
+            predicate = cb.and(predicate, cb.isNull(root.get("placeName")));
+        }
+        return predicate;
+    }
+
+    private Predicate getPredicateForEntityId(Events event, Root<Events> root, CriteriaBuilder cb, Predicate predicate) {
+        if (event.getEntityId() != null) {
+            predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_ID), event.getEntityId()));
+        } else {
+            predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_ID)));
+        }
+        return predicate;
+    }
+
+    private Predicate getPredicateForEventType(Events event, Root<Events> root, CriteriaBuilder cb, Predicate predicate) {
+        if (event.getEntityType() != null) {
+            predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_TYPE), event.getEntityType()));
+        } else {
+            predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_TYPE)));
+        }
+        return predicate;
+    }
+
 
     @Override
     public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {

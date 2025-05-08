@@ -638,6 +638,19 @@ public class PackingV3Service implements IPackingV3Service {
         return charge;
     }
 
+    @Override
+    public void processPacksAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipmentDetails.getPackingList() != null) {
+            List<Packing> packingList = shipmentDetails.getPackingList();
+            for (Packing packing : packingList) {
+                packing.setConsolidationId(consolidationId);
+            }
+            packingDao.saveAll(packingList);
+        }
+    }
+
+
     @PostConstruct
     private void setDefaultIncludeColumns() {
         defaultIncludeColumns = FieldUtils.getNonRelationshipFields(Packing.class);
