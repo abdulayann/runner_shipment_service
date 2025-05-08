@@ -21,7 +21,6 @@ public class PartiesResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
     private String type;
-    private String country;
     private String orgCode;
     private Integer tenantId;
     private String addressCode;
