@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {CustomerBookingV3Controller.class})
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CustomerBookingV3ControllerTest {
+class CustomerBookingV3ControllerTest {
 
     @Mock
     private IContainerV3Service containerV3Service;

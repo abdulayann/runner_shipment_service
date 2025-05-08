@@ -9455,6 +9455,7 @@
     "orgCode": "00001",
     "tenantId": 66,
     "addressCode": "Default",
+    "type": "CONSIGNEE",
     "orgData": {
       "Email": "unilever.epe@gmail.com",
       "Unloco": 64061,
