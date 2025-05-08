@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -103,7 +104,7 @@ public class ContainerV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest)
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid @NonNull ListCommonRequest listCommonRequest)
         throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, true);
         return ResponseHelper.buildSuccessResponse(containerListResponse,

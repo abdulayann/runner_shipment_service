@@ -786,10 +786,6 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     public ContainerListResponse list(ListCommonRequest request, boolean getMasterData) throws RunnerException {
         try {
-            if (request == null) {
-                log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
             Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -802,12 +798,13 @@ public class ContainerV3Service implements IContainerV3Service {
             }
 
            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
-           this.getMasterDataForList(responseList, getMasterData);
-           return ContainerListResponse.builder()
-               .containers(responseList)
-               .numberOfRecords(containersPage.getTotalElements())
-               .totalPages(containersPage.getTotalPages())
-               .build();
+            ContainerListResponse containerListResponse = ContainerListResponse.builder()
+                .containers(responseList)
+                .numberOfRecords(containersPage.getTotalElements())
+                .totalPages(containersPage.getTotalPages())
+                .build();
+           this.getMasterDataForList(containerListResponse, getMasterData);
+           return containerListResponse;
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -815,13 +812,13 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+    private void getMasterDataForList(ContainerListResponse containerListResponse, boolean getMasterData) {
         if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
-                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
-                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(containerListResponse)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(containerListResponse)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(containerListResponse)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONTAINER_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
             } catch (Exception ex) {
@@ -886,6 +883,46 @@ public class ContainerV3Service implements IContainerV3Service {
                         .toArray(CompletableFuture[]::new)
         );
     }
+    @Override
+    public void processContainersAfterShipmentAttachment(
+            Long consolidationId,
+            List<ShipmentDetails> shipmentDetailsList,
+            Set<Long> attachedShipmentIds,
+            Set<Long> interBranchRequestedShipIds) {
+
+        log.info("Processing container updates for consolidationId: {}", consolidationId);
+
+        shipmentDetailsList.stream()
+                // Filter eligible shipments:
+                // - Must be attached
+                // - Must not be part of inter-branch shipment request
+                // - Must have containers to process
+                .filter(shipment -> attachedShipmentIds.contains(shipment.getId()) &&
+                        !interBranchRequestedShipIds.contains(shipment.getId()) &&
+                        shipment.getContainersList() != null)
+                .map(shipment -> new ArrayList<>(shipment.getContainersList()))
+                .forEach(containers -> {
+                    // Set consolidationId for each container
+                    containers.forEach(container -> container.setConsolidationId(consolidationId));
+
+                    // Save updated containers
+                    List<Containers> saved = containerDao.saveAll(containers);
+
+                    // Perform post-save actions
+                    afterSaveList(saved, false);
+
+                    log.info("Updated and saved {} containers for consolidationId: {}", saved.size(), consolidationId);
+                });
+    }
+
+    public void afterSaveList(List<Containers> containers, boolean isCreate) {
+        if(containers != null && !containers.isEmpty()) {
+            for (Containers container : containers) {
+                afterSave(container, isCreate);
+            }
+        }
+    }
+
 
     @PostConstruct
     private void setDefaultIncludeColumns() {
@@ -893,8 +930,8 @@ public class ContainerV3Service implements IContainerV3Service {
         defaultIncludeColumns.addAll(List.of("id","guid","tenantId"));
     }
 
-    @Override
     @Transactional
+    @Override
     public ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();

@@ -1,6 +1,20 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -89,22 +103,6 @@ import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -123,20 +121,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 @SuppressWarnings("ALL")
 @Service
@@ -520,6 +519,22 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    @Override
+    public void createLogHistoryForShipment(ShipmentDetails shipmentDetails) {
+        try {
+            String entityPayload = jsonHelper.convertToJson(shipmentDetails);
+            LogHistoryRequest build = LogHistoryRequest.builder()
+                    .entityId(shipmentDetails.getId())
+                    .entityType(SHIPMENT)
+                    .entityGuid(shipmentDetails.getGuid())
+                    .entityPayload(entityPayload)
+                    .tenantId(shipmentDetails.getTenantId()).build();
+            logsHistoryService.createLogHistory(build);
+        } catch (Exception ex) {
+            log.error("Error while creating LogsHistory : " + ex.getMessage());
+        }
+    }
+
     private void setColoadingStation(ShipmentV3Request request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
@@ -684,6 +699,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 consolidationSync.sync(consolidationDetails, transactionId, false);
             } catch (Exception e) {
                 log.error("Error performing sync on consol entity, {}", e);
+            }
+        }
+    }
+
+    @Override
+    public void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId) {
+        for (ShipmentDetails shipmentDetails : shipments) {
+            try {
+                shipmentSync.sync(shipmentDetails, null, null, transactionId, false);
+            } catch (Exception e) {
+                log.error("Error performing sync on shipment entity, {}", e);
             }
         }
     }
@@ -936,6 +962,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     return i;
                 }).toList();
         shipmentDao.saveAll(shipments);
+    }
+
+    @Override
+    public List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException {
+        return shipmentDao.saveAll(shipments);
     }
 
     private boolean isExportOrImportBrokerPresent(ShipmentDetails shipment) {

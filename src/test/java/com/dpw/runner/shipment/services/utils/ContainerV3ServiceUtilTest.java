@@ -17,7 +17,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
-public class ContainerV3ServiceUtilTest {
+class ContainerV3ServiceUtilTest {
 
   @InjectMocks
   private ContainerValidationUtil containerValidationUtil;

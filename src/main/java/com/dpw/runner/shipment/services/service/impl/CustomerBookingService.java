@@ -348,7 +348,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
         }
         boolean isCreatedInPlatform = !Objects.isNull(oldEntity.get().getIsPlatformBookingCreated()) && oldEntity.get().getIsPlatformBookingCreated();
-        //todo: manual + existing mapper
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());

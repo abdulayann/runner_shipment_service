@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteRespons
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 
 import java.util.Map;
@@ -32,6 +33,12 @@ public interface IShipmentServiceV3 {
     ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException;
 
     ShipmentDetailsV3Response completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
+
+    void createLogHistoryForShipment(ShipmentDetails shipmentDetails);
+
+    void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId);
+
+    List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
     ShipmentPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
 

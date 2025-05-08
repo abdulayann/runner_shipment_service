@@ -423,11 +423,12 @@ public class PackingV3Service implements IPackingV3Service {
         Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
-        this.getMasterDataForList(responseList, getMasterData);
+        Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
         PackingListResponse packingListResponse = new PackingListResponse();
         packingListResponse.setPackings(responseList);
         packingListResponse.setTotalPages(packingPage.getTotalPages());
         packingListResponse.setTotalCount(packingPage.getTotalElements());
+        packingListResponse.setMasterData(masterDataResponse);
         return packingListResponse;
     }
 
@@ -442,19 +443,22 @@ public class PackingV3Service implements IPackingV3Service {
         packingDao.removeContainersFromPacking(containerIds);
     }
 
-    private void getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
+    private Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
-                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
-                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllCommodityTypesInSingleCallList(responseList)), executorServiceMasterData);
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllUnlocationInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllCommodityTypesInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+                return masterDataResponse;
             } catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
             }
         }
+        return masterDataResponse;
     }
 
     @Override
@@ -607,6 +611,19 @@ public class PackingV3Service implements IPackingV3Service {
         }
         return charge;
     }
+
+    @Override
+    public void processPacksAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
+                && shipmentDetails.getPackingList() != null) {
+            List<Packing> packingList = shipmentDetails.getPackingList();
+            for (Packing packing : packingList) {
+                packing.setConsolidationId(consolidationId);
+            }
+            packingDao.saveAll(packingList);
+        }
+    }
+
 
     @PostConstruct
     private void setDefaultIncludeColumns() {
