@@ -786,10 +786,6 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     public ContainerListResponse list(ListCommonRequest request, boolean getMasterData) throws RunnerException {
         try {
-            if (request == null) {
-                log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
             Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
