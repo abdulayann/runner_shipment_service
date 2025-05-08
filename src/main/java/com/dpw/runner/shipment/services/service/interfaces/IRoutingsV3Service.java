@@ -17,12 +17,12 @@ public interface IRoutingsV3Service{
 
     RoutingsResponse update(CommonRequestModel commonRequestModel, String module) throws RunnerException;
 
-    RoutingListResponse list(CommonRequestModel commonRequestModel) throws RunnerException;
+    RoutingListResponse list(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
 
     void delete(CommonRequestModel commonRequestModel, String module) throws RunnerException;
 
-    RoutingsResponse retrieveById(CommonRequestModel commonRequestModel) throws RunnerException;
+    RoutingsResponse retrieveById(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
     BulkRoutingResponse updateBulk(List<RoutingsRequest> request, String module) throws RunnerException;
     BulkRoutingResponse deleteBulk(List<RoutingsRequest> request, String module) throws RunnerException;
-    Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel);
+    Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource);
 }

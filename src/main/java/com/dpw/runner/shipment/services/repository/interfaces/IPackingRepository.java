@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
@@ -37,7 +38,23 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     List<Packing> findByContainerIdIn(List<Long> deleteContainerIds);
 
+    @ExcludeTenantFilter
+    default List<Packing> findByContainerIdInWithoutTenantFilter(List<Long> deleteContainerIds){
+        return findByContainerIdIn(deleteContainerIds);
+    }
+
     List<Packing> findByIdIn(List<Long> packingIds);
+
+    @Query(value = "SELECT * FROM packing WHERE id = ?1", nativeQuery = true)
+    Optional<Packing> findByIdWithQuery(Long id);
+
+    @Query(value = "SELECT * FROM packing WHERE guid = ?1", nativeQuery = true)
+    Optional<Packing> findByGuidWithQuery(UUID guid);
+
+    @ExcludeTenantFilter
+    default Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable) {
+        return findAll(spec, pageable);
+    }
 
     @Query("""
     SELECT
@@ -47,4 +64,10 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     WHERE p.shipmentId = :shipmentId
     """)
     PackingAssignmentProjection getPackingAssignmentCountByShipment(@Param("shipmentId") Long shipmentId);
+
+    @ExcludeTenantFilter
+    default PackingAssignmentProjection getPackingAssignmentCountByShipmentWithoutTenantFilter(@Param("shipmentId") Long shipmentId){
+        return getPackingAssignmentCountByShipment(shipmentId);
+    }
 }
+

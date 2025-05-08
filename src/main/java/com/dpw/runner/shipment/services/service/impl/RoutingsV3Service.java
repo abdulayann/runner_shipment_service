@@ -66,6 +66,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -226,7 +227,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
 
     @Override
-    public RoutingListResponse list(CommonRequestModel commonRequestModel) throws RunnerException {
+    public RoutingListResponse list(CommonRequestModel commonRequestModel, String xSource) throws RunnerException {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -235,7 +236,11 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
-            Page<Routings> routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Routings> routingsPage;
+            if(Objects.equals(xSource, NETWORK_TRANSFER))
+                routingsPage = routingsDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+            else
+                routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Routing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             List<IRunnerResponse> response = convertEntityListToDtoList(routingsPage.getContent());
             return RoutingListResponse.builder().routingsResponseList(response).totalCount(routingsPage.getTotalElements())
@@ -284,13 +289,17 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     @Override
-    public RoutingsResponse retrieveById(CommonRequestModel commonRequestModel) throws RunnerException {
+    public RoutingsResponse retrieveById(CommonRequestModel commonRequestModel, String xSource) throws RunnerException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         if(request.getId() == null) {
             log.error(RoutingConstants.ROUTING_ID_NULL_FOR_RETRIEVE, LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException(RoutingConstants.ID_GUID_NULL_ERROR);
         }
-        Optional<Routings> routings = routingsDao.findById(request.getId());
+        Optional<Routings> routings;
+        if(Objects.equals(xSource, NETWORK_TRANSFER))
+            routings = routingsDao.findByIdWithQuery(request.getId());
+        else
+            routings = routingsDao.findById(request.getId());
         if(routings.isEmpty()){
             log.debug("Routing is null for the input id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -493,9 +502,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     @Override
-    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel){
+    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource){
         Long id = commonRequestModel.getId();
-        Optional<Routings> routings = routingsDao.findById(id);
+        Optional<Routings> routings;
+        if(Objects.equals(xSource, NETWORK_TRANSFER))
+            routings = routingsDao.findByIdWithQuery(id);
+        else
+            routings = routingsDao.findById(id);
         if(routings.isEmpty()) {
             log.debug("Routing is null for the input id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

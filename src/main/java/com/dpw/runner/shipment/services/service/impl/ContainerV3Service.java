@@ -96,6 +96,23 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
+
 @Service
 @Slf4j
 public class ContainerV3Service implements IContainerV3Service {
@@ -475,30 +492,38 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId) throws RunnerException {
+    public ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException {
         if (shipmentId == null && consolidationId == null) {
             throw new RunnerException("Please provide shipmentId and consolidationId for containers summary");
         }
         if (shipmentId != null) {
-            List<Containers> containers = containerDao.findByShipmentId(shipmentId);
+            List<Containers> containers;
+            if(Objects.equals(xSource, NETWORK_TRANSFER))
+                containers = containerDao.findByShipmentIdWithoutTenantFilter(shipmentId);
+            else
+                containers = containerDao.findByShipmentId(shipmentId);
             List<Containers> containersList = new ArrayList<>(containers);
-            return calculateContainerSummary(containersList, true);
+            return getContainerSummaryResponse(containersList, true, xSource);
         }
-        List<Containers> containers = containerDao.findByConsolidationId(consolidationId);
+        List<Containers> containers;
+        if(Objects.equals(xSource, NETWORK_TRANSFER))
+            containers = containerDao.findByConsolidationIdWithoutTenantFilter(consolidationId);
+        else
+            containers = containerDao.findByConsolidationId(consolidationId);
         List<Containers> containersList = new ArrayList<>(containers);
-        return calculateContainerSummary(containersList, false);
+        return getContainerSummaryResponse(containersList, false, xSource);
     }
 
     @Override
-    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel, String xSource) throws RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        ContainerListResponse containerListResponse = list(request, true);
+        ContainerListResponse containerListResponse = list(request, true, xSource);
 
         log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         //ContainerListResponse containerListResponse = new ContainerListResponse();
-      //  containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
+        //  containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
         //set assigned container to yes/no, if any package is assigned to container or not
-        setAssignedContainer(containerListResponse);
+        setAssignedContainer(containerListResponse, xSource);
         containerListResponse.setTotalPages(containerListResponse.getTotalPages());
         containerListResponse.setNumberOfRecords(containerListResponse.getNumberOfRecords());
 
@@ -506,13 +531,18 @@ public class ContainerV3Service implements IContainerV3Service {
 
     }
 
-    private void setAssignedContainer(ContainerListResponse containerListResponse) {
+    private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {
         List<Long> containersId = containerListResponse.getContainers().stream()
                 .map(ContainerBaseResponse::getId) // or .map(container -> container.getId())
                 .filter(Objects::nonNull)
                 .toList();
         if (!CollectionUtils.isEmpty(containersId)) {
-            List<Packing> packs = packingDao.findByContainerIdIn(containersId);
+            List<Packing> packs;
+            if(Objects.equals(xSource, NETWORK_TRANSFER))
+                packs = packingDao.findByContainerIdInWithoutTenantFilter(containersId);
+            else
+                packs = packingDao.findByContainerIdIn(containersId);
+
             Set<Long> uniqueContainers = packs.stream().map(Packing::getContainerId).collect(Collectors.toSet());
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
                 if (uniqueContainers.contains(containerBaseResponse.getId())) {
@@ -542,7 +572,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return (ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(container, new HashSet<>(defaultIncludeColumns), new ContainerBaseResponse());
     }
 
-    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, boolean isShipment) throws RunnerException {
+    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException {
         double totalWeight = 0;
         double packageCount = 0;
         double tareWeight = 0;
@@ -595,7 +625,11 @@ public class ContainerV3Service implements IContainerV3Service {
                 summary.setTotalNetWeight(summary.getTotalNetWeight() + netWtDef);
             }
             if (!isShipment) {
-                List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containersList.stream().map(BaseEntity::getId).toList());
+                List<ShipmentsContainersMapping> shipmentsContainersMappings;
+                if(Objects.equals(xSource, NETWORK_TRANSFER))
+                    shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdInWithoutTenantFilter(containersList.stream().map(BaseEntity::getId).toList());
+                else
+                    shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containersList.stream().map(BaseEntity::getId).toList());
                 assignedContainers = shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getContainerId).distinct().count();
             }
             groupedContainerSummaryList = new ArrayList<>(summaryMap.values());
@@ -784,11 +818,15 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public ContainerListResponse list(ListCommonRequest request, boolean getMasterData) throws RunnerException {
+    public ContainerListResponse list(ListCommonRequest request, boolean getMasterData, String xSource) throws RunnerException {
         try {
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
-            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<Containers> containersPage;
+            if(Objects.equals(xSource, NETWORK_TRANSFER))
+                containersPage = containerDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+            else
+                containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Containers list for get containers retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             List<String> includeColumns;
             if (CollectionUtils.isEmpty(request.getIncludeColumns())) {
@@ -901,14 +939,14 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // fetch data
         Containers container = fetchDataForAssignContainer(request, shipmentDetailsList,
-                                                                packingListMap, assignedPacks, shipmentsContainersMappings);
+                packingListMap, assignedPacks, shipmentsContainersMappings);
 
         List<Long> assignedShipIds = shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList();
         List<Long> shipmentIdsToSetContainerCargo = new ArrayList<>();
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsList, assignedShipIds, request,
-                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
+                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
 
         // Save the data
         container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container, shipmentIdsForAttachment);
@@ -917,8 +955,8 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private Containers fetchDataForAssignContainer(AssignContainerRequest request,
-                                             List<ShipmentDetails> shipmentDetailsList, Map<Long, Packing> packingListMap,
-                                             List<Packing> assignedPacks, List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+                                                   List<ShipmentDetails> shipmentDetailsList, Map<Long, Packing> packingListMap,
+                                                   List<Packing> assignedPacks, List<ShipmentsContainersMapping> shipmentsContainersMappings) {
         // Identify requests
         Long containerId = request.getContainerId();
         Set<Long> shipmentIdsRequestedList = request.getShipmentPackIds().keySet();

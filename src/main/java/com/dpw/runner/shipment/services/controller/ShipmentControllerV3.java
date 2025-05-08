@@ -21,6 +21,7 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import javax.validation.Valid;
 import java.util.Optional;
@@ -101,12 +103,15 @@ public class ShipmentControllerV3 {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id,
+                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid,
+                                                        @RequestParam(required = false, defaultValue = "false") boolean getMasterData,
+                                                        @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException, AuthenticationException {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return ResponseHelper.buildSuccessResponse(shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData));
+        return ResponseHelper.buildSuccessResponse(shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData, xSource));
     }
 
     @GetMapping(ApiConstants.API_RETRIEVE_PENDING_NOTIFICATION_DATA)
@@ -119,8 +124,9 @@ public class ShipmentControllerV3 {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
-        return (ResponseEntity<?>) shipmentService.getAllMasterData(shipmentId);
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId,
+                                              @RequestHeader(value = "x-source", required = false) String xSource) {
+        return (ResponseEntity<?>) shipmentService.getAllMasterData(shipmentId, xSource);
     }
 
     @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)

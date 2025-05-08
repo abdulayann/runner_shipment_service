@@ -104,6 +104,19 @@ class ReferenceNumbersDaoTest {
     }
 
     @Test
+    void findAllWithoutTenantFilter() {
+        Page<ReferenceNumbers> expectedPage = mock(Page.class);
+        Specification<ReferenceNumbers> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(referenceNumbersRepository.findAllWithoutTenantFilter(spec, pageable)).thenReturn(expectedPage);
+
+        Page<ReferenceNumbers> resultPage = referenceNumbersDao.findAllWithoutTenantFilter(spec, pageable);
+
+        assertEquals(expectedPage, resultPage);
+        verify(referenceNumbersRepository).findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Test
     void findById_ValidId_ReturnsOptionalOfReferenceNumbers() {
         Long id = 1L;
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();

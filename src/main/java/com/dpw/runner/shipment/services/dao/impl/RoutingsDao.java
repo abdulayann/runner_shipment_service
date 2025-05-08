@@ -82,13 +82,28 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
+    public Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable) {
+        return routingsRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Override
     public Optional<Routings> findById(Long id) {
         return routingsRepository.findById(id);
     }
 
     @Override
+    public Optional<Routings> findByIdWithQuery(Long id) {
+        return routingsRepository.findByIdWithQuery(id);
+    }
+
+    @Override
     public Optional<Routings> findByGuid(UUID id) {
         return routingsRepository.findByGuid(id);
+    }
+
+    @Override
+    public Optional<Routings> findByGuidWithQuery(UUID id) {
+        return routingsRepository.findByGuidWithQuery(id);
     }
 
     @Override

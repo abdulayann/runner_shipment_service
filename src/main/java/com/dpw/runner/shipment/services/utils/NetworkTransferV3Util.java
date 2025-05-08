@@ -213,21 +213,19 @@ public class NetworkTransferV3Util {
 
             // Determine new tenant IDs by removing old partners from the current partners
             Set<Long> newTenantIds = new HashSet<>(currentPartners);
-            newTenantIds.removeAll(oldPartners);
+            oldPartners.forEach(newTenantIds::remove);
 
             // Determine old tenant IDs by removing current partners from the old partners
             Set<Long> oldTenantIds = new HashSet<>(oldPartners);
-            oldTenantIds.removeAll(currentPartners);
+            currentPartners.forEach(oldTenantIds::remove);
 
             // Process new tenant IDs for network transfer
-            newTenantIds.forEach(newTenantId -> {
-                processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS, false);
-            });
+            newTenantIds.forEach(newTenantId ->
+                processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS, false));
 
             // Process old tenant IDs for removal from network transfer
-            oldTenantIds.forEach(oldTenantId -> {
-                processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false);
-            });
+            oldTenantIds.forEach(oldTenantId ->
+                processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false));
         } else if (consolidationDetails.getTriangulationPartner() != null) {
             processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
                     oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS, false);
@@ -575,7 +573,6 @@ public class NetworkTransferV3Util {
             } else {
                 // If not eligible for network transfer, handle deletion of old network transfer entities
                 processNonEligibleNTE(oldEntity);
-
             }
         } catch (Exception ex) {
             log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());

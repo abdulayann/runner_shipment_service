@@ -15,6 +15,9 @@ public interface IContainerDao {
     Containers save(Containers containers);
 
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
+
+    Page<Containers> findAllWithoutTenantFilter(Specification<Containers> spec, Pageable pageable);
+
     List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId);
 
     List<Containers> getAllContainers();
@@ -33,6 +36,11 @@ public interface IContainerDao {
     List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldContainers) throws RunnerException;
     List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldContainers) throws RunnerException;
     List<Containers> findByShipmentId(Long shipmentId);
+
+    List<Containers> findByShipmentIdWithoutTenantFilter(Long shipmentId);
+
+    List<Containers> findByConsolidationIdWithoutTenantFilter(Long consolidationId);
+
     List<Containers> findByConsolidationId(Long consolidationId);
     List<Containers> findByConsolidationIdIn(List<Long> consolidationIds);
     List<Containers> findByBookingIdIn(List<Long> bookingIds);

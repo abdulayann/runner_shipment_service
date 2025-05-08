@@ -54,16 +54,18 @@ public class RoutingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_LIST_SUCCESSFUL, responseContainer = RoutingConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.SHIPMENT_API_LIST)
-    public ResponseEntity<IRunnerResponse> fetchShipmentRoute(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
-        var response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> fetchShipmentRoute(@RequestBody @Valid ListCommonRequest listCommonRequest,
+                                                              @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
+        var response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
         return ResponseHelper.buildListSuccessResponse(response.getRoutingsResponseList(), response.getTotalPages(), response.getTotalCount());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = RoutingConstants.ROUTING_ID, required = true) @RequestParam Long id) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = RoutingConstants.ROUTING_ID, required = true) @RequestParam Long id,
+                                                        @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return ResponseHelper.buildSuccessResponse(routingService.retrieveById(CommonRequestModel.buildRequest(request)));
+        return ResponseHelper.buildSuccessResponse(routingService.retrieveById(CommonRequestModel.buildRequest(request), xSource));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = RunnerResponse.class)})
@@ -86,8 +88,9 @@ public class RoutingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long routingId) {
-        return ResponseHelper.buildSuccessResponse(routingService.getAllMasterData(CommonRequestModel.buildRequest(routingId)));
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long routingId,
+                                                            @RequestHeader(value = "x-source", required = false) String xSource) {
+        return ResponseHelper.buildSuccessResponse(routingService.getAllMasterData(CommonRequestModel.buildRequest(routingId), xSource));
     }
 
 

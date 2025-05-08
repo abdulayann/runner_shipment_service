@@ -25,16 +25,19 @@ public interface IPackingV3Service {
 
     void downloadPacking(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException;
 
-    PackingResponse retrieveById(Long id, String guid);
+    PackingResponse retrieveById(Long id, String guid, String xSource);
 
-    PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData);
+    PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData, String xSource);
+
 
     List<PackingResponse> fetchPacksAttachedToContainers(List<Long> containerIds);
 
     void removeContainersFromPacking(List<Long> containerIds);
 
-    PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel);
-    Map<String, Object> getAllMasterData(Long id);
+    PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel, String xSource);
+
+    Map<String, Object> getAllMasterData(Long id, String xSource);
+
     Map<String, Object> fetchAllMasterDataByKey(PackingResponse packingResponse);
 
     List<Long> filterContainerIdsAttachedToPacking(List<Long> containerIds);
