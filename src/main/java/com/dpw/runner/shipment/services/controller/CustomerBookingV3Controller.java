@@ -201,7 +201,7 @@ public class CustomerBookingV3Controller {
         return ResponseHelper.buildSuccessResponse(bulkPackingResponse);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
     @GetMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
     public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody ListCommonRequest listCommonRequest) {
         PackingListResponse packingListResponse = packingV3Service.list(CommonRequestModel.buildRequest(listCommonRequest), true);
@@ -251,7 +251,6 @@ public class CustomerBookingV3Controller {
     })
     public ResponseEntity<IRunnerResponse> createBookingParties(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
         return ResponseHelper.buildSuccessResponse(partiesV3Service.create(partiesRequest));
-        //TODO: UI has to send partyType, entityId, entityType as "CUSTOMER_BOOKING", country
     }
 
     @ApiResponses(value = {

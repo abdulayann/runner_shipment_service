@@ -275,4 +275,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
     private Boolean isBorrowed;
+    private Long borrowedFrom;
 }
