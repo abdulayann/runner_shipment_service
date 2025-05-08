@@ -20,7 +20,7 @@ import org.springframework.http.HttpStatus;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,15 +48,15 @@ class RoutingV3ControllerTest {
 
     @Test
     void fetchShipmentRoute() throws RunnerException {
-        when(routingService.list(any())).thenReturn(RoutingListResponse.builder().totalPages(1).totalCount(2L).build());
-        var response = routingController.fetchShipmentRoute(ListCommonRequest.builder().build());
+        when(routingService.list(any(), eq(null))).thenReturn(RoutingListResponse.builder().totalPages(1).totalCount(2L).build());
+        var response = routingController.fetchShipmentRoute(ListCommonRequest.builder().build(), null);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
     void retrieveById() throws RunnerException {
-        when(routingService.retrieveById(any())).thenReturn(RoutingsResponse.builder().build());
-        var response = routingController.retrieveById(any());
+        when(routingService.retrieveById(any(), eq(null))).thenReturn(RoutingsResponse.builder().build());
+        var response = routingController.retrieveById(1L, null);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -83,8 +83,8 @@ class RoutingV3ControllerTest {
 
     @Test
     void getAllMasterData() {
-        when(routingService.getAllMasterData(any())).thenReturn(new HashMap<>());
-        var response = routingController.getAllMasterData(1L);
+        when(routingService.getAllMasterData(any(), eq(null))).thenReturn(new HashMap<>());
+        var response = routingController.getAllMasterData(1L, null);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

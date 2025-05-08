@@ -323,7 +323,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findById(1L)).thenReturn(Optional.of(packing));
         when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
 
-        PackingResponse actualResponse = packingV3Service.retrieveById(1L, null);
+        PackingResponse actualResponse = packingV3Service.retrieveById(1L, null, null);
 
         assertNotNull(actualResponse);
         assertEquals(1L, actualResponse.getId());
@@ -335,21 +335,21 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByGuid(guid)).thenReturn(Optional.of(packing));
         when(jsonHelper.convertValue(packing, PackingResponse.class)).thenReturn(response);
 
-        PackingResponse actualResponse = packingV3Service.retrieveById(null, guid.toString());
+        PackingResponse actualResponse = packingV3Service.retrieveById(null, guid.toString(), null);
 
         assertNotNull(actualResponse);
     }
 
     @Test
     void testRetrieveById_invalidRequest() {
-        assertThrows(ValidationException.class, () -> packingV3Service.retrieveById(null, null));
+        assertThrows(ValidationException.class, () -> packingV3Service.retrieveById(null, null, null));
     }
 
     @Test
     void testRetrieveById_notFound() {
         when(packingDao.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(ValidationException.class, () -> packingV3Service.retrieveById(1L, null));
+        assertThrows(ValidationException.class, () -> packingV3Service.retrieveById(1L, null, null));
     }
 
     @Test
@@ -362,7 +362,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(model, true);
+        PackingListResponse actualResponse = packingV3Service.list(model, true, null);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -383,7 +383,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.getPackingAssignmentCountByShipment(100L)).thenReturn(projection);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model);
+        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model, null);
 
         assertEquals(2L, actualResponse.getAssignedPackageCount());
         assertEquals(3L, actualResponse.getUnassignedPackageCount());
@@ -401,7 +401,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model);
+        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model, null);
 
         assertNotNull(actualResponse);
     }
@@ -410,7 +410,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testGetAllMasterData_success() {
         when(packingDao.findById(1L)).thenReturn(Optional.of(packing));
 
-        Map<String, Object> result = packingV3Service.getAllMasterData(1L);
+        Map<String, Object> result = packingV3Service.getAllMasterData(1L, null);
 
         assertNotNull(result);
     }
@@ -419,7 +419,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testGetAllMasterData_dataNotFound() {
         when(packingDao.findById(1L)).thenReturn(Optional.empty());
 
-        Map<String, Object> result = packingV3Service.getAllMasterData(1L);
+        Map<String, Object> result = packingV3Service.getAllMasterData(1L, null);
 
         assertTrue(result.isEmpty());
     }
@@ -428,14 +428,14 @@ class PackingV3ServiceTest extends CommonMocks {
     void testList_requestNull_logsError() {
         CommonRequestModel model = CommonRequestModel.builder().build(); // request is null
 
-        assertThrows(ValidationException.class, () -> packingV3Service.list(model, false));
+        assertThrows(ValidationException.class, () -> packingV3Service.list(model, false, null));
     }
 
     @Test
     void testGetAllMasterData_packingNotFound_returnsEmptyMap() {
         when(packingDao.findById(99L)).thenReturn(Optional.empty());
 
-        Map<String, Object> result = packingV3Service.getAllMasterData(99L);
+        Map<String, Object> result = packingV3Service.getAllMasterData(99L, null);
 
         assertTrue(result.isEmpty());
     }
@@ -444,7 +444,7 @@ class PackingV3ServiceTest extends CommonMocks {
     void testGetAllMasterData_internalException_returnsEmptyMap() {
         when(packingDao.findById(1L)).thenThrow(new RuntimeException("Database failure"));
 
-        Map<String, Object> result = packingV3Service.getAllMasterData(99L);
+        Map<String, Object> result = packingV3Service.getAllMasterData(99L, null);
 
         assertTrue(result.isEmpty());
     }

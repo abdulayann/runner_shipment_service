@@ -72,8 +72,9 @@ public class ReferenceNumbersV3Controller {
             @ApiResponse(code = 200, response = MyListResponseClass.class, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL, responseContainer = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
-        List<ReferenceNumbersResponse> referenceNumbersList = referenceNumbersV3Service.list(listCommonRequest);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,
+                                                @RequestHeader(value = "x-source", required = false) String xSource) {
+        List<ReferenceNumbersResponse> referenceNumbersList = referenceNumbersV3Service.list(listCommonRequest, xSource);
         List<IRunnerResponse> responseList = referenceNumbersList.stream().map(p -> (IRunnerResponse) p).toList();
         return ResponseHelper.buildListSuccessResponse(responseList);
     }

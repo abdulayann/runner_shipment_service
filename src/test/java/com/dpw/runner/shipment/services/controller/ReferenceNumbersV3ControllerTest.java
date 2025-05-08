@@ -22,6 +22,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 
@@ -88,9 +89,9 @@ class ReferenceNumbersV3ControllerTest {
         ReferenceNumbersResponse ref2 = new ReferenceNumbersResponse();
 
         List<ReferenceNumbersResponse> serviceList = List.of(ref1, ref2);
-        when(referenceNumbersV3Service.list(any())).thenReturn(serviceList);
+        when(referenceNumbersV3Service.list(any(), eq(null))).thenReturn(serviceList);
 
-        ResponseEntity<IRunnerResponse> result = controller.list(request);
+        ResponseEntity<IRunnerResponse> result = controller.list(request, null);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         RunnerListResponse<?> actual = (RunnerListResponse<?>) result.getBody();

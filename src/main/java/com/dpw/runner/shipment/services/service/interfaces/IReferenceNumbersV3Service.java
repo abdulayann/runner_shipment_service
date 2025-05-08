@@ -10,5 +10,5 @@ public interface IReferenceNumbersV3Service {
     ReferenceNumbersResponse create(ReferenceNumbersRequest request);
     ReferenceNumbersResponse update(ReferenceNumbersRequest request);
     ReferenceNumbersResponse delete(ReferenceNumbersRequest request);
-    List<ReferenceNumbersResponse> list(ListCommonRequest listCommonRequest);
+    List<ReferenceNumbersResponse> list(ListCommonRequest listCommonRequest, String xSource);
 }

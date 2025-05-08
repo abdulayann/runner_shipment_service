@@ -123,6 +123,17 @@ public class PackingDao implements IPackingDao {
         return packingRepository.findByShipmentId(shipmentId);
     }
 
+    public Optional<Packing> findByIdWithQuery(Long id) {
+        return packingRepository.findByIdWithQuery(id);
+    }
+    public Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable) {
+        return packingRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    public Optional<Packing> findByGuidWithQuery(UUID guid){
+        return packingRepository.findByGuidWithQuery(guid);
+    }
+
     public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
@@ -531,6 +542,11 @@ public class PackingDao implements IPackingDao {
     @Override
     public List<Packing> findByContainerIdIn(List<Long> deleteContainerIds) {
         return packingRepository.findByContainerIdIn(deleteContainerIds);
+    }
+
+    @Override
+    public List<Packing> findByContainerIdInWithoutTenantFilter(List<Long> deleteContainerIds) {
+        return packingRepository.findByContainerIdInWithoutTenantFilter(deleteContainerIds);
     }
 
     @Override

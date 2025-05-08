@@ -129,7 +129,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
-        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, false);
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.getContainerSummaryResponse(containersList, false, null);
         assertNotNull(containerSummaryResponse);
     }
 
@@ -143,7 +143,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
-        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, false);
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.getContainerSummaryResponse(containersList, false, null);
         assertNotNull(containerSummaryResponse);
     }
 
@@ -211,7 +211,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         when(containerDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
-        ContainerListResponse response = containerV3Service.list(request, true);
+        ContainerListResponse response = containerV3Service.list(request, true, null);
 
         assertNotNull(response);
     }
@@ -226,7 +226,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         // Act & Assert
         RunnerException exception = assertThrows(RunnerException.class, () -> {
-            containerV3Service.list(request, true);
+            containerV3Service.list(request, true, null);
         });
 
         assertEquals("DB failure", exception.getMessage());  // Or DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG if null

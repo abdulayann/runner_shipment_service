@@ -122,6 +122,9 @@ public class ContainerDao implements IContainerDao {
     public Page<Containers> findAll(Specification<Containers> spec, Pageable pageable) {
         return containerRepository.findAll(spec, pageable);
     }
+    public Page<Containers> findAllWithoutTenantFilter(Specification<Containers> spec, Pageable pageable){
+        return containerRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
 
     @Override
     public List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId) {
@@ -462,8 +465,21 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
+    public List<Containers> findByShipmentIdWithoutTenantFilter(Long shipmentId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", shipmentId, "CONTAINS");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAllWithoutTenantFilter(pair.getLeft(), pair.getRight());
+        return containersPage.getContent();
+    }
+
+    @Override
     public List<Containers> findByConsolidationId(Long consolidationId) {
         return containerRepository.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    public List<Containers> findByConsolidationIdWithoutTenantFilter(Long consolidationId) {
+        return containerRepository.findByConsolidationIdWithoutTenantFilter(consolidationId);
     }
 
     @Override

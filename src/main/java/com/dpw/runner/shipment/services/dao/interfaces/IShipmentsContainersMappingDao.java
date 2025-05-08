@@ -15,6 +15,8 @@ public interface IShipmentsContainersMappingDao {
     List<ShipmentsContainersMapping> findByContainerId(Long containerId);
     List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds);
 
+    List<ShipmentsContainersMapping> findByContainerIdInWithoutTenantFilter(List<Long> containerIds);
+
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
 
     void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId);

@@ -103,6 +103,23 @@ import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.auth.AuthenticationException;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -121,6 +138,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -326,11 +358,65 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
-        return retireveShipmentData(commonRequestModel);
+    public ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData, String source) throws RunnerException, AuthenticationException {
+        return retireveShipmentData(commonRequestModel, source);
     }
 
-    public ShipmentRetrieveLiteResponse retireveShipmentData(CommonRequestModel commonRequestModel) throws RunnerException {
+    public boolean isNotAllowedToViewShipment(List<TriangulationPartner> triangulationPartners,
+                                              ShipmentDetails shipmentDetails, Long currentTenant,
+                                              ConsolidationDetails consolidationDetails) {
+        boolean isNotAllowed = true;
+        if(consolidationDetails!=null && Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant))
+            isNotAllowed = false;
+
+        if(consolidationDetails!=null && consolidationDetails.getTriangulationPartnerList() != null && consolidationDetails.getTriangulationPartnerList().stream().filter(Objects::nonNull)
+                .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+            isNotAllowed = false;
+
+        if(consolidationDetails!=null && Objects.equals(consolidationDetails.getTriangulationPartner(), currentTenant))
+            isNotAllowed = false;
+
+        if(Objects.equals(shipmentDetails.getReceivingBranch(), currentTenant))
+            isNotAllowed = false;
+
+        if(triangulationPartners != null && triangulationPartners.stream().filter(Objects::nonNull)
+                .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+            isNotAllowed = false;
+
+        if(Objects.equals(shipmentDetails.getTriangulationPartner(), currentTenant))
+            isNotAllowed = false;
+
+        return isNotAllowed;
+    }
+
+    private Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+        Long id = request.getId();
+        Optional<ShipmentDetails> shipmentDetails;
+        if(id != null){
+            shipmentDetails = shipmentDao.findShipmentByIdWithQuery(id);
+        }
+        else {
+            UUID guid = UUID.fromString(request.getGuid());
+            shipmentDetails = shipmentDao.findShipmentByGuidWithQuery(guid);
+        }
+        if (!shipmentDetails.isPresent()) {
+            log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
+        Long currentTenant = TenantContext.getCurrentTenant().longValue();
+        ConsolidationDetails consolidationDetails = null;
+        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
+            consolidationDetails = shipmentDetails.get().getConsolidationList().iterator().next();
+        }
+        if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant, consolidationDetails)) {
+            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
+        }
+        return shipmentDetails;
+    }
+
+    public ShipmentRetrieveLiteResponse retireveShipmentData(CommonRequestModel commonRequestModel, String source) throws RunnerException, AuthenticationException {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         double start = System.currentTimeMillis();
         if (request.getId() == null && request.getGuid() == null) {
@@ -339,11 +425,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
-        if (id != null) {
-            shipmentDetails = shipmentDao.findById(id);
+        if(Objects.equals(source, NETWORK_TRANSFER)) {
+            shipmentDetails = retrieveForNte(request);
         } else {
-            UUID guid = UUID.fromString(request.getGuid());
-            shipmentDetails = shipmentDao.findByGuid(guid);
+            if (id != null) {
+                shipmentDetails = shipmentDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findByGuid(guid);
+            }
         }
         if (!shipmentDetails.isPresent()) {
             log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -1240,7 +1330,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public Map<String, Object> getAllMasterData(Long shipmentId) {
+    public Map<String, Object> getAllMasterData(Long shipmentId, String xSource) {
         Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(shipmentId);
         if (!shipmentDetailsOptional.isPresent()) {
             log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentId);

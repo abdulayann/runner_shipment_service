@@ -24,6 +24,11 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
 
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
 
+    @ExcludeTenantFilter
+    default Page<Containers> findAllWithoutTenantFilter(Specification<Containers> spec, Pageable pageable){
+        return findAll(spec, pageable);
+    }
+
     List<Containers> findByGuid(UUID guid);
 
     default Optional<Containers> findById(Long id) {
@@ -32,6 +37,11 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
     }
 
     List<Containers> findByConsolidationId(Long consolidationId);
+
+    @ExcludeTenantFilter
+    default List<Containers> findByConsolidationIdWithoutTenantFilter(Long consolidationId){
+        return findByConsolidationId(consolidationId);
+    }
 
     void deleteById(Long id);
 

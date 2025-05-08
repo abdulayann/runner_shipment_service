@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteRespons
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import org.apache.http.auth.AuthenticationException;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 
@@ -30,7 +31,7 @@ public interface IShipmentServiceV3 {
 
     void delete(CommonRequestModel commonRequestModel);
 
-    ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException;
+    ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData, String source) throws RunnerException, AuthenticationException;
 
     ShipmentDetailsV3Response completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
 
@@ -48,5 +49,5 @@ public interface IShipmentServiceV3 {
 
     String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
-    Map<String, Object>  getAllMasterData(Long shipmentId);
+    Map<String, Object>  getAllMasterData(Long shipmentId, String xSource);
 }

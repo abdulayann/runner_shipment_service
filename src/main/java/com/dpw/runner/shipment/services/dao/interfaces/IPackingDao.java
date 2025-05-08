@@ -50,6 +50,8 @@ public interface IPackingDao {
     List<Packing> findByConsolidationId(Long consolidationId);
     List<Packing> findByContainerIdIn(List<Long> containerIds);
 
+    List<Packing> findByContainerIdInWithoutTenantFilter(List<Long> containerIds);
+
     List<Packing> findByIdIn(List<Long> packingIds);
 
     void deleteByIdIn(List<Long> deletePackingIds);
@@ -57,4 +59,10 @@ public interface IPackingDao {
     PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId);
 
     List<Packing> findByShipmentId(Long shipmentId);
+
+    Optional<Packing> findByIdWithQuery(Long id);
+
+    Optional<Packing> findByGuidWithQuery(UUID guid);
+
+    Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable);
 }

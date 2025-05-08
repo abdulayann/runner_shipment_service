@@ -72,6 +72,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+
+
 
 @Service
 @Slf4j
@@ -383,8 +386,18 @@ public class PackingV3Service implements IPackingV3Service {
         packingV3Util.downloadPacking(response, request);
     }
 
+    private Optional<Packing> retrieveForNte(Long id, String guid){
+        Optional<Packing> packing;
+        if (id != null) {
+            packing = packingDao.findByIdWithQuery(id);
+        } else {
+            packing = packingDao.findByGuidWithQuery(UUID.fromString(guid));
+        }
+        return packing;
+    }
+
     @Override
-    public PackingResponse retrieveById(Long id, String guid) {
+    public PackingResponse retrieveById(Long id, String guid, String source) {
         String responseMsg;
         try {
             if (id == null && isStringNullOrEmpty(guid)) {
@@ -392,10 +405,15 @@ public class PackingV3Service implements IPackingV3Service {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Optional<Packing> packing;
-            if (id != null) {
-                packing = packingDao.findById(id);
-            } else {
-                packing = packingDao.findByGuid(UUID.fromString(guid));
+            if(Objects.equals(source, NETWORK_TRANSFER)){
+                packing = retrieveForNte(id, guid);
+            }
+            else {
+                if (id != null) {
+                    packing = packingDao.findById(id);
+                } else {
+                    packing = packingDao.findByGuid(UUID.fromString(guid));
+                }
             }
             if (packing.isEmpty()) {
                 log.debug(PackingConstants.PACKING_RETRIEVE_BY_ID_ERROR, id, LoggerHelper.getRequestIdFromMDC());
@@ -412,7 +430,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+    public PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData, String source) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -420,7 +438,11 @@ public class PackingV3Service implements IPackingV3Service {
         }
         // construct specifications for filter request
         Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
-        Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<Packing> packingPage;
+        if(Objects.equals(source, NETWORK_TRANSFER))
+            packingPage = packingDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+        else
+            packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
         Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
@@ -462,9 +484,9 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel) {
-        PackingListResponse packingListResponse = list(commonRequestModel, true);
-        log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+    public PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel, String xSource) {
+        PackingListResponse packingListResponse = list(commonRequestModel, true, xSource);
+        log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
             //get assigned packages
             Long shipmentId = null;
@@ -485,9 +507,13 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public Map<String, Object> getAllMasterData(Long id) {
+    public Map<String, Object> getAllMasterData(Long id, String source) {
         try {
-            Optional<Packing> packingOptional = packingDao.findById(id);
+            Optional<Packing> packingOptional;
+            if(Objects.equals(source, NETWORK_TRANSFER))
+                packingOptional = packingDao.findByIdWithQuery(id);
+            else
+                packingOptional = packingDao.findById(id);
             if (packingOptional.isEmpty()) {
                 log.debug(PackingConstants.PACKING_RETRIEVE_BY_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -495,7 +521,7 @@ public class PackingV3Service implements IPackingV3Service {
             Packing packing = packingOptional.get();
             PackingResponse packingResponse = convertEntityToDto(packing);
             long start = System.currentTimeMillis();
-            log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
+            log.info("Total time taken in fetching Packing MasterData response {}", (System.currentTimeMillis() - start));
             return fetchAllMasterDataByKey(packingResponse);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

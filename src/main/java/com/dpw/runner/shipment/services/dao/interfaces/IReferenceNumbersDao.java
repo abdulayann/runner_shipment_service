@@ -14,6 +14,9 @@ public interface IReferenceNumbersDao {
     ReferenceNumbers save(ReferenceNumbers referenceNumbers);
     List<ReferenceNumbers> saveAll(List<ReferenceNumbers> referenceNumbersList);
     Page<ReferenceNumbers> findAll(Specification<ReferenceNumbers> spec, Pageable pageable);
+
+    Page<ReferenceNumbers> findAllWithoutTenantFilter(Specification<ReferenceNumbers> spec, Pageable pageable);
+
     Optional<ReferenceNumbers> findById(Long id);
     void delete(ReferenceNumbers referenceNumbers);
     List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId) throws RunnerException;

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -161,8 +162,8 @@ class PackingV3ControllerTest {
 
     @Test
     void retrieveById() {
-        when(packingV3Service.retrieveById(any(), any())).thenReturn(new PackingResponse());
-        var response = packingV3Controller.retrieveById(1L, null);
+        when(packingV3Service.retrieveById(any(), any(), eq(null))).thenReturn(new PackingResponse());
+        var response = packingV3Controller.retrieveById(1L, null, null);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -175,8 +176,8 @@ class PackingV3ControllerTest {
 
     @Test
     void getAllMasterData() {
-        when(packingV3Service.getAllMasterData(anyLong())).thenReturn(new HashMap<>());
-        var response = packingV3Controller.getAllMasterData(1L);
+        when(packingV3Service.getAllMasterData(anyLong(), eq(null))).thenReturn(new HashMap<>());
+        var response = packingV3Controller.getAllMasterData(1L, null);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }
