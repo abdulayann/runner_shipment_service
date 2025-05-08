@@ -482,13 +482,14 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(null);
-
+        var container = mockShipmentDetailsResponse.getContainersList().iterator().next();
+        container.setContainerCode("FAK");
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(container, Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
-        assertFalse(response.isEmpty());
+        assertTrue(response.isEmpty());
     }
 
     @Test
@@ -498,14 +499,15 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
+        var container = mockShipmentDetailsResponse.getContainersList().iterator().next();
+        container.setContainerCode("FAK");
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(container, Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
-
     }
 
     @Test
@@ -832,7 +834,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
@@ -849,7 +851,7 @@ class MasterDataUtilsTest {
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
-        when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert

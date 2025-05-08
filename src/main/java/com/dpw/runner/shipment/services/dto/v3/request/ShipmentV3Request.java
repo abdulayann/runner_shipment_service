@@ -12,8 +12,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
-import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -184,7 +182,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isReefer;
     private String incotermsLocation;
     private LocalDateTime cargoReadinessDate;
-    private String controlled;
+    private Boolean controlled;
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
@@ -208,5 +206,6 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private LocalDateTime latestFullEquipmentDeliveredToCarrier;
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     private LocalDateTime latestArrivalTime;
+    private Boolean isBorrowed;
 
 }

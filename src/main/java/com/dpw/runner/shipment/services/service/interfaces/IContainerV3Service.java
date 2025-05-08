@@ -10,19 +10,17 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
-import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public interface IContainerV3Service {
-    ContainerResponse create(ContainerV3Request containerRequest);
+    ContainerResponse create(ContainerV3Request containerRequest, String module);
 
-    BulkContainerResponse updateBulk(List<ContainerRequest> request);
+    BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module);
 
-    BulkContainerResponse deleteBulk(List<ContainerRequest> request);
+    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module);
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId) throws RunnerException;
     ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) throws RunnerException;
@@ -35,4 +33,5 @@ public interface IContainerV3Service {
             List<ShipmentDetails> shipmentDetailsList,
             Set<Long> attachedShipmentIds,
             Set<Long> interBranchRequestedShipIds);
+    ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException;
 }

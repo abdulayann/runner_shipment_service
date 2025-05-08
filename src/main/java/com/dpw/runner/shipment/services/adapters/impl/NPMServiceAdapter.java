@@ -208,6 +208,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     {
                         list = list.stream().filter(c -> listContractsWithFilterRequest.getDestination().equals(c.getDestination())).toList();
                     }
+                    if (Boolean.TRUE.equals(listContractsWithFilterRequest.getIsDgEnabled())) {
+                        list = list.stream()
+                                .filter(c -> c.getDgClass() != null && !c.getDgClass().isEmpty()
+                                        && !(c.getDgClass().size() == 1 && "NULL".equalsIgnoreCase(c.getDgClass().get(0)))
+                                )
+                                .toList();
+                    }
                     npmContractsResponse.setContracts(list);
                 }
             }
@@ -221,7 +228,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateContracts(CommonRequestModel commonRequestModel) {
         try {
             UpdateContractRequest updateContractRequest = (UpdateContractRequest) commonRequestModel.getData();
             String url = npmBaseUrl + npmUpdateUrl;

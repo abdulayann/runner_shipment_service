@@ -4,13 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import io.swagger.annotations.ApiModel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -32,7 +26,9 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private Long bookingId;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
+    @NonNull
     private String packs;
+    @NonNull
     private String packsType;
     private BigDecimal weight;
     private String weightUnit;
@@ -40,6 +36,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private String volumeUnit;
     private String inspections;
     private String origin;
+    @NonNull
     private String commodity;
     private String packingOrder;
     private BigDecimal length;

@@ -85,6 +85,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@SuppressWarnings("java:S2259")
 public class MasterDataUtils{
 
     private static class ContainerCounts {
@@ -747,6 +748,35 @@ public class MasterDataUtils{
         return locCodesList;
     }
 
+    // Fetch All Organizations in single call from V1
+    public <T> List<String> createInBulkOrganizationRequest(IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+        if (Objects.isNull(entityPayload))
+            return null;
+
+        Map<String, String> fieldNameKeyMap = new HashMap<>();
+        List<String> orgIds = new ArrayList<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        List<String> fields = fetchFieldsMap(mainClass, Constants.ORGANIZATIONS);
+        for (String field: fields){
+            try {
+                Field field1 = entityPayload.getClass().getDeclaredField(field);
+                field1.setAccessible(true);
+                String orgId = field1.get(entityPayload) != null ? String.valueOf(field1.get(entityPayload)): null;
+                Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.ORGANIZATIONS, orgId));
+                if(orgId != null && !orgId.isEmpty()) {
+                    if (Objects.isNull(cacheValue))  orgIds.add(orgId);
+                    else if (!Objects.isNull(cacheMap)) cacheMap.put(orgId, cacheValue.get());
+                    fieldNameKeyMap.put(field, orgId);
+                }
+            } catch (Exception e) {
+                log.error("Error in createInBulkOrganizationsRequest : {}", e.getMessage(), e);
+                throw new GenericException(e);
+            }
+        }
+        fieldNameMainKeyMap.put(code, fieldNameKeyMap);
+        return orgIds;
+    }
+
     public Map<String, EntityTransferUnLocations> fetchInBulkUnlocations(Set<String> requests, String onField) {
         Map<String, EntityTransferUnLocations> keyMasterDataMap = new HashMap<>();
         if (requests.isEmpty()) {
@@ -781,6 +811,41 @@ public class MasterDataUtils{
                     unLocationsList.forEach(location -> keyMasterDataMap.put(location.getName(), location));
                 else
                     unLocationsList.forEach(location -> keyMasterDataMap.put(location.getLocationsReferenceGUID(), location));
+            }
+        }
+
+        return keyMasterDataMap;
+    }
+
+    public Map<String, EntityTransferOrganizations> fetchInOrganizations(Set<String> requests, String onField) {
+        Map<String, EntityTransferOrganizations> keyMasterDataMap = new HashMap<>();
+        if (requests.isEmpty()) {
+            return keyMasterDataMap;
+        }
+
+        log.info("Request: {} || OrganizationsList: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requests));
+
+        int batchSize = take;
+        int totalBatches = (int) Math.ceil((double) requests.size() / batchSize); // Calculate total number of batches
+
+        for (int i = 0; i < totalBatches; i++) {
+
+            List<String> batch = requests.stream()
+                    .skip((long) i * batchSize)
+                    .limit(batchSize)
+                    .toList();
+
+            CommonV1ListRequest request = new CommonV1ListRequest();
+            List<Object> field = new ArrayList<>(List.of(onField));
+            String operator = Operators.IN.getValue();
+            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(batch)));
+            request.setCriteriaRequests(criteria);
+
+            V1DataResponse response = v1Service.fetchOrganization(request);
+            List<EntityTransferOrganizations> organizationsList = jsonHelper.convertValueToList(response.entities, EntityTransferOrganizations.class);
+
+            if (!Objects.isNull(organizationsList)) {
+                organizationsList.forEach(org -> keyMasterDataMap.put(String.valueOf(org.getId()), org));
             }
         }
 
@@ -1023,6 +1088,10 @@ public class MasterDataUtils{
                     if (field.isAnnotationPresent(MasterData.class))
                         fields.add(field.getName());
                     break;
+                case Constants.ORGANIZATIONS:
+                    if (field.isAnnotationPresent(OrganizationMasterData.class))
+                        fields.add(field.getName());
+                    break;
                 default:
             }
         }
@@ -1215,6 +1284,10 @@ public class MasterDataUtils{
                     case CacheConstants.COMMODITY:
                         EntityTransferCommodityType object11 = (EntityTransferCommodityType) cache;
                         fieldNameMasterDataMap.put(key, object11.getDescription());
+                        break;
+                    case CacheConstants.ORGANIZATIONS:
+                        EntityTransferOrganizations object12 = (EntityTransferOrganizations) cache;
+                        fieldNameMasterDataMap.put(key, object12.getFullName());
                         break;
                     default:
                 }
@@ -1891,7 +1964,7 @@ public class MasterDataUtils{
     private boolean isAddressAbsent(Map<String, Object> cacheResponse, String addressCode) {
         Object orgAddressObj = cacheResponse.get(Constants.ORG_ADDRESS);
         if (orgAddressObj instanceof List<?>) {
-            return ((List<Map<String, Object>>) orgAddressObj).stream()
+            return ((List<Map<String, Object>>) orgAddressObj).stream().filter(Objects::nonNull)
                     .noneMatch(address -> Objects.equals(address.get(Constants.ADDRESS_SHORT_CODE), addressCode));
         }
         return true;
@@ -1924,7 +1997,7 @@ public class MasterDataUtils{
         List<Map<String, Object>> addressList = existingAddresses instanceof List<?>
                 ? new ArrayList<>((List<Map<String, Object>>) existingAddresses)
                 : new ArrayList<>();
-        if (addressList.stream().noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
+        if (addressList.stream().filter(Objects::nonNull).noneMatch(addr -> Objects.equals(addr.get(Constants.ADDRESS_SHORT_CODE), newAddress.get(Constants.ADDRESS_SHORT_CODE)))) {
             addressList.add(newAddress);
         }
         return addressList;

@@ -8,12 +8,9 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -29,6 +26,12 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.util.List;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_CONTAINERS;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_SUCCESS;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 @RestController
 @RequestMapping(ContainerConstants.CONTAINER_V3_API_HANDLE)
@@ -49,22 +52,30 @@ public class ContainerV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
-    @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@Valid @RequestBody ContainerV3Request containerRequest) {
-        log.info("Received Container Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
-        return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest));
+    @PostMapping(ApiConstants.SHIPMENT + ApiConstants.API_CREATE)
+    public ResponseEntity<IRunnerResponse> createFromShipment(@Valid @RequestBody ContainerV3Request containerRequest) {
+        log.info("Received Container Create request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest, SHIPMENT));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
+        @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.CONSOLIDATION + ApiConstants.API_CREATE)
+    public ResponseEntity<IRunnerResponse> createFromConsolidation(@Valid @RequestBody ContainerV3Request containerRequest) {
+        log.info("Received Container Create request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest, CONSOLIDATION));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PutMapping(value = ApiConstants.API_UPDATE_BULK)
-    public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ContainerRequest> request) {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.updateBulk(request));
+    public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ContainerV3Request> request) {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.updateBulk(request, SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerRequest> request) {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request));
+    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request) {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
@@ -98,4 +109,11 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerListResponse,
             containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponse.class)})
+    @PostMapping(ASSIGN_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request));
+    }
+
 }

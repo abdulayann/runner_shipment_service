@@ -12,6 +12,7 @@ import static com.dpw.runner.shipment.services.validator.constants.CustomerBooki
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -28,22 +29,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.DocumentMetaDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.request.platform.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -113,7 +101,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Slf4j
 @EnableAsync(proxyTargetClass = true)
-@SuppressWarnings({"java:S1066", "java:S1141"})
+@SuppressWarnings({"java:S1066", "java:S1141", "java:1168"})
 public class BookingIntegrationsUtility {
 
     @Autowired
@@ -144,6 +132,8 @@ public class BookingIntegrationsUtility {
     private IEventService eventService;
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private IOrderManagementAdapter orderManagementAdapter;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -265,7 +255,7 @@ public class BookingIntegrationsUtility {
             try {
                 try {
                     TimeUnit.SECONDS.sleep(5);
-                } catch (Exception ex) {
+                } catch (Exception ex) {  //NOSONAR - Ignoring interrupt intentionally
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
                 this.createBill(customerBooking, false, true, shipmentResponse, headers);
@@ -308,6 +298,14 @@ public class BookingIntegrationsUtility {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
+        try {
+            return shipmentService.createShipmentInV3(customerBookingRequest);
+        } catch (Exception ex) {
+            log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
+            throw ex;
+        }
+    }
 
     private void saveErrorResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String message) {
         IntegrationResponse response = IntegrationResponse.builder()
@@ -694,6 +692,7 @@ public class BookingIntegrationsUtility {
                 .shipmentMovement(shipmentDetails.getDirection())
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
+                .purchaseOrders(getOrdersByShipmentId(shipmentDetails.getShipmentId()))
                 .source(CustomerBookingConstants.RUNNER)
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
@@ -707,6 +706,15 @@ public class BookingIntegrationsUtility {
                 .addresses(getPartyAddresses(shipmentDetails.getClient(), shipmentDetails.getConsigner(), shipmentDetails.getConsignee(), shipmentDetails.getAdditionalDetails().getNotifyParty()))
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
+    }
+
+    private List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) {
+        try {
+            return orderManagementAdapter.getOrdersByShipmentId(shipmentId);
+        } catch (Exception e) {
+            log.error("Exception while retrieving orders for shipmentId {}: {}", shipmentId, e.getMessage(), e);
+            return null;
+        }
     }
 
     private List<ReferenceNumbersRequest> createReferenceNumbers(ShipmentDetails shipmentDetails) {

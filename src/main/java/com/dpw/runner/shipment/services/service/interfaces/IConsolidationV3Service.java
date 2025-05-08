@@ -2,11 +2,13 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -25,12 +27,14 @@ public interface IConsolidationV3Service {
     ConsolidationDetailsResponse completeUpdate(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException;
     ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException;
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
-    String attachShipments(ShipmentAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
+    String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
     void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity);
-    ConsolidationDetailsV3Response retrieveById(CommonGetRequest commonGetRequest, boolean getMasterData, String source) throws RunnerException, AuthenticationException;
-    Map<String, Object> getAllMasterData(CommonGetRequest commonGetRequest);
+    ConsolidationDetailsV3Response retrieveById(CommonGetRequest commonGetRequest, String source) throws RunnerException, AuthenticationException;
+    Map<String, Object> getAllMasterData(Long id, String source) throws RunnerException, AuthenticationException;
     ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
+    ConsolidationListV3Response list(ListCommonRequest listCommonRequest, boolean getMasterData);
+    ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
 }

@@ -8,8 +8,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContaine
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +16,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -67,8 +67,14 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         return null;
     }
 
-    private ShipmentsContainersMapping save(ShipmentsContainersMapping shipmentsContainersMapping) {
+    @Override
+    public ShipmentsContainersMapping save(ShipmentsContainersMapping shipmentsContainersMapping) {
         return shipmentsContainersMappingRepository.save(shipmentsContainersMapping);
+    }
+
+    @Override
+    public List<ShipmentsContainersMapping> saveAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList) {
+        return shipmentsContainersMappingRepository.saveAll(shipmentsContainersMappingList);
     }
 
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {

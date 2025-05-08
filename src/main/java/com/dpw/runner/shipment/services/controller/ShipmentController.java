@@ -730,7 +730,7 @@ public class ShipmentController {
     @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
     public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody
     OceanDGApprovalRequest request) {
-        log.info("Request received for oceanDGSendForApproval");
+        log.info("Received for oceanDGSendForApproval with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
             return shipmentService.sendOceanDGApprovalEmail(request);
         } catch (Exception ex) {
@@ -742,7 +742,7 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
     public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequest request) {
-        log.info("Request received for oceanDGApprovalResponse ");
+        log.info("Received for oceanDGApprovalResponse with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
             return shipmentService.dgApprovalResponse(request);
         } catch (Exception ex) {
@@ -813,6 +813,12 @@ public class ShipmentController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_WITH_EXECUTION_STATE_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.MATCHING_RULES_BY_GUID_AND_EXECUTION_STATE)
+    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuidAndExecutionState(@RequestBody @Valid GetMatchingRulesRequest getMatchingRulesRequest) {
+        return dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})

@@ -140,5 +140,6 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> retrieveByIdV3(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> fullShipmentsListV3(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listV3(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException;
 
 }

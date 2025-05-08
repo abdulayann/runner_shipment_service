@@ -13,6 +13,7 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -62,6 +63,9 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_notify_party_free_text")
     private Boolean isNotifyPartyFreeText;
+
+    @Transient
+    private List<Parties> additionalParties;
 
     @Column(name = "customer_email")
     private String customerEmail;
@@ -142,6 +146,10 @@ public class CustomerBooking extends MultiTenancy {
     @OrderBy("leg ASC")
     @BatchSize(size = 50)
     private List<Routings> routingList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
+    private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'BOOKING'")
@@ -259,4 +267,95 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "rejection_remarks")
     private String rejectionRemarks;
+
+    @Column(name = "payment_terms")
+    @MasterData(type = MasterDataType.PAYMENT)
+    private String paymentTerms;
+
+    @Column(name = "shipment_reference_number")
+    private String shipmentReferenceNumber;
+
+    @Column(name = "is_reefer")
+    private Boolean isReefer = false;
+
+    @Column(name = "incoterms_location")
+    @Size(max = 64)
+    private String incotermsLocation;
+
+    @Column(name = "cargo_readiness_date")
+    private LocalDateTime cargoReadinessDate;
+
+    @Column(name = "controlled")
+    private Boolean controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 64)
+    private String controlledReferenceNumber;
+
+    @Column(name = "partner")
+    private String partner;
+
+    @Column(name = "booking_agent")
+    private Long bookingAgent;
+
+    @Column(name = "co_load_bkg_number")
+    @Size(max = 64)
+    private String coLoadBkgNumber;
+
+    @Column(name = "pickup_at_origin_type")
+    private String pickupAtOriginType;
+
+    @Column(name = "delivery_at_destination_type")
+    private String deliveryAtDestinationType;
+
+    @Column(name = "brokerage_at_origin_type")
+    private String brokerageAtOriginType;
+
+    @Column(name = "brokerage_at_destination_type")
+    private String brokerageAtDestinationType;
+
+    @Column(name = "pickup_at_origin")
+    private Long pickupAtOrigin;
+
+    @Column(name = "delivery_at_destination")
+    private Long deliveryAtDestination;
+
+    @Column(name = "brokerage_at_origin")
+    private Long brokerageAtOrigin;
+
+    @Column(name = "brokerage_at_destination")
+    private Long brokerageAtDestination;
+
+    @Column(name = "brokerage_at_origin_date")
+    private LocalDateTime brokerageAtOriginDate;
+
+    @Column(name = "brokerage_at_destination_date")
+    private LocalDateTime brokerageAtDestinationDate;
+
+    @Column(name = "terminal_cut_off")
+    private LocalDateTime terminalCutoff;
+
+    @Column(name = "verified_gross_mass_cut_off")
+    private LocalDateTime verifiedGrossMassCutoff;
+
+    @Column(name = "shipping_instruction_cutoff")
+    private LocalDateTime shippingInstructionCutoff;
+
+    @Column(name = "dg_cut_off")
+    private LocalDateTime dgCutoff;
+
+    @Column(name = "reefer_cut_off")
+    private LocalDateTime reeferCutoff;
+
+    @Column(name = "earliest_empty_equipment_pickup")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+
+    @Column(name = "latest_full_equipment_delivered_to_carrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equipment_to_carrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
+    @Column(name = "latest_arrival_time")
+    private LocalDateTime latestArrivalTime;
 }

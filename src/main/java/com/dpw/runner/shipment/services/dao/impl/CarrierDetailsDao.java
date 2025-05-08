@@ -34,4 +34,9 @@ public class CarrierDetailsDao implements ICarrierDetailsDao {
     public void updateAtd(Long id, LocalDateTime shipmentAtd) {
         carrierRepository.updateAtd(id, shipmentAtd);
     }
+
+    @Override
+    public void update(CarrierDetails carrierDetails){
+        carrierRepository.save(carrierDetails);
+    }
 }

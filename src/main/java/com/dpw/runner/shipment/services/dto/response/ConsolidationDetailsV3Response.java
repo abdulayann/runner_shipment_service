@@ -8,16 +8,16 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -112,9 +112,6 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private PartiesResponse borrowedFrom;
     private PartiesResponse creditor;
     private PartiesResponse coLoadWith;
-    private PartiesResponse bookingAgent;
-    private String bookingAgentNumber;
-    private String bookingAgentBlNumber;
     private String createdBy;
     private List<String> houseBills;
     private List<String> shipmentIds;
@@ -165,4 +162,9 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private String partner;
+    private Long bookingAgent;
+    private String coLoadCarrierName;
+    private Long borrowedFromId;
+    private Boolean borrowed;
 }

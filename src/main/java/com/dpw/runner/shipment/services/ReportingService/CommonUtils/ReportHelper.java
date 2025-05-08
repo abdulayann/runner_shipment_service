@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
@@ -310,17 +311,26 @@ public class ReportHelper {
     }
 
     public static void addTenantDetails(Map<String, Object> dictionary, TenantModel tenantModel) {
-        dictionary.put(ReportConstants.TENANT_NAME, tenantModel.tenantName);
-        dictionary.put(ReportConstants.TENANT_ADDRESS_1, tenantModel.address1);
-        dictionary.put(ReportConstants.TENANT_ADDRESS_2, tenantModel.address2);
-        dictionary.put(ReportConstants.TENANT_EMAIL, tenantModel.email);
-        dictionary.put(ReportConstants.TENANT_CITY, tenantModel.city);
-        dictionary.put(ReportConstants.TENANT_STATE, tenantModel.state);
-        dictionary.put(ReportConstants.TENANT_COUNTRY, tenantModel.country);
-        dictionary.put(ReportConstants.TENANT_COUNTRY_PHONE, tenantModel.phone);
-        dictionary.put(ReportConstants.TENANT_MOBILE, tenantModel.mobile);
-        dictionary.put(ReportConstants.TENANT_ZIP_POST_CODE, tenantModel.zipPostCode);
-        dictionary.put(ReportConstants.TENANT_URL, tenantModel.websiteUrl);
+
+        if (Objects.nonNull(tenantModel)) {
+            dictionary.put(ReportConstants.TENANT_NAME, tenantModel.tenantName);
+            dictionary.put(ReportConstants.TENANT_ADDRESS_1, tenantModel.address1);
+            dictionary.put(ReportConstants.TENANT_ADDRESS_2, tenantModel.address2);
+            dictionary.put(ReportConstants.TENANT_EMAIL, tenantModel.email);
+            dictionary.put(ReportConstants.TENANT_CITY, tenantModel.city);
+            dictionary.put(ReportConstants.TENANT_STATE, tenantModel.state);
+            dictionary.put(ReportConstants.TENANT_COUNTRY, tenantModel.country);
+            dictionary.put(ReportConstants.TENANT_COUNTRY_PHONE, tenantModel.phone);
+            dictionary.put(ReportConstants.TENANT_MOBILE, tenantModel.mobile);
+            dictionary.put(ReportConstants.TENANT_ZIP_POST_CODE, tenantModel.zipPostCode);
+            dictionary.put(ReportConstants.TENANT_URL, tenantModel.websiteUrl);
+            dictionary.put(TENANT_NAME_IN_CAPS, StringUtility.toUpperCase(tenantModel.tenantName));
+            dictionary.put(TENANT_VAT_REG_NUMBER_IN_CAPS, StringUtility.toUpperCase(tenantModel.vatRegNumber));
+            dictionary.put(TENANT_EMAIL_IN_CAPS, StringUtility.toUpperCase(tenantModel.email));
+
+            List<String> tenantAddress = getOrgAddressForLesserLines(tenantModel.getAddress1(), tenantModel.getAddress2(), tenantModel.getState(), tenantModel.getCity(), tenantModel.getCountry(), tenantModel.getZipPostCode());
+            dictionary.put(TENANT_ADDRESS_IN_CAPS, CommonUtils.listIsNullOrEmpty(tenantAddress) ? tenantAddress : tenantAddress.stream().filter(Objects::nonNull).map(StringUtility::toUpperCase).toList());
+        }
     }
 
     public static String getValueFromMap(Map<String, Object> dataMap, String key) {
@@ -482,6 +492,32 @@ public class ReportHelper {
         }
 
         return number != null ? number.toString() : null;
+    }
+
+    public static void addPartyNameAndAddressInCaps(PartiesModel partiesModel, Map<String, Object> dictionary, String nameKey, String addressKey) {
+        try {
+            if (Objects.nonNull(partiesModel)) {
+                if (Objects.nonNull(partiesModel.getOrgData())) {
+                    dictionary.put(nameKey, StringUtility.toUpperCase(StringUtility.convertToString(partiesModel.getOrgData().get(PartiesConstants.FULLNAME))));
+                }
+
+                if (Objects.nonNull(partiesModel.getAddressData())) {
+
+                    List<String> address = getOrgAddressForLesserLines(
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.ADDRESS1)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.ADDRESS2)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.STATE)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.CITY)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.COUNTRY)),
+                            StringUtility.convertToString(partiesModel.getAddressData().get(PartiesConstants.ZIP_POST_CODE)));
+
+                    dictionary.put(addressKey, CommonUtils.listIsNullOrEmpty(address) ? address : address.stream().filter(Objects::nonNull).map(StringUtility::toUpperCase).toList());
+                }
+            }
+        } catch (Exception e) {
+            log.error("An error occurred in addPartyNameAndAddressInCaps: for keys: {} -- {} --- With exception {}", nameKey, addressKey, e.getMessage(), e);
+        }
+
     }
 
 }

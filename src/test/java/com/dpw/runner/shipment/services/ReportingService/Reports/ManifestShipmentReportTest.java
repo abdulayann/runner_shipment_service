@@ -27,7 +27,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -375,7 +374,7 @@ class ManifestShipmentReportTest extends CommonMocks {
     private void mockUnloc() {
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
-        when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
+        when(v1MasterData.fetchAllUnlocationData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
     }
 

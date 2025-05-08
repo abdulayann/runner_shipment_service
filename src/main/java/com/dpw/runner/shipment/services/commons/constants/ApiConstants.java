@@ -1,6 +1,21 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ApiConstants {
+    public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
+    public static final String BOOKING_API_UPDATE_CONTAINERS = "/update/booking/containers";
+    public static final String BOOKING_API_LIST_CONTAINERS = "/list/booking/containers";
+    public static final String BOOKING_API_DELETE_CONTAINERS = "/delete/booking/containers";
+
+    public static final String BOOKING_API_CREATE_REFERENCES = "/create/booking/references";
+    public static final String BOOKING_API_UPDATE_REFERENCES = "/update/booking/references";
+    public static final String BOOKING_API_LIST_REFERENCES = "/list/booking/references";
+    public static final String BOOKING_API_DELETE_REFERENCES = "/delete/booking/references";
+
+    public static final String BOOKING_API_CREATE_PARTIES = "/create/booking/parties";
+    public static final String BOOKING_API_UPDATE_PARTIES = "/update/booking/parties";
+    public static final String BOOKING_API_LIST_PARTIES = "/list/booking/parties";
+    public static final String BOOKING_API_DELETE_PARTIES = "/delete/booking/parties";
+
     private ApiConstants(){}
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
@@ -29,6 +44,10 @@ public class ApiConstants {
     public static final String SHIPMENT_API_LIST = "shipment-routing";
     public static final String SHIPMENT_API_UPDATE_BULK = "shipment/update/bulk";
     public static final String SHIPMENT_API_DELETE_BULK = "shipment/delete/bulk";
+    public static final String BOOKING_API_CREATE_PACKAGES = "/create/booking/packages";
+    public static final String BOOKING_API_UPDATE_PACKAGES = "/update/booking/packages";
+    public static final String BOOKING_API_LIST_PACKAGES = "/list/booking/packages";
+    public static final String BOOKING_API_DELETE_PACKAGES = "/delete/booking/packages";
 
 
     public static final String API_RETRIEVE_BY_ID_PARTIAL="/retrieve/partial/id";
@@ -68,6 +87,7 @@ public class ApiConstants {
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
     public static final String DETACH_SHIPMENTS = "detach-shipments";
+    public static final String ATTACH_CONSOLIDATION = "attach-consolidation";
     public static final String SAVE_FROM_V1 = "save/from/v1";
     public static final String API_GET_CUSTOM_REQ = "getCustomReq";
     public static final String API_SYNC_PRODUCT_SEQ = "getCustomProdSeqSync";
@@ -146,7 +166,7 @@ public class ApiConstants {
     public static final String CANCEL = "/cancel";
     public static final String LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS = "/listBranchesByDefaultOrgAndAddress";
     public static final String MATCHING_RULES_BY_GUID = "/get-matching-rules/guid";
-
+    public static final String MATCHING_RULES_BY_GUID_AND_EXECUTION_STATE = "/get-matching-rules";
 
     // Runner V3.0 API Endpoints
     public static final String API_CREATE_V3 = "/createV3";

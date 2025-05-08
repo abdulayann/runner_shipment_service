@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
@@ -50,8 +51,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,6 +76,8 @@ class ShipmentServiceImplV3Test {
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     @Mock
     private JsonHelper jsonHelper;
+    @Mock
+    private ConsolidationV3Service consolidationV3Service;
 
 
     @BeforeAll
@@ -235,6 +237,20 @@ class ShipmentServiceImplV3Test {
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
         assertNotNull(response);
+    }
+
+    @Test
+    void testAttachConsolidation() throws RunnerException {
+        when(consolidationV3Service.attachShipments(any())).thenReturn(null);
+        String res = shipmentServiceImplV3.attachConsolidation(any());
+        assertNull(res);
+    }
+
+    @Test
+    void testAttachConsolidation2() throws RunnerException {
+        when(consolidationV3Service.attachShipments(any())).thenReturn("null");
+        String res = shipmentServiceImplV3.attachConsolidation(any());
+        assertNotNull(res);
     }
 
 }

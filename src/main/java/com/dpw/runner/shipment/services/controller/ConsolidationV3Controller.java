@@ -5,12 +5,17 @@ import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -21,11 +26,15 @@ import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javax.validation.Valid;
+
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
@@ -36,6 +45,7 @@ public class ConsolidationV3Controller {
     private final JsonHelper jsonHelper;
 
     private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
+    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
 
     @Autowired
     public ConsolidationV3Controller(IConsolidationV3Service consolidationV3Service,
@@ -63,20 +73,21 @@ public class ConsolidationV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = ConsolidationV3Controller.MyResponseClass.class, message = ConsolidationConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Long id,
-                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam String guid,
-                                                        @RequestParam(required = false, defaultValue = "false") boolean getMasterData,
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam (required = false) Long id,
+                                                        @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam (required = false) String guid,
                                                         @RequestHeader(value = "x-source", required = false) String xSource
     ) throws RunnerException, AuthenticationException {
         CommonGetRequest request = CommonGetRequest.builder().id(id).guid(guid).build();
         log.info("Received Consolidation retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveById(request, getMasterData, xSource));
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.retrieveById(request, xSource));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long consolidationId) {
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getAllMasterData(CommonGetRequest.builder().id(consolidationId).build()));
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long consolidationId,
+                                                            @RequestHeader(value = "x-source", required = false) String xSource
+    ) throws RunnerException, AuthenticationException{
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getAllMasterData(consolidationId, xSource));
     }
 
     /**
@@ -89,7 +100,7 @@ public class ConsolidationV3Controller {
             @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.ATTACH_SHIPMENT_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
-    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         log.info("Received attachShipments request: {}", request);
         String warning = consolidationV3Service.attachShipments(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
@@ -110,4 +121,22 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationPendingNotificationResponse);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_V3)
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.list(listCommonRequest, getMasterData);
+        return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
+            consolidationListV3Response.getNumberOfRecords());
+
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Console Details Data List Retrieval")})
+    @PostMapping(value = ApiConstants.AUTO_ATTACH_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(@Valid @RequestBody @NonNull AutoAttachConsolidationV3Request request) {
+        log.info("Received console list v3 for shipment request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        ConsolidationListV3Response consolidationListV3Response =   consolidationV3Service.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
+        return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
+                consolidationListV3Response.getNumberOfRecords());
+    }
 }

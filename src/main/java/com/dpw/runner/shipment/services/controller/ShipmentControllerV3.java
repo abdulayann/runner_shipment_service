@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -40,7 +41,8 @@ import java.util.Optional;
 @Slf4j
 public class ShipmentControllerV3 {
 
-    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {}
+    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {
+    }
 
     private IShipmentServiceV3 shipmentService;
     private JsonHelper jsonHelper;
@@ -115,9 +117,31 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(shipmentPendingNotificationResponse);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId) {
+        return (ResponseEntity<?>) shipmentService.getAllMasterData(shipmentId);
+    }
+
     @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)
-    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId)  {
+    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
+    }
+
+    /**
+     * Attaches consolidation to a shipment.
+     *
+     * @param request Consolidation attach request
+     * @return Standard runner response
+     */
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.ATTACH_CONSOLIDATION_SUCCESSFUL)
+    })
+    @PostMapping(ApiConstants.ATTACH_CONSOLIDATION)
+    public ResponseEntity<IRunnerResponse> attachConsolidation(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
+        log.info("Received attachConsolidation request: {}", request);
+        String warning = shipmentService.attachConsolidation(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
 }

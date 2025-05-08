@@ -112,7 +112,8 @@ public class PartiesDao implements IPartiesDao {
         }
     }
 
-    private List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType) {
+    @Override
+    public List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType) {
         return partiesRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 

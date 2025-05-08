@@ -195,5 +195,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String oceanBlNumber;
     private UUID customerBookingGuid;
     private Boolean isFrob;
+    private Long containerAssignedToShipmentCargo;
 
 }

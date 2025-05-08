@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
@@ -35,4 +36,6 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     List<Routings> findByConsolidationId(Long consolidationId);
 
     List<Routings> findByIdIn(List<Long> routingIds);
+
+    List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage);
 }

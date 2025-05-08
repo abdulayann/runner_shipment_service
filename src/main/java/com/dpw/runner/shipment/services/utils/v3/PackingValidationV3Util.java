@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -86,7 +87,7 @@ public class PackingValidationV3Util {
             throw new ValidationException("Booking id is empty");
         }
         Optional<CustomerBooking> customerBooking = customerBookingService.findById(packingRequest.getBookingId());
-        if (!customerBooking.isPresent()) {
+        if (customerBooking.isEmpty()) {
             throw new ValidationException("Please provide the valid booking id");
         }
     }
@@ -96,7 +97,7 @@ public class PackingValidationV3Util {
             throw new ValidationException("Consolidation id is empty");
         }
         Optional<ConsolidationDetails> consolidationDetails = consolidationService.findById(packingRequest.getConsolidationId());
-        if (!consolidationDetails.isPresent()) {
+        if (consolidationDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid consolidation id");
         }
     }
@@ -106,8 +107,40 @@ public class PackingValidationV3Util {
             throw new ValidationException("Shipment id is empty");
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(packingRequest.getShipmentId());
-        if (!shipmentDetails.isPresent()) {
+        if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
+        }
+    }
+
+    public void validateSameParentId(List<PackingV3Request> requestList, String moduleType) {
+        if (requestList == null || requestList.isEmpty()) {
+            return;
+        }
+
+        switch (moduleType.toUpperCase()) {
+            case Constants.SHIPMENT -> validateSameId(requestList, PackingV3Request::getShipmentId, "shipmentId");
+            case Constants.CONSOLIDATION -> validateSameId(requestList, PackingV3Request::getConsolidationId, "consolidationId");
+            case Constants.BOOKING -> validateSameId(requestList, PackingV3Request::getBookingId, "bookingId");
+            default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
+        }
+    }
+
+    @SuppressWarnings("java:S4276")
+    private void validateSameId(List<PackingV3Request> list,
+                                Function<PackingV3Request, Long> idExtractor,
+                                String fieldName) {
+        Long expectedId = null;
+
+        for (PackingV3Request request : list) {
+            Long currentId = idExtractor.apply(request);
+            if (currentId == null) {
+                throw new IllegalArgumentException("All packing requests must have the " + fieldName + ".");
+            }
+            if (expectedId == null) {
+                expectedId = currentId;
+            } else if (!expectedId.equals(currentId)) {
+                throw new IllegalArgumentException("All packing requests must have the same " + fieldName + ".");
+            }
         }
     }
 }
