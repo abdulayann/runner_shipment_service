@@ -63,6 +63,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -105,6 +106,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Autowired
     private CommonUtils commonUtils;
 
+    @Lazy
     @Autowired
     private IShipmentServiceV3 shipmentService;
 
