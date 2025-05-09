@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 @Component
 public class PackingValidationV3Util {
     @Autowired
+    @Lazy
     private IShipmentServiceV3 shipmentService;
 
     @Autowired
