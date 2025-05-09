@@ -2,12 +2,16 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -23,6 +27,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 @Slf4j
 @RestController
@@ -59,6 +65,12 @@ public class ReferenceNumbersV3Controller {
         log.info("Received Reference Number Update request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.update(request));
 
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, response = BulkReferenceNumbersResponse.class)})
+    @PutMapping(value = ApiConstants.API_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ReferenceNumbersRequest> request) {
+        return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.updateBulk(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_DELETE_SUCCESSFUL, response = RunnerResponse.class)})

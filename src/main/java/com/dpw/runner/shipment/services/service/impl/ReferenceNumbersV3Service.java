@@ -8,7 +8,11 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -107,6 +111,37 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         log.info("Returning updated reference number response | Reference Number ID: {} | Response: {}", updatedReferenceNumber.getId(), response);
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    public BulkReferenceNumbersResponse updateBulk(List<ReferenceNumbersRequest> requests) {
+
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+        log.info("Starting reference number updation | Request ID: {} | Request Body: {}", requestId, requests);
+
+        // Validate the incoming request to ensure all mandatory fields are present
+        referenceNumbersValidationUtil.validateUpdateBulkRequest(requests);
+
+        // Convert the request DTOs to entity models for persistence
+        List<ReferenceNumbers> originalReferenceNumbers = jsonHelper.convertValueToList(requests, ReferenceNumbers.class);
+
+        // Save the updated containers to the database
+        List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.saveAll(originalReferenceNumbers);
+
+        //runAsyncPostSaveOperations(updatedReferenceNumbers, module);
+
+        // Add audit logs for all updated containers
+        recordAuditLogs(originalReferenceNumbers, updatedReferenceNumbers, DBOperationType.UPDATE);
+
+        // Convert saved entities into response DTOs
+        List<ReferenceNumbersResponse> referenceNumbersResponses = jsonHelper.convertValueToList(updatedReferenceNumbers, ReferenceNumbersResponse.class);
+
+        // Build and return the response
+        return BulkReferenceNumbersResponse.builder()
+                .referenceNumbersResponseList(referenceNumbersResponses)
+                .message(prepareBulkUpdateMessage(referenceNumbersResponses))
+                .build();
     }
 
     @Override
@@ -210,5 +245,22 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
                 log.error("Failed to add audit log for reference number ID {} and operation [{}]: {}", id, operationType, ex.getMessage(), ex);
             }
         }
+    }
+
+    private String prepareBulkUpdateMessage(List<ReferenceNumbersResponse> referenceNumbersResponses) {
+        String message;
+
+        // If more than one ref nums was updated, return a generic bulk success message
+        if (referenceNumbersResponses.size() > 1) {
+            message = "Bulk edit success! All selected reference numbers have been updated.";
+        } else {
+            // For a single ref num update
+            ReferenceNumbersResponse response = referenceNumbersResponses.get(0);
+            String referenceNumber = response.getReferenceNumber();
+
+            message = String.format("Reference number %s updated successfully!", referenceNumber);
+        }
+
+        return message;
     }
 }

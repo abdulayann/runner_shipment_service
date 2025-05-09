@@ -13,12 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @Slf4j
@@ -42,7 +43,9 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         String url = baseUrl + "/booking/external";
         log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJsonWithNulls(request));
+        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), Object.class);
+        log.info("Response for endpoint url: {}, : {}", url, jsonHelper.convertToJson(responseEntity.getBody()));
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 

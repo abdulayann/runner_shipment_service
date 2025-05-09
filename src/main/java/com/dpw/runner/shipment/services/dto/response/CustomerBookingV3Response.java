@@ -103,13 +103,11 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String integrationSource;
     private List<Parties> additionalParties;
     private String paymentTerms;
-    private LocalDateTime etd;
-    private LocalDateTime eta;
     private Boolean isReefer;
     private String incotermsLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadinessDate;
-    private String controlled;
+    private Boolean controlled;
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;

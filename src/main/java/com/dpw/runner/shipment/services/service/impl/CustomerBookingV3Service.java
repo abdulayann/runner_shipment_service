@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBoo
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
@@ -1134,7 +1136,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingV3Request request) throws RunnerException {
         Long bookingId = customerBooking.getId();
-        List<PackingRequest> packingRequest = request.getPackingList();
+        List<PackingV3Request> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
 
@@ -1146,7 +1148,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (routingsRequest != null)
             customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
 
-        List<ContainerRequest> containerRequest = request.getContainersList();
+        List<ContainerV3Request> containerRequest = request.getContainersList();
         if (containerRequest != null) {
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
@@ -1224,7 +1226,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
-        List<PackingRequest> packingRequest = request.getPackingList();
+        List<PackingV3Request> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.updateEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
 
@@ -1236,7 +1238,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (routingsRequest != null)
             customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
 
-        List<ContainerRequest> containerRequest = request.getContainersList();
+        List<ContainerV3Request> containerRequest = request.getContainersList();
         if (containerRequest != null) {
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
@@ -1317,11 +1319,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         {
             Boolean countryAirCargoSecurity = tenantSettingsResponse.getCountryAirCargoSecurity();
             validateAirSecurityAndPermissions(request, countryAirCargoSecurity);
-            ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV3(request).getBody()).getData());
+            ShipmentDetailsV3Response shipmentResponse = bookingIntegrationsUtility.createShipmentInV3(request);
             //Check 3
             if(shipmentResponse != null) {
                 if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
-                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, jsonHelper.convertValue(shipmentResponse, ShipmentDetailsResponse.class), V1AuthHelper.getHeaders());
                 }
                 customerBooking.setShipmentId(shipmentResponse.getShipmentId());
                 customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
