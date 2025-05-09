@@ -38,7 +38,7 @@ public class RoutingV3Util {
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
 
-    public void addAllMasterDataInSingleCallList(List<RoutingsResponse> routingListResponse) {
+    public void addAllMasterDataInSingleCallList(List<RoutingsResponse> routingListResponse, Map<String, Object> masterDataMap) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -55,7 +55,11 @@ public class RoutingV3Util {
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
-            routingListResponse.forEach(route -> route.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + route.getId()), CacheConstants.MASTER_LIST, cacheMap)));
+            if(masterDataMap == null)
+                routingListResponse.forEach(route -> route.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + route.getId()), CacheConstants.MASTER_LIST, cacheMap)));
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataMap, cacheMap);
+            }
 
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
@@ -64,7 +68,7 @@ public class RoutingV3Util {
         }
     }
 
-    public void addAllUnlocationInSingleCallList(List<RoutingsResponse> routingListResponse) {
+    public void addAllUnlocationInSingleCallList(List<RoutingsResponse> routingListResponse, Map<String, Object> masterDataMap) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -75,7 +79,11 @@ public class RoutingV3Util {
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
 
-            routingListResponse.forEach(route -> route.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + route.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
+            if(masterDataMap == null)
+                routingListResponse.forEach(route -> route.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + route.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataMap, cacheMap);
+            }
 
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
@@ -84,7 +92,7 @@ public class RoutingV3Util {
         }
     }
 
-    public void addAllVesselInSingleCallList(List<RoutingsResponse> routingListResponse) {
+    public void addAllVesselInSingleCallList(List<RoutingsResponse> routingListResponse, Map<String, Object> masterDataMap) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Set<String> vessels = new HashSet<>();
@@ -95,7 +103,11 @@ public class RoutingV3Util {
             Map<String, EntityTransferVessels> v1Data = masterDataUtils.fetchInBulkVessels(vessels);
             masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vessels, new EntityTransferVessels(), cacheMap);
 
-            routingListResponse.forEach(route -> route.setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + route.getId()), CacheConstants.VESSELS, cacheMap)));
+            if(masterDataMap == null)
+                routingListResponse.forEach(route -> route.setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + route.getId()), CacheConstants.VESSELS, cacheMap)));
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.VESSELS, masterDataMap, cacheMap);
+            }
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllVesselInSingleCallList RoutingList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Routings.class.getSimpleName(), ex.getMessage());
             CompletableFuture.completedFuture(null);
