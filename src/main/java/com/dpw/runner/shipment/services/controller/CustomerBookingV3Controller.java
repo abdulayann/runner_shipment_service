@@ -98,7 +98,9 @@ public class CustomerBookingV3Controller {
     @PostMapping(ApiConstants.API_LIST)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.list(listCommonRequest));
+        CustomerBookingV3ListResponse response = customerBookingV3Service.list(listCommonRequest);
+        List<IRunnerResponse> responseList = response.getCustomerBookingV3Responses().stream().map(p -> (IRunnerResponse) p).toList();
+        return ResponseHelper.buildListSuccessResponse(responseList, response.getTotalPages(), response.getTotalCount());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = CustomerBookingV3Response.class, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
