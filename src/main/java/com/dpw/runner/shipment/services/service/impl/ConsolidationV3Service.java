@@ -3192,7 +3192,21 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);
+
         return warning;
+    }
+
+    private void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments){
+        for(ShipmentDetails detachedShipment : detachedShipments){
+            if(detachedShipment.getCarrierDetails() != null){
+                detachedShipment.getCarrierDetails().setEta(null);
+                detachedShipment.getCarrierDetails().setEtd(null);
+                detachedShipment.getCarrierDetails().setAta(null);
+                detachedShipment.getCarrierDetails().setAtd(null);
+            }
+            detachedShipment.setMasterBill(null);
+            //TODO : carrier and carrier bkg number
+        }
     }
 
     private void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
