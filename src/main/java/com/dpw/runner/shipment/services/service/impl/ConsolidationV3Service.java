@@ -95,6 +95,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static java.util.stream.Collectors.toMap;
 
@@ -3133,6 +3134,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Override
     public String detachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
+        if(setIsNullOrEmpty(request.getShipmentIds())){
+            return "Select atleast one shipment to detach";
+        }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(request.getConsolidationId());
         if(consol.isPresent())
             return detachShipmentsHelper(consol.get(), request.getShipmentIds(), request.getRemarks());
@@ -3165,13 +3169,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
                 packingList = getPackingList(shipmentDetail, packingList);
                 setEventsList(shipmentDetail);
-                shipmentDetail.setConsolRef(null);
+              //  shipmentDetail.setConsolRef(null);
                 shipmentDetail.setMasterBill(null);
                 this.createLogHistoryForShipment(shipmentDetail);
             }
             if(saveSeaPacks)
                 packingList = packingDao.saveAll(packingList);
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
+            updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
             shipmentDao.saveAll(shipmentDetailsToSave);
             if(shipmentDetailsToSave!=null){
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
@@ -3203,9 +3208,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 detachedShipment.getCarrierDetails().setEtd(null);
                 detachedShipment.getCarrierDetails().setAta(null);
                 detachedShipment.getCarrierDetails().setAtd(null);
+                detachedShipment.getCarrierDetails().setShippingLine(null);
             }
             detachedShipment.setMasterBill(null);
-            //TODO : carrier and carrier bkg number
+            detachedShipment.setBookingNumber(null);
         }
     }
 
@@ -3387,9 +3393,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(shipmentDetail.getContainersList() != null) {
             List<Containers> containersList = new ArrayList<>(shipmentDetail.getContainersList());
             Map<Long, List<Packing>> containerPacksMap = new HashMap<>();
-            if(isSeaPackingList(shipmentDetail)) {
-                //TODO : Unassign packing logic clarfication
-                for(Packing packing: shipmentDetail.getPackingList()) {
+            List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
+            if(isSeaPackingList(shipmentDetail, packings)) {
+                for(Packing packing: packings) {
                     if(packing.getContainerId() != null) {
                         updateContainerPacksMap(packing, containerPacksMap);
                         packing.setContainerId(null);
@@ -3406,8 +3412,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return saveSeaPacks;
     }
 
+    //TODO : Shipment Aggregated Weight/ Volume
     private void processContainersListForShipment(Containers container, ShipmentDetails shipmentDetail, Map<Long, List<Packing>> containerPacksMap) throws RunnerException {
-        //TODO : verify logic
         if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode())) {
             if(CARGO_TYPE_FCL.equals(shipmentDetail.getShipmentType())) {
                 containerService.changeContainerWtVolForSeaFCLDetach(container);
@@ -3429,8 +3435,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             containerPacksMap.put(packing.getContainerId(), new ArrayList<>(Collections.singletonList(packing)));
     }
 
-    private boolean isSeaPackingList(ShipmentDetails shipmentDetail) {
-        return Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode()) && !listIsNullOrEmpty(shipmentDetail.getPackingList());
+    private boolean isSeaPackingList(ShipmentDetails shipmentDetail, List<Packing> packingList) {
+        return Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode()) && !listIsNullOrEmpty(packingList);
     }
 
     private Map<Long, ShipmentDetails> getShipmentDetailsMap(List<ShipmentDetails> shipmentDetails) throws RunnerException {
