@@ -75,6 +75,7 @@ import org.apache.poi.ss.formula.functions.T;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -178,9 +179,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private final ModelMapper modelMapper;
     private final ConsolidationV3Service consolidationV3Service;
     private final MasterDataHelper masterDataHelper;
-    private IContainerV3Service containerV3Service;
-    private IPackingV3Service packingV3Service;
-    private IRoutingsV3Service routingsV3Service;
 
 
     @Autowired
@@ -204,7 +202,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             INotesDao notesDao,
             IOrderManagementAdapter orderManagementAdapter,
             V1ServiceUtil v1ServiceUtil,
-            BookingIntegrationsUtility bookingIntegrationsUtility,
+            @Lazy BookingIntegrationsUtility bookingIntegrationsUtility,
             DependentServiceHelper dependentServiceHelper,
             IEventDao eventDao,
             IEventsV3Service eventService,
@@ -221,9 +219,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentValidationV3Util shipmentValidationV3Util,
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
-            ConsolidationV3Service consolidationV3Service, MasterDataHelper masterDataHelper,
-            IContainerV3Service containerV3Service, IPackingV3Service packingV3Service,
-            IRoutingsV3Service routingsV3Service) {
+            ConsolidationV3Service consolidationV3Service, MasterDataHelper masterDataHelper) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -264,9 +260,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
         this.consolidationV3Service = consolidationV3Service;
         this.masterDataHelper = masterDataHelper;
-        this.containerV3Service = containerV3Service;
-        this.packingService = packingService;
-        this.routingsV3Service = routingsV3Service;
     }
 
     @Override
