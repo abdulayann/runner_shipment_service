@@ -9,8 +9,6 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
@@ -24,7 +22,6 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -35,7 +32,6 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,7 +47,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -96,12 +91,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
 
-    private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("status", RunnerEntityMapping.builder().tableName(Constants.ROUTINGS).dataType(NetworkTransferStatus.class).fieldName("status").build())
-//            Map.entry("status", RunnerEntityMapping.builder().tableName(Constants.ROUTINGS).dataType(NetworkTransferStatus.class).fieldName("status").build())
-
-    );
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -125,8 +114,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         try {
             routings = routingsDao.save(routings);
 
-            // Create Audit logs for route
-            createAuditLogs(routings, null, DBOperationType.CREATE.name());
+            ParentResult parentResult = getParentDetails(List.of(routings), module);
+            // Audit logs
+            recordAuditLogs(null, List.of(routings), DBOperationType.CREATE, parentResult);
             // afterSave
             afterSave(Arrays.asList(routings), module);
             log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -136,18 +126,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             throw new RunnerException(responseMsg);
         }
         return convertEntityToDto(routings);
-    }
-
-    private void createAuditLogs(Routings routings, Routings oldRoutings, String operation) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
-                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                        .newData(routings)
-                        .prevData(oldRoutings)
-                        .parent(Routings.class.getSimpleName())
-                        .parentId(routings.getId())
-                        .operation(operation).build()
-        );
     }
 
     public void afterSave(List<Routings> routingList, String module) {
@@ -212,8 +190,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         try {
             routings = routingsDao.save(routings);
 
-            // Create Audit logs for route
-            createAuditLogs(routings, oldEntityData, DBOperationType.CREATE.name());
+            ParentResult parentResult = getParentDetails(List.of(routings), module);
+            // Audit logs
+            recordAuditLogs(List.of(oldEntityData), List.of(routings), DBOperationType.UPDATE, parentResult);
             // afterSave operations
             afterSave(Arrays.asList(routings), module);
             log.info("Routing updated successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -233,7 +212,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Routing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
+                throw new RunnerException("Request is empty for Routing list");
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
             Page<Routings> routingsPage;
@@ -242,9 +221,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             else
                 routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Routing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            List<IRunnerResponse> response = convertEntityListToDtoList(routingsPage.getContent());
-            return RoutingListResponse.builder().routingsResponseList(response).totalCount(routingsPage.getTotalElements())
-                    .totalPages(routingsPage.getTotalPages()).build();
+            List<RoutingsResponse> response = convertEntityListToDtoList(routingsPage.getContent());
+            Map<String, Object> masterData = this.getMasterDataForList(response);
+            return RoutingListResponse.builder().routings(response).totalCount(routingsPage.getTotalElements())
+                    .totalPages(routingsPage.getTotalPages()).masterData(masterData).build();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -252,17 +232,19 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
     }
 
-    void getMasterDataForList(List<RoutingsResponse> response) {
+    Map<String, Object> getMasterDataForList(List<RoutingsResponse> response) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
         try {
             double startTime = System.currentTimeMillis();
-            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllUnlocationInSingleCallList(response)), executorServiceMasterData);
-            var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllMasterDataInSingleCallList(response)), executorServiceMasterData);
-            var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllVesselInSingleCallList(response)), executorServiceMasterData);
+            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllUnlocationInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
+            var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllMasterDataInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
+            var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllVesselInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
             CompletableFuture.allOf(locationDataFuture, masterDataFuture, vesselDataFuture).join();
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.ROUTING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_ROUTING_LIST, ex.getLocalizedMessage());
         }
+        return masterDataResponse;
     }
 
     @Override
@@ -278,8 +260,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         try {
             routingsDao.delete(routing.get());
 
-            // Create Audit logs for route
-            createAuditLogs(null, oldEntityData, DBOperationType.DELETE.name());
+            ParentResult parentResult = getParentDetails(List.of(oldEntityData), module);
+            // Audit logs
+            recordAuditLogs(List.of(oldEntityData), null, DBOperationType.DELETE, parentResult);
             log.info("Routing deleted successfully for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -304,7 +287,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             log.debug("Routing is null for the input id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        return modelMapper.map(routings.get(), RoutingsResponse.class);
+        return convertEntityToDto(routings.get());
     }
 
     private Routings convertRequestToEntity(RoutingsRequest request) {
@@ -315,16 +298,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return jsonHelper.convertValue(routings, RoutingsResponse.class);
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<Routings> lst) {
+    private List<RoutingsResponse> convertEntityListToDtoList(List<Routings> lst) {
         List<RoutingsResponse> routingsListResponses = new ArrayList<>();
         lst.forEach(route -> {
             var response = modelMapper.map(route, RoutingsResponse.class);
             routingsListResponses.add(response);
         });
-        // Add master data if required
-        this.getMasterDataForList(routingsListResponses);
-
-        return new ArrayList<>(routingsListResponses);
+        return routingsListResponses;
     }
 
     @Override
