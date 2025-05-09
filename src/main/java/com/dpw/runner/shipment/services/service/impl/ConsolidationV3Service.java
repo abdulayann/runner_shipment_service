@@ -3135,7 +3135,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Override
     public String detachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         if(setIsNullOrEmpty(request.getShipmentIds())){
-            return "Select atleast one shipment to detach";
+            throw new RunnerException("Select atleast one shipment to detach");
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(request.getConsolidationId());
         if(consol.isPresent())
@@ -3169,7 +3169,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
                 packingList = getPackingList(shipmentDetail, packingList);
                 setEventsList(shipmentDetail);
-              //  shipmentDetail.setConsolRef(null);
                 shipmentDetail.setMasterBill(null);
                 this.createLogHistoryForShipment(shipmentDetail);
             }
@@ -3182,10 +3181,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
             }
         }
-        if(checkAttachDgAirShipments(consol)){
-            consol.setHazardous(false);
-            consolidationDetailsDao.save(consol, false);
-        }
+//        if(checkAttachDgAirShipments(consol)){
+//            consol.setHazardous(false);
+//            consolidationDetailsDao.save(consol, false);
+//        }
         if(Objects.equals(consol.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             this.checkSciForDetachConsole(consolidationId);
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
