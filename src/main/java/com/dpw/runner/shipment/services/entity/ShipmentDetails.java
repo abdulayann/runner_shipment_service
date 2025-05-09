@@ -622,6 +622,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String controlledReferenceNumber;
 
     @Column(name = "partner")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String partner;
 
     @Column(name = "booking_agent")
@@ -633,15 +634,19 @@ public class ShipmentDetails extends MultiTenancy {
     private String coLoadBkgNumber;
 
     @Column(name = "pickup_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String pickupAtOriginType;
 
     @Column(name = "delivery_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String deliveryAtDestinationType;
 
     @Column(name = "brokerage_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String brokerageAtOriginType;
 
     @Column(name = "brokerage_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String brokerageAtDestinationType;
 
     @Column(name = "pickup_at_origin")

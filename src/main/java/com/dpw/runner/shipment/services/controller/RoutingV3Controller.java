@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -56,8 +57,8 @@ public class RoutingV3Controller {
     @PostMapping(ApiConstants.SHIPMENT_API_LIST)
     public ResponseEntity<IRunnerResponse> fetchShipmentRoute(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                               @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
-        var response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
-        return ResponseHelper.buildListSuccessResponse(response.getRoutingsResponseList(), response.getTotalPages(), response.getTotalCount());
+        RoutingListResponse response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        return ResponseHelper.buildSuccessResponse(response, response.getTotalPages(), response.getTotalCount());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_RETRIEVE_BY_ID_SUCCESSFUL)})
