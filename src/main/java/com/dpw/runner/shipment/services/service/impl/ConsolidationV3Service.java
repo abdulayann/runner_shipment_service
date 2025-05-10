@@ -3391,23 +3391,39 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private boolean isSaveSeaPacks(ShipmentDetails shipmentDetail, List<Packing> packingList, boolean saveSeaPacks, List<Containers> allContainersList) throws RunnerException {
         if(shipmentDetail.getContainersList() != null) {
             List<Containers> containersList = new ArrayList<>(shipmentDetail.getContainersList());
+
+            Map<Long, String> containerIdNumberMap = containersList.stream()
+                .collect(Collectors.toMap(
+                    Containers::getId,
+                    Containers::getContainerNumber
+                ));
+
             Map<Long, List<Packing>> containerPacksMap = new HashMap<>();
             List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
             if(isSeaPackingList(shipmentDetail, packings)) {
                 for(Packing packing: packings) {
                     if(packing.getContainerId() != null) {
-                        updateContainerPacksMap(packing, containerPacksMap);
-                        packing.setContainerId(null);
-                        packingList.add(packing);
-                        saveSeaPacks = true;
+                        String containerAttachToPackException = String.format("Selected Shipment - %s - %d packs is assigned to the container(s): %s. Please unassign to detach.",
+                            shipmentDetail.getShipmentId(), packing.getInnerPacksCount(), containerIdNumberMap.get(packing.getContainerId()));
+
+                        throw new RunnerException(containerAttachToPackException);
+
+             //           updateContainerPacksMap(packing, containerPacksMap);
+//                        packing.setContainerId(null);
+//                        packingList.add(packing);
+//                        saveSeaPacks = true;
                     }
                 }
             }
             for(Containers container : containersList) {
-                processContainersListForShipment(container, shipmentDetail, containerPacksMap);
+                String containerAttachToShipmentException = String.format("Selected Shipment - %s is assigned with mentioned container : %s, Please unassign to detach the same.",
+                    shipmentDetail.getShipmentId(), container.getContainerNumber());
+                throw new RunnerException(containerAttachToShipmentException);
+          //      processContainersListForShipment(container, shipmentDetail, containerPacksMap);
             }
-            allContainersList.addAll(containersList);
+      //      allContainersList.addAll(containersList);
         }
+      //  processContainersListForShipment()
         return saveSeaPacks;
     }
 
