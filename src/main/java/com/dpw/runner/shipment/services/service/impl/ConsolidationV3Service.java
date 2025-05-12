@@ -3497,6 +3497,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<Containers> containersList = new ArrayList<>(shipmentDetail.getContainersList());
 
             Map<Long, String> containerIdNumberMap = containersList.stream()
+                .filter(c -> c.getId() != null && c.getContainerNumber() != null)
                 .collect(Collectors.toMap(
                     Containers::getId,
                     Containers::getContainerNumber
