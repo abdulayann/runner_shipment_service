@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.RoutingConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -18,7 +21,15 @@ import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -61,6 +72,14 @@ public class RoutingV3Controller {
         return ResponseHelper.buildSuccessResponse(response, response.getTotalPages(), response.getTotalCount());
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_LIST_SUCCESSFUL, responseContainer = RoutingConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.CONSOLIDATION_API_LIST)
+    public ResponseEntity<IRunnerResponse> fetchConsolidationRoute(@RequestBody @Valid ListCommonRequest listCommonRequest,
+                                                                   @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
+        RoutingListResponse response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        return ResponseHelper.buildSuccessResponse(response, response.getTotalPages(), response.getTotalCount());
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = RoutingConstants.ROUTING_ID, required = true) @RequestParam Long id,
@@ -81,6 +100,12 @@ public class RoutingV3Controller {
         return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.SHIPMENT));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = BulkRoutingResponse.class)})
+    @PutMapping(value = ApiConstants.CONSOLIDATION_API_UPDATE_BULK)
+    public ResponseEntity<IRunnerResponse> consolidationUpdateBulk(@RequestBody List<RoutingsRequest> request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.CONSOLIDATION));
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTING_DELETE_SUCCESSFUL, response = BulkRoutingResponse.class)})
     @DeleteMapping(value = ApiConstants.SHIPMENT_API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> shipmentDeleteBulk(@RequestBody List<RoutingsRequest> request) throws RunnerException {
@@ -93,7 +118,6 @@ public class RoutingV3Controller {
                                                             @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(routingService.getAllMasterData(CommonRequestModel.buildRequest(routingId), xSource));
     }
-
 
 
 }
