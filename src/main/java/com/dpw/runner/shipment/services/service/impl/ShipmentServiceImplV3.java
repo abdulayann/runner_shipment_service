@@ -1346,6 +1346,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
     }
 
+    @Override
+    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments) {
+        for(ShipmentDetails detachedShipment : detachedShipments){
+            if(detachedShipment.getCarrierDetails() != null){
+                detachedShipment.getCarrierDetails().setEta(null);
+                detachedShipment.getCarrierDetails().setEtd(null);
+                detachedShipment.getCarrierDetails().setAta(null);
+                detachedShipment.getCarrierDetails().setAtd(null);
+                detachedShipment.getCarrierDetails().setShippingLine(null);
+            }
+            detachedShipment.setMasterBill(null);
+            detachedShipment.setBookingNumber(null);
+        }
+    }
+
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);

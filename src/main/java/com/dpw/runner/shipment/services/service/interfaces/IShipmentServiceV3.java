@@ -50,4 +50,5 @@ public interface IShipmentServiceV3 {
     String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
     Map<String, Object>  getAllMasterData(Long shipmentId, String xSource);
+    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
 }
