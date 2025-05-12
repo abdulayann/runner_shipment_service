@@ -55,4 +55,6 @@ public interface IContainerDao {
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
     List<ContainerDeleteInfoProjection> findContainersAttachedToBothPackingAndCargo(List<Long> containerIds);
+
+    List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 }

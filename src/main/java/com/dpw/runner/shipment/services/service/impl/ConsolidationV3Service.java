@@ -1,6 +1,27 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import static java.util.stream.Collectors.toMap;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -40,6 +61,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappi
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
@@ -48,8 +70,8 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
@@ -129,8 +151,8 @@ import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
@@ -150,26 +172,6 @@ import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
-import java.util.function.Function;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.http.auth.AuthenticationException;
-import org.jetbrains.annotations.NotNull;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -190,29 +192,27 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_FACTOR_FOR_VOL_WT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-import static java.util.stream.Collectors.toMap;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.auth.AuthenticationException;
+import org.jetbrains.annotations.NotNull;
+import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 @SuppressWarnings("ALL")
 @Service
@@ -818,7 +818,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @param shipmentDetailsList  the set of shipment details to process
      * @throws RunnerException if any exception occurs during the calculation
      */
-    private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList)
+    private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeV3Response response, Set<ShipmentDetails> shipmentDetailsList)
             throws RunnerException {
 
         // Skip processing if consolidation is set to override mode
@@ -829,6 +829,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         // Retrieve shipment settings and tenant settings from the context
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+
+        // Get unique container IDs from the list
+        List<Long> containerIds = consolidationDetails.getContainersList().stream()
+                .map(Containers::getId).distinct().toList();
+
+        // Fetch container IDs attached to packing or shipment
+        Set<Long> assignedContainerIds = new HashSet<>(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(containerIds));
 
         // Set default units for weight and volume chargeable quantities
         String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
@@ -864,7 +871,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Calculate the TEU count for the consolidation and update the response
-        calculateConsoleShipmentTeuCount(consolidationDetails, response, v1TenantSettingsResponse);
+        calculateConsoleShipmentTeuCount(consolidationDetails, response, v1TenantSettingsResponse, assignedContainerIds);
 
         // Initialize achieved quantities if not already set
         if (consolidationDetails.getAchievedQuantities() == null) {
@@ -920,6 +927,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
         response.setSummaryWeight(IReport.convertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
         response.setSummaryVolume(IReport.convertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
+        response.setSummaryDGShipments(getSummaryDGShipments(shipmentDetailsList));
+        response.setSummaryContainer(getSummaryContainer(consolidationDetails.getContainersList(), assignedContainerIds));
+        response.setSummaryDgPacks(getSummaryDgPacks(consolidationDetails.getPackingList()));
+        response.setTotalPacks(Optional.ofNullable(consolidationDetails.getPackingList()).map(List::size).orElse(0));
 
         // Calculate and set the chargeable weight if applicable
         if (canSetChargableWeight(consolidationDetails)) {
@@ -931,9 +942,105 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void calculateConsoleShipmentTeuCount(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) {
+    /**
+     * Returns the number of hazardous (DG) packs over the total number of packs.
+     *
+     * @param packingList the list of {@link Packing} objects to evaluate; may be {@code null} or empty
+     * @return a string in the format "DGPacks / TotalPacks", or {@code null} if the input list is {@code null} or empty,
+     *         or if an error occurs
+     */
+    private String getSummaryDgPacks(List<Packing> packingList) {
+        try {
+            if (packingList == null || packingList.isEmpty()) {
+                log.info("packingList is null or empty.");
+                return null;
+            }
+
+            long totalPacks = packingList.size();
+            long totalDGPacks = 0;
+
+            for (Packing packing : packingList) {
+                if (Boolean.TRUE.equals(packing.getHazardous())) {
+                    totalDGPacks++;
+                }
+            }
+
+            return totalDGPacks + " / " + totalPacks;
+        } catch (Exception e) {
+            log.error("Error while calculating DG pack summary", e);
+            return null;
+        }
+    }
+
+    /**
+     * Returns a summary string showing the number of assigned containers over the total number of containers.
+     *
+     * @param containersList        the list of {@link Containers} to evaluate; may be {@code null} or empty
+     * @param assignedContainerIds  the set of container IDs that are considered assigned; may be {@code null}
+     * @return a string in the format "AssignedContainers / TotalContainers", or {@code null} if the input list is {@code null} or empty,
+     *         or if an error occurs during processing
+     */
+    private String getSummaryContainer(List<Containers> containersList, Set<Long> assignedContainerIds) {
+        try {
+            if (containersList == null || containersList.isEmpty()) {
+                log.info("containersList is null or empty.");
+                return null;
+            }
+
+            if (assignedContainerIds == null) {
+                log.info("assignedContainerIds is null. Treating all containers as unassigned.");
+                assignedContainerIds = Collections.emptySet();
+            }
+
+            long totalContainers = 0;
+            long totalAssignedContainers = 0;
+
+            for (Containers container : containersList) {
+                long count = container.getContainerCount();
+                totalContainers += count;
+                if (assignedContainerIds.contains(container.getId())) {
+                    totalAssignedContainers += count;
+                }
+            }
+
+            return totalAssignedContainers + " / " + totalContainers;
+        } catch (Exception e) {
+            log.error("Error while calculating container summary", e);
+            return null;
+        }
+    }
+
+    /**
+     * Returns a summary string showing the number of hazardous shipments (DG) over the total number of shipments.
+     *
+     * @param shipmentDetailsList a set of {@link ShipmentDetails} objects to evaluate;
+     *                            may be {@code null} or empty
+     * @return a string in the format "DGShipments / TotalShipments", or {@code null} if the input is {@code null} or empty,
+     *         or if an error occurs during processing
+     */
+    private String getSummaryDGShipments(Set<ShipmentDetails> shipmentDetailsList) {
+        try {
+            if (shipmentDetailsList == null || shipmentDetailsList.isEmpty()) {
+                return null;
+            }
+
+            long totalShipments = shipmentDetailsList.size();
+            long dgShipments = shipmentDetailsList.stream()
+                    .filter(sd -> Boolean.TRUE.equals(sd.getContainsHazardous()))
+                    .count();
+
+            return dgShipments + " / " + totalShipments;
+        } catch (Exception e) {
+            log.error("Error while calculating DG shipments summary", e);
+            return null;
+        }
+    }
+
+
+    private void calculateConsoleShipmentTeuCount(ConsolidationDetails consolidationDetails, ShipmentGridChangeV3Response response, V1TenantSettingsResponse v1TenantSettingsResponse, Set<Long> assignedContainerIds) {
         // Initialize the TEU (Twenty-foot Equivalent Unit) and container counters for console and shipment.
         Double consoleTeu = 0.0;
+        Double assignedConsoleTeu = 0.0;
         Double shipmentTeu = 0.0;
         long consoleCont = 0L;
         long shipmentCont = 0L;
@@ -966,11 +1073,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     // Calculate shipment container count using a helper method.
                     shipmentCont = getShipmentContainerCount(containers, shipmentCont);
 
-                    // Calculate TEU values if the cached entityTransferContainerType is present and has a valid TEU value.
+                    // If container type has a valid TEU value, update console, assigned, and shipment TEU counts accordingly
                     if (entityTransferContainerType != null && entityTransferContainerType.getTeu() != null) {
 
                         // Update the console TEU count by multiplying container count with the TEU value.
                         consoleTeu += (containers.getContainerCount() * entityTransferContainerType.getTeu());
+                        if(assignedContainerIds.contains(containers.getId())) {
+                            assignedConsoleTeu += (containers.getContainerCount() * entityTransferContainerType.getTeu());
+                        }
 
                         // Update the shipment TEU count using a separate method.
                         shipmentTeu = getShipmentTeu(containers, shipmentTeu, entityTransferContainerType);
@@ -979,11 +1089,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
         }
 
+        String totalConsolTeu = IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse);
+        String totalAssignedConsoleTeu = IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(assignedConsoleTeu), 0, v1TenantSettingsResponse);
+
         // Format and set the calculated TEU and container counts in the response.
-        response.setSummaryConsoleTEU(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryConsoleTEU(totalConsolTeu);
         response.setSummaryConsolContainer(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
         response.setSummaryShipmentTEU(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
         response.setSummaryShipmentContainer(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse));
+        response.setSummaryAssignedTEUs(totalAssignedConsoleTeu + " / "+totalConsolTeu);
     }
 
     /**
@@ -1256,12 +1370,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * Calculates achieved weight and volume values for all shipments under a consolidation, computes chargeable weight, updates allocations, and prepares summary response.
      *
      * @param consolidationId the ID of the consolidation to calculate for
-     * @return {@link ShipmentGridChangeResponse} containing updated shipment summary
+     * @return {@link ShipmentGridChangeV3Response} containing updated shipment summary
      * @throws RunnerException in case of data fetching or computation issues
      */
     @Override
-    public ShipmentGridChangeResponse calculateAchievedValues(Long consolidationId) throws RunnerException {
-        ShipmentGridChangeResponse response = new ShipmentGridChangeResponse();
+    public ShipmentGridChangeV3Response calculateAchievedValues(Long consolidationId) throws RunnerException {
+        ShipmentGridChangeV3Response response = new ShipmentGridChangeV3Response();
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
 
         // Perform the main logic for calculating achieved values and update the response
@@ -2674,7 +2788,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void calculateAchievedValuesForRetrieve(ConsolidationDetails consolidationDetails) {
         try {
-            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), consolidationDetails.getShipmentsList());
+            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeV3Response(), consolidationDetails.getShipmentsList());
         } catch (Exception e) {
             log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.getId());
         }

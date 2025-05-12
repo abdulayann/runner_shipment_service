@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.util.List;
@@ -24,6 +25,9 @@ public interface IContainerV3Service {
     BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module);
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException;
+
+    List<Containers> findByIdIn(List<Long> containerIds);
+
     ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
@@ -37,4 +41,5 @@ public interface IContainerV3Service {
 
     ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException;
 
+    List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 }
