@@ -286,6 +286,28 @@ class MasterDataHelperTest {
     }
 
     @Test
+    void testAddAllOrganizationDataInSingleCall_Success () throws ExecutionException, InterruptedException {
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        when(masterDataUtils.createInBulkOrganizationRequest(any(), any(), anyMap(), anyString(), anyMap())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInOrganizations(anySet(), anyString())).thenReturn(new HashMap<>());
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllOrganizationDataInSingleCallResult =  masterDataHelper.addAllOrganizationDataInSingleCall(shipmentDetailsResponse, null);
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllOrganizationDataInSingleCallResult.get();
+
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+    }
+
+    @Test
+    void testAddAllOrganizationDataInSingleCall_Error () throws ExecutionException, InterruptedException {
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        when(masterDataUtils.createInBulkOrganizationRequest(any(), any(), anyMap(), anyString(), anyMap())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInOrganizations(anySet(), anyString())).thenThrow(new RuntimeException());
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllOrganizationDataInSingleCallResult =  masterDataHelper.addAllOrganizationDataInSingleCall(shipmentDetailsResponse, null);
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllOrganizationDataInSingleCallResult.get();
+
+        assertNull(getResult);
+    }
+
+    @Test
     void testAddAllTenantDataInSingleCall() throws InterruptedException, ExecutionException {
         // Arrange
         doNothing().when(masterDataKeyUtils)
