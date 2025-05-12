@@ -15,6 +15,9 @@ public class ApiConstants {
     public static final String BOOKING_API_UPDATE_PARTIES = "/update/booking/parties";
     public static final String BOOKING_API_LIST_PARTIES = "/list/booking/parties";
     public static final String BOOKING_API_DELETE_PARTIES = "/delete/booking/parties";
+    public static final String CONSOLIDATION_API_LIST = "consolidation-routing";
+    public static final String CONSOLIDATION_API_UPDATE_BULK = "consolidation/update/bulk";
+    public static final String UPDATE_SAILING_SCHEDULE = "update-sailing-schedule";
 
     private ApiConstants(){}
     public static final String API_CREATE = "/create";

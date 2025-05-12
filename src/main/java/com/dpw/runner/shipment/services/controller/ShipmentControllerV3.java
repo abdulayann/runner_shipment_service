@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -148,6 +149,14 @@ public class ShipmentControllerV3 {
         log.info("Received attachConsolidation request: {}", request);
         String warning = shipmentService.attachConsolidation(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.UPDATE_SAILING_SCHEDULE_SUCCESSFUL)
+    })
+    @PostMapping(ApiConstants.UPDATE_SAILING_SCHEDULE)
+    public ResponseEntity<IRunnerResponse> updateSailingScheduleDataToShipment(@RequestBody @Valid ShipmentSailingScheduleRequest request) throws RunnerException {
+        log.info("Received updateSailingSchedule request: {}", request);
+        return ResponseHelper.buildSuccessResponse(shipmentService.updateSailingScheduleDataToShipment(request));
     }
 
 }

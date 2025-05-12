@@ -24,15 +24,19 @@ import java.util.Set;
 import java.util.UUID;
 
 
-@Repository @Generated
+@Repository
+@Generated
 @InterBranchEntity
 public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDetails> {
     List<ShipmentDetails> findAll();
+
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
+
     default Optional<ShipmentDetails> findById(Long id) {
         Specification<ShipmentDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
     default Optional<ShipmentDetails> findByGuid(UUID id) {
         Specification<ShipmentDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
@@ -44,29 +48,36 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details where house_bill = ?1 and tenant_id = ?2", nativeQuery = true)
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
+
     List<ShipmentDetails> findAllByHouseBill(String hbl);
+
     @Query(value = "SELECT * FROM shipment_details where booking_reference = ?1 and tenant_id = ?2", nativeQuery = true)
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
 
     @Query(value = "SELECT MAX(c.id) FROM consolidation_details c", nativeQuery = true)
     Long findMaxId();
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update shipment_details set job_status = ?2 Where id = ?1", nativeQuery = true)
     void saveJobStatus(Long id, String jobStatus);
 
-    @Modifying @Transactional @ExcludeTenantFilter
+    @Modifying
+    @Transactional
+    @ExcludeTenantFilter
     @Query(value = "Update shipment_details set status = ?2 Where id = ?1", nativeQuery = true)
     void saveStatus(Long id, Integer status);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update shipment_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update shipment_details set entity_transfer = ?2 Where id = ?1", nativeQuery = true)
     void saveEntityTransfer(Long id, Boolean entityTransfer);
 
@@ -101,11 +112,13 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " AND (?2 IS NULL OR shipment_id != CAST(?2 AS VARCHAR))", nativeQuery = true)
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update shipment_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update triangulation_partner_shipment set is_accepted = ?3 where shipment_id = ?1 AND partner_id = ?2", nativeQuery = true)
     void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
 
@@ -128,8 +141,9 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1 AND contains_hazardous = ?2", nativeQuery = true)
     List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList, boolean containsHazardous);
+
     List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
-    
+
     @Modifying
     @Query(value = "update shipment_additional_details set fcr_number = fcr_number + 1 where id in (select additional_details_id from shipment_details where id = ?1)", nativeQuery = true)
     void updateFCRNo(Long id);
@@ -176,4 +190,39 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Modifying
     @Query("UPDATE ShipmentDetails s SET s.containerAssignedToShipmentCargo = :containerId WHERE s.id IN :shipmentIds")
     void setShipmentIdsToContainer(@Param("shipmentIds") List<Long> shipmentIds, @Param("containerId") Long containerId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ShipmentDetails s
+            SET s.terminalCutoff = :terminalCutoff,
+                s.verifiedGrossMassCutoff = :verifiedGrossMassCutoff,
+                s.shippingInstructionCutoff = :shippingInstructionCutoff,
+                s.dgCutoff = :dgCutoff,
+                s.reeferCutoff = :reeferCutoff,
+                s.earliestEmptyEquipmentPickUp = :earliestEmptyEquipmentPickUp,
+                s.latestFullEquipmentDeliveredToCarrier = :latestFullEquipmentDeliveredToCarrier,
+                s.earliestDropOffFullEquipmentToCarrier = :earliestDropOffFullEquipmentToCarrier
+            WHERE s.id = :shipmentId
+            """)
+    void updateSailingScheduleRelatedInfo(
+            @Param("shipmentId") Long shipmentId,
+            @Param("terminalCutoff") LocalDateTime terminalCutoff,
+            @Param("verifiedGrossMassCutoff") LocalDateTime verifiedGrossMassCutoff,
+            @Param("shippingInstructionCutoff") LocalDateTime shippingInstructionCutoff,
+            @Param("dgCutoff") LocalDateTime dgCutoff,
+            @Param("reeferCutoff") LocalDateTime reeferCutoff,
+            @Param("earliestEmptyEquipmentPickUp") LocalDateTime earliestEmptyEquipmentPickUp,
+            @Param("latestFullEquipmentDeliveredToCarrier") LocalDateTime latestFullEquipmentDeliveredToCarrier,
+            @Param("earliestDropOffFullEquipmentToCarrier") LocalDateTime earliestDropOffFullEquipmentToCarrier
+    );
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ShipmentDetails s
+            SET s.latestArrivalTime = :latestArrivalTime
+            WHERE s.id = :shipmentId
+            """)
+    void updateSailingScheduleRelatedInfoForAir(@Param("shipmentId") Long shipmentId, @Param("latestArrivalTime") LocalDateTime latestArrivalTime);
 }

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import java.util.List;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -69,6 +70,7 @@ public class ContainerValidationUtil {
 
         boolean exists = containersList.stream()
                 .map(Containers::getContainerNumber)
+                .filter(Objects::nonNull)
                 .anyMatch(existingNumber -> existingNumber.equals(containerNumber));
 
         if (exists) {
