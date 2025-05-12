@@ -876,14 +876,11 @@ public class ContainerV3Service implements IContainerV3Service {
         ));
 
         Optional.of(module)
-                .filter(SHIPMENT::equals)
-                .map(m -> CompletableFuture.runAsync(
-                        masterDataUtils.withMdc(() -> shipmentsContainersMappingDao.assignShipments(
-                                container.getId(), request.getShipmentsIds(), false
-                        )),
-                        executorService
-                ))
-                .ifPresent(futures::add);
+            .filter(SHIPMENT::equals)
+            .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
+                container.getId(), request.getShipmentsIds(), false
+            ));
+
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
