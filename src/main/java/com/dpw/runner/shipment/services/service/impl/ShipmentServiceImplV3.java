@@ -38,8 +38,10 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -162,6 +164,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private final ModelMapper modelMapper;
     private final ConsolidationV3Service consolidationV3Service;
     private final MasterDataHelper masterDataHelper;
+    private final IRoutingsV3Service routingsV3Service;
 
 
     @Autowired
@@ -203,7 +206,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
-            MasterDataHelper masterDataHelper) {
+            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -230,6 +233,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.awbDao = awbDao;
         this.documentManagerService = documentManagerService;
         this.hblService = hblService;
+        this.routingsV3Service = routingsV3Service;
         this.packingService = packingService;
         this.shipmentSync = shipmentSync;
         this.consolidationSync = consolidationSync;
@@ -1326,6 +1330,23 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             detachedShipment.setMasterBill(null);
             detachedShipment.setBookingNumber(null);
         }
+    }
+
+    @Override
+    public ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException {
+        routingsV3Service.updateBulk(request.getRoutings(), SHIPMENT);
+        //update shipment fields
+        Long shipmentId = request.getRoutings().stream().findFirst().get().getShipmentId();
+        Optional<ShipmentDetails> shipmentDetailsEntity = shipmentDao.findById(shipmentId);
+        ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
+        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+            shipmentDao.updateSailingScheduleRelatedInfo(request, shipmentId);
+
+        } else if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+            shipmentDao.updateSailingScheduleRelatedInfoForAir(request, shipmentId);
+        }
+        ShipmentSailingScheduleResponse response = new ShipmentSailingScheduleResponse();
+        return response;
     }
 
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {

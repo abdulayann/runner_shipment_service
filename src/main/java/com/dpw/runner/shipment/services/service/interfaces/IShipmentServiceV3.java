@@ -9,7 +9,9 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.apache.http.auth.AuthenticationException;
@@ -55,4 +57,6 @@ public interface IShipmentServiceV3 {
 
     List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode);
     void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
+
+    ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
 }
