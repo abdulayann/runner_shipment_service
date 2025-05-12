@@ -926,8 +926,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
         response.setSummaryWeight(IReport.convertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
         response.setSummaryVolume(IReport.convertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
-        response.setSummaryDGShipmentsCount(getDGShipmentsCount(shipmentDetailsList));
-        response.setSummaryAssignedContainerCount(getAssignedContainerCount(consolidationDetails.getContainersList()));
+        response.setSummaryDGShipments(getSummaryDGShipments(shipmentDetailsList));
+        response.setSummaryContainer(getSummaryContainer(consolidationDetails.getContainersList(), assignedContainerIds));
+        response.setSummaryDgPacks(getSummaryDgPacks(consolidationDetails.getPackingList()));
+        response.setTotalPacks(Optional.ofNullable(consolidationDetails.getPackingList()).map(List::size).orElse(0));
 
         // Calculate and set the chargeable weight if applicable
         if (canSetChargableWeight(consolidationDetails)) {
@@ -939,48 +941,98 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private String getAssignedContainerCount(List<Containers> containersList) {
-        // Get unique container IDs from the list
-        List<Long> containerIds = containersList.stream()
-                .map(Containers::getId)
-                .distinct()
-                .toList();
-
-        // Fetch container IDs attached to packing or shipment
-        Set<Long> attachedContainerIds = new HashSet<>(
-                containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(containerIds)
-        );
-
-        // Initialize counters
-        long totalContainers = 0;
-        long totalAssignedContainers = 0;
-
-        // Iterate through containers and accumulate counts
-        for (Containers container : containersList) {
-            long count = container.getContainerCount();
-            totalContainers += count;
-            if (attachedContainerIds.contains(container.getId())) {
-                totalAssignedContainers += count;
+    /**
+     * Returns the number of hazardous (DG) packs over the total number of packs.
+     *
+     * @param packingList the list of {@link Packing} objects to evaluate; may be {@code null} or empty
+     * @return a string in the format "DGPacks / TotalPacks", or {@code null} if the input list is {@code null} or empty,
+     *         or if an error occurs
+     */
+    private String getSummaryDgPacks(List<Packing> packingList) {
+        try {
+            if (packingList == null || packingList.isEmpty()) {
+                log.info("packingList is null or empty.");
+                return null;
             }
-        }
 
-        // Return the result as "assigned / total"
-        return totalAssignedContainers + " / " + totalContainers;
+            long totalPacks = packingList.size();
+            long totalDGPacks = 0;
+
+            for (Packing packing : packingList) {
+                if (Boolean.TRUE.equals(packing.getHazardous())) {
+                    totalDGPacks++;
+                }
+            }
+
+            return totalDGPacks + " / " + totalPacks;
+        } catch (Exception e) {
+            log.error("Error while calculating DG pack summary", e);
+            return null;
+        }
     }
 
     /**
-     * Returns the count of hazardous shipments over the total number of shipments.
+     * Returns a summary string showing the number of assigned containers over the total number of containers.
      *
-     * @param shipmentDetailsList a set of {@link ShipmentDetails} objects to evaluate
-     * @return a string in the format "DGShipments / TotalShipments"
+     * @param containersList        the list of {@link Containers} to evaluate; may be {@code null} or empty
+     * @param assignedContainerIds  the set of container IDs that are considered assigned; may be {@code null}
+     * @return a string in the format "AssignedContainers / TotalContainers", or {@code null} if the input list is {@code null} or empty,
+     *         or if an error occurs during processing
      */
-    private String getDGShipmentsCount(Set<ShipmentDetails> shipmentDetailsList) {
-        long totalShipments = shipmentDetailsList.size();
-        long dgShipments = shipmentDetailsList.stream()
-                .filter(sd -> Boolean.TRUE.equals(sd.getContainsHazardous()))
-                .count();
+    private String getSummaryContainer(List<Containers> containersList, Set<Long> assignedContainerIds) {
+        try {
+            if (containersList == null || containersList.isEmpty()) {
+                log.info("containersList is null or empty.");
+                return null;
+            }
 
-        return dgShipments + " / " + totalShipments;
+            if (assignedContainerIds == null) {
+                log.info("assignedContainerIds is null. Treating all containers as unassigned.");
+                assignedContainerIds = Collections.emptySet();
+            }
+
+            long totalContainers = 0;
+            long totalAssignedContainers = 0;
+
+            for (Containers container : containersList) {
+                long count = container.getContainerCount();
+                totalContainers += count;
+                if (assignedContainerIds.contains(container.getId())) {
+                    totalAssignedContainers += count;
+                }
+            }
+
+            return totalAssignedContainers + " / " + totalContainers;
+        } catch (Exception e) {
+            log.error("Error while calculating container summary", e);
+            return null;
+        }
+    }
+
+    /**
+     * Returns a summary string showing the number of hazardous shipments (DG) over the total number of shipments.
+     *
+     * @param shipmentDetailsList a set of {@link ShipmentDetails} objects to evaluate;
+     *                            may be {@code null} or empty
+     * @return a string in the format "DGShipments / TotalShipments", or {@code null} if the input is {@code null} or empty,
+     *         or if an error occurs during processing
+     */
+    private String getSummaryDGShipments(Set<ShipmentDetails> shipmentDetailsList) {
+        try {
+            if (shipmentDetailsList == null || shipmentDetailsList.isEmpty()) {
+                return null;
+            }
+
+            long totalShipments = shipmentDetailsList.size();
+            long dgShipments = shipmentDetailsList.stream()
+                    .filter(sd -> Boolean.TRUE.equals(sd.getContainsHazardous()))
+                    .count();
+
+            return dgShipments + " / " + totalShipments;
+        } catch (Exception e) {
+            log.error("Error while calculating DG shipments summary", e);
+            return null;
+        }
     }
 
 

@@ -6,12 +6,12 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ShipmentGridChangeV3Response extends ShipmentGridChangeResponse {
-    private String summaryDGShipmentsCount;
-    private String summaryAssignedContainerCount;
+    private String summaryDGShipments;
+    private String summaryContainer;
     private String summaryAssignedTEUs;
+    private String summaryDgPacks;
+    private Integer totalPacks;
 
-    private Integer summaryAssignedDgPacks;
-    private Integer summaryDgPacksCount;
 
 
 }
