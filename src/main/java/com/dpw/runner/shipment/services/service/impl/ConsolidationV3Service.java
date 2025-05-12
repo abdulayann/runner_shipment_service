@@ -3295,6 +3295,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
+            //delete routings from shipment which has isFromConsolidation as true
+            routingsV3Service.deleteInheritedRoutingsFromShipment(shipmentDetailsToSave);
             shipmentDao.saveAll(shipmentDetailsToSave);
             if(shipmentDetailsToSave!=null){
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);

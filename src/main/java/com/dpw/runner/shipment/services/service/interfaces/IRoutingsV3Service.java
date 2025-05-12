@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 import java.util.List;
@@ -28,4 +29,6 @@ public interface IRoutingsV3Service{
     Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource);
 
     List<Routings> getRoutingsByShipmentId(Long id);
+
+    void deleteInheritedRoutingsFromShipment(List<ShipmentDetails> shipmentDetailsToSave) throws RunnerException;
 }
