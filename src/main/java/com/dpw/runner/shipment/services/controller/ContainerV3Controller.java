@@ -102,7 +102,7 @@ public class ContainerV3Controller {
     public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                    @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(CommonRequestModel.buildRequest(listCommonRequest), xSource);
-        return ResponseHelper.buildListSuccessContainerResponse(containerListResponse.getContainers(), containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
+        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})

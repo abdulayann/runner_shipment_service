@@ -2,14 +2,12 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
@@ -55,7 +53,7 @@ public class PackingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = PackingV3Controller.MyResponseClass.class),
-            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.SHIPMENT + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromShipment(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Create request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -63,7 +61,7 @@ public class PackingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = PackingV3Controller.MyResponseClass.class),
-            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.CONSOLIDATION + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromConsolidation(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Create request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -71,7 +69,7 @@ public class PackingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_CREATE_SUCCESSFUL, response = PackingV3Controller.MyResponseClass.class),
-            @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
+            @ApiResponse(code = 404, message = PackingConstants.NO_DATA, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> createFromCustomerBooking(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Create request from CustomerBooking with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
@@ -165,7 +163,7 @@ public class PackingV3Controller {
                                                         @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid, xSource));
     }
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
     @PostMapping(ApiConstants.SHIPMENT_PACKINGS)
     public ResponseEntity<IRunnerResponse> fetchShipmentPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                  @RequestHeader(value = "x-source", required = false) String xSource) {

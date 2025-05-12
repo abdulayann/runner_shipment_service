@@ -86,4 +86,5 @@ public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
     public String IECode;
     public String PartyName;
     public String BranchSINumber;
+    public Integer TenantId;
 }
