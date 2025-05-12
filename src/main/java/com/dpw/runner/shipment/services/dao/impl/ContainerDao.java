@@ -516,4 +516,9 @@ public class ContainerDao implements IContainerDao {
         return containerRepository.findContainersAttachedToBothPackingAndCargo(containerIds);
     }
 
+    @Override
+    public List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds) {
+        return containerRepository.findContainerIdsAttachedToEitherPackingOrShipment(containerIds);
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -95,22 +96,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -512,6 +497,11 @@ public class ContainerV3Service implements IContainerV3Service {
             containers = containerDao.findByConsolidationId(consolidationId);
         List<Containers> containersList = new ArrayList<>(containers);
         return getContainerSummaryResponse(containersList, false, xSource);
+    }
+
+    @Override
+    public List<Containers> findByIdIn(List<Long> containerIds) {
+        return containerRepository.findByIdIn(containerIds);
     }
 
     @Override
@@ -1106,6 +1096,11 @@ public class ContainerV3Service implements IContainerV3Service {
                 return true;
         }
         return false;
+    }
+
+    @Override
+    public List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds) {
+        return containerDao.findContainerIdsAttachedToEitherPackingOrShipment(containerIds);
     }
 
 }

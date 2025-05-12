@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
@@ -14,14 +14,13 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import java.util.List;
+import java.util.Map;
 import javax.validation.Valid;
 import org.apache.http.auth.AuthenticationException;
 
-import java.util.List;
-import java.util.Map;
-
 public interface IConsolidationV3Service {
-    ShipmentGridChangeResponse calculateAchievedValues(Long consolidationId) throws RunnerException;
+    ShipmentGridChangeV3Response calculateAchievedValues(Long consolidationId) throws RunnerException;
     ConsolidationDetailsResponse create(ConsolidationDetailsV3Request request);
     ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel);
     ConsolidationDetailsResponse completeUpdate(ConsolidationDetailsV3Request consolidationDetailsRequest) throws RunnerException;
