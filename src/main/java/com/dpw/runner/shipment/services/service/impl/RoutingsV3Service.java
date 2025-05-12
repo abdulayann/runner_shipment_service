@@ -313,7 +313,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             Pair<Specification<Routings>, Pageable> tuple = fetchData(request, Routings.class);
             Page<Routings> routingsPage;
-            if(Objects.equals(xSource, NETWORK_TRANSFER))
+            if (Objects.equals(xSource, NETWORK_TRANSFER))
                 routingsPage = routingsDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
             else
                 routingsPage = routingsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -376,11 +376,11 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             throw new RunnerException(RoutingConstants.ID_GUID_NULL_ERROR);
         }
         Optional<Routings> routings;
-        if(Objects.equals(xSource, NETWORK_TRANSFER))
+        if (Objects.equals(xSource, NETWORK_TRANSFER))
             routings = routingsDao.findByIdWithQuery(request.getId());
         else
             routings = routingsDao.findById(request.getId());
-        if(routings.isEmpty()){
+        if (routings.isEmpty()) {
             log.debug("Routing is null for the input id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -611,14 +611,14 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     @Override
-    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource){
+    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel, String xSource) {
         Long id = commonRequestModel.getId();
         Optional<Routings> routings;
-        if(Objects.equals(xSource, NETWORK_TRANSFER))
+        if (Objects.equals(xSource, NETWORK_TRANSFER))
             routings = routingsDao.findByIdWithQuery(id);
         else
             routings = routingsDao.findById(id);
-        if(routings.isEmpty()) {
+        if (routings.isEmpty()) {
             log.debug("Routing is null for the input id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -629,6 +629,17 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     public List<Routings> getRoutingsByShipmentId(Long id) {
         return routingsDao.findByShipmentId(id);
+    }
+
+    @Override
+    public void deleteInheritedRoutingsFromShipment(List<ShipmentDetails> shipmentDetailsList) throws RunnerException {
+        for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+            List<Routings> routings = shipmentDetails.getRoutingsList();
+            if (!CollectionUtils.isEmpty(routings)) {
+                routings.removeIf(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getInheritedFromConsolidation());
+                updateBulk(jsonHelper.convertValueToList(routings, RoutingsRequest.class), Constants.SHIPMENT);
+            }
+        }
     }
 
     public Map<String, Object> getAllMasterDataForRoute(RoutingsResponse response) {
