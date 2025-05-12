@@ -26,7 +26,7 @@ import java.util.List;
 @RestController
 @RequestMapping(EventConstants.EVENT_V3_API_HANDLE)
 @Slf4j
-public class EventsControllerV3 {
+public class EventsV3Controller {
     private final IEventsV3Service eventService;
     private final ApiKeyAuthenticationService authenticationService;
     private final IEventsSync eventsSync;
@@ -34,14 +34,14 @@ public class EventsControllerV3 {
     private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
-    public EventsControllerV3(IEventsV3Service eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
+    public EventsV3Controller(IEventsV3Service eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
         this.eventService = eventService;
         this.eventsSync = eventsSync;
         this.authenticationService = authenticationService;
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = EventsControllerV3.MyListResponseClass.class),
+            @ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = EventsV3Controller.MyListResponseClass.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(EventConstants.LIST_EVENT_DETAILS_V2)

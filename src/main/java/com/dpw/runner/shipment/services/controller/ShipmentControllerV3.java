@@ -70,7 +70,7 @@ public class ShipmentControllerV3 {
             @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received shipment list v3 request with RequestId: {}",
                 LoggerHelper.getRequestIdFromMDC());
-        return ResponseHelper.buildSuccessResponse(shipmentService.listShipment(CommonRequestModel.buildRequest(listCommonRequest), getMasterData));
+        return shipmentService.listShipment(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
     }
 
     @ApiResponses(value = {

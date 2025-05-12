@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import javax.validation.Valid;
 import org.apache.http.auth.AuthenticationException;
 
 import java.util.List;
@@ -35,4 +36,6 @@ public interface IConsolidationV3Service {
     ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
     ConsolidationListV3Response list(ListCommonRequest listCommonRequest, boolean getMasterData);
     ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
+    String detachShipments(@Valid ShipmentConsoleAttachDetachV3Request request)
+        throws RunnerException;
 }

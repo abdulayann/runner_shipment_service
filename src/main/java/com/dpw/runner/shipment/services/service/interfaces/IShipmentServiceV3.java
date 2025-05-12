@@ -16,7 +16,6 @@ import org.apache.http.auth.AuthenticationException;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -55,4 +54,5 @@ public interface IShipmentServiceV3 {
     ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException;
 
     List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode);
+    void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
 }

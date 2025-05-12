@@ -108,28 +108,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
 
 @SuppressWarnings("ALL")
 @Service
@@ -205,7 +188,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             @Lazy BookingIntegrationsUtility bookingIntegrationsUtility,
             DependentServiceHelper dependentServiceHelper,
             IEventDao eventDao,
-            IEventsV3Service eventService,
+            IEventsV3Service eventsV3Service,
             IAwbDao awbDao,
             IDocumentManagerService documentManagerService,
             IHblService hblService,
@@ -219,7 +202,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentValidationV3Util shipmentValidationV3Util,
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
-            ConsolidationV3Service consolidationV3Service, MasterDataHelper masterDataHelper) {
+            @Lazy ConsolidationV3Service consolidationV3Service,
+            MasterDataHelper masterDataHelper) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -1329,6 +1313,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
     }
 
+    @Override
+    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments) {
+        for(ShipmentDetails detachedShipment : detachedShipments){
+            if(detachedShipment.getCarrierDetails() != null){
+                detachedShipment.getCarrierDetails().setEta(null);
+                detachedShipment.getCarrierDetails().setEtd(null);
+                detachedShipment.getCarrierDetails().setAta(null);
+                detachedShipment.getCarrierDetails().setAtd(null);
+                detachedShipment.getCarrierDetails().setShippingLine(null);
+            }
+            detachedShipment.setMasterBill(null);
+            detachedShipment.setBookingNumber(null);
+        }
+    }
+
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
@@ -1821,6 +1820,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             boolean consolUpdated = false;
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
+                setOriginBranchFromExportBroker(shipmentDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
                 consolUpdated = true;
@@ -1840,6 +1840,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (consolidationDetails == null) {
             populateImportExportBrokerForShipment(shipmentDetails);
         }
+    }
+
+    private void setOriginBranchFromExportBroker(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getAdditionalDetails()!=null && shipmentDetails.getAdditionalDetails().getExportBroker()!=null)
+            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getTenantId()));
     }
 
     private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
@@ -1869,6 +1874,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setAdditionalDetails(new AdditionalDetails());
             }
             shipmentDetails.getAdditionalDetails().setExportBroker(v1ServiceUtil.getDefaultAgentOrgParty(null));
+            setOriginBranchFromExportBroker(shipmentDetails);
         } else if (Constants.DIRECTION_IMP.equals(shipmentDetails.getDirection()) &&
                 (shipmentDetails.getAdditionalDetails() == null || !CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker()))) {
             if(shipmentDetails.getAdditionalDetails() == null) {
