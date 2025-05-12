@@ -30,7 +30,7 @@ class EventsV3ControllerTest {
     @Mock
     private IEventsSync eventsSync;
     @InjectMocks
-    private EventsControllerV3 eventsController;
+    private EventsV3Controller eventsController;
 
 
     @Test

@@ -1,19 +1,19 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class ConsolidationPendingNotificationResponse extends ConsolidationDetailsResponse{
+public class ConsolidationPendingNotificationResponse extends ConsolidationDetailsV3Response {
     private Long id;
     private UUID guid;
     private Integer tenantId;
@@ -23,4 +23,10 @@ public class ConsolidationPendingNotificationResponse extends ConsolidationDetai
     private Long receivingBranch;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Map<String, Object> tenantMasterData;
+    private Long triangulationPartner;
+    private Long documentationPartner;
+    @JsonIgnore
+    private Long originBranch;
+    @JsonIgnore
+    private Long sourceTenantId;
 }

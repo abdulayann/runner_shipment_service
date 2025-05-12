@@ -1820,6 +1820,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             boolean consolUpdated = false;
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
+                setOriginBranchFromExportBroker(shipmentDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
                 consolUpdated = true;
@@ -1839,6 +1840,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (consolidationDetails == null) {
             populateImportExportBrokerForShipment(shipmentDetails);
         }
+    }
+
+    private void setOriginBranchFromExportBroker(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getAdditionalDetails()!=null && shipmentDetails.getAdditionalDetails().getExportBroker()!=null)
+            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getTenantId()));
     }
 
     private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
@@ -1868,6 +1874,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setAdditionalDetails(new AdditionalDetails());
             }
             shipmentDetails.getAdditionalDetails().setExportBroker(v1ServiceUtil.getDefaultAgentOrgParty(null));
+            setOriginBranchFromExportBroker(shipmentDetails);
         } else if (Constants.DIRECTION_IMP.equals(shipmentDetails.getDirection()) &&
                 (shipmentDetails.getAdditionalDetails() == null || !CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker()))) {
             if(shipmentDetails.getAdditionalDetails() == null) {
