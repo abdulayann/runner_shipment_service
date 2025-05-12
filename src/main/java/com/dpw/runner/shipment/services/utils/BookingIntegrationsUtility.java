@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -65,6 +66,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -118,6 +120,8 @@ public class BookingIntegrationsUtility {
     private IIntegrationResponseDao integrationResponseDao;
     @Autowired
     private IShipmentService shipmentService;
+    @Autowired
+    private IShipmentServiceV3 shipmentServiceV3;
     @Autowired
     private MasterDataFactory masterDataFactory;
     @Autowired
@@ -298,9 +302,9 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
+    public ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
         try {
-            return shipmentService.createShipmentInV3(customerBookingRequest);
+            return shipmentServiceV3.createShipmentInV3(customerBookingRequest);
         } catch (Exception ex) {
             log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;

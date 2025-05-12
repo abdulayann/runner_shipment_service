@@ -9,15 +9,17 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
 @ApiModel(value = "Routing response model")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RoutingListResponse implements IRunnerResponse {
-    List<IRunnerResponse> routingsResponseList = new ArrayList<>();
+    List<RoutingsResponse> routings = new ArrayList<>();
     @JsonIgnore
     private Integer totalPages = 0;
     @JsonIgnore
     private Long totalCount = 0L;
+    private Map<String, Object> masterData;
 }

@@ -257,5 +257,4 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private LocalDateTime latestArrivalTime;
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
-    private Long borrowedFrom;
 }

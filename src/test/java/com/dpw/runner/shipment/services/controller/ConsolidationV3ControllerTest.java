@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -48,11 +49,11 @@ class ConsolidationV3ControllerTest {
   @Mock
   private JsonHelper jsonHelper;
 
-  private ConsolidationDetailsRequest consolidationDetailsRequest;
+  private ConsolidationDetailsV3Request consolidationDetailsRequest;
 
   @BeforeEach
   void setup() {
-    consolidationDetailsRequest = new ConsolidationDetailsRequest();
+    consolidationDetailsRequest = new ConsolidationDetailsV3Request();
     // set minimal required fields here if needed
   }
 
