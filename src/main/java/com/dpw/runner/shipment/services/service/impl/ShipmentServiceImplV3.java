@@ -226,7 +226,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.bookingIntegrationsUtility = bookingIntegrationsUtility;
         this.dependentServiceHelper = dependentServiceHelper;
         this.eventDao = eventDao;
-        this.eventsV3Service = eventService;
+        this.eventsV3Service = eventsV3Service;
         this.awbDao = awbDao;
         this.documentManagerService = documentManagerService;
         this.hblService = hblService;
