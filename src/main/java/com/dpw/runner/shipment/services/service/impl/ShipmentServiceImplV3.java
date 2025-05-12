@@ -188,7 +188,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             @Lazy BookingIntegrationsUtility bookingIntegrationsUtility,
             DependentServiceHelper dependentServiceHelper,
             IEventDao eventDao,
-            IEventsV3Service eventService,
+            IEventsV3Service eventsV3Service,
             IAwbDao awbDao,
             IDocumentManagerService documentManagerService,
             IHblService hblService,
