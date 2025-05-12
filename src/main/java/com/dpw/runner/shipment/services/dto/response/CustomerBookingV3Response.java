@@ -142,4 +142,11 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime latestArrivalTime;
+    private BigDecimal teuCount;
+    private long containers;
+    private String packageType;
+    private long packages;
+    private String description;
+    private String marksnNumbers;
+    private String additionalTerms;
 }

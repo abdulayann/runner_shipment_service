@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ApiConstants {
+
+    private ApiConstants(){}
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
     public static final String BOOKING_API_UPDATE_CONTAINERS = "/update/booking/containers";
     public static final String BOOKING_API_LIST_CONTAINERS = "/list/booking/containers";
@@ -19,7 +21,9 @@ public class ApiConstants {
     public static final String CONSOLIDATION_API_UPDATE_BULK = "consolidation/update/bulk";
     public static final String UPDATE_SAILING_SCHEDULE = "update-sailing-schedule";
 
-    private ApiConstants(){}
+    public static final String GET_CONTAINER_DETAILS = "/get/containerDetails";
+
+
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
     public static final String API_UPLOAD = "/upload";

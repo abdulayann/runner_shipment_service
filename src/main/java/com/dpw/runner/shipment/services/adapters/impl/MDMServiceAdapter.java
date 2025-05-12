@@ -57,6 +57,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     @Value("${mdm.departmentListUrl}")
     String departmentListUrl;
 
+    @Value("${mdm.containerTypeListUrl}")
+    String containerTypeListUrl;
+
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -176,6 +179,20 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             log.error("MDM Service - error while fetching departments list", e);
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public DependentServiceResponse getContainerTypes() throws RunnerException {
+        String url = baseUrl + containerTypeListUrl;
+        try{
+            MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).build();
+            ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
+            DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
+            return dependentServiceResponse;
+        } catch (Exception ex){
+            log.error("MDM Service - error while fetching container type list", ex.getMessage());
+            throw new RunnerException("Error while fetching container type list: " + ex.getMessage());
+        }
     }
 
 }

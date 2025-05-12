@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
@@ -370,6 +371,11 @@ public class JsonTestUtility {
     public CustomerBookingRequest getCustomerBookingRequest() {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBookingRequest.class);
     }
+
+    public CustomerBookingV3Request getCustomerBookingV3Request() {
+        return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBookingV3Request.class);
+    }
+
     public CustomerBooking getCustomerBooking() {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBooking.class);
     }
