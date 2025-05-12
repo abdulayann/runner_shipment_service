@@ -25,6 +25,8 @@ public class ShipmentPendingNotificationResponse extends ShipmentDetailsResponse
     private Long triangulationPartner;
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     @JsonIgnore
+    private Long originBranch;
+    @JsonIgnore
     private Boolean cargoFinanceBooking;
     @JsonIgnore
     private Boolean isShipmentReadOnly;
