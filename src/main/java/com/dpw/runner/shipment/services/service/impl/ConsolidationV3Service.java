@@ -3172,47 +3172,31 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 shipmentDetail.setMasterBill(null);
                 this.createLogHistoryForShipment(shipmentDetail);
             }
-            if(saveSeaPacks)
-                packingList = packingDao.saveAll(packingList);
+
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
-            updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
+            shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
             shipmentDao.saveAll(shipmentDetailsToSave);
             if(shipmentDetailsToSave!=null){
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
             }
         }
-//        if(checkAttachDgAirShipments(consol)){
-//            consol.setHazardous(false);
-//            consolidationDetailsDao.save(consol, false);
-//        }
+
         if(Objects.equals(consol.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            this.checkSciForDetachConsole(consolidationId);
+            checkSciForDetachConsole(consolidationId);
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         if(remarks != null)
             sendEmailForDetachShipments(consol, shipmentDetails, shipmentRequestedTypes, remarks);
-        syncPackingConsoleAndShipment(consol, packingList, shipmentDetailsToSave);
+       // syncPackingConsoleAndShipment(consol, packingList, shipmentDetailsToSave);
         String warning = null;
         if(!shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);
+        calculateAchievedValues(consolidationId);
 
         return warning;
     }
 
-    private void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments){
-        for(ShipmentDetails detachedShipment : detachedShipments){
-            if(detachedShipment.getCarrierDetails() != null){
-                detachedShipment.getCarrierDetails().setEta(null);
-                detachedShipment.getCarrierDetails().setEtd(null);
-                detachedShipment.getCarrierDetails().setAta(null);
-                detachedShipment.getCarrierDetails().setAtd(null);
-                detachedShipment.getCarrierDetails().setShippingLine(null);
-            }
-            detachedShipment.setMasterBill(null);
-            detachedShipment.setBookingNumber(null);
-        }
-    }
 
     private void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
         try {
@@ -3407,11 +3391,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             shipmentDetail.getShipmentId(), packing.getInnerPacksCount(), containerIdNumberMap.get(packing.getContainerId()));
 
                         throw new RunnerException(containerAttachToPackException);
-
-             //           updateContainerPacksMap(packing, containerPacksMap);
-//                        packing.setContainerId(null);
-//                        packingList.add(packing);
-//                        saveSeaPacks = true;
                     }
                 }
             }
@@ -3419,29 +3398,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 String containerAttachToShipmentException = String.format("Selected Shipment - %s is assigned with mentioned container : %s, Please unassign to detach the same.",
                     shipmentDetail.getShipmentId(), container.getContainerNumber());
                 throw new RunnerException(containerAttachToShipmentException);
-          //      processContainersListForShipment(container, shipmentDetail, containerPacksMap);
             }
-      //      allContainersList.addAll(containersList);
         }
-      //  processContainersListForShipment()
         return saveSeaPacks;
     }
 
-    //TODO : Shipment Aggregated Weight/ Volume
-    private void processContainersListForShipment(Containers container, ShipmentDetails shipmentDetail, Map<Long, List<Packing>> containerPacksMap) throws RunnerException {
-        if(Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode())) {
-            if(CARGO_TYPE_FCL.equals(shipmentDetail.getShipmentType())) {
-                containerService.changeContainerWtVolForSeaFCLDetach(container);
-            } else {
-                if(containerPacksMap.containsKey(container.getId())) {
-                    List<Packing> packs = containerPacksMap.get(container.getId());
-                    for(Packing packing : packs) {
-                        containerService.changeContainerWtVolForSeaLCLDetach(container, packing);
-                    }
-                }
-            }
-        }
-    }
 
     private void updateContainerPacksMap(Packing packing, Map<Long, List<Packing>> containerPacksMap) {
         if(containerPacksMap.containsKey(packing.getContainerId()))
