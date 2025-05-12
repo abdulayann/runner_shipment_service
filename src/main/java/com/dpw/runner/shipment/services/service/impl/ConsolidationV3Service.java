@@ -7,20 +7,58 @@ import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
-import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest.ModuleData;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
@@ -29,28 +67,87 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
-import com.dpw.runner.shipment.services.helpers.*;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
+import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ConsolidationV3Util;
+import com.dpw.runner.shipment.services.utils.ConsolidationValidationV3Util;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import java.util.function.Function;
@@ -77,7 +174,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -87,7 +195,14 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
@@ -152,7 +267,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private IEventDao eventDao;
 
     @Autowired
-    private IRoutingsDao routingsDao;
+    private IRoutingsV3Service routingsV3Service;
 
     @Autowired
     private IEventsV3Service eventV3Service;
@@ -1977,6 +2092,34 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             List<EventsRequest> events = new ArrayList<>();
+            List<Routings> mainCarriageList = console.getRoutingsList().stream()
+                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                    .toList();
+            if (CollectionUtils.isEmpty(mainCarriageList)) {
+                List<Routings> mainCarriageRoutings = shipments.stream()
+                        .filter(shipment -> shipment.getRoutingsList().stream()
+                                .anyMatch(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE))
+                        .findFirst()
+                        .map(shipment -> shipment.getRoutingsList().stream()
+                                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                                .collect(Collectors.toList()))
+                        .orElse(Collections.emptyList());
+                List<Routings> consoleMainCarriageRouting = new ArrayList<>();
+
+                mainCarriageRoutings.stream()
+                        .filter(mainCarriageRouting -> RoutingCarriage.MAIN_CARRIAGE.equals(mainCarriageRouting.getCarriage()))
+                        .forEach(consolRoute -> {
+                            // Deep copy of the routing object
+                            var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
+                            syncedRoute.setConsolidationId(console.getId());
+                            syncedRoute.setBookingId(null);
+                            syncedRoute.setShipmentId(null);
+                            syncedRoute.setInheritedFromConsolidation(false); // Mark as inherited
+                            consoleMainCarriageRouting.add(syncedRoute);
+                        });
+                console.setRoutingsList(consoleMainCarriageRouting);
+                routingsV3Service.updateBulk(jsonHelper.convertValueToList(console.getRoutingsList(), RoutingsRequest.class), CONSOLIDATION);
+            }
 
             // Update each linked shipment and collect relevant event triggers
             for (ShipmentDetails sd : shipments) {
@@ -2016,8 +2159,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * This method handles both general and transport-mode-specific fields, such as voyage, vessel, flight number, ETA/ETD, etc. If the consolidation was attached from the shipment
      * screen (`fromAttachShipment` is true), additional fields like ETA, ETD, and flight number are copied.
      *
-     * @param console            The consolidation from which carrier details are sourced
-     * @param shipmentDetails    The shipment to update
+     * @param console         The consolidation from which carrier details are sourced
+     * @param shipmentDetails The shipment to update
      */
     private void updateCarrierDetailsForLinkedShipments(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
         if (console.getCarrierDetails() != null) {
@@ -2108,7 +2251,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Sync main carriage routing from console to shipment
-        syncMainCarriageRoutingToShipment(console.getRoutingsList(), shipmentDetails, true);
+        syncMainCarriageRoutingToShipment(console.getRoutingsList(), shipmentDetails);
 
         // Update export/import brokers if inter-branch logic applies
         updateInterBranchConsoleData(console, shipmentDetails);
@@ -2116,11 +2259,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private boolean isDesiredShipmenTypeForReverseSyncFromConsol(ShipmentDetails shipmentDetails) {
         boolean isDesiredShipmenTypeForReverseSyncFromConsol = false;
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())
-                && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())
-                && ((shipmentDetails.getShipmentType().equals("HSE") && Boolean.FALSE.equals(shipmentDetails.getB2b()))
+        if ((shipmentDetails.getShipmentType().equals("HSE") && Boolean.FALSE.equals(shipmentDetails.getB2b()))
                 || shipmentDetails.getShipmentType().equals("BCN")
-                || shipmentDetails.getShipmentType().equals("SCN"))) {
+                || shipmentDetails.getShipmentType().equals("SCN")) {
             isDesiredShipmenTypeForReverseSyncFromConsol = true;
         }
         return isDesiredShipmenTypeForReverseSyncFromConsol;
@@ -2134,7 +2275,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * different - If `AdditionalDetails` is null, initializes it before setting brokers
      *
      * @param console The consolidation object containing sending and receiving agents
-     * @param sd       The shipment details to update with broker info
+     * @param sd      The shipment details to update with broker info
      */
     private void updateInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails sd) {
         // Proceed only if it's NOT an inter-branch console
@@ -2170,41 +2311,26 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * - It creates copies of consolidation MAIN_CARRIAGE legs and assigns them to the shipment. - Existing MAIN_CARRIAGE legs in the shipment (not inherited from consolidation)
      * are preserved. - Reassigns leg sequence (1, 2, 3, ...) across all routings (PRE_CARRIAGE, MAIN_CARRIAGE, ON_CARRIAGE). - Optionally persists updated routing list to DB.
      *
-     * @param consolidationRoutings           List of routing legs from consolidation.
-     * @param shipmentDetails                 Shipment entity to which the routings should be applied.
-     * @param saveRoutes                      Flag to persist the routings to DB
+     * @param consolidationRoutings List of routing legs from consolidation.
+     * @param shipmentDetails       Shipment entity to which the routings should be applied.
+     * @param saveRoutes            Flag to persist the routings to DB
      * @throws RunnerException If any failure occurs during processing.
      */
     @Override
-    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException {
-
-        // Exit early if no consolidation routings or route master feature is disabled
-        if (CollectionUtils.isEmpty(consolidationRoutings)
-                || !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) throws RunnerException {
+        List<Routings> mainCarriageList = consolidationRoutings.stream()
+                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+        if (CollectionUtils.isEmpty(mainCarriageList)) {
             return;
         }
-
         List<Routings> shipmentMainCarriageRouting = new ArrayList<>();
         List<Routings> shipmentRoutingList = Optional.ofNullable(shipmentDetails.getRoutingsList()).orElse(new ArrayList<>());
         shipmentDetails.setRoutingsList(shipmentRoutingList);
-        List<Routings> existingOriginalShipmentMainCarriageRoutings = new ArrayList<>();
-
-        // Determine if routing sync is required based on shipment type and settings
-        boolean isDesiredShipmenTypeForReverseSyncFromConsol = isDesiredShipmenTypeForReverseSyncFromConsol(shipmentDetails);
-        if (isDesiredShipmenTypeForReverseSyncFromConsol) {
-            // Preserve original MAIN_CARRIAGE legs from shipment that were not inherited from consolidation
-            shipmentRoutingList.stream()
-                    .filter(shipmentRouting -> RoutingCarriage.MAIN_CARRIAGE.equals(shipmentRouting.getCarriage()) && Boolean.FALSE.equals(
-                            shipmentRouting.getInheritedFromConsolidation()))
-                    .forEach(existingOriginalShipmentMainCarriageRoutings::add);
-        }
 
         consolidationRoutings.stream()
                 .filter(consolRoutings -> RoutingCarriage.MAIN_CARRIAGE.equals(consolRoutings.getCarriage()))
                 .forEach(consolRoute -> {
-                    // Look for this POL POD main carriage routing in shipment routings list
-                    // update/create
-
                     // Deep copy of the routing object
                     var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
                     syncedRoute.setConsolidationId(null);
@@ -2213,10 +2339,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     syncedRoute.setInheritedFromConsolidation(true); // Mark as inherited
                     shipmentMainCarriageRouting.add(syncedRoute);
                 });
-
-        // Add back the original MAIN_CARRIAGE entries that weren't inherited
-        shipmentMainCarriageRouting.addAll(existingOriginalShipmentMainCarriageRoutings);
-
         // Logic to regroup all shipment routings with updated leg sequence
         // Assumption -> order of routes is as follows; Otherwise legs will have a chaotic order for user
         // 1. PRE_CARRIAGE
@@ -2234,13 +2356,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         mergeRoutingList(shipmentMainCarriageRouting, finalShipmentRouteList, legCount);
         mergeRoutingList(onCarriageShipmentRoutes, finalShipmentRouteList, legCount);
 
-        if (saveRoutes) {
-            // Persist updated routings to database
-            routingsDao.updateEntityFromShipment(finalShipmentRouteList, shipmentDetails.getId());
-        }
-
-        // Assign routing list to shipment routing
-        shipmentDetails.setRoutingsList(finalShipmentRouteList);
+        routingsV3Service.updateBulk(jsonHelper.convertValueToList(finalShipmentRouteList, RoutingsRequest.class), SHIPMENT);
+        List<Routings> routings = routingsV3Service.getRoutingsByShipmentId(shipmentDetails.getId());
+        shipmentDetails.setRoutingsList(routings);
     }
 
     /**
@@ -3506,11 +3624,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         branchWiseRequest.setModuleData(
             shipmentDetails.stream()
-                .map(shp -> ModuleData.builder()
+                .map(shp -> BillingBulkSummaryBranchWiseRequest.ModuleData.builder()
                     .branchId(shp.getTenantId().toString())
                     .moduleGuid(shp.getGuid().toString()).build())
                 .toList()
         );
         return branchWiseRequest;
+    }
+    @Override
+    public ConsolidationDetails getConsolidationById(Long consolidationId) {
+        return consolidationDetailsDao.findConsolidationsById(consolidationId);
     }
 }

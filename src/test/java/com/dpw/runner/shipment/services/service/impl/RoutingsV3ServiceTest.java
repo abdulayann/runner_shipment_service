@@ -135,12 +135,12 @@ class RoutingsV3ServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
                 .build();
-        mockShipmentSettings();
+        //mockShipmentSettings();
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
+        //when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
         var resp = routingsService.create(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
@@ -174,7 +174,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
                 .build();
-        mockShipmentSettings();
+        //mockShipmentSettings();
 
         when(routingsDao.findById(anyLong())).thenReturn(Optional.of(oldEntity));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(oldEntity);
@@ -182,7 +182,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
+       // when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
         var resp = routingsService.update(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
@@ -270,15 +270,20 @@ class RoutingsV3ServiceTest extends CommonMocks {
 
     @Test
     void testUpdateBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        RoutingsRequest newRequest = new RoutingsRequest();
         routingsRequest.setId(2L);
         routings.setId(2L);
-        List<RoutingsRequest> requestList = List.of(routingsRequest, newRequest);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest);
         RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
 
         when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
         when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings));
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 

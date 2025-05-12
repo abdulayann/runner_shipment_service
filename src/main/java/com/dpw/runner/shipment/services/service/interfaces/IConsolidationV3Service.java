@@ -28,7 +28,7 @@ public interface IConsolidationV3Service {
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
     String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
-    void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException;
+    void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity);
     ConsolidationDetailsV3Response retrieveById(CommonGetRequest commonGetRequest, String source) throws RunnerException, AuthenticationException;
@@ -38,4 +38,6 @@ public interface IConsolidationV3Service {
     ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
     String detachShipments(@Valid ShipmentConsoleAttachDetachV3Request request)
         throws RunnerException;
+
+    ConsolidationDetails getConsolidationById(Long consolidationId);
 }
