@@ -151,6 +151,7 @@ public class ShipmentConstants {
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";
+    public static final String UPDATE_SAILING_SCHEDULE_SUCCESSFUL = "Sailing schedule data updated successfully";
 
     private ShipmentConstants() {
     }
