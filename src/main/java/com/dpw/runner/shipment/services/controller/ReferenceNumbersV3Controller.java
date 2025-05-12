@@ -70,7 +70,10 @@ public class ReferenceNumbersV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_UPDATE_SUCCESSFUL, response = BulkReferenceNumbersResponse.class)})
     @PutMapping(value = ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ReferenceNumbersRequest> request) {
-        return ResponseHelper.buildSuccessResponse(referenceNumbersV3Service.updateBulk(request));
+        BulkReferenceNumbersResponse response = referenceNumbersV3Service.updateBulk(request);
+        List<ReferenceNumbersResponse> responseList = response.getReferenceNumbersResponseList();
+        List<IRunnerResponse> runnerResponseList = responseList.stream().map(p -> (IRunnerResponse) p).toList();
+        return ResponseHelper.buildListSuccessResponse(runnerResponseList);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_DELETE_SUCCESSFUL, response = RunnerResponse.class)})

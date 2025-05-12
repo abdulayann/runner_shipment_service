@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersV3Service;
@@ -66,6 +67,26 @@ class ReferenceNumbersV3ControllerTest {
         assertEquals(HttpStatus.OK, result.getStatusCode());
         RunnerResponse<?> actual = (RunnerResponse<?>) result.getBody();
         assertEquals(expectedResponse, actual.getData());
+    }
+
+    @Test
+    void testUpdateBulk_success() {
+        ReferenceNumbersRequest request = new ReferenceNumbersRequest();
+        BulkReferenceNumbersResponse expectedResponse = new BulkReferenceNumbersResponse();
+        ReferenceNumbersResponse ref1 = new ReferenceNumbersResponse();
+        ReferenceNumbersResponse ref2 = new ReferenceNumbersResponse();
+        List<ReferenceNumbersResponse> referenceNumbersResponseList = List.of(ref1, ref2);
+        expectedResponse.setReferenceNumbersResponseList(referenceNumbersResponseList);
+
+        when(referenceNumbersV3Service.updateBulk(any())).thenReturn(expectedResponse);
+
+        ResponseEntity<IRunnerResponse> result = controller.updateBulk(List.of(request));
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        RunnerListResponse<?> actual = (RunnerListResponse<?>) result.getBody();
+        assertEquals(2, actual.getData().size());
+        assertTrue(actual.getData().contains(ref1));
+        assertTrue(actual.getData().contains(ref2));
     }
 
     @Test

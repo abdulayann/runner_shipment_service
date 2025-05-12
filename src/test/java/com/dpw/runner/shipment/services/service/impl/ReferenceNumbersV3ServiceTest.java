@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.impl.ReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
@@ -139,7 +140,6 @@ class ReferenceNumbersV3ServiceTest {
 
         // Spy to verify audit
         ReferenceNumbersV3Service spyService = Mockito.spy(referenceNumbersV3Service);
-        //doNothing().when(spyService).recordAuditLogs(List.of(oldEntity), List.of(updatedEntity), DBOperationType.UPDATE);
 
         // Act
         ReferenceNumbersResponse actual = spyService.update(request);
@@ -151,7 +151,41 @@ class ReferenceNumbersV3ServiceTest {
         verify(referenceNumbersValidationUtil).validateUpdateRequest(request);
         verify(referenceNumbersDao).findById(101L);
         verify(referenceNumbersDao).save(newEntity);
-       // verify(spyService).recordAuditLogs(List.of(oldEntity), List.of(updatedEntity), DBOperationType.UPDATE);
+    }
+
+    @Test
+    void testUpdateBulk_success() {
+        // Arrange
+        ReferenceNumbersRequest request = new ReferenceNumbersRequest();
+        request.setId(101L);
+
+        ReferenceNumbers oldEntity = new ReferenceNumbers();
+        oldEntity.setId(101L);
+
+        ReferenceNumbers newEntity = new ReferenceNumbers();
+        newEntity.setId(101L);
+
+        ReferenceNumbers updatedEntity = new ReferenceNumbers();
+        updatedEntity.setId(101L);
+
+        ReferenceNumbersResponse expectedResponse = new ReferenceNumbersResponse();
+        expectedResponse.setId(101L);
+
+        // Mock behavior
+        doNothing().when(referenceNumbersValidationUtil).validateUpdateBulkRequest(List.of(request));
+        when(referenceNumbersDao.saveAll(any())).thenReturn(List.of(newEntity));
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(List.of(newEntity));
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbersResponse.class))).thenReturn(List.of(expectedResponse));
+
+        // Spy to verify audit
+        ReferenceNumbersV3Service spyService = Mockito.spy(referenceNumbersV3Service);
+
+        // Act
+        BulkReferenceNumbersResponse actual = spyService.updateBulk(List.of(request));
+
+        // Assert
+        assertNotNull(actual);
+        verify(referenceNumbersValidationUtil).validateUpdateBulkRequest(List.of(request));
     }
 
 

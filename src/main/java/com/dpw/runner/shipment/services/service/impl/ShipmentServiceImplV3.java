@@ -124,6 +124,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
+
+    @Autowired
+    ExecutorService executorService;
+
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
     private CommonUtils commonUtils;
@@ -133,7 +137,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
     private JsonHelper jsonHelper;
     private MasterDataUtils masterDataUtils;
-    private ExecutorService executorService;
     private IAuditLogService auditLogService;
     private ILogsHistoryService logsHistoryService;
     private IHblDao hblDao;
@@ -178,7 +181,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             JsonHelper jsonHelper,
             IHblDao hblDao,
             MasterDataUtils masterDataUtils,
-            ExecutorService executorService,
             IAuditLogService auditLogService,
             ILogsHistoryService logsHistoryService,
             IDateTimeChangeLogService dateTimeChangeLogService,
@@ -206,7 +208,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
-            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service) {
+            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -216,7 +218,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.jsonHelper = jsonHelper;
         this.hblDao = hblDao;
         this.masterDataUtils = masterDataUtils;
-        this.executorService = executorService;
         this.auditLogService = auditLogService;
         this.logsHistoryService = logsHistoryService;
         this.dateTimeChangeLogService = dateTimeChangeLogService;

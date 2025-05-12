@@ -126,7 +126,7 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         // Convert the request DTOs to entity models for persistence
         List<ReferenceNumbers> originalReferenceNumbers = jsonHelper.convertValueToList(requests, ReferenceNumbers.class);
 
-        // Save the updated containers to the database
+        // Save the updated ref nums to the database
         List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.saveAll(originalReferenceNumbers);
 
         //runAsyncPostSaveOperations(updatedReferenceNumbers, module);
