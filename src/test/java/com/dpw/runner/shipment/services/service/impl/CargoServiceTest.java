@@ -13,16 +13,13 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
 import com.dpw.runner.shipment.services.dto.request.ContainerDetailsRequest;
-import org.junit.Before;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -30,6 +27,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -68,17 +66,23 @@ public class CargoServiceTest {
         container2.setContainerCode("20GP");
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(customerBooking));
         when(customerBooking.getContainersList()).thenReturn(Arrays.asList(container1, container2));
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("20GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        when(jsonHelper.convertValueToList(mdmResponse, MdmContainerTypeResponse.class))
-                .thenReturn(Arrays.asList(mdmContainerTypeResponse));
 
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "20GP")));
+        when(jsonHelper.convertToJson(mdmResponse.getData())).thenReturn("dummyJson");
+        when(jsonHelper.convertJsonToMap("dummyJson")).thenReturn(
+                Map.of("data", Arrays.asList(Collections.singletonMap("code", "20GP")))
+        );
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
         ContainerDetailsResponse response = cargoService.getContainerDetails(request);
-
         // Assert
         assertNotNull(response);
         assertEquals(3L, response.getContainers());
@@ -98,8 +102,6 @@ public class CargoServiceTest {
         Set<Containers> containers = new HashSet<>();
         containers.add(container1);
 
-        System.out.println("Containers in Set (before JSON conversion): " + containers.size());
-
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(shipmentDetails.getContainersList()).thenReturn(containers);
 
@@ -108,9 +110,13 @@ public class CargoServiceTest {
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        when(jsonHelper.convertValueToList(mdmResponse, MdmContainerTypeResponse.class))
-                .thenReturn(Arrays.asList(mdmContainerTypeResponse));
-
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertToJson(mdmResponse.getData())).thenReturn("dummyJson");
+        when(jsonHelper.convertJsonToMap("dummyJson")).thenReturn(
+                Map.of("data", Arrays.asList(Collections.singletonMap("code", "40GP")))
+        );
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
         ContainerDetailsResponse response = cargoService.getContainerDetails(request);
 
@@ -139,8 +145,13 @@ public class CargoServiceTest {
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40HQ");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(3));
-        when(jsonHelper.convertValueToList(mdmResponse, MdmContainerTypeResponse.class))
-                .thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertToJson(mdmResponse.getData())).thenReturn("dummyJson");
+        when(jsonHelper.convertJsonToMap("dummyJson")).thenReturn(
+                Map.of("data", Arrays.asList(Collections.singletonMap("code", "40GP")))
+        );
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
 
         // Test
         ContainerDetailsResponse response = cargoService.getContainerDetails(request);
