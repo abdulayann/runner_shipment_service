@@ -141,4 +141,5 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String partner;
     private Long borrowedFromId;
     private Boolean borrowed;
+    private Long originBranch;
 }
