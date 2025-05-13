@@ -323,7 +323,7 @@ class ShipmentServiceImplV3Test {
         CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
         customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
         customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
-        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
+//        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
 
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
@@ -347,7 +347,7 @@ class ShipmentServiceImplV3Test {
         when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
 
         ContainerRequest containerRequest = ContainerRequest.builder().build();
-        when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(List.of(containerRequest));
+//        when(jsonHelper.convertValueToList(any(), eq(ContainerRequest.class))).thenReturn(List.of(containerRequest));
         PackSummaryResponse packSummaryResponse = mock(PackSummaryResponse.class);
         when(packingService.calculatePackSummary(anyList(), any(), any(), any())).thenReturn(packSummaryResponse);
 
@@ -357,13 +357,13 @@ class ShipmentServiceImplV3Test {
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
-        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(null);
+        //when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(null);
 
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
 
-        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
-        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
+        //when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+       // when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
