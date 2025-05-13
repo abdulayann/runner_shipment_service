@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
@@ -225,4 +227,18 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             WHERE s.id = :shipmentId
             """)
     void updateSailingScheduleRelatedInfoForAir(@Param("shipmentId") Long shipmentId, @Param("latestArrivalTime") LocalDateTime latestArrivalTime);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE ShipmentDetails s SET " +
+            "s.dateType = :dateType, " +
+            "s.shipmentGateInDate = :shipmentGateInDate, " +
+            "s.shipmentPackStatus = :shipmentPackStatus " +
+            "WHERE s.id = :shipmentId")
+    void updateShipmentDetailsFromPacks(
+            @Param("shipmentId") Long shipmentId,
+            @Param("dateType") DateBehaviorType dateType,
+            @Param("shipmentGateInDate") LocalDateTime shipmentGateInDate,
+            @Param("shipmentPackStatus") ShipmentPackStatus shipmentPackStatus
+    );
 }

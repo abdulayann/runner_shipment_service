@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import javax.validation.Valid;
 import org.apache.http.auth.AuthenticationException;
+import java.util.Optional;
 
 public interface IConsolidationV3Service {
     ShipmentGridChangeV3Response calculateAchievedValues(Long consolidationId) throws RunnerException;
@@ -39,4 +40,7 @@ public interface IConsolidationV3Service {
         throws RunnerException;
 
     ConsolidationDetails getConsolidationById(Long consolidationId);
+
+    Optional<ConsolidationDetails> findById(Long consolidationId);
+    ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
 }

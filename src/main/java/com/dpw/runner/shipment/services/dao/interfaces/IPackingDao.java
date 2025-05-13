@@ -65,4 +65,6 @@ public interface IPackingDao {
     Optional<Packing> findByGuidWithQuery(UUID guid);
 
     Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable);
+
+    List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
 }

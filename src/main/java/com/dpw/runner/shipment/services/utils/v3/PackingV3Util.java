@@ -6,18 +6,34 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationV3Request;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingExcelModel;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcelCell;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
@@ -33,26 +49,37 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTENT_TYPE_FOR_EXCEL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.YYYY_MM_DD_HH_MM_SS_FORMAT;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus.SAILED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -69,6 +96,18 @@ public class PackingV3Util {
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IConsolidationV3Service consolidationV3Service;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
+    @Autowired
+    private IPackingService packingService;
 
     private List<String> columnsSequenceForExcelDownloadForCargo = List.of(
             "guid", "shipmentNumber", "packs", "packsType", "innerPackageNumber", "innerPackageType", "origin", "packingOrder",
@@ -345,4 +384,172 @@ public class PackingV3Util {
         }
     }
 
+    public Long updateConsolidationIdInPackings(ShipmentDetails shipmentDetails, List<Packing> packings) {
+        if(Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+            Long consolidationId = getConsolidationId(shipmentDetails.getId());
+            for (Packing packing : packings) {
+                packing.setConsolidationId(consolidationId);
+            }
+            return consolidationId;
+        }
+        return null;
+    }
+
+    public Long getConsolidationId(Long shipmentId) {
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
+        if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
+            return consoleShipmentMappings.get(0).getConsolidationId();
+        }
+        return null;
+    }
+
+    public void processPackingRequests(List<Packing> packings, ShipmentDetails shipmentDetails) {
+        boolean fullGated = true;
+        boolean partialGated = false;
+        boolean fullAssigned = true;
+        boolean partialAssigned = false;
+        LocalDateTime maxDate = null;
+        for (Packing packing: packings) {
+            if(packing.getCargoGateInDate() != null) {
+                if(ACTUAL.equals(packing.getDateType()))
+                    partialGated = true;
+                else
+                    fullGated = false;
+                maxDate = getMaxDate(shipmentDetails, packing, maxDate);
+            }
+            else
+                fullGated = false;
+            if(packing.getContainerId() != null)
+                partialAssigned = true;
+            else
+                fullAssigned = false;
+        }
+        setShipmentPackStatusOnAssigned(shipmentDetails, partialAssigned, fullAssigned, partialGated, fullGated);
+    }
+
+    private LocalDateTime getMaxDate(ShipmentDetails shipmentDetails, Packing packing, LocalDateTime maxDate) {
+        if(maxDate == null || packing.getCargoGateInDate().isAfter(maxDate)) {
+            shipmentDetails.setShipmentGateInDate(packing.getCargoGateInDate());
+            shipmentDetails.setDateType(packing.getDateType());
+            maxDate = packing.getCargoGateInDate();
+        }
+        return maxDate;
+    }
+
+    public void setShipmentPackStatusSailed(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getCarrierDetails() != null && shipmentDetails.getCarrierDetails().getAtd() != null)
+            shipmentDetails.setShipmentPackStatus(SAILED);
+    }
+
+    private void setShipmentPackStatusOnAssigned(ShipmentDetails shipmentDetails, boolean partialAssigned, boolean fullAssigned, boolean partialGated, boolean fullGated) {
+        if(partialAssigned)
+            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.PARTIALLY_ASSIGNED);
+        if(fullAssigned)
+            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.ASSIGNED);
+        if(partialGated)
+            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.PARTIAL_CARGO_GATE_IN);
+        if(fullGated)
+            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.CARGO_GATED_IN);
+    }
+
+    @Transactional
+    public void savePackUtilisationCalculationInConsole(CalculatePackUtilizationV3Request calculatePackUtilizationRequest) {
+        try {
+            Optional<ConsolidationDetails> optional = consolidationV3Service.findById(calculatePackUtilizationRequest.getConsolidationId());
+            if(optional.isPresent() && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(optional.get().getTransportMode())) {
+                var consolidation = optional.get();
+                calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+                consolidationV3Service.save(consolidation, false);
+            }
+        }
+        catch (Exception e) {
+            log.error("Error saving pack utilisation in console : {}", e.getMessage());
+        }
+    }
+
+    // For inter branch context (hub/coload both possible) we are relying on source functions
+    public PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationV3Request request) throws RunnerException {
+        var consolidationId = request.getConsolidationId();
+        var updatedConsolPacks = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
+        List<Packing> shipmentPackingList = request.getShipmentPackingList();
+        var allocated = jsonHelper.convertValue(request.getAllocationsRequest(), Allocations.class);
+        var attachingShipments = request.getShipmentIdList();
+
+        Optional<ConsolidationDetails> optionalConsol = consolidationV3Service.findById(consolidationId);
+        ConsolidationDetails consol = null;
+        PackSummaryResponse packSummaryResponse = null;
+        AchievedQuantities achievedQuantities = null;
+        String toWeightUnit = Optional.ofNullable(request.getAllocationsRequest()).map(AllocationsRequest::getWeightUnit).orElse(Constants.WEIGHT_UNIT_KG);
+        String toVolumeUnit = Optional.ofNullable(request.getAllocationsRequest()).map(AllocationsRequest::getVolumeUnit).orElse(Constants.VOLUME_UNIT_M3);
+
+        var packingList = new ArrayList<Packing>();
+
+        if(optionalConsol.isEmpty()) {
+            return null;
+        }
+
+        consol = optionalConsol.get();
+        if(!Objects.isNull(allocated)) {
+            consol.setAllocations(allocated);
+        }
+        achievedQuantities = Optional.ofNullable(consol.getAchievedQuantities()).orElse(new AchievedQuantities());
+        achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
+        achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
+
+        List<Packing> consolPackingList = packingDao.findByConsolidationId(consolidationId);
+
+        if(!CommonUtils.listIsNullOrEmpty(shipmentPackingList)) {
+            var shipmentId = shipmentPackingList.get(0).getShipmentId();
+            // Filter out the old shipment-linked packs from the consol packs stream
+            packingList.addAll(consolPackingList.stream().filter(i -> !Objects.equals(i.getShipmentId(), shipmentId)).toList());
+            // Add the current updated packs of the shipment
+            packingList.addAll(shipmentPackingList);
+        }
+        else if (attachingShipments != null && !attachingShipments.isEmpty()) {
+            Set<Long> packingIdSet = new HashSet<>();
+            if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks())) {
+                packingList.addAll(consolPackingList);
+                packingIdSet = consolPackingList.stream().map(Packing::getId).collect(Collectors.toSet());
+            }
+            Set<Long> finalPackingIdSet = packingIdSet;
+            packingList.addAll(getShipmentPacks(attachingShipments).stream().filter(i -> !finalPackingIdSet.contains(i.getId())).toList());
+        }
+        else {
+            // Default case of packs updated from consol
+            packingList.addAll(Optional.ofNullable(updatedConsolPacks).orElse(Optional.ofNullable(consolPackingList).orElse(Collections.emptyList())));
+        }
+
+        log.info("calculating pack summary for aggregate of {} packs", packingList.size());
+        packSummaryResponse = packingService.calculatePackSummary(packingList, TRANSPORT_MODE_AIR, null, new ShipmentMeasurementDetailsDto());
+        log.info("Received weight: {} and volume:{} from packing summary response", packSummaryResponse.getAchievedWeight(), packSummaryResponse.getAchievedVolume());
+
+        // only process the below calculation if the consolidation is air , exp , co-loading = true, allocated != null
+        if(coLoadingConsolChecks(consol)) {
+            var convertedWeight = BigDecimal.valueOf(convertUnit(MASS, packSummaryResponse.getAchievedWeight(), packSummaryResponse.getWeightUnit(), toWeightUnit).doubleValue());
+            var convertedVolume = BigDecimal.valueOf(convertUnit(VOLUME, packSummaryResponse.getAchievedVolume(), packSummaryResponse.getVolumeUnit(), toVolumeUnit).doubleValue());
+            achievedQuantities.setConsolidatedWeight(convertedWeight);
+            achievedQuantities.setConsolidatedVolume(convertedVolume);
+            consol.setAchievedQuantities(achievedQuantities);
+            consol = commonUtils.calculateConsolUtilization(consol);
+            packSummaryResponse.setConsolidationAchievedQuantities(jsonHelper.convertValue(consol.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+            packSummaryResponse.setAllocatedWeight(consol.getAllocations().getWeight());
+            packSummaryResponse.setAllocatedVolume(consol.getAllocations().getVolume());
+            packSummaryResponse.setAllocationsResponse(jsonHelper.convertValue(consol.getAllocations(), AllocationsResponse.class));
+        }
+
+        return packSummaryResponse;
+    }
+
+    private boolean coLoadingConsolChecks(ConsolidationDetails consolidation) {
+        boolean flag = consolidation.getTransportMode().equalsIgnoreCase(TRANSPORT_MODE_AIR);
+        if(!Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()))
+            flag = false;
+        if(!(consolidation.getAllocations() != null && consolidation.getAllocations().getWeight() != null))
+            flag = false;
+        return flag;
+    }
+
+    private List<Packing> getShipmentPacks(List<Long> shipmentIds) {
+        return packingDao.findByShipmentIdIn(shipmentIds);
+    }
 }

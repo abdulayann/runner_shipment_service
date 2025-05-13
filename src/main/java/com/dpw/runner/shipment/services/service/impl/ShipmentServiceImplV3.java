@@ -43,6 +43,8 @@ import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -1294,6 +1296,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 cargoDetailsResponse.getVolumetricWeightUnit(),
                 cargoDetailsResponse.getChargable(),
                 cargoDetailsResponse.getChargeableUnit());
+    }
+
+    @Override
+    public void updateShipmentDetailsFromPacks(Long shipmentId, DateBehaviorType dateType, LocalDateTime shipmentGateInDate, ShipmentPackStatus shipmentPackStatus) {
+        shipmentDao.updateShipmentDetailsFromPacks(shipmentId, dateType, shipmentGateInDate, shipmentPackStatus);
     }
 
     @Override

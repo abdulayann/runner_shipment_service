@@ -13,8 +13,12 @@ import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRe
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.apache.http.auth.AuthenticationException;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 
@@ -48,6 +52,8 @@ public interface IShipmentServiceV3 {
     Optional<ShipmentDetails> findById(Long shipmentId);
 
     void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse);
+
+    void updateShipmentDetailsFromPacks(Long shipmentId, DateBehaviorType dateType, LocalDateTime shipmentGateInDate, ShipmentPackStatus shipmentPackStatus);
 
     String attachConsolidation(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 

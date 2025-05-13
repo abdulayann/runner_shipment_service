@@ -210,7 +210,7 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @DeleteMapping(ApiConstants.BOOKING_API_DELETE_PACKAGES)
-    public ResponseEntity<IRunnerResponse> deleteBookingPackages(@RequestBody @Valid List<PackingV3Request> packingV3RequestList) {
+    public ResponseEntity<IRunnerResponse> deleteBookingPackages(@RequestBody @Valid List<PackingV3Request> packingV3RequestList) throws RunnerException {
         BulkPackingResponse response = packingV3Service.deleteBulk(packingV3RequestList, BOOKING);
         return ResponseHelper.buildSuccessResponse(response);
     }
