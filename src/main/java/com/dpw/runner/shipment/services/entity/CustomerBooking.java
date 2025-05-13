@@ -298,9 +298,17 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "booking_agent")
     private Long bookingAgent;
 
-    @Column(name = "co_load_bkg_number")
+    @Column(name = "partner_bkg_number")
     @Size(max = 64)
-    private String coLoadBkgNumber;
+    private String partnerBkgNumber;
+
+    @Column(name = "partner_bl_or_awb_number")
+    @Size(max = 64)
+    private String partnerBLOrAWBNumber;
+
+    @Column(name = "carrier_bkg_number")
+    @Size(max = 64)
+    private String carrierBookingNumber;
 
     @Column(name = "pickup_at_origin_type")
     private String pickupAtOriginType;
