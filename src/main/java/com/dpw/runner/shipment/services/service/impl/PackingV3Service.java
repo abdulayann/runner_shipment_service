@@ -1,9 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -38,25 +34,10 @@ import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -73,8 +54,27 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -388,7 +388,7 @@ public class PackingV3Service implements IPackingV3Service {
         packingV3Util.downloadPacking(response, request);
     }
 
-    private Optional<Packing> retrieveForNte(Long id, String guid){
+    private Optional<Packing> retrieveForNte(Long id, String guid) {
         Optional<Packing> packing;
         if (id != null) {
             packing = packingDao.findByIdWithQuery(id);
@@ -407,10 +407,9 @@ public class PackingV3Service implements IPackingV3Service {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
             }
             Optional<Packing> packing;
-            if(Objects.equals(source, NETWORK_TRANSFER)){
+            if (Objects.equals(source, NETWORK_TRANSFER)) {
                 packing = retrieveForNte(id, guid);
-            }
-            else {
+            } else {
                 if (id != null) {
                     packing = packingDao.findById(id);
                 } else {
@@ -441,7 +440,7 @@ public class PackingV3Service implements IPackingV3Service {
         // construct specifications for filter request
         Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
         Page<Packing> packingPage;
-        if(Objects.equals(source, NETWORK_TRANSFER))
+        if (Objects.equals(source, NETWORK_TRANSFER))
             packingPage = packingDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -487,24 +486,17 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     public PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel, String xSource) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (StringUtility.isEmpty(request.getEntityId()) || Long.valueOf(request.getEntityId()) <= 0) {
+            throw new ValidationException("Entity id is empty");
+        }
         PackingListResponse packingListResponse = list(commonRequestModel, true, xSource);
         log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
-            //get assigned packages
-            Long shipmentId = null;
-            for (PackingResponse packingResponse : packingListResponse.getPackings()) {
-                if (packingResponse.getShipmentId() != null) {
-                    shipmentId = packingResponse.getShipmentId();
-                    break;
-                }
-            }
-            if (shipmentId != null) {
-                PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByShipment(shipmentId);
-                packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
-                packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
-            }
 
-        }
+        PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByShipment(Long.valueOf(request.getEntityId()));
+        packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
+        packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
+        
         return packingListResponse;
     }
 
@@ -512,7 +504,7 @@ public class PackingV3Service implements IPackingV3Service {
     public Map<String, Object> getAllMasterData(Long id, String source) {
         try {
             Optional<Packing> packingOptional;
-            if(Objects.equals(source, NETWORK_TRANSFER))
+            if (Objects.equals(source, NETWORK_TRANSFER))
                 packingOptional = packingDao.findByIdWithQuery(id);
             else
                 packingOptional = packingDao.findById(id);
