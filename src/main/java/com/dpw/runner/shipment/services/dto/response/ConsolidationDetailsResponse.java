@@ -169,4 +169,5 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private Long originBranch;
 }

@@ -208,5 +208,6 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private LocalDateTime latestArrivalTime;
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
+    private Long originBranch;
 
 }
