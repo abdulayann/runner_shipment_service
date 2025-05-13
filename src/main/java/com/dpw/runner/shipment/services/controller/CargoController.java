@@ -2,8 +2,6 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.CargoConstants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerDetailsResponse;
