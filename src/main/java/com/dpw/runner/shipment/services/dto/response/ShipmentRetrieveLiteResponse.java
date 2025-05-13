@@ -201,4 +201,5 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String consolidationNumber;
     private Boolean isReefer;
     private Boolean isPacksAvailable = Boolean.FALSE;
+    private Long originBranch;
 }
