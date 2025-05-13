@@ -44,6 +44,7 @@ public class ContainerV3Controller {
     private final ContainerV3Util containerV3Util;
 
     private static class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse>{}
+    private static class ContainerResponseClass extends RunnerResponse<ContainerResponse>{}
 
     public ContainerV3Controller(JsonHelper jsonHelper, IContainerV3Service containerV3Service, ContainerV3Util containerV3Util) {
         this.jsonHelper = jsonHelper;
@@ -116,7 +117,7 @@ public class ContainerV3Controller {
             containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponse.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request));

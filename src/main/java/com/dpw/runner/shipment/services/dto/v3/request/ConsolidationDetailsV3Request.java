@@ -139,7 +139,6 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private String partner;
-    private Long borrowedFromId;
     private Boolean borrowed;
     private Long originBranch;
 }
