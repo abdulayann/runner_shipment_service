@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
@@ -72,6 +73,9 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Mock
     private JsonHelper jsonHelper;
+
+    @Mock
+    private IPackingDao packingDao;
 
     @Mock
     private ContainerValidationUtil containerValidationUtil;
@@ -211,7 +215,8 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         when(containerDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
-        ContainerListResponse response = containerV3Service.list(request, true, null);
+        when(packingDao.findByContainerIdIn(any())).thenReturn(new ArrayList<>());
+        ContainerListResponse response = containerV3Service.list(request, anyBoolean(), anyString());
 
         assertNotNull(response);
     }
