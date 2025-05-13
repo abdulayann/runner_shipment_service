@@ -8,6 +8,7 @@ import io.swagger.annotations.ApiModel;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.UUID;
 import javax.validation.constraints.Size;
 
 import lombok.*;
@@ -22,6 +23,7 @@ import lombok.*;
 public class ContainerV3Request extends CommonRequest implements IRunnerRequest {
 
   private Long id;
+  private UUID guid;
   private Long consolidationId;
   private Set<Long> shipmentsIds;
   private Long bookingId;

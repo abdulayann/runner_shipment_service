@@ -870,7 +870,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private Optional<CustomerBooking> getValidatedCustomerBooking(long id) {
-        if (Objects.nonNull(id)) {
+        if (!Objects.nonNull(id)) {
             log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("Booking Id cannot be null");
         }

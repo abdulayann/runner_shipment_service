@@ -358,4 +358,25 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "latest_arrival_time")
     private LocalDateTime latestArrivalTime;
+
+    @Column(name = "teu_count")
+    private BigDecimal teuCount;
+
+    @Column(name = "containers")
+    private long containers;
+
+    @Column(name = "package_type")
+    private String packageType;
+
+    @Column(name = "packages")
+    private long packages;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "marks_n_numbers")
+    private String marksnNumbers;
+
+    @Column(name = "additional_terms")
+    private String additionalTerms;
 }
