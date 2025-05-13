@@ -3760,4 +3760,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public ConsolidationDetails getConsolidationById(Long consolidationId) {
         return consolidationDetailsDao.findConsolidationsById(consolidationId);
     }
+
+    @Override
+    public Optional<ConsolidationDetails> findById(Long consolidationId) {
+        return consolidationDetailsDao.findById(consolidationId);
+    }
+
+    @Override
+    public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
+        return consolidationDetailsDao.save(consolidationDetails, fromV1Sync);
+    }
 }

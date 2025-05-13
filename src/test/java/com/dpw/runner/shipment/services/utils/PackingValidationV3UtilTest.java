@@ -2,7 +2,10 @@ package com.dpw.runner.shipment.services.utils;
 
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -23,6 +26,8 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +51,9 @@ class PackingValidationV3UtilTest {
 
     @Mock
     private ICustomerBookingService customerBookingService;
+
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @InjectMocks
     private PackingValidationV3Util packingValidationV3Util;
@@ -313,5 +321,127 @@ class PackingValidationV3UtilTest {
 
         assertTrue(ex.getMessage().contains("have the shipmentId"));
     }
+
+    @Test
+    void testShipmentGateInDateIsNull_shouldNotThrow() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentGateInDate(null);
+
+        assertDoesNotThrow(() -> packingValidationV3Util.validateShipmentGateInDate(shipmentDetails));
+    }
+
+    @Test
+    void testShipmentGateInAfterCfsCutOff_shouldThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentGateInDate(now.plusDays(5));
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(now.plusDays(10));
+        shipmentDetails.setCarrierDetails(carrierDetails);
+
+        ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+        mapping.setConsolidationId(100L);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCfsCutOffDate(now);
+
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(mapping));
+        when(consolidationService.findById(100L)).thenReturn(Optional.of(consolidationDetails));
+
+        RunnerException ex = assertThrows(RunnerException.class, () ->
+                packingValidationV3Util.validateShipmentGateInDate(shipmentDetails)
+        );
+
+        assertEquals("Shipment Gate In date should not be greater than the CFS Cut Off Date entered at the consolidation level.", ex.getMessage());
+    }
+
+    @Test
+    void testShipmentGateInAfterEtd_shouldThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentGateInDate(now.plusDays(7));
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(now.plusDays(5));
+        shipmentDetails.setCarrierDetails(carrierDetails);
+
+        ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+        mapping.setConsolidationId(200L);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCfsCutOffDate(null); // null to skip this check
+
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(mapping));
+        when(consolidationService.findById(200L)).thenReturn(Optional.of(consolidationDetails));
+
+        RunnerException ex = assertThrows(RunnerException.class, () ->
+                packingValidationV3Util.validateShipmentGateInDate(shipmentDetails)
+        );
+
+        assertEquals("Shipment Gate In Date cannot be greater than ETD.", ex.getMessage());
+    }
+
+    @Test
+    void testValidShipmentGateInDate_shouldNotThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentGateInDate(now);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(now.plusDays(5));
+        shipmentDetails.setCarrierDetails(carrierDetails);
+
+        ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+        mapping.setConsolidationId(300L);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setCfsCutOffDate(now.plusDays(1));
+
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(mapping));
+        when(consolidationService.findById(300L)).thenReturn(Optional.of(consolidationDetails));
+
+        assertDoesNotThrow(() -> packingValidationV3Util.validateShipmentGateInDate(shipmentDetails));
+    }
+
+    @Test
+    void testConsoleShipmentMappingEmpty_shouldNotThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentGateInDate(now);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(now.plusDays(5));
+        shipmentDetails.setCarrierDetails(carrierDetails);
+
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(Collections.emptyList());
+
+        assertDoesNotThrow(() -> packingValidationV3Util.validateShipmentGateInDate(shipmentDetails));
+    }
+
+    @Test
+    void testConsolidationOptionalEmpty_shouldNotThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(1L);
+        shipmentDetails.setShipmentGateInDate(now);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(now.plusDays(5));
+        shipmentDetails.setCarrierDetails(carrierDetails);
+
+        ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+        mapping.setConsolidationId(123L);
+
+        when(consoleShipmentMappingDao.findByShipmentId(1L)).thenReturn(List.of(mapping));
+        when(consolidationService.findById(123L)).thenReturn(Optional.empty());
+
+        assertDoesNotThrow(() -> packingValidationV3Util.validateShipmentGateInDate(shipmentDetails));
+    }
+
 
 }
