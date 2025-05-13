@@ -4,5 +4,6 @@ public class CargoConstants {
     private CargoConstants(){}
 
     public static final String GET_CONTAINER_DETAILS_SUCCESS = "Container details fetch successful";
+    public static final String CARGO_API_HANDLE_V3 = "/api/v3/cargo";
 
 }

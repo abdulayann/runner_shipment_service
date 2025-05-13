@@ -374,7 +374,7 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "description")
     private String description;
 
-    @Column(name = "marksnNumbers")
+    @Column(name = "marks_n_numbers")
     private String marksnNumbers;
 
     @Column(name = "additional_terms")

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -57,7 +58,8 @@ public class CargoService implements ICargoService {
             return response;
         }
         DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
-        List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse, MdmContainerTypeResponse.class);
+        Map<String, Object> dataMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(mdmResponse.getData()));
+        List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(dataMap.get("data"), MdmContainerTypeResponse.class);
         Map<String, BigDecimal> codeTeuMap = containerTypes.stream()
                 .collect(Collectors.toMap(
                         MdmContainerTypeResponse::getCode,

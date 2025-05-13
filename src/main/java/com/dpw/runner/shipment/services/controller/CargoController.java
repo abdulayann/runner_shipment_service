@@ -23,10 +23,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 
+import static com.dpw.runner.shipment.services.commons.constants.CargoConstants.CARGO_API_HANDLE_V3;
+
 @Slf4j
 @SuppressWarnings("ALL")
 @RestController
-@RequestMapping(value = CustomerBookingConstants.CARGO_API_HANDLE_V3)
+@RequestMapping(value = CARGO_API_HANDLE_V3)
 public class CargoController {
 
     private final ICargoService cargoService;
