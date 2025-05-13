@@ -169,7 +169,7 @@ class ContainerV3ControllerTest {
         .thenReturn(mockResponse);
 
     // Act
-    ResponseEntity<IRunnerResponse> response = containerV3Controller.list(listCommonRequest, null);
+    ResponseEntity<IRunnerResponse> response = containerV3Controller.list(listCommonRequest, false, null);
 
     // Assert
     assertNotNull(response);
