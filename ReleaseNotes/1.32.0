@@ -1,1 +1,4 @@
 Release Version - Release-v1.32.0
+
+For Task 220443
+Step 1 : Run DBPatch/Release-v1.32.0/task_220443.sql
