@@ -37,7 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -66,6 +65,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -108,7 +108,7 @@ class PackingV3ServiceTest extends CommonMocks {
     private static ShipmentDetails testShipment;
 
     @BeforeAll
-    static void init(){
+    static void init() {
         try {
             jsonTestUtility = new JsonTestUtility();
         } catch (IOException e) {
@@ -372,16 +372,18 @@ class PackingV3ServiceTest extends CommonMocks {
     void testFetchShipmentPackages_withAssignedCounts() {
         CommonRequestModel model = CommonRequestModel.builder().build();
         ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setEntityId("123");
         model.setData(listCommonRequest);
 
-        PackingAssignmentProjection projection = Mockito.mock(PackingAssignmentProjection.class);
+        PackingAssignmentProjection projection = mock(PackingAssignmentProjection.class);
         when(projection.getAssignedCount()).thenReturn(2L);
         when(projection.getUnassignedCount()).thenReturn(3L);
 
         Page<Packing> page = new PageImpl<>(List.of(packing));
         when(packingDao.findAll(any(), any())).thenReturn(page);
-        when(packingDao.getPackingAssignmentCountByShipment(100L)).thenReturn(projection);
+        // when(packingDao.getPackingAssignmentCountByShipment(100L)).thenReturn(projection);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
+        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projection);
 
         PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model, null);
 
@@ -393,13 +395,16 @@ class PackingV3ServiceTest extends CommonMocks {
     void testFetchShipmentPackages2() {
         CommonRequestModel model = CommonRequestModel.builder().build();
         ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setEntityId("123");
         model.setData(listCommonRequest);
 
         response.setShipmentId(null);
+        PackingAssignmentProjection projectionMock = mock(PackingAssignmentProjection.class);
 
         Page<Packing> page = new PageImpl<>(List.of(packing));
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
+        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projectionMock);
 
         PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model, null);
 
