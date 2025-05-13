@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
@@ -127,7 +128,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         try {
             routings = routingsDao.save(routings);
 
-            ParentResult parentResult = getParentDetails(List.of(routings), module);
+            ParentResult parentResult = getParentDetails(List.of(routings), request.getEntityId(), module);
             // Audit logs
             recordAuditLogs(null, List.of(routings), DBOperationType.CREATE, parentResult);
             // afterSave
@@ -203,7 +204,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 }
 
                 // Step 5: Push to update
-                updateBulk(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class), Constants.SHIPMENT);
+                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+                bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
+                bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
+                updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
             }
         }
     }
@@ -287,7 +291,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         try {
             routings = routingsDao.save(routings);
 
-            ParentResult parentResult = getParentDetails(List.of(routings), module);
+            ParentResult parentResult = getParentDetails(List.of(routings), request.getEntityId(), module);
             // Audit logs
             recordAuditLogs(List.of(oldEntityData), List.of(routings), DBOperationType.UPDATE, parentResult);
             // afterSave operations
@@ -357,7 +361,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         try {
             routingsDao.delete(routing.get());
 
-            ParentResult parentResult = getParentDetails(List.of(oldEntityData), module);
+            ParentResult parentResult = getParentDetails(List.of(oldEntityData), request.getId(), module);
             // Audit logs
             recordAuditLogs(List.of(oldEntityData), null, DBOperationType.DELETE, parentResult);
             log.info("Routing deleted successfully for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -406,13 +410,11 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
     @Override
     @Transactional
-    public BulkRoutingResponse updateBulk(List<RoutingsRequest> incomingRoutings, String module) throws RunnerException {
-        //validate if list has same shipment id in all and shipment id and consol id should not be present at a time
-        routingValidationUtil.validateRoutingsRequest(incomingRoutings, module);
-        routingValidationUtil.validateMainCarriageAdjacencyInIncoming(incomingRoutings);
+    public BulkRoutingResponse updateBulk(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
+        routingValidationUtil.validateBulkUpdateRoutingRequest(request, module);
+        List<RoutingsRequest> incomingRoutings = request.getRoutings();
         // Separate IDs and determine existing routing
         List<Long> incomingIds = getIncomingRoutingsIds(incomingRoutings);
-
         List<Routings> existingRoutings = new ArrayList<>();
         List<Routings> oldConvertedRouting = null;
         if (!CollectionUtils.isEmpty(incomingIds)) {
@@ -421,14 +423,14 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             routingValidationUtil.validateUpdateBulkRequest(incomingRoutings, existingRoutings);
             oldConvertedRouting = jsonHelper.convertValueToList(existingRoutings, Routings.class);
         }
-        List<Routings> oldRoutingsForDeletion = deleteOrphanRoutings(incomingRoutings, module);
+        List<Routings> oldRoutingsForDeletion = deleteOrphanRoutings(request, module);
 
         List<Routings> routingsList = reOrderRoutings(jsonHelper.convertValueToList(incomingRoutings, Routings.class), existingRoutings);
         // Separate into create and update requests
 
         List<Routings> allSavedRouting = routingsDao.saveAll(routingsList);
 
-        ParentResult parentResult = getParentDetails(allSavedRouting, module);
+        ParentResult parentResult = getParentDetails(allSavedRouting, request.getEntityId(), module);
         List<Routings> matchedIncomingRoutings = new ArrayList<>();
         List<Routings> newRoutings = new ArrayList<>();
 
@@ -470,9 +472,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 .toList();
     }
 
-    private List<Routings> deleteOrphanRoutings(List<RoutingsRequest> incomingRoutings, String module) {
-        List<Long> incomingRoutingsIds = getIncomingRoutingsIds(incomingRoutings);
-        List<Routings> existingRoutingsForDeletion = getExistingRoutingByModule(incomingRoutings, module);
+    private List<Routings> deleteOrphanRoutings(BulkUpdateRoutingsRequest request, String module) {
+        List<Long> incomingRoutingsIds = getIncomingRoutingsIds(request.getRoutings());
+        List<Routings> existingRoutingsForDeletion = getExistingRoutingByModule(request.getRoutings(), request.getEntityId(), module);
         List<Routings> routingsToDelete = existingRoutingsForDeletion.stream()
                 .filter(routing -> !incomingRoutingsIds.contains(routing.getId()))
                 .toList();
@@ -484,10 +486,16 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return new ArrayList<>();
     }
 
-    private List<Routings> getExistingRoutingByModule(List<RoutingsRequest> incomingRoutings, String module) {
+    private List<Routings> getExistingRoutingByModule(List<RoutingsRequest> incomingRoutings, Long entityId, String module) {
         if (Constants.SHIPMENT.equals(module)) {
+            if (CollectionUtils.isEmpty(incomingRoutings)) {
+                return routingsDao.findByShipmentId(entityId);
+            }
             return routingsDao.findByShipmentId(incomingRoutings.get(0).getShipmentId());
         } else if (Constants.CONSOLIDATION.equals(module)) {
+            if (CollectionUtils.isEmpty(incomingRoutings)) {
+                return routingsDao.findByConsolidationId(entityId);
+            }
             return routingsDao.findByConsolidationId(incomingRoutings.get(0).getConsolidationId());
         }
         return new ArrayList<>();
@@ -536,16 +544,22 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
     }
 
-    public ParentResult getParentDetails(List<Routings> routingList, String moduleType) {
-        Routings firstRouting = routingList.get(0);
+    public ParentResult getParentDetails(List<Routings> routingList, Long entityId, String moduleType) {
+        Long parentId = null;
+        Routings firstRouting = null;
+        if (CollectionUtils.isEmpty(routingList)) {
+            parentId = entityId;
+        } else {
+            firstRouting = routingList.get(0);
+        }
 
         return switch (moduleType) {
             case Constants.SHIPMENT ->
-                    new ParentResult(ShipmentDetails.class.getSimpleName(), firstRouting.getShipmentId());
+                    new ParentResult(ShipmentDetails.class.getSimpleName(), entityId == null ? firstRouting.getShipmentId() : parentId);
             case Constants.CONSOLIDATION ->
-                    new ParentResult(ConsolidationDetails.class.getSimpleName(), firstRouting.getConsolidationId());
+                    new ParentResult(ConsolidationDetails.class.getSimpleName(), entityId == null ? firstRouting.getConsolidationId() : parentId);
             case Constants.BOOKING ->
-                    new ParentResult(CustomerBooking.class.getSimpleName(), firstRouting.getBookingId());
+                    new ParentResult(CustomerBooking.class.getSimpleName(), entityId == null ? firstRouting.getBookingId() : parentId);
             default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
         };
     }
@@ -583,7 +597,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         // Validate that all necessary routing IDs are present in the request
         routingValidationUtil.validateUpdateBulkRequest(routingListRequest, routingToDelete);
 
-        ParentResult parentResult = getParentDetails(routingToDelete, module);
+        ParentResult parentResult = getParentDetails(routingToDelete, routingIds.get(0), module);
 
         // Delete routing from DB
         routingsDao.deleteByIdIn(routingIds);
@@ -637,7 +651,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             List<Routings> routings = shipmentDetails.getRoutingsList();
             if (!CollectionUtils.isEmpty(routings)) {
                 routings.removeIf(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getInheritedFromConsolidation());
-                updateBulk(jsonHelper.convertValueToList(routings, RoutingsRequest.class), Constants.SHIPMENT);
+                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+                bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(routings, RoutingsRequest.class));
+                bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
+                updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
             }
         }
     }

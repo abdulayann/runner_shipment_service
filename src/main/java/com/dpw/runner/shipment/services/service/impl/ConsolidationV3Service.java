@@ -65,6 +65,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
@@ -2232,7 +2233,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             consoleMainCarriageRouting.add(syncedRoute);
                         });
                 console.setRoutingsList(consoleMainCarriageRouting);
-                routingsV3Service.updateBulk(jsonHelper.convertValueToList(console.getRoutingsList(), RoutingsRequest.class), CONSOLIDATION);
+                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+                bulkUpdateRoutingsRequest.setEntityId(console.getId());
+                bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(console.getRoutingsList(), RoutingsRequest.class));
+                routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
             }
 
             // Update each linked shipment and collect relevant event triggers
@@ -2470,7 +2474,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         mergeRoutingList(shipmentMainCarriageRouting, finalShipmentRouteList, legCount);
         mergeRoutingList(onCarriageShipmentRoutes, finalShipmentRouteList, legCount);
 
-        routingsV3Service.updateBulk(jsonHelper.convertValueToList(finalShipmentRouteList, RoutingsRequest.class), SHIPMENT);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
+        bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(finalShipmentRouteList, RoutingsRequest.class));
+
+        routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, SHIPMENT);
         List<Routings> routings = routingsV3Service.getRoutingsByShipmentId(shipmentDetails.getId());
         shipmentDetails.setRoutingsList(routings);
     }

@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
@@ -278,6 +279,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
                 .carrierDetails(new CarrierDetails())
                 .build();
         List<RoutingsRequest> requestList = List.of(routingsRequest);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
         RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
 
         when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
@@ -287,7 +290,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkRoutingResponse result = routingsService.updateBulk(requestList, Constants.SHIPMENT);
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
 
         assertNotNull(result.getRoutingsResponseList());
         assertEquals(1, result.getRoutingsResponseList().size());

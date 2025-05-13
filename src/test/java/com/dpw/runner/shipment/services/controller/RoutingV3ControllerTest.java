@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
@@ -70,7 +71,8 @@ class RoutingV3ControllerTest {
     @Test
     void shipmentUpdateBulk() throws RunnerException {
         when(routingService.updateBulk(any(), any())).thenReturn(BulkRoutingResponse.builder().build());
-        var response = routingController.shipmentUpdateBulk(List.of());
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        var response = routingController.shipmentUpdateBulk(bulkUpdateRoutingsRequest);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

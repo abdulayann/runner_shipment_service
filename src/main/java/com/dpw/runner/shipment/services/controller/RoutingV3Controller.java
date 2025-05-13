@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -96,13 +97,13 @@ public class RoutingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = BulkRoutingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT_API_UPDATE_BULK)
-    public ResponseEntity<IRunnerResponse> shipmentUpdateBulk(@RequestBody List<RoutingsRequest> request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> shipmentUpdateBulk(@RequestBody BulkUpdateRoutingsRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = BulkRoutingResponse.class)})
     @PutMapping(value = ApiConstants.CONSOLIDATION_API_UPDATE_BULK)
-    public ResponseEntity<IRunnerResponse> consolidationUpdateBulk(@RequestBody List<RoutingsRequest> request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> consolidationUpdateBulk(@RequestBody BulkUpdateRoutingsRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.CONSOLIDATION));
     }
 
