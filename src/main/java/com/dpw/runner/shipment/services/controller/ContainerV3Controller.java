@@ -108,9 +108,10 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid @NonNull ListCommonRequest listCommonRequest,
+                                                @RequestParam(required = false, defaultValue = "true") boolean getMasterData,
                                                 @RequestHeader(value = "x-source", required = false) String xSource)
         throws RunnerException {
-        ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, true, xSource);
+        ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, getMasterData, xSource);
         return ResponseHelper.buildSuccessResponse(containerListResponse,
             containerListResponse.getTotalPages() , containerListResponse.getNumberOfRecords());
     }

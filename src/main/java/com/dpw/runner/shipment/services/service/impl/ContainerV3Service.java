@@ -832,6 +832,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .totalPages(containersPage.getTotalPages())
                 .build();
            this.getMasterDataForList(containerListResponse, getMasterData);
+           setAssignedContainer(containerListResponse, xSource);
            return containerListResponse;
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
