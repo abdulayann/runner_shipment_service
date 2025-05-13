@@ -1506,7 +1506,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             /*  Populate unloc code for entities */
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
 
-            if(containerList != null)
+            if(containerList != null && !containerList.isEmpty())
                 shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(containerList.stream().toList(), Containers.class)));
 
             populateUnlocCodeFuture.join();
