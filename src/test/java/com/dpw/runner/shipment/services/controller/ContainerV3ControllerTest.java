@@ -4,8 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -165,16 +166,18 @@ class ContainerV3ControllerTest {
     mockResponse.setTotalPages(2);
     mockResponse.setNumberOfRecords(50L);
 
-    Mockito.when(containerV3Service.list(eq(listCommonRequest), eq(true), eq(null)))
+    // Stub service call
+    Mockito.when(containerV3Service.list(eq(listCommonRequest), anyBoolean(), anyString()))
         .thenReturn(mockResponse);
 
-    // Act
-    ResponseEntity<IRunnerResponse> response = containerV3Controller.list(listCommonRequest, false, null);
+    // Act — use actual values here, NOT Mockito matchers
+    ResponseEntity<IRunnerResponse> response = containerV3Controller.list(listCommonRequest, true, "test-source");
 
     // Assert
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
 
   @Test
   void downloadCSV() throws RunnerException {
