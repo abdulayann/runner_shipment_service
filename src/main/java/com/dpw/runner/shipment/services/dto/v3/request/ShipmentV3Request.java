@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -24,7 +25,7 @@ import java.util.UUID;
 @ValidCargoDeliveryDate
 @SuppressWarnings("java:S6539")
 public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
-    private AdditionalDetailRequest additionalDetails;
+    private AdditionalDetailV3Request additionalDetails;
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
@@ -195,7 +196,9 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
