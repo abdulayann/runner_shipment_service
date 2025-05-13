@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -13,7 +14,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -166,6 +166,7 @@ public class RoutingValidationUtil {
             throw new ValidationException("Either shipmentId or consolidationId must be present.");
         }
     }
+
     public void validateMainCarriageAdjacencyInIncoming(List<RoutingsRequest> incomingRoutings) {
         boolean inInheritedBlock = false;
         for (RoutingsRequest routing : incomingRoutings) {
@@ -185,4 +186,13 @@ public class RoutingValidationUtil {
         }
     }
 
+    public void validateBulkUpdateRoutingRequest(BulkUpdateRoutingsRequest request, String module) {
+        if (CollectionUtils.isEmpty(request.getRoutings()) && (request.getEntityId() == null || request.getEntityId() <= 0)) {
+            throw new ValidationException("Routing list or entity id is empty");
+        } else if (!CollectionUtils.isEmpty(request.getRoutings())) {
+            //validate if list has same shipment id in all and shipment id and consol id should not be present at a time
+            validateRoutingsRequest(request.getRoutings(), module);
+            validateMainCarriageAdjacencyInIncoming(request.getRoutings());
+        }
+    }
 }

@@ -1335,9 +1335,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException {
-        routingsV3Service.updateBulk(request.getRoutings(), SHIPMENT);
-        //update shipment fields
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(request.getRoutings());
         Long shipmentId = request.getRoutings().stream().findFirst().get().getShipmentId();
+        bulkUpdateRoutingsRequest.setEntityId(shipmentId);
+        routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, SHIPMENT);
+        //update shipment fields
+        //Long shipmentId = request.getRoutings().stream().findFirst().get().getShipmentId();
         Optional<ShipmentDetails> shipmentDetailsEntity = shipmentDao.findById(shipmentId);
         ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
         if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
