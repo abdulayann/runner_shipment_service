@@ -334,10 +334,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @OrganizationData
     private Parties borrowedFrom;
 
-    @Column(name = "borrowed_from_organization_id")
-    @OrganizationMasterData
-    private Long borrowedFromOrganizationId;
-
     @Column(name = "is_borrowed")
     private Boolean borrowed;
 

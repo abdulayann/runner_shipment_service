@@ -10,6 +10,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
@@ -25,15 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.Optional;
@@ -44,8 +38,9 @@ import java.util.Optional;
 @Slf4j
 public class ShipmentControllerV3 {
 
-    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {
-    }
+    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {}
+    private static class ShipmentUnAssignContainerTrayList extends RunnerResponse<ShipmentPacksUnAssignContainerTrayDto> {}
+    private static class ShipmentAssignContainerTrayList extends RunnerResponse<ShipmentPacksAssignContainerTrayDto> {}
 
     private IShipmentServiceV3 shipmentService;
     private JsonHelper jsonHelper;
@@ -130,9 +125,16 @@ public class ShipmentControllerV3 {
         return (ResponseEntity<?>) shipmentService.getAllMasterData(shipmentId, xSource);
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = ShipmentAssignContainerTrayList.class)})
     @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)
     public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId) {
         return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = ShipmentUnAssignContainerTrayList.class)})
+    @GetMapping(ApiConstants.API_GET_SHIPMENT_UN_ASSIGN_CONTAINER_TRAY)
+    public ResponseEntity<IRunnerResponse> getShipmentUnAssignContainerTray(@ApiParam Long containerId) {
+        return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationUnAssignContainerTray(containerId));
     }
 
     /**
