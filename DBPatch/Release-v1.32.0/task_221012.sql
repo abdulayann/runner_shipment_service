@@ -1,0 +1,1 @@
+UPDATE shipment_details SET house_bill = null, booking_number = null, updated_at = NOW() WHERE id = 54714 and tenant_id = 474;
