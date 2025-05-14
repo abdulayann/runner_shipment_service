@@ -71,4 +71,5 @@ public interface IShipmentServiceV3 {
     void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments);
 
     ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
+    void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails);
 }

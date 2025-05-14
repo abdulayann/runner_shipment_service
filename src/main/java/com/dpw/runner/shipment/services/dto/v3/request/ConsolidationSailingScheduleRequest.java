@@ -10,7 +10,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ShipmentSailingScheduleRequest implements IRunnerRequest {
+public class ConsolidationSailingScheduleRequest implements IRunnerRequest {
     private List<RoutingsRequest> routings;
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
