@@ -115,12 +115,12 @@ dev:
 qa:
   cicd: Full
   envName: qa
-  namespace: runner-shipment-service-qa-ns
+  namespace: runner-shipment-service-qa
   hpa:
-    minReplicas: 1
-    maxReplicas: 3
+    minReplicas: 2
+    maxReplicas: 5
   hostUrlList: 
-  - dummy-qa-runner-shipment-service.dpworld.com
+  - qa-runner.cargoes.com
   configMap:
     data:
       APP_ENV: qa
@@ -128,22 +128,45 @@ qa:
       NEW_RELIC_APP_NAME: runner-shipment-service-qa
   secretName: shipment-service-qa-SECRET
   deployment:
-    replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
-    minCpu: 300m
-    maxCpu: 500m
-    minMem: 512Mi
-    maxMem: 1Gi
+    replicaCount: 2
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1536m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 1000m
+    maxCpu: 1500m
+    minMem: 1.8Gi
+    maxMem: 3.5Gi
+
+demo:
+  cicd: Full
+  envName: demo
+  namespace: runner-shipment-service-demo
+  hpa:
+    minReplicas: 2
+    maxReplicas: 5
+  hostUrlList: 
+  - demo-runner.cargoes.com
+  configMap:
+    data:
+      APP_ENV: demo
+      props_profile: demo
+      NEW_RELIC_APP_NAME: runner-shipment-service-demo
+  secretName: shipment-service-demo-SECRET
+  deployment:
+    replicaCount: 2
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-demo-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1536m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 1000m
+    maxCpu: 1500m
+    minMem: 1.8Gi
+    maxMem: 3.5Gi
 
 staging:
   cicd: Full
   envName: staging
-  namespace: runner-shipment-service-staging-ns
+  namespace: runner-shipment-service-staging
   hpa:
-    minReplicas: 1
-    maxReplicas: 3
+    minReplicas: 2
+    maxReplicas: 5
   hostUrlList: 
-  -  dummy-staging-runner-shipment-service.dpworld.com
+  - staging-runner.cargoes.com
   configMap:
     data:
       APP_ENV: staging
@@ -151,22 +174,22 @@ staging:
       NEW_RELIC_APP_NAME: runner-shipment-service-staging
   secretName: shipment-service-staging-SECRET
   deployment:
-    replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
-    minCpu: 300m
-    maxCpu: 500m
-    minMem: 512Mi
-    maxMem: 1Gi
+    replicaCount: 2
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 1000m
+    maxCpu: 3000m
+    minMem: 2Gi
+    maxMem: 6Gi
 
 prod:
   cicd: Full
   envName: prod
-  namespace: runner-shipment-service-prod-ns
+  namespace: runner-shipment-service-prod
   hpa:
     minReplicas: 2
     maxReplicas: 5
   hostUrlList: 
-  - dummy-runner-shipment-service.dpworld.com
+  - app-runner.cargoes.com
   configMap:
     data:
       APP_ENV: prod
@@ -174,22 +197,22 @@ prod:
       NEW_RELIC_APP_NAME: runner-shipment-service-prod
   secretName: shipment-service-prod-SECRET
   deployment:
-    replicaCount: 1
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && sleep 10000s
-    minCpu: 300m
-    maxCpu: 500m
-    minMem: 512Mi
-    maxMem: 1Gi
+    replicaCount: 2
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 1000m
+    maxCpu: 3000m
+    minMem: 2Gi
+    maxMem: 6Gi
 
 dr:
   cicd: Full
   envName: dr
-  namespace: runner-shipment-service-dr-ns
+  namespace: runner-shipment-service-dr
   hpa:
-    minReplicas: 1
+    minReplicas: 2
     maxReplicas: 5
   hostUrlList: 
-  - dummy-runner-shipment-service.dpworld.com
+  - app-runner.cargoes.com
   configMap:
     data:
       APP_ENV: dr
@@ -198,8 +221,8 @@ dr:
   secretName: shipment-service-dr-SECRET
   deployment:
     replicaCount: 0
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms256m -Xmx750m -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
-    minCpu: 300m
-    maxCpu: 500m
-    minMem: 512Mi
-    maxMem: 1Gi
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    minCpu: 1000m
+    maxCpu: 3000m
+    minMem: 2Gi
+    maxMem: 6Gi
