@@ -4,14 +4,11 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+
+import java.util.*;
 
 public interface IPackingDao {
     Packing save(Packing packing);
@@ -62,6 +59,7 @@ public interface IPackingDao {
     PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId);
 
     List<Packing> findByShipmentId(Long shipmentId);
+    List<Packing> findByShipmentIdInAndContainerId(List<Long> shipmentIds, Long containerId);
 
     Optional<Packing> findByIdWithQuery(Long id);
 
@@ -72,4 +70,5 @@ public interface IPackingDao {
     PackingAssignmentProjection getPackingAssignmentCountByConsolidation(Long consolId);
 
     List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
+    void setPackingIdsToContainer(List<Long> packingIds, Long containerId);
 }

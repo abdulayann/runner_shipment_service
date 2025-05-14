@@ -77,6 +77,11 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         return shipmentsContainersMappingRepository.saveAll(shipmentsContainersMappingList);
     }
 
+    @Override
+    public void deleteAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList) {
+        shipmentsContainersMappingRepository.deleteAll(shipmentsContainersMappingList);
+    }
+
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {
         shipmentsContainersMappingRepository.delete(shipmentsContainersMapping);
     }

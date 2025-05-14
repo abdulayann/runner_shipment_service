@@ -1484,8 +1484,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
             if (assignedShipmentsList.contains(shipments.getId())) {
                 shipments.setSelectedContainerAssigned(true);
-                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
+                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType())) {
                     response.setIsFCLShipmentAssigned(true);
+                    response.setAssignedFCLShipment(shipments.getId());
+                }
             } else {
                 shipments.setSelectedContainerAssigned(false);
             }

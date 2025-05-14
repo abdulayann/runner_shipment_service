@@ -33,14 +33,16 @@ public class ShipmentPacksUnAssignContainerTrayDto {
         private BigDecimal volume;
         private String volumeUnit;
         private List<ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages> packsList;
-        private boolean selectedContainerAssigned;
         private String shipmentType;
+        private Long containerAssignedToShipmentCargo;
 
         @Data
         @Builder
         @AllArgsConstructor
         @NoArgsConstructor
         public static class Packages {
+            private Long id;
+            private UUID guid;
             private String commodity;
             private BigDecimal netWeight;
             private String netWeightUnit;
