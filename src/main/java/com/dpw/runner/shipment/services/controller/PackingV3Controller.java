@@ -134,19 +134,19 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @DeleteMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<PackingV3Request> request) {
+    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.deleteBulk(request, Constants.SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @DeleteMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulkFromConsolidation(@RequestBody List<PackingV3Request> request) {
+    public ResponseEntity<IRunnerResponse> deleteBulkFromConsolidation(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.deleteBulk(request, Constants.CONSOLIDATION));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_DELETE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @DeleteMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulkFromCustomerBooking(@RequestBody List<PackingV3Request> request) {
+    public ResponseEntity<IRunnerResponse> deleteBulkFromCustomerBooking(@RequestBody List<PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.deleteBulk(request, Constants.BOOKING));
     }
 

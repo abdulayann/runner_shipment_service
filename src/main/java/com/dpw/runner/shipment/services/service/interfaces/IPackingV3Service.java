@@ -24,7 +24,7 @@ public interface IPackingV3Service {
 
     BulkPackingResponse updateBulk(List<PackingV3Request> request, String module) throws RunnerException;
 
-    BulkPackingResponse deleteBulk(List<PackingV3Request> request, String module);
+    BulkPackingResponse deleteBulk(List<PackingV3Request> request, String module) throws RunnerException;
 
     void downloadPacking(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException;
 

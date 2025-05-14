@@ -77,5 +77,7 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     default PackingAssignmentProjection getPackingAssignmentCountByShipmentWithoutTenantFilter(@Param("shipmentId") Long shipmentId){
         return getPackingAssignmentCountByShipment(shipmentId);
     }
+
+    List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
 }
 

@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -11,6 +13,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -34,6 +37,9 @@ public class PackingValidationV3Util {
 
     @Autowired
     private ICustomerBookingService customerBookingService;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     public void validateUpdateBulkRequest(List<PackingV3Request> requests, List<Packing> existingPackings) {
         List<Long> incomingIds = requests.stream()
@@ -72,17 +78,18 @@ public class PackingValidationV3Util {
         }
     }
 
-    public void validateModule(PackingV3Request packingRequest, String module) {
+    public Object validateModule(PackingV3Request packingRequest, String module) {
         if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
-            validateShipment(packingRequest);
+            return validateShipment(packingRequest);
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
-            validateConsolidation(packingRequest);
+            return validateConsolidation(packingRequest);
         } else if (Constants.BOOKING.equalsIgnoreCase(module)) {
-            validateBooking(packingRequest);
+            return validateBooking(packingRequest);
         }
+        return null;
     }
 
-    private void validateBooking(PackingV3Request packingRequest) {
+    private CustomerBooking validateBooking(PackingV3Request packingRequest) {
         if (packingRequest.getBookingId() == null || packingRequest.getBookingId() <= 0) {
             throw new ValidationException("Booking id is empty");
         }
@@ -90,9 +97,10 @@ public class PackingValidationV3Util {
         if (customerBooking.isEmpty()) {
             throw new ValidationException("Please provide the valid booking id");
         }
+        return customerBooking.get();
     }
 
-    private void validateConsolidation(PackingV3Request packingRequest) {
+    private ConsolidationDetails validateConsolidation(PackingV3Request packingRequest) {
         if (packingRequest.getConsolidationId() == null || packingRequest.getConsolidationId() <= 0) {
             throw new ValidationException("Consolidation id is empty");
         }
@@ -100,9 +108,10 @@ public class PackingValidationV3Util {
         if (consolidationDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid consolidation id");
         }
+        return consolidationDetails.get();
     }
 
-    private void validateShipment(PackingV3Request packingRequest) {
+    private ShipmentDetails validateShipment(PackingV3Request packingRequest) {
         if (packingRequest.getShipmentId() == null || packingRequest.getShipmentId() <= 0) {
             throw new ValidationException("Shipment id is empty");
         }
@@ -110,6 +119,7 @@ public class PackingValidationV3Util {
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
         }
+        return shipmentDetails.get();
     }
 
     public void validateSameParentId(List<PackingV3Request> requestList, String moduleType) {
@@ -141,6 +151,24 @@ public class PackingValidationV3Util {
             } else if (!expectedId.equals(currentId)) {
                 throw new IllegalArgumentException("All packing requests must have the same " + fieldName + ".");
             }
+        }
+    }
+
+    public void validateShipmentGateInDate(ShipmentDetails shipmentDetails) throws RunnerException {
+        if(shipmentDetails.getShipmentGateInDate() != null) {
+            ConsolidationDetails consolidationDetails = null;
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+            if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
+                Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
+                Optional<ConsolidationDetails> consolidationOptional = consolidationService.findById(consolidationId);
+                if (consolidationOptional.isPresent())
+                    consolidationDetails = consolidationOptional.get();
+            }
+            if(consolidationDetails != null && consolidationDetails.getCfsCutOffDate() != null && shipmentDetails.getShipmentGateInDate().isAfter(consolidationDetails.getCfsCutOffDate())) {
+                    throw new RunnerException("Shipment Gate In date should not be greater than the CFS Cut Off Date entered at the consolidation level.");
+            }
+            else if(shipmentDetails.getCarrierDetails().getEtd() != null && shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getCarrierDetails().getEtd()))
+                throw new RunnerException("Shipment Gate In Date cannot be greater than ETD.");
         }
     }
 }

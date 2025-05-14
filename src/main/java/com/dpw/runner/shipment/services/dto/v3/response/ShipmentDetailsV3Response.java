@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -106,7 +107,7 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private PartiesResponse client;
     private PartiesResponse consigner;
     private PartiesResponse consignee;
-    private AdditionalDetailResponse additionalDetails;
+    private AdditionalDetailV3Response additionalDetails;
     private CarrierDetailResponse carrierDetails;
     private PickupDeliveryDetailsResponse pickupDetails;
     private PickupDeliveryDetailsResponse deliveryDetails;
@@ -234,8 +235,10 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
     private LocalDateTime brokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime terminalCutoff;

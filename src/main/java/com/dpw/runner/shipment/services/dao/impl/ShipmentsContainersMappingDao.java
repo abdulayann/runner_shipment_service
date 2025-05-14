@@ -117,7 +117,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 shipIds.remove(shipmentsContainersMappings.getShipmentId());
             }
         }
-        if (!shipIds.isEmpty()) {
+        if (shipIds!= null && !shipIds.isEmpty()) {
             for (Long id : shipIds) {
                 ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
                 entity.setShipmentId(id);

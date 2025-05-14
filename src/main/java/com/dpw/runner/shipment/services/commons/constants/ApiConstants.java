@@ -185,6 +185,8 @@ public class ApiConstants {
 
     public static final String API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY = "/get/shipments/assignContainerTray";
 
+    public static final String API_GET_SHIPMENT_UN_ASSIGN_CONTAINER_TRAY = "/get/shipments/unAssignContainerTray";
+
     public static final String SHIPMENT = "/shipment";
     public static final String CONSOLIDATION = "/consolidation";
     public static final String CUSTOMER_BOOKING = "/customer-booking";

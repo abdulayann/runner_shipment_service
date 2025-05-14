@@ -166,7 +166,6 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String partner;
     private Long bookingAgent;
     private String coLoadCarrierName;
-    private Long borrowedFromId;
     private Boolean borrowed;
     private Long originBranch;
 }

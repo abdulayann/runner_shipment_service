@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
@@ -58,6 +60,7 @@ public interface IShipmentDao {
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
     Integer findReceivingByGuid(UUID guid);
     void updateCargoDetailsInShipment(Long shipmentId, Integer noOfPacks, String packsUnit, BigDecimal volume, String volumeUnit, BigDecimal weight, String weightUnit, BigDecimal volumetricWeight, String volumetricWeightUnit, BigDecimal chargable, String chargeableUnit);
+    void updateShipmentDetailsFromPacks(Long shipmentId, DateBehaviorType dateBehaviorType, LocalDateTime shipmentGateInDate, ShipmentPackStatus shipmentPackStatus);
     void setShipmentIdsToContainer(List<Long> shipmentIds, Long containerId);
 
     void updateSailingScheduleRelatedInfo(ShipmentSailingScheduleRequest request, Long shipmentId);

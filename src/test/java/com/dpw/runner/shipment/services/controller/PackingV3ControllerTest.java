@@ -15,7 +15,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -140,21 +139,21 @@ class PackingV3ControllerTest {
     }
 
     @Test
-    void deleteBulkFromShipment() {
+    void deleteBulkFromShipment() throws RunnerException {
         when(packingV3Service.deleteBulk(any(), eq("SHIPMENT"))).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.deleteBulkFromShipment(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    void deleteBulkFromConsolidation() {
+    void deleteBulkFromConsolidation() throws RunnerException {
         when(packingV3Service.deleteBulk(any(), eq("CONSOLIDATION"))).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.deleteBulkFromConsolidation(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    void deleteBulkFromCustomerBooking() {
+    void deleteBulkFromCustomerBooking() throws RunnerException {
         when(packingV3Service.deleteBulk(any(), eq("BOOKING"))).thenReturn(new BulkPackingResponse());
         var response = packingV3Controller.deleteBulkFromCustomerBooking(Collections.singletonList(new PackingV3Request()));
         assertEquals(HttpStatus.OK, response.getStatusCode());

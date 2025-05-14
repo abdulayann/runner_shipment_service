@@ -123,6 +123,10 @@ public class PackingDao implements IPackingDao {
         return packingRepository.findByShipmentId(shipmentId);
     }
 
+    public List<Packing> findByShipmentIdIn(List<Long> shipmentIds) {
+        return packingRepository.findByShipmentIdIn(shipmentIds);
+    }
+
     public Optional<Packing> findByIdWithQuery(Long id) {
         return packingRepository.findByIdWithQuery(id);
     }
