@@ -10,12 +10,14 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerV3Service {
     ContainerResponse create(ContainerV3Request containerRequest, String module);
@@ -40,6 +42,7 @@ public interface IContainerV3Service {
             Set<Long> interBranchRequestedShipIds);
 
     ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException;
+    ContainerResponse unAssignContainers(UnAssignContainerRequest request) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 }

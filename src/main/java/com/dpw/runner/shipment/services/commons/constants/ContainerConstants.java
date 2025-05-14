@@ -17,7 +17,9 @@ public class ContainerConstants {
     public static final String CONTAINER_VALIDATED = "Container Validation Completed";
     public static final String GET_CONTAINERS = "/get/containers";
     public static final String ASSIGN_CONTAINERS = "/assignContainers";
+    public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
     public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
+    public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
     public static final String CHECK_CONTAINERS_DELETE = "/delete/checkMultipleShipment";
     public static final String SUCCESS = "API Successfully implemented";

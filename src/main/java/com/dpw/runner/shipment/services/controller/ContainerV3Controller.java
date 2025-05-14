@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -29,10 +30,9 @@ import javax.validation.Valid;
 import java.util.List;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_CONTAINERS;
-import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.ASSIGN_SUCCESS;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.*;
 
 @RestController
 @RequestMapping(ContainerConstants.CONTAINER_V3_API_HANDLE)
@@ -121,6 +121,12 @@ public class ContainerV3Controller {
     @PostMapping(ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
+    @PostMapping(UN_ASSIGN_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request));
     }
 
 }

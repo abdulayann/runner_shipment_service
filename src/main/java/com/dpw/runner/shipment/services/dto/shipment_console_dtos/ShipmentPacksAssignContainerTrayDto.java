@@ -38,12 +38,15 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
         private List<Packages> packingList;
         private boolean selectedContainerAssigned;
         private String shipmentType;
+        private Long containerAssignedToShipmentCargo;
 
         @Data
         @Builder
         @AllArgsConstructor
         @NoArgsConstructor
         private static class Packages {
+            private Long id;
+            private UUID guid;
             private String commodity;
             private BigDecimal netWeight;
             private String netWeightUnit;

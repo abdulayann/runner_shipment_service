@@ -6,18 +6,22 @@ import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 @Generated @InterBranchEntity
 public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     List<Packing> findByShipmentId(Long shipmentId);
+
+    List<Packing> findByShipmentIdInAndContainerId(List<Long> shipmentIds, Long containerId);
 
     default Optional<Packing> findById(Long id) {
         Specification<Packing> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
@@ -79,5 +83,9 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     }
 
     List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
+
+    @Modifying
+    @Query("UPDATE Packing p SET p.containerId = :containerId WHERE p.id IN :packingIds")
+    void setPackingIdsToContainer(@Param("packingIds") List<Long> packingIds, @Param("containerId") Long containerId);
 }
 
