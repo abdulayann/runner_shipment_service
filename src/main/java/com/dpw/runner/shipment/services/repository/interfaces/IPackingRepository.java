@@ -69,7 +69,7 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
                 SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
                 SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
             FROM Packing p
-            WHERE p.containerId = :consolId
+            WHERE p.consolidationId = :consolId
             """)
     PackingAssignmentProjection getPackingAssignmentCountByConsolidation(@Param("consolId") Long consolId);
 
