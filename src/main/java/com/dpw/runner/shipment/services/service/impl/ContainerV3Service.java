@@ -78,6 +78,8 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
@@ -532,15 +534,20 @@ public class ContainerV3Service implements IContainerV3Service {
                 packs = packingDao.findByContainerIdInWithoutTenantFilter(containersId);
             else
                 packs = packingDao.findByContainerIdIn(containersId);
-
+            AtomicLong assignedContainerCount = new AtomicLong(0L);
+            AtomicLong unassignedContainerCount = new AtomicLong(0L);
             Set<Long> uniqueContainers = packs.stream().map(Packing::getContainerId).collect(Collectors.toSet());
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
                 if (uniqueContainers.contains(containerBaseResponse.getId())) {
                     containerBaseResponse.setAssignedContainer(Constants.YES);
+                    assignedContainerCount.getAndIncrement();
                 } else {
                     containerBaseResponse.setAssignedContainer(Constants.NO);
+                    unassignedContainerCount.getAndIncrement();
                 }
             });
+            containerListResponse.setAssignedContainerCount(assignedContainerCount.get());
+            containerListResponse.setUnassignedContainerCount(unassignedContainerCount.get());
         }
     }
 
@@ -826,12 +833,14 @@ public class ContainerV3Service implements IContainerV3Service {
             }
 
            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+            Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
             ContainerListResponse containerListResponse = ContainerListResponse.builder()
                 .containers(responseList)
                 .numberOfRecords(containersPage.getTotalElements())
                 .totalPages(containersPage.getTotalPages())
+                .masterData(masterDataResponse)
                 .build();
-           this.getMasterDataForList(containerListResponse, getMasterData);
+
            setAssignedContainer(containerListResponse, xSource);
            return containerListResponse;
         } catch (Exception e) {
@@ -841,19 +850,21 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void getMasterDataForList(ContainerListResponse containerListResponse, boolean getMasterData) {
+    private Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(containerListResponse)), executorServiceMasterData);
-                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(containerListResponse)), executorServiceMasterData);
-                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(containerListResponse)), executorServiceMasterData);
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(responseList, masterDataResponse)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONTAINER_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
             } catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONTAINER_LIST, ex.getLocalizedMessage());
             }
         }
+        return masterDataResponse;
     }
 
     private void handlePostSaveActions(Containers container, ContainerV3Request request, String module) {
