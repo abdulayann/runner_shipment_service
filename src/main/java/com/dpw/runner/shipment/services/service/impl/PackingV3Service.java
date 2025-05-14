@@ -1,10 +1,17 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -16,16 +23,20 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationV3Request;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
@@ -46,6 +57,7 @@ import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -77,8 +89,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 
 
 @Service
@@ -538,6 +548,280 @@ public class PackingV3Service implements IPackingV3Service {
 
         return packingListResponse;
     }
+
+    @Override
+    public PackingListResponse fetchConsolidationPackages(CommonRequestModel commonRequestModel, String xSource) {
+
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (StringUtility.isEmpty(request.getEntityId()) || Long.parseLong(request.getEntityId()) <= 0) {
+            throw new ValidationException("Entity id is empty");
+        }
+        PackingListResponse packingListResponse = list(commonRequestModel, true, xSource);
+        log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+
+        List<PackingResponse> packings = packingListResponse.getPackings();
+        PackSummaryV3Response packSummaryV3Response = calculatePackSummary(packings, packings.get(0).getTransportMode());
+
+        PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByConsolidation(Long.valueOf(request.getEntityId()));
+        packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
+        packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
+        packingListResponse.setPackSummary(packSummaryV3Response);
+        return packingListResponse;
+
+    }
+
+    @Override
+    public PackSummaryV3Response calculatePackSummary(List<PackingResponse> packingList, String transportMode) {
+        try {
+            PackSummaryV3Response response = new PackSummaryV3Response();
+
+            // Initialize totals
+            double totalWeight = 0;
+            double totalVolume = 0;
+            double volumetricWeight;
+            double chargeableWeight;
+
+            // Initialize pack tracking
+            int totalPacks = 0;
+            int dgPacks = 0;
+            int totalInnerPacks = 0;
+            StringBuilder packsCount = new StringBuilder();
+            String packsUnit = null;
+            String innerPacksUnit = null;
+            Map<String, Long> unitCountMap = new HashMap<>();
+
+            // Determine units from settings
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
+
+            String toWeightUnit = !isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()) ?
+                    shipmentSettingsDetails.getWeightChargeableUnit() : Constants.WEIGHT_UNIT_KG;
+
+            String toVolumeUnit = !isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()) ?
+                    shipmentSettingsDetails.getVolumeChargeableUnit() : Constants.VOLUME_UNIT_M3;
+
+            // Loop over each packing entry
+            if (packingList != null) {
+                for (PackingResponse packing : packingList) {
+                    double convertedWeight = convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), toWeightUnit).doubleValue();
+                    double convertedVolume = convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), toVolumeUnit).doubleValue();
+
+                    totalWeight += convertedWeight;
+                    totalVolume += convertedVolume;
+
+                    packsUnit = getPacksUnit(packing, packsUnit, unitCountMap);
+                    if (!isStringNullOrEmpty(packing.getPacks())) {
+                        int packs = Integer.parseInt(packing.getPacks());
+                        totalPacks += packs;
+                        dgPacks = getDgPacks(packing, unitCountMap, packs, dgPacks);
+                    }
+
+                    totalInnerPacks = getTotalInnerPacks(packing, totalInnerPacks);
+                    innerPacksUnit = getInnerPacksUnit(packing, innerPacksUnit);
+                }
+            }
+
+            // Convert total volume and weight to standard units for further calculations
+            double totalVolumeInM3 = convertUnit(Constants.VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+            double totalWeightInKG = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+
+            // Calculate volumetric and chargeable weight
+            if (Constants.TRANSPORT_MODE_SEA.equals(transportMode)) {
+                volumetricWeight = totalWeightInKG / 1000;
+                chargeableWeight = Math.max(volumetricWeight, totalVolumeInM3);
+            } else {
+                double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
+                if (Constants.TRANSPORT_MODE_ROA.equals(transportMode)) {
+                    factor = Constants.ROAD_FACTOR_FOR_VOL_WT;
+                }
+                volumetricWeight = totalVolumeInM3 * factor;
+                chargeableWeight = Math.max(volumetricWeight, totalWeightInKG);
+            }
+
+            // Prepare packs count string
+            List<String> sortedUnits = new ArrayList<>(unitCountMap.keySet());
+            Collections.sort(sortedUnits);
+            updatePacksCount(sortedUnits, unitCountMap, packsCount, tenantSettings);
+
+            // Fill response
+            response.setDgPacks(dgPacks);
+            response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null ? packsUnit : ""));
+            response.setTotalPacks(packsCount.toString());
+            response.setTotalPacksWeight(
+                    String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), tenantSettings), toWeightUnit));
+            response.setTotalPacksVolume(
+                    String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), tenantSettings), toVolumeUnit));
+            response.setPacksVolume(BigDecimal.valueOf(totalVolume));
+            response.setPacksVolumeUnit(toVolumeUnit);
+            response.setAchievedWeight(BigDecimal.valueOf(totalWeight));
+            response.setAchievedVolume(BigDecimal.valueOf(totalVolume));
+            response.setWeightUnit(toWeightUnit);
+            response.setVolumeUnit(toVolumeUnit);
+
+            // Set volumetric and chargeable weights
+            setPacksVolumetricWeightInResponse(transportMode, response, volumetricWeight, tenantSettings);
+            setChargeableWeightAndUnit(transportMode, chargeableWeight, totalVolume, toVolumeUnit, totalWeight, toWeightUnit, response, tenantSettings);
+
+            return response;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    private void setChargeableWeightAndUnit(String transportMode, double chargeableWeight, double totalVolume, String toVolumeUnit,
+            double totalWeight, String toWeightUnit, PackSummaryResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) throws RunnerException {
+
+        // Default unit for chargeable weight is kg, unless overridden by transport mode logic
+        String packChargeableWeightUnit = Constants.WEIGHT_UNIT_KG;
+
+        // Identify transport mode for conditional logic
+        boolean isAir = Constants.TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isSea = Constants.TRANSPORT_MODE_SEA.equals(transportMode);
+
+        // For air shipments, chargeable weight is usually rounded to match standard billing practices (e.g., nearest 0.5kg or 1kg)
+        if (isAir) {
+            chargeableWeight = roundOffAirShipment(chargeableWeight);
+        }
+
+        // Sea freight uses different chargeable weight logic — based on actual volume in cubic meters vs weight in tons
+        if (isSea) {
+            // Convert total volume to cubic meters for comparison
+            double volInM3 = convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+
+            // Convert total weight to kilograms, then derive tonnage (assumes 1 ton = 100 kg for this billing logic)
+            double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+
+            // Chargeable weight for sea is the greater of volume (in m³) vs weight in tons (derived by dividing kg by 100)
+            chargeableWeight = Math.max(wtInKg / 100, volInM3);
+
+            // Unit is now volume-based (m³) instead of weight-based
+            packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
+        }
+
+        // Round the final chargeable weight to 2 decimal places to align with currency/precision expectations
+        chargeableWeight = BigDecimal.valueOf(chargeableWeight)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
+
+        // Format and set the user-facing field that includes the chargeable weight and its corresponding unit
+        response.setPacksChargeableWeight(
+                String.format(Constants.STRING_FORMAT,
+                        IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse),
+                        packChargeableWeightUnit));
+
+        // Also set raw values to be used for any further internal computation or API responses
+        response.setChargeableWeight(BigDecimal.valueOf(chargeableWeight));
+        response.setPacksChargeableWeightUnit(packChargeableWeightUnit);
+    }
+
+    private void setPacksVolumetricWeightInResponse(String transportMode, PackSummaryResponse response,
+            double volumetricWeight, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        // Sea freight typically treats volumetric weight as volume (in m³), not mass — this aligns with sea freight billing logic
+        if (Objects.equals(transportMode, TRANSPORT_MODE_SEA)) {
+            response.setPacksVolumetricWeight(
+                    String.format(Constants.STRING_FORMAT,
+                            IReport.convertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse),
+                            VOLUME_UNIT_M3));
+        } else {
+            // For air, road, and other modes, volumetric weight is represented as mass (usually in kg)
+            response.setPacksVolumetricWeight(
+                    String.format(Constants.STRING_FORMAT,
+                            IReport.convertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse),
+                            WEIGHT_UNIT_KG));
+        }
+    }
+
+    private void updatePacksCount(List<String> sortedKeys,
+            Map<String, Long> packTypeToCountMap,
+            StringBuilder packsCountBuilder,
+            V1TenantSettingsResponse tenantSettings) {
+
+        List<String> formattedPackCounts = new ArrayList<>();
+
+        for (String packType : sortedKeys) {
+            Long count = packTypeToCountMap.getOrDefault(packType, 0L);
+
+            // Format the count according to tenant-specific rules (locale, grouping, etc.)
+            String formattedCount = IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(count), 0, tenantSettings);
+
+            // Combine formatted count and pack type (e.g., "10 CTN", "2 PALLET")
+            formattedPackCounts.add(formattedCount + " " + packType);
+        }
+
+        // Join all formatted entries using comma separator for a clean, human-readable output
+        packsCountBuilder.append(String.join(", ", formattedPackCounts));
+    }
+
+    private String getInnerPacksUnit(PackingResponse packing, String currentInnerPacksUnit) {
+        String packageType = packing.getInnerPackageType();
+
+        // Proceed only if the package type is present
+        if (!isStringNullOrEmpty(packageType)) {
+
+            // If no unit has been set yet, assign the first non-null unit
+            if (currentInnerPacksUnit == null) {
+                currentInnerPacksUnit = packageType;
+            }
+            // If a different unit is found later, switch to generic 'MPK' (Mixed Pack)
+            else if (!currentInnerPacksUnit.equals(packageType)) {
+                currentInnerPacksUnit = MPK;
+            }
+        }
+
+        return currentInnerPacksUnit;
+    }
+
+    private int getTotalInnerPacks(PackingResponse packing, int totalInnerPacks) {
+        // Check if inner package number is available and non-empty before processing
+        if (!isStringNullOrEmpty(packing.getInnerPackageNumber())) {
+            try {
+                // Parse the inner package number and add to the running total
+                int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
+                totalInnerPacks += innerPacks;
+            } catch (NumberFormatException e) {
+                log.error("Error in getTotalInnerPacks to convert {} to integer for pack:{}", packing.getInnerPackageNumber(), packing.getId());
+            }
+        }
+        return totalInnerPacks;
+    }
+
+
+    private int getDgPacks(PackingResponse packing, Map<String, Long> map, int packs, int dgPacks) {
+        // If packing type is not empty, accumulate the pack count per type
+        if (!isStringNullOrEmpty(packing.getPacksType())) {
+            map.put(packing.getPacksType(), map.getOrDefault(packing.getPacksType(), 0L) + packs);
+        }
+
+        // If the packing is hazardous, increment the dangerous goods (DG) packs
+        if (Boolean.TRUE.equals(packing.getHazardous())) {
+            dgPacks += packs;
+        }
+        return dgPacks;
+    }
+
+    private String getPacksUnit(PackingResponse packing, String packsUnit, Map<String, Long> map) {
+        // If the pack type is not empty, update the packs unit and initialize map entry if absent
+        if (!isStringNullOrEmpty(packing.getPacksType())) {
+            // Call to determine packs unit based on packing type
+            packsUnit = getPacksUnit(packing, packsUnit);
+
+            // If this packing type is not already in the map, initialize its count to 0
+            map.putIfAbsent(packing.getPacksType(), 0L);
+        }
+        return packsUnit;
+    }
+
+    private String getPacksUnit(PackingResponse packing, String packsUnit) {
+        // If packsUnit is null, initialize it with the packing type
+        if (packsUnit == null) {
+            packsUnit = packing.getPacksType();
+        } else if (!packsUnit.equals(packing.getPacksType())) {
+            // If the pack unit differs from the current one, default to "MPK"
+            packsUnit = MPK;
+        }
+        return packsUnit;
+    }
+
 
     @Override
     public Map<String, Object> getAllMasterData(Long id, String source) {

@@ -191,6 +191,7 @@ public class ApiConstants {
     public static final String CONSOLIDATION = "/consolidation";
     public static final String CUSTOMER_BOOKING = "/customer-booking";
     public static final String SHIPMENT_PACKINGS = "/shipment-packings";
+    public static final String CONSOLIDATION_PACKINGS = "/consolidation-packings";
 
 
 }
