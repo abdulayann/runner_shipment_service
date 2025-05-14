@@ -6,15 +6,14 @@ import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 @Generated @InterBranchEntity
 public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
@@ -64,6 +63,15 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     WHERE p.shipmentId = :shipmentId
     """)
     PackingAssignmentProjection getPackingAssignmentCountByShipment(@Param("shipmentId") Long shipmentId);
+
+    @Query("""
+            SELECT
+                SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
+                SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
+            FROM Packing p
+            WHERE p.containerId = :consolId
+            """)
+    PackingAssignmentProjection getPackingAssignmentCountByConsolidation(@Param("consolId") Long consolId);
 
     @ExcludeTenantFilter
     default PackingAssignmentProjection getPackingAssignmentCountByShipmentWithoutTenantFilter(@Param("shipmentId") Long shipmentId){

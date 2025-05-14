@@ -20,6 +20,9 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.List;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -28,14 +31,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestHeader;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
-import java.util.List;
 
 @RestController
 @RequestMapping(PackingConstants.PACKING_V3_API_HANDLE)
@@ -163,11 +162,20 @@ public class PackingV3Controller {
                                                         @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid, xSource));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
     @PostMapping(ApiConstants.SHIPMENT_PACKINGS)
     public ResponseEntity<IRunnerResponse> fetchShipmentPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                  @RequestHeader(value = "x-source", required = false) String xSource) {
         PackingListResponse packingListResponse = packingV3Service.fetchShipmentPackages(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
+    @PostMapping(ApiConstants.CONSOLIDATION_PACKINGS)
+    public ResponseEntity<IRunnerResponse> fetchConsolidationPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
+            @RequestHeader(value = "x-source", required = false) String xSource) {
+        PackingListResponse packingListResponse = packingV3Service.fetchConsolidationPackages(CommonRequestModel.buildRequest(listCommonRequest), xSource);
         return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
     }
 

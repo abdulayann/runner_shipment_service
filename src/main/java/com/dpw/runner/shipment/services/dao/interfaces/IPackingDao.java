@@ -4,11 +4,14 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
-import java.util.*;
 
 public interface IPackingDao {
     Packing save(Packing packing);
@@ -65,4 +68,6 @@ public interface IPackingDao {
     Optional<Packing> findByGuidWithQuery(UUID guid);
 
     Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable);
+
+    PackingAssignmentProjection getPackingAssignmentCountByConsolidation(Long consolId);
 }

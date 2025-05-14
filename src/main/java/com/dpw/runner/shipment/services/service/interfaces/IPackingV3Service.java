@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
@@ -37,6 +38,10 @@ public interface IPackingV3Service {
     void removeContainersFromPacking(List<Long> containerIds);
 
     PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel, String xSource);
+
+    PackingListResponse fetchConsolidationPackages(CommonRequestModel commonRequestModel, String xSource);
+
+    PackSummaryV3Response calculatePackSummary(List<PackingResponse> packingList, String transportMode);
 
     Map<String, Object> getAllMasterData(Long id, String xSource);
 
