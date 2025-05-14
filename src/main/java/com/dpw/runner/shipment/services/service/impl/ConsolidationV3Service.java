@@ -274,7 +274,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private IEventsV3Service eventV3Service;
 
     @Autowired
-    @Lazy
     private IShipmentServiceV3 shipmentV3Service;
 
     @Autowired
