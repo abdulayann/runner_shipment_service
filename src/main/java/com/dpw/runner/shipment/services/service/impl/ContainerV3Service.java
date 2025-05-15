@@ -407,8 +407,8 @@ public class ContainerV3Service implements IContainerV3Service {
     private List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
         if (containerRequest.getConsolidationId() != null) {
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
-        } else if (containerRequest.getShipmentsIds() != null && containerRequest.getShipmentsIds().size() == 1) {
-            Long shipmentId = containerRequest.getShipmentsIds().iterator().next();
+        } else if (containerRequest.getShipmentsId() != null) {
+            Long shipmentId = containerRequest.getShipmentsId();
             return containerDao.findByShipmentId(shipmentId);
         } else if (containerRequest.getBookingId() != null) {
             return containerDao.findByBookingIdIn(List.of(containerRequest.getBookingId()));
@@ -858,7 +858,7 @@ public class ContainerV3Service implements IContainerV3Service {
         Optional.of(module)
             .filter(SHIPMENT::equals)
             .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
-                container.getId(), request.getShipmentsIds(), false
+                container.getId(), Set.of(request.getShipmentsId()), false
             ));
 
 

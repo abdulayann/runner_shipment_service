@@ -162,6 +162,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList);
         } else if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
             //updates routings to attached shipments
+            updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList);
             Long consolidationId = mainCarriageList.get(0).getConsolidationId();
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
@@ -256,6 +257,14 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
         updateCarrierDetails(shipmentDetails.getCarrierDetails(), mainCarriageRoutings);
         carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
+    }
+
+    private void updateConsolidationCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
+        Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationV3Service.findById(mainCarriageRoutings.get(0).getConsolidationId());
+        if(consolidationDetailsOptional.isEmpty()) return;
+        ConsolidationDetails consolidationDetails = consolidationDetailsOptional.get();
+        updateCarrierDetails(consolidationDetails.getCarrierDetails(), mainCarriageRoutings);
+        carrierDetailsDao.update(consolidationDetails.getCarrierDetails());
     }
 
     /**
