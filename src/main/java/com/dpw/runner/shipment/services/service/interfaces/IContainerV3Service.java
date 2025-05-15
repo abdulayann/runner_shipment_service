@@ -10,12 +10,14 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerV3Service {
     ContainerResponse create(ContainerV3Request containerRequest, String module);
@@ -28,7 +30,8 @@ public interface IContainerV3Service {
 
     List<Containers> findByIdIn(List<Long> containerIds);
 
-    ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
+    ContainerListResponse fetchShipmentContainers(ListCommonRequest commonRequestModel, String xSource) throws RunnerException;
+    ContainerListResponse fetchConsolidationContainers(ListCommonRequest listCommonRequest, String xSource) throws RunnerException;
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
     ContainerListResponse list(ListCommonRequest listCommonRequest, boolean isMasterData, String xSource) throws RunnerException;
@@ -40,6 +43,7 @@ public interface IContainerV3Service {
             Set<Long> interBranchRequestedShipIds);
 
     ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException;
+    ContainerResponse unAssignContainers(UnAssignContainerRequest request) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 }

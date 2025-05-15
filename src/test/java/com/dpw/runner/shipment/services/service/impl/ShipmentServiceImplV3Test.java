@@ -195,7 +195,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         shipmentServiceImplV3.executorService = Executors.newFixedThreadPool(2);
-        shipmentDetails = new ShipmentDetails();
+        shipmentDetails = jsonTestUtility.getTestShipment();
         consolidationDetails = new ConsolidationDetails();
         testShipment = jsonTestUtility.getTestShipment();
         testConsol = jsonTestUtility.getJson("MAWB_CONSOLIDATION", ConsolidationDetails.class);
@@ -303,8 +303,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void testGetShipmentAndPacksForConsolidationAssignContainerTray() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).build();
+        shipmentDetails.setId(4L);
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).packsList(new ArrayList<>()).build();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments));
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(new ArrayList<>());
         ShipmentPacksAssignContainerTrayDto response =
@@ -314,13 +316,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void testGetShipmentAndPacksForConsolidationAssignContainerTrayAssignedFCL() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        shipmentDetails.setId(4L);
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
         ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(4L)
                 .shipmentType(Constants.CARGO_TYPE_FCL)
+                .packsList(new ArrayList<>())
                 .build();
         ShipmentPacksAssignContainerTrayDto.Shipments shipments1 = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(5L)
+                .packsList(new ArrayList<>())
                 .build();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
@@ -331,12 +337,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void testGetShipmentAndPacksForConsolidationAssignContainerTrayAssigned() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
         ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(4L)
+                .packsList(new ArrayList<>())
                 .build();
         ShipmentPacksAssignContainerTrayDto.Shipments shipments1 = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(5L)
+                .packsList(new ArrayList<>())
                 .build();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
@@ -939,6 +948,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         request.setRoutings(List.of(routing));
 
         shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setId(1L);
 
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(routingsV3Service.updateBulk(any(), eq(SHIPMENT))).thenReturn(new BulkRoutingResponse());
@@ -958,6 +968,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ShipmentDetails details = new ShipmentDetails();
         details.setTransportMode("AIR");
+        details.setId(1L);
+        details.setCarrierDetails(new CarrierDetails());
 
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
         when(routingsV3Service.updateBulk(any(), eq(SHIPMENT))).thenReturn(new BulkRoutingResponse());

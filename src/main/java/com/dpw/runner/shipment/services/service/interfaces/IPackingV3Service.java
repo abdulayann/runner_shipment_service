@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -30,16 +31,16 @@ public interface IPackingV3Service {
 
     PackingResponse retrieveById(Long id, String guid, String xSource);
 
-    PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData, String xSource);
+    PackingListResponse list(ListCommonRequest listCommonRequest, boolean getMasterData, String xSource);
 
 
     List<PackingResponse> fetchPacksAttachedToContainers(List<Long> containerIds);
 
     void removeContainersFromPacking(List<Long> containerIds);
 
-    PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel, String xSource);
+    PackingListResponse fetchShipmentPackages(ListCommonRequest commonRequestModel, String xSource);
 
-    PackingListResponse fetchConsolidationPackages(CommonRequestModel commonRequestModel, String xSource);
+    PackingListResponse fetchConsolidationPackages(ListCommonRequest commonRequestModel, String xSource);
 
     PackSummaryV3Response calculatePackSummary(List<PackingResponse> packingList, String transportMode);
 

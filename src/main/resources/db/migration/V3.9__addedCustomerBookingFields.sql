@@ -11,6 +11,8 @@ ALTER TABLE IF EXISTS customer_booking
     ADD COLUMN IF NOT EXISTS delivery_at_destination_type varchar(64),
     ADD COLUMN IF NOT EXISTS brokerage_at_origin_type varchar(64),
     ADD COLUMN IF NOT EXISTS brokerage_at_destination_type varchar(64),
+    ADD COLUMN IF NOT EXISTS pickup_at_origin_date timestamp,
+    ADD COLUMN IF NOT EXISTS delivery_at_destination_date timestamp,
     ADD COLUMN IF NOT EXISTS pickup_at_origin bigint,
     ADD COLUMN IF NOT EXISTS delivery_at_destination bigint,
     ADD COLUMN IF NOT EXISTS brokerage_at_origin bigint,

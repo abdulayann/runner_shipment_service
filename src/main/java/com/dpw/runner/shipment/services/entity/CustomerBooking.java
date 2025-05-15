@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
@@ -322,6 +323,12 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "brokerage_at_destination_type")
     private String brokerageAtDestinationType;
 
+    @Column(name = "pickup_at_origin_date")
+    private LocalDateTime pickupAtOriginDate;
+
+    @Column(name = "delivery_at_destination_date")
+    private LocalDateTime deliveryAtDestinationDate;
+
     @Column(name = "pickup_at_origin")
     private Long pickupAtOrigin;
 
@@ -371,13 +378,13 @@ public class CustomerBooking extends MultiTenancy {
     private BigDecimal teuCount;
 
     @Column(name = "containers")
-    private long containers;
+    private Long containers;
 
     @Column(name = "package_type")
     private String packageType;
 
     @Column(name = "packages")
-    private long packages;
+    private Long packages;
 
     @Column(name = "description")
     private String description;

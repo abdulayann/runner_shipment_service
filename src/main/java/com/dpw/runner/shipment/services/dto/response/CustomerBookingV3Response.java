@@ -118,6 +118,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
+    private LocalDateTime pickupAtOriginDate;
+    private LocalDateTime deliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;

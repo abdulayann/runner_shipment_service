@@ -27,5 +27,6 @@ public interface IShipmentsContainersMappingDao {
     void updateShipmentsMappings(Long containerId, List<Long> shipIds);
     ShipmentsContainersMapping save(ShipmentsContainersMapping shipmentsContainersMapping);
     List<ShipmentsContainersMapping> saveAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList);
+    void deleteAll(List<ShipmentsContainersMapping> shipmentsContainersMappingList);
 
 }

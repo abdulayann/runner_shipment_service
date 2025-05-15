@@ -20,10 +20,9 @@ import java.util.List;
 @AllArgsConstructor
 public class ContainerListResponse implements IRunnerResponse {
     private List<ContainerBaseResponse> containers;
-    private Map<String, String> unlocationData;
-    private Map<String, String> masterData;
-    private Map<String, String> commodityTypeData;
-    private Map<String, String> containerCodeData;
+    private Map<String, Object> masterData;
+    private Long assignedContainerCount = 0L;
+    private Long unassignedContainerCount = 0L;
     @JsonIgnore
     private Integer totalPages;
     @JsonIgnore
