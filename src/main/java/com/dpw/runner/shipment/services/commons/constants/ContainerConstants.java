@@ -34,5 +34,6 @@ public class ContainerConstants {
     public static final String HAZ = "HAZ";
     public static final String ERROR_SYNCING_CONTAINERS = "Error syncing containers";
     public static final String SHIPMENT_CONTAINERS = "/shipment-containers";
+    public static final String CONSOLIDATION_CONTAINERS = "/consolidation-containers";
 
 }

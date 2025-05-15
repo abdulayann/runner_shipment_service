@@ -35,7 +35,7 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
         private String netWeightUnit;
         private BigDecimal volume;
         private String volumeUnit;
-        private List<Packages> packingList;
+        private List<Packages> packsList;
         private boolean selectedContainerAssigned;
         private String shipmentType;
         private Long containerAssignedToShipmentCargo;
@@ -44,7 +44,7 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
         @Builder
         @AllArgsConstructor
         @NoArgsConstructor
-        private static class Packages {
+        public static class Packages {
             private Long id;
             private UUID guid;
             private String commodity;

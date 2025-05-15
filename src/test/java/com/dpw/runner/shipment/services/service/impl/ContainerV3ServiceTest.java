@@ -198,10 +198,10 @@ class ContainerV3ServiceTest extends CommonMocks {
             argument.run();
             return mockRunnable;
         });
-        doNothing().when(shipmentsContainersMappingDao)
-            .assignShipments(any(), any(), eq(false));
+//        doNothing().when(shipmentsContainersMappingDao)
+//            .assignShipments(any(), any(), eq(false));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
-        ContainerResponse response = containerV3Service.create(containerV3Request, "SHIPMENT");
+        ContainerResponse response = containerV3Service.create(containerV3Request, "CONSOLIDATION");
         assertNotNull(response);
     }
 

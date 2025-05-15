@@ -204,7 +204,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
     @GetMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
     public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody ListCommonRequest listCommonRequest) {
-        PackingListResponse packingListResponse = packingV3Service.list(CommonRequestModel.buildRequest(listCommonRequest), true, null);
+        PackingListResponse packingListResponse = packingV3Service.list(listCommonRequest, true, null);
         return ResponseHelper.buildSuccessResponse(packingListResponse);
     }
 

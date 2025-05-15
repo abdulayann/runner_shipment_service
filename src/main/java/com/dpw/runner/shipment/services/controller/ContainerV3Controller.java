@@ -98,11 +98,20 @@ public class ContainerV3Controller {
                                                                      @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.calculateContainerSummary(shipmentId, consolidationId, xSource));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS)
     public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                    @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
-        ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(listCommonRequest, xSource);
+        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> fetchConsolidationContainers(@RequestBody @Valid ListCommonRequest listCommonRequest,
+        @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainers(listCommonRequest, xSource);
         return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
