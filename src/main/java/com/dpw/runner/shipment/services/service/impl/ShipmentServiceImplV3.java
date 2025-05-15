@@ -1437,14 +1437,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         //Long shipmentId = request.getRoutings().stream().findFirst().get().getShipmentId();
         Optional<ShipmentDetails> shipmentDetailsEntity = shipmentDao.findById(shipmentId);
         ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
-        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
-            shipmentDao.updateSailingScheduleRelatedInfo(request, shipmentId);
-
-        } else if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
-            shipmentDao.updateSailingScheduleRelatedInfoForAir(request, shipmentId);
-        }
+        updateCutoffDetailsToShipment(request, shipmentDetails);
+        shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+        shipmentDao.update(shipmentDetails, false);
         ShipmentSailingScheduleResponse response = new ShipmentSailingScheduleResponse();
         return response;
+    }
+
+    @Override
+    public void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails) {
+        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+            shipmentDao.updateSailingScheduleRelatedInfo(request, shipmentDetails.getId());
+
+        } else if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+            shipmentDao.updateSailingScheduleRelatedInfoForAir(request, shipmentDetails.getId());
+        }
     }
 
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {

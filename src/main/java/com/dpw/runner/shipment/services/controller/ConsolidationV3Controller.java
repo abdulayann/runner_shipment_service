@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsRespons
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -150,5 +152,10 @@ public class ConsolidationV3Controller {
         ConsolidationListV3Response consolidationListV3Response =   consolidationV3Service.getAutoAttachConsolidationDetails(CommonRequestModel.buildRequest(request));
         return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
                 consolidationListV3Response.getNumberOfRecords());
+    }
+    @PostMapping(ApiConstants.UPDATE_SAILING_SCHEDULE)
+    public ResponseEntity<IRunnerResponse> updateSailingScheduleDataToConsole(@RequestBody @Valid ConsolidationSailingScheduleRequest request) throws RunnerException {
+        log.info("Received updateSailingSchedule request: {}", request);
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.updateSailingScheduleDataToConsole(request));
     }
 }

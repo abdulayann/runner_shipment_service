@@ -483,15 +483,11 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel, String xSource) throws RunnerException {
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        ContainerListResponse containerListResponse = list(request, true, xSource);
-
+    public ContainerListResponse fetchShipmentContainers(ListCommonRequest listCommonRequest, String xSource) throws RunnerException {
+        ContainerListResponse containerListResponse = list(listCommonRequest, true, xSource);
         log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        //ContainerListResponse containerListResponse = new ContainerListResponse();
-        //  containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
         //set assigned container to yes/no, if any package is assigned to container or not
-        setAssignedContainer(containerListResponse, xSource);
+        //setAssignedContainer(containerListResponse, xSource);
         containerListResponse.setTotalPages(containerListResponse.getTotalPages());
         containerListResponse.setNumberOfRecords(containerListResponse.getNumberOfRecords());
 

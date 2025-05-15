@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -761,6 +762,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
         onSaveV3(consolidationDetails, errors, oldConsole);
         return consolidationDetails;
+    }
+
+    @Override
+    public void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId) {
+        consolidationRepository.updateSailingScheduleRelatedInfo(consolidationId, request.getTerminalCutoff(), request.getVerifiedGrossMassCutoff(),
+                request.getShippingInstructionCutoff(), request.getDgCutoff(), request.getReeferCutoff(),
+                request.getEarliestEmptyEquipmentPickUp(), request.getLatestFullEquipmentDeliveredToCarrier(),
+                request.getEarliestDropOffFullEquipmentToCarrier());
+    }
+
+    @Override
+    public void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId) {
+        consolidationRepository.updateSailingScheduleRelatedInfoForAir(consolidationId, request.getLatestArrivalTime());
     }
 
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole) {
