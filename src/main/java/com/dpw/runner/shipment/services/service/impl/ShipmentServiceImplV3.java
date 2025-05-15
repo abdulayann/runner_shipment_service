@@ -81,6 +81,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -1450,7 +1451,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     consolidationDetailsV3Request.getTransportMode(), consolidationDetailsV3Request.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
             ));
 
-            ConsolidationDetailsResponse consolDetailsResponse = consolidationV3Service.createConsolidationForBooking(CommonRequestModel.buildRequest(consolidationDetailsV3Request));
+            ConsolidationDetailsResponse consolDetailsResponse = consolidationV3Service.createConsolidationForBooking(CommonRequestModel.buildRequest(consolidationDetailsV3Request), customerBookingRequest);
 
             if(consolDetailsResponse != null)
             {
@@ -1514,8 +1515,19 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             /*  Populate unloc code for entities */
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
 
-            if(containerList != null && !containerList.isEmpty())
-                shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(containerList.stream().toList(), Containers.class)));
+            if (containerList != null && !containerList.isEmpty()) {
+                List<Containers> expandedContainers = containerList.stream()
+                        .flatMap(container -> {
+                            Long count = container.getContainerCount();
+                            container.setContainerCount(1L);
+                            return LongStream.range(0L, count)
+                                    .mapToObj(i -> jsonHelper.convertValue(container, Containers.class));
+                        })
+                        .toList();
+
+                shipmentDetails.setContainersList(new HashSet<>(expandedContainers));
+            }
+
 
             populateUnlocCodeFuture.join();
 
