@@ -872,8 +872,8 @@ public class ContainerV3Service implements IContainerV3Service {
     private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
-        CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
-        CompletableFuture.allOf(afterSaveFuture, syncFuture).join();
+        //CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
+        CompletableFuture.allOf(afterSaveFuture).join();
     }
 
     private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers) {
