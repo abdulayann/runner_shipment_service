@@ -11,6 +11,8 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPOR
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
@@ -89,7 +91,11 @@ import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -2207,38 +2213,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             List<EventsRequest> events = new ArrayList<>();
-            List<Routings> mainCarriageList = console.getRoutingsList().stream()
-                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                    .toList();
-            if (CollectionUtils.isEmpty(mainCarriageList)) {
-                List<Routings> mainCarriageRoutings = shipments.stream()
-                        .filter(shipment -> shipment.getRoutingsList().stream()
-                                .anyMatch(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE))
-                        .findFirst()
-                        .map(shipment -> shipment.getRoutingsList().stream()
-                                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                                .collect(Collectors.toList()))
-                        .orElse(Collections.emptyList());
-                List<Routings> consoleMainCarriageRouting = new ArrayList<>();
-
-                mainCarriageRoutings.stream()
-                        .filter(mainCarriageRouting -> RoutingCarriage.MAIN_CARRIAGE.equals(mainCarriageRouting.getCarriage()))
-                        .forEach(consolRoute -> {
-                            // Deep copy of the routing object
-                            var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
-                            syncedRoute.setConsolidationId(console.getId());
-                            syncedRoute.setBookingId(null);
-                            syncedRoute.setShipmentId(null);
-                            syncedRoute.setInheritedFromConsolidation(false); // Mark as inherited
-                            consoleMainCarriageRouting.add(syncedRoute);
-                        });
-                console.setRoutingsList(consoleMainCarriageRouting);
-                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
-                bulkUpdateRoutingsRequest.setEntityId(console.getId());
-                bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(console.getRoutingsList(), RoutingsRequest.class));
-                routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
-            }
-
             // Update each linked shipment and collect relevant event triggers
             for (ShipmentDetails sd : shipments) {
                 updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);
@@ -3769,5 +3743,39 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
         return consolidationDetailsDao.save(consolidationDetails, fromV1Sync);
+    }
+
+    @Override
+    public ConsolidationSailingScheduleResponse updateSailingScheduleDataToConsole(ConsolidationSailingScheduleRequest request) throws RunnerException {
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(request.getRoutings());
+        Long consolidationId = request.getRoutings().stream().findFirst().get().getConsolidationId();
+        bulkUpdateRoutingsRequest.setEntityId(consolidationId);
+        routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
+        //update consol fields
+        Optional<ConsolidationDetails> consolidationDetailsEntity = consolidationDetailsDao.findById(consolidationId);
+        ConsolidationDetails consolidationDetails = consolidationDetailsEntity.get();
+        updateCutOffDatesToConsol(request, consolidationId, consolidationDetails);
+        consolidationDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+        consolidationDetailsDao.update(consolidationDetails, false);
+        //update to attached shipments
+        Set<ShipmentDetails> shipmentDetailsSet = consolidationDetails.getShipmentsList();
+        if (!CollectionUtils.isEmpty(shipmentDetailsSet)) {
+            ShipmentSailingScheduleRequest shipmentSailingScheduleRequest = jsonHelper.convertCreateValue(request, ShipmentSailingScheduleRequest.class);
+            shipmentDetailsSet.stream().forEach(shipmentDetails -> {
+                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
+            });
+        }
+        ConsolidationSailingScheduleResponse response = new ConsolidationSailingScheduleResponse();
+        return response;
+    }
+
+    private void updateCutOffDatesToConsol(ConsolidationSailingScheduleRequest request, Long consolidationId, ConsolidationDetails consolidationDetails) {
+        if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
+            consolidationDetailsDao.updateSailingScheduleRelatedInfo(request, consolidationId);
+
+        } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
+            consolidationDetailsDao.updateSailingScheduleRelatedInfoForAir(request, consolidationId);
+        }
     }
 }

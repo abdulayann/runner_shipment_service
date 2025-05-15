@@ -30,7 +30,7 @@ public interface IContainerV3Service {
 
     List<Containers> findByIdIn(List<Long> containerIds);
 
-    ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
+    ContainerListResponse fetchShipmentContainers(ListCommonRequest commonRequestModel, String xSource) throws RunnerException;
     ContainerListResponse fetchConsolidationContainers(ListCommonRequest listCommonRequest, String xSource) throws RunnerException;
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;

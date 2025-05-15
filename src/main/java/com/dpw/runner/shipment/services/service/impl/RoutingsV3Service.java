@@ -554,11 +554,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     public ParentResult getParentDetails(List<Routings> routingList, Long entityId, String moduleType) {
-        Long parentId = null;
+        Long parentId = entityId;
         Routings firstRouting = null;
-        if (CollectionUtils.isEmpty(routingList)) {
-            parentId = entityId;
-        } else {
+        if (!CollectionUtils.isEmpty(routingList)) {
             firstRouting = routingList.get(0);
         }
 
