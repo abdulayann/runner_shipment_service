@@ -118,8 +118,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String deliveryAtDestinationType;
     private String brokerageAtOriginType;
     private String brokerageAtDestinationType;
-    private Long pickupAtOrigin;
-    private Long deliveryAtDestination;
+    private LocalDateTime pickupAtOrigin;
+    private LocalDateTime deliveryAtDestination;
     private Long brokerageAtOrigin;
     private Long brokerageAtDestination;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
