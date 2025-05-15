@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -112,8 +113,12 @@ class ShipmentServiceImplV3Test {
     @Mock
     private IAuditLogService auditLogService;
 
+    private static JsonTestUtility jsonTestUtility;
+    private static ShipmentDetails shipmentDetails;
+
     @BeforeAll
     static void init() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -132,7 +137,7 @@ class ShipmentServiceImplV3Test {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         shipmentServiceImplV3.executorService = Executors.newFixedThreadPool(2);
-
+        shipmentDetails = jsonTestUtility.getTestShipment();
     }
 
     @Test
@@ -236,8 +241,10 @@ class ShipmentServiceImplV3Test {
 
     @Test
     void testGetShipmentAndPacksForConsolidationAssignContainerTray() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).build();
+        shipmentDetails.setId(4L);
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).packsList(new ArrayList<>()).build();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments));
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(new ArrayList<>());
         ShipmentPacksAssignContainerTrayDto response =
@@ -247,13 +254,17 @@ class ShipmentServiceImplV3Test {
 
     @Test
     void testGetShipmentAndPacksForConsolidationAssignContainerTrayAssignedFCL() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        shipmentDetails.setId(4L);
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
         ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(4L)
                 .shipmentType(Constants.CARGO_TYPE_FCL)
+                .packsList(new ArrayList<>())
                 .build();
         ShipmentPacksAssignContainerTrayDto.Shipments shipments1 = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(5L)
+                .packsList(new ArrayList<>())
                 .build();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
@@ -264,12 +275,15 @@ class ShipmentServiceImplV3Test {
 
     @Test
     void testGetShipmentAndPacksForConsolidationAssignContainerTrayAssigned() {
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
         ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(4L)
+                .packsList(new ArrayList<>())
                 .build();
         ShipmentPacksAssignContainerTrayDto.Shipments shipments1 = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
                 .id(5L)
+                .packsList(new ArrayList<>())
                 .build();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
