@@ -36,6 +36,8 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.*;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
@@ -145,6 +147,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private final ConsolidationV3Service consolidationV3Service;
     private final MasterDataHelper masterDataHelper;
     private final IRoutingsV3Service routingsV3Service;
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
 
     @Autowired
@@ -463,9 +467,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .operation(DBOperationType.CREATE.name()).build()
             );
 
-            ShipmentDetails finalShipmentDetails1 = shipmentDetails;
-            String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
+//            ShipmentDetails finalShipmentDetails1 = shipmentDetails;
+//            String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
+//            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
+            // Trigger Kafka event for PushToDownStreamServices
+            this.triggerPushToDownStream(shipmentDetails, true);
         } catch (Exception e) {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(e.getMessage());
@@ -532,9 +538,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             mid = System.currentTimeMillis();
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, isFromET);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
-            ShipmentDetails finalEntity1 = entity;
-            String entityPayload = jsonHelper.convertToJson(finalEntity1);
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalEntity1.getId(), finalEntity1.getGuid())), executorServiceMasterData);
+//            ShipmentDetails finalEntity1 = entity;
+//            String entityPayload = jsonHelper.convertToJson(finalEntity1);
+//            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalEntity1.getId(), finalEntity1.getGuid())), executorServiceMasterData);
+            // Trigger Kafka event for PushToDownStreamServices
+            this.triggerPushToDownStream(entity, false);
             log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
             return jsonHelper.convertValue(entity, ShipmentDetailsV3Response.class);
         } catch (Exception e) {
@@ -703,7 +711,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         log.info("shipment afterSave referenceNumbersDao.updateEntityFromShipment..... ");
 
-        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
+//        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
 
         if (!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
             consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
@@ -716,12 +724,42 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         log.info("shipment afterSave end..... ");
     }
 
+    private void triggerPushToDownStream(ShipmentDetails shipmentDetails, Boolean isCreate){
+        List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+        if(CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+            consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+        }
+
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(shipmentDetails.getId())
+                .parentEntityName(SHIPMENT)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .isCreate(isCreate)
+                        .build())
+                .build();
+        if(CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
+            PushToDownstreamEventDto.Triggers triggers = PushToDownstreamEventDto.Triggers.builder()
+                    .entityId(consoleShipmentMappings.get(0).getConsolidationId())
+                    .entityName(Constants.CONSOLIDATION)
+                    .build();
+            List<PushToDownstreamEventDto.Triggers> triggersList = consoleShipmentMappings.stream().filter(x-> !Objects.equals(x.getShipmentId(), shipmentDetails.getId())).map(x -> {
+                return PushToDownstreamEventDto.Triggers.builder()
+                        .entityId(x.getShipmentId())
+                        .entityName(SHIPMENT)
+                        .build();
+            }).toList();
+            triggersList.add(triggers);
+            pushToDownstreamEventDto.setTriggers(triggersList);
+        }
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, shipmentDetails.getId().toString());
+    }
+
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, ConsolidationDetails consolidationDetails) {
         // Syncing shipment to V1
         syncShipment(shipmentDetails, consolidationDetails, syncConsole);
         log.info("shipment afterSave syncShipment..... ");
-        if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+//        if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
+//            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))

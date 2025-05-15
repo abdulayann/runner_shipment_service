@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.kafka.consumer;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +26,13 @@ public class PushToDownstreamConsumer {
 
     private final ObjectMapper objectMapper;
     private final IPushToDownstreamService pushToDownstreamService;
+    private final IV1Service v1Service;
 
     @Autowired
-    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService) {
+    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService, IV1Service v1Service) {
         this.objectMapper = objectMapper;
         this.pushToDownstreamService = pushToDownstreamService;
+        this.v1Service = v1Service;
     }
 
     @KafkaListener(
@@ -47,12 +50,13 @@ public class PushToDownstreamConsumer {
         logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp);
         try {
             PushToDownstreamEventDto object = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), PushToDownstreamEventDto.class);
-            pushToDownstreamService.process(object);
+            pushToDownstreamService. process(object);
 
             log.info("{} | Passed", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM);
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, message, ex.getLocalizedMessage());
         } finally {
+            v1Service.clearAuthContext();
             acknowledgment.acknowledge();
         }
     }

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
@@ -42,8 +43,10 @@ import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -59,6 +62,7 @@ import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -125,6 +129,9 @@ public class PackingV3Service implements IPackingV3Service {
     private IShipmentServiceV3 shipmentService;
 
     @Autowired
+    private DependentServiceHelper dependentServiceHelper;
+
+    @Autowired
     private IConsolidationService consolidationService;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
@@ -166,6 +173,8 @@ public class PackingV3Service implements IPackingV3Service {
         PackingResponse response = jsonHelper.convertValue(savedPacking, PackingResponse.class);
         log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
         afterSave(List.of(savedPacking), module, shipmentDetails, consolidationId);
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(List.of(savedPacking), module);
         return response;
     }
 
@@ -220,6 +229,9 @@ public class PackingV3Service implements IPackingV3Service {
 
         recordAuditLogs(List.of(oldConvertedPacking), List.of(updatedPacking), DBOperationType.UPDATE, parentResult);
         afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationId);
+
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(List.of(updatedPacking), module);
         return convertEntityToDto(updatedPacking);
     }
 
@@ -243,6 +255,9 @@ public class PackingV3Service implements IPackingV3Service {
         String packs = packing.getPacks();
         String packsType = packing.getPacksType();
         afterSave(List.of(packing), module, null, null);
+
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(List.of(packing), module);
         return packsType != null
                 ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
                 : String.format("Packing %s deleted successfully!", packs);
@@ -312,10 +327,37 @@ public class PackingV3Service implements IPackingV3Service {
         // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
         afterSave(allSavedPackings, module, shipmentDetails, consolidationId);
+
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(allSavedPackings, module);
+
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private void pushToDependentServices(List<Packing> packings, String module) {
+        if(Objects.equals(module, SHIPMENT)) {
+            Long shipId = packings.get(0).getShipmentId();
+            Long consoleId = packings.stream().map(Packing::getConsolidationId).filter(Objects::nonNull).findFirst().orElse(null);
+            triggerPushToDownStreamForShipment(shipId, consoleId);
+        }
+    }
+
+    private void triggerPushToDownStreamForShipment(Long shipmentId, Long consoleId){
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(shipmentId)
+                .parentEntityName(SHIPMENT)
+                .build();
+        if(consoleId != null) {
+            PushToDownstreamEventDto.Triggers triggers = PushToDownstreamEventDto.Triggers.builder()
+                    .entityName(Constants.CONSOLIDATION)
+                    .entityId(consoleId)
+                    .build();
+            pushToDownstreamEventDto.setTriggers(new ArrayList<>(Collections.singletonList(triggers)));
+        }
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, shipmentId.toString());
     }
 
     private void setConsolidationId(ShipmentDetails shipmentDetails, List<Packing> packings, Long consolidationId) {
@@ -357,6 +399,8 @@ public class PackingV3Service implements IPackingV3Service {
 
         afterSave(packingsToDelete, module, null, null);
 
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(packingsToDelete, module);
         // Return the response with status message
         return BulkPackingResponse.builder()
                 .message(prepareBulkDeleteMessage(packingsToDelete))
