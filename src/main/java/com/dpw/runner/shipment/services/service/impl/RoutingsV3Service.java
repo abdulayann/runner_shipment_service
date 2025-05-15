@@ -132,7 +132,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             // Audit logs
             recordAuditLogs(null, List.of(routings), DBOperationType.CREATE, parentResult);
             // afterSave
-            afterSave(Arrays.asList(routings), module);
+            afterSave(Arrays.asList(routings), request.getEntityId(), module);
             log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -154,16 +154,21 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         );
     }
 
-    public void afterSave(List<Routings> routingList, String module) throws RunnerException {
+    public void afterSave(List<Routings> routingList, Long entityId, String module) throws RunnerException {
         List<Routings> mainCarriageList = routingList.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
                 .toList();
         if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
             updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList);
-        } else if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
+        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
             //updates routings to attached shipments
-            updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList);
-            Long consolidationId = mainCarriageList.get(0).getConsolidationId();
+            Long consolidationId = entityId;
+            if (entityId == null) {
+                consolidationId = mainCarriageList.get(0).getConsolidationId();
+            }
+            if (!CollectionUtils.isEmpty(mainCarriageList)) {
+                updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList);
+            }
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
             for (ShipmentDetails shipmentDetails : shipmentsList) {
@@ -181,8 +186,15 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 }
 
                 // Step 2: Remove those inherited MAIN_CARRIAGE entries
+                boolean isMainCarriagePresent = updatedRoutings.stream()
+                        .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                                Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+                if (!isMainCarriagePresent && !CollectionUtils.isEmpty(mainCarriageList)) {
+                    updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+                }
                 updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
                         Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+
 
                 // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
                 List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
@@ -261,7 +273,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
     private void updateConsolidationCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
         Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationV3Service.findById(mainCarriageRoutings.get(0).getConsolidationId());
-        if(consolidationDetailsOptional.isEmpty()) return;
+        if (consolidationDetailsOptional.isEmpty()) return;
         ConsolidationDetails consolidationDetails = consolidationDetailsOptional.get();
         updateCarrierDetails(consolidationDetails.getCarrierDetails(), mainCarriageRoutings);
         carrierDetailsDao.update(consolidationDetails.getCarrierDetails());
@@ -304,7 +316,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             // Audit logs
             recordAuditLogs(List.of(oldEntityData), List.of(routings), DBOperationType.UPDATE, parentResult);
             // afterSave operations
-            afterSave(Arrays.asList(routings), module);
+            afterSave(Arrays.asList(routings), request.getEntityId(), module);
             log.info("Routing updated successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -464,7 +476,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         // Convert to response
         List<RoutingsResponse> routingResponses = jsonHelper.convertValueToList(allSavedRouting, RoutingsResponse.class);
 
-        afterSave(allSavedRouting, module);
+        afterSave(allSavedRouting, request.getEntityId(), module);
 
         return BulkRoutingResponse.builder()
                 .routingsResponseList(routingResponses)
