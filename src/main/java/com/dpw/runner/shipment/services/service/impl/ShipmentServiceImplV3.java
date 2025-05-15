@@ -1682,8 +1682,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .build()
                 ).
                 additionalDetails(AdditionalDetailV3Request.builder().
-                        pickupDate(customerBookingRequest.getPickupAtOrigin()).
-                        cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestination()).
+                        pickupDate(customerBookingRequest.getPickupAtOriginDate()).
+                        cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestinationDate()).
                         build()).
                 contractId(customerBookingRequest.getContractId()).
                 parentContractId(customerBookingRequest.getParentContractId()).
