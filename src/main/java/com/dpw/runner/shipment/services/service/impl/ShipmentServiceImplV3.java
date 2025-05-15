@@ -1443,8 +1443,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         } else if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
             shipmentDao.updateSailingScheduleRelatedInfoForAir(request, shipmentId);
         }
-        ShipmentSailingScheduleResponse response = new ShipmentSailingScheduleResponse();
-        return response;
+        return new ShipmentSailingScheduleResponse();
     }
 
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
