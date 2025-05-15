@@ -2213,38 +2213,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             List<EventsRequest> events = new ArrayList<>();
-            List<Routings> mainCarriageList = console.getRoutingsList().stream()
-                    .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                    .toList();
-            if (CollectionUtils.isEmpty(mainCarriageList)) {
-                List<Routings> mainCarriageRoutings = shipments.stream()
-                        .filter(shipment -> shipment.getRoutingsList().stream()
-                                .anyMatch(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE))
-                        .findFirst()
-                        .map(shipment -> shipment.getRoutingsList().stream()
-                                .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                                .collect(Collectors.toList()))
-                        .orElse(Collections.emptyList());
-                List<Routings> consoleMainCarriageRouting = new ArrayList<>();
-
-                mainCarriageRoutings.stream()
-                        .filter(mainCarriageRouting -> RoutingCarriage.MAIN_CARRIAGE.equals(mainCarriageRouting.getCarriage()))
-                        .forEach(consolRoute -> {
-                            // Deep copy of the routing object
-                            var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
-                            syncedRoute.setConsolidationId(console.getId());
-                            syncedRoute.setBookingId(null);
-                            syncedRoute.setShipmentId(null);
-                            syncedRoute.setInheritedFromConsolidation(false); // Mark as inherited
-                            consoleMainCarriageRouting.add(syncedRoute);
-                        });
-                console.setRoutingsList(consoleMainCarriageRouting);
-                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
-                bulkUpdateRoutingsRequest.setEntityId(console.getId());
-                bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(console.getRoutingsList(), RoutingsRequest.class));
-                routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
-            }
-
             // Update each linked shipment and collect relevant event triggers
             for (ShipmentDetails sd : shipments) {
                 updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);

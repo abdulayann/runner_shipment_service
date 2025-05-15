@@ -159,7 +159,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             @Param("hazardousBookingCutoff") LocalDateTime hazardousBookingCutoff,
             @Param("reeferCutoff") LocalDateTime reeferCutoff,
             @Param("earliestEmptyEquPickUp") LocalDateTime earliestEmptyEquPickUp,
-            @Param("latestFullEquipmentDeliveredToCarrier") LocalDateTime latestFullEquDeliveredToCarrier,
+            @Param("latestFullEquDeliveredToCarrier") LocalDateTime latestFullEquDeliveredToCarrier,
             @Param("earliestDropOffFullEquToCarrier") LocalDateTime earliestDropOffFullEquToCarrier
     );
 
