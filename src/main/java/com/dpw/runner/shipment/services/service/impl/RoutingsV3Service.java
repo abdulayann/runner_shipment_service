@@ -17,11 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
@@ -34,6 +30,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -104,6 +101,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
+
+    @Autowired
+    private NetworkTransferV3Util networkTransferV3Util;
 
     @Data
     @AllArgsConstructor
@@ -248,20 +248,58 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return cloned;
     }
 
+    private CarrierDetails getNewCarrierDetails(ShipmentDetails shipmentDetails){
+        CarrierDetails current = shipmentDetails.getCarrierDetails();
+        CarrierDetails existingCarrierDetails = null;
+
+        if(current!=null) {
+            existingCarrierDetails = new CarrierDetails();
+            existingCarrierDetails.setEta(current.getEta());
+            existingCarrierDetails.setEtd(current.getEtd());
+            existingCarrierDetails.setAta(current.getAta());
+            existingCarrierDetails.setAtd(current.getAtd());
+        }
+        return existingCarrierDetails;
+    }
+
     /**
      * Updates shipment's carrier details from main carriage routing legs based on tenantSettings
      */
     private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
         Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(mainCarriageRoutings.get(0).getShipmentId());
+        if(shipmentDetailsOptional.isEmpty())
+            return;
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
-        updateCarrierDetails(shipmentDetails.getCarrierDetails(), mainCarriageRoutings);
+        CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails);
+        updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails);
         carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
+    }
+
+    private boolean isValueChanged(Object newValue, Object oldValue) {
+        return (oldValue != null && newValue==null) || (newValue != null && !newValue.equals(oldValue));
+    }
+
+    private boolean isValidDateChange(CarrierDetails newCarrierDetails, CarrierDetails oldCarrierDetails){
+        if(oldCarrierDetails==null && newCarrierDetails!=null){
+            return newCarrierDetails.getEta() != null
+                    || newCarrierDetails.getEtd() != null
+                    || newCarrierDetails.getAta() != null
+                    || newCarrierDetails.getAtd() != null;
+        }
+        if(oldCarrierDetails!=null && newCarrierDetails!=null) {
+            return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta())
+                    || isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd())
+                    || isValueChanged(newCarrierDetails.getAta(), oldCarrierDetails.getAta())
+                    || isValueChanged(newCarrierDetails.getAtd(), oldCarrierDetails.getAtd());
+        }
+        return false;
     }
 
     /**
      * Updates the CarrierDetails fields using first and last main carriage legs.
      */
-    private void updateCarrierDetails(CarrierDetails carrierDetails, List<Routings> mainCarriageRoutings) {
+    private void updateCarrierDetails(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, CarrierDetails existingCarrierDetails) {
+        CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
         Routings firstLeg = mainCarriageRoutings.get(0);
         Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
 
@@ -274,6 +312,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setAta(lastLeg.getAta());
         carrierDetails.setDestinationPort(lastLeg.getPod());
         carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if(shipmentSettingsDetails !=null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));
     }
 
     @Override
