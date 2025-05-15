@@ -564,7 +564,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (!CollectionUtils.isEmpty(consolidationDetailsEntity)) {
             return new PackingListResponse();
         }
-        List<Long> shipmentIds = consolidationDetailsEntity.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(consoleShipmentMapping -> consoleShipmentMapping.getIsAttachmentDone()).map(ConsoleShipmentMapping::getShipmentId).toList();
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.SHIPMENT_ID, shipmentIds, Constants.IN, request);
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
