@@ -1629,6 +1629,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails);
+            generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
             List<RoutingsRequest> routingsRequest = customerBookingV3Request.getRoutingList();
@@ -1664,6 +1665,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentDetailsV3Response shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsV3Response.class);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
         return shipmentDetailsResponse;
+    }
+
+    private void generateAfterSaveEvents(ShipmentDetails shipmentDetails) {
+        if(Objects.nonNull(shipmentDetails.getAdditionalDetails().getPickupDate())) {
+            createAutomatedEvents(shipmentDetails, EventConstants.CACO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+        }
+        if(Objects.nonNull(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate())) {
+            createAutomatedEvents(shipmentDetails, EventConstants.CADE, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+        }
+        if(Objects.nonNull(shipmentDetails.getBrokerageAtOriginDate())) {
+            createAutomatedEvents(shipmentDetails, EventConstants.ECCC, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+        }
+        if(Objects.nonNull(shipmentDetails.getBookingNumber())) {
+            createAutomatedEvents(shipmentDetails, EventConstants.BOCO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+        }
     }
 
     private List<PackingV3Request> getPackingListRequest(CustomerBookingV3Request customerBookingRequest) {
@@ -1761,6 +1777,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .carrierAddedFromNpm(customerBookingRequest.getCarrierDetails().getCarrierAddedFromNpm())
                         .build()
                 ).
+                additionalDetails(AdditionalDetailV3Request.builder().
+                        pickupDate(customerBookingRequest.getPickupAtOrigin()).
+                        cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestination()).
+                        build()).
                 contractId(customerBookingRequest.getContractId()).
                 parentContractId(customerBookingRequest.getParentContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
@@ -1772,7 +1792,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 volumeUnit(customerBookingRequest.getVolumeUnit()).
                 volumetricWeight(customerBookingRequest.getWeightVolume()).
                 volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
-                bookingReference(customerBookingRequest.getBookingNumber()).
+                bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
                 bookingCreatedDate(customerBookingRequest.getBookingDate()).
                 shipmentCreatedOn(LocalDateTime.now()).
                 client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry())).
@@ -1825,8 +1845,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 deliveryAtDestinationType(customerBookingRequest.getDeliveryAtDestinationType()).
                 brokerageAtOriginType(customerBookingRequest.getBrokerageAtOriginType()).
                 brokerageAtDestinationType(customerBookingRequest.getBrokerageAtDestinationType()).
-                pickupAtOrigin(customerBookingRequest.getPickupAtOrigin()).
-                deliveryAtDestination(customerBookingRequest.getDeliveryAtDestination()).
                 brokerageAtOrigin(customerBookingRequest.getBrokerageAtOrigin()).
                 brokerageAtDestination(customerBookingRequest.getBrokerageAtDestination()).
                 brokerageAtOriginDate(customerBookingRequest.getBrokerageAtOriginDate()).
