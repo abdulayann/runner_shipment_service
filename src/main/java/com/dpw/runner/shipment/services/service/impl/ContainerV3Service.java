@@ -499,6 +499,12 @@ public class ContainerV3Service implements IContainerV3Service {
 
     }
 
+    @Override
+    public ContainerListResponse fetchConsolidationContainers(ListCommonRequest request, String xSource) throws RunnerException {
+        log.info("Container detail list retrieved for consolidation successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        return list(request, true, xSource);
+    }
+
     private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {
         List<Long> containersId = containerListResponse.getContainers().stream()
                 .map(ContainerBaseResponse::getId) // or .map(container -> container.getId())
@@ -866,8 +872,8 @@ public class ContainerV3Service implements IContainerV3Service {
     private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
-        CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
-        CompletableFuture.allOf(afterSaveFuture, syncFuture).join();
+        //CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
+        CompletableFuture.allOf(afterSaveFuture).join();
     }
 
     private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers) {
