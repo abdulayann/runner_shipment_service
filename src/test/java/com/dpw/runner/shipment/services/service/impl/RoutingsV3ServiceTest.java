@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -84,6 +85,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
     private IShipmentServiceV3 shipmentServiceV3;
     @Mock
     private ICarrierDetailsDao carrierDetailsDao;
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
     @InjectMocks
     private RoutingsV3Service routingsService;
 
