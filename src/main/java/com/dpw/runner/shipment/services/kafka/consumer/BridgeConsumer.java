@@ -89,13 +89,6 @@ public class BridgeConsumer {
         String bookingNumber = serviceRequestNode.path("BookingNumber").asText();
         String type = serviceRequestNode.path("Type").asText();
 
-        Optional<CustomerBooking> customerBooking = customerBookingDao.findByBookingNumber(bookingNumber);
-        if (customerBooking.isEmpty()) {
-            log.warn("No customer booking found for BookingNumber: {}", bookingNumber);
-            return;
-        }
-
-        Integer tenantId = customerBooking.get().getTenantId();
         if (StringUtility.isEmpty(bookingNumber)) {
             log.warn("Booking number is empty.");
             return;
@@ -103,7 +96,9 @@ public class BridgeConsumer {
 
         try {
             Optional<CustomerBooking> booking = customerBookingDao.findByBookingNumberQuery(bookingNumber);
+
             if (booking.isPresent()) {
+                Integer tenantId = booking.get().getTenantId();
                 setTenantContext(tenantId, booking.get());
                 auditLogService.addAuditLog(createAuditLog(tenantId, booking.get().getId(),
                         type.equalsIgnoreCase("HBL") ? "Doc: HBL" : "Doc: POD"));

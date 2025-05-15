@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
@@ -23,7 +24,7 @@ import java.util.Optional;
 public interface IConsolidationV3Service {
     ShipmentGridChangeV3Response calculateAchievedValues(Long consolidationId) throws RunnerException;
     ConsolidationDetailsResponse create(ConsolidationDetailsV3Request request);
-    ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel);
+    ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request request);
     ConsolidationDetailsResponse completeUpdate(ConsolidationDetailsV3Request consolidationDetailsRequest) throws RunnerException;
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
     String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
