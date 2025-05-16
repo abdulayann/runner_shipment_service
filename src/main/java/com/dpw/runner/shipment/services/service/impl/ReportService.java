@@ -50,6 +50,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
 import com.itextpdf.text.DocumentException;
@@ -154,6 +155,8 @@ public class ReportService implements IReportService {
     private CommonUtils commonUtils;
     @Autowired
     private ConsolidationService consolidationService;
+    @Autowired
+    private NetworkTransferV3Util networkTransferV3Util;
 
     @Autowired
     private IV1Service iv1Service;
@@ -2152,26 +2155,28 @@ public class ReportService implements IReportService {
 
     public void triggerAutomaticTransfer(IReport report, ReportRequest reportRequest){
         try {
-            if (triggerRequirementNotMatching(reportRequest)) return;
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            if (triggerRequirementNotMatching(shipmentSettingsDetails, reportRequest))
+                return;
             Long reportId = Long.parseLong(reportRequest.getReportId());
-
+            Boolean isRunnerV3Enabled = shipmentSettingsDetails.getIsRunnerV3Enabled();
             if (report instanceof HblReport) {
                 ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
                 if(shipmentDetails!=null) {
-                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerBlAutomaticTransfer(shipmentDetails)), executorService);
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerBlAutomaticTransfer(shipmentDetails, isRunnerV3Enabled)), executorService);
                 }
             } else if (report instanceof HawbReport) {
                 ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
                 if(shipmentDetails!=null) {
-                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerHAWBAutomaticTransfer(shipmentDetails)), executorService);
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerHAWBAutomaticTransfer(shipmentDetails, isRunnerV3Enabled)), executorService);
                 }
             } else if (report instanceof MawbReport) {
                 if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
-                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerConsoleMAWBAutomaticTransfer(reportId)), executorService);
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerConsoleMAWBAutomaticTransfer(reportId, isRunnerV3Enabled)), executorService);
                 } else {
                     ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
                     if(shipmentDetails!=null) {
-                        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerShipmentMAWBAutomaticTransfer(shipmentDetails)), executorService);
+                        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerShipmentMAWBAutomaticTransfer(shipmentDetails, isRunnerV3Enabled)), executorService);
                     }
                 }
             }
@@ -2180,8 +2185,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private boolean triggerRequirementNotMatching(ReportRequest reportRequest) {
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+    private boolean triggerRequirementNotMatching(ShipmentSettingsDetails shipmentSettingsDetails, ReportRequest reportRequest) {
         if (!Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())) {
             return true;
         }
@@ -2200,42 +2204,54 @@ public class ReportService implements IReportService {
         return shipmentDetails;
     }
 
-    public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails){
+    public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
         if(!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())){
             for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
                 if (consolidationDetails!=null  &&
                         (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
-                                !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType())))
-                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                                !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType()))) {
+                    triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
+                }
             }
         }
     }
 
-    public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails){
+    private void triggerConsoleAutomaticTransfer(Boolean isRunnerV3Enabled, ConsolidationDetails consolidationDetails) {
+        if(Boolean.TRUE.equals(isRunnerV3Enabled))
+            networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true);
+        else
+            consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+    }
+
+    public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
         if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
             for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
                 if (consolidationDetails!=null &&
                         (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
-                                Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType())))
-                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                                Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType()))) {
+                    triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
+                }
             }
         }
     }
 
-    public void triggerConsoleMAWBAutomaticTransfer(Long consolidationId){
+    public void triggerConsoleMAWBAutomaticTransfer(Long consolidationId, Boolean isRunnerV3Enabled){
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).orElse(null);
         if(consolidationDetails==null)
             return;
         if(Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType())) {
-            consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+            triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
         }
     }
 
-    public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails){
+    public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
         if(Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
-            shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);
+            if(Boolean.TRUE.equals(isRunnerV3Enabled))
+                networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true);
+            else
+                shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);
         }
     }
 

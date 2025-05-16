@@ -251,7 +251,7 @@ public class NetworkTransferV3Util {
         Long consolidationReceivingBranch = consolidationDetails.getReceivingBranch();
 
         if (existingNteNotValid(consolidationReceivingBranch, shipmentNetworkTransferMap)) {
-            List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
+            List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream() //NOSONAR
                     .flatMap(innerMap -> innerMap.values().stream()).toList();
             nteToDelete.addAll(allNetworkTransfers);
         }
