@@ -642,6 +642,7 @@ public class Constants {
 
     public static final String TESLA = "Tesla";
     public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
+    public static final String CONTAINS = "CONTAINS";
 
     private Constants() {
     }

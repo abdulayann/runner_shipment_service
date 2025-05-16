@@ -1,16 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -19,8 +8,8 @@ import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationV3Request;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
@@ -32,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -56,6 +46,24 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.nimbusds.jose.util.Pair;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -72,23 +80,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletResponse;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.ModelAttribute;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -126,6 +128,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private IConsolidationService consolidationService;
+
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
@@ -319,7 +324,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void setConsolidationId(ShipmentDetails shipmentDetails, List<Packing> packings, Long consolidationId) {
-        if(Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && consolidationId != null && !CommonUtils.listIsNullOrEmpty(packings)) {
+        if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && consolidationId != null && !CommonUtils.listIsNullOrEmpty(packings)) {
             for (Packing packing : packings) {
                 packing.setConsolidationId(consolidationId);
             }
@@ -480,8 +485,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData, String source) {
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+    public PackingListResponse list(ListCommonRequest request, boolean getMasterData, String source) {
         if (request == null) {
             log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException("Request cannot be null for list request.");
@@ -494,13 +498,15 @@ public class PackingV3Service implements IPackingV3Service {
         else
             packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
-        Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
         PackingListResponse packingListResponse = new PackingListResponse();
-        packingListResponse.setPackings(responseList);
-        packingListResponse.setTotalPages(packingPage.getTotalPages());
-        packingListResponse.setTotalCount(packingPage.getTotalElements());
-        packingListResponse.setMasterData(masterDataResponse);
+        if (packingPage != null) {
+            List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
+            Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+            packingListResponse.setPackings(responseList);
+            packingListResponse.setTotalPages(packingPage.getTotalPages());
+            packingListResponse.setTotalCount(packingPage.getTotalElements());
+            packingListResponse.setMasterData(masterDataResponse);
+        }
         return packingListResponse;
     }
 
@@ -534,12 +540,12 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel, String xSource) {
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+    public PackingListResponse fetchShipmentPackages(ListCommonRequest request, String xSource) {
         if (StringUtility.isEmpty(request.getEntityId()) || Long.valueOf(request.getEntityId()) <= 0) {
             throw new ValidationException("Entity id is empty");
         }
-        PackingListResponse packingListResponse = list(commonRequestModel, true, xSource);
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.SHIPMENT_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
+        PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
 
         PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByShipment(Long.valueOf(request.getEntityId()));
@@ -550,19 +556,23 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingListResponse fetchConsolidationPackages(CommonRequestModel commonRequestModel, String xSource) {
-
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+    public PackingListResponse fetchConsolidationPackages(ListCommonRequest request, String xSource) {
         if (StringUtility.isEmpty(request.getEntityId()) || Long.parseLong(request.getEntityId()) <= 0) {
             throw new ValidationException("Entity id is empty");
         }
-        PackingListResponse packingListResponse = list(commonRequestModel, true, xSource);
+        List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(Long.valueOf(request.getEntityId()));
+        if (!CollectionUtils.isEmpty(consolidationDetailsEntity)) {
+            return new PackingListResponse();
+        }
+        List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(consoleShipmentMapping -> consoleShipmentMapping.getIsAttachmentDone()).map(ConsoleShipmentMapping::getShipmentId).toList();
+        ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.SHIPMENT_ID, shipmentIds, Constants.IN, request);
+        PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
 
         List<PackingResponse> packings = packingListResponse.getPackings();
         PackSummaryV3Response packSummaryV3Response = calculatePackSummary(packings, packings.get(0).getTransportMode());
 
-        PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByConsolidation(Long.valueOf(request.getEntityId()));
+        PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByConsolidation(Long.valueOf(listCommonRequest.getEntityId()));
         packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
         packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
         packingListResponse.setPackSummary(packSummaryV3Response);
@@ -669,7 +679,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void setChargeableWeightAndUnit(String transportMode, double chargeableWeight, double totalVolume, String toVolumeUnit,
-            double totalWeight, String toWeightUnit, PackSummaryResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) throws RunnerException {
+                                            double totalWeight, String toWeightUnit, PackSummaryResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) throws RunnerException {
 
         // Default unit for chargeable weight is kg, unless overridden by transport mode logic
         String packChargeableWeightUnit = Constants.WEIGHT_UNIT_KG;
@@ -715,7 +725,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void setPacksVolumetricWeightInResponse(String transportMode, PackSummaryResponse response,
-            double volumetricWeight, V1TenantSettingsResponse v1TenantSettingsResponse) {
+                                                    double volumetricWeight, V1TenantSettingsResponse v1TenantSettingsResponse) {
         // Sea freight typically treats volumetric weight as volume (in m³), not mass — this aligns with sea freight billing logic
         if (Objects.equals(transportMode, TRANSPORT_MODE_SEA)) {
             response.setPacksVolumetricWeight(
@@ -732,9 +742,9 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void updatePacksCount(List<String> sortedKeys,
-            Map<String, Long> packTypeToCountMap,
-            StringBuilder packsCountBuilder,
-            V1TenantSettingsResponse tenantSettings) {
+                                  Map<String, Long> packTypeToCountMap,
+                                  StringBuilder packsCountBuilder,
+                                  V1TenantSettingsResponse tenantSettings) {
 
         List<String> formattedPackCounts = new ArrayList<>();
 
@@ -982,18 +992,18 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     public boolean checkIfLCLConsolidationEligible(ShipmentDetails shipmentDetails) {
-        if(!Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
+        if (!Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
             return false;
-        if(!Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()))
+        if (!Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()))
             return false;
-        if(!Constants.SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType()))
+        if (!Constants.SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType()))
             return false;
         return Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableLclConsolidation());
     }
 
     public void updateShipmentGateInDateAndStatusFromPacks(ShipmentDetails shipmentDetails, List<Packing> packings) throws RunnerException {
         shipmentDetails.setShipmentPackStatus(null);
-        if(!CommonUtils.listIsNullOrEmpty(packings)) {
+        if (!CommonUtils.listIsNullOrEmpty(packings)) {
             shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
             packingV3Util.processPackingRequests(packings, shipmentDetails);
         }

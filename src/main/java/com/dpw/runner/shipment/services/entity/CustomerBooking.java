@@ -323,11 +323,17 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "brokerage_at_destination_type")
     private String brokerageAtDestinationType;
 
+    @Column(name = "pickup_at_origin_date")
+    private LocalDateTime pickupAtOriginDate;
+
+    @Column(name = "delivery_at_destination_date")
+    private LocalDateTime deliveryAtDestinationDate;
+
     @Column(name = "pickup_at_origin")
-    private LocalDateTime pickupAtOrigin;
+    private Long pickupAtOrigin;
 
     @Column(name = "delivery_at_destination")
-    private LocalDateTime deliveryAtDestination;
+    private Long deliveryAtDestination;
 
     @Column(name = "brokerage_at_origin")
     private Long brokerageAtOrigin;
@@ -372,13 +378,13 @@ public class CustomerBooking extends MultiTenancy {
     private BigDecimal teuCount;
 
     @Column(name = "containers")
-    private long containers;
+    private Long containers;
 
     @Column(name = "package_type")
     private String packageType;
 
     @Column(name = "packages")
-    private long packages;
+    private Long packages;
 
     @Column(name = "description")
     private String description;

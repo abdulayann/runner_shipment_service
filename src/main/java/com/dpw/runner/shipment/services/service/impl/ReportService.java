@@ -2210,13 +2210,17 @@ public class ReportService implements IReportService {
                 if (consolidationDetails!=null  &&
                         (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
                                 !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType()))) {
-                    if(Boolean.TRUE.equals(isRunnerV3Enabled))
-                        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true);
-                    else
-                        consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                    triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
                 }
             }
         }
+    }
+
+    private void triggerConsoleAutomaticTransfer(Boolean isRunnerV3Enabled, ConsolidationDetails consolidationDetails) {
+        if(Boolean.TRUE.equals(isRunnerV3Enabled))
+            networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true);
+        else
+            consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
     }
 
     public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
@@ -2225,10 +2229,7 @@ public class ReportService implements IReportService {
                 if (consolidationDetails!=null &&
                         (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
                                 Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType()))) {
-                    if(Boolean.TRUE.equals(isRunnerV3Enabled))
-                        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true);
-                    else
-                        consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                    triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
                 }
             }
         }
@@ -2240,17 +2241,17 @@ public class ReportService implements IReportService {
             return;
         if(Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType())) {
-            if(Boolean.TRUE.equals(isRunnerV3Enabled))
-                networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true);
-            else
-                consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+            triggerConsoleAutomaticTransfer(isRunnerV3Enabled, consolidationDetails);
         }
     }
 
     public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
         if(Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
-            networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true);
+            if(Boolean.TRUE.equals(isRunnerV3Enabled))
+                networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true);
+            else
+                shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);
         }
     }
 
