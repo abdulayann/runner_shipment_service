@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
@@ -46,4 +45,6 @@ public interface IContainerV3Service {
     ContainerResponse unAssignContainers(UnAssignContainerRequest request) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
+    void updateAttachedContainersData(List<Long> containerIds) throws RunnerException;
+    void addShipmentCargoToContainer(Containers container, ShipmentDetails shipmentDetails) throws RunnerException;
 }

@@ -123,12 +123,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
@@ -218,6 +213,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     ExecutorService executorService;
     @Autowired
     private IContainerV3Service containerV3Service;
+    @Autowired
+    private ContainerV3Util containerV3Util;
     @Autowired
     private CacheManager cacheManager;
     @Autowired
@@ -842,6 +839,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!isCreate) {
             // Update AWB
             updateAwb(shipmentDetails, oldEntity);
+            // Update Container From Cargo
+            updateContainerFromCargo(shipmentDetails);
         }
         log.info("shipment afterSave isCreate .... ");
         shipmentRequest.setId(id);
@@ -1583,6 +1582,22 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
+//    private Long assignFirstBookingContainerToShipmentCargo(List<Containers> expandedContainers, ShipmentDetails shipmentDetails) throws RunnerException {
+//        Long containerId = null;
+//        for(int i=0;i<expandedContainers.size();i++) {
+//            Containers containers = expandedContainers.get(i);
+//            containers.setAssigned(true);
+//            if(i == 0) {
+//                containerV3Service.addShipmentCargoToContainer(containers, shipmentDetails);
+//                containerV3Util.setContainerNetWeight(containers);
+//                containerId = containers.getId();
+//            } else {
+//                containerV3Util.resetContainerDataForRecalculation(containers);
+//            }
+//        }
+//        return containerId;
+//    }
+
     @Override
     public ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
         Set<ConsolidationDetailsRequest> consolidationDetails = new HashSet<>();
@@ -1690,7 +1705,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
                 shipmentDetails.setContainersList(new HashSet<>(expandedContainers));
             }
-
 
             populateUnlocCodeFuture.join();
 
@@ -2399,4 +2413,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    private void updateContainerFromCargo(ShipmentDetails shipmentDetails) throws RunnerException {
+        if(!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) || Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
+            return;
+        containerV3Service.updateAttachedContainersData(List.of(shipmentDetails.getContainerAssignedToShipmentCargo()));
+    }
 }

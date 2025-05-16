@@ -28,6 +28,8 @@ public class ContainerResponse implements IRunnerResponse {
     private Long bookingId;
     private Long loggingId;
     private String containerCode;
+    private BigDecimal teu;
+    private Boolean assigned;
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;

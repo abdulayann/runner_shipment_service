@@ -96,8 +96,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
@@ -1031,8 +1030,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         // assigning zero to weight and volume as it will be freshly recalculated
-        container.setNetWeight(BigDecimal.ZERO);
-        container.setGrossVolume(BigDecimal.ZERO);
+        containerV3Util.resetContainerDataForRecalculation(container);
 
         // Fetch data already assigned
         assignedPacks.addAll(packingDao.findByContainerIdIn(List.of(containerId)).stream().toList());
@@ -1062,7 +1060,8 @@ public class ContainerV3Service implements IContainerV3Service {
                 addPackageDataToContainer(container, assignedPack);
             }
         }
-        containerV3Util.setContainerGrossWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        containerV3Util.setContainerNetWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        container.setAssigned(true);
         return shipmentIdsForAttachment;
     }
 
@@ -1075,9 +1074,11 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void addShipmentCargoToContainer(Containers container, ShipmentDetails shipmentDetails) throws RunnerException {
-        container.setNetWeight(containerV3Util.getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), shipmentDetails.getWeight(), shipmentDetails.getWeightUnit()));
+    @Override
+    public void addShipmentCargoToContainer(Containers container, ShipmentDetails shipmentDetails) throws RunnerException {
+        container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), shipmentDetails.getWeight(), shipmentDetails.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit()));
+        containerV3Util.addNoOfPackagesToContainerFromShipment(container, shipmentDetails.getNoOfPacks(), shipmentDetails.getPacksUnit());
     }
 
     private void assignContainerToShipmentAndPackages(ShipmentDetails shipmentDetails, AssignContainerRequest request, Containers container,
@@ -1091,8 +1092,9 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
-        container.setNetWeight(containerV3Util.getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
+        container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), packing.getVolume(), packing.getVolumeUnit()));
+        containerV3Util.addNoOfPackagesToContainerFromShipment(container, packing.getPacks(), packing.getPacksType());
     }
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
@@ -1151,7 +1153,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, shipmentDetailsMap, shipmentPackingMap,
-                shipmentIdsForCargoDetachment, removeAllPackingIds);
+                                                                                    shipmentIdsForCargoDetachment, removeAllPackingIds, shipmentsContainersMappings);
 
         // Save the data
         container = saveUnAssignContainerResults(shipmentIdsForDetachment, removeAllPackingIds, shipmentIdsForCargoDetachment,
@@ -1189,17 +1191,14 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         // assigning zero to weight and volume as it will be freshly recalculated
-        container.setNetWeight(BigDecimal.ZERO);
-        container.setGrossVolume(BigDecimal.ZERO);
+        containerV3Util.resetContainerDataForRecalculation(container);
 
         return container;
     }
 
-    private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container,
-                                                             Map<Long, ShipmentDetails> shipmentDetailsMap,
-                                                             Map<Long, List<Packing>> shipmentPackingMap,
-                                                             List<Long> shipmentIdsForCargoDetachment,
-                                                             List<Long> removeAllPackingIds) throws RunnerException {
+    private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, Map<Long,ShipmentDetails> shipmentDetailsMap,
+                                                             Map<Long, List<Packing>> shipmentPackingMap, List<Long> shipmentIdsForCargoDetachment,
+                                                             List<Long> removeAllPackingIds, List<ShipmentsContainersMapping> shipmentsContainersMappings) throws RunnerException {
         List<Long> shipmentIdsForDetachment = new ArrayList<>();
 
         for (Map.Entry<Long, ShipmentDetails> entry : shipmentDetailsMap.entrySet()) {
@@ -1215,7 +1214,10 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
-        containerV3Util.setContainerGrossWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        containerV3Util.setContainerNetWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        if(Objects.equals(shipmentIdsForDetachment.size(), shipmentsContainersMappings.size())) {
+            container.setAssigned(false);
+        }
         return shipmentIdsForDetachment;
     }
 
@@ -1274,6 +1276,32 @@ public class ContainerV3Service implements IContainerV3Service {
         if (!listIsNullOrEmpty(shipmentsContainersMappingList))
             shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappingList);
         return container;
+    }
+
+    @Override
+    public void updateAttachedContainersData(List<Long> containerIds) throws RunnerException {
+        if(listIsNullOrEmpty(containerIds)) {
+            return;
+        }
+        ListCommonRequest listCommonRequest = constructListCommonRequest("containerAssignedToShipmentCargo", containerIds, "IN");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+        Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        List<Packing> packingList = packingDao.findByContainerIdIn(containerIds);
+        List<Containers> containers = findByIdIn(containerIds);
+        Map<Long, Containers> containersMap = containers.stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        for(Containers containers1: containers) {
+            containerV3Util.resetContainerDataForRecalculation(containers1);
+        }
+        for(ShipmentDetails shipmentDetails: shipmentDetailsList.getContent()) {
+            addShipmentCargoToContainer(containersMap.get(shipmentDetails.getContainerAssignedToShipmentCargo()), shipmentDetails);
+        }
+        for(Packing packing: packingList) {
+            addPackageDataToContainer(containersMap.get(packing.getContainerId()), packing);
+        }
+        for(Containers containers1: containers) {
+            containerV3Util.setContainerNetWeight(containers1); // set container gross weight from cargo weight (net weight) and tare weight
+        }
+        containerDao.saveAll(containers.stream().toList());
     }
 
 }

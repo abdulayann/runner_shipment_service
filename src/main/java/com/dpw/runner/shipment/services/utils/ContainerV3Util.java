@@ -12,7 +12,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -46,6 +45,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -320,18 +320,43 @@ public class ContainerV3Util {
         return initialVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, addedVolume, addedVolumeUnit, initialVolumeUnit).toString()));
     }
 
-    public void setContainerGrossWeight(Containers container) throws RunnerException {
+    public void setContainerNetWeight(Containers container) throws RunnerException {
         if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO) && !isStringNullOrEmpty(container.getTareWeightUnit())) {
-            if(container.getGrossWeight() == null)
-                container.setGrossWeight(BigDecimal.ZERO);
-            if(isStringNullOrEmpty(container.getGrossWeightUnit())) {
-                container.setGrossWeightUnit(
-                        isStringNullOrEmpty(container.getNetWeightUnit()) ?
-                                commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getNetWeightUnit());
+            if(container.getNetWeight() == null)
+                container.setNetWeight(BigDecimal.ZERO);
+            if(isStringNullOrEmpty(container.getNetWeightUnit())) {
+                container.setNetWeightUnit(
+                        isStringNullOrEmpty(container.getGrossWeightUnit()) ?
+                                commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getGrossWeightUnit());
             }
-            container.setGrossWeight(getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
-            container.setGrossWeight(getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), container.getNetWeight(), container.getNetWeightUnit()));
+            container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
+            container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getGrossWeight(), container.getGrossWeightUnit()));
         }
+    }
+
+    public void resetContainerDataForRecalculation(Containers container) {
+        container.setNetWeight(BigDecimal.ZERO);
+        container.setGrossVolume(BigDecimal.ZERO);
+        container.setPacks("0");
+        container.setPacksType(null);
+    }
+
+    public void addNoOfPackagesToContainerFromShipment(Containers container, String packs, String packsType) {
+        if(isStringNullOrEmpty(packs))
+            return;
+        addNoOfPackagesToContainerFromShipment(container, Integer.parseInt(packs), packsType);
+    }
+
+    public void addNoOfPackagesToContainerFromShipment(Containers container, Integer packs, String packsType) {
+        if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
+            return;
+        if(isStringNullOrEmpty(container.getPacks()))
+            container.setPacks("0");
+        if(isStringNullOrEmpty(container.getPacksType()))
+            container.setPacksType(packsType);
+        else if(!Objects.equals(packsType, container.getPacksType()))
+            container.setPacksType(PKG);
+        container.setPacks(String.valueOf(Integer.parseInt(container.getPacks()) + packs));
     }
 
 }
