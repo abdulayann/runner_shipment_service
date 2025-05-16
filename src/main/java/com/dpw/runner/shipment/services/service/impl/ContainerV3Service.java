@@ -535,7 +535,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
             listCommonRequest = CommonUtils.constructListCommonRequest(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
         } else {
-            listCommonRequest = CommonUtils.andCriteria(SHIPMENTS_LIST, Long.valueOf(request.getEntityId()), Constants.CONTAINS, request);
+            listCommonRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
         }
         listCommonRequest.setSortRequest(request.getSortRequest());
         listCommonRequest.setPageNo(request.getPageNo());
