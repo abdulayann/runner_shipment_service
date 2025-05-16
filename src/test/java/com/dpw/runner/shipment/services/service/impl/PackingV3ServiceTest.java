@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -101,6 +102,8 @@ class PackingV3ServiceTest extends CommonMocks {
     ExecutorService executorServiceMasterData;
     @Mock
     private HttpServletResponse httpServletResponse;
+    @Mock
+    private IContainerV3Service containerV3Service;
 
     private Packing packing;
     private PackingV3Request request;

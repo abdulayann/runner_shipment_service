@@ -33,7 +33,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,7 +50,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -142,18 +140,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return convertEntityToDto(routings);
     }
 
-    private void createAuditLogs(Routings routings, Routings oldRoutings, String operation) throws RunnerException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException, JsonProcessingException, InvocationTargetException {
-        auditLogService.addAuditLog(
-                AuditLogMetaData.builder()
-                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                        .newData(routings)
-                        .prevData(oldRoutings)
-                        .parent(Routings.class.getSimpleName())
-                        .parentId(routings.getId())
-                        .operation(operation).build()
-        );
-    }
-
     public void afterSave(List<Routings> routingList, Long entityId, String module) throws RunnerException {
         List<Routings> mainCarriageList = routingList.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
@@ -171,94 +157,62 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
-            for (ShipmentDetails shipmentDetails : shipmentsList) {
-                List<Routings> originalRoutings = shipmentDetails.getRoutingsList();
-                List<Routings> updatedRoutings = new ArrayList<>(originalRoutings);
+            if (!CollectionUtils.isEmpty(shipmentsList)) {
+                for (ShipmentDetails shipmentDetails : shipmentsList) {
+                    List<Routings> originalRoutings = shipmentDetails.getRoutingsList();
+                    if (!CollectionUtils.isEmpty(originalRoutings)) {
+                        List<Routings> updatedRoutings = new ArrayList<>(originalRoutings);
 
-                // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
-                List<Integer> inheritedIndexes = new ArrayList<>();
-                for (int i = 0; i < updatedRoutings.size(); i++) {
-                    Routings routing = updatedRoutings.get(i);
-                    if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                            Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
-                        inheritedIndexes.add(i);
-                    }
-                }
+                        // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
+                        List<Integer> inheritedIndexes = new ArrayList<>();
+                        for (int i = 0; i < updatedRoutings.size(); i++) {
+                            Routings routing = updatedRoutings.get(i);
+                            if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                                    Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
+                                inheritedIndexes.add(i);
+                            }
+                        }
 
-                // Step 2: Remove those inherited MAIN_CARRIAGE entries
-                boolean isMainCarriagePresent = updatedRoutings.stream()
-                        .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                        // Step 2: Remove those inherited MAIN_CARRIAGE entries
+                        boolean isMainCarriagePresent = updatedRoutings.stream()
+                                .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                                        Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+                        if (!isMainCarriagePresent && !CollectionUtils.isEmpty(mainCarriageList)) {
+                            updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+                        }
+                        updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
                                 Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
-                if (!isMainCarriagePresent && !CollectionUtils.isEmpty(mainCarriageList)) {
-                    updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-                }
-                updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                        Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
 
 
-                // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
-                List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
-                        .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                        .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
-                        .toList();
+                        // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
+                        List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
+                                .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                                .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
+                                .toList();
 
-                // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
-                int offset = 0;
-                for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
-                    int insertAt = i < inheritedIndexes.size()
-                            ? inheritedIndexes.get(i)
-                            : offset; // append to end if more than removed
-                    if (insertAt >= updatedRoutings.size()) {
-                        updatedRoutings.add(consolidatedMainCarriages.get(i));
-                    } else {
-                        updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
+                        // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
+                        int offset = 0;
+                        for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
+                            int insertAt = i < inheritedIndexes.size()
+                                    ? inheritedIndexes.get(i)
+                                    : offset; // append to end if more than removed
+                            if (insertAt >= updatedRoutings.size()) {
+                                updatedRoutings.add(consolidatedMainCarriages.get(i));
+                            } else {
+                                updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
+                            }
+                            offset = insertAt + 1;
+                        }
+
+                        // Step 5: Push to update
+                        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+                        bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
+                        bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
+                        updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
                     }
-                    offset = insertAt + 1;
                 }
-
-                // Step 5: Push to update
-                BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
-                bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
-                bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
-                updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
             }
         }
-    }
-
-    private Routings cloneRoutingForConsolidation(Routings source, Long consolidationId) {
-        Routings cloned = new Routings();
-        cloned.setConsolidationId(consolidationId);
-        cloned.setBookingId(null);
-        cloned.setCarriage(source.getCarriage());
-        cloned.setLeg(source.getLeg());
-        cloned.setMode(source.getMode());
-        cloned.setRoutingStatus(source.getRoutingStatus());
-        cloned.setVesselName(source.getVesselName());
-        cloned.setPol(source.getPol());
-        cloned.setPod(source.getPod());
-        cloned.setDomestic(source.getIsDomestic());
-        cloned.setEta(source.getEta());
-        cloned.setEtd(source.getEtd());
-        cloned.setAta(source.getAta());
-        cloned.setAtd(source.getAtd());
-        // shipment should be null for the cloned routing being assigned to cnsole
-        cloned.setShipmentId(null);
-        cloned.setIsLinked(source.getIsLinked());
-        cloned.setIsSelectedForDocument(source.getIsSelectedForDocument());
-        cloned.setVoyage(source.getVoyage());
-        cloned.setAircraftRegistration(source.getAircraftRegistration());
-        cloned.setFlightNumber(source.getFlightNumber());
-        cloned.setAircraftType(source.getAircraftType());
-        cloned.setVehicleNumber(source.getVehicleNumber());
-        cloned.setRouteLegId(source.getRouteLegId());
-        cloned.setTransitDays(source.getTransitDays());
-        cloned.setCarrier(source.getCarrier());
-        cloned.setTruckReferenceNumber(source.getTruckReferenceNumber());
-        cloned.setCarrierCountry(source.getCarrierCountry());
-        cloned.setOriginPortLocCode(source.getOriginPortLocCode());
-        cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
-        cloned.setInheritedFromConsolidation(false);
-        return cloned;
     }
 
     private CarrierDetails getNewCarrierDetails(CarrierDetails currentCarrierDetails){
@@ -390,10 +344,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
 
     @Override
-    public RoutingListResponse list(CommonRequestModel commonRequestModel, String xSource) throws RunnerException {
+    public RoutingListResponse list(ListCommonRequest request, String xSource) throws RunnerException {
         String responseMsg;
         try {
-            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error("Request is empty for Routing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Request is empty for Routing list");
@@ -587,11 +540,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     private void recordAuditLogs(List<Routings> oldRouting, List<Routings> newRouting, DBOperationType operationType, ParentResult parentResult) {
         Map<Long, Routings> oldRoutingMap = Optional.ofNullable(oldRouting).orElse(List.of()).stream()
                 .filter(route -> route.getId() != null)
-                .collect(Collectors.toMap(Routings::getId, Function.identity()));
+                .collect(Collectors.toMap(Routings::getId, Function.identity(),
+                        (existing, replacement) -> existing));
 
         Map<Long, Routings> newRoutingMap = Optional.ofNullable(newRouting).orElse(List.of()).stream()
                 .filter(route -> route.getId() != null)
-                .collect(Collectors.toMap(Routings::getId, Function.identity()));
+                .collect(Collectors.toMap(Routings::getId, Function.identity(),
+                        (existing, replacement) -> existing));
 
         // Decide the relevant set of IDs based on operation
         Set<Long> idsToProcess = switch (operationType) {

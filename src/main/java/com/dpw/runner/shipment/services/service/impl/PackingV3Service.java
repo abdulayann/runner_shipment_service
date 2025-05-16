@@ -29,8 +29,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -529,12 +534,34 @@ public class PackingV3Service implements IPackingV3Service {
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.SHIPMENT_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
+            List<Long> containerIds = packingListResponse.getPackings().stream().filter(packing -> packing.getContainerId() != null).map(PackingResponse::getContainerId).toList();
+            if (!CollectionUtils.isEmpty(containerIds)) {
+                List<ContainerInfoProjection> containerInfoProjections = containerV3Service.getContainers(containerIds);
+                Map<Long, String> containerIdContainerNumberMap = containerInfoProjections.stream()
+                        .collect(Collectors.toMap(
+                                ContainerInfoProjection::getId,
+                                ContainerInfoProjection::getContainerNumber,
+                                (existing, replacement) -> existing
+                        ));
+                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
+            }
 
+        }
         PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByShipment(Long.valueOf(request.getEntityId()));
         packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
         packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
 
         return packingListResponse;
+    }
+
+    public void processPackingListResponse(PackingListResponse packingListResponse, Map<Long, String> containerIdContainerNumberMap) {
+        for (PackingResponse item : packingListResponse.getPackings()) {
+            Long containerId = item.getContainerId();
+            if (containerId != null) {
+                item.setContainerNumber(containerIdContainerNumberMap.get(containerId));
+            }
+        }
     }
 
     @Override
@@ -894,8 +921,12 @@ public class PackingV3Service implements IPackingV3Service {
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         response.setPacksUnit(Constants.PACKAGES);
+        Set<String> uniquePacksUnits = new HashSet<>();
         if (!CollectionUtils.isEmpty(packings)) {
             for (Packing packing : packings) {
+                if (!StringUtility.isEmpty(packing.getPacksType())) {
+                    uniquePacksUnits.add(packing.getPacksType());
+                }
                 if (packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
                     totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
                 }
@@ -909,6 +940,9 @@ public class PackingV3Service implements IPackingV3Service {
             response.setNoOfPacks(totalPacks);
             response.setWeight(totalWeight);
             response.setVolume(totalVolume);
+            if (uniquePacksUnits.size() == 1) {
+                response.setPacksUnit(packings.get(0).getPacksType());
+            }
             response = calculateVW(response);
         }
         return response;

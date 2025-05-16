@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
@@ -117,5 +118,10 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
             """, nativeQuery = true)
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 
-
+    @Query(value = """
+            SELECT c.id as id, c.containerNumber as containerNumber
+            FROM Containers c
+            WHERE c.id in(:containerIds)
+            """)
+    List<ContainerInfoProjection> findByContainerIds(@Param("containerIds") List<Long> containerIds);
 }

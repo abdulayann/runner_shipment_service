@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
@@ -42,6 +43,7 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -54,6 +56,7 @@ import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -509,6 +512,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public ContainerListResponse fetchShipmentContainers(ListCommonRequest request, String xSource) throws RunnerException {
+        if (StringUtility.isEmpty(request.getEntityId())) {
+            throw new ValidationException("Entity id is empty");
+        }
         ListCommonRequest listCommonRequest;
         if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
             listCommonRequest = CommonUtils.constructListCommonRequest(SHIPMENTS_LIST, Long.valueOf(request.getEntityId()), Constants.CONTAINS);
@@ -1139,6 +1145,11 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     public List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds) {
         return containerDao.findContainerIdsAttachedToEitherPackingOrShipment(containerIds);
+    }
+
+    @Override
+    public List<ContainerInfoProjection> getContainers(List<Long> containerIds) {
+        return containerDao.findByContainerIds(containerIds);
     }
 
     @Override

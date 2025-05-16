@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
@@ -20,7 +21,7 @@ public interface IRoutingsV3Service{
 
     RoutingsResponse update(CommonRequestModel commonRequestModel, String module) throws RunnerException;
 
-    RoutingListResponse list(CommonRequestModel commonRequestModel, String xSource) throws RunnerException;
+    RoutingListResponse list(ListCommonRequest listCommonRequest, String xSource) throws RunnerException;
 
     void delete(CommonRequestModel commonRequestModel, String module) throws RunnerException;
 

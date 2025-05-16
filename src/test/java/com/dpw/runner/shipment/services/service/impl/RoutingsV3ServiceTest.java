@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -24,8 +25,10 @@ import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -49,6 +52,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 
@@ -59,6 +63,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -82,8 +87,13 @@ class RoutingsV3ServiceTest extends CommonMocks {
     private RoutingV3Util routingV3Util;
     @Mock
     private IShipmentServiceV3 shipmentServiceV3;
+
+    @Mock
+    private IConsolidationV3Service consolidationV3Service;
     @Mock
     private ICarrierDetailsDao carrierDetailsDao;
+    @Mock
+    private NetworkTransferV3Util networkTransferV3Util;
     @InjectMocks
     private RoutingsV3Service routingsService;
 
@@ -298,6 +308,58 @@ class RoutingsV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testConsolidationUpdateBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setConsolidationId(1L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        Routings routings1 = new Routings();
+        routings1.setId(3l);
+        routings1.setConsolidationId(1L);
+        routings1.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+
+        Routings routings2 = new Routings();
+        routings2.setId(3l);
+        routings2.setConsolidationId(1L);
+        routings2.setCarriage(RoutingCarriage.ON_CARRIAGE);
+
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .routingsList(List.of(routings, routings1, routings2))
+                .build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .shipmentsList(Set.of(shipmentDetails))
+                .routingsList(List.of(routings, routings1, routings2))
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1, routings2));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(consolidationV3Service.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationV3Service.getConsolidationById(anyLong())).thenReturn(consolidationDetails);
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.CONSOLIDATION);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+        verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+    @Test
     void testDeleteBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         routingsRequest.setId(2L);
         routings.setId(2L);
@@ -321,7 +383,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.findAll(any(), any())).thenReturn(page);
         when(modelMapper.map(any(), eq(RoutingsResponse.class))).thenReturn(routingsResponse);
 
-        var response = routingsService.list(commonRequestModel, Constants.SHIPMENT);
+        var response = routingsService.list(request, Constants.SHIPMENT);
         assertEquals(1, response.getRoutings().size());
         assertEquals(1, response.getTotalCount());
     }
@@ -330,7 +392,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
     @Test
     void testList_RequestNull() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
-        assertThrows(RunnerException.class, () -> routingsService.list(commonRequestModel, Constants.SHIPMENT));
+        assertThrows(RunnerException.class, () -> routingsService.list(null, Constants.SHIPMENT));
     }
 
     @Test

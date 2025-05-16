@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
@@ -519,6 +520,11 @@ public class ContainerDao implements IContainerDao {
     @Override
     public List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds) {
         return containerRepository.findContainerIdsAttachedToEitherPackingOrShipment(containerIds);
+    }
+
+    @Override
+    public List<ContainerInfoProjection> findByContainerIds(List<Long> containerIds) {
+        return containerRepository.findByContainerIds(containerIds);
     }
 
 }
