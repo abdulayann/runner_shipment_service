@@ -780,7 +780,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @SuppressWarnings("java:S125")
-    private void beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean isImportFile) throws RunnerException {
+    protected void beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean isImportFile) throws RunnerException {
         shipmentValidationV3Util.validateStaleShipmentUpdateError(shipmentDetails, isCreate);
 
         /* Future to populate unloc code in shipment child entities*/
@@ -923,7 +923,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+    protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldEntity)
                 && !Objects.equals(oldEntity.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
@@ -973,7 +973,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .map(ConsoleShipmentMapping::getShipmentId).toList();
     }
 
-    private ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Set<ConsolidationDetails> consolidationList, ShipmentDetails shipment) {
+    protected ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Set<ConsolidationDetails> consolidationList, ShipmentDetails shipment) {
         if (!setIsNullOrEmpty(consolidationList)) {
             return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, consolidationList.iterator().next().getId(), shipment, null);
         }
@@ -1024,7 +1024,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return null;
     }
 
-    private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<Events> eventsList, Long id, Integer previousStatus) throws RunnerException {
+    protected void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<Events> eventsList, Long id, Integer previousStatus) throws RunnerException {
         if (eventsList != null) {
             eventsList = setEventDetails(eventsList, shipmentDetails);
             eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, oldEntity, eventsList, isCreate);
@@ -1048,7 +1048,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @SuppressWarnings({"java:S1066", "java:S2583"})
-    private void autoGenerateEvents(ShipmentDetails shipmentDetails) {
+    protected void autoGenerateEvents(ShipmentDetails shipmentDetails) {
         Events response = null;
         if (shipmentDetails.getStatus() != null) {
             // LATER : remove this
@@ -1060,7 +1060,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private List<Events> setEventDetails(List<Events> eventsList, ShipmentDetails shipmentDetails) {
+    protected List<Events> setEventDetails(List<Events> eventsList, ShipmentDetails shipmentDetails) {
         if (eventsList != null && !eventsList.isEmpty()) {
             for (Events events : eventsList) {
                 events.setShipmentNumber(shipmentDetails.getShipmentId());
@@ -1091,7 +1091,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, consolidationList, shipment);
     }
 
-    private boolean isDiffPresentInOldNewShipment(ShipmentDetails shipment, ShipmentDetails oldEntity) {
+    protected boolean isDiffPresentInOldNewShipment(ShipmentDetails shipment, ShipmentDetails oldEntity) {
         return oldEntity == null || !Objects.equals(shipment.getMasterBill(), oldEntity.getMasterBill()) ||
                 !Objects.equals(shipment.getDirection(), oldEntity.getDirection()) ||
                 (shipment.getAdditionalDetails() != null && oldEntity.getAdditionalDetails() != null &&
@@ -1106,7 +1106,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         ));
     }
 
-    private ConsolidationDetails processLinkedConsolidationDetails(ShipmentDetails shipment, ShipmentDetails oldEntity, Set<ConsolidationDetails> consolidationList, boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, AtomicBoolean makeConsoleSciT1) throws RunnerException {
+    protected ConsolidationDetails processLinkedConsolidationDetails(ShipmentDetails shipment, ShipmentDetails oldEntity, Set<ConsolidationDetails> consolidationList, boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, AtomicBoolean makeConsoleSciT1) throws RunnerException {
         ConsolidationDetails consolidationDetails;
         consolidationDetails = consolidationDetailsDao.findById(consolidationList.iterator().next().getId()).get();
         consolidationDetails.setBol(shipment.getMasterBill());
@@ -1135,7 +1135,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return consolidationDetails;
     }
 
-    private boolean checkConsoleSciUpdateT1(ShipmentDetails shipment, ShipmentDetails oldEntity) {
+    protected boolean checkConsoleSciUpdateT1(ShipmentDetails shipment, ShipmentDetails oldEntity) {
         if (shipment.getAdditionalDetails() == null) return false;
         if (Strings.isNullOrEmpty(shipment.getAdditionalDetails().getSci())) return false;
         if (!Objects.equals(shipment.getAdditionalDetails().getSci(), AwbConstants.T1)) return false;
@@ -1178,11 +1178,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return shipmentDao.saveAll(shipments);
     }
 
-    private boolean isExportOrImportBrokerPresent(ShipmentDetails shipment) {
+    protected boolean isExportOrImportBrokerPresent(ShipmentDetails shipment) {
         return CommonUtils.checkPartyNotNull(shipment.getAdditionalDetails().getExportBroker()) || CommonUtils.checkPartyNotNull(shipment.getAdditionalDetails().getImportBroker());
     }
 
-    private void addAdditionalDetailsForShipment(ShipmentDetails shipment, ShipmentDetails i) {
+    protected void addAdditionalDetailsForShipment(ShipmentDetails shipment, ShipmentDetails i) {
         if (i.getAdditionalDetails() == null) {
             i.setAdditionalDetails(new AdditionalDetails());
         }
@@ -1224,7 +1224,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return !Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldEntity.getAdditionalDetails().getEfreightStatus());
     }
 
-    private boolean checkOriginalPrintedForJobTypeChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+    protected boolean checkOriginalPrintedForJobTypeChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (oldEntity == null)
             return false;
         if (!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA))
@@ -1236,7 +1236,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return !Objects.equals(shipmentDetails.getJobType(), oldEntity.getJobType());
     }
 
-    private void updateAwbForDisableFetchConditionForAwb(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
+    protected void updateAwbForDisableFetchConditionForAwb(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
         if (checkDisableFetchConditionForAwb(shipmentDetails, oldEntity, shipmentSettingsDetails)) {
             List<Awb> awbs = awbDao.findByShipmentId(shipmentDetails.getId());
             if (!awbs.isEmpty()) {
@@ -1250,7 +1250,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private boolean checkDisableFetchConditionForAwb(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails) {
+    protected boolean checkDisableFetchConditionForAwb(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails) {
         if (oldEntity == null)
             return false;
         if (!Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag()))
@@ -1263,7 +1263,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 || !Objects.equals(shipmentDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
     }
 
-    private void processBranchesAndPartner(ShipmentDetails shipmentDetails) {
+    protected void processBranchesAndPartner(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0) {
             shipmentDetails.setReceivingBranch(null);
         }
@@ -1283,7 +1283,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setDocumentationPartner(null);
     }
 
-    private void validateBeforeSave(ShipmentDetails shipmentDetails) {
+    protected void validateBeforeSave(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
             throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
 
@@ -2243,7 +2243,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
+    protected AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         if (isStringNullOrEmpty(request.getWeightUnit()))
@@ -2266,7 +2266,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws RunnerException {
+    protected AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws RunnerException {
         if (isStringNullOrEmpty(request.getTransportMode()))
             return response;
         if (!isStringNullOrEmpty(response.getWeightUnit()) && !isStringNullOrEmpty(response.getVolumeUnit())) {
@@ -2291,7 +2291,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws RunnerException { // to account for updateShipmentDetails flag in v1 container summary
+    protected AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws RunnerException { // to account for updateShipmentDetails flag in v1 container summary
         double totalWeight = 0;
         double packageCount = 0;
         double tareWeight = 0;
