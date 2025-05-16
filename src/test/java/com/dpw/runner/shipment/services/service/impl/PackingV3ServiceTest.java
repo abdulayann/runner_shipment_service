@@ -104,8 +104,6 @@ class PackingV3ServiceTest extends CommonMocks {
     ExecutorService executorServiceMasterData;
     @Mock
     private HttpServletResponse httpServletResponse;
-    @Mock
-    private IContainerV3Service containerV3Service;
 
     private Packing packing;
     private PackingV3Request request;
