@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
@@ -47,4 +48,6 @@ public interface IContainerV3Service {
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
     void updateAttachedContainersData(List<Long> containerIds) throws RunnerException;
     void addShipmentCargoToContainer(Containers container, ShipmentDetails shipmentDetails) throws RunnerException;
+
+    List<ContainerInfoProjection> getContainers(List<Long> containerIds);
 }
