@@ -50,6 +50,12 @@ public class Containers extends MultiTenancy {
     @DedicatedMasterData(type = Constants.CONTAINER_TYPE_MASTER_DATA)
     private String containerCode;
 
+    @Column(name = "teu")
+    private BigDecimal teu;
+
+    @Column(name = "is_assigned")
+    private Boolean assigned;
+
     @Column(name = "container_number")
     private String containerNumber;
 
