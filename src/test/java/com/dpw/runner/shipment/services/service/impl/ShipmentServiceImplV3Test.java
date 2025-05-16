@@ -439,7 +439,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(ConsolidationDetailsResponse.builder().build()).when(consolidationV3Service).createConsolidationForBooking(any());
+        doReturn(ConsolidationDetailsResponse.builder().build()).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
