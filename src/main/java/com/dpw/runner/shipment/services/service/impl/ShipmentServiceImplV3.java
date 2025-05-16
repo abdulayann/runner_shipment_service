@@ -1499,8 +1499,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         updateCutoffDetailsToShipment(request, shipmentDetails);
         shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
         shipmentDao.update(shipmentDetails, false);
-        ShipmentSailingScheduleResponse response = new ShipmentSailingScheduleResponse();
-        return response;
+        return new ShipmentSailingScheduleResponse();
     }
 
     @Override

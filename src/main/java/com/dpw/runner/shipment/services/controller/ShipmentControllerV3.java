@@ -120,9 +120,9 @@ public class ShipmentControllerV3 {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
     @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
-    public ResponseEntity<?> getAllMasterData(@RequestParam Long shipmentId,
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long shipmentId,
                                               @RequestHeader(value = "x-source", required = false) String xSource) {
-        return (ResponseEntity<?>) shipmentService.getAllMasterData(shipmentId, xSource);
+        return ResponseHelper.buildSuccessResponse(shipmentService.getAllMasterData(shipmentId, xSource));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = ShipmentAssignContainerTrayList.class)})
