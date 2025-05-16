@@ -582,6 +582,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 consolidationDetails.getCarrierDetails().setFlightNumber(null);
             }
         }
+
+        if(!Boolean.TRUE.equals(isCreate)){
+            // This method will only work for non air transport modes , validation check moved inside the method
+            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeV3Response(), oldEntity.getShipmentsList());
+            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
+        }
+
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
             consolidationDetails.setDocumentationPartner(null);
         setReceivingAndTriangulationBranch(consolidationDetails);
@@ -2171,7 +2178,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                                 !Objects.equals(console.getCarrierDetails().getEtd(), oldEntity.getCarrierDetails().getEtd()) ||
                                 !Objects.equals(console.getCarrierDetails().getEta(), oldEntity.getCarrierDetails().getEta()) ||
                                 !Objects.equals(console.getCarrierDetails().getAtd(), oldEntity.getCarrierDetails().getAtd()) ||
-                                !Objects.equals(console.getCarrierDetails().getAta(), oldEntity.getCarrierDetails().getAta())
+                                !Objects.equals(console.getCarrierDetails().getAta(), oldEntity.getCarrierDetails().getAta()) ||
+                                canProcesscutOffFields(console, oldEntity)
                         )) ||
                 !CommonUtils.checkSameParties(console.getSendingAgent(), oldEntity.getSendingAgent()) ||
                 !CommonUtils.checkSameParties(console.getReceivingAgent(), oldEntity.getReceivingAgent()));
@@ -2223,7 +2231,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             for (ShipmentDetails sd : shipments) {
                 updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);
             }
-
+            updateShipmentCutOffDatesFromConsol(console, console.getRoutingsList(), shipments);
             // Persist updated shipment details and event logs
             shipmentV3Service.saveAll(shipments);
             eventV3Service.saveAllEvent(events);
@@ -3783,5 +3791,54 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
             consolidationDetailsDao.updateSailingScheduleRelatedInfoForAir(request, consolidationId);
         }
+    }
+
+    private void updateShipmentCutOffDatesFromConsol(ConsolidationDetails consolidationDetails, List<Routings> routingsList, List<ShipmentDetails> shipmentDetailsList){
+        if (!CollectionUtils.isEmpty(shipmentDetailsList)) {
+            List<RoutingsRequest> routingsRequests = jsonHelper.convertValueToList(routingsList, RoutingsRequest.class);
+            ShipmentSailingScheduleRequest shipmentSailingScheduleRequest = buildShipmentSailingScheduleRequest(consolidationDetails, routingsRequests);
+            shipmentDetailsList.stream().forEach(shipmentDetails -> {
+                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
+            });
+        }
+    }
+
+    private boolean canProcesscutOffFields(ConsolidationDetails consol, ConsolidationDetails oldEntity) {
+        return !Objects.equals(consol.getTerminalCutoff(), oldEntity.getTerminalCutoff()) ||
+            !Objects.equals(consol.getVerifiedGrossMassCutoff(), oldEntity.getVerifiedGrossMassCutoff()) ||
+            !Objects.equals(consol.getShipInstructionCutoff(), oldEntity.getShipInstructionCutoff()) ||
+            !Objects.equals(consol.getHazardousBookingCutoff(), oldEntity.getHazardousBookingCutoff()) ||
+            !Objects.equals(consol.getReeferCutoff(), oldEntity.getReeferCutoff()) ||
+            !Objects.equals(consol.getEarliestEmptyEquPickUp(), oldEntity.getEarliestEmptyEquPickUp()) ||
+            !Objects.equals(consol.getLatestFullEquDeliveredToCarrier(), oldEntity.getLatestFullEquDeliveredToCarrier()) ||
+            !Objects.equals(consol.getEarliestDropOffFullEquToCarrier(), oldEntity.getEarliestDropOffFullEquToCarrier()) ||
+            !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
+    }
+
+
+    private ShipmentSailingScheduleRequest buildShipmentSailingScheduleRequest(ConsolidationDetails consolidationDetails,
+        List<RoutingsRequest> routingsList){
+
+        if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
+            return ShipmentSailingScheduleRequest.builder()
+                .routings(routingsList)
+                .carrier(consolidationDetails.getCarrierDetails().getShippingLine())
+                .terminalCutoff(consolidationDetails.getTerminalCutoff())
+                .verifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff())
+                .shippingInstructionCutoff(consolidationDetails.getShipInstructionCutoff())
+                .dgCutoff(consolidationDetails.getHazardousBookingCutoff())
+                .reeferCutoff(consolidationDetails.getReeferCutoff())
+                .earliestEmptyEquipmentPickUp(consolidationDetails.getEarliestEmptyEquPickUp())
+                .latestFullEquipmentDeliveredToCarrier(consolidationDetails.getLatestFullEquDeliveredToCarrier())
+                .earliestDropOffFullEquipmentToCarrier(consolidationDetails.getEarliestDropOffFullEquToCarrier())
+                .build();
+        } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
+            return ShipmentSailingScheduleRequest.builder()
+                .routings(routingsList)
+                .latestArrivalTime(consolidationDetails.getLatDate())
+                .build();
+        }
+
+        return null;
     }
 }
