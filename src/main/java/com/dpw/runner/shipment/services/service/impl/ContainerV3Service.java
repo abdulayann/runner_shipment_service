@@ -519,6 +519,7 @@ public class ContainerV3Service implements IContainerV3Service {
         listCommonRequest.setSortRequest(request.getSortRequest());
         listCommonRequest.setPageNo(request.getPageNo());
         listCommonRequest.setPageSize(request.getPageSize());
+        listCommonRequest.setContainsText(request.getContainsText());
         ContainerListResponse containerListResponse = list(listCommonRequest, true, xSource);
         log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         containerListResponse.setTotalPages(containerListResponse.getTotalPages());
@@ -540,6 +541,7 @@ public class ContainerV3Service implements IContainerV3Service {
         listCommonRequest.setSortRequest(request.getSortRequest());
         listCommonRequest.setPageNo(request.getPageNo());
         listCommonRequest.setPageSize(request.getPageSize());
+        listCommonRequest.setContainsText(request.getContainsText());
         return list(listCommonRequest, true, xSource);
     }
 
