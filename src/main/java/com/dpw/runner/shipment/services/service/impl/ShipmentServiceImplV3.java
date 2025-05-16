@@ -1646,6 +1646,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
+        //todo: remove this: aditya
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
@@ -1694,16 +1695,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
 
             if (containerList != null && !containerList.isEmpty()) {
-                List<Containers> expandedContainers = containerList.stream()
-                        .flatMap(container -> {
-                            Long count = container.getContainerCount();
-                            container.setContainerCount(1L);
-                            return LongStream.range(0L, count)
-                                    .mapToObj(i -> jsonHelper.convertValue(container, Containers.class));
-                        })
-                        .toList();
-
-                shipmentDetails.setContainersList(new HashSet<>(expandedContainers));
+                shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(containerList.stream().toList(), Containers.class)));
             }
 
             populateUnlocCodeFuture.join();

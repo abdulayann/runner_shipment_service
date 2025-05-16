@@ -588,13 +588,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void setContainerAndPackingList(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid, List<ContainerV3Request> containerRequestList, Long id, List<PackingV3Request> packingRequestList) throws RunnerException {
         if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
                 && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, (!isFromBooking && !includeGuid) && isCreate), id, (Long) null, true);
+            List<ContainerV3Request> splittedContainers = splitContainerIntoLineItems(containerRequestList);
+            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate), id, (Long) null, true);
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
             List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
             consolidationDetails.setPackingList(updatedPackings);
         }
+    }
+
+    private List<ContainerV3Request> splitContainerIntoLineItems(List<ContainerV3Request> containerRequestList) {
+        List<ContainerV3Request> expandedContainers = new ArrayList<>();
+        if (!containerRequestList.isEmpty()) {
+            for(ContainerV3Request containerV3Request: containerRequestList) {
+                Long count = containerV3Request.getContainerCount();
+                for (int i = 0; i < count; i++) {
+                    ContainerV3Request newContainer = jsonHelper.convertValue(containerV3Request, ContainerV3Request.class);
+                    newContainer.setContainerCount(1L);
+                    expandedContainers.add(newContainer);
+                }
+            }
+        }
+        return expandedContainers;
     }
 
     private boolean checkForAwbUpdate(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
