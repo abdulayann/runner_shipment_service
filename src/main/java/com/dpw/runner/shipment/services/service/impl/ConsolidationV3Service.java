@@ -2741,7 +2741,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         for(Containers containers: containersMap.values()) {
             noOfCont++;
-            teus = teus.add(containers.getTeu());
+            if(Objects.nonNull(containers.getTeu()))
+                teus = teus.add(containers.getTeu());
         }
 
         String transportMode = consolidationDetails.getTransportMode();
