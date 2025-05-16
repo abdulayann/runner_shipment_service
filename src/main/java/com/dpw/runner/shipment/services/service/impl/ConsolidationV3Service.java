@@ -852,8 +852,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
         // Get unique container IDs from the list
-        List<Long> containerIds = consolidationDetails.getContainersList().stream()
-                .map(Containers::getId).distinct().toList();
+        List<Long> containerIds = new ArrayList<>();
+        if (consolidationDetails.getContainersList() != null) {
+            containerIds = consolidationDetails.getContainersList().stream()
+                .map(Containers::getId)
+                .distinct()
+                .toList();
+        }
 
         // Fetch container IDs attached to packing or shipment
         Set<Long> assignedContainerIds = new HashSet<>(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(containerIds));
@@ -2232,7 +2237,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             for (ShipmentDetails sd : shipments) {
                 updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);
             }
-            updateShipmentDetailsIfConsolidationChanged(console, oldConsolEntity, shipments);
+            updateShipmentDetailsIfConsolidationChanged(oldConsolEntity, console, shipments);
             // Persist updated shipment details and event logs
             shipmentV3Service.saveAll(shipments);
             eventV3Service.saveAllEvent(events);
@@ -2425,6 +2430,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     @Override
     public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) throws RunnerException {
+        if(consolidationRoutings == null) return;
         List<Routings> mainCarriageList = consolidationRoutings.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
                 .toList();
