@@ -58,6 +58,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -752,8 +753,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
         // Get unique container IDs from the list
-        List<Long> containerIds = consolidationDetails.getContainersList().stream()
-                .map(Containers::getId).distinct().toList();
+        List<Long> containerIds = new ArrayList<>();
+        if (consolidationDetails.getContainersList() != null) {
+            containerIds = consolidationDetails.getContainersList().stream()
+                .map(Containers::getId)
+                .distinct()
+                .toList();
+        }
 
         // Fetch container IDs attached to packing or shipment
         Set<Long> assignedContainerIds = new HashSet<>(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(containerIds));
@@ -2132,7 +2138,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             for (ShipmentDetails sd : shipments) {
                 updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);
             }
-            updateShipmentCutOffDatesFromConsol(console, shipments);
+            updateShipmentDetailsIfConsolidationChanged(oldConsolEntity, console, shipments);
             // Persist updated shipment details and event logs
             shipmentV3Service.saveAll(shipments);
             eventV3Service.saveAllEvent(events);
@@ -2325,6 +2331,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     @Override
     public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) throws RunnerException {
+        if(consolidationRoutings == null) return;
         List<Routings> mainCarriageList = consolidationRoutings.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
                 .toList();
@@ -3755,16 +3762,64 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void updateShipmentCutOffDatesFromConsol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList){
-        if (!CollectionUtils.isEmpty(shipmentDetailsList)) {
-            if(TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())){
+//    private void updateShipmentCutOffDatesFromConsol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList){
+//        if (!CollectionUtils.isEmpty(shipmentDetailsList)) {
+//            if(TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())){
+//
+//            }else if(TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())){
+//
+//            }
+////            shipmentDetailsList.stream().forEach(shipmentDetails -> {
+////                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
+////            });
+//        }
+//    }
 
-            }else if(TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())){
+    public void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+        ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList) {
 
+        if (oldConsolidation == null || newConsolidation == null || shipmentDetailsList == null) {
+            return;
+        }
+
+        for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+            String transportMode = shipmentDetails.getTransportMode();
+
+            if (TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)) {
+                updateIfChanged(oldConsolidation.getTerminalCutoff(), newConsolidation.getTerminalCutoff(),
+                    val -> shipmentDetails.setTerminalCutoff(val));
+
+                updateIfChanged(oldConsolidation.getVerifiedGrossMassCutoff(), newConsolidation.getVerifiedGrossMassCutoff(),
+                    val -> shipmentDetails.setVerifiedGrossMassCutoff(val));
+
+                updateIfChanged(oldConsolidation.getShipInstructionCutoff(), newConsolidation.getShipInstructionCutoff(),
+                    val -> shipmentDetails.setShippingInstructionCutoff(val));
+
+                updateIfChanged(oldConsolidation.getHazardousBookingCutoff(), newConsolidation.getHazardousBookingCutoff(),
+                    val -> shipmentDetails.setDgCutoff(val));
+
+                updateIfChanged(oldConsolidation.getReeferCutoff(), newConsolidation.getReeferCutoff(),
+                    val -> shipmentDetails.setReeferCutoff(val));
+
+                updateIfChanged(oldConsolidation.getEarliestEmptyEquPickUp(), newConsolidation.getEarliestEmptyEquPickUp(),
+                    val -> shipmentDetails.setEarliestEmptyEquipmentPickUp(val));
+
+                updateIfChanged(oldConsolidation.getLatestFullEquDeliveredToCarrier(), newConsolidation.getLatestFullEquDeliveredToCarrier(),
+                    val -> shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(val));
+
+                updateIfChanged(oldConsolidation.getEarliestDropOffFullEquToCarrier(), newConsolidation.getEarliestDropOffFullEquToCarrier(),
+                    val -> shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(val));
+
+            } else if (TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)) {
+                updateIfChanged(oldConsolidation.getLatDate(), newConsolidation.getLatDate(),
+                    val -> shipmentDetails.setLatestArrivalTime(val));
             }
-//            shipmentDetailsList.stream().forEach(shipmentDetails -> {
-//                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
-//            });
+        }
+    }
+
+    private void updateIfChanged(LocalDateTime oldValue, LocalDateTime newValue, Consumer<LocalDateTime> setter) {
+        if (!Objects.equals(oldValue, newValue)) {
+            setter.accept(newValue);
         }
     }
 

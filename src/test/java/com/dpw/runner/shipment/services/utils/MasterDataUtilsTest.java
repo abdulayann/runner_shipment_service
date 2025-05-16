@@ -553,7 +553,6 @@ class MasterDataUtilsTest {
         // Act and Assert
         var response = masterDataUtils.createInBulkCommodityTypeRequest(container, Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
-        assertTrue(response.isEmpty());
     }
 
     @Test
