@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -104,6 +105,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private CarrierDetailResponse carrierDetails;
     private AchievedQuantitiesResponse achievedQuantities;
     private AllocationsResponse allocations;
+    private ShipmentWtVolResponse shipmentWtVolResponse;
     private ArrivalDepartureDetailsResponse arrivalDetails;
     private ArrivalDepartureDetailsResponse departureDetails;
     private String sendingAgentCountry;
