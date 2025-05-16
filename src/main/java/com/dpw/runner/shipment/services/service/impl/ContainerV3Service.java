@@ -92,6 +92,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
@@ -530,7 +531,16 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     public ContainerListResponse fetchConsolidationContainers(ListCommonRequest request, String xSource) throws RunnerException {
         log.info("Container detail list retrieved for consolidation successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        return list(request, true, xSource);
+        ListCommonRequest listCommonRequest;
+        if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
+            listCommonRequest = CommonUtils.constructListCommonRequest(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
+        } else {
+            listCommonRequest = CommonUtils.andCriteria(SHIPMENTS_LIST, Long.valueOf(request.getEntityId()), Constants.CONTAINS, request);
+        }
+        listCommonRequest.setSortRequest(request.getSortRequest());
+        listCommonRequest.setPageNo(request.getPageNo());
+        listCommonRequest.setPageSize(request.getPageSize());
+        return list(listCommonRequest, true, xSource);
     }
 
     private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {

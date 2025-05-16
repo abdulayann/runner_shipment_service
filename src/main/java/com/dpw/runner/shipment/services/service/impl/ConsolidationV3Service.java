@@ -582,6 +582,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 consolidationDetails.getCarrierDetails().setFlightNumber(null);
             }
         }
+
+        if(!Boolean.TRUE.equals(isCreate)){
+            // This method will only work for non air transport modes , validation check moved inside the method
+            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeV3Response(), oldEntity.getShipmentsList());
+            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
+        }
+
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
             consolidationDetails.setDocumentationPartner(null);
         setReceivingAndTriangulationBranch(consolidationDetails);
