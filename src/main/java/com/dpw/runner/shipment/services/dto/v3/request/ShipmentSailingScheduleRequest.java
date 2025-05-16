@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
@@ -11,7 +12,6 @@ import java.util.List;
 
 @Getter
 @Setter
-@Builder
 public class ShipmentSailingScheduleRequest implements IRunnerRequest {
     private List<RoutingsRequest> routings;
     private LocalDateTime terminalCutoff;

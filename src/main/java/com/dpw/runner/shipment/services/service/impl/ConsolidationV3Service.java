@@ -2231,7 +2231,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             for (ShipmentDetails sd : shipments) {
                 updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);
             }
-            updateShipmentCutOffDatesFromConsol(console, console.getRoutingsList(), shipments);
+            updateShipmentCutOffDatesFromConsol(console, shipments);
             // Persist updated shipment details and event logs
             shipmentV3Service.saveAll(shipments);
             eventV3Service.saveAllEvent(events);
@@ -3793,13 +3793,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void updateShipmentCutOffDatesFromConsol(ConsolidationDetails consolidationDetails, List<Routings> routingsList, List<ShipmentDetails> shipmentDetailsList){
+    private void updateShipmentCutOffDatesFromConsol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList){
         if (!CollectionUtils.isEmpty(shipmentDetailsList)) {
-            List<RoutingsRequest> routingsRequests = jsonHelper.convertValueToList(routingsList, RoutingsRequest.class);
-            ShipmentSailingScheduleRequest shipmentSailingScheduleRequest = buildShipmentSailingScheduleRequest(consolidationDetails, routingsRequests);
-            shipmentDetailsList.stream().forEach(shipmentDetails -> {
-                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
-            });
+            if(TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())){
+
+            }else if(TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())){
+
+            }
+//            shipmentDetailsList.stream().forEach(shipmentDetails -> {
+//                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
+//            });
         }
     }
 
@@ -3816,29 +3819,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
 
-    private ShipmentSailingScheduleRequest buildShipmentSailingScheduleRequest(ConsolidationDetails consolidationDetails,
-        List<RoutingsRequest> routingsList){
-
-        if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
-            return ShipmentSailingScheduleRequest.builder()
-                .routings(routingsList)
-                .carrier(consolidationDetails.getCarrierDetails().getShippingLine())
-                .terminalCutoff(consolidationDetails.getTerminalCutoff())
-                .verifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff())
-                .shippingInstructionCutoff(consolidationDetails.getShipInstructionCutoff())
-                .dgCutoff(consolidationDetails.getHazardousBookingCutoff())
-                .reeferCutoff(consolidationDetails.getReeferCutoff())
-                .earliestEmptyEquipmentPickUp(consolidationDetails.getEarliestEmptyEquPickUp())
-                .latestFullEquipmentDeliveredToCarrier(consolidationDetails.getLatestFullEquDeliveredToCarrier())
-                .earliestDropOffFullEquipmentToCarrier(consolidationDetails.getEarliestDropOffFullEquToCarrier())
-                .build();
-        } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
-            return ShipmentSailingScheduleRequest.builder()
-                .routings(routingsList)
-                .latestArrivalTime(consolidationDetails.getLatDate())
-                .build();
-        }
-
-        return null;
-    }
+//    private ShipmentSailingScheduleRequest buildShipmentSailingScheduleRequest(ConsolidationDetails consolidationDetails,
+//        List<RoutingsRequest> routingsList){
+//
+//        if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
+//            return ShipmentSailingScheduleRequest.builder()
+//                .routings(routingsList)
+//                .carrier(consolidationDetails.getCarrierDetails().getShippingLine())
+//                .terminalCutoff(consolidationDetails.getTerminalCutoff())
+//                .verifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff())
+//                .shippingInstructionCutoff(consolidationDetails.getShipInstructionCutoff())
+//                .dgCutoff(consolidationDetails.getHazardousBookingCutoff())
+//                .reeferCutoff(consolidationDetails.getReeferCutoff())
+//                .earliestEmptyEquipmentPickUp(consolidationDetails.getEarliestEmptyEquPickUp())
+//                .latestFullEquipmentDeliveredToCarrier(consolidationDetails.getLatestFullEquDeliveredToCarrier())
+//                .earliestDropOffFullEquipmentToCarrier(consolidationDetails.getEarliestDropOffFullEquToCarrier())
+//                .build();
+//        } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
+//            return ShipmentSailingScheduleRequest.builder()
+//                .routings(routingsList)
+//                .latestArrivalTime(consolidationDetails.getLatDate())
+//                .build();
+//        }
+//
+//        return null;
+//    }
 }
