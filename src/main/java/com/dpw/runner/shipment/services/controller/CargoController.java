@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.CargoConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.ContainerDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
@@ -37,11 +37,11 @@ public class CargoController {
     }
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = ContainerDetailsResponse.class, message = CargoConstants.GET_CONTAINER_DETAILS_SUCCESS)
+            @ApiResponse(code = 200, response = CargoDetailsResponse.class, message = CargoConstants.GET_CONTAINER_DETAILS_SUCCESS)
     })
     @PostMapping((ApiConstants.GET_CONTAINER_DETAILS))
     public ResponseEntity<IRunnerResponse> getContainerDetails(@RequestBody @NonNull @Valid ContainerDetailsRequest containerDetailsRequest) throws RunnerException {
-        ContainerDetailsResponse containerDetails = cargoService.getContainerDetails(containerDetailsRequest);
-        return ResponseHelper.buildSuccessResponse(containerDetails);
+        CargoDetailsResponse cargoDetailsResponse = cargoService.getContainerDetails(containerDetailsRequest);
+        return ResponseHelper.buildSuccessResponse(cargoDetailsResponse);
     }
 }

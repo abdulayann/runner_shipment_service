@@ -1153,11 +1153,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
         }
-        // to-do check with Aditya if Notes is present in V3 or not
-//        List<NotesRequest> notesRequests = request.getNotesList();
-//        if (notesRequests != null) {
-//            notesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
-//        }
     }
 
     private void processBookingChargesRequest(CustomerBooking customerBooking, List<BookingChargesRequest> bookingChargesRequest, Map<UUID, Containers> containerMap) throws RunnerException {

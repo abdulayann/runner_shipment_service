@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.ContainerDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -82,10 +82,10 @@ public class CargoServiceTest {
         );
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
         // Assert
         assertNotNull(response);
-        assertEquals(3L, response.getContainers());
+        assertEquals(3, response.getContainers());
         assertEquals(BigDecimal.valueOf(6), response.getTeuCount());
     }
 
@@ -118,11 +118,11 @@ public class CargoServiceTest {
         );
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertEquals(3L, response.getContainers());
+        assertEquals(3, response.getContainers());
         assertEquals(BigDecimal.valueOf(6), response.getTeuCount());
     }
 
@@ -154,11 +154,11 @@ public class CargoServiceTest {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
 
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertEquals(11L, response.getContainers());
+        assertEquals(11, response.getContainers());
         assertEquals(BigDecimal.valueOf(33), response.getTeuCount());
     }
 
@@ -168,11 +168,11 @@ public class CargoServiceTest {
         ContainerDetailsRequest request = createRequest("UNKNOWN", "1");
 
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertEquals(0L, response.getContainers()); // Total containers should be 0
+        assertEquals(0, response.getContainers()); // Total containers should be 0
         assertEquals(BigDecimal.ZERO, response.getTeuCount()); // TEU count should be 0
     }
 
@@ -188,11 +188,11 @@ public class CargoServiceTest {
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
 
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertEquals(0L, response.getContainers());
+        assertEquals(0, response.getContainers());
         assertEquals(BigDecimal.ZERO, response.getTeuCount());
     }
 
@@ -208,11 +208,11 @@ public class CargoServiceTest {
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
 
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertEquals(0L, response.getContainers());
+        assertEquals(0, response.getContainers());
         assertEquals(BigDecimal.ZERO, response.getTeuCount());
     }
 
@@ -229,11 +229,11 @@ public class CargoServiceTest {
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(3));
 
         // Test
-        ContainerDetailsResponse response = cargoService.getContainerDetails(request);
+        CargoDetailsResponse response = cargoService.getContainerDetails(request);
 
         // Assert
         assertNotNull(response);
-        assertEquals(0L, response.getContainers()); // No containers
+        assertEquals(0, response.getContainers()); // No containers
         assertEquals(BigDecimal.ZERO, response.getTeuCount()); // TEU count should be 0
     }
 
