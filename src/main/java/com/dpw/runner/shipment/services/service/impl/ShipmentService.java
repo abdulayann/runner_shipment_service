@@ -829,7 +829,7 @@ public class ShipmentService implements IShipmentService {
 
         // Determine DPS status based on HOLD events with PER_BLOCKED or HOLD state
         boolean isOnDpsHold = dpsEvents.stream().anyMatch(event ->
-                DpsWorkflowType.HOLD.equals(event.getWorkflowType()) &&
+                DpsWorkflowType.DPS_HOLD.equals(event.getWorkflowType()) &&
                         (DpsWorkflowState.PER_BLOCKED.equals(event.getState()) || DpsWorkflowState.HOLD.equals(event.getState()))
         );
 

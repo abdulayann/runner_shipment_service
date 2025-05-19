@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
@@ -21,6 +22,7 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -84,6 +86,8 @@ class NotificationServiceTest {
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Mock
     private CommonUtils commonUtils;
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -697,6 +701,7 @@ class NotificationServiceTest {
                 .requestedBranchId(2)
                 .requestedUser("abc")
                 .reassignedToBranchId(3)
+                .networkTransferId(12L)
                 .build();
         NetworkTransfer networkTransfer = NetworkTransfer.builder()
                 .entityNumber("SHP163834")
@@ -707,7 +712,7 @@ class NotificationServiceTest {
         UserContext.getUser().setEmail("xyz@xyz.com");
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
-        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
@@ -732,6 +737,7 @@ class NotificationServiceTest {
                 .requestedBranchId(2)
                 .requestedUser("abc")
                 .reassignedToBranchId(3)
+                .networkTransferId(11L)
                 .build();
         NetworkTransfer networkTransfer = NetworkTransfer.builder()
                 .entityNumber("SHP163834")
@@ -742,7 +748,7 @@ class NotificationServiceTest {
         UserContext.getUser().setEmail("xyz@xyz.com");
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
-        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
@@ -767,9 +773,19 @@ class NotificationServiceTest {
                 .requestedBranchId(2)
                 .requestedUser("abc")
                 .reassignedToBranchId(3)
+                .networkTransferId(13L)
                 .build();
         NetworkTransfer networkTransfer = NetworkTransfer.builder()
                 .entityNumber("SHP163834")
+                .entityType(Constants.SHIPMENT)
+                .entityId(1L)
+                .isInterBranchEntity(true)
+                .build();
+        NetworkTransfer consoleNetworkTransfer = NetworkTransfer.builder()
+                .entityNumber("CON163834")
+                .entityId(2L)
+                .entityType(Constants.CONSOLIDATION)
+                .isInterBranchEntity(true)
                 .build();
         Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
         tenantModelMap.put(3, new Object());
@@ -777,7 +793,11 @@ class NotificationServiceTest {
         UserContext.getUser().setEmail("xyz@xyz.com");
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
-        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.CONSOLIDATION), any(), anyList(), anyString())).thenReturn(List.of(consoleNetworkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
@@ -803,9 +823,19 @@ class NotificationServiceTest {
                 .requestedBranchId(2)
                 .requestedUser("abc")
                 .reassignedToBranchId(3)
+                .networkTransferId(13L)
                 .build();
         NetworkTransfer networkTransfer = NetworkTransfer.builder()
                 .entityNumber("SHP163834")
+                .entityType(Constants.SHIPMENT)
+                .entityId(1L)
+                .isInterBranchEntity(true)
+                .build();
+        NetworkTransfer consoleNetworkTransfer = NetworkTransfer.builder()
+                .entityNumber("CON163834")
+                .entityId(2L)
+                .entityType(Constants.CONSOLIDATION)
+                .isInterBranchEntity(true)
                 .build();
         Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
         tenantModelMap.put(3, new Object());
@@ -813,7 +843,11 @@ class NotificationServiceTest {
         UserContext.getUser().setEmail("xyz@xyz.com");
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
-        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.CONSOLIDATION), any(), anyList(), anyString())).thenReturn(List.of(consoleNetworkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
@@ -836,9 +870,13 @@ class NotificationServiceTest {
                 .requestedBranchId(2)
                 .requestedUser("abc")
                 .reassignedToBranchId(3)
+                .networkTransferId(13L)
                 .build();
         NetworkTransfer networkTransfer = NetworkTransfer.builder()
-                .entityNumber("SHP163834")
+                .entityNumber("CON163834")
+                .entityType(Constants.CONSOLIDATION)
+                .entityId(1L)
+                .isInterBranchEntity(true)
                 .build();
         Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
         tenantModelMap.put(3, new Object());
@@ -846,7 +884,9 @@ class NotificationServiceTest {
         UserContext.getUser().setEmail("xyz@xyz.com");
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
-        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
@@ -872,9 +912,13 @@ class NotificationServiceTest {
                 .requestedBranchId(2)
                 .requestedUser("abc")
                 .reassignedToBranchId(3)
+                .networkTransferId(13L)
                 .build();
         NetworkTransfer networkTransfer = NetworkTransfer.builder()
-                .entityNumber("SHP163834")
+                .entityNumber("CON163834")
+                .entityType(Constants.CONSOLIDATION)
+                .entityId(1L)
+                .isInterBranchEntity(true)
                 .build();
         Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
         tenantModelMap.put(3, new Object());
@@ -882,7 +926,9 @@ class NotificationServiceTest {
         UserContext.getUser().setEmail("xyz@xyz.com");
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
-        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
         doAnswer(invocation -> {
             Map<String, String> mapArg = invocation.getArgument(1);
             mapArg.put("abc", "abc@example.com");
