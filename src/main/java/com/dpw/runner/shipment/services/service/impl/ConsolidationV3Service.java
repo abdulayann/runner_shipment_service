@@ -2751,8 +2751,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         String packsType = null;
         Integer noOfCont = 0;
         BigDecimal teus = BigDecimal.ZERO;
+        Long shipmentsCount = 0L;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+            shipmentsCount = consolidationDetails.getShipmentsList().stream().count();
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
@@ -2782,6 +2784,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationDetailsResponse.getShipmentWtVolResponse() == null)
             consolidationDetailsResponse.setShipmentWtVolResponse(new ShipmentWtVolResponse());
 
+        consolidationDetailsResponse.setShipmentsCount(shipmentsCount);
         consolidationDetailsResponse.getShipmentWtVolResponse().setWeight(sumWeight);
         consolidationDetailsResponse.getShipmentWtVolResponse().setWeightUnit(weightChargeableUnit);
         consolidationDetailsResponse.getShipmentWtVolResponse().setVolume(sumVolume);

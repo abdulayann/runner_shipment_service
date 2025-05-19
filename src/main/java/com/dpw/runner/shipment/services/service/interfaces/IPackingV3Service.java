@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
@@ -10,10 +9,13 @@ import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import java.util.Set;
 
 public interface IPackingV3Service {
 
@@ -51,4 +53,6 @@ public interface IPackingV3Service {
     List<Long> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
     void processPacksAfterShipmentAttachment(Long consolidationId, ShipmentDetails shipmentDetails);
+
+    Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
 }

@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -199,7 +200,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
-            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService) {
+            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService,
+            IPackingV3Service packingV3Service) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -241,6 +243,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
         this.consolidationV3Service = consolidationV3Service;
         this.masterDataHelper = masterDataHelper;
+        this.packingV3Service = packingV3Service;
     }
 
     @Override
@@ -1467,17 +1470,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId) {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+
         ListCommonRequest listCommonRequest = constructListCommonRequest(CONSOLIDATION_ID, consolidationId, "=");
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentService.tableNames);
         Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetails.getContent().stream().collect(Collectors.toMap(e -> e.getId(), Function.identity()));
-        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        Set<Long> containerIds = new HashSet<>();
+
         response.setShipmentsList(jsonHelper.convertValueToList(shipmentDetails.getContent(), ShipmentPacksAssignContainerTrayDto.Shipments.class));
         for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
             shipments.setPacksList(jsonHelper.convertValueToList(
                     shipmentDetailsMap.containsKey(shipments.getId()) ? shipmentDetailsMap.get(shipments.getId()).getPackingList().stream().toList() : new ArrayList<>(),
                     ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class));
+            shipments.getPacksList().stream()
+                    .map(ShipmentPacksAssignContainerTrayDto.Shipments.Packages::getContainerId)
+                    .filter(Objects::nonNull)
+                    .forEach(containerIds::add);
         }
+        setContainerNumber(response, containerIds);
+
         List<ShipmentsContainersMapping> shipmentsContainersMappingsList = shipmentsContainersMappingDao.findByContainerId(containerId);
         List<Long> assignedShipmentsList = shipmentsContainersMappingsList.stream().map(e -> e.getShipmentId()).toList();
         response.setIsFCLShipmentAssigned(false);
@@ -1495,6 +1507,20 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
+    private void setContainerNumber(ShipmentPacksAssignContainerTrayDto response, Set<Long> containerIds) {
+        Map<Long, ContainerInfoProjection> containerIdNumberMap = packingV3Service.getContainerIdNumberMap(containerIds);
+        for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
+            if(!listIsNullOrEmpty(shipments.getPacksList())) {
+                for(ShipmentPacksAssignContainerTrayDto.Shipments.Packages packages: shipments.getPacksList()) {
+                    if(Objects.nonNull(packages.getContainerId()) && containerIdNumberMap.containsKey(packages.getContainerId())) {
+                        packages.setContainerNumber(containerIdNumberMap.get(packages.getContainerId()).getContainerNumber());
+                        packages.setContainerCode(containerIdNumberMap.get(packages.getContainerId()).getContainerCode());
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public ShipmentPacksUnAssignContainerTrayDto getShipmentAndPacksForConsolidationUnAssignContainerTray(Long containerId) {
         ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
@@ -1504,12 +1530,32 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(shipmentsContainersMappings.stream().map(e -> e.getShipmentId()).collect(Collectors.toSet()));
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetails.stream().collect(Collectors.toMap(e -> e.getId(), Function.identity()));
         response.setShipmentsList(jsonHelper.convertValueToList(shipmentDetails, ShipmentPacksUnAssignContainerTrayDto.Shipments.class));
+        Set<Long> containerIds = new HashSet<>();
         for (ShipmentPacksUnAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
             shipments.setPacksList(jsonHelper.convertValueToList(
                     shipmentDetailsMap.get(shipments.getId()).getPackingList().stream().filter(e -> containerId.equals(e.getContainerId())).toList(),
                     ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.class));
+            shipments.getPacksList().stream()
+                    .map(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages::getContainerId)
+                    .filter(Objects::nonNull)
+                    .forEach(containerIds::add);
         }
+        setContainerNumber(response, containerIds);
         return response;
+    }
+
+    private void setContainerNumber(ShipmentPacksUnAssignContainerTrayDto response, Set<Long> containerIds) {
+        Map<Long, ContainerInfoProjection> containerIdNumberMap = packingV3Service.getContainerIdNumberMap(containerIds);
+        for (ShipmentPacksUnAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
+            if(!listIsNullOrEmpty(shipments.getPacksList())) {
+                for(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages packages: shipments.getPacksList()) {
+                    if(Objects.nonNull(packages.getContainerId()) && containerIdNumberMap.containsKey(packages.getContainerId())) {
+                        packages.setContainerNumber(containerIdNumberMap.get(packages.getContainerId()).getContainerNumber());
+                        packages.setContainerCode(containerIdNumberMap.get(packages.getContainerId()).getContainerCode());
+                    }
+                }
+            }
+        }
     }
 
     @Override

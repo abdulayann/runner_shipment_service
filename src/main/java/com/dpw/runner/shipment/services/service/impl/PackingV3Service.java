@@ -1,17 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -45,11 +33,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -57,24 +41,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -90,6 +56,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -592,15 +573,9 @@ public class PackingV3Service implements IPackingV3Service {
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
-            List<Long> containerIds = packingListResponse.getPackings().stream().filter(packing -> packing.getContainerId() != null).map(PackingResponse::getContainerId).toList();
+            Set<Long> containerIds = packingListResponse.getPackings().stream().map(PackingResponse::getContainerId).filter(Objects::nonNull).collect(Collectors.toSet());
             if (!CollectionUtils.isEmpty(containerIds)) {
-                List<ContainerInfoProjection> containerInfoProjections = containerV3Service.getContainers(containerIds);
-                Map<Long, String> containerIdContainerNumberMap = containerInfoProjections.stream()
-                        .collect(Collectors.toMap(
-                                ContainerInfoProjection::getId,
-                                ContainerInfoProjection::getContainerNumber,
-                                (existing, replacement) -> existing
-                        ));
+                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
                 processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
             }
 
@@ -612,11 +587,11 @@ public class PackingV3Service implements IPackingV3Service {
         return packingListResponse;
     }
 
-    public void processPackingListResponse(PackingListResponse packingListResponse, Map<Long, String> containerIdContainerNumberMap) {
+    public void processPackingListResponse(PackingListResponse packingListResponse, Map<Long, ContainerInfoProjection> containerIdContainerNumberMap) {
         for (PackingResponse item : packingListResponse.getPackings()) {
             Long containerId = item.getContainerId();
             if (containerId != null) {
-                item.setContainerNumber(containerIdContainerNumberMap.get(containerId));
+                item.setContainerNumber(containerIdContainerNumberMap.get(containerId).getContainerNumber());
             }
         }
     }
@@ -1113,4 +1088,16 @@ public class PackingV3Service implements IPackingV3Service {
             containerIdsToUpdate.add(shipmentDetails.getContainerAssignedToShipmentCargo());
         containerV3Service.updateAttachedContainersData(containerIdsToUpdate.stream().toList());
     }
+
+    @Override
+    public Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds) {
+        List<ContainerInfoProjection> containerInfoProjections = containerV3Service.getContainers(containerIds.stream().toList());
+        return containerInfoProjections.stream()
+                .collect(Collectors.toMap(
+                        ContainerInfoProjection::getId,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+    }
+
 }
