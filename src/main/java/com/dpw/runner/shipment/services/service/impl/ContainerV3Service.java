@@ -1248,7 +1248,8 @@ public class ContainerV3Service implements IContainerV3Service {
             addShipmentCargoToContainer(container, shipmentDetails);
         } else {
             for (Packing packing : packingList) { // loop over all the assigned packs of shipment
-                addPackageDataToContainer(container, packing);
+                if(Objects.equals(packing.getContainerId(), container.getId()))
+                    addPackageDataToContainer(container, packing);
             }
         }
     }
