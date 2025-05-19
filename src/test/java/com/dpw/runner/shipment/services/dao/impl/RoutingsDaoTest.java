@@ -778,4 +778,39 @@ class RoutingsDaoTest extends CommonMocks {
         assertEquals(0, result.size());
     }
 
+    @Test
+    void testFindByIdIn() {
+        List<Long> routingIds = new ArrayList<>();
+        routingIds.add(1L);
+        routingsDao.findByIdIn(routingIds);
+        verify(routingsRepository).findByIdIn(routingIds);
+    }
+
+    @Test
+    void testDeleteByIdIn() {
+        List<Long> routingIds = new ArrayList<>();
+        routingIds.add(1L);
+        routingsDao.deleteByIdIn(routingIds);
+        verify(routingsRepository).deleteAllById(routingIds);
+    }
+
+    @Test
+    void testFindByShipmentIdAndCarriage() {
+        routingsDao.findByShipmentIdAndCarriage(1L, RoutingCarriage.MAIN_CARRIAGE);
+        verify(routingsRepository).findByShipmentIdAndCarriage(1L, RoutingCarriage.MAIN_CARRIAGE);
+    }
+
+    @Test
+    void testFindByConsolidationId() {
+        routingsDao.findByConsolidationId(1L);
+        verify(routingsRepository).findByConsolidationId(1L);
+    }
+
+    @Test
+    void testDeleteAll() {
+        List<Routings> existingRoutingsForDeletion = new ArrayList<>();
+        routingsDao.deleteAll(existingRoutingsForDeletion);
+        verify(routingsRepository).deleteAll(existingRoutingsForDeletion);
+    }
+
 }

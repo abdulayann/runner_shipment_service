@@ -290,6 +290,31 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void fetchInOrganizations() {
+        Set<String> requests = new HashSet<>();
+        requests.add("123");
+        String onField = "";
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        EntityTransferOrganizations entityTransferOrganizations = EntityTransferOrganizations.builder()
+                .FullName("Org1")
+                .Id(1L)
+                .build();
+        List<EntityTransferOrganizations> organizations = new ArrayList<>();
+        organizations.add(entityTransferOrganizations);
+        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(organizations);
+        var response = masterDataUtils.fetchInOrganizations(requests, onField);
+        assertEquals(entityTransferOrganizations, response.get("1"));
+    }
+
+    @Test
+    void fetchInOrganizations1() {
+        Set<String> requests = new HashSet<>();
+        var response = masterDataUtils.fetchInOrganizations(requests, "");
+        assertTrue(response.isEmpty());
+    }
+
+    @Test
     void createInBulkOrganizationRequest3() {
         // Arrange
         var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
