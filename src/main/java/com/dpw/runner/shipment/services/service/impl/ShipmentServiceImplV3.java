@@ -888,7 +888,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void triggerPushToDownStream(ShipmentDetails shipmentDetails, Boolean isCreate){
         List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
-        if(CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+        if(!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
             consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
         }
 
@@ -899,7 +899,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .isCreate(isCreate)
                         .build())
                 .build();
-        if(CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
+        if(!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
             PushToDownstreamEventDto.Triggers triggers = PushToDownstreamEventDto.Triggers.builder()
                     .entityId(consoleShipmentMappings.get(0).getConsolidationId())
                     .entityName(Constants.CONSOLIDATION)
