@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import io.swagger.annotations.ApiModel;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,5 +17,5 @@ import lombok.ToString;
 @AllArgsConstructor
 public class BulkContainerResponse {
     private String message;
-    private List<ContainerResponse> containerResponseList;
+    private List<ContainerResponse> containerResponseList = new ArrayList<>();
 }
