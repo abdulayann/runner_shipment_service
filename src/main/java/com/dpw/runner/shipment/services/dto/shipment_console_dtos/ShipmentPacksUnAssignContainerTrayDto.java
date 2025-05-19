@@ -28,6 +28,8 @@ public class ShipmentPacksUnAssignContainerTrayDto {
         private String houseBill;
         private Integer noOfPacks;
         private String packsUnit;
+        private BigDecimal weight;
+        private String weightUnit;
         private BigDecimal netWeight;
         private String netWeightUnit;
         private BigDecimal volume;
@@ -44,6 +46,8 @@ public class ShipmentPacksUnAssignContainerTrayDto {
             private Long id;
             private UUID guid;
             private String commodity;
+            private BigDecimal weight;
+            private String weightUnit;
             private BigDecimal netWeight;
             private String netWeightUnit;
             private String packs;
