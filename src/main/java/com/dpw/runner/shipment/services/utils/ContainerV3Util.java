@@ -309,7 +309,7 @@ public class ContainerV3Util {
 
     public BigDecimal getAddedVolume(BigDecimal initialVolume, String initialVolumeUnit, BigDecimal addedVolume, String addedVolumeUnit) throws RunnerException {
         if(isStringNullOrEmpty(initialVolumeUnit)) {
-            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
+            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getVolumeChargeableUnit();
         }
         if(Objects.isNull(initialVolume)) {
             initialVolume = BigDecimal.ZERO;
