@@ -23,8 +23,10 @@ import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -67,6 +69,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -96,6 +99,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     private CommonUtils commonUtils;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
@@ -493,10 +498,28 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
         afterSave(allSavedRouting, request.getEntityId(), module);
 
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(request, module, allSavedRouting);
+
         return BulkRoutingResponse.builder()
                 .routingsResponseList(routingResponses)
                 .message(prepareBulkUpdateMessage(routingResponses))
                 .build();
+    }
+
+    private void pushToDependentServices(BulkUpdateRoutingsRequest request, String module, List<Routings> routingsList) {
+        if(Objects.equals(module, SHIPMENT)) {
+            Long shipId = request.getEntityId() != null ? request.getEntityId() : routingsList.get(0).getShipmentId();
+            triggerPushToDownStreamForShipment(shipId);
+        }
+    }
+
+    private void triggerPushToDownStreamForShipment(Long shipmentId){
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(shipmentId)
+                .parentEntityName(SHIPMENT)
+                .build();
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, shipmentId.toString());
     }
 
     @NotNull

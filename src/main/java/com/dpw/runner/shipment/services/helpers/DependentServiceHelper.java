@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -31,6 +32,8 @@ public class DependentServiceHelper {
     private final KafkaProducer producer;
     @Value("${shipmentsKafka.queue}")
     private String senderQueue;
+    @Value("${shipments.internal.messages.kafka}")
+    private String downStreamQueue;
     private final ITrackingServiceAdapter trackingServiceAdapter;
     private final IContainerService containerService;
 
@@ -46,7 +49,7 @@ public class DependentServiceHelper {
         pushShipmentDataToKafka(shipmentDetails, isCreate, isAutoSellRequired);
         pushShipmentDataToTrackingServiceAdapter(shipmentDetails);
         try {
-            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers));
+            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), oldContainers != null ? new ArrayList<>(oldContainers): null);
         }
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());
@@ -101,5 +104,11 @@ public class DependentServiceHelper {
         catch (Exception e) {
             log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
         }
+    }
+
+
+    public void pushToKafkaForDownStream(PushToDownstreamEventDto request, String transactionId) {
+        log.info("Producing PushToDownstreamServiceMsg to kafka with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        producer.produceToKafka(jsonHelper.convertToJson(request), downStreamQueue, transactionId);
     }
 }

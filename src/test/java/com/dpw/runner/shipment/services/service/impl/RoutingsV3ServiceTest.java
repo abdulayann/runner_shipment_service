@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -92,6 +93,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
     private IConsolidationV3Service consolidationV3Service;
     @Mock
     private ICarrierDetailsDao carrierDetailsDao;
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
     @Mock
     private NetworkTransferV3Util networkTransferV3Util;
     @InjectMocks
