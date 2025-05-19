@@ -72,6 +72,7 @@ import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Pair;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
@@ -439,7 +440,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(ConsolidationDetailsResponse.builder().build()).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+        doReturn(Pair.of(ConsolidationDetailsResponse.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 

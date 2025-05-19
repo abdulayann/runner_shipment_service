@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappi
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
@@ -1090,6 +1091,13 @@ public class ContainerV3Service implements IContainerV3Service {
             shipmentIdsToSetContainerCargo.add(shipmentDetails.getId()); // assign container to shipment cargo
             addShipmentCargoToContainer(container, shipmentDetails);
         }
+    }
+
+    @Override
+    public void addShipmentCargoToContainerInCreateFromBooking(Containers container, CustomerBookingV3Request customerBookingV3Request) throws RunnerException {
+        container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), customerBookingV3Request.getGrossWeight(), customerBookingV3Request.getGrossWeightUnit()));
+        container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), customerBookingV3Request.getVolume(), customerBookingV3Request.getVolumeUnit()));
+        containerV3Util.addNoOfPackagesToContainerFromShipment(container, customerBookingV3Request.getQuantity(), customerBookingV3Request.getQuantityUnit());
     }
 
     @Override
