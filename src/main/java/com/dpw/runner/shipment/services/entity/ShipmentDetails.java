@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
@@ -283,6 +284,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "receiving_branch")
     @TenantIdData
     private Long receivingBranch;
+
+    @Column(name = "origin_branch")
+    @TenantIdData
+    private Long originBranch;
 
     @Column(name = "intra_branch")
     private Boolean intraBranch;
@@ -598,6 +603,106 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_frob")
     private Boolean isFrob;
+
+    @Column(name = "is_reefer")
+    private Boolean isReefer = false;
+
+    @Column(name = "incoterms_location")
+    @Size(max = 64)
+    private String incotermsLocation;
+
+    @Column(name = "cargo_readiness_date")
+    private LocalDateTime cargoReadinessDate;
+
+    @Column(name = "controlled")
+    private Boolean controlled;
+
+    @Column(name = "controlled_reference_number")
+    @Size(max = 64)
+    private String controlledReferenceNumber;
+
+    @Column(name = "partner")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String partner;
+
+    @Column(name = "booking_agent")
+    @OrganizationMasterData
+    private Long bookingAgent;
+
+    @Column(name = "co_load_bkg_number")
+    @Size(max = 64)
+    private String coLoadBkgNumber;
+
+    @Column(name = "pickup_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String pickupAtOriginType;
+
+    @Column(name = "delivery_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String deliveryAtDestinationType;
+
+    @Column(name = "brokerage_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String brokerageAtOriginType;
+
+    @Column(name = "brokerage_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
+    private String brokerageAtDestinationType;
+
+    @Column(name = "pickup_at_origin")
+    @OrganizationMasterData
+    private Long pickupAtOrigin;
+
+    @Column(name = "delivery_at_destination")
+    @OrganizationMasterData
+    private Long deliveryAtDestination;
+
+    @Column(name = "brokerage_at_origin")
+    @OrganizationMasterData
+    private Long brokerageAtOrigin;
+
+    @Column(name = "brokerage_at_destination")
+    @OrganizationMasterData
+    private Long brokerageAtDestination;
+
+    @Column(name = "brokerage_at_origin_date")
+    private LocalDateTime brokerageAtOriginDate;
+
+    @Column(name = "brokerage_at_destination_date")
+    private LocalDateTime brokerageAtDestinationDate;
+
+    @Column(name = "terminal_cut_off")
+    private LocalDateTime terminalCutoff;
+
+    @Column(name = "verified_gross_mass_cut_off")
+    private LocalDateTime verifiedGrossMassCutoff;
+
+    @Column(name = "shipping_instruction_cutoff")
+    private LocalDateTime shippingInstructionCutoff;
+
+    @Column(name = "dg_cut_off")
+    private LocalDateTime dgCutoff;
+
+    @Column(name = "reefer_cut_off")
+    private LocalDateTime reeferCutoff;
+
+    @Column(name = "earliest_empty_equipment_pickup")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+
+    @Column(name = "latest_full_equipment_delivered_to_carrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+
+    @Column(name = "earliest_drop_off_full_equipment_to_carrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+
+    @Column(name = "latest_arrival_time")
+    private LocalDateTime latestArrivalTime;
+
+    @Column(name = "container_assigned_to_shipment_cargo")
+    private Long containerAssignedToShipmentCargo;
+
+    @Column(name = "is_borrowed")
+    private Boolean isBorrowed;
 
     @Override
     public boolean equals(Object o) {

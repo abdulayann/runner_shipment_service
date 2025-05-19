@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ContainerConstants {
     private ContainerConstants(){}
     public static final String CONTAINER_API_HANDLE = "/api/v2/containers";
+    public static final String CONTAINER_V3_API_HANDLE = "/api/v3/containers";
     public static final String CONTAINER_CREATE_SUCCESSFUL = "Successful Container Data Creation";
     public static final String CONTAINER_UPDATE_SUCCESSFUL = "Successful Container Data Update";
     public static final String CONTAINER_LIST_SUCCESSFUL = "Successful Container Data List Retrieval";
@@ -15,6 +16,10 @@ public class ContainerConstants {
     public static final String CONTAINER_DETACH_SUCCESSFUL = "Container Detached Successfully";
     public static final String CONTAINER_VALIDATED = "Container Validation Completed";
     public static final String GET_CONTAINERS = "/get/containers";
+    public static final String ASSIGN_CONTAINERS = "/assignContainers";
+    public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
+    public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
+    public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
     public static final String CHECK_CONTAINERS_DELETE = "/delete/checkMultipleShipment";
     public static final String SUCCESS = "API Successfully implemented";
@@ -28,4 +33,7 @@ public class ContainerConstants {
     public static final String CONTAINER_UPDATE_MSG = "ContainerUpdate";
     public static final String HAZ = "HAZ";
     public static final String ERROR_SYNCING_CONTAINERS = "Error syncing containers";
+    public static final String SHIPMENT_CONTAINERS = "/shipment-containers";
+    public static final String CONSOLIDATION_CONTAINERS = "/consolidation-containers";
+
 }

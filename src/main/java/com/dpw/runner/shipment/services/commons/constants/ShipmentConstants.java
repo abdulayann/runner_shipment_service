@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -34,6 +35,7 @@ public class ShipmentConstants {
             "POD", "Waybill Number", "Additional Terms", "Reference Number", "POL Code", "POD Code", "Origin Code", "Destination Code"
     );
     public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", "referenceNumbersList","servicesList", "containersList", "eventsList","triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "referenceNumbersList", "triangulationPartnerList");
     public static final String ORIGIN_PORT_LOC_CODE = "originPortLocCode";
     public static final String PLACE_OF_ISSUE = "placeOfIssue";
     public static final String PAID_PLACE = "paidPlace";
@@ -149,6 +151,7 @@ public class ShipmentConstants {
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";
+    public static final String UPDATE_SAILING_SCHEDULE_SUCCESSFUL = "Sailing schedule data updated successfully";
 
     private ShipmentConstants() {
     }
@@ -267,5 +270,7 @@ public class ShipmentConstants {
     public static final String SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE = "Request Id and Guid are null for Shipment retrieve with Request Id {}";
     public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";
     public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
+
+    public static final String ATTACH_CONSOLIDATION_SUCCESSFUL = "Attach Consolidation Request Successful";
 
 }

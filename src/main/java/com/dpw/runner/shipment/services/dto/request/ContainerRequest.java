@@ -28,6 +28,8 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Long bookingId;
     private Long loggingId;
     private String containerCode;
+    private BigDecimal teu;
+    private Boolean assigned;
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
@@ -114,4 +116,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant = false;
     private ContainerPraStatus praStatus;
+    private BigDecimal humidity;
+    private BigDecimal vents;
 }

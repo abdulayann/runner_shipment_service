@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -98,4 +99,6 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String rejectionRemarks;
     private List<ReferenceNumbersResponse> referenceNumbersList;
     private String shipmentReferenceNumber;
+    private List<Parties> additionalParties;
+    private String paymentTerms;
 }

@@ -110,6 +110,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IRoutingsDao routingsDao;
 
     @Autowired
+    private IPartiesDao partiesDao;
+
+    @Autowired
     private IContainerDao containerDao;
 
     @Autowired
@@ -572,6 +575,13 @@ public class CustomerBookingService implements ICustomerBookingService {
                 log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
+
+            //Fetch all parties based on entity type and entity id and exclude certain parties and keep remaining ones as additional parties
+            List<Parties> allParties = partiesDao.findByEntityIdAndEntityType(customerBooking.get().getId(), "CUSTOMER_BOOKING");
+            List<String> excludedTypes = Arrays.asList("CLIENT", "CONSIGNOR", "CONSIGNEE", "NOTIFY PARTY");
+            List<Parties> additionalParties = allParties.stream().filter(party -> !excludedTypes.contains(party.getType())).toList();
+            customerBooking.get().setAdditionalParties(additionalParties);
+
             double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             log.info("Time taken to fetch booking details from db: {} Request Id {}", current - startTime, LoggerHelper.getRequestIdFromMDC());
@@ -1726,6 +1736,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         } catch (Exception e){
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public Optional<CustomerBooking> findById(Long bookingId) {
+        return customerBookingDao.findById(bookingId);
     }
 
     public void pushCustomerBookingDataToDependentService(CustomerBooking customerBooking , boolean isCreate) {

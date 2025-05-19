@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,15 @@ public interface IRoutingsDao {
 
     Optional<Routings> findByGuid(UUID id);
 
+    Optional<Routings> findByIdWithQuery(Long id);
+
+    Optional<Routings> findByGuidWithQuery(UUID id);
+
+    Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable);
+
     void delete(Routings routings);
+    List<Routings> findByIdIn(List<Long> routingIds);
+    void deleteByIdIn(List<Long> routingIds);
 
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId) throws RunnerException;
     List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId, Map<Long, Routings> oldEntityMap);
@@ -42,4 +51,11 @@ public interface IRoutingsDao {
     List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException;
     List<Routings> generateDefaultRouting(CarrierDetails carrierDetails, String transportMode);
     List<Routings> findRoutingsByConsolidationId(Long consolidationId);
+    List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage);
+
+    List<Routings> findByShipmentId(Long shipmentId);
+
+    List<Routings> findByConsolidationId(Long consolidationId);
+
+    void deleteAll(List<Routings> existingRoutingsForDeletion);
 }

@@ -32,7 +32,14 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -65,9 +72,10 @@ public class RoutingsDao implements IRoutingsDao {
         validateRoutingForDocumentSelection(routings);
         return routingsRepository.save(routings);
     }
+
     @Override
     public List<Routings> saveAll(List<Routings> routingsList) {
-        for(var routings: routingsList) {
+        for (var routings : routingsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
@@ -82,8 +90,18 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
+    public Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable) {
+        return routingsRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Override
     public Optional<Routings> findById(Long id) {
         return routingsRepository.findById(id);
+    }
+
+    @Override
+    public Optional<Routings> findByIdWithQuery(Long id) {
+        return routingsRepository.findByIdWithQuery(id);
     }
 
     @Override
@@ -92,8 +110,21 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
+    public Optional<Routings> findByGuidWithQuery(UUID id) {
+        return routingsRepository.findByGuidWithQuery(id);
+    }
+
+    @Override
     public void delete(Routings routings) {
         routingsRepository.delete(routings);
+    }
+
+    public List<Routings> findByIdIn(List<Long> routingIds) {
+        return routingsRepository.findByIdIn(routingIds);
+    }
+
+    public void deleteByIdIn(List<Long> routingIds) {
+        routingsRepository.deleteAllById(routingIds);
     }
 
     @Override
@@ -104,7 +135,7 @@ public class RoutingsDao implements IRoutingsDao {
             // LATER- Handle Transactions here
             List<Routings> routings = findByShipmentId(shipmentId);
             Map<Long, Routings> hashMap = routings.stream()
-                        .collect(Collectors.toMap(Routings::getId, Function.identity()));
+                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && !routingsList.isEmpty()) {
@@ -127,8 +158,18 @@ public class RoutingsDao implements IRoutingsDao {
         }
     }
 
-    private List<Routings> findByShipmentId(Long shipmentId) {
+    public List<Routings> findByShipmentId(Long shipmentId) {
         return routingsRepository.findByShipmentId(shipmentId);
+    }
+
+    @Override
+    public List<Routings> findByConsolidationId(Long consolidationId) {
+        return routingsRepository.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    public void deleteAll(List<Routings> existingRoutingsForDeletion) {
+        routingsRepository.deleteAll(existingRoutingsForDeletion);
     }
 
     @Override
@@ -169,6 +210,7 @@ public class RoutingsDao implements IRoutingsDao {
         }
         return res;
     }
+
     @Override
     public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId, Map<Long, Routings> oldEntityMap) {
         List<Routings> res = new ArrayList<>();
@@ -192,7 +234,7 @@ public class RoutingsDao implements IRoutingsDao {
         for (Routings req : res) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(oldEntityJsonStringMap.containsKey(req.getId())){
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
                 oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
                 operation = DBOperationType.UPDATE.name();
             }
@@ -293,7 +335,7 @@ public class RoutingsDao implements IRoutingsDao {
             // LATER- Handle Transactions here
             List<Routings> routings = findRoutingsByConsolidationId(consolidationId);
             Map<Long, Routings> hashMap = routings.stream()
-                        .collect(Collectors.toMap(Routings::getId, Function.identity()));
+                    .collect(Collectors.toMap(Routings::getId, Function.identity()));
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && !routingsList.isEmpty()) {
@@ -374,6 +416,7 @@ public class RoutingsDao implements IRoutingsDao {
         }
         return res;
     }
+
     @Override
     public List<Routings> saveEntityFromConsole(List<Routings> routings, Long consolidationId, Map<Long, Routings> oldEntityMap) {
         List<Routings> res = new ArrayList<>();
@@ -400,12 +443,11 @@ public class RoutingsDao implements IRoutingsDao {
             hashMap.values().forEach(routing -> {
                 String json = jsonHelper.convertToJson(routing);
                 delete(routing);
-                if(entity != null)
-                {
+                if (entity != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Routings.class))
                                         .parent(entity)
@@ -465,7 +507,7 @@ public class RoutingsDao implements IRoutingsDao {
 
     private void validateRoutingForDocumentSelection(Routings routings) {
         if (Boolean.TRUE.equals(routings.getIsSelectedForDocument()) &&
-            (RoutingCarriage.PRE_CARRIAGE.equals(routings.getCarriage()) || RoutingCarriage.ON_CARRIAGE.equals(routings.getCarriage()))) {
+                (RoutingCarriage.PRE_CARRIAGE.equals(routings.getCarriage()) || RoutingCarriage.ON_CARRIAGE.equals(routings.getCarriage()))) {
             throw new ValidationException(Constants.ROUTING_VALIDATION);
         }
     }
@@ -521,11 +563,11 @@ public class RoutingsDao implements IRoutingsDao {
 
                 if (canUpdateModeCarriage(locations, currentLocation, nextLocation)) {
                     mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
-                    carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
+                    carriage = locations.get(currentLocation).getRight() != null ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
                 }
                 String flightNumber = "";
                 String flightCarrier = "";
-                if(shouldIncludeFlightDetails(transportMode, carriage)) {
+                if (shouldIncludeFlightDetails(transportMode, carriage)) {
                     flightNumber = carrierDetails.getFlightNumber();
                     flightCarrier = carrierDetails.getShippingLine();
                 }
@@ -562,10 +604,10 @@ public class RoutingsDao implements IRoutingsDao {
     /**
      * Creates a new routing request.
      *
-     * @param leg   the leg number for the routing request
-     * @param mode  the mode of transport for the routing request
-     * @param pol   the Port of Loading for the routing request
-     * @param pod   the Port of Discharge for the routing request
+     * @param leg  the leg number for the routing request
+     * @param mode the mode of transport for the routing request
+     * @param pol  the Port of Loading for the routing request
+     * @param pod  the Port of Discharge for the routing request
      * @return a new {@link RoutingsRequest} object with the specified parameters
      */
     private Routings createRoutingsRequest(Long leg, String mode, String pol, String pod, RoutingCarriage carriage, String flightNumber, String carrier) {
@@ -586,5 +628,10 @@ public class RoutingsDao implements IRoutingsDao {
     @Override
     public List<Routings> findRoutingsByConsolidationId(Long consolidationId) {
         return routingsRepository.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    public List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage) {
+        return routingsRepository.findByShipmentIdAndCarriage(shipmentId, routingCarriage);
     }
 }

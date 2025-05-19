@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -9,19 +13,37 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,17 +52,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.springframework.util.CollectionUtils;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Repository
@@ -111,6 +123,9 @@ public class ContainerDao implements IContainerDao {
     public Page<Containers> findAll(Specification<Containers> spec, Pageable pageable) {
         return containerRepository.findAll(spec, pageable);
     }
+    public Page<Containers> findAllWithoutTenantFilter(Specification<Containers> spec, Pageable pageable){
+        return containerRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
 
     @Override
     public List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId) {
@@ -135,6 +150,11 @@ public class ContainerDao implements IContainerDao {
     @Override
     public void delete(Containers containers) {
         containerRepository.delete(containers);
+    }
+
+    @Override
+    public void deleteAllById(List<Long> containerIdList) {
+        containerRepository.deleteAllById(containerIdList);
     }
 
     private void deleteByIds(List<Long> ids) {
@@ -446,13 +466,31 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
+    public List<Containers> findByShipmentIdWithoutTenantFilter(Long shipmentId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentsList", shipmentId, "CONTAINS");
+        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
+        Page<Containers> containersPage = findAllWithoutTenantFilter(pair.getLeft(), pair.getRight());
+        return containersPage.getContent();
+    }
+
+    @Override
     public List<Containers> findByConsolidationId(Long consolidationId) {
         return containerRepository.findByConsolidationId(consolidationId);
     }
 
     @Override
+    public List<Containers> findByConsolidationIdWithoutTenantFilter(Long consolidationId) {
+        return containerRepository.findByConsolidationIdWithoutTenantFilter(consolidationId);
+    }
+
+    @Override
     public List<Containers> findByConsolidationIdIn(List<Long> consolidationIds) {
         return containerRepository.findByConsolidationIdIn(consolidationIds);
+    }
+
+    @Override
+    public List<Containers> findByBookingIdIn(List<Long> bookingIds) {
+        return containerRepository.findByBookingIdIn(bookingIds);
     }
     @Override
     public List<Containers> findByIdIn(List<Long> containerIds) {
@@ -463,4 +501,30 @@ public class ContainerDao implements IContainerDao {
     public void deleteByIdIn(List<Long> containerIds) {
         containerRepository.deleteAllById(containerIds);
     }
+
+    @Override
+    public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds) {
+        return containerRepository.filterContainerIdsAttachedToShipmentCargo(containerIds);
+    }
+
+    @Override
+    public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds) {
+        return containerRepository.filterContainerIdsAttachedToPacking(containerIds);
+    }
+
+    @Override
+    public List<ContainerDeleteInfoProjection> findContainersAttachedToBothPackingAndCargo(List<Long> containerIds) {
+        return containerRepository.findContainersAttachedToBothPackingAndCargo(containerIds);
+    }
+
+    @Override
+    public List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds) {
+        return containerRepository.findContainerIdsAttachedToEitherPackingOrShipment(containerIds);
+    }
+
+    @Override
+    public List<ContainerInfoProjection> findByContainerIds(List<Long> containerIds) {
+        return containerRepository.findByContainerIds(containerIds);
+    }
+
 }

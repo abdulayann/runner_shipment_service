@@ -105,6 +105,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Mock
     private IContainerDao containerDao;
     @Mock
+    private IPartiesDao partiesDao;
+    @Mock
     private IAuditLogService auditLogService;
     @Mock
     private INPMServiceAdapter npmService;
@@ -137,6 +139,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     private static ObjectMapper objectMapper;
     private static CustomerBookingRequest customerBookingRequest;
     private static CustomerBooking customerBooking;
+    private static Parties testParties;
 
 
     @BeforeAll
@@ -153,6 +156,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void setup() {
         customerBookingRequest = jsonTestUtility.getCustomerBookingRequest();
         customerBooking = jsonTestUtility.getCustomerBooking();
+        testParties = jsonTestUtility.getParties();
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().hasNoUtilization(true).build());
     }
@@ -1024,6 +1028,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         inputBooking.setShipmentGuid(guid);
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
          when(v1Service.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
+         when(partiesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(List.of(testParties));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
         mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
@@ -128,11 +129,34 @@ class PackingDaoTest {
     }
 
     @Test
+    void findAllWithoutTenantFilter() {
+        Page<Packing> packingPage = mock(Page.class);
+        Specification<Packing> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(packingRepository.findAllWithoutTenantFilter(spec, pageable)).thenReturn(packingPage);
+
+        Page<Packing> packings = packingDao.findAllWithoutTenantFilter(spec, pageable);
+
+        assertEquals(packingPage, packings);
+    }
+
+    @Test
     void findById() {
         Optional<Packing> optionalPacking = Optional.of(testPacking);
         when(packingRepository.findById(anyLong())).thenReturn(optionalPacking);
 
         Optional<Packing> packing = packingDao.findById(1L);
+
+        assertTrue(packing.isPresent());
+        assertEquals(testPacking, packing.get());
+    }
+
+    @Test
+    void findByIdWithQuery() {
+        Optional<Packing> optionalPacking = Optional.of(testPacking);
+        when(packingRepository.findByIdWithQuery(anyLong())).thenReturn(optionalPacking);
+
+        Optional<Packing> packing = packingDao.findByIdWithQuery(1L);
 
         assertTrue(packing.isPresent());
         assertEquals(testPacking, packing.get());
@@ -151,11 +175,33 @@ class PackingDaoTest {
     }
 
     @Test
+    void findByGuidWithQuery() {
+        Packing routings = jsonTestUtility.getCompleteShipment().getPackingList().get(0);
+        Optional<Packing> optionalPacking = Optional.of(routings);
+        when(packingRepository.findByGuidWithQuery(any(UUID.class))).thenReturn(optionalPacking);
+
+        Optional<Packing> foundPacking = packingDao.findByGuidWithQuery(UUID.randomUUID());
+
+        assertTrue(foundPacking.isPresent());
+        assertEquals(routings, foundPacking.get());
+    }
+
+    @Test
     void delete() {
         Packing routings = jsonTestUtility.getCompleteShipment().getPackingList().get(0);
 
         assertDoesNotThrow(() -> packingDao.delete(routings));
         verify(packingRepository, Mockito.times(1)).delete(routings);
+    }
+
+    @Test
+    void findByContainerIdInWithoutTenantFilter() {
+        List<Packing> packingList = Collections.singletonList(testPacking);
+        when(packingRepository.findByContainerIdInWithoutTenantFilter(List.of(1L))).thenReturn(packingList);
+
+        List<Packing> packingRes = packingDao.findByContainerIdInWithoutTenantFilter(List.of(1L));
+
+        assertEquals(packingList, packingRes);
     }
 
     @Test

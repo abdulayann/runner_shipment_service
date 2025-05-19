@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
@@ -9,6 +11,7 @@ import org.springframework.data.domain.Page;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,4 +36,19 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     }
 
     List<Routings> findByConsolidationId(Long consolidationId);
+
+    List<Routings> findByIdIn(List<Long> routingIds);
+
+    List<Routings> findByShipmentIdAndCarriage(Long shipmentId, RoutingCarriage routingCarriage);
+
+    @Query(value = "SELECT * FROM routings WHERE id = ?1", nativeQuery = true)
+    Optional<Routings> findByIdWithQuery(Long id);
+
+    @Query(value = "SELECT * FROM routings WHERE guid = ?1", nativeQuery = true)
+    Optional<Routings> findByGuidWithQuery(UUID guid);
+
+    @ExcludeTenantFilter
+    default Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable) {
+        return findAll(spec, pageable);
+    }
 }

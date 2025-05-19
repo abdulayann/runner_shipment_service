@@ -266,6 +266,7 @@ public class Constants {
     public static final String ROUTING_CFD = "CFD";
     public static final String SHIPMENT_TYPE_STD = "STD";
     public static final String SYSTEM = "System";
+    public static final String NETWORK_TRANSFER = "network_transfer";
 
     public static final String METER = "M";
     public static final String ANGSTROM = "A";
@@ -370,6 +371,7 @@ public class Constants {
     public static final String CONSIGNEE = "consignee";
     public static final String SHIPMENT_DETAILS = "ShipmentDetails";
     public static final String ADDITIONAL_DETAILS = "additionalDetails";
+    public static final String ROUTINGS = "routings";
     public static final String STATUS = "status";
     public static final String JOB_TYPE = "jobType";
     public static final String INCOTERMS = "incoterms";
@@ -406,6 +408,7 @@ public class Constants {
     public static final String GROSS_WEIGHT = "grossWeight";
     public static final String PACKS = "packs";
     public static final String UNLOCATIONS = "Unlocations";
+    public static final String ORGANIZATIONS = "Organizations";
     public static final String CONTAINER_TYPES = "ContainerTypes";
     public static final String FLASH_POINT = "flashpoint";
     public static final String BRANCH = "branch";
@@ -413,6 +416,7 @@ public class Constants {
     public static final String COUNTRY = "_country";
     public static final String NAME = "_name";
     public static final String CODE = "_code";
+    public static final String IATA_CODE = "_iataCode";
     public static final String DISPLAY_NAME = "_displayName";
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
@@ -632,11 +636,14 @@ public class Constants {
     public static final String OUTBOUND = "Outbound";
     public static final String IGNORED_ERROR_MSG = "Ignored error.";
     public static final String EMPTY_STRING = "";
+    public static final String YES = "Yes";
+    public static final String NO = "No";
     public static final String APP_CONFIG_ID_NOT_VALID = "Application config id is not valid";
     public static final String APPLICATION_CONFIG_ID_EMPTY_ERROR_MESSAGE = "Application config id can not be empty";
 
     public static final String TESLA = "Tesla";
     public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
+    public static final String CONTAINS = "CONTAINS";
 
     private Constants() {
     }

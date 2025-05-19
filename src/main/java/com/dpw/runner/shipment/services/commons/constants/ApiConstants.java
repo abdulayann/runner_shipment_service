@@ -1,7 +1,29 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ApiConstants {
+
     private ApiConstants(){}
+    public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
+    public static final String BOOKING_API_UPDATE_CONTAINERS = "/update/booking/containers";
+    public static final String BOOKING_API_LIST_CONTAINERS = "/list/booking/containers";
+    public static final String BOOKING_API_DELETE_CONTAINERS = "/delete/booking/containers";
+
+    public static final String BOOKING_API_CREATE_REFERENCES = "/create/booking/references";
+    public static final String BOOKING_API_UPDATE_REFERENCES = "/update/booking/references";
+    public static final String BOOKING_API_LIST_REFERENCES = "/list/booking/references";
+    public static final String BOOKING_API_DELETE_REFERENCES = "/delete/booking/references";
+
+    public static final String BOOKING_API_CREATE_PARTIES = "/create/booking/parties";
+    public static final String BOOKING_API_UPDATE_PARTIES = "/update/booking/parties";
+    public static final String BOOKING_API_LIST_PARTIES = "/list/booking/parties";
+    public static final String BOOKING_API_DELETE_PARTIES = "/delete/booking/parties";
+    public static final String CONSOLIDATION_API_LIST = "consolidation-routing";
+    public static final String CONSOLIDATION_API_UPDATE_BULK = "consolidation/update/bulk";
+    public static final String UPDATE_SAILING_SCHEDULE = "update-sailing-schedule";
+
+    public static final String GET_CONTAINER_DETAILS = "/get/containerDetails";
+
+
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
     public static final String API_UPLOAD = "/upload";
@@ -12,6 +34,7 @@ public class ApiConstants {
 
 
     public static final String API_UPDATE = "/update";
+    public static final String API_UPDATE_BULK = "/update/bulk";
 
     public static final String API_RETRIEVE = "/retrieve";
 
@@ -20,6 +43,18 @@ public class ApiConstants {
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
     public static final String EXPORT_LIST = "/export-list";
+
+    // Shipment endpoints
+    public static final String SHIPMENT_API_CREATE = "shipment/create";
+    public static final String SHIPMENT_API_UPDATE = "shipment/update";
+    public static final String SHIPMENT_API_DELETE = "shipment/delete";
+    public static final String SHIPMENT_API_LIST = "shipment-routing";
+    public static final String SHIPMENT_API_UPDATE_BULK = "shipment/update/bulk";
+    public static final String SHIPMENT_API_DELETE_BULK = "shipment/delete/bulk";
+    public static final String BOOKING_API_CREATE_PACKAGES = "/create/booking/packages";
+    public static final String BOOKING_API_UPDATE_PACKAGES = "/update/booking/packages";
+    public static final String BOOKING_API_LIST_PACKAGES = "/list/booking/packages";
+    public static final String BOOKING_API_DELETE_PACKAGES = "/delete/booking/packages";
 
 
     public static final String API_RETRIEVE_BY_ID_PARTIAL="/retrieve/partial/id";
@@ -40,6 +75,7 @@ public class ApiConstants {
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
     public static final String API_CONSOLE_SHIPMENT_LIST = "/console-shipment-list";
     public static final String API_DELETE = "/delete";
+    public static final String API_DELETE_BULK = "/delete/bulk";
     public static final String API_SAVE_FROM_V1 = "/save/v1";
     public static final String API_PARTIAL_UPDATE = "/patch";
     public static final String TOGGLE_LOCK = "/toggleLock";
@@ -58,6 +94,7 @@ public class ApiConstants {
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
     public static final String DETACH_SHIPMENTS = "detach-shipments";
+    public static final String ATTACH_CONSOLIDATION = "attach-consolidation";
     public static final String SAVE_FROM_V1 = "save/from/v1";
     public static final String API_GET_CUSTOM_REQ = "getCustomReq";
     public static final String API_SYNC_PRODUCT_SEQ = "getCustomProdSeqSync";
@@ -143,4 +180,18 @@ public class ApiConstants {
     public static final String API_UPDATE_V3 = "/updateV3";
     public static final String API_LIST_V3 = "/listV3";
     public static final String API_RETRIEVE_BY_ID_V3 = "/retrieveV3/id";
+
+    public static final String API_RETRIEVE_PENDING_NOTIFICATION_DATA = "/pending/notification/data";
+
+    public static final String API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY = "/get/shipments/assignContainerTray";
+
+    public static final String API_GET_SHIPMENT_UN_ASSIGN_CONTAINER_TRAY = "/get/shipments/unAssignContainerTray";
+
+    public static final String SHIPMENT = "/shipment";
+    public static final String CONSOLIDATION = "/consolidation";
+    public static final String CUSTOMER_BOOKING = "/customer-booking";
+    public static final String SHIPMENT_PACKINGS = "/shipment-packings";
+    public static final String CONSOLIDATION_PACKINGS = "/consolidation-packings";
+
+
 }

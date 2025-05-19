@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
@@ -8,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -55,4 +59,11 @@ public interface IShipmentDao {
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
     Integer findReceivingByGuid(UUID guid);
+    void updateCargoDetailsInShipment(Long shipmentId, Integer noOfPacks, String packsUnit, BigDecimal volume, String volumeUnit, BigDecimal weight, String weightUnit, BigDecimal volumetricWeight, String volumetricWeightUnit, BigDecimal chargable, String chargeableUnit);
+    void updateShipmentDetailsFromPacks(Long shipmentId, DateBehaviorType dateBehaviorType, LocalDateTime shipmentGateInDate, ShipmentPackStatus shipmentPackStatus);
+    void setShipmentIdsToContainer(List<Long> shipmentIds, Long containerId);
+
+    void updateSailingScheduleRelatedInfo(ShipmentSailingScheduleRequest request, Long shipmentId);
+
+    void updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest request, Long shipmentId);
 }

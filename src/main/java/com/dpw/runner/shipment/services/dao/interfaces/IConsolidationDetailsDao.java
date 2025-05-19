@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
@@ -48,5 +49,10 @@ public interface IConsolidationDetailsDao {
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(List<Long> consolidationIDs);
     Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
+    ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails);
 
+    void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId);
+
+    void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId);
 }

@@ -119,6 +119,11 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Page<Events> findAllWithoutTenantFilter(Specification<Events> spec, Pageable pageable) {
+        return eventRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Override
     public Optional<Events> findById(Long id) {
         return eventRepository.findById(id);
     }

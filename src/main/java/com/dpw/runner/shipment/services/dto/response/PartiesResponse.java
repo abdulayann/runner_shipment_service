@@ -31,4 +31,5 @@ public class PartiesResponse implements IRunnerResponse {
     private Boolean isAddressFreeText;
     private RAKCDetailsResponse rAKCDetails;
     private String countryCode;
+    private String message;
 }

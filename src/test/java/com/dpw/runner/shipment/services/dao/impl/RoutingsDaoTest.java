@@ -170,6 +170,18 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
+    void testFindAllWithoutTenantFilter() {
+        Page<Routings> routingsPage = mock(Page.class);
+        Specification<Routings> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        when(routingsRepository.findAllWithoutTenantFilter(spec, pageable)).thenReturn(routingsPage);
+
+        Page<Routings> foundRoutingsPage = routingsDao.findAllWithoutTenantFilter(spec, pageable);
+
+        assertEquals(routingsPage, foundRoutingsPage);
+    }
+
+    @Test
     void testFindById() {
         Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
         Optional<Routings> optionalRoutings = Optional.of(routings);
@@ -188,6 +200,30 @@ class RoutingsDaoTest extends CommonMocks {
         when(routingsRepository.findByGuid(any(UUID.class))).thenReturn(optionalRoutings);
 
         Optional<Routings> foundRoutings = routingsDao.findByGuid(UUID.randomUUID());
+
+        assertTrue(foundRoutings.isPresent());
+        assertEquals(routings, foundRoutings.get());
+    }
+
+    @Test
+    void testFindByIdWithQuery() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Optional<Routings> optionalRoutings = Optional.of(routings);
+        when(routingsRepository.findByIdWithQuery(anyLong())).thenReturn(optionalRoutings);
+
+        Optional<Routings> foundRoutings = routingsDao.findByIdWithQuery(1L);
+
+        assertTrue(foundRoutings.isPresent());
+        assertEquals(routings, foundRoutings.get());
+    }
+
+    @Test
+    void testFindByGuidWithQuery() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        Optional<Routings> optionalRoutings = Optional.of(routings);
+        when(routingsRepository.findByGuidWithQuery(any(UUID.class))).thenReturn(optionalRoutings);
+
+        Optional<Routings> foundRoutings = routingsDao.findByGuidWithQuery(UUID.randomUUID());
 
         assertTrue(foundRoutings.isPresent());
         assertEquals(routings, foundRoutings.get());

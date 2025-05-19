@@ -3008,7 +3008,7 @@ public class ConsolidationService implements IConsolidationService {
         container.setAchievedVolume(volume);
         container = containerService.calculateUtilization(container);
         containerDao.save(container);
-        shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList(), false);
+        shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded, false);
         packingADSync(packingList, UUID.randomUUID().toString());
         return container;
     }
@@ -5273,6 +5273,11 @@ public class ConsolidationService implements IConsolidationService {
         } catch (Exception e) {
             log.error("Exception during creation or updation of Automatic transfer flow for consolidation Id: {} with exception: {}", consolidationDetails.getId(), e.getMessage());
         }
+    }
+
+    @Override
+    public Optional<ConsolidationDetails> findById(Long consolidationId) {
+        return consolidationDetailsDao.findById(consolidationId);
     }
 
     private boolean isCarrierDetailsInvalid(ConsolidationDetails consolidationDetails, QuartzJobInfo quartzJobInfo) {

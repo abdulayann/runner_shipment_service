@@ -137,4 +137,38 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT * FROM consolidation_details WHERE guid = ?1", nativeQuery = true)
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
 
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ConsolidationDetails s
+            SET s.terminalCutoff = :terminalCutoff,
+                s.verifiedGrossMassCutoff = :verifiedGrossMassCutoff,
+                s.shipInstructionCutoff = :shipInstructionCutoff,
+                s.hazardousBookingCutoff = :hazardousBookingCutoff,
+                s.reeferCutoff = :reeferCutoff,
+                s.earliestEmptyEquPickUp = :earliestEmptyEquPickUp,
+                s.latestFullEquDeliveredToCarrier = :latestFullEquDeliveredToCarrier,
+                s.earliestDropOffFullEquToCarrier = :earliestDropOffFullEquToCarrier
+            WHERE s.id = :consolidationId
+            """)
+    void updateSailingScheduleRelatedInfo(
+            @Param("consolidationId") Long consolidationId,
+            @Param("terminalCutoff") LocalDateTime terminalCutoff,
+            @Param("verifiedGrossMassCutoff") LocalDateTime verifiedGrossMassCutoff,
+            @Param("shipInstructionCutoff") LocalDateTime shipInstructionCutoff,
+            @Param("hazardousBookingCutoff") LocalDateTime hazardousBookingCutoff,
+            @Param("reeferCutoff") LocalDateTime reeferCutoff,
+            @Param("earliestEmptyEquPickUp") LocalDateTime earliestEmptyEquPickUp,
+            @Param("latestFullEquDeliveredToCarrier") LocalDateTime latestFullEquDeliveredToCarrier,
+            @Param("earliestDropOffFullEquToCarrier") LocalDateTime earliestDropOffFullEquToCarrier
+    );
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ConsolidationDetails s
+            SET s.latDate = :latDate
+            WHERE s.id = :consolidationId
+            """)
+    void updateSailingScheduleRelatedInfoForAir(@Param("consolidationId") Long consolidationId, @Param("latDate") LocalDateTime latDate);
 }
