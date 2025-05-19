@@ -337,6 +337,7 @@ public class ContainerV3Util {
     public void resetContainerDataForRecalculation(Containers container) {
         container.setNetWeight(BigDecimal.ZERO);
         container.setGrossVolume(BigDecimal.ZERO);
+        container.setGrossWeight(BigDecimal.ZERO);
         container.setPacks("0");
         container.setPacksType(null);
     }
