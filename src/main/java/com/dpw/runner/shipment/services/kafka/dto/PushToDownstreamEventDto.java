@@ -13,6 +13,7 @@ public class PushToDownstreamEventDto {
     private Long parentEntityId;
     private String parentEntityName;
     private String action;
+    private Meta meta = new Meta();
     List<Triggers> triggers;
 
 
@@ -25,6 +26,15 @@ public class PushToDownstreamEventDto {
         private Long entityId;
         private String entityName;
         private String action;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Meta {
+        private Boolean isCreate = false;
+        private Boolean isAutoSellRequired = false;
     }
 }
 

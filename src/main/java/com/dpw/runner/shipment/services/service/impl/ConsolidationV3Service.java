@@ -58,7 +58,6 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
@@ -87,6 +86,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -306,6 +306,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Map.entry("houseBill", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("houseBill").build()),
         Map.entry("voyageOrFlightNumber", RunnerEntityMapping.builder().tableName(Constants.CARRIER_DETAILS).dataType(String.class).fieldName("voyageOrFlightNumber").build()),
         Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+        Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(LocalDateTime.class).fieldName("updatedAt").build()),
         Map.entry("hazardous", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Boolean.class).build()),
         Map.entry("shipShipmentType", RunnerEntityMapping.builder().tableName(Constants.SHIPMENTS_LIST).dataType(String.class).fieldName("shipmentType").build()),
         Map.entry("tenantId", RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_DETAILS).dataType(Integer.class).fieldName("tenantId").build()),
@@ -339,7 +340,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Transactional
     @Override
-    public ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request){
+    public Pair<ConsolidationDetailsResponse, Long> createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request){
         ConsolidationDetailsV3Request request = (ConsolidationDetailsV3Request) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -347,6 +348,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        Long containerAssignedToShipmentCargo = null;
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);
@@ -355,14 +357,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             getConsolidation(consolidationDetails);
             Long id = consolidationDetails.getId();
-            setContainerAndPackingList(consolidationDetails, true, shipmentSettingsDetails, true, false, customerBookingV3Request.getContainersList(), id, customerBookingV3Request.getPackingList());
+            containerAssignedToShipmentCargo = setContainerAndPackingList(consolidationDetails, true, shipmentSettingsDetails, true, false, customerBookingV3Request.getContainersList(), id, customerBookingV3Request.getPackingList(), customerBookingV3Request);
             afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+        return Pair.of(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class), containerAssignedToShipmentCargo);
     }
 
     @Override
@@ -586,17 +588,23 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
     }
 
-    private void setContainerAndPackingList(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid, List<ContainerV3Request> containerRequestList, Long id, List<PackingV3Request> packingRequestList) throws RunnerException {
+    private Long setContainerAndPackingList(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails,
+                                            Boolean isFromBooking, boolean includeGuid, List<ContainerV3Request> containerRequestList, Long id,
+                                            List<PackingV3Request> packingRequestList, CustomerBookingV3Request customerBookingV3Request) throws RunnerException {
+        Long containerAssignedToShipmentCargo = null;
         if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
                 && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
             List<ContainerV3Request> splittedContainers = splitContainerIntoLineItems(containerRequestList);
-            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate), id, (Long) null, true);
+            List<Containers> containers = commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate);
+            containerAssignedToShipmentCargo = shipmentV3Service.assignFirstBookingContainerToShipmentCargo(containers, customerBookingV3Request);
+            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(containers, id, (Long) null, true);
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
             List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
             consolidationDetails.setPackingList(updatedPackings);
         }
+        return containerAssignedToShipmentCargo;
     }
 
     private List<ContainerV3Request> splitContainerIntoLineItems(List<ContainerV3Request> containerRequestList) {

@@ -72,6 +72,7 @@ import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Pair;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
@@ -439,7 +440,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(ConsolidationDetailsResponse.builder().build()).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+        doReturn(Pair.of(ConsolidationDetailsResponse.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
@@ -1114,6 +1115,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         mockShipmentRequest.setIsChargableEditable(true);
         commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
@@ -1151,6 +1153,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
         mockCarrierDetails.setEta(LocalDateTime.now());
         mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setId(1L);
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -1238,6 +1241,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         mockShipmentRequest.setIsChargableEditable(true);
         commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -1287,6 +1291,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -1855,8 +1860,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.afterSave(newShipment, null, true, shipmentRequest,
                 new ShipmentSettingsDetails(), false, false);
 
-        verify(dependentServiceHelper).pushShipmentDataToDependentService(
-                eq(newShipment), eq(true), eq(true), isNull());
+        verify(dateTimeChangeLogService).createEntryFromShipment(any(), isNull());
     }
 
     @Test
