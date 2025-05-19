@@ -69,7 +69,7 @@ public class RoutingV3Controller {
     @PostMapping(ApiConstants.SHIPMENT_API_LIST)
     public ResponseEntity<IRunnerResponse> fetchShipmentRoute(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                               @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
-        RoutingListResponse response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        RoutingListResponse response = routingService.list(listCommonRequest, xSource);
         return ResponseHelper.buildSuccessResponse(response, response.getTotalPages(), response.getTotalCount());
     }
 
@@ -77,7 +77,7 @@ public class RoutingV3Controller {
     @PostMapping(ApiConstants.CONSOLIDATION_API_LIST)
     public ResponseEntity<IRunnerResponse> fetchConsolidationRoute(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                    @RequestHeader(value = "x-source", required = false) String xSource) throws RunnerException {
-        RoutingListResponse response = routingService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        RoutingListResponse response = routingService.list(listCommonRequest, xSource);
         return ResponseHelper.buildSuccessResponse(response, response.getTotalPages(), response.getTotalCount());
     }
 

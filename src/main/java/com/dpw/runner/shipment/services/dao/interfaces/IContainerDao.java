@@ -7,6 +7,8 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -57,4 +59,6 @@ public interface IContainerDao {
     List<ContainerDeleteInfoProjection> findContainersAttachedToBothPackingAndCargo(List<Long> containerIds);
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
+
+    List<ContainerInfoProjection> findByContainerIds(List<Long> containerIds);
 }

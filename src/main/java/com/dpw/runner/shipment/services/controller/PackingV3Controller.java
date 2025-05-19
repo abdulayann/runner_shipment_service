@@ -167,7 +167,7 @@ public class PackingV3Controller {
     @PostMapping(ApiConstants.SHIPMENT_PACKINGS)
     public ResponseEntity<IRunnerResponse> fetchShipmentPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
                                                                  @RequestHeader(value = "x-source", required = false) String xSource) {
-        PackingListResponse packingListResponse = packingV3Service.fetchShipmentPackages(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        PackingListResponse packingListResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, xSource);
         return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
     }
 
@@ -175,7 +175,7 @@ public class PackingV3Controller {
     @PostMapping(ApiConstants.CONSOLIDATION_PACKINGS)
     public ResponseEntity<IRunnerResponse> fetchConsolidationPackages(@RequestBody @Valid ListCommonRequest listCommonRequest,
             @RequestHeader(value = "x-source", required = false) String xSource) {
-        PackingListResponse packingListResponse = packingV3Service.fetchConsolidationPackages(CommonRequestModel.buildRequest(listCommonRequest), xSource);
+        PackingListResponse packingListResponse = packingV3Service.fetchConsolidationPackages(listCommonRequest, xSource);
         return ResponseHelper.buildSuccessResponse(packingListResponse, packingListResponse.getTotalPages(), packingListResponse.getTotalCount());
     }
 

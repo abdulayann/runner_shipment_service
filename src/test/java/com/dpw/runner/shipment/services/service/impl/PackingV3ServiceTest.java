@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
@@ -83,6 +84,8 @@ class PackingV3ServiceTest extends CommonMocks {
 
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private IContainerV3Service containerV3Service;
     @Mock
     private JsonHelper jsonHelper;
     @Mock
@@ -440,7 +443,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(model, true, null);
+        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, true, null);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -456,7 +459,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findAllWithoutTenantFilter(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
 
-        PackingListResponse actualResponse = packingV3Service.list(model, false, Constants.NETWORK_TRANSFER);
+        PackingListResponse actualResponse = packingV3Service.list(listCommonRequest, false, Constants.NETWORK_TRANSFER);
 
         assertEquals(1, actualResponse.getPackings().size());
         assertEquals(1, actualResponse.getTotalCount());
@@ -478,7 +481,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
         when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projection);
 
-        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model, null);
+        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, null);
 
         assertEquals(2L, actualResponse.getAssignedPackageCount());
         assertEquals(3L, actualResponse.getUnassignedPackageCount());
@@ -499,7 +502,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
         when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projectionMock);
 
-        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(model, null);
+        PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, null);
 
         assertNotNull(actualResponse);
     }
@@ -533,9 +536,7 @@ class PackingV3ServiceTest extends CommonMocks {
 
     @Test
     void testList_requestNull_logsError() {
-        CommonRequestModel model = CommonRequestModel.builder().build(); // request is null
-
-        assertThrows(ValidationException.class, () -> packingV3Service.list(model, false, null));
+        assertThrows(ValidationException.class, () -> packingV3Service.list(null, false, null));
     }
 
     @Test

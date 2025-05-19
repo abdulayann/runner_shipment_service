@@ -17,4 +17,5 @@ public class PackingConstants {
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Packing Data Retrieval By Id";
     public static final String PACKING_RETRIEVE_BY_ID_ERROR = "Packing is null for Id {} with Request Id {}";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final String PKG = "PKG";
 }

@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.impl.CommonErrorLogsDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -24,7 +26,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -55,6 +56,9 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
     @Mock
     private QuartzJobInfoDao quartzJobInfoDao;
+
+    @Mock
+    private CommonErrorLogsDao commonErrorLogsDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
@@ -1008,5 +1012,526 @@ class NetworkTransferV3UtilTest extends CommonMocks {
 
         verify(networkTransferDao, times(1)).getInterConsoleNTList(any(), any());
     }
+
+    @Test
+    void triggerAutomaticTransfer_InvalidForTransfer() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(false)
+                .build());
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .transportMode(TRANSPORT_MODE_AIR)
+                .receivingBranch(null)
+                .shipmentType(DIRECTION_EXP)
+                .build();
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verifyNoInteractions(quartzJobInfoDao);
+        verifyNoInteractions(quartzJobInfoService);
+    }
+
+    @Test
+    void triggerAutomaticTransfer_NoExistingQuartzJob_CreateNewJob() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        mockShipmentSettings();
+        networkTransferV3Util.triggerAutomaticTransfer(testConsol, null, false);
+
+        verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(0)).createSimpleJob(any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(0)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_NoExistingQuartzJob_CreateNewJob1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setReceivingBranch(1L);
+        ConsolidationDetails consolidationDetails2 = testConsol;
+        consolidationDetails2.setReceivingBranch(null);
+        consolidationDetails2.setShipmentsList(Set.of());
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails2, consolidationDetails1, false);
+
+        verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(0)).createSimpleJob(any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(0)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ExistingQuartzJob_NoChanges() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build();
+
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ExistingQuartzJob_UpdateJob() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newJob = new QuartzJobInfo();
+        newJob.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
+        when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(newJob);
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_AlreadyAccepted() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verifyNoInteractions(quartzJobInfoDao);
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetailsNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(null);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_EtaNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().etd(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_EtdNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).ata(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(Set.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(new QuartzJobInfo());
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, null, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_AtaNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).atd(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(Set.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        newQuartzJob.setId(2L);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(false);
+        when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
+        verify(quartzJobInfoService, times(1)).createSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_CarrierDetails_AtdNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        CarrierDetails carrierDetails = CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).ata(LocalDateTime.now()).build();
+        consolidationDetails1.setCarrierDetails(carrierDetails);
+        consolidationDetails1.setShipmentsList(Set.of(new ShipmentDetails()));
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
+        newQuartzJob.setId(2L);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
+        when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
+        when(quartzJobInfoService.updateSimpleJob(any())).thenReturn(new QuartzJobResponse());
+        doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(1)).save(any());
+        verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
+        verify(quartzJobInfoService, times(1)).updateSimpleJob(any());
+        verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_ErrorLog() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(new CarrierDetails());
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isAirStandardCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.getCarrierDetails().setFlightNumber("1424");
+        CarrierDetails carrierDetails = consolidationDetails1.getCarrierDetails();
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.getCarrierDetails().setFlightNumber("1224");
+        consolidationDetails.getCarrierDetails().setEta(carrierDetails.getEta());
+        consolidationDetails.getCarrierDetails().setEtd(carrierDetails.getEtd());
+        consolidationDetails.getCarrierDetails().setAta(carrierDetails.getAta());
+        consolidationDetails.getCarrierDetails().setAtd(carrierDetails.getAtd());
+
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_oldCarrierDetailsNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(CarrierDetails.builder().atd(LocalDateTime.now()).build());
+        consolidationDetails.setCarrierDetails(null);
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+        verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_QuartzJobNull() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setCarrierDetails(CarrierDetails.builder().atd(LocalDateTime.now()).build());
+        consolidationDetails.setCarrierDetails(null);
+
+        mockShipmentSettings();
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(null);
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+        verify(quartzJobInfoService, times(1)).getActiveFileTransferConfigurations(any());
+    }
+
+
+    @Test
+    void triggerAutomaticTransfer_isAirNonStandardCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isSeaCase() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_SEA);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails.setCarrierDetails(consolidationDetails1.getCarrierDetails());
+        consolidationDetails.setReceivingAgent(new Parties());
+        consolidationDetails.setSendingAgent(consolidationDetails1.getSendingAgent());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isValidReceivingBranchChange() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        consolidationDetails1.setReceivingBranch(100L);
+        var a = LocalDateTime.now();
+        consolidationDetails1.getCarrierDetails().setEta(a);
+        consolidationDetails1.getCarrierDetails().setEtd(a);
+
+        consolidationDetails.setId(5L);
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        consolidationDetails.getCarrierDetails().setEta(a);
+        consolidationDetails.getCarrierDetails().setEtd(a);
+        consolidationDetails.setReceivingBranch(200L);
+        consolidationDetails.setBol(consolidationDetails1.getBol());
+        consolidationDetails.setSendingAgent(consolidationDetails1.getSendingAgent());
+        consolidationDetails.setReceivingAgent(consolidationDetails1.getReceivingAgent());
+
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
+    @Test
+    void triggerAutomaticTransfer_isValidDateChange() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_ROA);
+        consolidationDetails1.setShipmentType(DIRECTION_EXP);
+        consolidationDetails1.setReceivingBranch(100L);
+        consolidationDetails1.setReceivingAgent(new Parties());
+        consolidationDetails1.setSendingAgent(new Parties());
+        consolidationDetails.setReceivingAgent(new Parties());
+        consolidationDetails.setSendingAgent(new Parties());
+        consolidationDetails.setCarrierDetails(new CarrierDetails());
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+
+        QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
+        when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
+        mockShipmentSettings();
+
+        networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
+
+        verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
+    }
+
 
 }

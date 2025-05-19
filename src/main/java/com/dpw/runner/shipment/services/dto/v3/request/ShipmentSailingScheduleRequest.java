@@ -2,7 +2,9 @@ package com.dpw.runner.shipment.services.dto.v3.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;

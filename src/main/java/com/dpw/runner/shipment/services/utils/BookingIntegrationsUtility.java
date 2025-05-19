@@ -87,6 +87,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -120,7 +121,7 @@ public class BookingIntegrationsUtility {
     private IIntegrationResponseDao integrationResponseDao;
     @Autowired
     private IShipmentService shipmentService;
-    @Autowired
+    @Autowired @Lazy
     private IShipmentServiceV3 shipmentServiceV3;
     @Autowired
     private MasterDataFactory masterDataFactory;

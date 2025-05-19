@@ -53,6 +53,12 @@ class RoutingV3ControllerTest {
         var response = routingController.fetchShipmentRoute(ListCommonRequest.builder().build(), null);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
+    @Test
+    void fetchConsolidationRoute() throws RunnerException {
+        when(routingService.list(any(), eq(null))).thenReturn(RoutingListResponse.builder().totalPages(1).totalCount(2L).build());
+        var response = routingController.fetchConsolidationRoute(ListCommonRequest.builder().build(), null);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
 
     @Test
     void retrieveById() throws RunnerException {
@@ -75,7 +81,13 @@ class RoutingV3ControllerTest {
         var response = routingController.shipmentUpdateBulk(bulkUpdateRoutingsRequest);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
-
+    @Test
+    void consolidationUpdateBulk() throws RunnerException {
+        when(routingService.updateBulk(any(), any())).thenReturn(BulkRoutingResponse.builder().build());
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        var response = routingController.consolidationUpdateBulk(bulkUpdateRoutingsRequest);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
     @Test
     void shipmentDeleteBulk() throws RunnerException {
         when(routingService.deleteBulk(any(), any())).thenReturn(BulkRoutingResponse.builder().build());

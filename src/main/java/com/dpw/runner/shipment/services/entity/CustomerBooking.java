@@ -378,13 +378,13 @@ public class CustomerBooking extends MultiTenancy {
     private BigDecimal teuCount;
 
     @Column(name = "containers")
-    private long containers;
+    private Long containers;
 
     @Column(name = "package_type")
     private String packageType;
 
     @Column(name = "packages")
-    private long packages;
+    private Long packages;
 
     @Column(name = "description")
     private String description;
