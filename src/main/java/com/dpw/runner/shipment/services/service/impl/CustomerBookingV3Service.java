@@ -58,6 +58,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -83,6 +85,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
+
+    @Value("${shipments.internal.messages.kafka}")
+    private String internalQueue;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -920,6 +925,20 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
+
+        //AFTER TRANSACTION COMMITS
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // Fetch again from DB using committed ID
+                Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(bookingId);
+                if(customerBookingOptional.isPresent()) {
+                    KafkaResponse kafkaResponse = producer.getKafkaResponse(customerBookingOptional.get(), true);
+                    kafkaResponse.setTransactionId(UUID.randomUUID().toString());
+                    producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), internalQueue, StringUtility.convertToString(customerBookingOptional.get().getGuid()));
+                }
+            }
+        });
 
         saveChildEntities(customerBooking, request);
         generateBookingAcknowledgementEvent(request);
