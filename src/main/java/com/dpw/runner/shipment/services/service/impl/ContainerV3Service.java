@@ -1209,7 +1209,7 @@ public class ContainerV3Service implements IContainerV3Service {
             }
         }
 
-        containerV3Util.setContainerNetWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
+        containerV3Util.setContainerNetWeight(container); // set container net weight from gross weight and tare weight
         if(Objects.equals(shipmentIdsForDetachment.size(), shipmentsContainersMappings.size())) {
             container.setAssigned(false);
         }
