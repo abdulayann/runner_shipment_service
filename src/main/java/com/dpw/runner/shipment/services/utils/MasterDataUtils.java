@@ -1232,6 +1232,7 @@ public class MasterDataUtils{
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);
+                        fieldNameMasterDataMap.put(key + Constants.IATA_CODE, object.IATACode);
 
                         break;
                     case CacheConstants.UNLOCATIONS_AWB:
