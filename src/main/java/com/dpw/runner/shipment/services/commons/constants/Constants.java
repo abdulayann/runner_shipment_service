@@ -416,6 +416,7 @@ public class Constants {
     public static final String COUNTRY = "_country";
     public static final String NAME = "_name";
     public static final String CODE = "_code";
+    public static final String IATA_CODE = "_iataCode";
     public static final String DISPLAY_NAME = "_displayName";
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
