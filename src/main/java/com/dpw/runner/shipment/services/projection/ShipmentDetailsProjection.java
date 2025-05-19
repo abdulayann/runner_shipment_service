@@ -8,9 +8,11 @@ public interface ShipmentDetailsProjection {
     Integer getTenantId();
     String getHblNumber();
     String getShipmentId();
-    String getShipmentType(); // shipment_type
-    String getTransportMode(); // transport_mode
+    String getShipmentType();
+    String getTransportMode();
     Long getId();
+    String getShipmentNumber();
+    Long getContainerId();
 
     class NullShipmentDetailsProjection implements ShipmentDetailsProjection {
 
@@ -41,6 +43,16 @@ public interface ShipmentDetailsProjection {
 
         @Override
         public Long getId() {
+            return null;
+        }
+
+        @Override
+        public String getShipmentNumber() {
+            return null;
+        }
+
+        @Override
+        public Long getContainerId() {
             return null;
         }
 

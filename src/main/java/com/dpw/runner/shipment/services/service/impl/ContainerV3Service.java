@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
@@ -56,6 +57,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -538,18 +540,58 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public ContainerListResponse fetchConsolidationContainers(ListCommonRequest request, String xSource) throws RunnerException {
-        log.info("Container detail list retrieved for consolidation successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        ListCommonRequest listCommonRequest;
+        ListCommonRequest enrichedRequest;
+
         if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
-            listCommonRequest = CommonUtils.constructListCommonRequest(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
+            enrichedRequest = CommonUtils.constructListCommonRequest(
+                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
         } else {
-            listCommonRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
+            enrichedRequest = CommonUtils.andCriteria(
+                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
         }
-        listCommonRequest.setSortRequest(request.getSortRequest());
-        listCommonRequest.setPageNo(request.getPageNo());
-        listCommonRequest.setPageSize(request.getPageSize());
-        listCommonRequest.setContainsText(request.getContainsText());
-        return list(listCommonRequest, true, xSource);
+
+        // Carry forward pagination, sorting, and search text
+        enrichedRequest.setSortRequest(request.getSortRequest());
+        enrichedRequest.setPageNo(request.getPageNo());
+        enrichedRequest.setPageSize(request.getPageSize());
+        enrichedRequest.setContainsText(request.getContainsText());
+
+        ContainerListResponse containerListResponse;
+        try {
+            containerListResponse = list(enrichedRequest, true, xSource);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
+        }
+
+        List<ContainerBaseV3Response> containers = containerListResponse.getContainers();
+        if (CollectionUtils.isEmpty(containers)) {
+            log.info("No containers found for consolidation.");
+            return containerListResponse;
+        }
+
+        List<Long> containerIds = containers.stream().map(ContainerBaseResponse::getId)
+                .filter(Objects::nonNull).distinct().toList();
+
+        List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
+
+        Map<Long, ShipmentDetailsProjection> containerIdToShipmentDetailsMap = attachedShipmentDetails.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        ShipmentDetailsProjection::getContainerId,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+
+        for (ContainerBaseV3Response container : containers) {
+            ShipmentDetailsProjection details = containerIdToShipmentDetailsMap.get(container.getId());
+            if (details != null) {
+                container.setAttachedShipmentId(details.getId());
+                container.setAttachedShipmentNumber(details.getShipmentNumber());
+                container.setAttachedShipmentType(details.getShipmentType());
+            }
+        }
+
+        return containerListResponse;
     }
 
     private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {
@@ -586,10 +628,10 @@ public class ContainerV3Service implements IContainerV3Service {
         return responseList;
     }
 
-    private List<ContainerBaseResponse> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
-        List<ContainerBaseResponse> responseList = new ArrayList<>();
+    private List<ContainerBaseV3Response> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
+        List<ContainerBaseV3Response> responseList = new ArrayList<>();
         long start = System.currentTimeMillis();
-        lst.forEach(containers -> responseList.add((ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns.stream().collect(Collectors.toSet()), new ContainerBaseResponse())));
+        lst.forEach(containers -> responseList.add((ContainerBaseV3Response) commonUtils.setIncludedFieldsToResponse(containers, new HashSet<>(includeColumns), new ContainerBaseResponse())));
         log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
         return responseList;
     }
@@ -861,7 +903,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 includeColumns = request.getIncludeColumns();
             }
 
-            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+            List<ContainerBaseV3Response> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
             Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
             ContainerListResponse containerListResponse = ContainerListResponse.builder()
                     .containers(responseList)
@@ -879,7 +921,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+    private Map<String, Object> getMasterDataForList(List<ContainerBaseV3Response> responseList, boolean getMasterData) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
