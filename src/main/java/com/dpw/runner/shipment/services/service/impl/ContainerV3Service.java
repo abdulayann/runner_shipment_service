@@ -57,7 +57,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
-import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -622,12 +621,6 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private List<ContainerBaseResponse> convertEntityListToDtoList(List<Containers> lst) {
-        List<ContainerBaseResponse> responseList = new ArrayList<>();
-        lst.forEach(containers -> responseList.add(convertEntityToDto(containers)));
-        return responseList;
-    }
-
     private List<ContainerBaseV3Response> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
         List<ContainerBaseV3Response> responseList = new ArrayList<>();
         long start = System.currentTimeMillis();
@@ -976,22 +969,6 @@ public class ContainerV3Service implements IContainerV3Service {
         );
     }
 
-    private CompletableFuture<Void> runContainerSyncAsync(List<Containers> containers) {
-        return CompletableFuture.allOf(
-                containers.stream()
-                        .map(container -> CompletableFuture.runAsync(
-                                masterDataUtils.withMdc(() -> {
-                                    Long containerId = container.getId();
-                                    List<ShipmentsContainersMapping> mappings =
-                                            shipmentsContainersMappingDao.findByContainerIdIn(List.of(containerId));
-                                    containersSync.sync(List.of(containerId), new PageImpl<>(mappings));
-                                }),
-                                executorService
-                        ))
-                        .toArray(CompletableFuture[]::new)
-        );
-    }
-
     @Override
     public void processContainersAfterShipmentAttachment(
             Long consolidationId,
@@ -1049,21 +1026,24 @@ public class ContainerV3Service implements IContainerV3Service {
                         e -> e.getValue() == null ? new ArrayList<>() : e.getValue()
                 )));
 
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
         Map<Long, Packing> packingListMap = new HashMap<>();
         List<Packing> assignedPacks = new ArrayList<>();
         List<ShipmentsContainersMapping> shipmentsContainersMappings = new ArrayList<>();
+        Set<Long> assignedShipIds = new HashSet<>();
 
         // fetch data
-        Containers container = fetchDataForAssignContainer(request, shipmentDetailsList,
-                packingListMap, assignedPacks, shipmentsContainersMappings);
+        Containers container = fetchDataForAssignContainer(request, shipmentDetailsMap,
+                                        packingListMap, assignedPacks, shipmentsContainersMappings, assignedShipIds);
 
-        List<Long> assignedShipIds = shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList();
         List<Long> shipmentIdsToSetContainerCargo = new ArrayList<>();
 
+        // validate before assign container
+        containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap);
+
         // Do calculations/logic implementation
-        List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsList, assignedShipIds, request,
-                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
+        List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, request,
+                                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
 
         // Save the data
         container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container, shipmentIdsForAttachment);
@@ -1072,8 +1052,9 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private Containers fetchDataForAssignContainer(AssignContainerRequest request,
-                                                   List<ShipmentDetails> shipmentDetailsList, Map<Long, Packing> packingListMap,
-                                                   List<Packing> assignedPacks, List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+                                                   Map<Long, ShipmentDetails> shipmentDetailsMap, Map<Long, Packing> packingListMap,
+                                                   List<Packing> assignedPacks, List<ShipmentsContainersMapping> shipmentsContainersMappings,
+                                                   Set<Long> assignedShipIds) {
         // Identify requests
         Long containerId = request.getContainerId();
         Set<Long> shipmentIdsRequestedList = request.getShipmentPackIds().keySet();
@@ -1083,31 +1064,39 @@ public class ContainerV3Service implements IContainerV3Service {
                 .flatMap(List::stream)
                 .filter(Objects::nonNull).toList();
 
-        // Fetch data to be assigned
-        Containers container = containerDao.findById(containerId)
-                .orElseThrow(() -> new EntityNotFoundException("Container not found with ID: " + containerId));
-        shipmentDetailsList.addAll(shipmentDao.findShipmentsByIds(shipmentIdsRequestedList));
-        if (!listIsNullOrEmpty(packIdsRequestedList)) {
-            packingListMap.putAll(packingDao.findByIdIn(packIdsRequestedList).stream().collect(Collectors.toMap(Packing::getId, Function.identity())));
-        }
-
-        // assigning zero to weight and volume as it will be freshly recalculated
-        containerV3Util.resetContainerDataForRecalculation(container);
+        Set<Long> shipmentIds = new HashSet<>(shipmentIdsRequestedList);
 
         // Fetch data already assigned
         assignedPacks.addAll(packingDao.findByContainerIdIn(List.of(containerId)).stream().toList());
         shipmentsContainersMappings.addAll(shipmentsContainersMappingDao.findByContainerId(containerId));
+        assignedShipIds.addAll(shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList());
+
+        shipmentIds.addAll(assignedShipIds);
+
+        // Fetch data to be assigned
+        Containers container = containerDao.findById(containerId)
+                .orElseThrow(() -> new EntityNotFoundException("Container not found with ID: " + containerId));
+        if (!listIsNullOrEmpty(packIdsRequestedList)) {
+            packingListMap.putAll(packingDao.findByIdIn(packIdsRequestedList).stream().collect(Collectors.toMap(Packing::getId, Function.identity())));
+        }
+
+        // Fetch all shipments (already assigned and to be assigned)
+        List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(shipmentIds);
+        shipmentDetailsMap.putAll(shipmentDetails.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity())));
+
+        // assigning zero to weight and volume as it will be freshly recalculated
+        containerV3Util.resetContainerDataForRecalculation(container);
 
         return container;
     }
 
-    private List<Long> assignContainerCalculationsAndLogic(List<ShipmentDetails> shipmentDetailsList, List<Long> assignedShipIds,
+    private List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
                                                            AssignContainerRequest request, List<Long> shipmentIdsToSetContainerCargo,
                                                            Containers container, Map<Long, Packing> packingListMap,
                                                            List<Packing> assignedPacks) throws RunnerException {
         List<Long> shipmentIdsForAttachment = new ArrayList<>();
-        for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-            Long id = shipmentDetails.getId();
+        for (Long id : request.getShipmentPackIds().keySet()) {
+            ShipmentDetails shipmentDetails = shipmentDetailsMap.get(id);
             if (!assignedShipIds.contains(id)) {
                 shipmentIdsForAttachment.add(id); // need to assign this shipment
             }
@@ -1121,6 +1110,10 @@ public class ContainerV3Service implements IContainerV3Service {
             for (Packing assignedPack : assignedPacks) {
                 addPackageDataToContainer(container, assignedPack);
             }
+        }
+        for(Long id: assignedShipIds) { // adding weight/volume of already assigned Shipment Cargo
+            ShipmentDetails shipmentDetails = shipmentDetailsMap.get(id);
+            addShipmentCargoToContainer(container, shipmentDetails);
         }
         containerV3Util.setContainerNetWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
         container.setAssigned(true);
@@ -1326,7 +1319,8 @@ public class ContainerV3Service implements IContainerV3Service {
             addShipmentCargoToContainer(container, shipmentDetails);
         } else {
             for (Packing packing : packingList) { // loop over all the assigned packs of shipment
-                addPackageDataToContainer(container, packing);
+                if(Objects.equals(packing.getContainerId(), container.getId()))
+                    addPackageDataToContainer(container, packing);
             }
         }
     }

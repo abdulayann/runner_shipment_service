@@ -319,7 +319,7 @@ public class ContainerV3Util {
 
     public BigDecimal getAddedVolume(BigDecimal initialVolume, String initialVolumeUnit, BigDecimal addedVolume, String addedVolumeUnit) throws RunnerException {
         if(isStringNullOrEmpty(initialVolumeUnit)) {
-            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
+            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getVolumeChargeableUnit();
         }
         if(Objects.isNull(initialVolume)) {
             initialVolume = BigDecimal.ZERO;
@@ -347,6 +347,7 @@ public class ContainerV3Util {
     public void resetContainerDataForRecalculation(Containers container) {
         container.setNetWeight(BigDecimal.ZERO);
         container.setGrossVolume(BigDecimal.ZERO);
+        container.setGrossWeight(BigDecimal.ZERO);
         container.setPacks("0");
         container.setPacksType(null);
     }
