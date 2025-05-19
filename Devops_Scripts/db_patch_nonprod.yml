@@ -1,6 +1,6 @@
 trigger: none
 pool:
-  name: Cargoes Runner
+  name: Runner-self-hosted-agent
 
 name: $(Build.SourceBranchName)_$(Rev:r)
 
