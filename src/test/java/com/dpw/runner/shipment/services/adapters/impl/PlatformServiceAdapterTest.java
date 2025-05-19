@@ -15,14 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.RestTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {PlatformServiceAdapter.class, String.class})
@@ -43,8 +43,10 @@ class PlatformServiceAdapterTest {
     @Test
     void testCreateAtPlatform() throws RunnerException {
         PlatformCreateRequest platformCreateRequest = PlatformCreateRequest.builder().build();
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(ResponseEntity.ok("abc"));
+
         when(jsonHelper.convertToJson(Mockito.any())).thenReturn("hello");
         ResponseEntity<IRunnerResponse> response = platformServiceAdapter.createAtPlatform(CommonRequestModel.buildRequest(platformCreateRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
