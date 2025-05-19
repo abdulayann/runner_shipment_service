@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -21,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import java.util.List;
@@ -44,6 +44,9 @@ class ContainerV3ControllerTest {
   private IContainerV3Service containerV3Service;
 
   @Mock
+  private ContainerV3FacadeService containerV3FacadeService;
+
+  @Mock
   private ContainerV3Util containerV3Util;
 
   @Mock
@@ -52,9 +55,9 @@ class ContainerV3ControllerTest {
   @Test
   void testCreateFromShipment() {
     ContainerV3Request request = new ContainerV3Request();
-    ContainerResponse response = new ContainerResponse();
+    BulkContainerResponse bulkContainerResponse = new BulkContainerResponse();
 
-    Mockito.when(containerV3Service.create(request, "SHIPMENT")).thenReturn(response);
+    Mockito.when(containerV3FacadeService.createUpdateContainer(List.of(request), "SHIPMENT")).thenReturn(bulkContainerResponse);
     Mockito.when(jsonHelper.convertToJson(Mockito.any())).thenReturn("{}");
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.createFromShipment(request);
@@ -65,9 +68,9 @@ class ContainerV3ControllerTest {
   @Test
   void testCreateFromConsolidation() {
     ContainerV3Request request = new ContainerV3Request();
-    ContainerResponse response = new ContainerResponse();
+    BulkContainerResponse bulkContainerResponse = new BulkContainerResponse();
 
-    Mockito.when(containerV3Service.create(request, "CONSOLIDATION")).thenReturn(response);
+    Mockito.when(containerV3FacadeService.createUpdateContainer(List.of(request), "CONSOLIDATION")).thenReturn(bulkContainerResponse);
     Mockito.when(jsonHelper.convertToJson(Mockito.any())).thenReturn("{}");
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.createFromConsolidation(request);
@@ -80,7 +83,7 @@ class ContainerV3ControllerTest {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
 
-    Mockito.when(containerV3Service.updateBulk(requestList, "SHIPMENT")).thenReturn(response);
+    Mockito.when(containerV3FacadeService.createUpdateContainer(requestList, "SHIPMENT")).thenReturn(response);
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.updateBulk(requestList);
 
