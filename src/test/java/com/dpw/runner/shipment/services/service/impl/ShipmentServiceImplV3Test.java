@@ -108,6 +108,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ShipmentServiceImplV3Test extends CommonMocks {

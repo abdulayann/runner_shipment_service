@@ -92,6 +92,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 
+@SuppressWarnings("java:S4165")
 @Service
 @Slf4j
 public class PackingV3Service implements IPackingV3Service {
@@ -630,7 +631,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (!CollectionUtils.isEmpty(consolidationDetailsEntity)) {
             return new PackingListResponse();
         }
-        List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(consoleShipmentMapping -> consoleShipmentMapping.getIsAttachmentDone()).map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
         ListCommonRequest listCommonRequest = CommonUtils.andCriteria(Constants.SHIPMENT_ID, shipmentIds, Constants.IN, request);
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -980,29 +981,33 @@ public class PackingV3Service implements IPackingV3Service {
         response.setPacksUnit(Constants.PACKAGES);
         Set<String> uniquePacksUnits = new HashSet<>();
         if (!CollectionUtils.isEmpty(packings)) {
-            for (Packing packing : packings) {
-                if (!StringUtility.isEmpty(packing.getPacksType())) {
-                    uniquePacksUnits.add(packing.getPacksType());
-                }
-                if (packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
-                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
-                }
-                if (packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
-                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
-                }
-                if (!isStringNullOrEmpty(packing.getPacks())) {
-                    totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
-                }
-            }
-            response.setNoOfPacks(totalPacks);
-            response.setWeight(totalWeight);
-            response.setVolume(totalVolume);
-            if (uniquePacksUnits.size() == 1) {
-                response.setPacksUnit(packings.get(0).getPacksType());
-            }
+            populateSummaryDetails(packings, response, uniquePacksUnits, totalWeight, totalVolume, totalPacks);
             response = calculateVW(response);
         }
         return response;
+    }
+
+    private void populateSummaryDetails(List<Packing> packings, CargoDetailsResponse response, Set<String> uniquePacksUnits, BigDecimal totalWeight, BigDecimal totalVolume, Integer totalPacks) throws RunnerException {
+        for (Packing packing : packings) {
+            if (!StringUtility.isEmpty(packing.getPacksType())) {
+                uniquePacksUnits.add(packing.getPacksType());
+            }
+            if (packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
+                totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
+            }
+            if (packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
+                totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
+            }
+            if (!isStringNullOrEmpty(packing.getPacks())) {
+                totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
+            }
+        }
+        response.setNoOfPacks(totalPacks);
+        response.setWeight(totalWeight);
+        response.setVolume(totalVolume);
+        if (uniquePacksUnits.size() == 1) {
+            response.setPacksUnit(packings.get(0).getPacksType());
+        }
     }
 
     private CargoDetailsResponse calculateVW(CargoDetailsResponse response) throws RunnerException {
@@ -1102,7 +1107,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void updateAttachedContainersData(List<Packing> packings, ShipmentDetails shipmentDetails) throws RunnerException {
-        if(!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
+        if(shipmentDetails == null || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
             return;
         Set<Long> containerIdsToUpdate = new HashSet<>();
         packings.forEach(e -> {
