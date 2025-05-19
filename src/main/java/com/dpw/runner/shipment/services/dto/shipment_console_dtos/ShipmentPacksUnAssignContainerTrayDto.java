@@ -51,6 +51,8 @@ public class ShipmentPacksUnAssignContainerTrayDto {
             private BigDecimal volume;
             private String volumeUnit;
             private Long containerId;
+            private String containerNumber;
+            private String containerCode;
         }
     }
 

@@ -5,4 +5,6 @@ public interface ContainerInfoProjection {
     Long getId();
 
     String getContainerNumber();
+
+    String getContainerCode();
 }

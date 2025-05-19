@@ -56,13 +56,9 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -186,6 +182,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private MasterDataHelper masterDataHelper;
     @Mock
     private IHblDao hblDao;
+    @Mock
+    private IPackingV3Service packingV3Service;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;
@@ -332,7 +330,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
         ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).packsList(new ArrayList<>()).build();
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.class))).thenReturn(List.of(shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class))).thenReturn(new ArrayList<>());
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(new ArrayList<>());
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
@@ -353,7 +352,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .id(5L)
                 .packsList(new ArrayList<>())
                 .build();
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.class))).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class))).thenReturn(new ArrayList<>());
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
@@ -372,7 +372,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .id(5L)
                 .packsList(new ArrayList<>())
                 .build();
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.class))).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class))).thenReturn(new ArrayList<>());
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
@@ -1063,6 +1064,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setPackingList(List.of(pack1, pack2));
 
         // Mocks
+        ContainerInfoProjection mockProjection = mock(ContainerInfoProjection.class);
+
         when(shipmentsContainersMappingDao.findByContainerId(containerId)).thenReturn(mappings);
         when(shipmentDao.findShipmentsByIds(Set.of(100L))).thenReturn(List.of(shipment));
 
@@ -1077,6 +1080,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .thenReturn(List.of(shipmentsDto));
         when(jsonHelper.convertValueToList(eq(List.of(pack1)), eq(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.class)))
                 .thenReturn(List.of(packing));
+//        when(mockProjection.getContainerNumber()).thenReturn("");
+//        when(mockProjection.getContainerCode()).thenReturn("");
 
         // When
         ShipmentPacksUnAssignContainerTrayDto result = shipmentServiceImplV3.getShipmentAndPacksForConsolidationUnAssignContainerTray(containerId);

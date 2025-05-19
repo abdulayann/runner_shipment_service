@@ -55,6 +55,8 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
             private BigDecimal volume;
             private String volumeUnit;
             private Long containerId;
+            private String containerNumber;
+            private String containerCode;
         }
     }
 }

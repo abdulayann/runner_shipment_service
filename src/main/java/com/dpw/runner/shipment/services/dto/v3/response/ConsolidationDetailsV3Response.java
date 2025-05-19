@@ -170,4 +170,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private String coLoadCarrierName;
     private Boolean borrowed;
     private Long originBranch;
+    private Long shipmentsCount;
 }

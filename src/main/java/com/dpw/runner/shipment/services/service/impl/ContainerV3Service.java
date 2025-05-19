@@ -1257,18 +1257,19 @@ public class ContainerV3Service implements IContainerV3Service {
                                                      List<Long> shipmentIdsForDetachment, List<Long> removeAllPackingIds,
                                                      ShipmentDetails shipmentDetails) throws RunnerException {
         Long shipmentId = shipmentDetails.getId();
+        Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentId));
+
         // we are removing all the packages from this shipment, hence container will be detached from shipment
-        if (Objects.equals(request.getShipmentPackIds().get(shipmentId).size(), packingList.size())) {
+        if (Objects.equals(removePackIds.size(), packingList.size())) {
             shipmentIdsForDetachment.add(shipmentId);
+            removeAllPackingIds.addAll(removePackIds);
             // check if we need to remove cargo link as well from shipment
             if (Objects.equals(shipmentDetails.getContainerAssignedToShipmentCargo(),
                     container.getId())) { // shipment cargo was linked to this container
                 shipmentIdsForCargoDetachment.add(shipmentId);
             }
         } else { // only some packages are being removed from container
-            Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentId));
             removeAllPackingIds.addAll(removePackIds);
-
             // add data of remaining packages to container
             for (Packing packing : packingList) { // loop over all the assigned packs of shipment
                 if (!removePackIds.contains(packing.getId())) { // this pack is not being detached
