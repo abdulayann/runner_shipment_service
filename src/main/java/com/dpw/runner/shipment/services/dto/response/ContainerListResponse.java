@@ -19,7 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ContainerListResponse implements IRunnerResponse {
-    private List<ContainerBaseResponse> containers;
+    private List<ContainerBaseV3Response> containers;
     private Map<String, Object> masterData;
     private Long assignedContainerCount = 0L;
     private Long unassignedContainerCount = 0L;

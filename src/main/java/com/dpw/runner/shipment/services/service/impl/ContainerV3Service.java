@@ -1,5 +1,16 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -10,20 +21,29 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -37,6 +57,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
@@ -44,8 +65,34 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,22 +105,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -508,18 +539,58 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public ContainerListResponse fetchConsolidationContainers(ListCommonRequest request, String xSource) throws RunnerException {
-        log.info("Container detail list retrieved for consolidation successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        ListCommonRequest listCommonRequest;
+        ListCommonRequest enrichedRequest;
+
         if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
-            listCommonRequest = CommonUtils.constructListCommonRequest(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
+            enrichedRequest = CommonUtils.constructListCommonRequest(
+                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
         } else {
-            listCommonRequest = CommonUtils.andCriteria(CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
+            enrichedRequest = CommonUtils.andCriteria(
+                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
         }
-        listCommonRequest.setSortRequest(request.getSortRequest());
-        listCommonRequest.setPageNo(request.getPageNo());
-        listCommonRequest.setPageSize(request.getPageSize());
-        listCommonRequest.setContainsText(request.getContainsText());
-        return list(listCommonRequest, true, xSource);
+
+        // Carry forward pagination, sorting, and search text
+        enrichedRequest.setSortRequest(request.getSortRequest());
+        enrichedRequest.setPageNo(request.getPageNo());
+        enrichedRequest.setPageSize(request.getPageSize());
+        enrichedRequest.setContainsText(request.getContainsText());
+
+        ContainerListResponse containerListResponse;
+        try {
+            containerListResponse = list(enrichedRequest, true, xSource);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
+        }
+
+        List<ContainerBaseV3Response> containers = containerListResponse.getContainers();
+        if (CollectionUtils.isEmpty(containers)) {
+            log.info("No containers found for consolidation.");
+            return containerListResponse;
+        }
+
+        List<Long> containerIds = containers.stream().map(ContainerBaseResponse::getId)
+                .filter(Objects::nonNull).distinct().toList();
+
+        List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
+
+        Map<Long, ShipmentDetailsProjection> containerIdToShipmentDetailsMap = attachedShipmentDetails.stream()
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        ShipmentDetailsProjection::getContainerId,
+                        Function.identity(),
+                        (existing, replacement) -> existing
+                ));
+
+        for (ContainerBaseV3Response container : containers) {
+            ShipmentDetailsProjection details = containerIdToShipmentDetailsMap.get(container.getId());
+            if (details != null) {
+                container.setAttachedShipmentId(details.getId());
+                container.setAttachedShipmentNumber(details.getShipmentNumber());
+                container.setAttachedShipmentType(details.getShipmentType());
+            }
+        }
+
+        return containerListResponse;
     }
 
     private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {
@@ -550,10 +621,10 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private List<ContainerBaseResponse> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
-        List<ContainerBaseResponse> responseList = new ArrayList<>();
+    private List<ContainerBaseV3Response> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
+        List<ContainerBaseV3Response> responseList = new ArrayList<>();
         long start = System.currentTimeMillis();
-        lst.forEach(containers -> responseList.add((ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns.stream().collect(Collectors.toSet()), new ContainerBaseResponse())));
+        lst.forEach(containers -> responseList.add((ContainerBaseV3Response) commonUtils.setIncludedFieldsToResponse(containers, new HashSet<>(includeColumns), new ContainerBaseResponse())));
         log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
         return responseList;
     }
@@ -825,7 +896,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 includeColumns = request.getIncludeColumns();
             }
 
-            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+            List<ContainerBaseV3Response> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
             Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
             ContainerListResponse containerListResponse = ContainerListResponse.builder()
                     .containers(responseList)
@@ -843,7 +914,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+    private Map<String, Object> getMasterDataForList(List<ContainerBaseV3Response> responseList, boolean getMasterData) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
