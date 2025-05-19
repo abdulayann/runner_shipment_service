@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.executors.PostCommitActionExecutor;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -124,6 +125,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     private INPMServiceAdapter npmService;
 
     @Autowired
+    private PostCommitActionExecutor postCommitActionExecutor;
+
+    @Autowired
     UserContext userContext;
 
     @Autowired
@@ -151,6 +155,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IQuoteContractsService quoteContractsService;
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
+
+    @Value("${shipments.internal.messages.kafka}")
+    private String internalQueue;
 
     @Autowired
     private IEventDao eventDao;
@@ -231,6 +238,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
+
+        //AFTER TRANSACTION COMMITS
+        postCommitActionExecutor.executeAfterCommit(() -> customerBookingDao.findById(bookingId),
+                booking -> producer.getKafkaResponse(booking, true),
+                StringUtility.convertToString(customerBooking.getGuid()), internalQueue);
 
         saveChildEntities(customerBooking, request);
         generateBookingAcknowledgementEvent(request);
