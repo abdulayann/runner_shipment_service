@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
@@ -48,9 +49,10 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -135,8 +137,11 @@ public class ContainerV3Service implements IContainerV3Service {
     @Autowired
     private KafkaProducer producer;
 
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
+
     @Value("${containersKafka.queue}")
-    private String senderQueue;
+    private String containerKafkaQueue;
 
     @Autowired
     private MasterDataUtils masterDataUtils;
@@ -463,7 +468,10 @@ public class ContainerV3Service implements IContainerV3Service {
                 container.setTenantId(TenantContext.getCurrentTenant());
             }
 
-            // Build Kafka message payload
+            triggerPushToDownStream(container, isCreate);
+
+            // REMOVE AFTER SUCCESS OF INTERNAL KAFKA
+            /* // Build Kafka message payload
             KafkaResponse kafkaResponse = producer.getKafkaResponse(container, isCreate);
 
             // Serialize payload to JSON
@@ -473,16 +481,36 @@ public class ContainerV3Service implements IContainerV3Service {
             String messageKey = UUID.randomUUID().toString();
 
             // Send message to Kafka
-            producer.produceToKafka(message, senderQueue, messageKey);
+            producer.produceToKafka(message, containerKafkaQueue, messageKey);
 
             // Log success for traceability
             log.info("Pushed container update to Kafka | containerId={} | tenantId={} | key={}",
                     container.getId(), container.getTenantId(), messageKey);
+
+             */
         } catch (Exception ex) {
             // Log failure with detailed error message and exception stack trace
             log.error("Failed to push container update to Kafka | containerId={} | error={}",
                     container.getId(), ex.getMessage(), ex);
         }
+    }
+
+    private void triggerPushToDownStream(Containers container, Boolean isCreate) {
+        String transactionId = UUID.randomUUID().toString();
+
+        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | containerId={} | isCreate={} | transactionId={}",
+                container.getId(), isCreate, transactionId);
+
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(container.getId())
+                .parentEntityName(CONTAINER)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .isCreate(isCreate).build()).build();
+
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);
+
+        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | containerId={} | transactionId={}",
+                container.getId(), transactionId);
     }
 
     @Override
