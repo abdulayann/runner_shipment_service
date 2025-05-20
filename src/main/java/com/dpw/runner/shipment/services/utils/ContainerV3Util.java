@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -346,6 +347,9 @@ public class ContainerV3Util {
             }
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getGrossWeight(), container.getGrossWeightUnit()));
+        } else {
+            container.setNetWeight(container.getGrossWeight());
+            container.setNetWeightUnit(container.getGrossWeightUnit());
         }
     }
 
@@ -357,13 +361,13 @@ public class ContainerV3Util {
         container.setPacksType(null);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, String packs, String packsType) {
+    public void addNoOfPackagesToContainerFromPacks(Containers container, String packs, String packsType) {
         if(isStringNullOrEmpty(packs))
             return;
-        addNoOfPackagesToContainerFromShipment(container, Integer.parseInt(packs), packsType);
+        addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, Integer packs, String packsType) {
+    public void addNoOfPackagesToContainer(Containers container, Integer packs, String packsType) {
         if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
             return;
         if(isStringNullOrEmpty(container.getPacks()))
