@@ -449,6 +449,7 @@ public class V1ServiceUtil {
         if(tenantModel.getDefaultOrgId() != null && tenantModel.getDefaultAddressId() != null) {
             PartiesRequest partiesRequest = getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
             partiesResponse = jsonHelper.convertValue(partiesRequest, PartiesResponse.class);
+            partiesResponse.setTenantId(null);
         }
         return partiesResponse;
     }
@@ -461,6 +462,7 @@ public class V1ServiceUtil {
         if(tenantModel.getDefaultOrgId() != null && tenantModel.getDefaultAddressId() != null) {
             PartiesRequest partiesRequest = getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
             parties = jsonHelper.convertValue(partiesRequest, Parties.class);
+            parties.setTenantId(null);
         }
         return parties;
     }
