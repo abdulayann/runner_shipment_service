@@ -507,6 +507,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .parentEntityId(container.getId())
                 .parentEntityName(CONTAINER)
                 .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(container.getTenantId())
                         .isCreate(isCreate).build()).build();
 
         dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);

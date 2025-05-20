@@ -70,16 +70,20 @@ public class PushToDownstreamService implements IPushToDownstreamService {
             }
 
         } else if (Objects.equals(message.getParentEntityName(), Constants.CONTAINER)) {
-            this.pushContainerData(message.getParentEntityId(), message.getMeta().getIsCreate(), transactionId);
+            this.pushContainerData(message, transactionId);
         }
     }
 
     @Override
-    public void pushContainerData(Long parentEntityId, Boolean isCreate, String transactionId) {
+    public void pushContainerData(PushToDownstreamEventDto eventDto, String transactionId) {
+        Long parentEntityId = eventDto.getParentEntityId();
+        Boolean isCreate = eventDto.getMeta().getIsCreate();
+        Integer tenantId = eventDto.getMeta().getTenantId();
         log.info("[InternalKafkaConsume] Pushing container data | transactionId={} | parentEntityId={} | isCreate={}",
                 transactionId, parentEntityId, isCreate);
 
         // Fetch container data
+        TenantContext.setCurrentTenant(tenantId);
         List<Containers> containersList = containerV3Service.findByIdIn(List.of(parentEntityId));
         if (containersList.isEmpty()) {
             log.warn("[InternalKafkaConsume] No containers found for parentEntityId={} | transactionId={}",

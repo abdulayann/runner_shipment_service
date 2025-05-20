@@ -1,11 +1,10 @@
 package com.dpw.runner.shipment.services.kafka.dto;
 
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 @Data @Builder
 @AllArgsConstructor @NoArgsConstructor
@@ -35,6 +34,7 @@ public class PushToDownstreamEventDto {
     public static class Meta {
         private Boolean isCreate = false;
         private Boolean isAutoSellRequired = false;
+        private Integer tenantId;
     }
 }
 

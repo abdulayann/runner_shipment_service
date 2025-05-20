@@ -6,5 +6,5 @@ public interface IPushToDownstreamService {
 
     void process(PushToDownstreamEventDto message, String transactionId);
 
-    void pushContainerData(Long parentEntityId, Boolean isCreate, String transactionId);
+    void pushContainerData(PushToDownstreamEventDto eventDto, String transactionId);
 }
