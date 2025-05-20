@@ -624,7 +624,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private List<ContainerBaseV3Response> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
         List<ContainerBaseV3Response> responseList = new ArrayList<>();
         long start = System.currentTimeMillis();
-        lst.forEach(containers -> responseList.add((ContainerBaseV3Response) commonUtils.setIncludedFieldsToResponse(containers, new HashSet<>(includeColumns), new ContainerBaseResponse())));
+        lst.forEach(containers -> responseList.add((ContainerBaseV3Response) commonUtils.setIncludedFieldsToResponse(containers, new HashSet<>(includeColumns), new ContainerBaseV3Response())));
         log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
         return responseList;
     }
