@@ -17,14 +17,21 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -67,6 +74,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
@@ -96,6 +104,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     private CommonUtils commonUtils;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
@@ -140,6 +150,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return convertEntityToDto(routings);
     }
 
+    @Transactional
     public void afterSave(List<Routings> routingList, Long entityId, String module) throws RunnerException {
         List<Routings> mainCarriageList = routingList.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
@@ -152,9 +163,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             if (entityId == null) {
                 consolidationId = mainCarriageList.get(0).getConsolidationId();
             }
-            if (!CollectionUtils.isEmpty(mainCarriageList)) {
-                updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList);
-            }
+            updateConsolCarrierDetails(mainCarriageList);
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
             if (!CollectionUtils.isEmpty(shipmentsList)) {
@@ -165,23 +174,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
                         // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
                         List<Integer> inheritedIndexes = new ArrayList<>();
-                        for (int i = 0; i < updatedRoutings.size(); i++) {
-                            Routings routing = updatedRoutings.get(i);
-                            if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                                    Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
-                                inheritedIndexes.add(i);
-                            }
-                        }
+                        getMainCarriageInheritedIndex(updatedRoutings, inheritedIndexes);
 
                         // Step 2: Remove those inherited MAIN_CARRIAGE entries
-                        boolean isMainCarriagePresent = updatedRoutings.stream()
-                                .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                                        Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
-                        if (!isMainCarriagePresent && !CollectionUtils.isEmpty(mainCarriageList)) {
-                            updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-                        }
-                        updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                                Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+                        removeMainCarriageFromShipmentRouting(mainCarriageList, updatedRoutings);
 
 
                         // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
@@ -192,17 +188,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
                         // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
                         int offset = 0;
-                        for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
-                            int insertAt = i < inheritedIndexes.size()
-                                    ? inheritedIndexes.get(i)
-                                    : offset; // append to end if more than removed
-                            if (insertAt >= updatedRoutings.size()) {
-                                updatedRoutings.add(consolidatedMainCarriages.get(i));
-                            } else {
-                                updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
-                            }
-                            offset = insertAt + 1;
-                        }
+                        insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
 
                         // Step 5: Push to update
                         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
@@ -215,10 +201,51 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
     }
 
-    private CarrierDetails getNewCarrierDetails(CarrierDetails currentCarrierDetails){
+    private static void insertNewConsolMainCarriageAtInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes, List<Routings> consolidatedMainCarriages, int offset) {
+        for (int i = 0; i < consolidatedMainCarriages.size(); i++) {
+            int insertAt = i < inheritedIndexes.size()
+                    ? inheritedIndexes.get(i)
+                    : offset; // append to end if more than removed
+            if (insertAt >= updatedRoutings.size()) {
+                updatedRoutings.add(consolidatedMainCarriages.get(i));
+            } else {
+                updatedRoutings.add(insertAt, consolidatedMainCarriages.get(i));
+            }
+            offset = insertAt + 1;
+        }
+    }
+
+    private static void removeMainCarriageFromShipmentRouting(List<Routings> mainCarriageList, List<Routings> updatedRoutings) {
+        boolean isMainCarriagePresent = updatedRoutings.stream()
+                .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                        Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+        if (!isMainCarriagePresent && !CollectionUtils.isEmpty(mainCarriageList)) {
+            updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+        }
+        updatedRoutings.removeIf(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                Boolean.TRUE.equals(r.getInheritedFromConsolidation()));
+    }
+
+    private static void getMainCarriageInheritedIndex(List<Routings> updatedRoutings, List<Integer> inheritedIndexes) {
+        for (int i = 0; i < updatedRoutings.size(); i++) {
+            Routings routing = updatedRoutings.get(i);
+            if (routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                    Boolean.TRUE.equals(routing.getInheritedFromConsolidation())) {
+                inheritedIndexes.add(i);
+            }
+        }
+    }
+
+    private void updateConsolCarrierDetails(List<Routings> mainCarriageList) {
+        if (!CollectionUtils.isEmpty(mainCarriageList)) {
+            updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList);
+        }
+    }
+
+    private CarrierDetails getNewCarrierDetails(CarrierDetails currentCarrierDetails) {
         CarrierDetails existingCarrierDetails = null;
 
-        if(currentCarrierDetails!=null) {
+        if (currentCarrierDetails != null) {
             existingCarrierDetails = new CarrierDetails();
             existingCarrierDetails.setEta(currentCarrierDetails.getEta());
             existingCarrierDetails.setEtd(currentCarrierDetails.getEtd());
@@ -233,7 +260,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
      */
     private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
         Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(mainCarriageRoutings.get(0).getShipmentId());
-        if(shipmentDetailsOptional.isEmpty())
+        if (shipmentDetailsOptional.isEmpty())
             return;
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails.getCarrierDetails());
@@ -251,10 +278,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     private boolean isValueChanged(Object newValue, Object oldValue) {
-        return (oldValue != null && newValue==null) || (newValue != null && !newValue.equals(oldValue));
+        return (oldValue != null && newValue == null) || (newValue != null && !newValue.equals(oldValue));
     }
 
-    private boolean isValidDateChange(CarrierDetails newCarrierDetails, CarrierDetails oldCarrierDetails) {
+     boolean isValidDateChange(CarrierDetails newCarrierDetails, CarrierDetails oldCarrierDetails) {
         if (oldCarrierDetails == null && newCarrierDetails != null) {
             return newCarrierDetails.getEta() != null
                     || newCarrierDetails.getEtd() != null
@@ -287,7 +314,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setAta(lastLeg.getAta());
         carrierDetails.setDestinationPort(lastLeg.getPod());
         carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
-        if(isValidDateChange(carrierDetails, existingCarrierDetails))
+        if (isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true)));
     }
 
@@ -309,11 +336,12 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setDestinationPort(lastLeg.getPod());
         carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(shipmentSettingsDetails !=null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
+        if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));
     }
 
     @Override
+    @Transactional
     public RoutingsResponse update(CommonRequestModel commonRequestModel, String module) throws RunnerException {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
         routingValidationUtil.validateUpdateRequest(request);
@@ -493,10 +521,28 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
         afterSave(allSavedRouting, request.getEntityId(), module);
 
+        // Triggering Event for shipment and console for DependentServices update
+        pushToDependentServices(request, module, allSavedRouting);
+
         return BulkRoutingResponse.builder()
                 .routingsResponseList(routingResponses)
                 .message(prepareBulkUpdateMessage(routingResponses))
                 .build();
+    }
+
+    private void pushToDependentServices(BulkUpdateRoutingsRequest request, String module, List<Routings> routingsList) {
+        if (Objects.equals(module, SHIPMENT)) {
+            Long shipId = request.getEntityId() != null ? request.getEntityId() : routingsList.get(0).getShipmentId();
+            triggerPushToDownStreamForShipment(shipId);
+        }
+    }
+
+    private void triggerPushToDownStreamForShipment(Long shipmentId) {
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(shipmentId)
+                .parentEntityName(SHIPMENT)
+                .build();
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, shipmentId.toString());
     }
 
     @NotNull
@@ -682,11 +728,12 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     @Override
+    @Transactional
     public void deleteInheritedRoutingsFromShipment(List<ShipmentDetails> shipmentDetailsList) throws RunnerException {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             List<Routings> routings = shipmentDetails.getRoutingsList();
             if (!CollectionUtils.isEmpty(routings)) {
-                routings.removeIf(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getInheritedFromConsolidation());
+                routings.removeIf(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && routing.getInheritedFromConsolidation() != null && routing.getInheritedFromConsolidation());
                 BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
                 bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(routings, RoutingsRequest.class));
                 bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
@@ -796,13 +843,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 }
                 result.add(routing);
             } else {
-                if (inPreBlock) {
-                    preBuffer.add(routing);
-                } else if (inOnBlock) {
-                    onBuffer.add(routing);
-                } else {
-                    result.add(routing);
-                }
+                reOrderOtherCarriage(result, preBuffer, onBuffer, inPreBlock, inOnBlock, routing);
             }
         }
 
@@ -814,6 +855,16 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         result.addAll(onInsertIndex + 1, onBuffer);
 
         return result;
+    }
+
+    private static void reOrderOtherCarriage(List<Routings> result, List<Routings> preBuffer, List<Routings> onBuffer, boolean inPreBlock, boolean inOnBlock, Routings routing) {
+        if (inPreBlock) {
+            preBuffer.add(routing);
+        } else if (inOnBlock) {
+            onBuffer.add(routing);
+        } else {
+            result.add(routing);
+        }
     }
 
     private int findLastIndexOfType(List<Routings> list, RoutingCarriage type) {
@@ -838,16 +889,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     int lastIndex = result.size() - 1;
                     boolean canInsert = true;
 
-                    if (lastIndex >= 0) {
-                        Routings prev = result.get(lastIndex);
-                        if (Boolean.TRUE.equals(prev.getInheritedFromConsolidation()) &&
-                                Boolean.TRUE.equals(current.getInheritedFromConsolidation())) {
-                            canInsert = false;
-                        }
-                    }
-
-                    if (canInsert) result.addAll(buffer);
-                    else newToAppendAtEnd.addAll(buffer);
+                    setMainCarriageInheritedIndexPosition(result, newToAppendAtEnd, buffer, current, lastIndex, canInsert);
 
                     buffer.clear();
                 }
@@ -863,6 +905,19 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         result.addAll(buffer);
         result.addAll(newToAppendAtEnd);
         return result;
+    }
+
+     void setMainCarriageInheritedIndexPosition(List<Routings> result, List<Routings> newToAppendAtEnd, List<Routings> buffer, Routings current, int lastIndex, boolean canInsert) {
+        if (lastIndex >= 0) {
+            Routings prev = result.get(lastIndex);
+            if (Boolean.TRUE.equals(prev.getInheritedFromConsolidation()) &&
+                    Boolean.TRUE.equals(current.getInheritedFromConsolidation())) {
+                canInsert = false;
+            }
+        }
+
+        if (canInsert) result.addAll(buffer);
+        else newToAppendAtEnd.addAll(buffer);
     }
 
     private List<Routings> processCarriage(List<Routings> carriage, Set<UUID> existingGuids) {

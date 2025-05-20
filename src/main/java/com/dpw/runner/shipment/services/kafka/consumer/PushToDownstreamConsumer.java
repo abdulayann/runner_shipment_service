@@ -3,8 +3,10 @@ package com.dpw.runner.shipment.services.kafka.consumer;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +17,6 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-
 
 @Service
 @Slf4j
@@ -25,11 +25,13 @@ public class PushToDownstreamConsumer {
 
     private final ObjectMapper objectMapper;
     private final IPushToDownstreamService pushToDownstreamService;
+    private final IV1Service v1Service;
 
     @Autowired
-    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService) {
+    PushToDownstreamConsumer(ObjectMapper objectMapper, IPushToDownstreamService pushToDownstreamService, IV1Service v1Service) {
         this.objectMapper = objectMapper;
         this.pushToDownstreamService = pushToDownstreamService;
+        this.v1Service = v1Service;
     }
 
     @KafkaListener(
@@ -42,17 +44,19 @@ public class PushToDownstreamConsumer {
             @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
             @Header(KafkaHeaders.OFFSET) long offset,
             @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
+            @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String transactionId,
             Acknowledgment acknowledgment) {
 
-        logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp);
+        logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp, transactionId);
         try {
             PushToDownstreamEventDto object = objectMapper.readValue(StringEscapeUtils.unescapeJson(message), PushToDownstreamEventDto.class);
-            pushToDownstreamService.process(object);
+            pushToDownstreamService.process(object, transactionId);
 
             log.info("{} | Passed", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM);
         } catch (Exception ex) {
             log.error("Exception occurred for event: {} for message: {} with exception: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, message, ex.getLocalizedMessage());
         } finally {
+            v1Service.clearAuthContext();
             acknowledgment.acknowledge();
         }
     }
@@ -62,11 +66,13 @@ public class PushToDownstreamConsumer {
             String topic,
             int partition,
             long offset,
-            long receivedTimestamp) {
+            long receivedTimestamp,
+            String transactionId) {
         log.info("{} Received message from topic: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, topic);
         log.info("{} Partition: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, partition);
         log.info("{} Offset: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, offset);
         log.info("{} Received Timestamp: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, Instant.ofEpochMilli(receivedTimestamp));
         log.info("{} Message: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, kafkaMessage);
+        log.info("{} Transaction Id: {}", LoggerEvent.KAFKA_PUSH_TO_DOWNSTREAM, transactionId);
     }
 }

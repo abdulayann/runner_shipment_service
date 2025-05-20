@@ -56,13 +56,9 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -72,6 +68,7 @@ import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.util.Pair;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
@@ -107,6 +104,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ShipmentServiceImplV3Test extends CommonMocks {
@@ -185,6 +183,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private MasterDataHelper masterDataHelper;
     @Mock
     private IHblDao hblDao;
+    @Mock
+    private IPackingV3Service packingV3Service;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;
@@ -331,7 +331,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
         ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).packsList(new ArrayList<>()).build();
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.class))).thenReturn(List.of(shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class))).thenReturn(new ArrayList<>());
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(new ArrayList<>());
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
@@ -352,7 +353,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .id(5L)
                 .packsList(new ArrayList<>())
                 .build();
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.class))).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class))).thenReturn(new ArrayList<>());
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
@@ -371,7 +373,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .id(5L)
                 .packsList(new ArrayList<>())
                 .build();
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.class))).thenReturn(List.of(shipments1, shipments));
+        when(jsonHelper.convertValueToList(any(), eq(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.class))).thenReturn(new ArrayList<>());
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
         ShipmentPacksAssignContainerTrayDto response =
                 shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
@@ -439,7 +442,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(ConsolidationDetailsResponse.builder().build()).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+        doReturn(Pair.of(ConsolidationDetailsResponse.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
@@ -1062,6 +1065,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setPackingList(List.of(pack1, pack2));
 
         // Mocks
+        ContainerInfoProjection mockProjection = mock(ContainerInfoProjection.class);
+
         when(shipmentsContainersMappingDao.findByContainerId(containerId)).thenReturn(mappings);
         when(shipmentDao.findShipmentsByIds(Set.of(100L))).thenReturn(List.of(shipment));
 
@@ -1076,6 +1081,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .thenReturn(List.of(shipmentsDto));
         when(jsonHelper.convertValueToList(eq(List.of(pack1)), eq(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.class)))
                 .thenReturn(List.of(packing));
+//        when(mockProjection.getContainerNumber()).thenReturn("");
+//        when(mockProjection.getContainerCode()).thenReturn("");
 
         // When
         ShipmentPacksUnAssignContainerTrayDto result = shipmentServiceImplV3.getShipmentAndPacksForConsolidationUnAssignContainerTray(containerId);
@@ -1114,6 +1121,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         mockShipmentRequest.setIsChargableEditable(true);
         commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
@@ -1151,6 +1159,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
         mockCarrierDetails.setEta(LocalDateTime.now());
         mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setId(1L);
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -1238,6 +1247,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         mockShipmentRequest.setIsChargableEditable(true);
         commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -1287,6 +1297,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
@@ -1855,8 +1866,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.afterSave(newShipment, null, true, shipmentRequest,
                 new ShipmentSettingsDetails(), false, false);
 
-        verify(dependentServiceHelper).pushShipmentDataToDependentService(
-                eq(newShipment), eq(true), eq(true), isNull());
+        verify(dateTimeChangeLogService).createEntryFromShipment(any(), isNull());
     }
 
     @Test

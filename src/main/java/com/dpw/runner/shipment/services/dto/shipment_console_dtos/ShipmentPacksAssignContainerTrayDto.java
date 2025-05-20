@@ -31,6 +31,8 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
         private String houseBill;
         private Integer noOfPacks;
         private String packsUnit;
+        private BigDecimal weight;
+        private String weightUnit;
         private BigDecimal netWeight;
         private String netWeightUnit;
         private BigDecimal volume;
@@ -48,6 +50,8 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
             private Long id;
             private UUID guid;
             private String commodity;
+            private BigDecimal weight;
+            private String weightUnit;
             private BigDecimal netWeight;
             private String netWeightUnit;
             private String packs;
@@ -55,6 +59,8 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
             private BigDecimal volume;
             private String volumeUnit;
             private Long containerId;
+            private String containerNumber;
+            private String containerCode;
         }
     }
 }

@@ -1,5 +1,11 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -12,7 +18,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -23,6 +33,22 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.nimbusds.jose.util.Pair;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -34,22 +60,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -231,11 +241,8 @@ public class ContainerV3Util {
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
 
-            if (masterDataResponse == null) {
-                containers.forEach(container -> container.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
-            }else{
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
-            }
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -253,11 +260,8 @@ public class ContainerV3Util {
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
             masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
 
-            if (masterDataResponse == null) {
-                containers.forEach(container -> container.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.COMMODITY, cacheMap)));
-            }else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
-            }
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
+
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -282,11 +286,8 @@ public class ContainerV3Util {
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
-            if (masterDataResponse == null) {
-                containers.forEach(container -> container.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.MASTER_LIST, cacheMap)));
-            }else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
-            }
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCallPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -309,7 +310,7 @@ public class ContainerV3Util {
 
     public BigDecimal getAddedVolume(BigDecimal initialVolume, String initialVolumeUnit, BigDecimal addedVolume, String addedVolumeUnit) throws RunnerException {
         if(isStringNullOrEmpty(initialVolumeUnit)) {
-            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
+            initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getVolumeChargeableUnit();
         }
         if(Objects.isNull(initialVolume)) {
             initialVolume = BigDecimal.ZERO;
@@ -321,7 +322,8 @@ public class ContainerV3Util {
     }
 
     public void setContainerNetWeight(Containers container) throws RunnerException {
-        if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO) && !isStringNullOrEmpty(container.getTareWeightUnit())) {
+        if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO)
+                && !isStringNullOrEmpty(container.getTareWeightUnit())) {
             if(container.getNetWeight() == null)
                 container.setNetWeight(BigDecimal.ZERO);
             if(isStringNullOrEmpty(container.getNetWeightUnit())) {
@@ -329,25 +331,33 @@ public class ContainerV3Util {
                         isStringNullOrEmpty(container.getGrossWeightUnit()) ?
                                 commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getGrossWeightUnit());
             }
+            if(container.getGrossWeight() == null || BigDecimal.ZERO.equals(container.getGrossWeight()) || isStringNullOrEmpty(container.getGrossWeightUnit())) {
+                container.setNetWeight(BigDecimal.ZERO);
+                return;
+            }
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getGrossWeight(), container.getGrossWeightUnit()));
+        } else {
+            container.setNetWeight(container.getGrossWeight());
+            container.setNetWeightUnit(container.getGrossWeightUnit());
         }
     }
 
     public void resetContainerDataForRecalculation(Containers container) {
         container.setNetWeight(BigDecimal.ZERO);
         container.setGrossVolume(BigDecimal.ZERO);
+        container.setGrossWeight(BigDecimal.ZERO);
         container.setPacks("0");
         container.setPacksType(null);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, String packs, String packsType) {
+    public void addNoOfPackagesToContainerFromPacks(Containers container, String packs, String packsType) {
         if(isStringNullOrEmpty(packs))
             return;
-        addNoOfPackagesToContainerFromShipment(container, Integer.parseInt(packs), packsType);
+        addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, Integer packs, String packsType) {
+    public void addNoOfPackagesToContainer(Containers container, Integer packs, String packsType) {
         if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
             return;
         if(isStringNullOrEmpty(container.getPacks()))

@@ -21,6 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -31,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -184,49 +188,29 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         assertEquals(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, "SEA"), ex.getMessage());
     }
 
-    @Test
-    void testValidTransportModeConfig_ConfigDisabled_NoException() {
+    @ParameterizedTest
+    @MethodSource("provideTransportModeValidationCases")
+    void testValidTransportModeConfig_NoException(String newMode, String oldMode, boolean configEnabled, boolean importFileFlag) {
         ShipmentDetails newShipment = new ShipmentDetails();
-        newShipment.setTransportMode("SEA");
+        newShipment.setTransportMode(newMode);
 
         ShipmentDetails oldShipment = new ShipmentDetails();
-        oldShipment.setTransportMode("AIR");
+        oldShipment.setTransportMode(oldMode);
 
         V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
-        settings.setTransportModeConfig(false); // disabled
+        settings.setTransportModeConfig(configEnabled);
 
         assertDoesNotThrow(() ->
-                shipmentValidationV3Util.validTransportModeForTrasnportModeConfig(newShipment, oldShipment, false, false, settings));
+                shipmentValidationV3Util.validTransportModeForTrasnportModeConfig(
+                        newShipment, oldShipment, false, importFileFlag, settings));
     }
 
-    @Test
-    void testValidTransportModeConfig_ImportFileTrue_NoException() {
-        ShipmentDetails newShipment = new ShipmentDetails();
-        newShipment.setTransportMode("SEA");
-
-        ShipmentDetails oldShipment = new ShipmentDetails();
-        oldShipment.setTransportMode("AIR");
-
-        V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
-        settings.setTransportModeConfig(true);
-
-        assertDoesNotThrow(() ->
-                shipmentValidationV3Util.validTransportModeForTrasnportModeConfig(newShipment, oldShipment, false, true, settings));
-    }
-
-    @Test
-    void testValidTransportModeConfig_TransportModeSame_NoException() {
-        ShipmentDetails newShipment = new ShipmentDetails();
-        newShipment.setTransportMode("AIR");
-
-        ShipmentDetails oldShipment = new ShipmentDetails();
-        oldShipment.setTransportMode("AIR");
-
-        V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
-        settings.setTransportModeConfig(true);
-
-        assertDoesNotThrow(() ->
-                shipmentValidationV3Util.validTransportModeForTrasnportModeConfig(newShipment, oldShipment, false, false, settings));
+    private static Stream<Arguments> provideTransportModeValidationCases() {
+        return Stream.of(
+                Arguments.of("SEA", "AIR", false, false),  // config disabled
+                Arguments.of("SEA", "AIR", true, true),    // import file true
+                Arguments.of("AIR", "AIR", true, false)    // same transport mode
+        );
     }
 
     @Test

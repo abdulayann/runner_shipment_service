@@ -13,12 +13,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -27,20 +26,14 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
@@ -50,8 +43,8 @@ public class ConsolidationV3Controller {
     private final IConsolidationV3Service consolidationV3Service;
     private final JsonHelper jsonHelper;
 
-    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
+    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsV3Response> {}
+    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsV3Response> {}
 
     @Autowired
     public ConsolidationV3Controller(IConsolidationV3Service consolidationV3Service,
@@ -65,7 +58,7 @@ public class ConsolidationV3Controller {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ConsolidationDetailsV3Request request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull ConsolidationDetailsV3Request request) {
         log.info("Received Consolidation create request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.create(request));
     }

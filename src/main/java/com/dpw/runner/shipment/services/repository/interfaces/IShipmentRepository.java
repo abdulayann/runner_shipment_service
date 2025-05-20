@@ -114,6 +114,15 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             + " AND (?2 IS NULL OR shipment_id != CAST(?2 AS VARCHAR))", nativeQuery = true)
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
+    @Query(value = "SELECT sd.id as id, "
+            + " sd.shipment_id as shipmentId, "
+            + " scm.container_id as containerId, "
+            + " sd.shipment_type as shipmentType"
+            + " FROM shipment_details sd"
+            + " JOIN shipments_containers_mapping scm ON sd.id = scm.shipment_id"
+            + " WHERE scm.container_id in (?1)", nativeQuery = true)
+    List<ShipmentDetailsProjection> findShipmentDetailsByAttachedContainerIds(List<Long> containerIds);
+
     @Modifying
     @Transactional
     @Query(value = "Update shipment_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)

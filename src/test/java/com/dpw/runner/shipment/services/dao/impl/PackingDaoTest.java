@@ -230,7 +230,6 @@ class PackingDaoTest {
 
     @Test
     void testUpdateEntityFromShipment_WithOldEntity_NullPacking() throws Exception{
-        List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         List<Long> deletedConts = new ArrayList<>();
         List<Packing> packings = spyService.updateEntityFromShipment(null, 1L, deletedConts);
@@ -240,7 +239,6 @@ class PackingDaoTest {
     @Test
     void testUpdateEntityFromShipment_WithOldEntity_EmptyPacking() throws Exception{
         List<Packing> packings = new ArrayList<>();
-        List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         List<Long> deletedConts = new ArrayList<>();
         List<Packing> packingsList = spyService.updateEntityFromShipment(packings, 1L, deletedConts);
@@ -259,7 +257,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromShipment_failure() throws Exception {
+    void testUpdateEntityFromShipment_failure() {
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).findByShipmentId(any());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(null, 1L, null));
@@ -309,7 +307,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromBooking_Failure() throws RunnerException {
+    void testUpdateEntityFromBooking_Failure() {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
@@ -356,7 +354,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromConsole_Failure() throws RunnerException {
+    void testUpdateEntityFromConsole_Failure() {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
@@ -421,7 +419,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromConsole_WithOldEntity_Failure() throws RunnerException {
+    void testUpdateEntityFromConsole_WithOldEntity_Failure() {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(RuntimeException.class).when(spyService).saveEntityFromConsole(anyList(), anyLong());
@@ -481,7 +479,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromShipment_RetrievalFailure() throws Exception {
+    void testSaveEntityFromShipment_RetrievalFailure() {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         routingsList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -501,7 +499,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromShipment_Update() throws RunnerException {
+    void testSaveEntityFromShipment_Update() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -526,7 +524,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromShipment_WithOldEntity_NewMap() throws Exception{
+    void testSaveEntityFromShipment_WithOldEntity_NewMap() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -574,7 +572,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromBooking_hashMap() throws Exception {
+    void testSaveEntityFromBooking_hashMap() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -595,7 +593,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromBooking_RetrievalFailure() throws Exception {
+    void testSaveEntityFromBooking_RetrievalFailure() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
@@ -617,7 +615,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromConsole() throws Exception {
+    void testSaveEntityFromConsole() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -629,7 +627,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromConsole_NullId() throws Exception {
+    void testSaveEntityFromConsole_NullId() {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(testPacking).when(spyService).save(any());
@@ -639,7 +637,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromConsole_RetrievalFailure() throws Exception {
+    void testSaveEntityFromConsole_RetrievalFailure() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -648,7 +646,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromConsole_WithOldEntity() throws Exception{
+    void testSaveEntityFromConsole_WithOldEntity() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -661,7 +659,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromConsole_WithOldEntity_Failure() throws Exception{
+    void testSaveEntityFromConsole_WithOldEntity_Failure() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
@@ -670,7 +668,7 @@ class PackingDaoTest {
     }
 
     @Test
-    void testSaveEntityFromConsole_WithOldEntity_NullId() throws Exception{
+    void testSaveEntityFromConsole_WithOldEntity_NullId() {
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(packingList).when(spyService).saveAll(any());
@@ -801,11 +799,128 @@ class PackingDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromShipment_WithOldEntity_Failure() throws RunnerException{
+    void testUpdateEntityFromShipment_WithOldEntity_Failure(){
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).saveEntityFromShipment(anyList(), anyLong());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), new ArrayList<>(), new HashSet<>(), new HashMap<>()));
+    }
+
+    @Test
+    void findByIdIn() {
+        List<Packing> expectedPackings = Collections.singletonList(testPacking);
+        List<Long> packingIds = List.of(1L);
+
+        when(packingRepository.findByIdIn(packingIds)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByIdIn(packingIds);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByIdIn(packingIds);
+    }
+
+    @Test
+    void deleteByIdIn() {
+        List<Long> packingIds = List.of(1L, 2L);
+
+        doNothing().when(packingRepository).deleteAllById(packingIds);
+
+        packingDao.deleteByIdIn(packingIds);
+
+        verify(packingRepository).deleteAllById(packingIds);
+    }
+
+    @Test
+    void getPackingAssignmentCountByShipment() {
+        Long shipmentId = 100L;
+        PackingAssignmentProjection projection = mock(PackingAssignmentProjection.class);
+
+        when(packingRepository.getPackingAssignmentCountByShipment(shipmentId)).thenReturn(projection);
+
+        PackingAssignmentProjection result = packingDao.getPackingAssignmentCountByShipment(shipmentId);
+
+        assertEquals(projection, result);
+        verify(packingRepository).getPackingAssignmentCountByShipment(shipmentId);
+    }
+
+    @Test
+    void getPackingAssignmentCountByConsolidation() {
+        Long consolId = 200L;
+        PackingAssignmentProjection projection = mock(PackingAssignmentProjection.class);
+
+        when(packingRepository.getPackingAssignmentCountByConsolidation(consolId)).thenReturn(projection);
+
+        PackingAssignmentProjection result = packingDao.getPackingAssignmentCountByConsolidation(consolId);
+
+        assertEquals(projection, result);
+        verify(packingRepository).getPackingAssignmentCountByConsolidation(consolId);
+    }
+
+    @Test
+    void findByContainerIdIn() {
+        List<Long> containerIds = List.of(1L, 2L);
+        List<Packing> expectedPackings = List.of(testPacking);
+
+        when(packingRepository.findByContainerIdIn(containerIds)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByContainerIdIn(containerIds);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByContainerIdIn(containerIds);
+    }
+
+    @Test
+    void removeContainersFromPacking() {
+        List<Long> containerIds = List.of(1L, 2L);
+        List<Packing> packingList = List.of(testPacking);
+
+        when(packingRepository.findByContainerIdIn(containerIds)).thenReturn(packingList);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(packingRepository.save(any())).thenReturn(testPacking);
+
+        packingDao.removeContainersFromPacking(containerIds);
+
+        verify(packingRepository).findByContainerIdIn(containerIds);
+        verify(validatorUtility).applyValidation(any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void findByShipmentIdInAndContainerId() {
+        List<Long> shipmentIds = List.of(10L, 20L);
+        Long containerId = 5L;
+        List<Packing> expectedPackings = List.of(testPacking);
+
+        when(packingRepository.findByShipmentIdInAndContainerId(shipmentIds, containerId)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByShipmentIdInAndContainerId(shipmentIds, containerId);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByShipmentIdInAndContainerId(shipmentIds, containerId);
+    }
+
+    @Test
+    void findByShipmentIdIn() {
+        List<Long> shipmentIds = List.of(100L, 200L);
+        List<Packing> expectedPackings = List.of(testPacking);
+
+        when(packingRepository.findByShipmentIdIn(shipmentIds)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByShipmentIdIn(shipmentIds);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByShipmentIdIn(shipmentIds);
+    }
+
+    @Test
+    void setPackingIdsToContainer() {
+        List<Long> packingIds = List.of(10L, 20L);
+        Long containerId = 123L;
+
+        doNothing().when(packingRepository).setPackingIdsToContainer(packingIds, containerId);
+
+        packingDao.setPackingIdsToContainer(packingIds, containerId);
+
+        verify(packingRepository).setPackingIdsToContainer(packingIds, containerId);
     }
 
 }
