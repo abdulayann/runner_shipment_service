@@ -453,13 +453,15 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     /**
-     * Post-processing logic after saving a container entity.
+     * Post-processing logic invoked after saving a container entity.
      * <p>
-     * Sets the tenant if missing, constructs a Kafka message and pushes it to the configured queue. Logs any failure during Kafka operations.
+     * Ensures the tenant ID is set on the container if missing,
+     * then constructs and pushes a Kafka message to the configured internal queue.
+     * Any failures during Kafka operations are logged.
      * </p>
      *
      * @param container the container entity that was persisted
-     * @param isCreate  flag indicating if this is a creation or an update
+     * @param isCreate  true if the container was newly created; false if updated
      */
     private void afterSave(Containers container, boolean isCreate) {
         try {
