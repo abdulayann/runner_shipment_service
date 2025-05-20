@@ -28,7 +28,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtil
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
@@ -54,6 +53,7 @@ import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -139,6 +139,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private IConsolidationService consolidationService;
+
+    @Autowired
+    private IConsolidationV3Service consolidationV3Service;
 
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
@@ -646,9 +649,30 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest calculatePackSummaryRequest) {
-        List<PackingRequest> packingList = calculatePackSummaryRequest.getPackingList();
-        String transportMode = calculatePackSummaryRequest.getTransportMode();
+    public PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest request) {
+        List<Packing> packingList;
+        String transportMode;
+
+        Long consolidationId = request.getConsolidationId();
+        Long shipmentId = request.getShipmentId();
+
+        if (ObjectUtils.isNotEmpty(consolidationId)) {
+            ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
+                    .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
+
+            packingList = consolidation.getPackingList();
+            transportMode = consolidation.getTransportMode();
+
+        } else if (ObjectUtils.isNotEmpty(shipmentId)) {
+            ShipmentDetails shipment = shipmentService.findById(shipmentId)
+                    .orElseThrow(() -> new IllegalArgumentException("No Shipment found with Id: " + shipmentId));
+
+            packingList = shipment.getPackingList();
+            transportMode = shipment.getTransportMode();
+
+        } else {
+            throw new IllegalArgumentException("Either Consolidation Id or Shipment Id must be provided.");
+        }
 
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();
@@ -680,7 +704,7 @@ public class PackingV3Service implements IPackingV3Service {
 
             // Loop over each packing entry
             if (packingList != null) {
-                for (PackingRequest packing : packingList) {
+                for (Packing packing : packingList) {
                     double convertedWeight = convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), toWeightUnit).doubleValue();
                     double convertedVolume = convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), toVolumeUnit).doubleValue();
 
@@ -830,7 +854,7 @@ public class PackingV3Service implements IPackingV3Service {
         packsCountBuilder.append(String.join(", ", formattedPackCounts));
     }
 
-    private String getInnerPacksUnit(PackingRequest packing, String currentInnerPacksUnit) {
+    private String getInnerPacksUnit(Packing packing, String currentInnerPacksUnit) {
         String packageType = packing.getInnerPackageType();
 
         // Proceed only if the package type is present
@@ -849,7 +873,7 @@ public class PackingV3Service implements IPackingV3Service {
         return currentInnerPacksUnit;
     }
 
-    private int getTotalInnerPacks(PackingRequest packing, int totalInnerPacks) {
+    private int getTotalInnerPacks(Packing packing, int totalInnerPacks) {
         // Check if inner package number is available and non-empty before processing
         if (!isStringNullOrEmpty(packing.getInnerPackageNumber())) {
             try {
@@ -864,7 +888,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
 
-    private int getDgPacks(PackingRequest packing, Map<String, Long> map, int packs, int dgPacks) {
+    private int getDgPacks(Packing packing, Map<String, Long> map, int packs, int dgPacks) {
         // If packing type is not empty, accumulate the pack count per type
         if (!isStringNullOrEmpty(packing.getPacksType())) {
             map.put(packing.getPacksType(), map.getOrDefault(packing.getPacksType(), 0L) + packs);
@@ -877,7 +901,7 @@ public class PackingV3Service implements IPackingV3Service {
         return dgPacks;
     }
 
-    private String getPacksUnit(PackingRequest packing, String packsUnit, Map<String, Long> map) {
+    private String getPacksUnit(Packing packing, String packsUnit, Map<String, Long> map) {
         // If the pack type is not empty, update the packs unit and initialize map entry if absent
         if (!isStringNullOrEmpty(packing.getPacksType())) {
             // Call to determine packs unit based on packing type
@@ -889,7 +913,7 @@ public class PackingV3Service implements IPackingV3Service {
         return packsUnit;
     }
 
-    private String getPacksUnit(PackingRequest packing, String packsUnit) {
+    private String getPacksUnit(Packing packing, String packsUnit) {
         // If packsUnit is null, initialize it with the packing type
         if (packsUnit == null) {
             packsUnit = packing.getPacksType();
