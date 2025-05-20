@@ -185,5 +185,15 @@ class ConsolidationV3ControllerTest {
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
   }
+
+  @Test
+  void testDetachShipments() throws RunnerException {
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    String result = "Result";
+    when(consolidationV3Service.detachShipments(request)).thenReturn(result);
+
+    ResponseEntity<IRunnerResponse> response = controller.detachShipments(request);
+    assertNotNull(response);
+  }
 }
 

@@ -317,9 +317,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     );
 
     private ConsolidationDetailsResponse createConsolidation(ConsolidationDetailsV3Request request, boolean isFromET) {
-        if (request == null) {
-            log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -3773,18 +3770,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-//    private void updateShipmentCutOffDatesFromConsol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList){
-//        if (!CollectionUtils.isEmpty(shipmentDetailsList)) {
-//            if(TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())){
-//
-//            }else if(TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())){
-//
-//            }
-////            shipmentDetailsList.stream().forEach(shipmentDetails -> {
-////                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
-////            });
-//        }
-//    }
 
     public void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
         ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList) {
@@ -3846,30 +3831,4 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
     }
 
-
-//    private ShipmentSailingScheduleRequest buildShipmentSailingScheduleRequest(ConsolidationDetails consolidationDetails,
-//        List<RoutingsRequest> routingsList){
-//
-//        if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
-//            return ShipmentSailingScheduleRequest.builder()
-//                .routings(routingsList)
-//                .carrier(consolidationDetails.getCarrierDetails().getShippingLine())
-//                .terminalCutoff(consolidationDetails.getTerminalCutoff())
-//                .verifiedGrossMassCutoff(consolidationDetails.getVerifiedGrossMassCutoff())
-//                .shippingInstructionCutoff(consolidationDetails.getShipInstructionCutoff())
-//                .dgCutoff(consolidationDetails.getHazardousBookingCutoff())
-//                .reeferCutoff(consolidationDetails.getReeferCutoff())
-//                .earliestEmptyEquipmentPickUp(consolidationDetails.getEarliestEmptyEquPickUp())
-//                .latestFullEquipmentDeliveredToCarrier(consolidationDetails.getLatestFullEquDeliveredToCarrier())
-//                .earliestDropOffFullEquipmentToCarrier(consolidationDetails.getEarliestDropOffFullEquToCarrier())
-//                .build();
-//        } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
-//            return ShipmentSailingScheduleRequest.builder()
-//                .routings(routingsList)
-//                .latestArrivalTime(consolidationDetails.getLatDate())
-//                .build();
-//        }
-//
-//        return null;
-//    }
 }
