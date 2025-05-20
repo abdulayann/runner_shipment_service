@@ -1,11 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -18,11 +12,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -33,22 +23,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.nimbusds.jose.util.Pair;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -60,6 +34,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -346,6 +336,9 @@ public class ContainerV3Util {
             }
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getGrossWeight(), container.getGrossWeightUnit()));
+        } else {
+            container.setNetWeight(container.getGrossWeight());
+            container.setNetWeightUnit(container.getGrossWeightUnit());
         }
     }
 
@@ -357,13 +350,13 @@ public class ContainerV3Util {
         container.setPacksType(null);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, String packs, String packsType) {
+    public void addNoOfPackagesToContainerFromPacks(Containers container, String packs, String packsType) {
         if(isStringNullOrEmpty(packs))
             return;
-        addNoOfPackagesToContainerFromShipment(container, Integer.parseInt(packs), packsType);
+        addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, Integer packs, String packsType) {
+    public void addNoOfPackagesToContainer(Containers container, Integer packs, String packsType) {
         if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
             return;
         if(isStringNullOrEmpty(container.getPacks()))
