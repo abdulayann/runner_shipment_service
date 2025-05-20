@@ -17,7 +17,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -230,7 +230,7 @@ public class ContainerV3Util {
         return fields;
     }
 
-    public void addAllUnlocationInSingleCallList(List<ContainerBaseV3Response> containers, Map<String, Object> masterDataResponse) {
+    public void addAllUnlocationInSingleCallList(List<ContainerBaseResponse> containers, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -253,7 +253,7 @@ public class ContainerV3Util {
         }
     }
 
-    public void addAllCommodityTypesInSingleCall(List<ContainerBaseV3Response> containers, Map<String, Object> masterDataResponse) {
+    public void addAllCommodityTypesInSingleCall(List<ContainerBaseResponse> containers, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -275,7 +275,7 @@ public class ContainerV3Util {
         }
     }
 
-    public void addAllMasterDataInSingleCallList(List<ContainerBaseV3Response> containers, Map<String, Object> masterDataResponse) {
+    public void addAllMasterDataInSingleCallList(List<ContainerBaseResponse> containers, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
