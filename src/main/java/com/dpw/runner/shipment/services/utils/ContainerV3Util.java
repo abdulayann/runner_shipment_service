@@ -18,7 +18,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;

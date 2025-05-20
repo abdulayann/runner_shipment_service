@@ -1,5 +1,14 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -12,7 +21,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -24,6 +33,12 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,18 +51,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -135,21 +138,21 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Test
     void testAddAllUnlocationInSingleCallList() throws RunnerException {
-        List<ContainerBaseV3Response> containerResponseList = List.of(objectMapper.convertValue(testContainer, ContainerBaseV3Response.class));
+        List<ContainerBaseResponse> containerResponseList = List.of(objectMapper.convertValue(testContainer, ContainerBaseResponse.class));
         containerV3Util.addAllUnlocationInSingleCallList(containerResponseList, Map.of("1", testContainer));
         assertNotNull(containerResponseList);
     }
 
     @Test
     void testAddAllCommodityTypesInSingleCall() throws RunnerException{
-        List<ContainerBaseV3Response> containerResponseList = List.of(objectMapper.convertValue(testContainer, ContainerBaseV3Response.class));
+        List<ContainerBaseResponse> containerResponseList = List.of(objectMapper.convertValue(testContainer, ContainerBaseResponse.class));
         containerV3Util.addAllCommodityTypesInSingleCall(containerResponseList, Map.of("1", testContainer));
         assertNotNull(containerResponseList);
     }
 
     @Test
     void testAddAllMasterDataInSingleCall() throws RunnerException{
-        List<ContainerBaseV3Response> containerResponseList = List.of(objectMapper.convertValue(testContainer, ContainerBaseV3Response.class));
+        List<ContainerBaseResponse> containerResponseList = List.of(objectMapper.convertValue(testContainer, ContainerBaseResponse.class));
         containerV3Util.addAllMasterDataInSingleCallList(containerResponseList, Map.of("1", testContainer));
         assertNotNull(containerResponseList);
     }
