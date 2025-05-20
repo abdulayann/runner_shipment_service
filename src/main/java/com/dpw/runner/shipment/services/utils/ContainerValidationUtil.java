@@ -1,16 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -20,16 +16,6 @@ import java.util.Objects;
 @Slf4j
 @Component
 public class ContainerValidationUtil {
-
-    @Autowired
-    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
-
-    @Autowired
-    private IPackingV3Service packingService;
-
-    @Autowired
-    private IShipmentServiceV3 shipmentService;
-
 
     /**
      * Validates a bulk update request for containers.
