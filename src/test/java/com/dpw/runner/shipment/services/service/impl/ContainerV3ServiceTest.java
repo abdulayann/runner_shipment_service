@@ -1,27 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
@@ -41,15 +25,12 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContaine
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -58,12 +39,6 @@ import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,6 +53,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.Executors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -302,6 +287,51 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testDeleteBulk2(){
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>());
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        assertThrows(IllegalArgumentException.class, () ->containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+    }
+
+    @Test
+    void testDeleteBulk3(){
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        ContainerDeleteInfoProjection containerDeleteInfoProjection = mock(ContainerDeleteInfoProjection.class);
+        when(containerDeleteInfoProjection.getContainerNumber()).thenReturn("CONT123");
+        when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
+        when(containerDeleteInfoProjection.getPacks()).thenReturn("2");
+        List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
+        when(containerDao.findContainersAttachedToBothPackingAndCargo(any())).thenReturn(containerDeleteInfoProjections);
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+    }
+
+    @Test
+    void testDeleteBulk4(){
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        ContainerDeleteInfoProjection containerDeleteInfoProjection = mock(ContainerDeleteInfoProjection.class);
+        when(containerDeleteInfoProjection.getContainerNumber()).thenReturn("CONT123");
+        when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
+        when(containerDeleteInfoProjection.getPacks()).thenReturn("2");
+        List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
+        when(containerDao.filterContainerIdsAttachedToPacking(any())).thenReturn(containerDeleteInfoProjections);
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+    }
+
+    @Test
+    void testDeleteBulk5(){
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        ContainerDeleteInfoProjection containerDeleteInfoProjection = mock(ContainerDeleteInfoProjection.class);
+        when(containerDeleteInfoProjection.getContainerNumber()).thenReturn("CONT123");
+        when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
+        List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
+        when(containerDao.filterContainerIdsAttachedToShipmentCargo(any())).thenReturn(containerDeleteInfoProjections);
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+    }
+
+    @Test
     void calculateContainerSummaryTest() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();
@@ -419,6 +449,37 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
         containerV3Service.updateAttachedContainersData(containerIds);
         assertNotNull(containerIds);
+    }
+
+    @Test
+    void testProcessAuditLogIds() {
+        Set<Long> idsToProcess = Set.of(1L, 2L);
+        Map<Long, Containers> oldContainerMap = Map.of(1L, testContainer);
+        Map<Long, Containers> newContainerMap = Map.of(2L, testContainer);
+        DBOperationType operationType = DBOperationType.UPDATE;
+        containerV3Service.processAuditLogIds(idsToProcess, oldContainerMap, newContainerMap, operationType);
+        assertNotNull(idsToProcess);
+    }
+
+    @Test
+    void testProcessContainersAfterShipmentAttachment() {
+        testShipment.setId(1L);
+        testShipment.setContainersList(Set.of(testContainer));
+        List<ShipmentDetails> shipmentDetailsList = List.of(testShipment);
+        Set<Long> attachedShipmentIds = Set.of(1L);
+        Set<Long> interBranchRequestedShipIds = Set.of(2L);
+        containerV3Service.processContainersAfterShipmentAttachment(1L, shipmentDetailsList, attachedShipmentIds, interBranchRequestedShipIds);
+        assertNotNull(shipmentDetailsList);
+    }
+
+    @Test
+    void testFindContainerIdsAttachedToEitherPackingOrShipment() {
+        assertDoesNotThrow(() -> containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(List.of(1L)));
+    }
+
+    @Test
+    void testGetContainers() {
+        assertDoesNotThrow(() -> containerV3Service.getContainers(List.of(1L)));
     }
 
 }

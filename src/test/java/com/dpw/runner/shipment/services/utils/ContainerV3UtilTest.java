@@ -315,7 +315,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setTareWeight(BigDecimal.ONE);
         testContainer.setTareWeightUnit("KG");
         testContainer.setPacks(null);
-        testContainer.setPacksType("BBG");
+        testContainer.setPacksType("BKG");
         testShipment.setId(1L);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         testShipment.setContainerAssignedToShipmentCargo(1L);
@@ -344,6 +344,48 @@ class ContainerV3UtilTest extends CommonMocks {
         testPacking.setShipmentId(1L);
         testPacking.setContainerId(1L);
         containerV3Util.addNoOfPackagesToContainerFromPacks(testContainer, "", "BKG");
+        assertNull(testContainer.getPacks());
+    }
+
+    @Test
+    void testAddNoOfPackagesToContainerFromShipment5() throws RunnerException {
+        testContainer.setId(1L);
+        testContainer.setGrossWeight(BigDecimal.ONE);
+        testContainer.setGrossWeightUnit("KG");
+        testContainer.setNetWeight(BigDecimal.ONE);
+        testContainer.setNetWeightUnit("KG");
+        testContainer.setTareWeight(BigDecimal.ONE);
+        testContainer.setTareWeightUnit("KG");
+        testContainer.setPacks(null);
+        testContainer.setPacksType("BBG");
+        testShipment.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        testPacking.setContainerId(1L);
+        containerV3Util.addNoOfPackagesToContainer(testContainer, null, "");
+        assertNull(testContainer.getPacks());
+    }
+
+    @Test
+    void testAddNoOfPackagesToContainerFromShipment6() throws RunnerException {
+        testContainer.setId(1L);
+        testContainer.setGrossWeight(BigDecimal.ONE);
+        testContainer.setGrossWeightUnit("KG");
+        testContainer.setNetWeight(BigDecimal.ONE);
+        testContainer.setNetWeightUnit("KG");
+        testContainer.setTareWeight(BigDecimal.ONE);
+        testContainer.setTareWeightUnit("KG");
+        testContainer.setPacks(null);
+        testContainer.setPacksType("BBG");
+        testShipment.setId(1L);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        testPacking.setContainerId(1L);
+        containerV3Util.addNoOfPackagesToContainer(testContainer, null, "BKG");
         assertNull(testContainer.getPacks());
     }
 }
