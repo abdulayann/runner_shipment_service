@@ -47,6 +47,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -194,8 +195,49 @@ class NetworkTransferServiceTest extends CommonMocks{
     void requestForReassign_InterConsoleTrue() {
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
-        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.SHIPMENT).isInterBranchEntity(true).build()));
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().entityType(Constants.SHIPMENT).isInterBranchEntity(true).build();
+        networkTransfer1.setTenantId(1);
+        networkTransfer1.setJobType(DIRECTION_CTS);
+        networkTransfer1.setEntityNumber("DIRECTION_CTS");
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(any(), any());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForReassign_InterConsoleTrue2() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().entityType(Constants.SHIPMENT).isInterBranchEntity(true).build();
+        networkTransfer1.setTenantId(1);
+        networkTransfer1.setJobType(DIRECTION_CTS);
+        networkTransfer1.setEntityNumber("DIRECTION_CTS");
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer1));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().assignedTo("abc").build()));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(any(), any());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
