@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.ContainerDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
@@ -31,8 +31,8 @@ public class CargoControllerTest {
     
     @Test
     void getContainerDetailsSuccess() throws RunnerException {
-        when(cargoService.getContainerDetails(any())).thenReturn(new CargoDetailsResponse());
-        var responseEntity = cargoController.getContainerDetails(new ContainerDetailsRequest());
+        when(cargoService.getCargoDetails(any())).thenReturn(new CargoDetailsResponse());
+        var responseEntity = cargoController.getCargoDetails(new CargoDetailsRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 }

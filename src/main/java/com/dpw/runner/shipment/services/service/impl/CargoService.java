@@ -6,13 +6,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.ContainerDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
@@ -20,10 +17,11 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
@@ -57,35 +55,24 @@ public class CargoService implements ICargoService {
     }
 
     @Override
-    public CargoDetailsResponse getContainerDetails(ContainerDetailsRequest request) throws RunnerException {
-        CargoDetailsResponse response = getBaseCargoDetailsResponse();
+    public CargoDetailsResponse getCargoDetails(CargoDetailsRequest request) throws RunnerException {
+        CargoDetailsResponse response = new CargoDetailsResponse();
 
         String entityType = request.getEntityType();
         Long entityId = Long.valueOf(request.getEntityId());
 
         List<Containers> containers = fetchContainers(entityType, entityId);
-        if (containers.isEmpty()) return response;
-
         List<Packing> packings = fetchPackings(entityType, entityId);
-        Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
-
-        response.setContainers(getTotalContainerCount(containers));
-        response.setTeuCount(getTotalTeu(containers, codeTeuMap));
-        calculateCargoDetails(packings, response);
-
-        return response;
-    }
-
-    private CargoDetailsResponse getBaseCargoDetailsResponse() {
-        CargoDetailsResponse response = new CargoDetailsResponse();
-        response.setContainers(0);
-        response.setTeuCount(BigDecimal.ZERO);
-        response.setWeight(BigDecimal.ZERO);
-        response.setVolume(BigDecimal.ZERO);
-        response.setNoOfPacks(0);
-        response.setWeightUnit(WEIGHT_UNIT_KG);
-        response.setVolumeUnit(VOLUME_UNIT_M3);
-        response.setPacksUnit(PACKAGES);
+        response.setTransportMode(fetchTransportType(entityType, entityId));
+        response.setShipmentType(fetchShipmentType(entityType, entityId));
+        if(!packings.isEmpty()) {
+            calculateCargoDetails(packings, response);
+        }
+        if (!containers.isEmpty()) {
+            Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
+            response.setContainers(getTotalContainerCount(containers));
+            response.setTeuCount(getTotalTeu(containers, codeTeuMap));
+        }
         return response;
     }
 
@@ -102,16 +89,13 @@ public class CargoService implements ICargoService {
 
     private BigDecimal getTotalTeu(List<Containers> containers, Map<String, BigDecimal> teuMap) {
         return containers.stream()
-                .map(c -> {
-                    long count = c.getContainerCount() != null ? c.getContainerCount() : 0;
-                    BigDecimal teu = teuMap.getOrDefault(c.getContainerCode(), BigDecimal.ZERO);
-                    return teu.multiply(BigDecimal.valueOf(count));
-                })
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .map(c -> teuMap.getOrDefault(c.getContainerCode(), BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(Optional.ofNullable(c.getContainerCount()).orElse(0L))))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(1, RoundingMode.UNNECESSARY);
     }
 
     private void calculateCargoDetails(List<Packing> packings, CargoDetailsResponse response) throws RunnerException {
-        if (CollectionUtils.isEmpty(packings)) return;
 
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
@@ -128,7 +112,6 @@ public class CargoService implements ICargoService {
                 totalPacks += Integer.parseInt(p.getPacks());
             }
         }
-
         response.setWeight(totalWeight);
         response.setVolume(totalVolume);
         response.setNoOfPacks(totalPacks);
@@ -171,45 +154,94 @@ public class CargoService implements ICargoService {
                 Math.floor(charge) + 0.5 : Math.ceil(charge);
     }
 
-    private List<Containers> fetchContainers(String entityType, Long entityId) {
+    private <T> List<T> fetchEntityDataList(String entityType, Long entityId, Function<CustomerBooking, Collection<T>> bookingFn, Function<ShipmentDetails, Collection<T>> shipmentFn, Function<ConsolidationDetails, Collection<T>> consolidationFn) {
         return switch (entityType.toUpperCase()) {
             case "BOOKING" -> customerBookingDao.findById(entityId)
-                    .map(CustomerBooking::getContainersList)
-                    .orElse(Collections.emptyList());
+                    .map(bookingFn)
+                    .map(list -> new ArrayList<>(list))
+                    .orElseGet(ArrayList::new);
 
             case "SHIPMENT" -> shipmentDao.findById(entityId)
-                    .map(sd -> new ArrayList<>(sd.getContainersList()))
+                    .map(shipmentFn)
+                    .map(list -> new ArrayList<>(list))
                     .orElseGet(ArrayList::new);
 
             case "CONSOLIDATION" -> consolidationDetailsDao.findById(entityId)
-                    .map(ConsolidationDetails::getContainersList)
-                    .orElse(Collections.emptyList());
+                    .map(consolidationFn)
+                    .map(list -> new ArrayList<>(list))
+                    .orElseGet(ArrayList::new);
 
             default -> {
                 log.error("Unknown entityType '{}' in request", entityType);
-                yield Collections.emptyList();
+                yield new ArrayList<>();
             }
         };
     }
 
-    private List<Packing> fetchPackings(String entityType, Long entityId) {
+    private <T> T fetchSingleEntityData(
+            String entityType,
+            Long entityId,
+            Function<CustomerBooking, T> bookingFn,
+            Function<ShipmentDetails, T> shipmentFn,
+            Function<ConsolidationDetails, T> consolidationFn
+    ) {
         return switch (entityType.toUpperCase()) {
-            case "BOOKING" -> customerBookingDao.findById(entityId)
-                    .map(CustomerBooking::getPackingList)
-                    .orElse(Collections.emptyList());
+            case BOOKING -> customerBookingDao.findById(entityId)
+                    .map(bookingFn)
+                    .orElse(null);
 
-            case "SHIPMENT" -> shipmentDao.findById(entityId)
-                    .map(sd -> new ArrayList<>(sd.getPackingList()))
-                    .orElseGet(ArrayList::new);
+            case SHIPMENT -> shipmentDao.findById(entityId)
+                    .map(shipmentFn)
+                    .orElse(null);
 
-            case "CONSOLIDATION" -> consolidationDetailsDao.findById(entityId)
-                    .map(ConsolidationDetails::getPackingList)
-                    .orElse(Collections.emptyList());
+            case CONSOLIDATION -> consolidationDetailsDao.findById(entityId)
+                    .map(consolidationFn)
+                    .orElse(null);
 
             default -> {
                 log.error("Unknown entityType '{}' in request", entityType);
-                yield Collections.emptyList();
+                yield null;
             }
         };
+    }
+
+    private List<Containers> fetchContainers(String entityType, Long entityId) {
+        return fetchEntityDataList(
+                entityType,
+                entityId,
+                CustomerBooking::getContainersList,
+                ShipmentDetails::getContainersList,
+                ConsolidationDetails::getContainersList
+        );
+    }
+
+    private List<Packing> fetchPackings(String entityType, Long entityId) {
+        return fetchEntityDataList(
+                entityType,
+                entityId,
+                CustomerBooking::getPackingList,
+                ShipmentDetails::getPackingList,
+                ConsolidationDetails::getPackingList
+        );
+    }
+
+    private String fetchTransportType(String entityType, Long entityId) {
+        return fetchSingleEntityData(
+                entityType,
+                entityId,
+                CustomerBooking::getTransportType,
+                ShipmentDetails::getTransportMode,
+                ConsolidationDetails::getTransportMode
+        );
+    }
+
+    private String fetchShipmentType(String entityType, Long entityId) {
+        return fetchSingleEntityData(
+                entityType,
+                entityId,
+                CustomerBooking::getCargoType,
+                ShipmentDetails::getShipmentType,
+                ConsolidationDetails::getShipmentType
+        );
     }
 }

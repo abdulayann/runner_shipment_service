@@ -5,11 +5,11 @@ import lombok.*;
 
 @Setter
 @Getter
-@ApiModel("Container Details Request Model")
+@ApiModel("Cargo Details Request Model")
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ContainerDetailsRequest {
+public class CargoDetailsRequest {
     private String entityType;
     private String entityId;
 }
