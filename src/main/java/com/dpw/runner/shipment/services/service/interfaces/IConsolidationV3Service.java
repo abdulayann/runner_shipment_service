@@ -25,9 +25,9 @@ import java.util.Optional;
 
 public interface IConsolidationV3Service {
     ShipmentGridChangeV3Response calculateAchievedValues(Long consolidationId) throws RunnerException;
-    ConsolidationDetailsResponse create(ConsolidationDetailsV3Request request);
-    Pair<ConsolidationDetailsResponse, Long> createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request request);
-    ConsolidationDetailsResponse completeUpdate(ConsolidationDetailsV3Request consolidationDetailsRequest) throws RunnerException;
+    ConsolidationDetailsV3Response create(ConsolidationDetailsV3Request request);
+    Pair<ConsolidationDetails, Long> createConsolidationForBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request request);
+    ConsolidationDetailsV3Response completeUpdate(ConsolidationDetailsV3Request consolidationDetailsRequest) throws RunnerException;
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
     String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
