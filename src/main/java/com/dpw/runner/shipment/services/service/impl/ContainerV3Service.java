@@ -394,7 +394,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return message;
     }
 
-    private List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
+    protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
         if (containerRequest.getConsolidationId() != null) {
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
         } else if (containerRequest.getShipmentsId() != null) {
@@ -615,10 +615,6 @@ public class ContainerV3Service implements IContainerV3Service {
         return responseList;
     }
 
-    private ContainerBaseResponse convertEntityToDto(Containers container) {
-        return (ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(container, new HashSet<>(defaultIncludeColumns), new ContainerBaseResponse());
-    }
-
     public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException {
         double totalWeight = 0;
         double packageCount = 0;
@@ -813,7 +809,7 @@ public class ContainerV3Service implements IContainerV3Service {
         response.setSuccess(!listIsNullOrEmpty(entityTransferMasterLists));
     }
 
-    private ContainerNumberCheckResponse validateContainerNumberFormat(String containerNumber, ContainerNumberCheckResponse response) {
+    protected ContainerNumberCheckResponse validateContainerNumberFormat(String containerNumber, ContainerNumberCheckResponse response) {
         for (int i = 0; i < 4; i++) {
             if (containerNumber.charAt(i) < 65 || containerNumber.charAt(i) > 90) {
                 response.setSuccess(false);
@@ -1076,7 +1072,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return container;
     }
 
-    private List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
+    protected List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
                                                            AssignContainerRequest request, List<Long> shipmentIdsToSetContainerCargo,
                                                            Containers container, Map<Long, Packing> packingListMap,
                                                            List<Packing> assignedPacks) throws RunnerException {

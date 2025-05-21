@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
@@ -45,6 +47,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -436,6 +440,118 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testUnAssignContainers1() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L, 2L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUnAssignContainers2() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L, 2L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(3L);
+        testPacking.setShipmentId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUnAssignContainers3() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(2L);
+        Packing testPacking1 = objectMapper.convertValue(testPacking, Packing.class);
+        testPacking1.setId(2L);
+        testPacking1.setShipmentId(2L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUnAssignContainers4() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(2L);
+        testShipment1.setContainerAssignedToShipmentCargo(1L);
+        Packing testPacking1 = objectMapper.convertValue(testPacking, Packing.class);
+        testPacking1.setId(2L);
+        testPacking1.setShipmentId(2L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUnAssignContainers5() throws RunnerException{
+        UnAssignContainerRequest request = new UnAssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testPacking.setId(1L);
+        testPacking.setShipmentId(1L);
+        ShipmentDetails testShipment1 = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        testShipment1.setId(2L);
+        Packing testPacking1 = objectMapper.convertValue(testPacking, Packing.class);
+        testPacking1.setId(2L);
+        testPacking1.setShipmentId(2L);
+        testPacking1.setContainerId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
+        when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = containerV3Service.unAssignContainers(request);
+        assertNotNull(response);
+    }
+
+    @Test
     void testUpdateAttachedContainersData() throws RunnerException{
         List<Long> containerIds = List.of(1L);
         testContainer.setId(1L);
@@ -449,6 +565,12 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
         containerV3Service.updateAttachedContainersData(containerIds);
         assertNotNull(containerIds);
+    }
+
+    @Test
+    void testUpdateAttachedContainersData1() {
+        List<Long> containerIds = new ArrayList<>();
+        assertDoesNotThrow(() -> containerV3Service.updateAttachedContainersData(containerIds));
     }
 
     @Test
@@ -480,6 +602,85 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Test
     void testGetContainers() {
         assertDoesNotThrow(() -> containerV3Service.getContainers(List.of(1L)));
+    }
+
+    @Test
+    void testGetSiblingContainers() {
+        List<Containers> containersList = containerV3Service.getSiblingContainers(new ContainerV3Request());
+        assertEquals(0, containersList.size());
+    }
+
+    @Test
+    void testGetSiblingContainersWithRequest() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setShipmentsId(1L);
+        when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request);
+        assertEquals(1, containersList.size());
+    }
+
+    @Test
+    void testGetSiblingContainersWithRequest1() {
+        ContainerV3Request request = new ContainerV3Request();
+        request.setBookingId(1L);
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(new Containers()));
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request);
+        assertEquals(1, containersList.size());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "CONTAINER", "CON000000", "CONT000000#" })
+    void testValidateContainerNumberFormat_InvalidCases(String containerNumber) {
+        ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
+        response.setSuccess(true);
+
+        response = containerV3Service.validateContainerNumberFormat(containerNumber, response);
+
+        assertFalse(response.isSuccess());
+    }
+
+    @Test
+    void testDownloadContainers() {
+        assertDoesNotThrow(() -> containerV3Service.downloadContainers(null, new BulkDownloadRequest()));
+    }
+
+    @Test
+    void testAfterSaveList() {
+        List<Containers> containersList = List.of(new Containers());
+        assertDoesNotThrow(() -> containerV3Service.afterSaveList(containersList, true));
+    }
+
+    @Test
+    void testAssignContainerCalculationsAndLogic() {
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(1L, new ArrayList<>()));
+        List<Packing> assignedPacks = List.of(testPacking);
+        Set<Long> assignedShipIds = Set.of(1L);
+        Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
+        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks));
+    }
+
+    @Test
+    void testAssignContainerCalculationsAndLogic1() {
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(1L);
+        assignContainerRequest.setShipmentPackIds(Map.of(1L, new ArrayList<>()));
+        testPacking.setContainerId(null);
+        List<Packing> assignedPacks = List.of(testPacking);
+        Set<Long> assignedShipIds = Set.of(1L);
+        testShipment.setPackingList(new ArrayList<>(List.of(testPacking)));
+        Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
+        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks));
+    }
+
+    @Test
+    void testAddShipmentCargoToContainerInCreateFromBooking() {
+        CustomerBookingV3Request customerBookingV3Request = new CustomerBookingV3Request();
+        customerBookingV3Request.setId(1L);
+        testContainer.setId(1L);
+        testContainer.setContainerNumber("CONT-123");
+        assertDoesNotThrow(() -> containerV3Service.addShipmentCargoToContainerInCreateFromBooking(testContainer, customerBookingV3Request));
     }
 
 }
