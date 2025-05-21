@@ -171,4 +171,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             WHERE s.id = :consolidationId
             """)
     void updateSailingScheduleRelatedInfoForAir(@Param("consolidationId") Long consolidationId, @Param("latDate") LocalDateTime latDate);
+
+    @Query(value = "SELECT bookingNumber FROM ConsolidationDetails WHERE id = :consolidationId")
+    String getBookingNumberFromConsol(@Param("consolidationId") Long consolidationId);
 }

@@ -243,4 +243,5 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isBorrowed;
     private Long containerAssignedToShipmentCargo;
     private Long consolidationId;
+    private String consolBookingNumber;
 }

@@ -415,12 +415,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Long shipmentId = shipmentDetailsEntity.getId();
         UUID guid = shipmentDetailsEntity.getGuid();
         List<String> implications = new ArrayList<>();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
         var pendingNotificationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setPendingCount(shipmentId, pendingCount)), executorService);
         var implicationListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setImplicationsResponse(guid, implications)), executorService);
+        var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
 
         ShipmentRetrieveLiteResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveLiteResponse.class);
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-        CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture).join();
+        CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture, containerTeuFuture).join();
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
@@ -428,17 +430,24 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setImplicationList(implications);
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
         if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
-            response.setConsolidationId(consoleShipmentMappings.get(0).getConsolidationId());
+            Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
+            response.setConsolidationId(consolidationId);
+            String bookingNumber = consolidationV3Service.getBookingNumberFromConsol(consolidationId);
+            response.setConsolBookingNumber(bookingNumber);
         }
         //add isPacksAvailable flag
         if (!CollectionUtils.isEmpty(shipmentDetailsEntity.getPackingList())) {
             response.setIsPacksAvailable(Boolean.TRUE);
         }
-        Set<Containers> containersList = shipmentDetailsEntity.getContainersList();
-        if (!CollectionUtils.isEmpty(containersList)) {
-            setCounterCountAndTeuCount(response, containersList);
-        }
+        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
+        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
+        if (!CollectionUtils.isEmpty(containersList)) {
+            setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
+        }
     }
 
     private void setCounterCountAndTeuCount(ShipmentRetrieveLiteResponse response, Set<Containers> containersList) {
