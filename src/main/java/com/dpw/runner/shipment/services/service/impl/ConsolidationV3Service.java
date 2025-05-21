@@ -3927,6 +3927,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return response;
     }
 
+    @Override
+    public String getBookingNumberFromConsol(Long consolidationId) {
+        return consolidationDetailsDao.getBookingNumberFromConsol(consolidationId);
+    }
+
     private void updateCutOffDatesToConsol(ConsolidationSailingScheduleRequest request, Long consolidationId, ConsolidationDetails consolidationDetails) {
         if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
             consolidationDetailsDao.updateSailingScheduleRelatedInfo(request, consolidationId);

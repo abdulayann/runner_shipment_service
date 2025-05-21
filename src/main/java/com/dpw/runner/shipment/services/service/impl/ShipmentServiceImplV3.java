@@ -415,12 +415,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Long shipmentId = shipmentDetailsEntity.getId();
         UUID guid = shipmentDetailsEntity.getGuid();
         List<String> implications = new ArrayList<>();
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
         var pendingNotificationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setPendingCount(shipmentId, pendingCount)), executorService);
         var implicationListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setImplicationsResponse(guid, implications)), executorService);
+        var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
 
         ShipmentRetrieveLiteResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveLiteResponse.class);
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-        CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture).join();
+        CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture, containerTeuFuture).join();
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
@@ -428,17 +430,24 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setImplicationList(implications);
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
         if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
-            response.setConsolidationId(consoleShipmentMappings.get(0).getConsolidationId());
+            Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
+            response.setConsolidationId(consolidationId);
+            String bookingNumber = consolidationV3Service.getBookingNumberFromConsol(consolidationId);
+            response.setConsolBookingNumber(bookingNumber);
         }
         //add isPacksAvailable flag
         if (!CollectionUtils.isEmpty(shipmentDetailsEntity.getPackingList())) {
             response.setIsPacksAvailable(Boolean.TRUE);
         }
-        Set<Containers> containersList = shipmentDetailsEntity.getContainersList();
-        if (!CollectionUtils.isEmpty(containersList)) {
-            setCounterCountAndTeuCount(response, containersList);
-        }
+        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
+        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
+        if (!CollectionUtils.isEmpty(containersList)) {
+            setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
+        }
     }
 
     private void setCounterCountAndTeuCount(ShipmentRetrieveLiteResponse response, Set<Containers> containersList) {
@@ -697,7 +706,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (Boolean.TRUE.equals(shipmentRequest.getIsChargableEditable())) {
             shipmentDetails.setChargable(shipmentRequest.getChargable());
         }
-        validateBeforeSave(shipmentDetails);
+        validateBeforeSave(shipmentDetails, oldEntity);
 
         processBranchesAndPartner(shipmentDetails);
 
@@ -1210,7 +1219,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setDocumentationPartner(null);
     }
 
-    protected void validateBeforeSave(ShipmentDetails shipmentDetails) {
+    protected void validateBeforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
             throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
 
@@ -1221,6 +1230,23 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))) {
                 shipmentDetails.setHouseBill(null);
             }
+        }
+
+        // Validation for Partner fields for 'STD' Shipment
+        this.validationForPartnerFields(shipmentDetails, oldEntity);
+
+    }
+
+    private void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
+        String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
+        String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);
+        String masterBill = Optional.ofNullable(oldEntity).map(ShipmentDetails::getMasterBill).orElse(null);
+        if(!Objects.equals(shipmentDetails.getCoLoadBlNumber(), coloadBlNumber) || !Objects.equals(shipmentDetails.getCoLoadBkgNumber(), coloadBkgNumber)) {
+            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent BkgNumber, BL No/AWB No. for STD shipments");
+        }
+        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
+            throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
         }
     }
 

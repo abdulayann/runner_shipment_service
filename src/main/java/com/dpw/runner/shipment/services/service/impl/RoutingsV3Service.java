@@ -77,6 +77,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+@SuppressWarnings("java:S6809")
 @Service
 @Slf4j
 public class RoutingsV3Service implements IRoutingsV3Service {
@@ -112,8 +113,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
     @Autowired
     private NetworkTransferV3Util networkTransferV3Util;
-    @Autowired
-    private RoutingsV3Service self;
 
     @Data
     @AllArgsConstructor
@@ -142,7 +141,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             // Audit logs
             recordAuditLogs(null, List.of(routings), DBOperationType.CREATE, parentResult);
             // afterSave
-            self.afterSave(Arrays.asList(routings), request.getEntityId(), module);
+            afterSave(Arrays.asList(routings), request.getEntityId(), module);
             log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -196,7 +195,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
                         bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
                         bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
-                        self.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+                        updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
                     }
                 }
             }
@@ -362,7 +361,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             // Audit logs
             recordAuditLogs(List.of(oldEntityData), List.of(routings), DBOperationType.UPDATE, parentResult);
             // afterSave operations
-            self.afterSave(Arrays.asList(routings), request.getEntityId(), module);
+            afterSave(Arrays.asList(routings), request.getEntityId(), module);
             log.info("Routing updated successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -521,7 +520,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         // Convert to response
         List<RoutingsResponse> routingResponses = jsonHelper.convertValueToList(allSavedRouting, RoutingsResponse.class);
 
-        self.afterSave(allSavedRouting, request.getEntityId(), module);
+        afterSave(allSavedRouting, request.getEntityId(), module);
 
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(request, module, allSavedRouting);
@@ -739,7 +738,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
                 bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(routings, RoutingsRequest.class));
                 bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
-                self.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+                updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
             }
         }
     }
