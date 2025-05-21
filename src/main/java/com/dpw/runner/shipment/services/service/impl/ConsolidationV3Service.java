@@ -3736,42 +3736,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consolidationDetailsDao.save(consolidationDetails, fromV1Sync);
     }
 
-    @Override
-    public ConsolidationSailingScheduleResponse updateSailingScheduleDataToConsole(ConsolidationSailingScheduleRequest request) throws RunnerException {
-        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
-        bulkUpdateRoutingsRequest.setRoutings(request.getRoutings());
-        Long consolidationId = request.getRoutings().stream().findFirst().get().getConsolidationId();
-        bulkUpdateRoutingsRequest.setEntityId(consolidationId);
-        routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
-        //update consol fields
-        Optional<ConsolidationDetails> consolidationDetailsEntity = consolidationDetailsDao.findById(consolidationId);
-        ConsolidationDetails consolidationDetails = consolidationDetailsEntity.get();
-        updateCutOffDatesToConsol(request, consolidationId, consolidationDetails);
-        consolidationDetails.getCarrierDetails().setShippingLine(request.getCarrier());
-        consolidationDetailsDao.update(consolidationDetails, false);
-        //update to attached shipments
-        Set<ShipmentDetails> shipmentDetailsSet = consolidationDetails.getShipmentsList();
-        if (!CollectionUtils.isEmpty(shipmentDetailsSet)) {
-            ShipmentSailingScheduleRequest shipmentSailingScheduleRequest = jsonHelper.convertCreateValue(request, ShipmentSailingScheduleRequest.class);
-            shipmentDetailsSet.stream().forEach(shipmentDetails -> {
-                shipmentV3Service.updateCutoffDetailsToShipment(shipmentSailingScheduleRequest, shipmentDetails);
-            });
-        }
-        ConsolidationSailingScheduleResponse response = new ConsolidationSailingScheduleResponse();
-        return response;
-    }
-
-    private void updateCutOffDatesToConsol(ConsolidationSailingScheduleRequest request, Long consolidationId, ConsolidationDetails consolidationDetails) {
-        if (TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
-            consolidationDetailsDao.updateSailingScheduleRelatedInfo(request, consolidationId);
-
-        } else if (TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
-            consolidationDetailsDao.updateSailingScheduleRelatedInfoForAir(request, consolidationId);
-        }
-    }
-
-
-    public void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+    private void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
         ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList) {
 
         if (oldConsolidation == null || newConsolidation == null || shipmentDetailsList == null) {
@@ -3783,32 +3748,32 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             if (TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)) {
                 updateIfChanged(oldConsolidation.getTerminalCutoff(), newConsolidation.getTerminalCutoff(),
-                    val -> shipmentDetails.setTerminalCutoff(val));
+                    shipmentDetails::setTerminalCutoff);
 
                 updateIfChanged(oldConsolidation.getVerifiedGrossMassCutoff(), newConsolidation.getVerifiedGrossMassCutoff(),
-                    val -> shipmentDetails.setVerifiedGrossMassCutoff(val));
+                    shipmentDetails::setVerifiedGrossMassCutoff);
 
                 updateIfChanged(oldConsolidation.getShipInstructionCutoff(), newConsolidation.getShipInstructionCutoff(),
-                    val -> shipmentDetails.setShippingInstructionCutoff(val));
+                    shipmentDetails::setShippingInstructionCutoff);
 
                 updateIfChanged(oldConsolidation.getHazardousBookingCutoff(), newConsolidation.getHazardousBookingCutoff(),
-                    val -> shipmentDetails.setDgCutoff(val));
+                    shipmentDetails::setDgCutoff);
 
                 updateIfChanged(oldConsolidation.getReeferCutoff(), newConsolidation.getReeferCutoff(),
-                    val -> shipmentDetails.setReeferCutoff(val));
+                    shipmentDetails::setReeferCutoff);
 
                 updateIfChanged(oldConsolidation.getEarliestEmptyEquPickUp(), newConsolidation.getEarliestEmptyEquPickUp(),
-                    val -> shipmentDetails.setEarliestEmptyEquipmentPickUp(val));
+                    shipmentDetails::setEarliestEmptyEquipmentPickUp);
 
                 updateIfChanged(oldConsolidation.getLatestFullEquDeliveredToCarrier(), newConsolidation.getLatestFullEquDeliveredToCarrier(),
-                    val -> shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(val));
+                    shipmentDetails::setLatestFullEquipmentDeliveredToCarrier);
 
                 updateIfChanged(oldConsolidation.getEarliestDropOffFullEquToCarrier(), newConsolidation.getEarliestDropOffFullEquToCarrier(),
-                    val -> shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(val));
+                    shipmentDetails::setEarliestDropOffFullEquipmentToCarrier);
 
             } else if (TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)) {
                 updateIfChanged(oldConsolidation.getLatDate(), newConsolidation.getLatDate(),
-                    val -> shipmentDetails.setLatestArrivalTime(val));
+                    shipmentDetails::setLatestArrivalTime);
             }
         }
     }

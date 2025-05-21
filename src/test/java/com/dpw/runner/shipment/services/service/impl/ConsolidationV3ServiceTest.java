@@ -39,15 +39,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
@@ -88,6 +89,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -605,5 +607,66 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     mockShipmentSettings();
     String res = consolidationV3Service.generateCustomBolNumber();
     assertEquals(14, res.length());
+  }
+
+  @Test
+  void updateLinkedShipmentData_Exception(){
+    V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+    tenantSettingsResponse.setEnableAirMessaging(Boolean.TRUE);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
+
+    consolidationDetails = testConsol;
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+    consolidationDetails.setEfreightStatus(Constants.EAW);
+
+    List<ShipmentDetails> shipments = new ArrayList<>();
+    AdditionalDetails additionalDetails = new AdditionalDetails();
+    additionalDetails.setEfreightStatus(Constants.NON);
+
+    ShipmentDetails shipmentDetails1 = ShipmentDetails
+        .builder()
+        .additionalDetails(additionalDetails)
+        .build();
+    shipments.add(shipmentDetails1);
+
+    when(consolidationV3Util.getShipmentsList(consolidationDetails.getId()))
+        .thenReturn(shipments);
+
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails,
+        null, true));
+  }
+
+  @Test
+  void updateLinkedShipmentData_Success() throws RunnerException {
+    mockTenantSettings();
+
+    consolidationDetails = testConsol;
+    CarrierDetails carrierDetails = CarrierDetails.builder().build();
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consolidationDetails.setEfreightStatus(Constants.EAW);
+    ConsolidationDetails oldConsolidation = consolidationDetails;
+    oldConsolidation.setEarliestDropOffFullEquToCarrier(LocalDateTime.now());
+
+    List<ShipmentDetails> shipments = new ArrayList<>();
+    AdditionalDetails additionalDetails = new AdditionalDetails();
+    additionalDetails.setEfreightStatus(Constants.NON);
+
+    ShipmentDetails shipmentDetails1 = ShipmentDetails
+        .builder()
+        .additionalDetails(additionalDetails)
+        .transportMode(Constants.TRANSPORT_MODE_SEA)
+        .carrierDetails(carrierDetails)
+        .build();
+    shipments.add(shipmentDetails1);
+
+    when(jsonHelper.convertCreateValue(any(), eq(Routings.class))).thenReturn(new Routings());
+
+    when(consolidationV3Util.getShipmentsList(consolidationDetails.getId()))
+        .thenReturn(shipments);
+
+    when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    assertNotNull(shipmentDetailsList);
   }
 }

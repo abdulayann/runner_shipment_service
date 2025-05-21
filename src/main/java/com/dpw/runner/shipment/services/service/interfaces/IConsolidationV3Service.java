@@ -48,5 +48,4 @@ public interface IConsolidationV3Service {
 
     Optional<ConsolidationDetails> findById(Long consolidationId);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
-    ConsolidationSailingScheduleResponse updateSailingScheduleDataToConsole(ConsolidationSailingScheduleRequest request) throws RunnerException;
 }
