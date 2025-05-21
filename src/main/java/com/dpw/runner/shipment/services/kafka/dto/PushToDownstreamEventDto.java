@@ -9,7 +9,7 @@ import java.util.List;
 
 @Data @Builder
 @AllArgsConstructor @NoArgsConstructor
-public class PushToDownstreamEventDto {
+public class PushToDownstreamEventDto implements KafkaPayload {
     private Long parentEntityId;
     private String parentEntityName;
     private String action;

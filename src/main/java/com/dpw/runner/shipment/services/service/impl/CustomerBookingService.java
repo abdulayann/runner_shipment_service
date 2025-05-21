@@ -30,18 +30,20 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.executors.PostCommitActionExecutor;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.producer.PushToDownstreamPublisher;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.repository.interfaces.InternalEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
@@ -125,7 +127,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     private INPMServiceAdapter npmService;
 
     @Autowired
-    private PostCommitActionExecutor postCommitActionExecutor;
+    private PushToDownstreamPublisher pushToDownstreamPublisher;
 
     @Autowired
     UserContext userContext;
@@ -150,14 +152,13 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Autowired
     private IOrderManagementAdapter orderManagementAdapter;
     @Autowired
+    private InternalEventRepository internalEventRepository;
+    @Autowired
     private KafkaProducer producer;
     @Autowired
     private IQuoteContractsService quoteContractsService;
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
-
-    @Value("${shipments.internal.messages.kafka}")
-    private String internalQueue;
 
     @Autowired
     private IEventDao eventDao;
@@ -239,10 +240,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
 
-        //AFTER TRANSACTION COMMITS
-        postCommitActionExecutor.executeAfterCommit(() -> customerBookingDao.findById(bookingId),
-                booking -> producer.getKafkaResponse(booking, true),
-                StringUtility.convertToString(customerBooking.getGuid()), internalQueue);
+        //It executes only AFTER TRANSACTION COMMITS
+        String transactionId = bookingId.toString();
+        pushToDownstreamPublisher.publish(PushToDownstreamEventDto.builder().parentEntityId(bookingId).parentEntityName(Constants.CUSTOMER_BOOKING).build(), transactionId, bookingId, Constants.CUSTOMER_BOOKING);
 
         saveChildEntities(customerBooking, request);
         generateBookingAcknowledgementEvent(request);
