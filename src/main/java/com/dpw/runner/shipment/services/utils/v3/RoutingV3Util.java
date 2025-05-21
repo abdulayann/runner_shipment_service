@@ -132,7 +132,7 @@ public class RoutingV3Util {
 
             // Postprocessing
             if(masterDataResponse == null)
-                routingsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName()), CacheConstants.MASTER_LIST, false, cacheMap));
+                routingsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName()), CacheConstants.MASTER_LIST, false, cacheMap));
             else
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
 

@@ -1,16 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -21,37 +10,29 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -65,34 +46,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
-import com.dpw.runner.shipment.services.utils.FieldUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,6 +60,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -136,8 +107,11 @@ public class ContainerV3Service implements IContainerV3Service {
     @Autowired
     private KafkaProducer producer;
 
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
+
     @Value("${containersKafka.queue}")
-    private String senderQueue;
+    private String containerKafkaQueue;
 
     @Autowired
     private MasterDataUtils masterDataUtils;
@@ -171,25 +145,6 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IShipmentServiceV3 shipmentService;
-
-    private final List<String> columnsSequenceForExcelDownload = List.of(
-            "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
-            "hblDeliveryMode", "containerNumber", "containerCount", "descriptionOfGoods", "handlingInfo",
-            "hazardous", "dgClass", "hazardousUn", "packs", "packsType", "marksNums", "minTemp", "minTempUnit",
-            "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "grossVolume",
-            "grossVolumeUnit", "measurement", "measurementUnit", "commodityCode", "hsCode", "customsReleaseCode",
-            "containerStuffingLocation", "pacrNumber", "containerComments", "sealNumber", "carrierSealNumber",
-            "shipperSealNumber", "terminalOperatorSealNumber", "veterinarySealNumber", "customsSealNumber"
-    );
-
-    private final List<String> columnsSequenceForExcelDownloadForAir = List.of(
-            "guid", "hblDeliveryMode", "descriptionOfGoods", "hazardous", "hazardousUn", "packs", "packsType",
-            "marksNums", "serialNumber", "innerPackageNumber", "innerPackageType", "packageLength", "packageBreadth",
-            "packageHeight", "innerPackageMeasurementUnit", "isTemperatureMaintained", "minTemp", "minTempUnit",
-            "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "chargeable",
-            "chargeableUnit", "grossVolume", "grossVolumeUnit", "commodityCode", "hsCode", "customsReleaseCode", "pacrNumber",
-            "containerComments"
-    );
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
@@ -267,10 +222,11 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         // Validate that the containers are not assigned to any active shipment or packing before deletion
-        validateNoAssignments(containerIds);
+         validateNoAssignments(containerIds);
 
         // Collect all unique shipment IDs that are associated with the containers to delete
         List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
+                .filter(Objects::nonNull)
                 .flatMap(Set::stream).map(ShipmentDetails::getId).distinct().toList();
 
         // Proceed with the deletion of the containers and any related associations (shipment, packing, etc.)
@@ -372,7 +328,10 @@ public class ContainerV3Service implements IContainerV3Service {
             }
             default -> throw new IllegalStateException("Unexpected value: " + operationType);
         };
+        processAuditLogIds(idsToProcess, oldContainerMap, newContainerMap, operationType);
+    }
 
+    public void processAuditLogIds(Set<Long> idsToProcess, Map<Long, Containers> oldContainerMap, Map<Long, Containers> newContainerMap, DBOperationType operationType) {
         for (Long id : idsToProcess) {
             try {
                 Containers oldData = oldContainerMap.get(id);
@@ -435,7 +394,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return message;
     }
 
-    private List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
+    protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
         if (containerRequest.getConsolidationId() != null) {
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
         } else if (containerRequest.getShipmentsId() != null) {
@@ -448,13 +407,15 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     /**
-     * Post-processing logic after saving a container entity.
+     * Post-processing logic invoked after saving a container entity.
      * <p>
-     * Sets the tenant if missing, constructs a Kafka message and pushes it to the configured queue. Logs any failure during Kafka operations.
+     * Ensures the tenant ID is set on the container if missing,
+     * then constructs and pushes a Kafka message to the configured internal queue.
+     * Any failures during Kafka operations are logged.
      * </p>
      *
      * @param container the container entity that was persisted
-     * @param isCreate  flag indicating if this is a creation or an update
+     * @param isCreate  true if the container was newly created; false if updated
      */
     private void afterSave(Containers container, boolean isCreate) {
         try {
@@ -463,7 +424,10 @@ public class ContainerV3Service implements IContainerV3Service {
                 container.setTenantId(TenantContext.getCurrentTenant());
             }
 
-            // Build Kafka message payload
+            triggerPushToDownStream(container, isCreate);
+
+            // REMOVE AFTER SUCCESS OF INTERNAL KAFKA
+            /* // Build Kafka message payload
             KafkaResponse kafkaResponse = producer.getKafkaResponse(container, isCreate);
 
             // Serialize payload to JSON
@@ -473,16 +437,37 @@ public class ContainerV3Service implements IContainerV3Service {
             String messageKey = UUID.randomUUID().toString();
 
             // Send message to Kafka
-            producer.produceToKafka(message, senderQueue, messageKey);
+            producer.produceToKafka(message, containerKafkaQueue, messageKey);
 
             // Log success for traceability
             log.info("Pushed container update to Kafka | containerId={} | tenantId={} | key={}",
                     container.getId(), container.getTenantId(), messageKey);
+
+             */
         } catch (Exception ex) {
             // Log failure with detailed error message and exception stack trace
             log.error("Failed to push container update to Kafka | containerId={} | error={}",
                     container.getId(), ex.getMessage(), ex);
         }
+    }
+
+    private void triggerPushToDownStream(Containers container, Boolean isCreate) {
+        String transactionId = UUID.randomUUID().toString();
+
+        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | containerId={} | isCreate={} | transactionId={}",
+                container.getId(), isCreate, transactionId);
+
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(container.getId())
+                .parentEntityName(CONTAINER)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(container.getTenantId())
+                        .isCreate(isCreate).build()).build();
+
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);
+
+        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | containerId={} | transactionId={}",
+                container.getId(), transactionId);
     }
 
     @Override
@@ -562,7 +547,7 @@ public class ContainerV3Service implements IContainerV3Service {
             throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
         }
 
-        List<ContainerBaseV3Response> containers = containerListResponse.getContainers();
+        List<ContainerBaseResponse> containers = containerListResponse.getContainers();
         if (CollectionUtils.isEmpty(containers)) {
             log.info("No containers found for consolidation.");
             return containerListResponse;
@@ -581,7 +566,7 @@ public class ContainerV3Service implements IContainerV3Service {
                         (existing, replacement) -> existing
                 ));
 
-        for (ContainerBaseV3Response container : containers) {
+        for (ContainerBaseResponse container : containers) {
             ShipmentDetailsProjection details = containerIdToShipmentDetailsMap.get(container.getId());
             if (details != null) {
                 container.setAttachedShipmentId(details.getId());
@@ -621,16 +606,13 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private List<ContainerBaseV3Response> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
-        List<ContainerBaseV3Response> responseList = new ArrayList<>();
+    private List<ContainerBaseResponse> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
+        List<ContainerBaseResponse> responseList = new ArrayList<>();
         long start = System.currentTimeMillis();
-        lst.forEach(containers -> responseList.add((ContainerBaseV3Response) commonUtils.setIncludedFieldsToResponse(containers, new HashSet<>(includeColumns), new ContainerBaseV3Response())));
+        lst.forEach(containers -> responseList.add(
+                (ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(containers, new HashSet<>(includeColumns), new ContainerBaseResponse())));
         log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
         return responseList;
-    }
-
-    private ContainerBaseResponse convertEntityToDto(Containers container) {
-        return (ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(container, new HashSet<>(defaultIncludeColumns), new ContainerBaseResponse());
     }
 
     public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException {
@@ -827,7 +809,7 @@ public class ContainerV3Service implements IContainerV3Service {
         response.setSuccess(!listIsNullOrEmpty(entityTransferMasterLists));
     }
 
-    private ContainerNumberCheckResponse validateContainerNumberFormat(String containerNumber, ContainerNumberCheckResponse response) {
+    protected ContainerNumberCheckResponse validateContainerNumberFormat(String containerNumber, ContainerNumberCheckResponse response) {
         for (int i = 0; i < 4; i++) {
             if (containerNumber.charAt(i) < 65 || containerNumber.charAt(i) > 90) {
                 response.setSuccess(false);
@@ -896,7 +878,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 includeColumns = request.getIncludeColumns();
             }
 
-            List<ContainerBaseV3Response> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
             Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
             ContainerListResponse containerListResponse = ContainerListResponse.builder()
                     .containers(responseList)
@@ -914,7 +896,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private Map<String, Object> getMasterDataForList(List<ContainerBaseV3Response> responseList, boolean getMasterData) {
+    private Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
@@ -1090,7 +1072,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return container;
     }
 
-    private List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
+    protected List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
                                                            AssignContainerRequest request, List<Long> shipmentIdsToSetContainerCargo,
                                                            Containers container, Map<Long, Packing> packingListMap,
                                                            List<Packing> assignedPacks) throws RunnerException {
@@ -1133,14 +1115,14 @@ public class ContainerV3Service implements IContainerV3Service {
     public void addShipmentCargoToContainerInCreateFromBooking(Containers container, CustomerBookingV3Request customerBookingV3Request) throws RunnerException {
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), customerBookingV3Request.getGrossWeight(), customerBookingV3Request.getGrossWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), customerBookingV3Request.getVolume(), customerBookingV3Request.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainerFromShipment(container, customerBookingV3Request.getQuantity(), customerBookingV3Request.getQuantityUnit());
+        containerV3Util.addNoOfPackagesToContainer(container, customerBookingV3Request.getQuantity(), customerBookingV3Request.getQuantityUnit());
     }
 
     @Override
     public void addShipmentCargoToContainer(Containers container, ShipmentDetails shipmentDetails) throws RunnerException {
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), shipmentDetails.getWeight(), shipmentDetails.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainerFromShipment(container, shipmentDetails.getNoOfPacks(), shipmentDetails.getPacksUnit());
+        containerV3Util.addNoOfPackagesToContainer(container, shipmentDetails.getNoOfPacks(), shipmentDetails.getPacksUnit());
     }
 
     private void assignContainerToShipmentAndPackages(ShipmentDetails shipmentDetails, AssignContainerRequest request, Containers container,
@@ -1156,7 +1138,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), packing.getVolume(), packing.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainerFromShipment(container, packing.getPacks(), packing.getPacksType());
+        containerV3Util.addNoOfPackagesToContainerFromPacks(container, packing.getPacks(), packing.getPacksType());
     }
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
@@ -1367,7 +1349,7 @@ public class ContainerV3Service implements IContainerV3Service {
             addPackageDataToContainer(containersMap.get(packing.getContainerId()), packing);
         }
         for(Containers containers1: containers) {
-            containerV3Util.setContainerNetWeight(containers1); // set container gross weight from cargo weight (net weight) and tare weight
+            containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight
         }
         containerDao.saveAll(containers.stream().toList());
     }

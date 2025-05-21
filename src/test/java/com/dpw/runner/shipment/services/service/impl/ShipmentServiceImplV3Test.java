@@ -27,13 +27,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -50,11 +44,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
+import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
@@ -442,7 +432,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(Pair.of(ConsolidationDetailsResponse.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+        doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
@@ -2663,7 +2653,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsignee(consignee);
 
         assertThrows(ValidationException.class, () -> {
-            shipmentServiceImplV3.validateBeforeSave(shipment);
+            shipmentServiceImplV3.validateBeforeSave(shipment, null);
         });
     }
 
@@ -2674,7 +2664,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setTransportMode("ROAD");
         shipment.setMasterBill("MASTER-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("MASTER-BILL", shipment.getHouseBill());
     }
@@ -2689,7 +2679,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         shipment.setConsigner(null); // Null consignor
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
     }
 
     @Test
@@ -2700,7 +2690,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("ORIGINAL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("ORIGINAL", shipment.getHouseBill()); // unchanged
     }
@@ -2713,7 +2703,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER-BILL");
         shipment.setHouseBill("HOUSE-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("HOUSE-BILL", shipment.getHouseBill()); // unchanged
     }
@@ -2726,7 +2716,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER-BILL");
         shipment.setHouseBill("HOUSE-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertNull(shipment.getHouseBill());
     }
@@ -2737,12 +2727,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsigner(new Parties());
         shipment.setConsignee(null); // Consignee is null
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
     }
 
     @Test
     void testValidateBeforeSave_withNullOrgCodes_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
+        ShipmentDetails oldEntity = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -2752,7 +2743,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, oldEntity));
     }
 
     @Test
@@ -2763,7 +2754,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2776,7 +2767,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2789,7 +2780,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2801,7 +2792,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         details.setTransportMode("AIRSEA"); // not AIR, not SEA, not null
         details.setMasterBill("MBL123");
 
-        shipmentServiceImplV3.validateBeforeSave(details);
+        shipmentServiceImplV3.validateBeforeSave(details, null);
 
         assertEquals("MBL123", details.getHouseBill());
     }

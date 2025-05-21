@@ -1,20 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -25,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -44,6 +30,8 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -61,30 +49,13 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IEventService;
-import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.ConsolidationV3Util;
-import com.dpw.runner.shipment.services.utils.ConsolidationValidationV3Util;
-import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
-import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -111,6 +82,19 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -323,9 +307,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     mockShipmentSettings();
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
-    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
-    ConsolidationDetailsResponse createResponse = spyService.create(consolidationDetailsV3Request);
+    ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(consolidationDetailsResponse);
+    ConsolidationDetailsV3Response createResponse = spyService.create(consolidationDetailsV3Request);
 
     assertNotNull(createResponse);
   }
@@ -349,9 +333,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     mockShipmentSettings();
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
-    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
-    ConsolidationDetailsResponse createResponse = spyService.create(consolidationDetailsV3Request);
+    ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(consolidationDetailsResponse);
+    ConsolidationDetailsV3Response createResponse = spyService.create(consolidationDetailsV3Request);
 
     assertNotNull(createResponse);
   }
@@ -376,9 +360,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     mockShipmentSettings();
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
-    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
-    ConsolidationDetailsResponse createResponse = spyService.create(consolidationDetailsV3Request);
+    ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(consolidationDetailsResponse);
+    ConsolidationDetailsV3Response createResponse = spyService.create(consolidationDetailsV3Request);
 
     assertNotNull(createResponse);
   }
@@ -402,7 +386,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    when(jsonHelper.convertValue(consoleDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
     mockShipmentSettings();
     var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
 

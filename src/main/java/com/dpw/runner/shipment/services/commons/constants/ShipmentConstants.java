@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class ShipmentConstants {
@@ -147,7 +148,9 @@ public class ShipmentConstants {
             Map.entry("routingPol", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pol").build()),
             Map.entry("routingPolCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(ORIGIN_PORT_LOC_CODE).build()),
             Map.entry("routingPod", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pod").build()),
-            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build())
+            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
+            Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build())
+
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";

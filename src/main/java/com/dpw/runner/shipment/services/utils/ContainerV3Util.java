@@ -17,7 +17,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -230,7 +230,7 @@ public class ContainerV3Util {
         return fields;
     }
 
-    public void addAllUnlocationInSingleCallList(List<ContainerBaseV3Response> containers, Map<String, Object> masterDataResponse) {
+    public void addAllUnlocationInSingleCallList(List<ContainerBaseResponse> containers, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -241,11 +241,8 @@ public class ContainerV3Util {
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
 
-            if (masterDataResponse == null) {
-                containers.forEach(container -> container.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
-            }else{
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
-            }
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -253,7 +250,7 @@ public class ContainerV3Util {
         }
     }
 
-    public void addAllCommodityTypesInSingleCall(List<ContainerBaseV3Response> containers, Map<String, Object> masterDataResponse) {
+    public void addAllCommodityTypesInSingleCall(List<ContainerBaseResponse> containers, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -263,11 +260,8 @@ public class ContainerV3Util {
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
             masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
 
-            if (masterDataResponse == null) {
-                containers.forEach(container -> container.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.COMMODITY, cacheMap)));
-            }else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
-            }
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
+
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -275,7 +269,7 @@ public class ContainerV3Util {
         }
     }
 
-    public void addAllMasterDataInSingleCallList(List<ContainerBaseV3Response> containers, Map<String, Object> masterDataResponse) {
+    public void addAllMasterDataInSingleCallList(List<ContainerBaseResponse> containers, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -292,11 +286,8 @@ public class ContainerV3Util {
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
-            if (masterDataResponse == null) {
-                containers.forEach(container -> container.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.MASTER_LIST, cacheMap)));
-            }else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
-            }
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCallPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
@@ -346,6 +337,9 @@ public class ContainerV3Util {
             }
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getGrossWeight(), container.getGrossWeightUnit()));
+        } else {
+            container.setNetWeight(container.getGrossWeight());
+            container.setNetWeightUnit(container.getGrossWeightUnit());
         }
     }
 
@@ -357,13 +351,13 @@ public class ContainerV3Util {
         container.setPacksType(null);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, String packs, String packsType) {
+    public void addNoOfPackagesToContainerFromPacks(Containers container, String packs, String packsType) {
         if(isStringNullOrEmpty(packs))
             return;
-        addNoOfPackagesToContainerFromShipment(container, Integer.parseInt(packs), packsType);
+        addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
     }
 
-    public void addNoOfPackagesToContainerFromShipment(Containers container, Integer packs, String packsType) {
+    public void addNoOfPackagesToContainer(Containers container, Integer packs, String packsType) {
         if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
             return;
         if(isStringNullOrEmpty(container.getPacks()))

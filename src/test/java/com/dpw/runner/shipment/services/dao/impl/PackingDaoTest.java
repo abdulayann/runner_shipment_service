@@ -869,4 +869,58 @@ class PackingDaoTest {
         verify(packingRepository).findByContainerIdIn(containerIds);
     }
 
+    @Test
+    void removeContainersFromPacking() {
+        List<Long> containerIds = List.of(1L, 2L);
+        List<Packing> packingList = List.of(testPacking);
+
+        when(packingRepository.findByContainerIdIn(containerIds)).thenReturn(packingList);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        when(packingRepository.save(any())).thenReturn(testPacking);
+
+        packingDao.removeContainersFromPacking(containerIds);
+
+        verify(packingRepository).findByContainerIdIn(containerIds);
+        verify(validatorUtility).applyValidation(any(), any(), any(), anyBoolean());
+    }
+
+    @Test
+    void findByShipmentIdInAndContainerId() {
+        List<Long> shipmentIds = List.of(10L, 20L);
+        Long containerId = 5L;
+        List<Packing> expectedPackings = List.of(testPacking);
+
+        when(packingRepository.findByShipmentIdInAndContainerId(shipmentIds, containerId)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByShipmentIdInAndContainerId(shipmentIds, containerId);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByShipmentIdInAndContainerId(shipmentIds, containerId);
+    }
+
+    @Test
+    void findByShipmentIdIn() {
+        List<Long> shipmentIds = List.of(100L, 200L);
+        List<Packing> expectedPackings = List.of(testPacking);
+
+        when(packingRepository.findByShipmentIdIn(shipmentIds)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByShipmentIdIn(shipmentIds);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByShipmentIdIn(shipmentIds);
+    }
+
+    @Test
+    void setPackingIdsToContainer() {
+        List<Long> packingIds = List.of(10L, 20L);
+        Long containerId = 123L;
+
+        doNothing().when(packingRepository).setPackingIdsToContainer(packingIds, containerId);
+
+        packingDao.setPackingIdsToContainer(packingIds, containerId);
+
+        verify(packingRepository).setPackingIdsToContainer(packingIds, containerId);
+    }
+
 }

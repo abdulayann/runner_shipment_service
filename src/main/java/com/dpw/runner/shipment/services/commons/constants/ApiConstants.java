@@ -21,7 +21,7 @@ public class ApiConstants {
     public static final String CONSOLIDATION_API_UPDATE_BULK = "consolidation/update/bulk";
     public static final String UPDATE_SAILING_SCHEDULE = "update-sailing-schedule";
 
-    public static final String GET_CONTAINER_DETAILS = "/get/containerDetails";
+    public static final String GET_CARGO_DETAILS = "/get/cargoDetails";
 
 
     public static final String API_CREATE = "/create";

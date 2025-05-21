@@ -77,6 +77,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
+@SuppressWarnings("java:S6809")
 @Service
 @Slf4j
 public class RoutingsV3Service implements IRoutingsV3Service {

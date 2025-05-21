@@ -14,7 +14,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseV3Response;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
@@ -143,7 +143,7 @@ class ContainerV3ControllerTest {
   void testFetchShipmentContainers() throws RunnerException {
     ListCommonRequest listCommonRequest = new ListCommonRequest();
     ContainerListResponse containerListResponse = new ContainerListResponse();
-    containerListResponse.setContainers(List.of(new ContainerBaseV3Response()));
+    containerListResponse.setContainers(List.of(new ContainerBaseResponse()));
     containerListResponse.setTotalPages(1);
     containerListResponse.setNumberOfRecords(1L);
 
@@ -163,7 +163,7 @@ class ContainerV3ControllerTest {
     // Arrange
     ListCommonRequest listCommonRequest = new ListCommonRequest();
 
-    ContainerBaseV3Response container = new ContainerBaseV3Response();
+    ContainerBaseResponse container = new ContainerBaseResponse();
     ContainerListResponse mockResponse = new ContainerListResponse();
     mockResponse.setContainers(List.of(container));
     mockResponse.setTotalPages(2);
