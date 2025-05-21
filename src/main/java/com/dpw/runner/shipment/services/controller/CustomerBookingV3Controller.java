@@ -259,7 +259,6 @@ public class CustomerBookingV3Controller {
     @PutMapping(ApiConstants.BOOKING_API_UPDATE_PARTIES)
     public ResponseEntity<IRunnerResponse> updateBookingParties(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
         return ResponseHelper.buildSuccessResponse(partiesV3Service.update(partiesRequest));
-
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PartiesConstants.PARTIES_DELETE_SUCCESSFUL, response = PartiesResponse.class)})

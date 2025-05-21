@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.*;
@@ -870,10 +869,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private Optional<CustomerBooking> getValidatedCustomerBooking(long id) {
-        if (!Objects.nonNull(id)) {
-            log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("Booking Id cannot be null");
-        }
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
         if(customerBooking.isEmpty())
         {
@@ -1454,6 +1449,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         };
     }
 
+    //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(CustomerBookingV3Response customerBookingResponse) {
         try {
             // Preprocessing
@@ -1490,6 +1486,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     }
 
+    //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllLocationDataInSingleCall(CustomerBookingV3Response customerBookingResponse) {
         try {
             // Preprocessing
@@ -1516,6 +1513,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleCall(CustomerBookingV3Response customerBookingResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();

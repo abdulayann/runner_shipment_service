@@ -286,6 +286,102 @@ public class CargoServiceTest {
     }
 
     @Test
+    void testGetCargoDetailsForCustomerBooking_WithContainersAndPackings_ForSeaTransport() throws RunnerException {
+        CargoDetailsRequest request = new CargoDetailsRequest();
+        request.setEntityId("1");
+        request.setEntityType("BOOKING");
+
+        CustomerBooking booking = new CustomerBooking();
+        booking.setTransportType("AIR");
+        booking.setCargoType("LCL");
+        Containers container = new Containers();
+        container.setContainerCode("20GP");
+        container.setContainerCount(2L);
+        booking.setContainersList(List.of(container));
+        booking.setTransportType("SEA");
+
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.valueOf(100));
+        packing.setWeightUnit("KG");
+        packing.setVolume(BigDecimal.valueOf(2));
+        packing.setVolumeUnit("M3");
+        packing.setPacks("10");
+        booking.setPackingList(List.of(packing));
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("20GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
+        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
+
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
+
+        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
+        vwOb.setChargeable(BigDecimal.valueOf(100));
+        vwOb.setChargeableUnit("KG");
+        vwOb.setVolumeWeight(BigDecimal.valueOf(150));
+        vwOb.setVolumeWeightUnit("KG");
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+
+        CargoDetailsResponse response = cargoService.getCargoDetails(request);
+
+        assertEquals(2, response.getContainers());
+        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
+        assertEquals(BigDecimal.valueOf(100), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(10, response.getNoOfPacks());
+        assertEquals(BigDecimal.valueOf(2.0), response.getChargable());
+        assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
+        assertEquals("KG", response.getVolumetricWeightUnit());
+    }
+
+    @Test
+    void testGetCargoDetailsForCustomerBooking_WithContainersAndPackings_WithNullSeaTransport() throws RunnerException {
+        CargoDetailsRequest request = new CargoDetailsRequest();
+        request.setEntityId("1");
+        request.setEntityType("BOOKING");
+
+        CustomerBooking booking = new CustomerBooking();
+        booking.setTransportType("AIR");
+        booking.setCargoType("LCL");
+        Containers container = new Containers();
+        container.setContainerCode("20GP");
+        container.setContainerCount(2L);
+        booking.setContainersList(List.of(container));
+        booking.setTransportType(null);
+
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.valueOf(100));
+        packing.setWeightUnit("KG");
+        packing.setVolume(BigDecimal.valueOf(2));
+        packing.setVolumeUnit("M3");
+        packing.setPacks("10");
+        booking.setPackingList(List.of(packing));
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("20GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
+        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
+
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
+
+        CargoDetailsResponse response = cargoService.getCargoDetails(request);
+
+        assertEquals(2, response.getContainers());
+        assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
+        assertEquals(BigDecimal.valueOf(100), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(10, response.getNoOfPacks());
+    }
+
+    @Test
     void testGetCargoDetailsForShipment_WithContainersAndPackings() throws RunnerException {
         CargoDetailsRequest request = new CargoDetailsRequest();
         request.setEntityId("1");
