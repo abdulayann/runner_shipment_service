@@ -2,9 +2,11 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -32,6 +34,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IV1Service v1Service;
     @Autowired
@@ -71,6 +75,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
         } else if (Objects.equals(message.getParentEntityName(), Constants.CONTAINER)) {
             this.pushContainerData(message, transactionId);
+        } else if(Objects.equals(message.getParentEntityName(), Constants.CUSTOMER_BOOKING)) {
+            this.pushCustomerBookingDataToPlatform(message, transactionId);
         }
     }
 
@@ -105,6 +111,22 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         producer.produceToKafka(message, containerKafkaQueue, transactionId);
         log.info("[InternalKafkaConsume] Kafka message sent to queue='{}' | transactionId={}",
                 containerKafkaQueue, transactionId);
+    }
+
+    @Override
+    public void pushCustomerBookingDataToPlatform(PushToDownstreamEventDto downstreamEventDto, String transactionId) {
+        Integer tenantId = downstreamEventDto.getMeta().getTenantId();
+        TenantContext.setCurrentTenant(tenantId);
+        Optional<CustomerBooking> customerBooking = customerBookingDao.findById(downstreamEventDto.getParentEntityId());
+        if(customerBooking.isEmpty()) {
+            log.info("[InternalKafkaConsume] Customer Booking: {} | transactionId={} not found.", downstreamEventDto.getParentEntityId(), transactionId);
+            return;
+        }
+        log.info("[InternalKafkaConsume] Initiating booking creation in platform with payload: {} | transactionId={}", jsonHelper.convertToJson(customerBooking.get()), transactionId);
+        // Create at platform
+        bookingIntegrationsUtility.createBookingInPlatform(customerBooking.get());
+
+        log.info("[InternalKafkaConsume] Customer booking creation done at platform | transactionId={}", transactionId);
     }
 
     private void pushShipmentData(Long entityId, boolean isCreate, boolean isAutoSellRequired) {
