@@ -706,7 +706,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (Boolean.TRUE.equals(shipmentRequest.getIsChargableEditable())) {
             shipmentDetails.setChargable(shipmentRequest.getChargable());
         }
-        validateBeforeSave(shipmentDetails);
+        validateBeforeSave(shipmentDetails, oldEntity);
 
         processBranchesAndPartner(shipmentDetails);
 
@@ -1219,7 +1219,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setDocumentationPartner(null);
     }
 
-    protected void validateBeforeSave(ShipmentDetails shipmentDetails) {
+    protected void validateBeforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
             throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
 
@@ -1230,6 +1230,23 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))) {
                 shipmentDetails.setHouseBill(null);
             }
+        }
+
+        // Validation for Partner fields for 'STD' Shipment
+        this.validationForPartnerFields(shipmentDetails, oldEntity);
+
+    }
+
+    private void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
+        String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
+        String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);
+        String masterBill = Optional.ofNullable(oldEntity).map(ShipmentDetails::getMasterBill).orElse(null);
+        if(!Objects.equals(shipmentDetails.getCoLoadBlNumber(), coloadBlNumber) || !Objects.equals(shipmentDetails.getCoLoadBkgNumber(), coloadBkgNumber)) {
+            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent BkgNumber, BL No/AWB No. for STD shipments");
+        }
+        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
+            throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
         }
     }
 

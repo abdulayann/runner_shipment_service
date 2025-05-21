@@ -2653,7 +2653,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsignee(consignee);
 
         assertThrows(ValidationException.class, () -> {
-            shipmentServiceImplV3.validateBeforeSave(shipment);
+            shipmentServiceImplV3.validateBeforeSave(shipment, null);
         });
     }
 
@@ -2664,7 +2664,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setTransportMode("ROAD");
         shipment.setMasterBill("MASTER-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("MASTER-BILL", shipment.getHouseBill());
     }
@@ -2679,7 +2679,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         shipment.setConsigner(null); // Null consignor
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
     }
 
     @Test
@@ -2690,7 +2690,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("ORIGINAL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("ORIGINAL", shipment.getHouseBill()); // unchanged
     }
@@ -2703,7 +2703,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER-BILL");
         shipment.setHouseBill("HOUSE-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("HOUSE-BILL", shipment.getHouseBill()); // unchanged
     }
@@ -2716,7 +2716,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER-BILL");
         shipment.setHouseBill("HOUSE-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertNull(shipment.getHouseBill());
     }
@@ -2727,12 +2727,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsigner(new Parties());
         shipment.setConsignee(null); // Consignee is null
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
     }
 
     @Test
     void testValidateBeforeSave_withNullOrgCodes_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
+        ShipmentDetails oldEntity = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -2742,7 +2743,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, oldEntity));
     }
 
     @Test
@@ -2753,7 +2754,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2766,7 +2767,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2779,7 +2780,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2791,7 +2792,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         details.setTransportMode("AIRSEA"); // not AIR, not SEA, not null
         details.setMasterBill("MBL123");
 
-        shipmentServiceImplV3.validateBeforeSave(details);
+        shipmentServiceImplV3.validateBeforeSave(details, null);
 
         assertEquals("MBL123", details.getHouseBill());
     }
