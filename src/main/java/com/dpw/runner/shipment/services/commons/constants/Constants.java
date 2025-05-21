@@ -644,6 +644,9 @@ public class Constants {
     public static final String TESLA = "Tesla";
     public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
     public static final String CONTAINS = "CONTAINS";
+    public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
+    public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
+    public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
 
     private Constants() {
     }

@@ -1,25 +1,39 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto.Triggers;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
 import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +62,12 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     private KafkaProducer producer;
     @Value("${containersKafka.queue}")
     private String containerKafkaQueue;
+    @Value("${consolidationsKafka.queue}")
+    private String consolidationKafkaQueue;
+    @Autowired
+    private IConsolidationV3Service consolidationV3Service;
+    @Autowired
+    private ITrackingServiceAdapter trackingServiceAdapter;
 
     @Transactional
     @Override
@@ -69,8 +89,18 @@ public class PushToDownstreamService implements IPushToDownstreamService {
                 });
             }
 
-        } else if (Objects.equals(message.getParentEntityName(), Constants.CONTAINER)) {
-            this.pushContainerData(message, transactionId);
+        } else if (Constants.CONTAINER.equalsIgnoreCase(message.getParentEntityName())) {
+            if (Constants.CONTAINER_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+                this.pushContainerData(message, transactionId);
+            }
+        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(message.getParentEntityName())) {
+            if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+                this.pushConsolidationData(message, transactionId);
+            }
+            if (Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+                this.pushConsolidationDataToTracking(message, transactionId);
+            }
+
         }
     }
 
@@ -105,6 +135,100 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         producer.produceToKafka(message, containerKafkaQueue, transactionId);
         log.info("[InternalKafkaConsume] Kafka message sent to queue='{}' | transactionId={}",
                 containerKafkaQueue, transactionId);
+        TenantContext.removeTenant();
+    }
+
+    @Override
+    public void pushConsolidationData(PushToDownstreamEventDto eventDto, String transactionId) {
+        Long parentEntityId = eventDto.getParentEntityId();
+        Boolean isCreate = eventDto.getMeta().getIsCreate();
+        Integer tenantId = eventDto.getMeta().getTenantId();
+
+        TenantContext.setCurrentTenant(tenantId);
+
+        Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
+
+        if (consolidationDetailsOpt.isPresent()) {
+            ConsolidationDetails consolidationDetails = consolidationDetailsOpt.get();
+
+            if (consolidationDetails.getTenantId() == null) {
+                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
+            }
+
+            // block 1
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(consolidationDetails, isCreate);
+            kafkaResponse.setTransactionId(UUID.randomUUID().toString());
+            log.info("Producing consolidation data to kafka with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), consolidationKafkaQueue, StringUtility.convertToString(consolidationDetails.getGuid()));
+
+            // block 2
+            if (consolidationDetails.getShipmentsList() != null) {
+                List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+                if (!shipmentIds.isEmpty()) {
+                    List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+                    for (ShipmentDetails shipment : shipments) {
+                        dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
+                    }
+                }
+            }
+
+            // block 3
+            List<Events> events = trackingServiceAdapter.getAllEvents(null, consolidationDetails, consolidationDetails.getReferenceNumber());
+            UniversalEventsPayload universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(consolidationDetails.getReferenceNumber(), Constants.CONSOLIDATION,
+                    consolidationDetails.getConsolidationNumber(), events);
+            List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads = new ArrayList<>();
+            if (universalEventsPayload != null) {
+                trackingPayloads.add(universalEventsPayload);
+                String jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                log.info("Producing tracking service payload from consolidation with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
+            }
+        }
+        TenantContext.removeTenant();
+    }
+
+    @Override
+    public void pushConsolidationDataToTracking(PushToDownstreamEventDto eventDto, String transactionId) {
+        Long parentEntityId = eventDto.getParentEntityId();
+        Boolean isCreate = eventDto.getMeta().getIsCreate();
+        Integer tenantId = eventDto.getMeta().getTenantId();
+
+        TenantContext.setCurrentTenant(tenantId);
+
+        Optional<ConsolidationDetails> consolidationDetailsOpt = consolidationV3Service.findById(parentEntityId);
+
+        if (consolidationDetailsOpt.isPresent()) {
+            ConsolidationDetails consolidationDetails = consolidationDetailsOpt.get();
+
+            if (consolidationDetails.getTenantId() == null) {
+                consolidationDetails.setTenantId(TenantContext.getCurrentTenant());
+            }
+
+            if (trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
+
+                List<Triggers> triggers = eventDto.getTriggers();
+                Set<Long> shipmentIds = triggers.stream().map(Triggers::getEntityId).collect(Collectors.toSet());
+                List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(shipmentIds);
+
+                for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                    UniversalTrackingPayload payload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
+                            consolidationDetails, shipmentDetails);
+                    List<UniversalTrackingPayload> payloadList = new ArrayList<>();
+                    if (payload != null) {
+                        payloadList.add(payload);
+                        var jsonBody = jsonHelper.convertToJson(payloadList);
+                        log.info(
+                                "Producing tracking service payload from consolidation with RequestId: {} and payload: {}",
+                                LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                        trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,
+                                false);
+                    }
+                }
+            }
+
+
+        }
+        TenantContext.removeTenant();
     }
 
     private void pushShipmentData(Long entityId, boolean isCreate, boolean isAutoSellRequired) {
