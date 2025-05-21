@@ -777,6 +777,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.updateSailingScheduleRelatedInfoForAir(consolidationId, request.getLatestArrivalTime());
     }
 
+    @Override
+    public String getBookingNumberFromConsol(Long consolidationId) {
+        return consolidationRepository.getBookingNumberFromConsol(consolidationId);
+    }
+
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole) {
         errors.addAll(applyConsolidationValidationsV3(consolidationDetails));
         if (!errors.isEmpty())
