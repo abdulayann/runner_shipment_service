@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,6 +30,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
+    @Size(max = 50, message = "Max size is 50 for bookingNumber")
     private String bookingNumber;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String bookingReference;
@@ -69,6 +71,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String lockedBy;
     private String marksNum;
     @JsonDeserialize(using = TrimStringDeserializer.class)
+    @Size(max = 50, message = "Max size is 50 for masterBill")
     private String masterBill;
     private BigDecimal netWeight;
     private String netWeightUnit;
@@ -174,6 +177,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
 
     private Boolean isCoLoadEnabled;
     private String coLoadCarrierName;
+    @Size(max = 50, message = "Max size is 50 for coLoadBlNumber")
     private String coLoadBlNumber;
 
     private String issuingCarrierName;
@@ -181,12 +185,15 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private UUID customerBookingGuid;
     private Boolean isFrob;
     private Boolean isReefer;
+    @Size(max = 50, message = "Max size is 50 for incotermsLocation")
     private String incotermsLocation;
     private LocalDateTime cargoReadinessDate;
     private Boolean controlled;
+    @Size(max = 50, message = "Max size is 50 for controlledReferenceNumber")
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
+    @Size(max = 50, message = "Max size is 50 for coLoadBkgNumber")
     private String coLoadBkgNumber;
     private String pickupAtOriginType;
     private String deliveryAtDestinationType;
