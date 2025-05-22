@@ -59,7 +59,7 @@ public interface IPackingDao {
     PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId);
 
     PackingAssignmentProjection getPackingAssignmentCountByShipmentIn(List<Long> shipmentIds);
-
+    PackingAssignmentProjection getPackingAssignmentCountByShipmentAndTenant(Long shipmentIds, Integer tenantId);
     List<Packing> findByShipmentId(Long shipmentId);
     List<Packing> findByShipmentIdInAndContainerId(List<Long> shipmentIds, Long containerId);
 
@@ -71,4 +71,6 @@ public interface IPackingDao {
 
     List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
     void setPackingIdsToContainer(List<Long> packingIds, Long containerId);
+
+    PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer currentTenant);
 }

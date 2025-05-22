@@ -577,4 +577,13 @@ public class PackingDao implements IPackingDao {
         return packingRepository.getPackingAssignmentCountByShipmentIn(shipmentIds);
     }
 
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentAndTenant(Long shipmentIds, Integer tenantId) {
+        return packingRepository.getPackingAssignmentCountByShipmentAndTenant(shipmentIds, tenantId);
+    }
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer tenantId) {
+        return packingRepository.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, tenantId);
+    }
+
 }

@@ -67,4 +67,6 @@ public interface IShipmentDao {
     void updateSailingScheduleRelatedInfo(ShipmentSailingScheduleRequest request, Long shipmentId);
 
     void updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest request, Long shipmentId);
+
+    List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
 }

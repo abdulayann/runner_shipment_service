@@ -899,4 +899,9 @@ public class ShipmentDao implements IShipmentDao {
     public void updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest request, Long shipmentId) {
         shipmentRepository.updateSailingScheduleRelatedInfoForAir(shipmentId, request.getLatestArrivalTime());
     }
+
+    @Override
+    public List<ShipmentDetails> findByIdIn(List<Long> shipmentIds) {
+        return shipmentRepository.findAllById(shipmentIds);
+    }
 }
