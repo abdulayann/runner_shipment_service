@@ -88,7 +88,10 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void list_Success() throws RunnerException {
-        when(customerBookingV3Service.list(any())).thenReturn(new CustomerBookingV3ListResponse());
+        CustomerBookingV3ListResponse customerBookingV3ListResponse = new CustomerBookingV3ListResponse();
+        customerBookingV3ListResponse.setTotalPages(10);
+        customerBookingV3ListResponse.setTotalCount(247L);
+        when(customerBookingV3Service.list(any())).thenReturn(customerBookingV3ListResponse);
         var response = customerBookingV3Controller.list(new ListCommonRequest());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
