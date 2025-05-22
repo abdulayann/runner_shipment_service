@@ -115,7 +115,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     @Query(value = "SELECT sd.id as id, "
-            + " sd.shipment_id as shipmentId, "
+            + " sd.shipment_id as shipmentNumber, "
             + " scm.container_id as containerId, "
             + " sd.shipment_type as shipmentType"
             + " FROM shipment_details sd"
