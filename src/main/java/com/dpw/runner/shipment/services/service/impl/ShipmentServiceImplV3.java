@@ -1716,6 +1716,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
+    public List<ShipmentDetails> findByIdIn(List<Long> shipmentIds) {
+        return shipmentDao.findByIdIn(shipmentIds);
+    }
+
+    @Override
     public ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
         Set<ConsolidationDetailsRequest> consolidationDetails = new HashSet<>();
         Set<ContainerRequest> containerList = new HashSet<>();

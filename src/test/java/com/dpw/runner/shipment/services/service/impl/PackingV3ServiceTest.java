@@ -65,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -486,7 +487,7 @@ class PackingV3ServiceTest extends CommonMocks {
         Page<Packing> page = new PageImpl<>(List.of(packing));
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
-        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projection);
+        when(packingDao.getPackingAssignmentCountByShipmentAndTenant(anyLong(), anyInt())).thenReturn(projection);
 
         PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, null);
 
@@ -507,7 +508,7 @@ class PackingV3ServiceTest extends CommonMocks {
         Page<Packing> page = new PageImpl<>(List.of(packing));
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
-        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projectionMock);
+        when(packingDao.getPackingAssignmentCountByShipmentAndTenant(anyLong(), anyInt())).thenReturn(projectionMock);
 
         PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, null);
 
