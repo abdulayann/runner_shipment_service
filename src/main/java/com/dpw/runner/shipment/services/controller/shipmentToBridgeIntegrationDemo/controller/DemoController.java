@@ -21,6 +21,6 @@ public class DemoController {
     public String receivePayload(@RequestBody RootPayload payload) throws JsonProcessingException {
         String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(payload);
         log.info("Received Payload:\n" + json);
-        return "Payload received and printed to console.";
+        return "Payload received and printed to console: " + json;
     }
 }
