@@ -69,8 +69,6 @@ public interface IPackingDao {
 
     Page<Packing> findAllWithoutTenantFilter(Specification<Packing> spec, Pageable pageable);
 
-    PackingAssignmentProjection getPackingAssignmentCountByConsolidation(Long consolId);
-
     List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
     void setPackingIdsToContainer(List<Long> packingIds, Long containerId);
 }

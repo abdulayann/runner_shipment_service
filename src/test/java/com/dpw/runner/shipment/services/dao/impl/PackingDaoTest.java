@@ -844,19 +844,6 @@ class PackingDaoTest {
     }
 
     @Test
-    void getPackingAssignmentCountByConsolidation() {
-        Long consolId = 200L;
-        PackingAssignmentProjection projection = mock(PackingAssignmentProjection.class);
-
-        when(packingRepository.getPackingAssignmentCountByConsolidation(consolId)).thenReturn(projection);
-
-        PackingAssignmentProjection result = packingDao.getPackingAssignmentCountByConsolidation(consolId);
-
-        assertEquals(projection, result);
-        verify(packingRepository).getPackingAssignmentCountByConsolidation(consolId);
-    }
-
-    @Test
     void findByContainerIdIn() {
         List<Long> containerIds = List.of(1L, 2L);
         List<Packing> expectedPackings = List.of(testPacking);

@@ -577,10 +577,4 @@ public class PackingDao implements IPackingDao {
         return packingRepository.getPackingAssignmentCountByShipmentIn(shipmentIds);
     }
 
-    @Override
-    public PackingAssignmentProjection getPackingAssignmentCountByConsolidation(Long consolId) {
-        return packingRepository.getPackingAssignmentCountByConsolidation(consolId);
-    }
-
-
 }

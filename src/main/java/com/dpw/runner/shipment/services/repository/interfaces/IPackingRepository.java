@@ -59,32 +59,39 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
         return findAll(spec, pageable);
     }
 
-    @Query("""
+    @Query(value = """
     SELECT
-        SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
-        SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
-    FROM Packing p
-    WHERE p.shipmentId = :shipmentId
-    """)
+        SUM(CASE
+                WHEN p.container_id IS NOT NULL AND p.container_id > 0
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS assignedCount,
+        SUM(CASE
+                WHEN p.container_id IS NULL
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS unassignedCount
+    FROM packing p
+    WHERE p.shipment_id = ?1
+    """, nativeQuery = true)
     PackingAssignmentProjection getPackingAssignmentCountByShipment(@Param("shipmentId") Long shipmentId);
 
-    @Query("""
+    @Query(value = """
     SELECT
-        SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
-        SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
-    FROM Packing p
-    WHERE p.shipmentId IN :shipmentIds
-    """)
+        SUM(CASE
+                WHEN p.container_id IS NOT NULL AND p.container_id > 0
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS assignedCount,
+        SUM(CASE
+                WHEN p.container_id IS NULL
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS unassignedCount
+    FROM packing p
+    WHERE p.shipment_id IN ?1
+    """, nativeQuery = true)
     PackingAssignmentProjection getPackingAssignmentCountByShipmentIn(@Param("shipmentIds") List<Long> shipmentIds);
-
-    @Query("""
-            SELECT
-                SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
-                SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
-            FROM Packing p
-            WHERE p.consolidationId = :consolId
-            """)
-    PackingAssignmentProjection getPackingAssignmentCountByConsolidation(@Param("consolId") Long consolId);
 
     @ExcludeTenantFilter
     default PackingAssignmentProjection getPackingAssignmentCountByShipmentWithoutTenantFilter(@Param("shipmentId") Long shipmentId){
