@@ -70,6 +70,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -1491,20 +1492,33 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     /**
-     * Calculates achieved weight and volume values for all shipments under a consolidation, computes chargeable weight, updates allocations, and prepares summary response.
+     * Calculates the achieved weight and volume for shipments in a consolidation,
+     * determines chargeable weight, updates allocations, and prepares a summary response.
      *
-     * @param consolidationId the ID of the consolidation to calculate for
-     * @return {@link ShipmentGridChangeV3Response} containing updated shipment summary
-     * @throws RunnerException in case of data fetching or computation issues
+     * <p>If no specific shipment IDs are provided, the method calculates for all shipments
+     * under the given consolidation. Otherwise, it calculates for the provided subset of shipments.</p>
+     *
+     * @param request the request containing the consolidation ID and optional list of shipment IDs
+     * @return {@link ShipmentGridChangeV3Response} containing the updated shipment summary
+     * @throws RunnerException if there's an error during data retrieval or calculation
      */
     @Override
-    public ShipmentGridChangeV3Response calculateAchievedValues(Long consolidationId) throws RunnerException {
+    public ShipmentGridChangeV3Response calculateAchievedValues(CalculateAchievedValueRequest request) throws RunnerException {
         ShipmentGridChangeV3Response response = new ShipmentGridChangeV3Response();
-        ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
+        ConsolidationDetails consolidationDetails = fetchConsolidationDetails(request.getConsolidationId());
 
-        // Perform the main logic for calculating achieved values and update the response
-        calculateAchievedValues(consolidationDetails, response, consolidationDetails.getShipmentsList());
+        Set<ShipmentDetails> shipmentsToCalculate;
 
+        if (ObjectUtils.isEmpty(request.getShipmentIds())) {
+            // Calculate for all shipments under consolidation
+            shipmentsToCalculate = new HashSet<>(consolidationDetails.getShipmentsList());
+        } else {
+            // Fetch and calculate only for specified shipment IDs
+            List<ShipmentDetails> shipmentDetailsList = shipmentV3Service.getShipmentsFromId(new ArrayList<>(request.getShipmentIds()));
+            shipmentsToCalculate = new HashSet<>(shipmentDetailsList);
+        }
+
+        calculateAchievedValues(consolidationDetails, response, shipmentsToCalculate);
         return response;
     }
 
@@ -3571,7 +3585,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);
-        calculateAchievedValues(consolidationId);
+        CalculateAchievedValueRequest request = CalculateAchievedValueRequest.builder()
+                .consolidationId(consolidationId).build();
+        calculateAchievedValues(request);
 
         return warning;
     }
