@@ -12,8 +12,8 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
@@ -152,4 +152,15 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
                 consolidationListV3Response.getNumberOfRecords());
     }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful Consolidation Attachment Flag Update"),
+            @ApiResponse(code = 400, message = "Invalid input - enableFlag cannot be null")
+    })
+    @PostMapping(value = ApiConstants.ATTACHMENT_FLAG)
+    public ResponseEntity<IRunnerResponse> updateConsolidationAttachmentFlag(@RequestParam Boolean enableFlag, @RequestParam Long consolId) {
+        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolId);
+        return ResponseHelper.buildSuccessResponse();
+    }
+
 }

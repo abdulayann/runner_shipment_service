@@ -3975,6 +3975,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     return consolidationDetailsDao.getBookingNumberFromConsol(consolidationId);
   }
 
+    @Override
+    public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
+        try {
+            if (enableFlag == null) {
+                throw new IllegalArgumentException("enableFlag cannot be null");
+            }
+            consolidationDetailsDao.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
     private boolean canProcesscutOffFields(ConsolidationDetails consol, ConsolidationDetails oldEntity) {
         return !Objects.equals(consol.getTerminalCutoff(), oldEntity.getTerminalCutoff()) ||
             !Objects.equals(consol.getVerifiedGrossMassCutoff(), oldEntity.getVerifiedGrossMassCutoff()) ||

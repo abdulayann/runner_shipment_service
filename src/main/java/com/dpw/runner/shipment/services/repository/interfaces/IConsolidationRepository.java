@@ -174,4 +174,13 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
 
     @Query(value = "SELECT bookingNumber FROM ConsolidationDetails WHERE id = :consolidationId")
     String getBookingNumberFromConsol(@Param("consolidationId") Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query("""
+            UPDATE ConsolidationDetails s
+            SET s.openForAttachment = :enableFlag
+            WHERE s.id = :consolidationId
+            """)
+    void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
 }
