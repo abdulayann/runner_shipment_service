@@ -95,11 +95,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
-import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -577,16 +574,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             .sourceInfo(sourceInfo)
                             .tenantId(consolidationDetails.getTenantId()).build()).build();
 
-            List<Triggers> triggers = new ArrayList<>();
+            if(ObjectUtils.isNotEmpty(shipmentDetailsList)) {
+                List<Triggers> triggers = new ArrayList<>();
 
-            for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                Triggers vTrigger = Triggers.builder()
-                        .entityId(shipmentDetails.getId())
-                        .entityName(SHIPMENT).build();
-                triggers.add(vTrigger);
+                for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                    Triggers vTrigger = Triggers.builder()
+                            .entityId(shipmentDetails.getId())
+                            .entityName(SHIPMENT).build();
+                    triggers.add(vTrigger);
+                }
+                pushToDownstreamEventDto.setTriggers(triggers);
             }
-            pushToDownstreamEventDto.setTriggers(triggers);
-
         } else if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(sourceInfo)) {
             pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                     .parentEntityId(consolidationDetails.getId())
@@ -1400,12 +1398,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private List<ShipmentDetails> findContainerNumberChangeShipment(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
         List<Containers> containersList = consolidationDetails.getContainersList();
         List<Containers> oldContainerList = oldEntity.getContainersList();
+        Map<Long, String> oldContainerMap = new HashMap<>();
+        Map<Long, String> containerMap = new HashMap<>();
 
-        Map<Long, String> oldContainerMap = oldContainerList.stream()
-                .collect(toMap(Containers::getId, Containers::getContainerNumber));
+        if(ObjectUtils.isNotEmpty(oldContainerList)) {
+            oldContainerMap = oldContainerList.stream()
+                    .collect(toMap(Containers::getId, Containers::getContainerNumber));
+        }
 
-        Map<Long, String> containerMap = containersList.stream()
-                .collect(toMap(Containers::getId, Containers::getContainerNumber));
+        if(ObjectUtils.isNotEmpty(containersList)) {
+            containerMap = containersList.stream()
+                    .collect(toMap(Containers::getId, Containers::getContainerNumber));
+        }
 
         List<Long> containerIds = new ArrayList<>();
         for(Long id : oldContainerMap.keySet()){
