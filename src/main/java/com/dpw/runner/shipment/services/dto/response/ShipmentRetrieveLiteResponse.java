@@ -242,4 +242,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private LocalDateTime latestArrivalTime;
     private Boolean isBorrowed;
     private Long containerAssignedToShipmentCargo;
+    private Long consolidationId;
+    private String consolBookingNumber;
 }

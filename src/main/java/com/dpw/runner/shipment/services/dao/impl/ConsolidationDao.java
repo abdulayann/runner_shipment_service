@@ -777,6 +777,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.updateSailingScheduleRelatedInfoForAir(consolidationId, request.getLatestArrivalTime());
     }
 
+    @Override
+    public String getBookingNumberFromConsol(Long consolidationId) {
+        return consolidationRepository.getBookingNumberFromConsol(consolidationId);
+    }
+
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole) {
         errors.addAll(applyConsolidationValidationsV3(consolidationDetails));
         if (!errors.isEmpty())
@@ -807,13 +812,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
-            addAirCargoSecurityValidationsErrors(request, errors);
+            addAirCargoSecurityValidationsErrorsV3(request, errors);
         } else {
-            addNonDgValidationsErrors(request, shipmentSettingsDetails, errors);
+            addNonDgValidationsErrorsV3(request, shipmentSettingsDetails, errors);
         }
-
-        // Container Number can not be repeated
-        addContainerNumberValidationErrors(request, errors);
 
         // MBL number must be unique
         addMBLNumberValidationErrors(request, errors);
@@ -832,7 +834,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return errors;
     }
 
-    private void addAirCargoSecurityValidationsErrors(ConsolidationDetails request, Set<String> errors) {
+    private void addAirCargoSecurityValidationsErrorsV3(ConsolidationDetails request, Set<String> errors) {
         if (!CommonUtils.checkAirSecurityForConsolidation(request)) {
             errors.add("You don't have Air Security permission to create or update AIR EXP Consolidation.");
         }
@@ -857,7 +859,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private void addNonDgValidationsErrors(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+    private void addNonDgValidationsErrorsV3(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         // Non dg consolidation validations
         if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
             // Non dg Consolidations can not have dg shipments

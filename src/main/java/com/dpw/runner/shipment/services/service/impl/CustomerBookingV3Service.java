@@ -29,11 +29,13 @@ import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -82,6 +84,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
+
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -190,13 +195,34 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                     && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(customerBooking)), executorService);
+                // Triggering Event for customer booking for DependentServices update
+                triggerPushToDownStreamForCustomerBooking(customerBooking);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
+    }
+
+    private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking) {
+        Long bookingId = customerBooking.getId();
+        String transactionId = bookingId.toString();
+
+        log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | bookingId={} | transactionId={}",
+                bookingId, transactionId);
+
+        PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
+                .parentEntityId(bookingId)
+                .parentEntityName(Constants.CUSTOMER_BOOKING)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .tenantId(customerBooking.getTenantId())
+                        .isCreate(true).build())
+                .build();
+        dependentServiceHelper.pushToKafkaForDownStream(pushToDownstreamEventDto, transactionId);
+
+        log.info("[InternalKafkaPush] Message successfully pushed to internal Kafka | bookingId={} | transactionId={}",
+               bookingId, bookingId);
     }
 
     @Override
@@ -241,8 +267,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
                     && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
-                CustomerBooking finalCustomerBooking = customerBooking;
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
+
+                // Triggering Event for customer booking for DependentServices update
+                triggerPushToDownStreamForCustomerBooking(customerBooking);
             }
         } catch (Exception e) {
             log.error(e.getMessage());

@@ -7,4 +7,6 @@ public interface IPushToDownstreamService {
     void process(PushToDownstreamEventDto message, String transactionId);
 
     void pushContainerData(PushToDownstreamEventDto eventDto, String transactionId);
+
+    void pushCustomerBookingDataToPlatform(PushToDownstreamEventDto downstreamEventDto, String transactionId);
 }
