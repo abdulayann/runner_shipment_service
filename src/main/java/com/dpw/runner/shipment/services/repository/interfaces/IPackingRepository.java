@@ -69,6 +69,15 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     PackingAssignmentProjection getPackingAssignmentCountByShipment(@Param("shipmentId") Long shipmentId);
 
     @Query("""
+    SELECT
+        SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
+        SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
+    FROM Packing p
+    WHERE p.shipmentId IN :shipmentIds
+    """)
+    PackingAssignmentProjection getPackingAssignmentCountByShipmentIn(@Param("shipmentIds") List<Long> shipmentIds);
+
+    @Query("""
             SELECT
                 SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
                 SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
