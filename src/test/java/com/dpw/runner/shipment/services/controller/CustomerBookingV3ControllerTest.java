@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
@@ -27,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -135,6 +138,13 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
+    void createBookingContainers() {
+        when(containerV3Service.create(any(), any())).thenReturn(new ContainerResponse());
+        var responseEntity = customerBookingV3Controller.createBookingContainers(new ContainerV3Request());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void updateBookingContainers() {
         when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
         var responseEntity = customerBookingV3Controller.updateBookingContainers(List.of(new ContainerV3Request()));
@@ -156,7 +166,7 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void addBookingPackages() throws RunnerException {
+    void createBookingPackages() throws RunnerException {
         when(packingV3Service.create(any(), any())).thenReturn(new PackingResponse());
         var responseEntity = customerBookingV3Controller.createBookingPackages(new PackingV3Request());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -180,6 +190,62 @@ class CustomerBookingV3ControllerTest {
     void deleteBookingPackages() throws RunnerException {
         when(packingV3Service.deleteBulk(any(),any())).thenReturn(new BulkPackingResponse());
         var responseEntity = customerBookingV3Controller.deleteBookingPackages(List.of(new PackingV3Request()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createBookingReferences() {
+        when(referenceNumbersV3Service.create(any())).thenReturn(new ReferenceNumbersResponse());
+        var responseEntity = customerBookingV3Controller.createBookingReferences(new ReferenceNumbersRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateBookingReferences() {
+        when(referenceNumbersV3Service.update(any())).thenReturn(new ReferenceNumbersResponse());
+        var responseEntity = customerBookingV3Controller.updateBookingReferences(new ReferenceNumbersRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void deleteBookingReferences() {
+        when(referenceNumbersV3Service.delete(any())).thenReturn(new ReferenceNumbersResponse());
+        var responseEntity = customerBookingV3Controller.deleteBookingReferences(new ReferenceNumbersRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listBookingReferences() {
+        when(referenceNumbersV3Service.list(any(), any())).thenReturn(new ArrayList<>());
+        var responseEntity = customerBookingV3Controller.listBookingReferences(new ListCommonRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createBookingParties() {
+        when(partiesV3Service.create(any())).thenReturn(new PartiesResponse());
+        var responseEntity = customerBookingV3Controller.createBookingParties(new PartiesRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateBookingParties() {
+        when(partiesV3Service.update(any())).thenReturn(new PartiesResponse());
+        var responseEntity = customerBookingV3Controller.updateBookingParties(new PartiesRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void deleteBookingParties() {
+        when(partiesV3Service.delete(any())).thenReturn(new PartiesResponse());
+        var responseEntity = customerBookingV3Controller.deleteBookingParties(new PartiesRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listBookingParties() {
+        when(partiesV3Service.list(any())).thenReturn(new ArrayList<>());
+        var responseEntity = customerBookingV3Controller.listBookingParties(new ListCommonRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 }

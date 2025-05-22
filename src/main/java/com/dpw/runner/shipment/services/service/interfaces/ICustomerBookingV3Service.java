@@ -16,7 +16,7 @@ public interface ICustomerBookingV3Service {
     CustomerBookingV3DeleteResponse delete(@Valid Long id) throws RunnerException;
     CustomerBookingV3ListResponse list(@Valid ListCommonRequest listCommonRequest) throws RunnerException;
     CustomerBookingV3Response retrieveById(CommonGetRequest request) throws RunnerException;
-    CustomerBookingV3Response cloneBooking(long id) throws RunnerException;
+    CustomerBookingV3Response cloneBooking(Long id) throws RunnerException;
     CustomerBookingV3Response retrieveByOrderId(String orderId) throws RunnerException;
     PlatformToRunnerCustomerBookingResponse platformCreateBooking(@Valid PlatformToRunnerCustomerBookingRequest request) throws RunnerException;
 }
