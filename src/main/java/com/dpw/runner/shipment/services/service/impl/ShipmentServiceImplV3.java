@@ -1589,7 +1589,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         Long containerId = null;
         for (int i = 0; i < expandedContainers.size(); i++) {
             Containers containers = expandedContainers.get(i);
-            containers.setAssigned(true);
             if (i == 0) {
                 containerV3Service.addShipmentCargoToContainerInCreateFromBooking(containers, customerBookingV3Request);
                 containerV3Util.setContainerNetWeight(containers);

@@ -2982,12 +2982,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         consolidationDetailsV3Response.getShipmentWtVolResponse().setVolumeUnit(volumeChargeableUnit);
         consolidationDetailsV3Response.getShipmentWtVolResponse().setPacks(packs);
         consolidationDetailsV3Response.getShipmentWtVolResponse().setPacksType(packsType);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setChargeable(vwOb.getChargeable());
+        consolidationDetailsV3Response.getShipmentWtVolResponse().setChargable(vwOb.getChargeable());
         consolidationDetailsV3Response.getShipmentWtVolResponse().setChargeableUnit(vwOb.getChargeableUnit());
         consolidationDetailsV3Response.getShipmentWtVolResponse().setWeightVolume(vwOb.getVolumeWeight());
         consolidationDetailsV3Response.getShipmentWtVolResponse().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setAssignedContainerCount(noOfCont);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setAssignedContainerTeu(teus);
+        consolidationDetailsV3Response.getShipmentWtVolResponse().setContainerCount(noOfCont);
+        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
     }
 
     @Override
