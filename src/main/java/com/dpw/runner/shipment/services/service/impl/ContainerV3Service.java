@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.response.AttachedShipmentResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
@@ -589,22 +590,26 @@ public class ContainerV3Service implements IContainerV3Service {
 
         List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
 
-        Map<Long, ShipmentDetailsProjection> containerIdToShipmentDetailsMap = attachedShipmentDetails.stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(
-                        ShipmentDetailsProjection::getContainerId,
-                        Function.identity(),
-                        (existing, replacement) -> existing
-                ));
+        Map<Long, List<ShipmentDetailsProjection>> containerIdToShipmentDetailsMap =
+                attachedShipmentDetails.stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.groupingBy(ShipmentDetailsProjection::getContainerId));
 
-        for (ContainerBaseResponse container : containers) {
-            ShipmentDetailsProjection details = containerIdToShipmentDetailsMap.get(container.getId());
-            if (details != null) {
-                container.setAttachedShipmentId(details.getId());
-                container.setAttachedShipmentNumber(details.getShipmentNumber());
-                container.setAttachedShipmentType(details.getShipmentType());
+        containers.forEach(container -> {
+            List<ShipmentDetailsProjection> details = containerIdToShipmentDetailsMap.get(container.getId());
+
+            if (ObjectUtils.isNotEmpty(details)) {
+                List<AttachedShipmentResponse> attachedShipmentResponseList = details.stream()
+                        .map(detail -> AttachedShipmentResponse.builder()
+                                .attachedShipmentId(detail.getId())
+                                .attachedShipmentNumber(detail.getShipmentNumber())
+                                .attachedShipmentType(detail.getShipmentType())
+                                .build())
+                        .collect(Collectors.toList());
+
+                container.setAttachedShipmentResponses(attachedShipmentResponseList);
             }
-        }
+        });
 
         return containerListResponse;
     }
