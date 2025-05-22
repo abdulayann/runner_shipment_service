@@ -131,7 +131,5 @@ public class ContainerBaseResponse implements IRunnerResponse {
     private BigDecimal humidity;
     private BigDecimal vents;
     private String assignedContainer;
-    private Long attachedShipmentId;
-    private String attachedShipmentNumber;
-    private String attachedShipmentType;
+    private List<AttachedShipmentResponse> attachedShipmentResponses;
 }
