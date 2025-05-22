@@ -34,6 +34,8 @@ public interface IShipmentServiceV3 {
 
     List<ShipmentDetailsProjection> findShipmentDetailsByAttachedContainerIds(List<Long> containerIds);
 
+    List<ShipmentDetails> getShipmentsFromId(List<Long> shipmentIds);
+
     NotificationCount getPendingNotificationCount();
 
     ResponseEntity<IRunnerResponse> listShipment(CommonRequestModel commonRequestModel, boolean getMasterData);
