@@ -616,7 +616,7 @@ public class PackingV3Service implements IPackingV3Service {
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
 
-        PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByConsolidation(Long.valueOf(listCommonRequest.getEntityId()));
+        PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByShipmentIn(shipmentIds);
         packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
         packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
         return packingListResponse;
@@ -724,14 +724,10 @@ public class PackingV3Service implements IPackingV3Service {
             updatePacksCount(sortedUnits, unitCountMap, packsCount, tenantSettings);
             PackingAssignmentProjection assignedPackages = null;
             if(module.equals(Constants.CONSOLIDATION)) {
-                if(TRANSPORT_MODE_SEA.equals(transportMode)) {
-                    List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
-                    if (!ObjectUtils.isEmpty(consolidationDetailsEntity)) {
-                        List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
-                        assignedPackages = packingDao.getPackingAssignmentCountByShipmentIn(shipmentIds);
-                    }
-                } else {
-                    assignedPackages = packingDao.getPackingAssignmentCountByConsolidation(consolidationId);
+                List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+                if (!ObjectUtils.isEmpty(consolidationDetailsEntity)) {
+                    List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
+                    assignedPackages = packingDao.getPackingAssignmentCountByShipmentIn(shipmentIds);
                 }
             }
             else
