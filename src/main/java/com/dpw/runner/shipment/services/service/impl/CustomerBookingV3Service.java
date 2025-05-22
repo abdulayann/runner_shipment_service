@@ -345,7 +345,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     @Override
-    public CustomerBookingV3Response cloneBooking(long id) throws RunnerException {
+    public CustomerBookingV3Response cloneBooking(Long id) throws RunnerException {
+        if(Objects.isNull(id)) {
+            log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Booking Id cannot be null");
+        }
         String responseMsg;
         try {
             Optional<CustomerBooking> customerBooking = getValidatedCustomerBooking(id);
