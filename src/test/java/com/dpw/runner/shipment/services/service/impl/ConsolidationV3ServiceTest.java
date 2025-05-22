@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
@@ -84,6 +86,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.PageImpl;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -595,6 +598,48 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     mockShipmentSettings();
     String res = consolidationV3Service.generateCustomBolNumber();
     assertEquals(14, res.length());
+  }
+
+  @Test
+  void testGetAutoAttachConsolidationDetails_Success() {
+    AutoAttachConsolidationV3Request request = new AutoAttachConsolidationV3Request();
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+    mockShipmentSettings();
+    ConsolidationListV3Response response = consolidationV3Service.getAutoAttachConsolidationDetails(commonRequestModel);
+    assertNotNull(response);
+  }
+
+  @Test
+  void testGetAutoAttachConsolidationDetails_Success2() {
+    AutoAttachConsolidationV3Request request = new AutoAttachConsolidationV3Request();
+    request.setDirection(Constants.IMP);
+    request.setShipId(1L);
+    request.setBranchIds(new ArrayList<>());
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+    mockShipmentSettings();
+    ConsolidationListV3Response response = consolidationV3Service.getAutoAttachConsolidationDetails(commonRequestModel);
+    assertNotNull(response);
+  }
+
+  @Test
+  void testGetAutoAttachConsolidationDetails_Success3() {
+    AutoAttachConsolidationV3Request request = new AutoAttachConsolidationV3Request();
+    request.setDirection(Constants.IMP);
+    request.setShipId(1L);
+    request.setBranchIds(new ArrayList<>());
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+    when(consoleShipmentMappingDao.findByShipmentIdAll(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build()));
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+    mockShipmentSettings();
+    ConsolidationListV3Response response = consolidationV3Service.getAutoAttachConsolidationDetails(commonRequestModel);
+    assertNotNull(response);
+  }
+
+  @Test
+  void testList() {
+    assertThrows(ValidationException.class, () -> consolidationV3Service.list(null, true));
   }
 
   @Test
