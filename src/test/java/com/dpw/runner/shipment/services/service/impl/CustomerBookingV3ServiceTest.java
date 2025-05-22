@@ -598,6 +598,98 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testPlatformCreateBookingV3_with_B2B_Source() throws RunnerException {
+        PlatformToRunnerCustomerBookingRequest request = new PlatformToRunnerCustomerBookingRequest();
+        request.setSource(BookingSource.B2B);
+        var container = BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build();
+        container.setGuid(UUID.randomUUID());
+        var addressDataMap = customerBooking.getCustomer().getAddressData();
+        var orgDataMap = customerBooking.getCustomer().getOrgData();
+        addressDataMap.put(PartiesConstants.ADDRESS2, "delhi");
+        addressDataMap.put(PartiesConstants.CITY, "New Delhi");
+        addressDataMap.put(PartiesConstants.STATE, "New Delhi");
+        addressDataMap.put(PartiesConstants.ZIP_POST_CODE, "110011");
+        addressDataMap.put(PartiesConstants.MOBILE, "9871413293");
+        addressDataMap.put(PartiesConstants.PHONE, "01198765432");
+        var containersList = List.of(
+                BookingContainerRequest.builder().containerCode("20GP").containerCount(1L).commodityGroup("FAK").runner_guid(UUID.randomUUID()).build(),
+                BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build(),
+                container
+        );
+        var pack = BookingPackingRequest.builder().dimensionUnit("M").isDimension(true).commodityGroup("FAK").build();
+        pack.setGuid(UUID.randomUUID());
+        var packingList = List.of(
+                BookingPackingRequest.builder().dimensionUnit("M").isDimension(true).commodityGroup("FAK").build(),
+                BookingPackingRequest.builder().dimensionUnit("M").isDimension(false).commodityGroup("FAK").build(),
+                pack
+        );
+        var route = BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("UIHJK").build();
+        route.setGuid(UUID.randomUUID());
+        var routingList = List.of(
+                BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("APLU").build(),
+                route
+        );
+        var chargesList = List.of(
+                PlatformBookingChargesRequest.builder()
+                        .creditor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .debtor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .build()
+        );
+        request.setContainersList(containersList);
+        request.setPackingList(packingList);
+        request.setRoutingList(routingList);
+        request.setBookingCharges(chargesList);
+        request.setVessel("Vessel");
+        request.setIsSingleUsageContract(true);
+        request.setIsConsignorFreeText(true);
+        request.setIsConsigneeFreeText(true);
+        request.setIsNotifyPartyFreeText(true);
+        request.setCustomer(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").build());
+        request.setConsignor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setConsignee(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setNotifyParty(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setShippingLine("code");
+        request.setBookingNumber("DBAR-5586091-311749");
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBookingV3Request customerBookingRequest = new CustomerBookingV3Request();
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setId(1L);
+        customerBooking.setBookingNumber("DBAR-5586091-311749");
+        customerBooking.setIsConsigneeAddressFreeText(true);
+        customerBooking.setIsConsignorAddressFreeText(true);
+        customerBooking.setIsCustomerAddressFreeText(false);
+        customerBooking.setIsNotifyPartyAddressFreeText(true);
+        customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
+
+        CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(customerBooking, CustomerBookingV3Response.class);
+
+        // Mock
+        when(customerBookingDao.findByBookingNumber(any())).thenReturn(Optional.empty());
+        when(modelMapper.map(any(), eq(CustomerBookingV3Request.class))).thenReturn(customerBookingRequest);
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
+        when(customerBookingDao.save(any())).thenReturn(customerBooking);
+        when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().entities(List.of()).build());
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        when(jsonHelper.convertValueToList(any(), eq(VesselsResponse.class))).thenReturn(List.of(new VesselsResponse()));
+
+        // Test
+        PlatformToRunnerCustomerBookingResponse response = customerBookingService.platformCreateBooking(request);
+
+        // Assert
+        verify(customerBookingDao, times(1)).save(customerBooking);
+        assertNotNull(response);
+        assertEquals("DBAR-5586091-311749", response.getBookingNumber());
+        assertEquals("SINGLE_USAGE", request.getContractStatus());
+
+        if (response.getCharges() != null && !response.getCharges().isEmpty()) {
+            assertNotNull(response.getCharges().get(0).getGuid());
+        }
+    }
+
+    @Test
     void testV3PlatformCreateBooking2() throws RunnerException {
         PlatformToRunnerCustomerBookingRequest request = new PlatformToRunnerCustomerBookingRequest();
 
@@ -2060,6 +2152,14 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
             customerBookingService.cloneBooking(1L);
         });
         assertEquals(DAO_GENERIC_RETRIEVE_EXCEPTION_MSG, exception.getMessage());
+    }
+
+    @Test
+    void testV3Clone_with_bookingId_null() {
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            customerBookingService.cloneBooking(null);
+        });
+        assertEquals("Booking Id cannot be null", exception.getMessage());
     }
 
     @Test
