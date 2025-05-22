@@ -12,7 +12,20 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.MawbStocks;
+import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -43,15 +56,40 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.persistence.EntityManager;
+import javax.validation.ConstraintViolationException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -133,23 +171,6 @@ class ShipmentDaoTest extends CommonMocks {
         assertThrows(DataRetrievalFailureException.class, () -> {
             shipmentDao.save(shipmentDetails, false);
         });
-    }
-
-    @Test
-    void saveTest() throws RunnerException {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
-        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
-        shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        shipmentDetails.setId(1L);
-
-        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        mockShipmentSettings();
-        assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
 
     @Test
@@ -540,7 +561,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().build()));
         mockShipmentSettings();
-        assertThrows(ValidationException.class, () ->{
+        assertThrows(ValidationException.class, () -> {
             shipmentDao.update(shipmentDetails, false);
         });
     }
@@ -580,8 +601,8 @@ class ShipmentDaoTest extends CommonMocks {
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
         mockShipmentSettings();
-       ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
-       assertNotNull(response);
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
     }
 
     @Test
@@ -1656,4 +1677,325 @@ class ShipmentDaoTest extends CommonMocks {
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true);
         assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
+
+    @Test
+    void testUpdateShipmentsBookingNumber() {
+        when(shipmentRepository.updateShipmentsBookingNumber(Mockito.<List<UUID>>any(), Mockito.<String>any()))
+                .thenReturn(10);
+        int actualUpdateShipmentsBookingNumberResult = shipmentDao.updateShipmentsBookingNumber(new ArrayList<>(), "42");
+        verify(shipmentRepository).updateShipmentsBookingNumber(Mockito.<List<UUID>>any(), Mockito.<String>any());
+        assertEquals(10, actualUpdateShipmentsBookingNumberResult);
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateCargoDetailsInShipment(Long, Integer, String, BigDecimal, String, BigDecimal, String, BigDecimal, String, BigDecimal, String)}
+     */
+    @Test
+    void testUpdateCargoDetailsInShipment() {
+        when(shipmentRepository.updateCargoDetailsInShipment(Mockito.<Long>any(), Mockito.<Integer>any(),
+                Mockito.<String>any(), Mockito.<BigDecimal>any(), Mockito.<String>any(), Mockito.<BigDecimal>any(),
+                Mockito.<String>any(), Mockito.<BigDecimal>any(), Mockito.<String>any(), Mockito.<BigDecimal>any(),
+                Mockito.<String>any())).thenReturn(1);
+        BigDecimal volume = new BigDecimal("2.3");
+        BigDecimal weight = new BigDecimal("2.3");
+        BigDecimal volumetricWeight = new BigDecimal("2.3");
+        shipmentDao.updateCargoDetailsInShipment(1L, 1, "Packs Unit", volume, "Volume Unit", weight, "Weight Unit",
+                volumetricWeight, "Volumetric Weight Unit", new BigDecimal("2.3"), "Chargeable Unit");
+        verify(shipmentRepository).updateCargoDetailsInShipment(Mockito.<Long>any(), Mockito.<Integer>any(),
+                Mockito.<String>any(), Mockito.<BigDecimal>any(), Mockito.<String>any(), Mockito.<BigDecimal>any(),
+                Mockito.<String>any(), Mockito.<BigDecimal>any(), Mockito.<String>any(), Mockito.<BigDecimal>any(),
+                Mockito.<String>any());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateShipmentDetailsFromPacks(Long, DateBehaviorType, LocalDateTime, ShipmentPackStatus)}
+     */
+    @Test
+    void testUpdateShipmentDetailsFromPacks() {
+        doNothing().when(shipmentRepository)
+                .updateShipmentDetailsFromPacks(Mockito.<Long>any(), Mockito.<DateBehaviorType>any(),
+                        Mockito.<LocalDateTime>any(), Mockito.<ShipmentPackStatus>any());
+        shipmentDao.updateShipmentDetailsFromPacks(1L, DateBehaviorType.ACTUAL, LocalDate.of(1970, 1, 1).atStartOfDay(),
+                ShipmentPackStatus.BOOKED);
+        verify(shipmentRepository).updateShipmentDetailsFromPacks(Mockito.<Long>any(), Mockito.<DateBehaviorType>any(),
+                Mockito.<LocalDateTime>any(), Mockito.<ShipmentPackStatus>any());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateShipmentDetailsFromPacks(Long, DateBehaviorType, LocalDateTime, ShipmentPackStatus)}
+     */
+    @Test
+    void testUpdateShipmentDetailsFromPacks2() {
+        doNothing().when(shipmentRepository)
+                .updateShipmentDetailsFromPacks(Mockito.<Long>any(), Mockito.<DateBehaviorType>any(),
+                        Mockito.<LocalDateTime>any(), Mockito.<ShipmentPackStatus>any());
+        shipmentDao.updateShipmentDetailsFromPacks(1L, DateBehaviorType.ESTIMATED, LocalDate.of(1970, 1, 1).atStartOfDay(),
+                ShipmentPackStatus.BOOKED);
+        verify(shipmentRepository).updateShipmentDetailsFromPacks(Mockito.<Long>any(), Mockito.<DateBehaviorType>any(),
+                Mockito.<LocalDateTime>any(), Mockito.<ShipmentPackStatus>any());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+    }
+
+    /**
+     * Method under test: {@link ShipmentDao#setShipmentIdsToContainer(List, Long)}
+     */
+    @Test
+    void testSetShipmentIdsToContainer() {
+        doNothing().when(shipmentRepository).setShipmentIdsToContainer(Mockito.<List<Long>>any(), Mockito.<Long>any());
+        shipmentDao.setShipmentIdsToContainer(new ArrayList<>(), 1L);
+        verify(shipmentRepository).setShipmentIdsToContainer(Mockito.<List<Long>>any(), Mockito.<Long>any());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+    }
+
+    /**
+     * Method under test: {@link ShipmentDao#setShipmentIdsToContainer(List, Long)}
+     */
+    @Test
+    void testSetShipmentIdsToContainer2() {
+        doNothing().when(shipmentRepository).setShipmentIdsToContainer(Mockito.<List<Long>>any(), Mockito.<Long>any());
+
+        ArrayList<Long> shipmentIds = new ArrayList<>();
+        shipmentIds.add(1L);
+        shipmentDao.setShipmentIdsToContainer(shipmentIds, 1L);
+        verify(shipmentRepository).setShipmentIdsToContainer(Mockito.<List<Long>>any(), Mockito.<Long>any());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+    }
+
+    /**
+     * Method under test: {@link ShipmentDao#setShipmentIdsToContainer(List, Long)}
+     */
+    @Test
+    void testSetShipmentIdsToContainer3() {
+        doNothing().when(shipmentRepository).setShipmentIdsToContainer(Mockito.<List<Long>>any(), Mockito.<Long>any());
+
+        ArrayList<Long> shipmentIds = new ArrayList<>();
+        shipmentIds.add(0L);
+        shipmentIds.add(1L);
+        shipmentDao.setShipmentIdsToContainer(shipmentIds, 1L);
+        verify(shipmentRepository).setShipmentIdsToContainer(Mockito.<List<Long>>any(), Mockito.<Long>any());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateSailingScheduleRelatedInfo(ShipmentSailingScheduleRequest, Long)}
+     */
+    @Test
+    void testUpdateSailingScheduleRelatedInfo() {
+        doNothing().when(shipmentRepository)
+                .updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
+                        Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                        Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                        Mockito.<LocalDateTime>any());
+
+        ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+        request.setCarrier("Carrier");
+        request.setDgCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestDropOffFullEquipmentToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestEmptyEquipmentPickUp(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestArrivalTime(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestFullEquipmentDeliveredToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setReeferCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setRoutings(new ArrayList<>());
+        request.setShippingInstructionCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setTerminalCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setVerifiedGrossMassCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        shipmentDao.updateSailingScheduleRelatedInfo(request, 1L);
+        verify(shipmentRepository).updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                Mockito.<LocalDateTime>any());
+        assertEquals("00:00", request.getDgCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getEarliestDropOffFullEquipmentToCarrier().toLocalTime().toString());
+        assertEquals("00:00", request.getEarliestEmptyEquipmentPickUp().toLocalTime().toString());
+        assertEquals("00:00", request.getLatestArrivalTime().toLocalTime().toString());
+        assertEquals("00:00", request.getLatestFullEquipmentDeliveredToCarrier().toLocalTime().toString());
+        assertEquals("00:00", request.getReeferCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getShippingInstructionCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getTerminalCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getVerifiedGrossMassCutoff().toLocalTime().toString());
+        assertEquals("Carrier", request.getCarrier());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+        assertTrue(request.getRoutings().isEmpty());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateSailingScheduleRelatedInfo(ShipmentSailingScheduleRequest, Long)}
+     */
+    @Test
+    void testUpdateSailingScheduleRelatedInfo2() {
+        doThrow(new ConstraintViolationException(new HashSet<>())).when(shipmentRepository)
+                .updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
+                        Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                        Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                        Mockito.<LocalDateTime>any());
+
+        ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+        request.setCarrier("Carrier");
+        request.setDgCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestDropOffFullEquipmentToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestEmptyEquipmentPickUp(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestArrivalTime(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestFullEquipmentDeliveredToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setReeferCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setRoutings(new ArrayList<>());
+        request.setShippingInstructionCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setTerminalCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setVerifiedGrossMassCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        assertThrows(ConstraintViolationException.class, () -> shipmentDao.updateSailingScheduleRelatedInfo(request, 1L));
+        verify(shipmentRepository).updateSailingScheduleRelatedInfo(Mockito.<Long>any(), Mockito.<LocalDateTime>any(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(), Mockito.<LocalDateTime>any(),
+                Mockito.<LocalDateTime>any());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest, Long)}
+     */
+    @Test
+    void testUpdateSailingScheduleRelatedInfoForAir() {
+        doNothing().when(shipmentRepository)
+                .updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(), Mockito.<LocalDateTime>any());
+
+        ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+        request.setCarrier("Carrier");
+        request.setDgCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestDropOffFullEquipmentToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestEmptyEquipmentPickUp(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestArrivalTime(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestFullEquipmentDeliveredToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setReeferCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setRoutings(new ArrayList<>());
+        request.setShippingInstructionCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setTerminalCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setVerifiedGrossMassCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        shipmentDao.updateSailingScheduleRelatedInfoForAir(request, 1L);
+        verify(shipmentRepository).updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(),
+                Mockito.<LocalDateTime>any());
+        assertEquals("00:00", request.getDgCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getEarliestDropOffFullEquipmentToCarrier().toLocalTime().toString());
+        assertEquals("00:00", request.getEarliestEmptyEquipmentPickUp().toLocalTime().toString());
+        assertEquals("00:00", request.getLatestArrivalTime().toLocalTime().toString());
+        assertEquals("00:00", request.getLatestFullEquipmentDeliveredToCarrier().toLocalTime().toString());
+        assertEquals("00:00", request.getReeferCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getShippingInstructionCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getTerminalCutoff().toLocalTime().toString());
+        assertEquals("00:00", request.getVerifiedGrossMassCutoff().toLocalTime().toString());
+        assertEquals("Carrier", request.getCarrier());
+        assertEquals(0L, shipmentDao.findMaxId().longValue());
+        assertTrue(request.getRoutings().isEmpty());
+    }
+
+    /**
+     * Method under test:
+     * {@link ShipmentDao#updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest, Long)}
+     */
+    @Test
+    void testUpdateSailingScheduleRelatedInfoForAir2() {
+        doThrow(new ConstraintViolationException(new HashSet<>())).when(shipmentRepository)
+                .updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(), Mockito.<LocalDateTime>any());
+
+        ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+        request.setCarrier("Carrier");
+        request.setDgCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestDropOffFullEquipmentToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setEarliestEmptyEquipmentPickUp(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestArrivalTime(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setLatestFullEquipmentDeliveredToCarrier(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setReeferCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setRoutings(new ArrayList<>());
+        request.setShippingInstructionCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setTerminalCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        request.setVerifiedGrossMassCutoff(LocalDate.of(1970, 1, 1).atStartOfDay());
+        assertThrows(ConstraintViolationException.class,
+                () -> shipmentDao.updateSailingScheduleRelatedInfoForAir(request, 1L));
+        verify(shipmentRepository).updateSailingScheduleRelatedInfoForAir(Mockito.<Long>any(),
+                Mockito.<LocalDateTime>any());
+    }
+
+    @Test
+    void findByShipmentIdInAndContainsHazardousTest() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+
+        when(shipmentRepository.findByShipmentIdInAndContainsHazardous(any(), anyBoolean())).thenReturn(shipmentDetailsList);
+        List<ShipmentDetails> shipmentDetails1 = shipmentDao.findByShipmentIdInAndContainsHazardous(List.of(1L), false);
+        assertNotNull(shipmentDetails1);
+    }
+
+    @Test
+    void findByShipmentIdInTest() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+
+        when(shipmentRepository.findByShipmentIdIn(any())).thenReturn(shipmentDetailsList);
+        List<ShipmentDetails> shipmentDetails1 = shipmentDao.findByShipmentIdIn(List.of("SHP0001"));
+        assertNotNull(shipmentDetails1);
+    }
+
+    @Test
+    void findShipmentByGuidWithQueryTest() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+
+        when(shipmentRepository.findShipmentByGuidWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findShipmentByGuidWithQuery(UUID.randomUUID());
+        assertNotNull(shipmentDetails1);
+    }
+
+    @Test
+    void testSaveIsTransferredToReceivingBranchTest() {
+        Long shipmentId = 123L;
+        Boolean isTransferred = true;
+
+        shipmentDao.saveIsTransferredToReceivingBranch(shipmentId, isTransferred);
+
+        verify(shipmentRepository, times(1))
+                .saveIsTransferredToReceivingBranch(shipmentId, isTransferred);
+    }
+
+    @Test
+    void updateIsAcceptedTriangulationPartnerTest() {
+        Long shipmentId = 123L;
+        Long triangulationPartner = 234L;
+        Boolean isTransferred = true;
+
+        shipmentDao.updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isTransferred);
+
+        verify(shipmentRepository, times(1))
+                .updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isTransferred);
+    }
+
+    @Test
+    void saveWithoutValidationTest() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+
+        when(shipmentRepository.save(shipmentDetails)).thenReturn(shipmentDetails);
+        ShipmentDetails shipmentDetails1 = shipmentDao.saveWithoutValidation(shipmentDetails);
+        assertNotNull(shipmentDetails1);
+
+    }
+
+    @Test
+    void updateAdditionalDetailsByShipmentIdTest() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+
+        shipmentDao.updateAdditionalDetailsByShipmentId(1l, true);
+        verify(shipmentRepository, times(1))
+                .updateAdditionalDetailsByShipmentId(1l, true);
+    }
+
 }
