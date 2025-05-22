@@ -35,6 +35,7 @@ public class PushToDownstreamEventDto {
         private Boolean isCreate = false;
         private Boolean isAutoSellRequired = false;
         private Integer tenantId;
+        private String sourceInfo;
     }
 }
 
