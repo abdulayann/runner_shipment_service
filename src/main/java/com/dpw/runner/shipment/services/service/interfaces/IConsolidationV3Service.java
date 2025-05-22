@@ -44,4 +44,6 @@ public interface IConsolidationV3Service {
     Optional<ConsolidationDetails> findById(Long consolidationId);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     String getBookingNumberFromConsol(Long consolidationId);
+
+    void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId);
 }
