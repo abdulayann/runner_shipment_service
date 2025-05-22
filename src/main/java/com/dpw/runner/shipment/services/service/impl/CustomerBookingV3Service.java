@@ -85,9 +85,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
 
-    @Autowired
-    private DependentServiceHelper dependentServiceHelper;
-
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
     private final INPMServiceAdapter npmService;
@@ -109,6 +106,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final IOrderManagementAdapter orderManagementAdapter;
     private final IV1Service v1Service;
     private final ModelMapper modelMapper;
+    private final DependentServiceHelper dependentServiceHelper;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -149,7 +147,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     IPartiesDao partiesDao,
                                     IShipmentDao shipmentDao,
                                     IV1Service v1Service,
-                                    ModelMapper modelMapper){
+                                    ModelMapper modelMapper,
+                                    DependentServiceHelper dependentServiceHelper){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -171,6 +170,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.shipmentDao = shipmentDao;
         this.v1Service = v1Service;
         this.modelMapper = modelMapper;
+        this.dependentServiceHelper = dependentServiceHelper;
     }
 
     @Override
@@ -231,7 +231,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
-        long id = request.getId();
+        Long id = request.getId();
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -573,8 +573,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBookingRequest.getCarrierDetails().setId(customerBooking.getCarrierDetails().getId());
             customerBookingRequest.getCarrierDetails().setGuid(customerBooking.getCarrierDetails().getGuid());
         }
-        if(customerBooking.getCurrentPartyForQuote() != null)
-        {
+        if(customerBooking.getCurrentPartyForQuote() != null) {
             customerBookingRequest.setCurrentPartyForQuote(customerBooking.getCurrentPartyForQuote());
         }
 
@@ -899,7 +898,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         return optional;
     }
 
-    private Optional<CustomerBooking> getValidatedCustomerBooking(long id) {
+    private Optional<CustomerBooking> getValidatedCustomerBooking(Long id) {
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
         if(customerBooking.isEmpty())
         {

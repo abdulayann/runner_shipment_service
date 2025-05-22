@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
@@ -123,7 +124,6 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
     private IMDMServiceAdapter mdmServiceAdapter;
     @Mock
     private IBookingChargesDao bookingChargesDao;
-
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
     @Mock
@@ -132,6 +132,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
     private OrderManagementAdapter orderManagementAdapter;
     @Mock
     private IQuoteContractsService quoteContractsService;
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
 
     @Mock
     private INotesDao notesDao;
@@ -164,7 +166,7 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCreateV3WithPendingForCreditLimitStatus() throws RunnerException {
+    void testCreateV3WithPendingForCreditLimitStatus_with_kafka_events() throws RunnerException {
         CustomerBookingV3Request request = new CustomerBookingV3Request();
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -178,11 +180,11 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingV3Response = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
 
         // Mock
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(mockCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
+        doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -191,6 +193,7 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
 
         // Assert
         assertEquals(customerBookingV3Response, actualResponse);
+        verify(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
     }
 
     @Test
@@ -1167,7 +1170,6 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
 
         // Mocks
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(inputCustomerBooking));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
@@ -1219,7 +1221,6 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
 
         // Mocks
         when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Approved");
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(existingBooking));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
@@ -1321,7 +1322,6 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, Boolean.TRUE));
         // Mocks
         when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Approved");
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(existingBooking));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
@@ -1428,7 +1428,6 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, Boolean.TRUE));
         // Mocks
         when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Approved");
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(existingBooking));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
@@ -1551,6 +1550,66 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         assertEquals(bookingId, response.getId());
         verify(customerBookingDao, times(1)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+    }
+
+    @Test
+    void testV3UpdateBooking_SuccessfulUpdate_ReturnsUpdatedResponse_Send_kafka_events() throws Exception {
+        // Arrange
+        UUID bookingGuid = UUID.randomUUID();
+        long bookingId = 123L;
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .ShipmentServiceV2Enabled(true)
+                        .FetchRatesMandate(Boolean.FALSE)
+                        .build()
+        );
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        CustomerBooking existingBooking = new CustomerBooking();
+        existingBooking.setId(bookingId);
+        existingBooking.setGuid(bookingGuid);
+        existingBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        existingBooking.setCreatedBy("user1");
+        existingBooking.setIsPlatformBookingCreated(false);
+        existingBooking.setSource(BookingSource.Runner);
+        existingBooking.setBookingStatus(BookingStatus.PENDING_FOR_REVIEW);
+
+        CustomerBookingV3Request request = new CustomerBookingV3Request();
+        request.setId(bookingId);
+        request.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+
+        CustomerBooking updatedBooking = new CustomerBooking();
+        updatedBooking.setId(bookingId);
+        updatedBooking.setGuid(bookingGuid);
+        updatedBooking.setCreatedAt(existingBooking.getCreatedAt());
+        updatedBooking.setCreatedBy(existingBooking.getCreatedBy());
+        updatedBooking.setIsPlatformBookingCreated(false);
+        updatedBooking.setSource(BookingSource.Runner);
+        updatedBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+
+        CustomerBookingV3Response expectedResponse = new CustomerBookingV3Response();
+        expectedResponse.setId(bookingId);
+        expectedResponse.setGuid(bookingGuid);
+
+        // Mocks
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(existingBooking));
+        when(eventDao.findByEntityIdAndEntityType(bookingId, Constants.BOOKING)).thenReturn(Optional.of(new Events()));
+        when(jsonHelper.convertValue(request, CustomerBooking.class)).thenReturn(updatedBooking);
+        when(jsonHelper.convertToJson(existingBooking)).thenReturn("{}");
+        when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
+        when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+        doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
+        mockTenantSettings();
+        mockShipmentSettings();
+
+        // Act
+        CustomerBookingV3Response response = customerBookingService.update(request);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals(bookingId, response.getId());
+        verify(customerBookingDao, times(1)).save(any());
+        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+        verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
     }
 
     @Test
