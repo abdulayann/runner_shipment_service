@@ -22,10 +22,10 @@ public class ShipmentWtVolResponse implements IRunnerResponse {
     private BigDecimal weightVolume;
     private String weightVolumeUnit;
     @JsonSerialize(using = DecimalPlaceValueSerializer.class)
-    private BigDecimal chargeable;
+    private BigDecimal chargable;
     private String chargeableUnit;
     private Integer packs;
     private String packsType;
-    private Integer assignedContainerCount;
-    private BigDecimal assignedContainerTeu;
+    private Integer containerCount;
+    private BigDecimal teuCount;
 }

@@ -53,9 +53,6 @@ public class Containers extends MultiTenancy {
     @Column(name = "teu")
     private BigDecimal teu;
 
-    @Column(name = "is_assigned")
-    private Boolean assigned;
-
     @Column(name = "container_number")
     private String containerNumber;
 

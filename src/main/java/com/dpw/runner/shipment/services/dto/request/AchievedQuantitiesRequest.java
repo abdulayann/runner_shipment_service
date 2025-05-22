@@ -27,4 +27,8 @@ public class AchievedQuantitiesRequest implements IRunnerRequest {
     private String consolidationChargeQuantityUnit;
     private String weightUtilization;
     private String volumeUtilization;
+    private Integer packs;
+    private String packsType;
+    private Integer containerCount;
+    private BigDecimal teuCount;
 }

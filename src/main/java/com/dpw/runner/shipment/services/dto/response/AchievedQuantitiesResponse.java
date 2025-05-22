@@ -34,4 +34,8 @@ public class AchievedQuantitiesResponse implements IRunnerResponse {
     private String consolidationChargeQuantityUnit;
     private String weightUtilization;
     private String volumeUtilization;
+    private Integer packs;
+    private String packsType;
+    private Integer containerCount;
+    private BigDecimal teuCount;
 }
