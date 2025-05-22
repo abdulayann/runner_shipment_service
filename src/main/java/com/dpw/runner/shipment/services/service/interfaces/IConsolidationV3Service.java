@@ -6,12 +6,11 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
-import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -42,12 +41,8 @@ public interface IConsolidationV3Service {
     ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
     String detachShipments(@Valid ShipmentConsoleAttachDetachV3Request request)
         throws RunnerException;
-
     ConsolidationDetails getConsolidationById(Long consolidationId);
-
     Optional<ConsolidationDetails> findById(Long consolidationId);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
-    ConsolidationSailingScheduleResponse updateSailingScheduleDataToConsole(ConsolidationSailingScheduleRequest request) throws RunnerException;
-
     String getBookingNumberFromConsol(Long consolidationId);
 }
