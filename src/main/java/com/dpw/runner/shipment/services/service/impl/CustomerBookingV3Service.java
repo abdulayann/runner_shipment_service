@@ -313,9 +313,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Pair<Specification<CustomerBooking>, Pageable> tuple = fetchData(request, CustomerBooking.class, tableNames);
             Page<CustomerBooking> customerBookingPage = customerBookingDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Booking list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            int pageSize = customerBookingPage.getSize();
+            long totalPages = pageSize == 0 ? 0 : (customerBookingPage.getTotalElements() + pageSize - 1) / pageSize;
             return CustomerBookingV3ListResponse.builder()
                     .customerBookingV3Responses(jsonHelper.convertValueToList(customerBookingPage.getContent(),CustomerBookingV3Response.class))
-                    .totalPages(customerBookingPage.getTotalPages())
+                    .totalPages((int) totalPages)
                     .totalCount(customerBookingPage.getTotalElements())
                     .build();
         } catch (Exception e) {
