@@ -923,11 +923,15 @@ public class ContainerV3Service implements IContainerV3Service {
                 executorService
         ));
 
-        Optional.of(module)
-                .filter(SHIPMENT::equals)
-                .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
-                        container.getId(), Set.of(request.getShipmentsId()), false
-                ));
+        Optional.ofNullable(module)
+            .filter(SHIPMENT::equals)
+            .filter(m -> container.getId() != null)
+            .filter(m -> request.getShipmentsId() != null)
+            .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
+                container.getId(),
+                Set.of(request.getShipmentsId()),
+                false
+            ));
 
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
