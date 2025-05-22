@@ -146,9 +146,4 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
                 consolidationListV3Response.getNumberOfRecords());
     }
-    @PostMapping(ApiConstants.UPDATE_SAILING_SCHEDULE)
-    public ResponseEntity<IRunnerResponse> updateSailingScheduleDataToConsole(@RequestBody @Valid ConsolidationSailingScheduleRequest request) throws RunnerException {
-        log.info("Received updateSailingSchedule request: {}", request);
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.updateSailingScheduleDataToConsole(request));
-    }
 }

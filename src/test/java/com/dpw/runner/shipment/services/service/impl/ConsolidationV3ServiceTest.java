@@ -12,14 +12,39 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -37,6 +62,15 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +97,9 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -603,5 +640,182 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   @Test
   void testList() {
     assertThrows(ValidationException.class, () -> consolidationV3Service.list(null, true));
+  }
+
+  @Test
+  void updateLinkedShipmentData_Exception(){
+    V1TenantSettingsResponse tenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+    tenantSettingsResponse.setEnableAirMessaging(Boolean.TRUE);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
+
+    consolidationDetails = testConsol;
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+    consolidationDetails.setEfreightStatus(Constants.EAW);
+
+    List<ShipmentDetails> shipments = new ArrayList<>();
+    AdditionalDetails additionalDetails = new AdditionalDetails();
+    additionalDetails.setEfreightStatus(Constants.NON);
+
+    ShipmentDetails shipmentDetails1 = ShipmentDetails
+        .builder()
+        .additionalDetails(additionalDetails)
+        .build();
+    shipments.add(shipmentDetails1);
+
+    when(consolidationV3Util.getShipmentsList(consolidationDetails.getId()))
+        .thenReturn(shipments);
+
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails,
+        null, true));
+  }
+
+  @Test
+  void updateLinkedShipmentData_Success() throws RunnerException {
+    mockTenantSettings();
+
+    consolidationDetails = testConsol;
+    CarrierDetails carrierDetails = CarrierDetails.builder().build();
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consolidationDetails.setEfreightStatus(Constants.EAW);
+    consolidationDetails.setSendingAgent(new Parties());
+    consolidationDetails.setReceivingAgent(new Parties());
+    ConsolidationDetails oldConsolidation = consolidationDetails;
+    oldConsolidation.setEarliestDropOffFullEquToCarrier(LocalDateTime.now());
+
+    List<ShipmentDetails> shipments = new ArrayList<>();
+    AdditionalDetails additionalDetails = new AdditionalDetails();
+    additionalDetails.setEfreightStatus(Constants.NON);
+
+    ShipmentDetails shipmentDetails1 = ShipmentDetails
+        .builder()
+        .additionalDetails(additionalDetails)
+        .transportMode(Constants.TRANSPORT_MODE_SEA)
+        .carrierDetails(carrierDetails)
+        .build();
+    shipments.add(shipmentDetails1);
+
+    when(jsonHelper.convertCreateValue(any(), eq(Routings.class))).thenReturn(new Routings());
+
+    when(consolidationV3Util.getShipmentsList(consolidationDetails.getId()))
+        .thenReturn(shipments);
+
+    when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    assertNotNull(shipmentDetailsList);
+  }
+
+  @Test
+  void updateLinkedShipmentData_Success1() throws RunnerException {
+    mockTenantSettings();
+
+    consolidationDetails = testConsol;
+    consolidationDetails.setRoutingsList(List.of(Routings.builder().build()));
+    CarrierDetails carrierDetails = CarrierDetails.builder().build();
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consolidationDetails.setEfreightStatus(Constants.EAW);
+    consolidationDetails.setBookingNumber("BOOKING123");
+    consolidationDetails.setInterBranchConsole(false);
+    ConsolidationDetails oldConsolidation = consolidationDetails;
+    oldConsolidation.setEarliestDropOffFullEquToCarrier(LocalDateTime.now());
+
+    List<ShipmentDetails> shipments = new ArrayList<>();
+    AdditionalDetails additionalDetails = new AdditionalDetails();
+    additionalDetails.setEfreightStatus(Constants.NON);
+
+    ShipmentDetails shipmentDetails1 = ShipmentDetails
+        .builder()
+        .transportMode(Constants.TRANSPORT_MODE_SEA)
+        .carrierDetails(carrierDetails)
+        .bookingNumber("BOOKING1234")
+        .direction(DIRECTION_EXP)
+        .build();
+    shipments.add(shipmentDetails1);
+
+    lenient().when(jsonHelper.convertCreateValue(any(), eq(Routings.class))).thenReturn(new Routings());
+
+    when(consolidationV3Util.getShipmentsList(consolidationDetails.getId()))
+        .thenReturn(shipments);
+
+    lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    assertNotNull(shipmentDetailsList);
+  }
+
+  @Test
+  void updateLinkedShipmentData_Exception1() throws RunnerException {
+    mockTenantSettings();
+
+    consolidationDetails = testConsol;
+    consolidationDetails.setRoutingsList(List.of(Routings.builder().build()));
+    CarrierDetails carrierDetails = CarrierDetails.builder().build();
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    consolidationDetails.setEfreightStatus(Constants.EAW);
+    consolidationDetails.setBookingNumber("BOOKING123");
+    consolidationDetails.setInterBranchConsole(true);
+    ConsolidationDetails oldConsolidation = consolidationDetails;
+    oldConsolidation.setEarliestDropOffFullEquToCarrier(LocalDateTime.now());
+
+    List<ShipmentDetails> shipments = new ArrayList<>();
+    AdditionalDetails additionalDetails = new AdditionalDetails();
+    additionalDetails.setEfreightStatus(Constants.NON);
+
+    ShipmentDetails shipmentDetails1 = ShipmentDetails
+        .builder()
+        .transportMode(Constants.TRANSPORT_MODE_SEA)
+        .carrierDetails(carrierDetails)
+        .bookingNumber("BOOKING1234")
+        .isReceivingBranchAdded(true)
+        .direction(DIRECTION_EXP)
+        .build();
+    shipments.add(shipmentDetails1);
+
+    lenient().when(jsonHelper.convertCreateValue(any(), eq(Routings.class))).thenReturn(new Routings());
+
+    when(consolidationV3Util.getShipmentsList(consolidationDetails.getId()))
+        .thenReturn(shipments);
+    when(consolidationV3Util.checkConsolidationEligibleForCFSValidation(any())).thenReturn(true);
+    when(consolidationValidationV3Util.checkIfShipmentDateGreaterThanConsole(any(), any())).thenReturn(true);
+
+    lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true));
+
+  }
+
+  @Test
+  void completeUpdate_NullEntityException() throws RunnerException {
+    consolidationDetailsV3Request.setId(1L);
+    var spyService = Mockito.spy(consolidationV3Service);
+    Mockito.doReturn(Optional.empty()).when(spyService).retrieveByIdOrGuid(any());
+    assertThrows(DataRetrievalFailureException.class,
+        () -> spyService.completeUpdate(consolidationDetailsV3Request));
+  }
+
+  @Test
+  void completeUpdate_Success() throws RunnerException {
+    consolidationDetailsV3Request.setId(1L);
+    consolidationDetails.setInterBranchConsole(true);
+    consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+    Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
+    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
+    when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+    when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
+    when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    mockShipmentSettings();
+    mockTenantSettings();
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(new ConsolidationDetailsV3Response());
+
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = spyService.completeUpdate(consolidationDetailsV3Request);
+    assertNotNull(consolidationDetailsV3Response);
   }
 }
