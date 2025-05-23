@@ -15,10 +15,14 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
@@ -33,6 +37,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -1242,4 +1247,305 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   }
 
+  @Test
+  void pushShipmentDataToDependentService_Test(){
+      KafkaResponse kafkaResponse = new KafkaResponse();
+      when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(kafkaResponse);
+      lenient().when(jsonHelper.convertToJson(kafkaResponse)).thenReturn("kafkaResponse");
+      lenient().when(trackingServiceAdapter.checkIfConsolContainersExist(any())).thenReturn(true);
+      lenient().when(trackingServiceAdapter.checkIfAwbExists(any())).thenReturn(false);
+      CarrierDetails carrierDetails = CarrierDetails.builder().shippingLine("SP").build();
+      consolidationDetails.setCarrierDetails(carrierDetails);
+      ConsolidationDetails oldEntity = consolidationDetails;
+      consolidationDetails.setInterBranchConsole(false);
+      oldEntity.setMawb("AAAA");
+
+      when(trackingServiceAdapter.getAllEvents(any(), any(), any())).thenReturn(new ArrayList<>());
+      UniversalTrackingPayload.UniversalEventsPayload payload = new UniversalEventsPayload();
+      when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(payload);
+      when(jsonHelper.convertToJson(any())).thenReturn("Adaf");
+
+      consolidationV3Service.pushShipmentDataToDependentService(consolidationDetails, true, oldEntity);
+      assertThat(consolidationDetails.getInterBranchConsole()).isFalse();
+  }
+
+  @Test
+  void pushShipmentDataToDependentService_Test1(){
+    KafkaResponse kafkaResponse = new KafkaResponse();
+    when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(kafkaResponse);
+    lenient().when(jsonHelper.convertToJson(kafkaResponse)).thenReturn("kafkaResponse");
+    lenient().when(trackingServiceAdapter.checkIfConsolContainersExist(any())).thenReturn(false);
+    lenient().when(trackingServiceAdapter.checkIfAwbExists(any())).thenReturn(true);
+    CarrierDetails carrierDetails = CarrierDetails.builder().shippingLine("SP").build();
+
+    Containers container1 = new Containers();
+    container1.setId(1L);
+    container1.setContainerNumber("C1");
+
+    Containers container2 = new Containers();
+    container2.setId(2L);
+    container2.setContainerNumber("C2");
+
+    Containers container3 = new Containers();
+    container3.setId(3L);
+    container3.setContainerNumber("C3");
+
+    Containers container4 = new Containers();
+    container4.setId(4L);
+    container4.setContainerNumber("C4");
+
+    List<Containers> containersList1 = List.of(container1, container2, container3);
+    List<Containers> containersList2 = List.of(container2, container3, container4);
+
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setContainersList(containersList1);
+
+    ConsolidationDetails oldEntity = consolidationDetails;
+    consolidationDetails.setInterBranchConsole(false);
+    oldEntity.setContainersList(containersList2);
+
+    lenient().when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(1L)
+        .build()));
+
+    List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+    ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+    shipmentDetailsList.add(shipmentDetails1);
+
+    lenient().when(trackingServiceAdapter.mapConsoleDataToTrackingServiceData(any(), any())).thenReturn(UniversalTrackingPayload.builder().build());
+
+    lenient().when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+    lenient().when(trackingServiceAdapter.getAllEvents(any(), any(), anyString())).thenReturn(new ArrayList<>());
+    UniversalTrackingPayload.UniversalEventsPayload payload = new UniversalEventsPayload();
+    lenient().when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(payload);
+    when(jsonHelper.convertToJson(any())).thenReturn("Adaf");
+
+    doThrow(new GenericException("Ex")).when(containerService).pushContainersToDependentServices(anyList(), anyList());
+    doThrow(new GenericException("EX")).when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue(any(), any());
+
+    consolidationV3Service.pushShipmentDataToDependentService(consolidationDetails, true, oldEntity);
+    assertThat(consolidationDetails.getInterBranchConsole()).isFalse();
+  }
+
+  @Test
+  void shouldSetReceivingBranchToNullWhenZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setReceivingBranch(0L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getReceivingBranch()).isNull();
+  }
+
+  @Test
+  void shouldKeepReceivingBranchWhenNonZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setReceivingBranch(10L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getReceivingBranch()).isEqualTo(10L);
+  }
+
+  @Test
+  void shouldNullifyTriangulationPartnerListIfOnlyOneWithZero() {
+    TriangulationPartner partner = new TriangulationPartner();
+    partner.setTriangulationPartner(0L);
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(List.of(partner));
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartnerList()).isNull();
+  }
+
+  @Test
+  void shouldNotNullifyTriangulationPartnerListIfOneWithNonZero() {
+    TriangulationPartner partner = new TriangulationPartner();
+    partner.setTriangulationPartner(123L);
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(List.of(partner));
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartnerList()).isNotNull();
+    assertThat(details.getTriangulationPartnerList()).hasSize(1);
+  }
+
+  @Test
+  void shouldSetTriangulationPartnerToNullWhenListIsNullAndValueIsZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(null);
+    details.setTriangulationPartner(0L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartner()).isNull();
+  }
+
+  @Test
+  void shouldNotSetTriangulationPartnerToNullWhenListIsNullAndValueIsNonZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(null);
+    details.setTriangulationPartner(999L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartner()).isEqualTo(999L);
+  }
+
+  @Test
+  void shouldDoNothingWhenAllInputsAreValid() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setReceivingBranch(100L);
+    details.setTriangulationPartner(500L);
+    details.setTriangulationPartnerList(Arrays.asList(
+        new TriangulationPartner(101L, true),
+        new TriangulationPartner(102L, false)
+    ));
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getReceivingBranch()).isEqualTo(100L);
+    assertThat(details.getTriangulationPartner()).isEqualTo(500L);
+    assertThat(details.getTriangulationPartnerList()).hasSize(2);
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnFalse_whenOldEntityIsNull() {
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        new ConsolidationDetails(), null, new ShipmentSettingsDetails());
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnFalse_whenIataTactFlagIsFalse() {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(false);
+
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        new ConsolidationDetails(), new ConsolidationDetails(), settings);
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnFalse_whenTransportModeIsNotAir() {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setTransportMode("SEA");
+
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        newEntity, new ConsolidationDetails(), settings);
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnTrue_whenCarrierDetailsAreDifferent() {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+    CarrierDetails newCarrier = new CarrierDetails();
+    newCarrier.setOriginPort("DXB");
+    newCarrier.setDestinationPort("JFK");
+    newCarrier.setShippingLine("EK");
+    newEntity.setCarrierDetails(newCarrier);
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    CarrierDetails oldCarrier = new CarrierDetails();
+    oldCarrier.setOriginPort("DEL");
+    oldCarrier.setDestinationPort("LHR");
+    oldCarrier.setShippingLine("AI");
+    oldEntity.setCarrierDetails(oldCarrier);
+
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        newEntity, oldEntity, settings);
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void saveAwb_shouldNotSave_whenCheckConditionReturnsFalse() throws RunnerException {
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = null;
+
+    consolidationV3Service.saveAwb(newEntity, oldEntity);
+
+    verify(awbDao, never()).findByConsolidationId(any());
+  }
+
+  @Test
+  void saveAwb_shouldSave_whenCheckConditionIsTrueAndAwbsExist() throws RunnerException {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setId(1L);
+    newEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+    CarrierDetails newCarrier = new CarrierDetails();
+    newCarrier.setOriginPort("DXB");
+    newCarrier.setDestinationPort("JFK");
+    newCarrier.setShippingLine("EK");
+    newEntity.setCarrierDetails(newCarrier);
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    CarrierDetails oldCarrier = new CarrierDetails();
+    oldCarrier.setOriginPort("DEL");
+    oldCarrier.setDestinationPort("LHR");
+    oldCarrier.setShippingLine("AI");
+    oldEntity.setCarrierDetails(oldCarrier);
+
+    AwbGoodsDescriptionInfo info = new AwbGoodsDescriptionInfo();
+    info.setDisableFetchRates(true);
+    info.setEnableFetchRatesWarning(false);
+
+    Awb awb = new Awb();
+    awb.setAwbGoodsDescriptionInfo(List.of(info));
+
+    when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(awb));
+
+    consolidationV3Service.saveAwb(newEntity, oldEntity);
+
+    verify(awbDao).save(awb);
+  }
+
+  @Test
+  void saveAwb_shouldNotSave_whenAwbListIsEmpty() throws RunnerException {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setId(1L);
+    newEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+    CarrierDetails newCarrier = new CarrierDetails();
+    newCarrier.setOriginPort("DXB");
+    newCarrier.setDestinationPort("JFK");
+    newCarrier.setShippingLine("EK");
+    newEntity.setCarrierDetails(newCarrier);
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    CarrierDetails oldCarrier = new CarrierDetails();
+    oldCarrier.setOriginPort("DEL");
+    oldCarrier.setDestinationPort("LHR");
+    oldCarrier.setShippingLine("AI");
+    oldEntity.setCarrierDetails(oldCarrier);
+
+    when(awbDao.findByConsolidationId(1L)).thenReturn(Collections.emptyList());
+
+    consolidationV3Service.saveAwb(newEntity, oldEntity);
+
+    verify(awbDao, never()).save(any());
+  }
 }
