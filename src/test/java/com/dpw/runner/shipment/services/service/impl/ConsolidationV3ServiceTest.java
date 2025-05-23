@@ -11,13 +11,18 @@ import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
+import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
@@ -26,11 +31,13 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -41,6 +48,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +58,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -66,6 +75,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -237,6 +247,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private static ShipmentDetails testShipment;
   private static Containers testContainer;
 
+  private MockedStatic<UnitConversionUtility> unitConversionUtilityMockedStatic;
+
   @BeforeAll
   static void init() throws IOException {
     jsonTestUtility = new JsonTestUtility();
@@ -263,12 +275,16 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     missingFields = new ArrayList<>();
     testShipment = jsonTestUtility.getTestShipment();
     testContainer = jsonTestUtility.getTestContainer();
+    unitConversionUtilityMockedStatic = mockStatic(UnitConversionUtility.class);
   }
 
   @AfterEach
   void tearDown() {
     consolidationV3Service.executorService.shutdown();
     consolidationV3Service.executorServiceMasterData.shutdown();
+    if (unitConversionUtilityMockedStatic != null) {
+      unitConversionUtilityMockedStatic.close();
+    }
   }
 
   private Runnable mockRunnable() {
@@ -774,6 +790,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     var spyService = Mockito.spy(consolidationV3Service);
     Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
 
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+        .thenReturn(new BigDecimal("1000"));
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
@@ -788,6 +806,35 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     ConsolidationDetailsV3Response consolidationDetailsV3Response = spyService.completeUpdate(consolidationDetailsV3Request);
     assertNotNull(consolidationDetailsV3Response);
+  }
+
+  @Test
+  void completeUpdate_Exception1()
+      throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    consolidationDetailsV3Request.setId(1L);
+    consolidationDetails.setInterBranchConsole(true);
+    consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+    Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+        .thenReturn(new BigDecimal("1000"));
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
+    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
+    when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+    when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
+    doThrow(new GenericException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
+    when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+   when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenThrow(new GenericException("RelegalAccessException"));
+    mockShipmentSettings();
+    mockTenantSettings();
+
+    assertThrows(GenericException.class, () -> spyService.completeUpdate(consolidationDetailsV3Request));
   }
 
   @Test
@@ -848,5 +895,657 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     mockShipmentSettings();
     consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
     assertNotNull(consolidationDetailsV3Response);
+  }
+
+  @Test
+  void testPopulateOriginDestination_EXP(){
+    consolidationDetails.setInterBranchConsole(false);
+    consolidationDetails.setShipmentType(DIRECTION_EXP);
+    consolidationDetails.setSendingAgent(new Parties());
+    Parties parties = new Parties();
+    parties.setTenantId(1);
+    when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(parties);
+    consolidationV3Service.populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
+
+    // Verify that shipment type remains unchanged
+    assertThat(consolidationDetails.getShipmentType()).isEqualTo(DIRECTION_EXP);
+
+    // Verify that interBranchConsole flag remains unchanged
+    assertThat(consolidationDetails.getInterBranchConsole()).isFalse();
+  }
+
+  @Test
+  void testPopulateOriginDestination_IMP(){
+    consolidationDetails.setInterBranchConsole(false);
+    consolidationDetails.setShipmentType(DIRECTION_IMP);
+    consolidationDetails.setReceivingAgent(new Parties());
+    when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
+    consolidationV3Service.populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
+
+    // Verify that shipment type remains unchanged
+    assertThat(consolidationDetails.getShipmentType()).isEqualTo(DIRECTION_IMP);
+
+    // Verify that interBranchConsole flag remains unchanged
+    assertThat(consolidationDetails.getInterBranchConsole()).isFalse();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_SeaTransport_Success() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_SEA;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("1000");
+    BigDecimal volume = new BigDecimal("2.5");
+
+    when(UnitConversionUtility.convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3))
+        .thenReturn(new BigDecimal("2.5"));
+    when(UnitConversionUtility.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG))
+        .thenReturn(new BigDecimal("1000"));
+    when(UnitConversionUtility.convertUnit(Constants.VOLUME, new BigDecimal("1"), Constants.VOLUME_UNIT_M3, volumeUnit))
+        .thenReturn(new BigDecimal("1"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isEqualTo(new BigDecimal("2.5"));
+    assertThat(result.getChargeableUnit()).isEqualTo(Constants.VOLUME_UNIT_M3);
+    assertThat(result.getVolumeWeight()).isEqualTo(new BigDecimal("1"));
+    assertThat(result.getVolumeWeightUnit()).isEqualTo(volumeUnit);
+  }
+
+  @Test
+  void testCalculateVolumeWeight_RailTransport_Success() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_RAI;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("500");
+    BigDecimal volume = new BigDecimal("1.7");
+
+    when(UnitConversionUtility.convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3))
+        .thenReturn(new BigDecimal("1.7"));
+    when(UnitConversionUtility.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG))
+        .thenReturn(new BigDecimal("500"));
+    when(UnitConversionUtility.convertUnit(Constants.VOLUME, new BigDecimal("0.5"), Constants.VOLUME_UNIT_M3, volumeUnit))
+        .thenReturn(new BigDecimal("0.5"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isEqualTo(new BigDecimal("1.7"));
+    assertThat(result.getChargeableUnit()).isEqualTo(Constants.VOLUME_UNIT_M3);
+    assertThat(result.getVolumeWeight()).isEqualTo(new BigDecimal("0.5"));
+    assertThat(result.getVolumeWeightUnit()).isEqualTo(volumeUnit);
+  }
+
+  @Test
+  void testCalculateVolumeWeight_FSATransport_Success() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_FSA;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("2000");
+    BigDecimal volume = new BigDecimal("3.2");
+
+    when(UnitConversionUtility.convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3))
+        .thenReturn(new BigDecimal("3.2"));
+    when(UnitConversionUtility.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG))
+        .thenReturn(new BigDecimal("2000"));
+    when(UnitConversionUtility.convertUnit(Constants.VOLUME, new BigDecimal("2"), Constants.VOLUME_UNIT_M3, volumeUnit))
+        .thenReturn(new BigDecimal("2"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isEqualTo(new BigDecimal("3.2"));
+    assertThat(result.getChargeableUnit()).isEqualTo(Constants.VOLUME_UNIT_M3);
+    assertThat(result.getVolumeWeight()).isEqualTo(new BigDecimal("2"));
+    assertThat(result.getVolumeWeightUnit()).isEqualTo(volumeUnit);
+  }
+
+  @Test
+  void testCalculateVolumeWeight_AirTransport_WeightGreaterThanVolumeWeight() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("1000");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+        .thenReturn(new BigDecimal("1000"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_AirTransport_VolumeWeightGreaterThanWeight() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+        .thenReturn(new BigDecimal("100"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_FASTransport_Success() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_FAS;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("500");
+    BigDecimal volume = new BigDecimal("1.5");
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(),any()))
+        .thenReturn(new BigDecimal("500"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_RoadTransport_Success() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_ROA;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+        .thenReturn(new BigDecimal("100"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_EmptyWeightUnit_ReturnsEmptyObject() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isNull();
+    assertThat(result.getChargeableUnit()).isNull();
+    assertThat(result.getVolumeWeight()).isNull();
+    assertThat(result.getVolumeWeightUnit()).isNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_EmptyVolumeUnit_ReturnsEmptyObject() throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "KG";
+    String volumeUnit = "";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isNull();
+    assertThat(result.getChargeableUnit()).isNull();
+    assertThat(result.getVolumeWeight()).isNull();
+    assertThat(result.getVolumeWeightUnit()).isNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_EmptyTransportMode_ReturnsEmptyObject() throws RunnerException {
+    // Given
+    String transportMode = "";
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isNull();
+    assertThat(result.getChargeableUnit()).isNull();
+    assertThat(result.getVolumeWeight()).isNull();
+    assertThat(result.getVolumeWeightUnit()).isNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_DefaultCase_ReturnsEmptyObject() throws RunnerException {
+    // Given
+    String transportMode = "UNKNOWN_MODE";
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+    assertThat(result.getChargeable()).isNull();
+    assertThat(result.getChargeableUnit()).isNull();
+    assertThat(result.getVolumeWeight()).isNull();
+    assertThat(result.getVolumeWeightUnit()).isNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_ExceptionInConvertUnit_ThrowsRunnerException()
+      throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    when(UnitConversionUtility.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG))
+        .thenThrow(new RuntimeException("Conversion error"));
+
+    // When & Then
+    RunnerException exception = assertThrows(RunnerException.class, () -> {
+      consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+    });
+
+    assertThat(exception.getMessage()).isEqualTo("Conversion error");
+  }
+
+  @Test
+  void testCalculateVolumeWeight_ExceptionWithNullMessage_ThrowsRunnerExceptionWithNullMessage()
+      throws RunnerException {
+    // Given
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100");
+    BigDecimal volume = new BigDecimal("2.0");
+
+    RuntimeException causeException = new RuntimeException((String) null);
+    when(UnitConversionUtility.convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG))
+        .thenThrow(causeException);
+
+    // When & Then
+    RunnerException exception = assertThrows(RunnerException.class, () -> {
+      consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+    });
+
+    assertThat(exception.getMessage()).isNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_SeaTransport_WithRoundingUp() throws RunnerException {
+    // Given - Test the ceiling rounding for chargeable amount
+    String transportMode = Constants.TRANSPORT_MODE_SEA;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("1000");
+    BigDecimal volume = new BigDecimal("2.51"); // This should round up to 2.6
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+        .thenReturn(new BigDecimal("2.51"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void testCalculateVolumeWeight_AirTransport_WithRoundingUp() throws RunnerException {
+    // Given - Test the ceiling rounding for chargeable weight
+    String transportMode = Constants.TRANSPORT_MODE_AIR;
+    String weightUnit = "KG";
+    String volumeUnit = "M3";
+    BigDecimal weight = new BigDecimal("100.01");
+    BigDecimal volume = new BigDecimal("1.0");
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(new BigDecimal("100.01"));
+
+    // When
+    VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
+
+    // Then
+    assertThat(result).isNotNull();
+
+  }
+
+  @Test
+  void pushShipmentDataToDependentService_Test(){
+      KafkaResponse kafkaResponse = new KafkaResponse();
+      when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(kafkaResponse);
+      lenient().when(jsonHelper.convertToJson(kafkaResponse)).thenReturn("kafkaResponse");
+      lenient().when(trackingServiceAdapter.checkIfConsolContainersExist(any())).thenReturn(true);
+      lenient().when(trackingServiceAdapter.checkIfAwbExists(any())).thenReturn(false);
+      CarrierDetails carrierDetails = CarrierDetails.builder().shippingLine("SP").build();
+      consolidationDetails.setCarrierDetails(carrierDetails);
+      ConsolidationDetails oldEntity = consolidationDetails;
+      consolidationDetails.setInterBranchConsole(false);
+      oldEntity.setMawb("AAAA");
+
+      when(trackingServiceAdapter.getAllEvents(any(), any(), any())).thenReturn(new ArrayList<>());
+      UniversalTrackingPayload.UniversalEventsPayload payload = new UniversalEventsPayload();
+      when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(payload);
+      when(jsonHelper.convertToJson(any())).thenReturn("Adaf");
+
+      consolidationV3Service.pushShipmentDataToDependentService(consolidationDetails, true, oldEntity);
+      assertThat(consolidationDetails.getInterBranchConsole()).isFalse();
+  }
+
+  @Test
+  void pushShipmentDataToDependentService_Test1(){
+    KafkaResponse kafkaResponse = new KafkaResponse();
+    when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(kafkaResponse);
+    lenient().when(jsonHelper.convertToJson(kafkaResponse)).thenReturn("kafkaResponse");
+    lenient().when(trackingServiceAdapter.checkIfConsolContainersExist(any())).thenReturn(false);
+    lenient().when(trackingServiceAdapter.checkIfAwbExists(any())).thenReturn(true);
+    CarrierDetails carrierDetails = CarrierDetails.builder().shippingLine("SP").build();
+
+    Containers container1 = new Containers();
+    container1.setId(1L);
+    container1.setContainerNumber("C1");
+
+    Containers container2 = new Containers();
+    container2.setId(2L);
+    container2.setContainerNumber("C2");
+
+    Containers container3 = new Containers();
+    container3.setId(3L);
+    container3.setContainerNumber("C3");
+
+    Containers container4 = new Containers();
+    container4.setId(4L);
+    container4.setContainerNumber("C4");
+
+    List<Containers> containersList1 = List.of(container1, container2, container3);
+    List<Containers> containersList2 = List.of(container2, container3, container4);
+
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setContainersList(containersList1);
+
+    ConsolidationDetails oldEntity = consolidationDetails;
+    consolidationDetails.setInterBranchConsole(false);
+    oldEntity.setContainersList(containersList2);
+
+    lenient().when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(1L)
+        .build()));
+
+    List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+    ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+    shipmentDetailsList.add(shipmentDetails1);
+
+    lenient().when(trackingServiceAdapter.mapConsoleDataToTrackingServiceData(any(), any())).thenReturn(UniversalTrackingPayload.builder().build());
+
+    lenient().when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+    lenient().when(trackingServiceAdapter.getAllEvents(any(), any(), anyString())).thenReturn(new ArrayList<>());
+    UniversalTrackingPayload.UniversalEventsPayload payload = new UniversalEventsPayload();
+    lenient().when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(payload);
+    when(jsonHelper.convertToJson(any())).thenReturn("Adaf");
+
+    doThrow(new GenericException("Ex")).when(containerService).pushContainersToDependentServices(anyList(), anyList());
+    doThrow(new GenericException("EX")).when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue(any(), any());
+
+    consolidationV3Service.pushShipmentDataToDependentService(consolidationDetails, true, oldEntity);
+    assertThat(consolidationDetails.getInterBranchConsole()).isFalse();
+  }
+
+  @Test
+  void shouldSetReceivingBranchToNullWhenZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setReceivingBranch(0L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getReceivingBranch()).isNull();
+  }
+
+  @Test
+  void shouldKeepReceivingBranchWhenNonZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setReceivingBranch(10L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getReceivingBranch()).isEqualTo(10L);
+  }
+
+  @Test
+  void shouldNullifyTriangulationPartnerListIfOnlyOneWithZero() {
+    TriangulationPartner partner = new TriangulationPartner();
+    partner.setTriangulationPartner(0L);
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(List.of(partner));
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartnerList()).isNull();
+  }
+
+  @Test
+  void shouldNotNullifyTriangulationPartnerListIfOneWithNonZero() {
+    TriangulationPartner partner = new TriangulationPartner();
+    partner.setTriangulationPartner(123L);
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(List.of(partner));
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartnerList()).isNotNull();
+    assertThat(details.getTriangulationPartnerList()).hasSize(1);
+  }
+
+  @Test
+  void shouldSetTriangulationPartnerToNullWhenListIsNullAndValueIsZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(null);
+    details.setTriangulationPartner(0L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartner()).isNull();
+  }
+
+  @Test
+  void shouldNotSetTriangulationPartnerToNullWhenListIsNullAndValueIsNonZero() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setTriangulationPartnerList(null);
+    details.setTriangulationPartner(999L);
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getTriangulationPartner()).isEqualTo(999L);
+  }
+
+  @Test
+  void shouldDoNothingWhenAllInputsAreValid() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setReceivingBranch(100L);
+    details.setTriangulationPartner(500L);
+    details.setTriangulationPartnerList(Arrays.asList(
+        new TriangulationPartner(101L, true),
+        new TriangulationPartner(102L, false)
+    ));
+
+    consolidationV3Service.setReceivingAndTriangulationBranch(details);
+
+    assertThat(details.getReceivingBranch()).isEqualTo(100L);
+    assertThat(details.getTriangulationPartner()).isEqualTo(500L);
+    assertThat(details.getTriangulationPartnerList()).hasSize(2);
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnFalse_whenOldEntityIsNull() {
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        new ConsolidationDetails(), null, new ShipmentSettingsDetails());
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnFalse_whenIataTactFlagIsFalse() {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(false);
+
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        new ConsolidationDetails(), new ConsolidationDetails(), settings);
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnFalse_whenTransportModeIsNotAir() {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setTransportMode("SEA");
+
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        newEntity, new ConsolidationDetails(), settings);
+
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void checkDisableFetchConditionForAwb_shouldReturnTrue_whenCarrierDetailsAreDifferent() {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+    CarrierDetails newCarrier = new CarrierDetails();
+    newCarrier.setOriginPort("DXB");
+    newCarrier.setDestinationPort("JFK");
+    newCarrier.setShippingLine("EK");
+    newEntity.setCarrierDetails(newCarrier);
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    CarrierDetails oldCarrier = new CarrierDetails();
+    oldCarrier.setOriginPort("DEL");
+    oldCarrier.setDestinationPort("LHR");
+    oldCarrier.setShippingLine("AI");
+    oldEntity.setCarrierDetails(oldCarrier);
+
+    boolean result = consolidationV3Service.checkDisableFetchConditionForAwb(
+        newEntity, oldEntity, settings);
+
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void saveAwb_shouldNotSave_whenCheckConditionReturnsFalse() throws RunnerException {
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = null;
+
+    consolidationV3Service.saveAwb(newEntity, oldEntity);
+
+    verify(awbDao, never()).findByConsolidationId(any());
+  }
+
+  @Test
+  void saveAwb_shouldSave_whenCheckConditionIsTrueAndAwbsExist() throws RunnerException {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setId(1L);
+    newEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+    CarrierDetails newCarrier = new CarrierDetails();
+    newCarrier.setOriginPort("DXB");
+    newCarrier.setDestinationPort("JFK");
+    newCarrier.setShippingLine("EK");
+    newEntity.setCarrierDetails(newCarrier);
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    CarrierDetails oldCarrier = new CarrierDetails();
+    oldCarrier.setOriginPort("DEL");
+    oldCarrier.setDestinationPort("LHR");
+    oldCarrier.setShippingLine("AI");
+    oldEntity.setCarrierDetails(oldCarrier);
+
+    AwbGoodsDescriptionInfo info = new AwbGoodsDescriptionInfo();
+    info.setDisableFetchRates(true);
+    info.setEnableFetchRatesWarning(false);
+
+    Awb awb = new Awb();
+    awb.setAwbGoodsDescriptionInfo(List.of(info));
+
+    when(awbDao.findByConsolidationId(1L)).thenReturn(List.of(awb));
+
+    consolidationV3Service.saveAwb(newEntity, oldEntity);
+
+    verify(awbDao).save(awb);
+  }
+
+  @Test
+  void saveAwb_shouldNotSave_whenAwbListIsEmpty() throws RunnerException {
+    ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+    settings.setIataTactFlag(true);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    newEntity.setId(1L);
+    newEntity.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+    CarrierDetails newCarrier = new CarrierDetails();
+    newCarrier.setOriginPort("DXB");
+    newCarrier.setDestinationPort("JFK");
+    newCarrier.setShippingLine("EK");
+    newEntity.setCarrierDetails(newCarrier);
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    CarrierDetails oldCarrier = new CarrierDetails();
+    oldCarrier.setOriginPort("DEL");
+    oldCarrier.setDestinationPort("LHR");
+    oldCarrier.setShippingLine("AI");
+    oldEntity.setCarrierDetails(oldCarrier);
+
+    when(awbDao.findByConsolidationId(1L)).thenReturn(Collections.emptyList());
+
+    consolidationV3Service.saveAwb(newEntity, oldEntity);
+
+    verify(awbDao, never()).save(any());
   }
 }

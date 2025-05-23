@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -431,7 +432,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e.getMessage());
+            throw new GenericException(e.getMessage());
         }
     }
 
@@ -1264,7 +1265,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(isMasterDataChange(consolidationDetails, oldEntity)){
             return new ArrayList<>(consolidationDetails.getShipmentsList());
         }
-
         // check Container Number change
         return findContainerNumberChangeShipment(consolidationDetails, oldEntity);
     }
@@ -1318,7 +1318,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return isMawbChange || isCarrierSpacChange;
     }
 
-    private void setReceivingAndTriangulationBranch(ConsolidationDetails consolidationDetails) {
+    protected void setReceivingAndTriangulationBranch(ConsolidationDetails consolidationDetails) {
         if(consolidationDetails.getReceivingBranch() != null && consolidationDetails.getReceivingBranch() == 0)
             consolidationDetails.setReceivingBranch(null);
         if(ObjectUtils.isNotEmpty(consolidationDetails.getTriangulationPartnerList())
@@ -1333,7 +1333,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void saveAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) throws RunnerException {
+    protected void saveAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) throws RunnerException {
         if(checkDisableFetchConditionForAwb(consolidationDetails, oldEntity, commonUtils.getShipmentSettingFromContext())) {
             List<Awb> awbs = awbDao.findByConsolidationId(consolidationDetails.getId());
             if(!awbs.isEmpty()) {
@@ -1347,7 +1347,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private boolean checkDisableFetchConditionForAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
+    protected boolean checkDisableFetchConditionForAwb(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity,ShipmentSettingsDetails shipmentSettingsDetails){
         if(oldEntity == null)
             return false;
         if(!Boolean.TRUE.equals(shipmentSettingsDetails.getIataTactFlag())){
@@ -1398,76 +1398,77 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     /**
      * Populates the response summary fields: weight, volume, allocations, and chargeable weight.
      */
-    private void updateResponseSummary(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, BigDecimal totalWeight,
-            V1TenantSettingsResponse v1TenantSettingsResponse, String weightChargeableUnit, BigDecimal totalVolume, String volumeChargeableUnit) throws RunnerException {
 
-        response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
-        response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
-
-        // Format and set total weight and volume
-        response.setSummaryWeight(IReport.convertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
-        response.setSummaryVolume(IReport.convertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
-
-        // For LCL Sea shipments, calculate chargeable weight (max of volume and weight)
-        if (canSetChargableWeight(consolidationDetails)) {
-            double volInM3 = convertUnit(Constants.VOLUME, totalVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
-            double wtInKg = convertUnit(Constants.MASS, totalWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
-            double chargeableWeight = Math.max(wtInKg / 1000, volInM3); // Compare in tons
-            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-            response.setSummaryChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
-        }
-    }
+//    private void updateResponseSummary(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, BigDecimal totalWeight,
+//            V1TenantSettingsResponse v1TenantSettingsResponse, String weightChargeableUnit, BigDecimal totalVolume, String volumeChargeableUnit) throws RunnerException {
+//
+//        response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
+//        response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
+//
+//        // Format and set total weight and volume
+//        response.setSummaryWeight(IReport.convertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
+//        response.setSummaryVolume(IReport.convertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
+//
+//        // For LCL Sea shipments, calculate chargeable weight (max of volume and weight)
+//        if (canSetChargableWeight(consolidationDetails)) {
+//            double volInM3 = convertUnit(Constants.VOLUME, totalVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+//            double wtInKg = convertUnit(Constants.MASS, totalWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+//            double chargeableWeight = Math.max(wtInKg / 1000, volInM3); // Compare in tons
+//            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
+//            response.setSummaryChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
+//        }
+//    }
 
     /**
      * Computes chargeable weight/volume and updates achieved quantities and allocation units.
      */
-    private void updateAllocationsAndChargeables(ConsolidationDetails consolidationDetails, String weightChargeableUnit, String volumeChargeableUnit,
-            BigDecimal totalWeight, BigDecimal totalVolume) throws RunnerException {
-
-        String transportMode = consolidationDetails.getTransportMode();
-
-        if (consolidationDetails.getAllocations() == null) {
-            consolidationDetails.setAllocations(new Allocations());
-        }
-
-        // Compute chargeable weight based on mode
-        VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, totalWeight, totalVolume);
-
-        consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
-        consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
-
-        // Special case for LCL sea shipments
-        if (transportMode.equals(Constants.TRANSPORT_MODE_SEA)
-                && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
-
-            BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(),
-                    consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
-
-            BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(),
-                    consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
-
-            // Max of weight in tons or volume in m3
-            consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(winKg.divide(BigDecimal.valueOf(1000)).max(vinM3));
-            consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(Constants.VOLUME_UNIT_M3);
-        }
-
-        consolidationDetails.getAchievedQuantities().setWeightVolume(vwOb.getVolumeWeight());
-        consolidationDetails.getAchievedQuantities().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
-        consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
-    }
+//    private void updateAllocationsAndChargeables(ConsolidationDetails consolidationDetails, String weightChargeableUnit, String volumeChargeableUnit,
+//            BigDecimal totalWeight, BigDecimal totalVolume) throws RunnerException {
+//
+//        String transportMode = consolidationDetails.getTransportMode();
+//
+//        if (consolidationDetails.getAllocations() == null) {
+//            consolidationDetails.setAllocations(new Allocations());
+//        }
+//
+//        // Compute chargeable weight based on mode
+//        VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, totalWeight, totalVolume);
+//
+//        consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
+//        consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
+//
+//        // Special case for LCL sea shipments
+//        if (transportMode.equals(Constants.TRANSPORT_MODE_SEA)
+//                && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+//
+//            BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(),
+//                    consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
+//
+//            BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(),
+//                    consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
+//
+//            // Max of weight in tons or volume in m3
+//            consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(winKg.divide(BigDecimal.valueOf(1000)).max(vinM3));
+//            consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(Constants.VOLUME_UNIT_M3);
+//        }
+//
+//        consolidationDetails.getAchievedQuantities().setWeightVolume(vwOb.getVolumeWeight());
+//        consolidationDetails.getAchievedQuantities().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
+//        consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
+//    }
 
     /**
      * Sets weight and volume into AchievedQuantities section of the consolidation.
      */
-    private void setAchievedQuantities(ConsolidationDetails details, BigDecimal weight, String weightUnit, BigDecimal volume, String volumeUnit) {
-        if (details.getAchievedQuantities() == null) {
-            details.setAchievedQuantities(new AchievedQuantities());
-        }
-        details.getAchievedQuantities().setConsolidatedWeight(weight);
-        details.getAchievedQuantities().setConsolidatedWeightUnit(weightUnit);
-        details.getAchievedQuantities().setConsolidatedVolume(volume);
-        details.getAchievedQuantities().setConsolidatedVolumeUnit(volumeUnit);
-    }
+//    private void setAchievedQuantities(ConsolidationDetails details, BigDecimal weight, String weightUnit, BigDecimal volume, String volumeUnit) {
+//        if (details.getAchievedQuantities() == null) {
+//            details.setAchievedQuantities(new AchievedQuantities());
+//        }
+//        details.getAchievedQuantities().setConsolidatedWeight(weight);
+//        details.getAchievedQuantities().setConsolidatedWeightUnit(weightUnit);
+//        details.getAchievedQuantities().setConsolidatedVolume(volume);
+//        details.getAchievedQuantities().setConsolidatedVolumeUnit(volumeUnit);
+//    }
 
     /**
      * Calculates the total gross weight from all containers in the provided shipments,
@@ -1478,46 +1479,46 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @return The total gross weight in the specified target unit.
      * @throws RunnerException If unit conversion fails for any container.
      */
-    private BigDecimal calculateTotalGrossWeight(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
-        // Return zero if there are no shipments
-        if (shipments == null || shipments.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal totalGrossWeight = BigDecimal.ZERO;
-
-        // Iterate through each shipment
-        for (ShipmentDetails shipment : shipments) {
-            Set<Containers> containersList = shipment.getContainersList();
-
-            // Skip if there are no containers in the shipment
-            if (containersList == null || containersList.isEmpty()) {
-                continue;
-            }
-
-            // Iterate through each container in the shipment
-            for (Containers container : containersList) {
-                try {
-                    // Convert container gross weight to target unit and add to total
-                    BigDecimal convertedWeight = new BigDecimal(convertUnit(
-                            Constants.MASS,
-                            container.getGrossWeight(),
-                            container.getGrossWeightUnit(),
-                            targetUnit
-                    ).toString());
-
-                    totalGrossWeight = totalGrossWeight.add(convertedWeight);
-                } catch (RunnerException e) {
-                    // Log and rethrow the exception with shipment context
-                    log.error("Unit conversion failed for shipmentId={}, containerUnit={}, targetUnit={}: {}",
-                            shipment.getId(), container.getGrossWeightUnit(), targetUnit, e.getMessage(), e);
-                    throw new RunnerException("Failed gross weight conversion for shipment ID: " + shipment.getId(), e);
-                }
-            }
-        }
-
-        return totalGrossWeight;
-    }
+//    private BigDecimal calculateTotalGrossWeight(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
+//        // Return zero if there are no shipments
+//        if (shipments == null || shipments.isEmpty()) {
+//            return BigDecimal.ZERO;
+//        }
+//
+//        BigDecimal totalGrossWeight = BigDecimal.ZERO;
+//
+//        // Iterate through each shipment
+//        for (ShipmentDetails shipment : shipments) {
+//            Set<Containers> containersList = shipment.getContainersList();
+//
+//            // Skip if there are no containers in the shipment
+//            if (containersList == null || containersList.isEmpty()) {
+//                continue;
+//            }
+//
+//            // Iterate through each container in the shipment
+//            for (Containers container : containersList) {
+//                try {
+//                    // Convert container gross weight to target unit and add to total
+//                    BigDecimal convertedWeight = new BigDecimal(convertUnit(
+//                            Constants.MASS,
+//                            container.getGrossWeight(),
+//                            container.getGrossWeightUnit(),
+//                            targetUnit
+//                    ).toString());
+//
+//                    totalGrossWeight = totalGrossWeight.add(convertedWeight);
+//                } catch (RunnerException e) {
+//                    // Log and rethrow the exception with shipment context
+//                    log.error("Unit conversion failed for shipmentId={}, containerUnit={}, targetUnit={}: {}",
+//                            shipment.getId(), container.getGrossWeightUnit(), targetUnit, e.getMessage(), e);
+//                    throw new RunnerException("Failed gross weight conversion for shipment ID: " + shipment.getId(), e);
+//                }
+//            }
+//        }
+//
+//        return totalGrossWeight;
+//    }
 
     /**
      * Calculates the total gross volume from all containers in the provided shipments,
@@ -1528,101 +1529,101 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @return The total gross volume in the specified target unit.
      * @throws RunnerException If unit conversion fails for any container.
      */
-    private BigDecimal calculateTotalGrossVolume(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
-        // Return zero if there are no shipments
-        if (shipments == null || shipments.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal totalGrossVolume = BigDecimal.ZERO;
-
-        // Iterate through each shipment
-        for (ShipmentDetails shipment : shipments) {
-            Set<Containers> containersList = shipment.getContainersList();
-
-            // Skip if there are no containers in the shipment
-            if (containersList == null || containersList.isEmpty()) {
-                continue;
-            }
-
-            // Iterate through each container in the shipment
-            for (Containers container : containersList) {
-                try {
-                    // Convert container gross volume to target unit and add to total
-                    BigDecimal convertedVolume = new BigDecimal(convertUnit(
-                            Constants.VOLUME,
-                            container.getGrossVolume(),
-                            container.getGrossVolumeUnit(),
-                            targetUnit
-                    ).toString());
-
-                    totalGrossVolume = totalGrossVolume.add(convertedVolume);
-                } catch (RunnerException e) {
-                    // Log and rethrow the exception with shipment context
-                    log.error("Unit conversion failed for shipmentId={}, containerVolumeUnit={}, targetUnit={}: {}",
-                            shipment.getId(), container.getGrossVolumeUnit(), targetUnit, e.getMessage(), e);
-                    throw new RunnerException("Failed gross volume conversion for shipment ID: " + shipment.getId(), e);
-                }
-            }
-        }
-
-        return totalGrossVolume;
-    }
+//    private BigDecimal calculateTotalGrossVolume(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
+//        // Return zero if there are no shipments
+//        if (shipments == null || shipments.isEmpty()) {
+//            return BigDecimal.ZERO;
+//        }
+//
+//        BigDecimal totalGrossVolume = BigDecimal.ZERO;
+//
+//        // Iterate through each shipment
+//        for (ShipmentDetails shipment : shipments) {
+//            Set<Containers> containersList = shipment.getContainersList();
+//
+//            // Skip if there are no containers in the shipment
+//            if (containersList == null || containersList.isEmpty()) {
+//                continue;
+//            }
+//
+//            // Iterate through each container in the shipment
+//            for (Containers container : containersList) {
+//                try {
+//                    // Convert container gross volume to target unit and add to total
+//                    BigDecimal convertedVolume = new BigDecimal(convertUnit(
+//                            Constants.VOLUME,
+//                            container.getGrossVolume(),
+//                            container.getGrossVolumeUnit(),
+//                            targetUnit
+//                    ).toString());
+//
+//                    totalGrossVolume = totalGrossVolume.add(convertedVolume);
+//                } catch (RunnerException e) {
+//                    // Log and rethrow the exception with shipment context
+//                    log.error("Unit conversion failed for shipmentId={}, containerVolumeUnit={}, targetUnit={}: {}",
+//                            shipment.getId(), container.getGrossVolumeUnit(), targetUnit, e.getMessage(), e);
+//                    throw new RunnerException("Failed gross volume conversion for shipment ID: " + shipment.getId(), e);
+//                }
+//            }
+//        }
+//
+//        return totalGrossVolume;
+//    }
 
 
     /**
      * Calculates total weight from all shipments converted to target unit.
      */
-    private BigDecimal calculateTotalWeight(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
-        if (shipments == null || shipments.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal totalWeight = BigDecimal.ZERO;
-        for (ShipmentDetails shipment : shipments) {
-            try {
-                BigDecimal weight = new BigDecimal(convertUnit(
-                        Constants.MASS,
-                        shipment.getWeight(),
-                        shipment.getWeightUnit(),
-                        targetUnit
-                ).toString());
-                totalWeight = totalWeight.add(weight);
-            } catch (RunnerException e) {
-                log.error("Failed to convert weight unit for shipment ID: {}. Source unit: {}, Target unit: {}. Reason: {}",
-                        shipment.getId(), shipment.getWeightUnit(), targetUnit, e.getMessage(), e);
-                throw new RunnerException("Error converting weight unit for shipment ID: " + shipment.getId(), e);
-            }
-        }
-        return totalWeight;
-    }
+//    private BigDecimal calculateTotalWeight(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
+//        if (shipments == null || shipments.isEmpty()) {
+//            return BigDecimal.ZERO;
+//        }
+//
+//        BigDecimal totalWeight = BigDecimal.ZERO;
+//        for (ShipmentDetails shipment : shipments) {
+//            try {
+//                BigDecimal weight = new BigDecimal(convertUnit(
+//                        Constants.MASS,
+//                        shipment.getWeight(),
+//                        shipment.getWeightUnit(),
+//                        targetUnit
+//                ).toString());
+//                totalWeight = totalWeight.add(weight);
+//            } catch (RunnerException e) {
+//                log.error("Failed to convert weight unit for shipment ID: {}. Source unit: {}, Target unit: {}. Reason: {}",
+//                        shipment.getId(), shipment.getWeightUnit(), targetUnit, e.getMessage(), e);
+//                throw new RunnerException("Error converting weight unit for shipment ID: " + shipment.getId(), e);
+//            }
+//        }
+//        return totalWeight;
+//    }
 
     /**
      * Calculates total volume from all shipments converted to target unit.
      */
-    private BigDecimal calculateTotalVolume(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
-        if (shipments == null || shipments.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-
-        BigDecimal totalVolume = BigDecimal.ZERO;
-        for (ShipmentDetails shipment : shipments) {
-            try {
-                BigDecimal volume = new BigDecimal(convertUnit(
-                        Constants.VOLUME,
-                        shipment.getVolume(),
-                        shipment.getVolumeUnit(),
-                        targetUnit
-                ).toString());
-                totalVolume = totalVolume.add(volume);
-            } catch (RunnerException e) {
-                log.error("Failed to convert volume unit for shipment ID: {}. Source unit: {}, Target unit: {}. Reason: {}",
-                        shipment.getId(), shipment.getVolumeUnit(), targetUnit, e.getMessage(), e);
-                throw new RunnerException("Error converting volume unit for shipment ID: " + shipment.getId(), e);
-            }
-        }
-        return totalVolume;
-    }
+//    private BigDecimal calculateTotalVolume(Set<ShipmentDetails> shipments, String targetUnit) throws RunnerException {
+//        if (shipments == null || shipments.isEmpty()) {
+//            return BigDecimal.ZERO;
+//        }
+//
+//        BigDecimal totalVolume = BigDecimal.ZERO;
+//        for (ShipmentDetails shipment : shipments) {
+//            try {
+//                BigDecimal volume = new BigDecimal(convertUnit(
+//                        Constants.VOLUME,
+//                        shipment.getVolume(),
+//                        shipment.getVolumeUnit(),
+//                        targetUnit
+//                ).toString());
+//                totalVolume = totalVolume.add(volume);
+//            } catch (RunnerException e) {
+//                log.error("Failed to convert volume unit for shipment ID: {}. Source unit: {}, Target unit: {}. Reason: {}",
+//                        shipment.getId(), shipment.getVolumeUnit(), targetUnit, e.getMessage(), e);
+//                throw new RunnerException("Error converting volume unit for shipment ID: " + shipment.getId(), e);
+//            }
+//        }
+//        return totalVolume;
+//    }
 
     /**
      * Checks if chargeable weight can be set based on container category and transport mode.
