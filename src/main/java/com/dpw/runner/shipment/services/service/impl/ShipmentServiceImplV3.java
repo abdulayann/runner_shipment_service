@@ -559,7 +559,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
+    protected void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
         if (!CollectionUtils.isEmpty(containersList)) {
             setCounterCountAndTeuCount(shipmentRetrieveLiteResponse, containersList);
         }
@@ -588,7 +588,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setContainerCount(Long.valueOf(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse)));
     }
 
-    private Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
+    protected Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
         Object cache = null;
         if (cacheMap.isEmpty()) {
             Optional<Cache> masterDataCacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));
@@ -908,7 +908,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         log.info("shipment afterSave end..... ");
     }
 
-    private void triggerPushToDownStream(ShipmentDetails shipmentDetails, Boolean isCreate) {
+    protected void triggerPushToDownStream(ShipmentDetails shipmentDetails, Boolean isCreate) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
         if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
             consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
@@ -932,7 +932,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .entityId(x.getShipmentId())
                             .entityName(SHIPMENT)
                             .build())
-                    .toList();
+                    .collect(Collectors.toList());
             triggersList.add(triggers);
             pushToDownstreamEventDto.setTriggers(triggersList);
         }
