@@ -50,6 +50,7 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
             private Long id;
             private UUID guid;
             private String commodity;
+            private String commodityCode;
             private BigDecimal weight;
             private String weightUnit;
             private BigDecimal netWeight;
