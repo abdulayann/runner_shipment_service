@@ -90,8 +90,8 @@ class ViewsDaoTest {
 
     @Test
     void findAllByUsername() {
-        when(viewsRepository.findAllByUsername(any())).thenReturn(new ArrayList<>());
-        List<String> response = viewsDao.findAllByUsername("egy");
+        when(viewsRepository.findAllByUsernameAndEntity(any(), any())).thenReturn(new ArrayList<>());
+        List<String> response = viewsDao.findAllByUsernameAndEntity("egy", "entity");
         assertEquals(0, response.size());
     }
 

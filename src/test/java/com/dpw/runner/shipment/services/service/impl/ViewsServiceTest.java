@@ -82,9 +82,10 @@ class ViewsServiceTest {
         ViewsRequest request = new ViewsRequest(); // Provide necessary data for request
         request.setIsDefault(true);
         request.setName("name");
+        request.setEntity("entity");
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("name"));
+        when(viewsDao.findAllByUsernameAndEntity(anyString(), anyString())).thenReturn(List.of("name"));
 
         assertThrows(ValidationException.class, () ->viewsService.create(commonRequestModel));
     }
@@ -152,12 +153,12 @@ class ViewsServiceTest {
         request.setIsDefault(true);
         request.setId(10L);
         request.setName("test");
+        request.setEntity("entity");
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         views.setCreatedBy("user");
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
-        when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("test"));
 
         assertThrows(ValidationException.class, () -> viewsService.update(commonRequestModel));
 
