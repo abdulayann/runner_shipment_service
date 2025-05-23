@@ -43,8 +43,8 @@ public class ViewsDao implements IViewsDao {
     }
 
     @Override
-    public List<String> findAllByUsername(String username){
-        return viewsRepository.findAllByUsername(username);
+    public List<String> findAllByUsernameAndEntity(String username, String entity){
+        return viewsRepository.findAllByUsernameAndEntity(username, entity);
     }
 
     @Override

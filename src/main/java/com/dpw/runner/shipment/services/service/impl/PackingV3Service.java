@@ -670,6 +670,14 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setContainsText(request.getContainsText());
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
+            Set<Long> containerIds = packingListResponse.getPackings().stream().map(PackingResponse::getContainerId).filter(Objects::nonNull).collect(Collectors.toSet());
+            if (!CollectionUtils.isEmpty(containerIds)) {
+                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
+                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
+            }
+
+        }
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {
             assignedPackages = packingDao.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, TenantContext.getCurrentTenant());
