@@ -44,6 +44,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -4154,6 +4155,146 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         container.setContainerCount(count);
         container.setId(id);
         return container;
+    }
+    
+    @Test
+    void testSetContainerNumberAndMasterData() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                                .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData1() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        ContainerInfoProjection projection = mock(ContainerInfoProjection.class);
+        when(packingV3Service.getContainerIdNumberMap(any())).thenReturn(Map.of(2L, projection));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData2() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData3() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        when(masterDataUtils.fetchInBulkCommodityTypes(any())).thenReturn(Map.of("123", new EntityTransferCommodityType()));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                                .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData1_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        ContainerInfoProjection projection = mock(ContainerInfoProjection.class);
+        when(packingV3Service.getContainerIdNumberMap(any())).thenReturn(Map.of(2L, projection));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData2_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData3_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(new ArrayList<>())
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData4_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        when(masterDataUtils.fetchInBulkCommodityTypes(any())).thenReturn(Map.of("123", new EntityTransferCommodityType()));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
     }
 
     private AdditionalDetails getMockAdditionalDetails(LocalDateTime mockDateTime, Boolean isDocTurnedOverToCustomer,

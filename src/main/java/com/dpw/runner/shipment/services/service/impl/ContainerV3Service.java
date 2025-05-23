@@ -910,7 +910,8 @@ public class ContainerV3Service implements IContainerV3Service {
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
                 var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
                 var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(responseList, masterDataResponse)), executorServiceMasterData);
-                CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
+                var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllContainerTypesInSingleCall(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture, containerTypeFuture).join();
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONTAINER_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
             } catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONTAINER_LIST, ex.getLocalizedMessage());
