@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -14,13 +15,17 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -34,6 +39,7 @@ import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -56,6 +62,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -246,6 +253,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private List<ModuleValidationFieldType> missingFields;
   private static ShipmentDetails testShipment;
   private static Containers testContainer;
+  private static ShipmentSettingsDetails shipmentSettingsDetails;
 
   private MockedStatic<UnitConversionUtility> unitConversionUtilityMockedStatic;
 
@@ -271,6 +279,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     consolidationV3Service.executorServiceMasterData = Executors.newFixedThreadPool(2);
     shipmentDetails = jsonTestUtility.getCompleteShipment();
     consolidationDetails = new ConsolidationDetails();
+    shipmentSettingsDetails = new ShipmentSettingsDetails();
     customerBookingV3Request = new CustomerBookingV3Request();
     missingFields = new ArrayList<>();
     testShipment = jsonTestUtility.getTestShipment();
@@ -1548,4 +1557,1104 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     verify(awbDao, never()).save(any());
   }
+
+  @Test
+  void getBookingNumberFromConsol_shouldReturnBookingNumber() {
+    Long consolidationId = 123L;
+    String expectedBookingNumber = "BOOK123";
+
+    when(consolidationDetailsDao.getBookingNumberFromConsol(consolidationId)).thenReturn(expectedBookingNumber);
+
+    String actualBookingNumber = consolidationV3Service.getBookingNumberFromConsol(consolidationId);
+
+    assertEquals(expectedBookingNumber, actualBookingNumber);
+    verify(consolidationDetailsDao, times(1)).getBookingNumberFromConsol(consolidationId);
+  }
+
+  @Test
+  void updateConsolidationAttachmentFlag_shouldUpdateFlag_whenFlagIsNotNull() {
+    Long consolidationId = 123L;
+    Boolean enableFlag = true;
+
+    doNothing().when(consolidationDetailsDao).updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+
+    consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+
+    verify(consolidationDetailsDao, times(1)).updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+  }
+
+  @Test
+  void updateConsolidationAttachmentFlag_shouldThrowException_whenFlagIsNull() {
+    Long consolidationId = 123L;
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        consolidationV3Service.updateConsolidationAttachmentFlag(null, consolidationId)
+    );
+
+    assertEquals("enableFlag cannot be null", exception.getMessage());
+    verify(consolidationDetailsDao, never()).updateConsolidationAttachmentFlag(any(), any());
+  }
+
+  @Test
+  void updateConsolidationAttachmentFlag_shouldWrapException_whenDaoThrows() {
+    Long consolidationId = 123L;
+    Boolean enableFlag = false;
+
+    doThrow(new RuntimeException("DB error")).when(consolidationDetailsDao)
+        .updateConsolidationAttachmentFlag(enableFlag, consolidationId);
+
+    IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolidationId)
+    );
+
+    assertEquals("DB error", exception.getMessage());
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setTerminalCutoff(LocalDateTime.now());
+    oldEntity.setTerminalCutoff(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnFalse_whenAllFieldsAreEqual() {
+    LocalDateTime cutoffTime = LocalDateTime.now();
+
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setTerminalCutoff(cutoffTime);
+    newEntity.setVerifiedGrossMassCutoff(cutoffTime);
+    newEntity.setShipInstructionCutoff(cutoffTime);
+    newEntity.setHazardousBookingCutoff(cutoffTime);
+    newEntity.setReeferCutoff(cutoffTime);
+    newEntity.setEarliestEmptyEquPickUp(cutoffTime);
+    newEntity.setLatestFullEquDeliveredToCarrier(cutoffTime);
+    newEntity.setEarliestDropOffFullEquToCarrier(cutoffTime);
+    newEntity.setLatDate(cutoffTime);
+
+    oldEntity.setTerminalCutoff(cutoffTime);
+    oldEntity.setVerifiedGrossMassCutoff(cutoffTime);
+    oldEntity.setShipInstructionCutoff(cutoffTime);
+    oldEntity.setHazardousBookingCutoff(cutoffTime);
+    oldEntity.setReeferCutoff(cutoffTime);
+    oldEntity.setEarliestEmptyEquPickUp(cutoffTime);
+    oldEntity.setLatestFullEquDeliveredToCarrier(cutoffTime);
+    oldEntity.setEarliestDropOffFullEquToCarrier(cutoffTime);
+    oldEntity.setLatDate(cutoffTime);
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertFalse(result);
+  }
+
+  @Test
+  void validateOutstandingDuesForShipments_shouldThrowBillingException_whenOutstandingDuesExist() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setGuid(UUID.randomUUID());
+    shipment.setTenantId(1);
+    shipment.setShipmentId("H123");
+    shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+    V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+    settings.setEnableConsolSplitBillCharge(true);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+
+    BillingDueSummary dueSummary = new BillingDueSummary();
+    dueSummary.setModuleGuid(shipment.getGuid().toString());
+    dueSummary.setDueRemaining(true);
+    when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(dueSummary));
+
+    List<ShipmentDetails> shipmentList = List.of(shipment);
+
+    BillingException exception = assertThrows(BillingException.class, () ->
+        consolidationV3Service.validateOutstandingDuesForShipments(shipmentList)
+    );
+
+    assertTrue(exception.getMessage().contains("cannot be detached"));
+  }
+
+  @Test
+  void validateOutstandingDuesForShipments_shouldDoNothing_whenNoOutstandingDues() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setGuid(UUID.randomUUID());
+    shipment.setTenantId(1);
+    shipment.setShipmentId("H123");
+    shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+    V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+    settings.setEnableConsolSplitBillCharge(true);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+
+    BillingDueSummary dueSummary = new BillingDueSummary();
+    dueSummary.setModuleGuid(shipment.getGuid().toString());
+    dueSummary.setDueRemaining(false);
+    when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(dueSummary));
+
+    assertDoesNotThrow(() ->
+        consolidationV3Service.validateOutstandingDuesForShipments(List.of(shipment))
+    );
+  }
+
+  @Test
+  void validateOutstandingDuesForShipments_shouldSkip_whenSplitBillingDisabled() {
+    V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+    settings.setEnableConsolSplitBillCharge(false);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+    assertDoesNotThrow(() ->
+        consolidationV3Service.validateOutstandingDuesForShipments(List.of(shipment))
+    );
+
+    verify(billingServiceAdapter, never()).fetchBillingDueSummary(any());
+  }
+
+  @Test
+  void validateOutstandingDuesForShipments_shouldSkip_whenListIsEmpty() {
+    V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+    settings.setEnableConsolSplitBillCharge(true);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+
+    assertDoesNotThrow(() ->
+        consolidationV3Service.validateOutstandingDuesForShipments(Collections.emptyList())
+    );
+
+    verify(billingServiceAdapter, never()).fetchBillingDueSummary(any());
+  }
+
+  @Test
+  void createBillingBulkSummaryBranchWiseRequest_shouldMapFieldsCorrectly() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTenantId(10);
+    shipment.setGuid(UUID.randomUUID());
+
+    BillingBulkSummaryBranchWiseRequest request =
+        consolidationV3Service.createBillingBulkSummaryBranchWiseRequest(List.of(shipment));
+
+    assertEquals(Constants.SHIPMENT, request.getModuleType());
+    assertEquals("10", request.getModuleData().get(0).getBranchId());
+    assertEquals(shipment.getGuid().toString(), request.getModuleData().get(0).getModuleGuid());
+  }
+
+  @Test
+  void getConsolidationById_shouldReturnConsolidationDetails() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    when(consolidationDetailsDao.findConsolidationsById(1L)).thenReturn(details);
+
+    ConsolidationDetails result = consolidationV3Service.getConsolidationById(1L);
+
+    assertEquals(details, result);
+  }
+
+  @Test
+  void findById_shouldReturnOptionalConsolidationDetails() {
+    ConsolidationDetails details = new ConsolidationDetails();
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(details));
+
+    Optional<ConsolidationDetails> result = consolidationV3Service.findById(1L);
+
+    assertTrue(result.isPresent());
+    assertEquals(details, result.get());
+  }
+
+  @Test
+  void save_shouldReturnSavedEntity() {
+    ConsolidationDetails input = new ConsolidationDetails();
+    when(consolidationDetailsDao.save(input, true)).thenReturn(input);
+
+    ConsolidationDetails result = consolidationV3Service.save(input, true);
+
+    assertEquals(input, result);
+  }
+
+  @Test
+  void testIsSaveSeaPacks_whenNoContainersAssigned_shouldReturnTrue() throws RunnerException {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setShipmentId("SH123");
+    shipment.setContainersList(null); // no containers assigned
+
+    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of());
+    assertTrue(result);
+  }
+
+  @Test
+  void testIsSaveSeaPacks_whenPackingAttachedToContainer_shouldThrowRunnerException() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setTransportMode(TRANSPORT_MODE_SEA);
+    shipment.setShipmentId("SH999");
+
+    Containers container = new Containers();
+    container.setId(10L);
+    container.setContainerNumber("CONT01");
+    shipment.setContainersList(Set.of(container));
+
+    Packing packing = new Packing();
+    packing.setContainerId(10L);
+    packing.setInnerPacksCount(5L);
+
+    when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
+    // assuming isSeaPackingList returns true
+
+    RunnerException ex = assertThrows(RunnerException.class, () -> {
+      consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of(container));
+    });
+
+    assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
+  }
+
+  @Test
+  void testIsSaveSeaPacks_whenContainerStillAttachedToShipment_shouldThrowRunnerException() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    shipment.setShipmentId("SH567");
+
+    Containers container = new Containers();
+    container.setId(20L);
+    container.setContainerNumber("CONT02");
+    shipment.setContainersList(Set.of(container));
+
+    when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
+
+    RunnerException ex = assertThrows(RunnerException.class, () -> {
+      consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of(container));
+    });
+
+    assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
+  }
+
+  @Test
+  void testUpdateShipmentDataInPlatform_whenShipmentIdsIsNull_shouldDoNothing() {
+    consolidationV3Service.updateShipmentDataInPlatform(null);
+    verifyNoInteractions(shipmentDao, bookingIntegrationsUtility);
+  }
+
+  @Test
+  void testUpdateShipmentDataInPlatform_whenNoShipmentsFound_shouldDoNothing() {
+    when(shipmentDao.findShipmentsByIds(anySet()))
+        .thenThrow(new GenericException("Ex"));
+
+    consolidationV3Service.updateShipmentDataInPlatform(Set.of(1L, 2L));
+    verifyNoInteractions(bookingIntegrationsUtility);
+  }
+
+  @Test
+  void testUpdateShipmentDataInPlatform_whenNoShipmentsFound_Exception() {
+    when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(Collections.emptyList());
+
+    consolidationV3Service.updateShipmentDataInPlatform(Set.of(1L, 2L));
+    verify(shipmentDao).findShipmentsByIds(Set.of(1L, 2L));
+    verifyNoInteractions(bookingIntegrationsUtility);
+  }
+
+  @Test
+  void testUpdateShipmentDataInPlatform_whenP100BranchEnabled_shouldCallUpdateBooking() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    List<ShipmentDetails> shipments = List.of(shipment);
+
+    when(shipmentDao.findShipmentsByIds(Set.of(1L))).thenReturn(shipments);
+    V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+    settings.setP100Branch(true);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+
+    consolidationV3Service.updateShipmentDataInPlatform(Set.of(1L));
+
+    verify(bookingIntegrationsUtility).updateBookingInPlatformEmptyContainer(shipment);
+  }
+
+  @Test
+  void testUpdateShipmentDataInPlatform_whenP100BranchDisabled_shouldNotCallUpdateBooking() {
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setId(1L);
+    List<ShipmentDetails> shipments = List.of(shipment);
+
+    when(shipmentDao.findShipmentsByIds(Set.of(1L))).thenReturn(shipments);
+    V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+    settings.setP100Branch(false);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(settings);
+
+    consolidationV3Service.updateShipmentDataInPlatform(Set.of(1L));
+
+    verify(bookingIntegrationsUtility, never()).updateBookingInPlatformEmptyContainer(any());
+  }
+
+  // Utility method for creating dummy ConsolidationDetails
+  private ConsolidationDetails createConsole(String type, boolean interBranch, boolean isAccepted) {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setShipmentType(type);
+    console.setInterBranchConsole(interBranch);
+    // Stub isConsoleAccepted if needed via spy or override
+    return console;
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenShipmentTypeIsNotEXP_shouldReturn() {
+    ConsolidationDetails console = createConsole("IMP", true, false);
+    consolidationV3Service.processInterConsoleDetachShipment(console, List.of(1L));
+    verifyNoInteractions(commonUtils, shipmentDao, networkTransferService);
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenInterBranchConsoleIsFalse_shouldReturn() {
+    ConsolidationDetails console = createConsole(Constants.DIRECTION_EXP, false, false);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+    consolidationV3Service.processInterConsoleDetachShipment(console, List.of(1L));
+    verifyNoInteractions(shipmentDao, networkTransferService);
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenNetworkTransferDisabled_shouldReturn() {
+    ConsolidationDetails console = createConsole(Constants.DIRECTION_EXP, true, false);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(false);
+
+    consolidationV3Service.processInterConsoleDetachShipment(console, List.of(1L));
+    verify(commonUtils).getShipmentSettingFromContext();
+    verifyNoInteractions(shipmentDao, networkTransferService);
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenShipmentIdsEmpty_shouldReturn() {
+    ConsolidationDetails console = createConsole(Constants.DIRECTION_EXP, true, false);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+    consolidationV3Service.processInterConsoleDetachShipment(console, Collections.emptyList());
+    verify(commonUtils).getShipmentSettingFromContext();
+    verifyNoInteractions(shipmentDao, networkTransferService);
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenConsoleIsAccepted_shouldReturn() {
+    ConsolidationDetails console = createConsole(Constants.DIRECTION_EXP, true, false);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+
+    // Stub isConsoleAccepted to return true
+    ConsolidationV3Service spyService = Mockito.spy(consolidationV3Service);
+    doReturn(true).when(spyService).isConsoleAccepted(console);
+
+    spyService.processInterConsoleDetachShipment(console, List.of(1L, 2L));
+    verify(spyService).isConsoleAccepted(console);
+    verifyNoInteractions(shipmentDao, networkTransferService);
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenAllConditionsMet_shouldCallDeleteValidNetworkTransferEntity() {
+    ConsolidationDetails console = createConsole(Constants.DIRECTION_EXP, true, false);
+    ShipmentDetails s1 = new ShipmentDetails();
+    s1.setId(1L);
+    s1.setReceivingBranch(22L);
+
+    ShipmentDetails s2 = new ShipmentDetails();
+    s2.setId(2L);
+    s2.setReceivingBranch(null); // should be skipped
+
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+    when(shipmentDao.findShipmentsByIds(Set.of(1L, 2L))).thenReturn(List.of(s1, s2));
+
+    // Stub isConsoleAccepted to return false
+    ConsolidationV3Service spyService = Mockito.spy(consolidationV3Service);
+    doReturn(false).when(spyService).isConsoleAccepted(console);
+
+    spyService.processInterConsoleDetachShipment(console, List.of(1L, 2L));
+
+    verify(networkTransferService, never()).deleteValidNetworkTransferEntity(null, 2L, "SHIPMENT");
+  }
+
+  @Test
+  void testProcessInterConsoleDetachShipment_whenExceptionOccurs_shouldLogError() {
+    ConsolidationDetails console = createConsole(Constants.DIRECTION_EXP, true, false);
+
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+    when(shipmentDao.findShipmentsByIds(anySet())).thenThrow(new RuntimeException("DB error"));
+
+    // Stub isConsoleAccepted to return false
+    ConsolidationV3Service spyService = Mockito.spy(consolidationV3Service);
+    doReturn(false).when(spyService).isConsoleAccepted(console);
+
+    assertDoesNotThrow(() ->
+        spyService.processInterConsoleDetachShipment(console, List.of(1L)));
+
+    verify(shipmentDao).findShipmentsByIds(anySet());
+  }
+
+  @Test
+  void testIsConsoleAccepted(){
+    when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(new ArrayList<>());
+    assertFalse(consolidationV3Service.isConsoleAccepted(consolidationDetails));
+  }
+
+  @Test
+  void testCreateLogHistoryForConsole_shouldCallLogHistoryServiceWithCorrectData() {
+    // Arrange
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setId(101L);
+
+    String jsonPayload = "{\"id\":101,\"guid\":\"guid-101\"}";
+
+    when(jsonHelper.convertToJson(details)).thenReturn(jsonPayload);
+
+    // Act
+    consolidationV3Service.createLogHistoryForConsole(details);
+
+    // Assert
+    ArgumentCaptor<LogHistoryRequest> captor = ArgumentCaptor.forClass(LogHistoryRequest.class);
+    verify(logsHistoryService).createLogHistory(captor.capture());
+
+    LogHistoryRequest request = captor.getValue();
+    assertEquals(101L, request.getEntityId());
+    assertEquals(jsonPayload, request.getEntityPayload());
+    assertEquals(Constants.CONSOLIDATION, request.getEntityType());
+  }
+
+  @Test
+  void testCreateLogHistoryForConsole_whenJsonConversionFails_shouldLogErrorAndNotThrow() {
+    // Arrange
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setId(101L);
+
+    when(jsonHelper.convertToJson(details)).thenThrow(new RuntimeException("Serialization failed"));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.createLogHistoryForConsole(details));
+
+    verify(logsHistoryService, never()).createLogHistory(any());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenConsolationNotFound_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L),
+        createConsoleShipmentMapping(2L, 202L)
+    );
+    List<Awb> mawbs = Arrays.asList(createMawb(301L));
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenMawbsListIsEmpty_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L)
+    );
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(Collections.emptyList());
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenMawbsListIsNull_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L)
+    );
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(null);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenShipIdListIsEmpty_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<Awb> mawbs = Arrays.asList(createMawb(301L));
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(Collections.emptyList());
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenMawbCargoInfoIsNull_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L)
+    );
+    Awb mawb = createMawb(301L);
+    mawb.setAwbCargoInfo(null);
+    List<Awb> mawbs = Arrays.asList(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenMawbStatusIsAwbFsuLocked_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L)
+    );
+    Awb mawb = createMawbWithCargoInfo(301L, "T2");
+    mawb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
+    List<Awb> mawbs = Arrays.asList(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenMawbSciIsAlreadyT1_shouldNotThrow() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L)
+    );
+    Awb mawb = createMawbWithCargoInfo(301L, AwbConstants.T1);
+    mawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS);
+    List<Awb> mawbs = List.of(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+
+    // Act & Assert
+    assertDoesNotThrow(() -> consolidationV3Service.checkSciForAttachConsole(consoleId));
+
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenNoShipmentHasSciT1_shouldNotUpdateMawbAndConsole() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L),
+        createConsoleShipmentMapping(2L, 202L)
+    );
+    Awb mawb = createMawbWithCargoInfo(301L, "T2");
+    mawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS);
+    List<Awb> mawbs = List.of(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    List<Awb> shipmentAwbs = Arrays.asList(
+        createAwbWithCargoInfo(401L, "T2"),
+        createAwbWithCargoInfo(402L, "T3")
+    );
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+    when(awbDao.findByShipmentIdList(Arrays.asList(201L, 202L))).thenReturn(shipmentAwbs);
+
+    // Act
+    consolidationV3Service.checkSciForAttachConsole(consoleId);
+
+    // Assert
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenShipmentAwbsIsNull_shouldNotUpdateMawbAndConsole() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L)
+    );
+    Awb mawb = createMawbWithCargoInfo(301L, "T2");
+    mawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS);
+    List<Awb> mawbs = List.of(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+    when(awbDao.findByShipmentIdList(Arrays.asList(201L))).thenReturn(null);
+
+    // Act
+    consolidationV3Service.checkSciForAttachConsole(consoleId);
+
+    // Assert
+    verify(awbDao, never()).save(any());
+    verify(consolidationDetailsDao, never()).save(any(), anyBoolean());
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenShipmentHasSciT1_shouldUpdateMawbAndConsole() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L),
+        createConsoleShipmentMapping(2L, 202L)
+    );
+    Awb mawb = createMawbWithCargoInfo(301L, "T2");
+    mawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS);
+    List<Awb> mawbs = List.of(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    List<Awb> shipmentAwbs = Arrays.asList(
+        createAwbWithCargoInfo(401L, "T2"),
+        createAwbWithCargoInfo(402L, AwbConstants.T1)
+    );
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+    when(awbDao.findByShipmentIdList(Arrays.asList(201L, 202L))).thenReturn(shipmentAwbs);
+
+    // Act
+    consolidationV3Service.checkSciForAttachConsole(consoleId);
+
+    // Assert
+    assertEquals(AwbConstants.T1, mawb.getAwbCargoInfo().getSci());
+    assertEquals(AwbConstants.T1, consolDetails.getSci());
+
+    verify(awbDao).save(mawb);
+    verify(consolidationDetailsDao).save(consolDetails, false);
+  }
+
+  @Test
+  void testCheckSciForAttachConsole_whenMultipleShipmentsHaveSciT1_shouldUpdateMawbAndConsole() throws RunnerException {
+    // Arrange
+    Long consoleId = 101L;
+    List<ConsoleShipmentMapping> mappingList = Arrays.asList(
+        createConsoleShipmentMapping(1L, 201L),
+        createConsoleShipmentMapping(2L, 202L),
+        createConsoleShipmentMapping(3L, 203L)
+    );
+    Awb mawb = createMawbWithCargoInfo(301L, "T3");
+    mawb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS);
+    List<Awb> mawbs = List.of(mawb);
+    ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
+
+    List<Awb> shipmentAwbs = Arrays.asList(
+        createAwbWithCargoInfo(401L, AwbConstants.T1),
+        createAwbWithCargoInfo(402L, AwbConstants.T1),
+        createAwbWithCargoInfo(403L, "T2")
+    );
+
+    when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
+    when(awbDao.findByConsolidationId(consoleId)).thenReturn(mawbs);
+    when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolDetails));
+    when(awbDao.findByShipmentIdList(Arrays.asList(201L, 202L, 203L))).thenReturn(shipmentAwbs);
+
+    // Act
+    consolidationV3Service.checkSciForAttachConsole(consoleId);
+
+    // Assert
+    assertEquals(AwbConstants.T1, mawb.getAwbCargoInfo().getSci());
+    assertEquals(AwbConstants.T1, consolDetails.getSci());
+
+    verify(awbDao).save(mawb);
+    verify(consolidationDetailsDao).save(consolDetails, false);
+  }
+
+  // Helper methods for creating test objects
+  private ConsoleShipmentMapping createConsoleShipmentMapping(Long id, Long shipmentId) {
+    ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+    mapping.setId(id);
+    mapping.setShipmentId(shipmentId);
+    return mapping;
+  }
+
+  private Awb createMawb(Long id) {
+    Awb awb = new Awb();
+    awb.setId(id);
+    return awb;
+  }
+
+  private Awb createMawbWithCargoInfo(Long id, String sci) {
+    Awb awb = new Awb();
+    awb.setId(id);
+    AwbCargoInfo cargoInfo = new AwbCargoInfo();
+    cargoInfo.setSci(sci);
+    awb.setAwbCargoInfo(cargoInfo);
+    return awb;
+  }
+
+  private Awb createAwbWithCargoInfo(Long id, String sci) {
+    Awb awb = new Awb();
+    awb.setId(id);
+    AwbCargoInfo cargoInfo = new AwbCargoInfo();
+    cargoInfo.setSci(sci);
+    awb.setAwbCargoInfo(cargoInfo);
+    return awb;
+  }
+
+  @Test
+  void detachShipments_NullRequest(){
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    assertThrows(RunnerException.class, () -> consolidationV3Service.detachShipments(request));
+  }
+
+  @Test
+  void detachShipments_Success() throws RunnerException {
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    request.setShipmentIds(Set.of(1L,2L));
+    request.setConsolidationId(1L);
+
+    shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+    shipmentDetails.setEventsList(List.of(Events.builder().build()));
+    shipmentDetails.setContainersList(new HashSet<>());
+
+    ShipmentDetails shipmentDetails1 = shipmentDetails;
+    shipmentDetails1.setId(1L);
+
+    ShipmentDetails shipmentDetails2 = shipmentDetails;
+    shipmentDetails2.setId(2L);
+    consolidationDetails.setInterBranchConsole(true);
+    consolidationDetails.setShipmentsList(new HashSet<>());
+    consolidationDetails.setOverride(true);
+    consolidationDetails.setId(1L);
+
+    List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails1,shipmentDetails2);
+    lenient().when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+
+  //Mockito.doNothing().when(spyService).processInterConsoleDetachShipment(any(), any());
+   // Mockito.doReturn(true).when(spyService).isSaveSeaPacks(any(), any(), any(), any());
+
+    V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+    v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+    lenient().when(consoleShipmentMappingDao.detachShipments(any(), any())).thenReturn(List.of(1L,2L));
+    lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
+    when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+    String response = spyService.detachShipments(request);
+    assertNull(response);
+  }
+
+  @Test
+  void fetchAllMasterDataByKey_Success(){
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    var response = consolidationV3Service.fetchAllMasterDataByKey(consolidationDetailsV3Response);
+    assertNotNull(response);
+
+  }
+
+  @Test
+  void testGetSummaryContainer_whenContainersListIsNull_shouldReturnNull() {
+    // Arrange
+    List<Containers> containersList = null;
+    Set<Long> assignedContainerIds = Set.of(1L, 2L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertNull(result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenContainersListIsEmpty_shouldReturnNull() {
+    // Arrange
+    List<Containers> containersList = Collections.emptyList();
+    Set<Long> assignedContainerIds = Set.of(1L, 2L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertNull(result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenAssignedContainerIdsIsNull_shouldTreatAllAsUnassigned() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 5L),
+        createContainer(2L, 3L),
+        createContainer(3L, 2L)
+    );
+    Set<Long> assignedContainerIds = null;
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("0 / 10", result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenNoContainersAreAssigned_shouldReturnZeroAssigned() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 4L),
+        createContainer(2L, 6L)
+    );
+    Set<Long> assignedContainerIds = Set.of(99L, 100L); // IDs not in containersList
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("0 / 10", result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenAllContainersAreAssigned_shouldReturnFullAssignment() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 3L),
+        createContainer(2L, 4L),
+        createContainer(3L, 2L)
+    );
+    Set<Long> assignedContainerIds = Set.of(1L, 2L, 3L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("9 / 9", result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenPartialContainersAreAssigned_shouldReturnCorrectSummary() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 5L),
+        createContainer(2L, 3L),
+        createContainer(3L, 4L),
+        createContainer(4L, 2L)
+    );
+    Set<Long> assignedContainerIds = Set.of(1L, 3L); // Only containers 1 and 3 are assigned
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("9 / 14", result); // (5 + 4) / (5 + 3 + 4 + 2)
+  }
+
+  @Test
+  void testGetSummaryContainer_whenSingleContainerAssigned_shouldReturnCorrectSummary() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 7L)
+    );
+    Set<Long> assignedContainerIds = Set.of(1L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("7 / 7", result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenSingleContainerNotAssigned_shouldReturnZeroAssigned() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 8L)
+    );
+    Set<Long> assignedContainerIds = Set.of(2L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("0 / 8", result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenContainerCountIsZero_shouldHandleCorrectly() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 0L),
+        createContainer(2L, 5L),
+        createContainer(3L, 0L)
+    );
+    Set<Long> assignedContainerIds = Set.of(1L, 2L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("5 / 5", result); // (0 + 5) / (0 + 5 + 0)
+  }
+
+  @Test
+  void testGetSummaryContainer_whenAssignedContainerIdsIsEmpty_shouldTreatAllAsUnassigned() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 3L),
+        createContainer(2L, 4L)
+    );
+    Set<Long> assignedContainerIds = Collections.emptySet();
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("0 / 7", result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenLargeNumbers_shouldHandleCorrectly() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(1L, 1000L),
+        createContainer(2L, 2000L),
+        createContainer(3L, 1500L)
+    );
+    Set<Long> assignedContainerIds = Set.of(1L, 3L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("2500 / 4500", result); // (1000 + 1500) / (1000 + 2000 + 1500)
+  }
+
+  @Test
+  void testGetSummaryContainer_whenContainerGetContainerCountThrowsException_shouldReturnNull() {
+    // Arrange
+    Containers mockContainer = mock(Containers.class);
+    when(mockContainer.getContainerCount()).thenThrow(new RuntimeException("Database error"));
+
+    List<Containers> containersList = Arrays.asList(mockContainer);
+    Set<Long> assignedContainerIds = Set.of(1L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertNull(result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenContainerGetIdThrowsException_shouldReturnNull() {
+    // Arrange
+    Containers mockContainer = mock(Containers.class);
+    when(mockContainer.getContainerCount()).thenReturn(5L);
+    when(mockContainer.getId()).thenThrow(new RuntimeException("ID retrieval error"));
+
+    List<Containers> containersList = Arrays.asList(mockContainer);
+    Set<Long> assignedContainerIds = Set.of(1L);
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertNull(result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenAssignedContainerIdsContainsThrowsException_shouldReturnNull() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(createContainer(1L, 5L));
+    Set<Long> mockAssignedContainerIds = mock(Set.class);
+    when(mockAssignedContainerIds.contains(any())).thenThrow(new RuntimeException("Set operation error"));
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, mockAssignedContainerIds);
+
+    // Assert
+    assertNull(result);
+  }
+
+  @Test
+  void testGetSummaryContainer_whenMixedAssignmentWithMultipleContainers_shouldReturnCorrectSummary() {
+    // Arrange
+    List<Containers> containersList = Arrays.asList(
+        createContainer(10L, 2L),
+        createContainer(20L, 8L),
+        createContainer(30L, 1L),
+        createContainer(40L, 6L),
+        createContainer(50L, 3L)
+    );
+    Set<Long> assignedContainerIds = Set.of(10L, 30L, 50L); // Containers with counts 2, 1, 3
+
+    // Act
+    String result = consolidationV3Service.getSummaryContainer(containersList, assignedContainerIds);
+
+    // Assert
+    assertEquals("6 / 20", result); // (2 + 1 + 3) / (2 + 8 + 1 + 6 + 3)
+  }
+
+
+  // Helper method for creating test containers
+  private Containers createContainer(Long id, Long containerCount) {
+    Containers container = new Containers();
+    container.setId(id);
+    container.setContainerCount(containerCount);
+    return container;
+  }
+
+
+  // Helper methods for creating test objects
+  private ConsolidationDetails createConsolidationDetails(Long id) {
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setId(id);
+    return details;
+  }
+
 }
