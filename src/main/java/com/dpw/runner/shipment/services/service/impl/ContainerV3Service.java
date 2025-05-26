@@ -575,7 +575,7 @@ public class ContainerV3Service implements IContainerV3Service {
                                 .attachedShipmentNumber(detail.getShipmentNumber())
                                 .attachedShipmentType(detail.getShipmentType())
                                 .build())
-                        .collect(Collectors.toList());
+                        .toList();
 
                 container.setAttachedShipmentResponses(attachedShipmentResponseList);
             }
@@ -947,7 +947,6 @@ public class ContainerV3Service implements IContainerV3Service {
     private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
-        //CompletableFuture<Void> syncFuture = runContainerSyncAsync(containers);
         CompletableFuture.allOf(afterSaveFuture).join();
     }
 
@@ -1212,11 +1211,11 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, shipmentDetailsMap, shipmentPackingMap,
-                                                                                    shipmentIdsForCargoDetachment, removeAllPackingIds, shipmentsContainersMappings);
+                                                                                    shipmentIdsForCargoDetachment, removeAllPackingIds);
 
         // Save the data
         container = saveUnAssignContainerResults(shipmentIdsForDetachment, removeAllPackingIds, shipmentIdsForCargoDetachment,
-                container, shipmentsContainersMappings);
+                                                    container, shipmentsContainersMappings);
 
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
@@ -1256,7 +1255,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, Map<Long,ShipmentDetails> shipmentDetailsMap,
                                                              Map<Long, List<Packing>> shipmentPackingMap, List<Long> shipmentIdsForCargoDetachment,
-                                                             List<Long> removeAllPackingIds, List<ShipmentsContainersMapping> shipmentsContainersMappings) throws RunnerException {
+                                                             List<Long> removeAllPackingIds) throws RunnerException {
         List<Long> shipmentIdsForDetachment = new ArrayList<>();
 
         for (Map.Entry<Long, ShipmentDetails> entry : shipmentDetailsMap.entrySet()) {
