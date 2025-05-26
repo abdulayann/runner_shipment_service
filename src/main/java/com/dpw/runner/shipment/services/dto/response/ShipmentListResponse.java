@@ -36,6 +36,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String serviceType;
     private String masterBill;
     private String bookingReference;
+    private Long bookingId;
     private String srnReferenceNumber;
     private String consolRef;
     private Long salesAgent;
@@ -99,6 +100,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private Long container40GPCount;
     private Long container40RECount;
     private Set<String> containerNumbers;
+    private Integer containerCount;
     private PickupDeliveryDetailsListResponse pickupDetails;
     private PickupDeliveryDetailsListResponse deliveryDetails;
     private String createdBy;

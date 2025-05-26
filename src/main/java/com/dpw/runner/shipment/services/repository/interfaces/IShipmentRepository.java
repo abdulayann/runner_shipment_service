@@ -5,10 +5,17 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.projection.CustomerBookingProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -17,13 +24,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 
 @Repository
@@ -250,4 +250,13 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             @Param("shipmentGateInDate") LocalDateTime shipmentGateInDate,
             @Param("shipmentPackStatus") ShipmentPackStatus shipmentPackStatus
     );
+
+
+    @Query(value = """
+            select cb.id as id,
+            sd.id as shipmentId
+             from ShipmentDetails sd inner join CustomerBooking cb on cb.bookingNumber = sd.bookingReference where sd.id in (:shipmentIdList)
+            """)
+    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(@Param("shipmentIdList") List<Long> shipmentIdList);
+
 }
