@@ -39,6 +39,7 @@ public class ApiConstants {
     public static final String API_RETRIEVE = "/retrieve";
 
     public static final String API_RETRIEVE_BY_ID = "/retrieve/id";
+    public static final String API_RETRIEVE_BY_BOOKING_NUMBER = "/retrieve/booking-number";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
