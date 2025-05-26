@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
@@ -27,11 +28,15 @@ import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Respons
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
@@ -2236,5 +2241,318 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
 
         assertEquals(actualResponse, customerBookingResponse);
+    }
+
+    @Test
+    void testV3RetryForBillingFailsWhenCustomerBookingIsNotPresent() {
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        String errorMessage = DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+
+        // Mock
+        when(customerBookingDao.findById(id)).thenReturn(Optional.empty());
+
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            customerBookingService.retryForBilling(request);
+        });
+
+        // Assert that the message is as expected
+        assertEquals(errorMessage, exception.getMessage());
+    }
+
+    @Test
+    void testV3RetryForBillingFailsWhenStatusNotReadyForShipment() throws RunnerException {
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        String errorMessage = String.format("Booking should be in: %s stage for this operation", BookingStatus.READY_FOR_SHIPMENT);
+
+        // Mock
+        when(customerBookingDao.findById(id)).thenReturn(Optional.of(customerBooking));
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            customerBookingService.retryForBilling(request);
+        });
+
+        // Assert that the message is as expected
+        assertEquals(errorMessage, exception.getMessage());
+    }
+
+    @Test
+    void testV3RetryForBillingFailsWhenBillIsCreated() throws RunnerException {
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+        customerBooking.setIsBillCreated(true);
+        String errorMessage = String.format("Bill is already created for booking with id: %s", request.getId());
+
+        // Mock
+        when(customerBookingDao.findById(id)).thenReturn(Optional.of(customerBooking));
+
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            customerBookingService.retryForBilling(request);
+        });
+
+        // Assert that the message is as expected
+        assertEquals(errorMessage, exception.getMessage());
+    }
+    @Test
+    void testV3RetryForBillingSuccess() throws RunnerException {
+        Long id = 1L;
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+        customerBooking.setShipmentGuid(String.valueOf(UUID.randomUUID()));
+
+        V1ShipmentCreationResponse shipmentCreationResponse = new V1ShipmentCreationResponse();
+        ResponseEntity<V1ShipmentCreationResponse> v1ShipmentCreationResponseResponseEntity = new ResponseEntity<>(shipmentCreationResponse, HttpStatus.OK);
+
+        // Mock
+        when(customerBookingDao.findById(id)).thenReturn(Optional.of(customerBooking));
+        when(bookingIntegrationsUtility.createShipmentInV1(any(),anyBoolean(), anyBoolean(), any(), any())).thenReturn(v1ShipmentCreationResponseResponseEntity);
+        when(jsonHelper.convertValue(any(), eq(V1ShipmentCreationResponse.class))).thenReturn(shipmentCreationResponse);
+
+        // Test
+        V1ShipmentCreationResponse v1ShipmentCreationResponse = customerBookingService.retryForBilling(request);
+
+        // Assert
+        assertNotNull(v1ShipmentCreationResponse);
+    }
+
+    @Test
+    void testV3CreditCheckFailure() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(false)
+                        .IsCreditLimitWithFusionEnabled(false)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckFailure2() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(false)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckFailure3() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of())
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith0Value() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .CreditLimitOn(0)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+//        creditLimitRequest.setCustomerIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var org = jsonTestUtility.getOrganizationData();
+        var address = jsonTestUtility.getAddressData();
+
+        when(v1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().entities(List.of(org)).build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferOrganizations.class))).thenReturn(List.of(org));
+
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(List.of(address)).build());
+        when(jsonHelper.convertValueToList(any(),eq(EntityTransferAddress.class))).thenReturn(List.of(address));
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith0Value2() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .CreditLimitOn(0)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setCustomerIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith1Value() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("213123213")
+                        .siteNumber("213213213321")
+                        .creditDetails(List.of(CheckCreditBalanceFusionResponse.CreditDetails.builder().CreditLimit(111).CreditLimitCurrency("INR").TotalCreditLimit(111).build()))
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(true);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
+        when(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(any())).thenReturn(ResponseEntity.ok(mockUpdateCreditLimitResponse));
+        when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        when(jsonHelper.convertValue(any(), eq(UpdateOrgCreditLimitBookingResponse.class))).thenReturn(mockUpdateCreditLimitResponse);
+        mockTenantSettings();
+        CheckCreditLimitResponse checkCreditLimitResponse = customerBookingService.checkCreditLimitFromFusion(creditLimitRequest);
+        assertNotNull(checkCreditLimitResponse);
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn2() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("78678").siteNumber("434343")
+                        .creditDetails(List.of(CheckCreditBalanceFusionResponse.CreditDetails.builder().CreditLimit(111).CreditLimitCurrency("INR").TotalCreditLimit(111).build()))
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(false);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
+        when(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(any())).thenReturn(ResponseEntity.ok(mockUpdateCreditLimitResponse));
+        when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn3() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("78678").siteNumber("434343")
+                        .creditDetails(List.of(CheckCreditBalanceFusionResponse.CreditDetails.builder().CreditLimit(111).CreditLimitCurrency("INR").TotalCreditLimit(111).build()))
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(false);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(null);
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
+    }
+
+    @Test
+    void testV3CreditCheckWithCreditLimitWith1ValueWithGlobalFusionOn4() throws RunnerException {
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .EnableCreditLimitManagement(true)
+                        .IsCreditLimitWithFusionEnabled(true)
+                        .RestrictedItemsForCreditLimit(List.of("CUS_BK"))
+                        .IsGlobalFusionIntegrationEnabled(true)
+                        .BusinessUnitName("ANY")
+                        .CreditLimitOn(1)
+                        .build());
+        CreditLimitRequest creditLimitRequest = new CreditLimitRequest();
+        creditLimitRequest.setSiteIdentifierId("12212112");
+        creditLimitRequest.setClientOrgCode("FRC00003424");
+        creditLimitRequest.setClientAddressCode("FRDO0005605");
+        var mockFusionResponse = ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().data(new CheckCreditBalanceFusionResponse()).build());
+        var mockUpdateCreditLimitResponse = new UpdateOrgCreditLimitBookingResponse();
+        var mockCheckCreditBalanceFusionResponse = new CheckCreditBalanceFusionResponse();
+        mockCheckCreditBalanceFusionResponse.setData(
+                CheckCreditBalanceFusionResponse.FusionData.builder()
+                        .accountNumber("213123213")
+                        .siteNumber("213213213321")
+                        .build());
+        mockUpdateCreditLimitResponse.setSuccess(true);
+        when(fusionServiceAdapter.checkCreditLimitP100(any())).thenReturn(mockFusionResponse);
+        when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
+        mockTenantSettings();
+        var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
+        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 }

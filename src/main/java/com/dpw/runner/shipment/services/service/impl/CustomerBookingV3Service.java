@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
@@ -9,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -27,6 +29,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -107,6 +110,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final IV1Service v1Service;
     private final ModelMapper modelMapper;
     private final DependentServiceHelper dependentServiceHelper;
+    private final IFusionServiceAdapter fusionServiceAdapter;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -148,7 +152,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     IShipmentDao shipmentDao,
                                     IV1Service v1Service,
                                     ModelMapper modelMapper,
-                                    DependentServiceHelper dependentServiceHelper){
+                                    DependentServiceHelper dependentServiceHelper,
+                                    IFusionServiceAdapter fusionServiceAdapter){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -171,6 +176,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.v1Service = v1Service;
         this.modelMapper = modelMapper;
         this.dependentServiceHelper = dependentServiceHelper;
+        this.fusionServiceAdapter = fusionServiceAdapter;
     }
 
     @Override
@@ -561,6 +567,163 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
 
         return platformResponse;
+    }
+
+    @Override
+    public CheckCreditLimitResponse checkCreditLimitFromFusion(CreditLimitRequest creditLimitRequest) throws RunnerException {
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+
+        if (Boolean.FALSE.equals(v1TenantSettingsResponse.getEnableCreditLimitManagement()) || Boolean.FALSE.equals(v1TenantSettingsResponse.getIsCreditLimitWithFusionEnabled())) {
+            log.error("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("EnableCreditLimitManagement Or EnableCreditLimitIntegrationWithFusion is False in Branch settings");
+        }
+        boolean isCustomerBookingRestricted = v1TenantSettingsResponse.getRestrictedItemsForCreditLimit().stream().anyMatch(p -> p.equals("CUS_BK"));
+        if (!isCustomerBookingRestricted) {
+            log.error("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking");
+        }
+        CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
+        processCreditLimitOn(v1TenantSettingsResponse, creditLimitRequest, request);
+        if (Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled())) {
+            request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
+            request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
+            ResponseEntity<IRunnerResponse> response = fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
+            if(response == null || response.getBody() == null || ((DependentServiceResponse)response.getBody()).getData() == null){
+                log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("No Data found on Fusion");
+            }
+            CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(((DependentServiceResponse)response.getBody()).getData(), CheckCreditBalanceFusionResponse.class);
+            CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
+            try{
+                UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
+                if(Boolean.TRUE.equals(updateOrgCreditLimitBookingResponse.getSuccess())){
+                    log.info("Successfully Updated Org with Credit Limit in V1");
+                }else {
+                    log.error("Error in Updating Org Credit Limit in V1 with error : {}", updateOrgCreditLimitBookingResponse.getError());
+                    throw new ValidationException("Error in Updating Org Credit Limit in V1 with error : "+ updateOrgCreditLimitBookingResponse.getError());
+                }
+            } catch (Exception ex){
+                log.error("Error in Updating Org Credit Limit in V1 with error : {} with Request Id {}", ex.getMessage(), LoggerHelper.getRequestIdFromMDC());
+                throw new GenericException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
+            }
+            return checkCreditLimitResponse;
+        } else {
+            log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking");
+        }
+    }
+
+    @Override
+    public V1ShipmentCreationResponse retryForBilling(CommonGetRequest request) throws RunnerException {
+        String responseMsg;
+        try {
+            if (Objects.isNull(request) || Objects.isNull(request.getId()))
+                log.error("Request Id is null for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+
+            Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(request.getId());
+            if (customerBookingOptional.isEmpty()) {
+                log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+
+            CustomerBooking customerBooking = customerBookingOptional.get();
+            if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
+                throw new RunnerException(String.format("Booking should be in: %s stage for this operation", BookingStatus.READY_FOR_SHIPMENT));
+            if (!Objects.isNull(customerBooking.getIsBillCreated()) && Boolean.TRUE.equals(customerBooking.getIsBillCreated()))
+                throw new RunnerException(String.format("Bill is already created for booking with id: %s", request.getId()));
+
+            V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, false, true, UUID.fromString(customerBooking.getShipmentGuid()), V1AuthHelper.getHeaders()).getBody(), V1ShipmentCreationResponse.class);
+            customerBooking.setIsBillCreated(true);
+            customerBookingDao.save(customerBooking);
+            return shipmentCreationResponse;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    private CheckCreditLimitResponse createCheckCreditLimitPayload(CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse){
+        if(checkCreditBalanceFusionResponse.getData().getCreditDetails() == null || checkCreditBalanceFusionResponse.getData().getCreditDetails().isEmpty()){
+            log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("No Data found on Fusion: "+ checkCreditBalanceFusionResponse.getData().getMessage());
+        }
+        double totalCreditLimit = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit();
+        double outstandingAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOutstandingAmount();
+        double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
+        double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
+        var paymentTerm = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms();
+        if(paymentTerm == null || paymentTerm.isEmpty()){
+            paymentTerm = CustomerBookingConstants.IMMEDIATE;
+        }
+
+        double creditLimitUtilizedPer = totalCreditLimit != 0 ? (outstandingAmount * 100) / totalCreditLimit : 0;
+        double overDuePer = totalCreditLimit != 0 ? (overDueAmount * 100) / totalCreditLimit : 0;
+        return CheckCreditLimitResponse.builder()
+                .totalCreditLimit(CommonUtils.roundOffToTwoDecimalPlace(totalCreditLimit))
+                .currency(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getCreditLimitCurrency())
+                .outstandingAmount(CommonUtils.roundOffToTwoDecimalPlace(outstandingAmount))
+                .notDueAmount(CommonUtils.roundOffToTwoDecimalPlace(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getNotDue()))
+                .overdueAmount(CommonUtils.roundOffToTwoDecimalPlace(overDueAmount))
+                .totalCreditAvailableBalance(CommonUtils.roundOffToTwoDecimalPlace(totalCreditAvailableBalance))
+                .creditLimitUtilizedPer(CommonUtils.roundOffToTwoDecimalPlace(creditLimitUtilizedPer))
+                .overduePer(CommonUtils.roundOffToTwoDecimalPlace(overDuePer))
+                .paymentTerms(paymentTerm)
+                .accountNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getAccountNumber())
+                .siteNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getSiteNumber())
+                .build();
+    }
+
+    private void processCreditLimitOn(V1TenantSettingsResponse v1TenantSettingsResponse, CreditLimitRequest creditLimitRequest, CheckCreditBalanceFusionRequest request) {
+        if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
+
+            if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode() != null){
+                CommonV1ListRequest orgRequest = new CommonV1ListRequest();
+                List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
+                String op = "=";
+                List<Object> orgCriteria = new ArrayList<>(List.of(orgField, op, creditLimitRequest.getClientOrgCode()));
+                orgRequest.setCriteriaRequests(orgCriteria);
+                V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
+                List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
+
+
+                long orgId=orgList.get(0).getId();
+                creditLimitRequest.setCustomerIdentifierId(orgList.get(0).getCustomerIdentifier());
+                List<Object> finalCriteria= new ArrayList<>();
+
+
+                CommonV1ListRequest addressReq = new CommonV1ListRequest();
+                List<Object> addressField = new ArrayList<>(List.of("AddressShortCode"));
+                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, op, creditLimitRequest.getClientAddressCode()));
+                finalCriteria.add(addressCriteria);
+
+                finalCriteria.add("and");
+
+                List<Object>orgIdCriteria=new ArrayList<>();
+                List<Object> orgIdField = List.of("OrgId");
+                orgIdCriteria.add(List.of(orgIdField, op, orgId));
+                finalCriteria.addAll(orgIdCriteria);
+
+                addressReq.setCriteriaRequests(finalCriteria);
+                V1DataResponse addressResponse = v1Service.addressList(addressReq);
+                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+                creditLimitRequest.setSiteIdentifierId(addressList.get(0).getSiteIdentifier());
+            }
+
+            if(creditLimitRequest == null || creditLimitRequest.getCustomerIdentifierId() == null) {
+                log.error("CustomerIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("CustomerIdentifierId is Required for credit check");
+            }
+            request.getReq_Params().setAccount_number(creditLimitRequest.getCustomerIdentifierId());
+        }
+        else if(v1TenantSettingsResponse.getCreditLimitOn() == 1) {
+            if(creditLimitRequest == null || creditLimitRequest.getSiteIdentifierId() == null){
+                log.error("SiteIdentifierId is Required with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("SiteIdentifierId is Required for credit check");
+            }
+            request.getReq_Params().setSite_number(creditLimitRequest.getSiteIdentifierId());
+        }
     }
 
     private void updateDataInExistingBooking(CustomerBooking customerBooking, CustomerBookingV3Request customerBookingRequest) {
