@@ -1,15 +1,19 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -23,12 +27,15 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
@@ -36,6 +43,12 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -45,6 +58,7 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -55,6 +69,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +95,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -2640,6 +2657,150 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     assertEquals("6 / 20", result); // (2 + 1 + 3) / (2 + 8 + 1 + 6 + 3)
   }
 
+  @Test
+  void addAllOrganizationDataInSingleCall_Success() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    List<String> mockOrgIds = List.of("org1", "org2", "org3");
+    Map<String, EntityTransferOrganizations> mockKeyMasterDataMap = new HashMap<>();
+    mockKeyMasterDataMap.put("org1", new EntityTransferOrganizations());
+    mockKeyMasterDataMap.put("org2", new EntityTransferOrganizations());
+
+    when(masterDataUtils.createInBulkOrganizationRequest(
+        any(), any(), any(), any(), any())).thenReturn(mockOrgIds);
+
+    when(masterDataUtils.fetchInOrganizations(any(), any()))
+        .thenReturn(mockKeyMasterDataMap);
+
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> result =
+        consolidationV3Service.addAllOrganizationDataInSingleCall(consolidationDetailsV3Response, masterDataResponse);
+
+    // Assert
+    assertNotNull(result);
+  }
+
+  @Test
+  void addAllTenantDataInSingleCall_Success() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<String> mockTenantIds = Set.of("tenant1", "tenant2");
+    Map<String, TenantModel> mockTenantMap = new HashMap<>();
+    mockTenantMap.put("tenant1", new TenantModel());
+    mockTenantMap.put("tenant2", new TenantModel());
+
+    when(masterDataUtils.createInBulkTenantsRequest(
+        any(), any(), any(), anyString(), anyMap()))
+        .thenReturn(new ArrayList<>(mockTenantIds));
+
+    when(masterDataUtils.fetchInTenantsList(mockTenantIds))
+        .thenReturn(mockTenantMap);
+
+    doNothing().when(masterDataUtils).pushToCache(
+        anyMap(), eq(CacheConstants.TENANTS), anySet(), any(), anyMap());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(
+        anyMap(), eq(CacheConstants.TENANTS), anyMap(), anyMap());
+
+    // Act
+    CompletableFuture<Map<String, TenantModel>> resultFuture =
+        consolidationV3Service.addAllTenantDataInSingleCall(consolidationDetailsV3Response, masterDataResponse);
+
+    // Assert
+    assertNotNull(resultFuture);
+    Map<String, TenantModel> result = resultFuture.join();
+    assertNotNull(result);
+    assertEquals(2, result.size());
+    assertTrue(result.containsKey("tenant1"));
+    assertTrue(result.containsKey("tenant2"));
+  }
+
+  @Test
+  void addAllTenantDataInSingleCall_Success1() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<String> mockTenantIds = Set.of("tenant1", "tenant2");
+    Map<String, TenantModel> mockTenantMap = new HashMap<>();
+    mockTenantMap.put("tenant1", new TenantModel());
+    mockTenantMap.put("tenant2", new TenantModel());
+
+    when(masterDataUtils.createInBulkTenantsRequest(
+        any(), any(), any(), anyString(), anyMap()))
+        .thenReturn(new ArrayList<>(mockTenantIds));
+
+    when(masterDataUtils.fetchInTenantsList(mockTenantIds))
+        .thenReturn(mockTenantMap);
+
+    when(masterDataUtils.setMasterData(anyMap(),anyString(), anyMap()))
+        .thenReturn(new HashMap<>());
+    doNothing().when(masterDataUtils).pushToCache(
+        anyMap(), eq(CacheConstants.TENANTS), anySet(), any(), anyMap());
+
+    // Act
+    CompletableFuture<Map<String, TenantModel>> resultFuture =
+        consolidationV3Service.addAllTenantDataInSingleCall(consolidationDetailsV3Response, null);
+
+    // Assert
+    assertNotNull(resultFuture);
+  }
+  @Test
+  void addAllTenantDataInSingleCall_Failure_ReturnsNullFuture() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    when(masterDataUtils.createInBulkTenantsRequest(
+        any(), any(), any(), anyString(), anyMap()))
+        .thenThrow(new RuntimeException("Simulated failure"));
+
+    // Act
+    CompletableFuture<Map<String, TenantModel>> resultFuture =
+        consolidationV3Service.addAllTenantDataInSingleCall(consolidationDetailsV3Response, masterDataResponse);
+
+    // Assert
+    assertNotNull(resultFuture);
+    assertNull(resultFuture.join());
+  }
+
+  @Test
+  void addAllOrganizationDataInSingleCall_CreateInBulkThrowsException_ReturnsNull() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    when(masterDataUtils.createInBulkOrganizationRequest(
+        any(ConsolidationDetailsV3Response.class),
+        eq(ConsolidationDetails.class),
+        any(Map.class),
+        eq(ConsolidationDetails.class.getSimpleName()),
+        any(Map.class)
+    )).thenThrow(new RuntimeException("Database connection failed"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> result =
+        consolidationV3Service.addAllOrganizationDataInSingleCall(consolidationDetailsV3Response, masterDataResponse);
+
+    // Assert
+    assertNotNull(result);
+    assertTrue(result.isDone());
+    assertNull(result.join());
+
+    // Verify error logging (if you have a way to capture logs)
+    verify(masterDataUtils).createInBulkOrganizationRequest(
+        any(ConsolidationDetailsV3Response.class),
+        eq(ConsolidationDetails.class),
+        any(Map.class),
+        eq(ConsolidationDetails.class.getSimpleName()),
+        any(Map.class)
+    );
+  }
 
   // Helper method for creating test containers
   private Containers createContainer(Long id, Long containerCount) {
@@ -2649,12 +2810,654 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     return container;
   }
 
-
   // Helper methods for creating test objects
   private ConsolidationDetails createConsolidationDetails(Long id) {
     ConsolidationDetails details = new ConsolidationDetails();
     details.setId(id);
     return details;
   }
+
+  @Test
+  void addAllMasterDataInSingleCall_Success_NoCarrierDetails_NullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = null;
+
+    Set<MasterListRequest> listRequests = Set.of(new MasterListRequest());
+    Map<String, EntityTransferMasterLists> keyMasterDataMap = Map.of("key1", new EntityTransferMasterLists());
+
+    when(masterDataUtils.createInBulkMasterListRequest(
+        any(), eq(ConsolidationDetails.class), any(), eq("ConsolidationDetails"), any()))
+        .thenReturn(new ArrayList<>(listRequests));
+
+
+    when(masterDataUtils.fetchInBulkMasterList(any()))
+        .thenReturn(keyMasterDataMap);
+
+    doNothing().when(commonUtils).createMasterDataKeysList(eq(listRequests), any());
+
+    doNothing().when(masterDataUtils).pushToCache(
+        eq(keyMasterDataMap), eq(CacheConstants.MASTER_LIST), anySet(), any(), any());
+
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.MASTER_LIST), any()))
+        .thenReturn(new HashMap<>());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllMasterDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+  }
+
+  @Test
+  void addAllMasterDataInSingleCall_Success_WithCarrierDetails_NullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+    response.setCarrierDetails(carrierDetailResponse);
+    Map<String, Object> masterDataResponse = null;
+
+    Set<MasterListRequest> initialRequests = Set.of(new MasterListRequest());
+    Set<MasterListRequest> carrierRequests = Set.of(new MasterListRequest());
+
+    Map<String, EntityTransferMasterLists> keyMasterDataMap = Map.of("key1", new EntityTransferMasterLists());
+
+    when(masterDataUtils.createInBulkMasterListRequest(
+        eq(response), eq(ConsolidationDetails.class), any(), eq("ConsolidationDetails"), any()))
+        .thenReturn(new ArrayList<>(initialRequests));
+
+    when(masterDataUtils.createInBulkMasterListRequest(
+        eq(carrierDetailResponse), eq(CarrierDetails.class), any(), eq("CarrierDetails"), any()))
+        .thenReturn(new ArrayList<>(carrierRequests));
+
+    when(masterDataUtils.fetchInBulkMasterList(any()))
+        .thenReturn(keyMasterDataMap);
+
+    doNothing().when(commonUtils).createMasterDataKeysList(anySet(), anySet());
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.MASTER_LIST), anySet(), any(), any());
+
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.MASTER_LIST), any()))
+        .thenReturn(new HashMap<>());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllMasterDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+
+  @Test
+  void addAllMasterDataInSingleCall_Success_WithMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<MasterListRequest> listRequests = Set.of(new MasterListRequest());
+    Map<String, EntityTransferMasterLists> keyMasterDataMap = Map.of("key1", new EntityTransferMasterLists());
+
+    when(masterDataUtils.createInBulkMasterListRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenReturn(new ArrayList<>(listRequests));
+
+
+    when(masterDataUtils.fetchInBulkMasterList(any()))
+        .thenReturn(keyMasterDataMap);
+
+    doNothing().when(commonUtils).createMasterDataKeysList(anySet(), anySet());
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.MASTER_LIST), anySet(), any(), any());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.MASTER_LIST), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllMasterDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllMasterDataInSingleCall_Success_WithMasterDataResponse1() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    response.setAllocations(new AllocationsResponse());
+    response.setAchievedQuantities(new AchievedQuantitiesResponse());
+    response.setReferenceNumbersList(new ArrayList<>());
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<MasterListRequest> listRequests = Set.of(new MasterListRequest());
+    Map<String, EntityTransferMasterLists> keyMasterDataMap = Map.of("key1", new EntityTransferMasterLists());
+
+    when(masterDataUtils.createInBulkMasterListRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenReturn(new ArrayList<>(listRequests));
+
+
+    when(masterDataUtils.fetchInBulkMasterList(any()))
+        .thenReturn(keyMasterDataMap);
+
+    doNothing().when(commonUtils).createMasterDataKeysList(anySet(), anySet());
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.MASTER_LIST), anySet(), any(), any());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.MASTER_LIST), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllMasterDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllMasterDataInSingleCall_Failure_ReturnsNullFuture() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    when(masterDataUtils.createInBulkMasterListRequest(
+        any(), any(), any(), anyString(), any()))
+        .thenThrow(new RuntimeException("Simulated exception"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllMasterDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    assertNull(future.join());
+  }
+
+  @Test
+  void addAllWarehouseDataInSingleCall_Success_WithMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+    Set<String> warehouseTypes = Set.of("W1", "W2");
+
+    Map<String, WareHouseResponse> v1Data = Map.of(
+        "W1", new WareHouseResponse(),
+        "W2", new WareHouseResponse()
+    );
+
+    when(masterDataUtils.createInBulkWareHouseRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenReturn(new ArrayList<>(warehouseTypes));
+
+    when(masterDataUtils.fetchInWareHousesList(any()))
+        .thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.WAREHOUSES), anySet(), any(), any());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.WAREHOUSES), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllWarehouseDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllWarehouseDataInSingleCall_Success_WithNullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Set<String> warehouseTypes = Set.of("W1", "W2");
+
+    Map<String, WareHouseResponse> v1Data = Map.of(
+        "W1", new WareHouseResponse(),
+        "W2", new WareHouseResponse()
+    );
+
+    when(masterDataUtils.createInBulkWareHouseRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenReturn(new ArrayList<>(warehouseTypes));
+
+    when(masterDataUtils.fetchInWareHousesList(any()))
+        .thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.WAREHOUSES), anySet(), any(), any());
+
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.WAREHOUSES), any()))
+        .thenReturn(Map.of("dummyKey", "dummyValue"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllWarehouseDataInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCommodityTypesInSingleCall_Success_WithMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<String> commodityTypes = Set.of(); // The code initializes it empty, so mimic that
+
+    Map<String, EntityTransferCommodityType> v1Data = Map.of(
+        "type1", new EntityTransferCommodityType()
+    );
+
+    when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
+        .thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.COMMODITY), anySet(), any(), any());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.COMMODITY), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCommodityTypesInSingleCall_Success_WithNullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+
+    Map<String, EntityTransferCommodityType> v1Data = Map.of(
+        "type1", new EntityTransferCommodityType()
+    );
+
+    when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
+        .thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(
+        any(), eq(CacheConstants.COMMODITY), anySet(), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCommodityTypesInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCommodityTypesInSingleCall_ExceptionThrown_ReturnsNullResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
+        .thenThrow(new RuntimeException("Simulated failure"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNull(result);
+  }
+
+  @Test
+  void addAllCurrencyDataInSingleCall_Success_WithMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+    Set<String> currencyList = Set.of("USD", "INR");
+
+    Map<String, EntityTransferCurrency> v1Data = Map.of(
+        "USD", new EntityTransferCurrency(),
+        "INR", new EntityTransferCurrency()
+    );
+
+    when(masterDataUtils.createInBulkCurrencyRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any())
+    ).thenReturn(new ArrayList<>(currencyList));
+
+    when(masterDataUtils.fetchInCurrencyList(anySet())).thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.CURRENCIES), anySet(), any(), any());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.CURRENCIES), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCurrencyDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+
+  @Test
+  void addAllCurrencyDataInSingleCall_Success_WithNullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Set<String> currencyList = Set.of("EUR");
+
+    Map<String, EntityTransferCurrency> v1Data = Map.of("EUR", new EntityTransferCurrency());
+
+    when(masterDataUtils.createInBulkCurrencyRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any())
+    ).thenReturn(new ArrayList<>(currencyList));
+
+    when(masterDataUtils.fetchInCurrencyList(anySet())).thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.CURRENCIES), anySet(), any(), any());
+
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.CURRENCIES), any()))
+        .thenReturn(Map.of("EUR", "Euro"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCurrencyDataInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCurrencyDataInSingleCall_ExceptionThrown_ReturnsNullResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    when(masterDataUtils.createInBulkCurrencyRequest(
+        any(), eq(ConsolidationDetails.class), any(), anyString(), any())
+    ).thenThrow(new RuntimeException("Simulated error"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCurrencyDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNull(result);
+  }
+
+  @Test
+  void addAllCarrierDataInSingleCall_Success_WithMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse carrierDetails = new CarrierDetailResponse();
+    response.setCarrierDetails(carrierDetails);
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<String> carrierList = Set.of("EK", "LH");
+    Map<String, EntityTransferCarrier> v1Data = Map.of(
+        "EK", new EntityTransferCarrier(),
+        "LH", new EntityTransferCarrier()
+    );
+
+    when(masterDataUtils.createInBulkCarriersRequest(
+        any(), eq(CarrierDetails.class), any(), anyString(), any())
+    ).thenReturn(new ArrayList<>(carrierList));
+
+    when(masterDataUtils.fetchInBulkCarriers(anySet())).thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.CARRIER), anySet(), any(), any());
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.CARRIER), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCarrierDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCarrierDataInSingleCall_Success_WithNullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse carrierDetails = new CarrierDetailResponse();
+    response.setCarrierDetails(carrierDetails);
+
+    Set<String> carrierList = Set.of("AA");
+
+    Map<String, EntityTransferCarrier> v1Data = Map.of("AA", new EntityTransferCarrier());
+
+    when(masterDataUtils.createInBulkCarriersRequest(
+        any(), eq(CarrierDetails.class), any(), anyString(), any())
+    ).thenReturn(new ArrayList<>(carrierList));
+
+    when(masterDataUtils.fetchInBulkCarriers(anySet())).thenReturn(v1Data);
+
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.CARRIER), anySet(), any(), any());
+
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.CARRIER), any()))
+        .thenReturn(Map.of("AA", "American Airlines"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCarrierDataInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCarrierDataInSingleCall_Success_WhenCarrierDetailsIsNull() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response(); // No carrierDetails set
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Map<String, EntityTransferCarrier> v1Data = Collections.emptyMap();
+
+    when(masterDataUtils.fetchInBulkCarriers(anySet())).thenReturn(v1Data);
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.CARRIER), anySet(), any(), any());
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.CARRIER), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCarrierDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllCarrierDataInSingleCall_ExceptionThrown_ReturnsNull() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse carrierDetails = new CarrierDetailResponse();
+    response.setCarrierDetails(carrierDetails);
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    when(masterDataUtils.createInBulkCarriersRequest(
+        any(), eq(CarrierDetails.class), any(), anyString(), any())
+    ).thenThrow(new RuntimeException("Test exception"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllCarrierDataInSingleCall(response, masterDataResponse);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNull(result);
+  }
+
+  @Test
+  void addAllUnlocationDataInSingleCall_Success_WithNullMasterDataResponse() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+
+    CarrierDetailResponse carrierDetails = new CarrierDetailResponse();
+
+    response.setCarrierDetails(carrierDetails);
+
+    List<String> unlocCodesMain = List.of("SGSIN");
+    List<String> unlocCodesCarrier = List.of("AEJEA");
+
+    Map<String, EntityTransferUnLocations> masterDataMap = Map.of(
+        "SGSIN", new EntityTransferUnLocations(),
+        "AEJEA", new EntityTransferUnLocations()
+    );
+
+    when(masterDataUtils.createInBulkUnLocationsRequest(eq(response), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenReturn(unlocCodesMain);
+    when(masterDataUtils.createInBulkUnLocationsRequest(eq(carrierDetails), eq(CarrierDetails.class), any(), anyString(), any()))
+        .thenReturn(unlocCodesCarrier);
+    when(masterDataUtils.fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID)))
+        .thenReturn(masterDataMap);
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.UNLOCATIONS), anySet(), any(), any());
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.UNLOCATIONS), any()))
+        .thenReturn(Map.of("SGSIN", "Singapore"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllUnlocationDataInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllUnlocationDataInSingleCall_Success_WithMasterDataResponseAndArrivalDeparture() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    CarrierDetailResponse carrierDetails = new CarrierDetailResponse();
+    ArrivalDepartureDetailsResponse arrival = new ArrivalDepartureDetailsResponse();
+    ArrivalDepartureDetailsResponse departure = new ArrivalDepartureDetailsResponse();
+
+    response.setCarrierDetails(carrierDetails);
+    response.setArrivalDetails(arrival);
+    response.setDepartureDetails(departure);
+
+    List<String> consUnloc = List.of("USNYC");
+    List<String> carrierUnloc = List.of("JPTYO");
+    List<String> arrivalUnloc = List.of("INBOM");
+    List<String> departureUnloc = List.of("AUMEL");
+
+    Set<String> combinedUnlocs = new HashSet<>();
+    combinedUnlocs.addAll(consUnloc);
+    combinedUnlocs.addAll(carrierUnloc);
+    combinedUnlocs.addAll(arrivalUnloc);
+    combinedUnlocs.addAll(departureUnloc);
+
+    Map<String, EntityTransferUnLocations> masterDataMap = new HashMap<>();
+    combinedUnlocs.forEach(code -> masterDataMap.put(code, new EntityTransferUnLocations()));
+
+    when(masterDataUtils.createInBulkUnLocationsRequest(any(), any(), any(), any(), any()))
+        .thenReturn(consUnloc);
+
+
+    when(masterDataUtils.fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID)))
+        .thenReturn(masterDataMap);
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.UNLOCATIONS), anySet(), any(), any());
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.UNLOCATIONS), any(), any());
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(any(), eq(CacheConstants.COUNTRIES), any(), any());
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllUnlocationDataInSingleCall(response, new HashMap<>());
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllUnlocationDataInSingleCall_Success_MinimalCase() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+    List<String> codes = List.of("DEHAM");
+
+    when(masterDataUtils.createInBulkUnLocationsRequest(eq(response), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenReturn(codes);
+
+    Map<String, EntityTransferUnLocations> masterDataMap = Map.of("DEHAM", new EntityTransferUnLocations());
+
+    when(masterDataUtils.fetchInBulkUnlocations(anySet(), eq(EntityTransferConstants.LOCATION_SERVICE_GUID)))
+        .thenReturn(masterDataMap);
+    doNothing().when(masterDataUtils).pushToCache(any(), eq(CacheConstants.UNLOCATIONS), anySet(), any(), any());
+    when(masterDataUtils.setMasterData(any(), eq(CacheConstants.UNLOCATIONS), any()))
+        .thenReturn(Map.of("DEHAM", "Hamburg"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllUnlocationDataInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNotNull(result);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
+  void addAllUnlocationDataInSingleCall_ExceptionThrown_ReturnsNull() {
+    // Arrange
+    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
+
+    when(masterDataUtils.createInBulkUnLocationsRequest(any(), eq(ConsolidationDetails.class), any(), anyString(), any()))
+        .thenThrow(new RuntimeException("Simulated error"));
+
+    // Act
+    CompletableFuture<ResponseEntity<IRunnerResponse>> future =
+        consolidationV3Service.addAllUnlocationDataInSingleCall(response, null);
+
+    // Assert
+    assertNotNull(future);
+    ResponseEntity<IRunnerResponse> result = future.join();
+    assertNull(result);
+  }
+
 
 }
