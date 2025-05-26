@@ -18,7 +18,17 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
+import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -432,6 +442,7 @@ public class MasterDataUtils{
             shipmentListResponse.setContainer40GPCount(counts.container40GPCount);
             shipmentListResponse.setContainer40RECount(counts.container40RECount);
             shipmentListResponse.setContainerNumbers(counts.containerNumbers);
+            shipmentListResponse.setContainerCount(counts.containerNumbers.size());
         } else if (response instanceof AttachListShipmentResponse attachListShipmentResponse) {
             attachListShipmentResponse.setContainer20Count(counts.container20Count);
             attachListShipmentResponse.setContainer40Count(counts.container40Count);

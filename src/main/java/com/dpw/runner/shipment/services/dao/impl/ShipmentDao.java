@@ -41,6 +41,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
+import com.dpw.runner.shipment.services.projection.CustomerBookingProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -309,6 +310,11 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId) {
         return shipmentRepository.findByBookingReference(ref, tenantId);
+    }
+
+    @Override
+    public List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<Long> shipmentIds) {
+        return shipmentRepository.findCustomerBookingProByShipmentIdIn(shipmentIds);
     }
 
     @Override
