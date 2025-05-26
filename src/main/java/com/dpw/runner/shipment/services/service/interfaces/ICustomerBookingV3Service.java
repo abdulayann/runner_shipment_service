@@ -23,4 +23,6 @@ public interface ICustomerBookingV3Service {
     PlatformToRunnerCustomerBookingResponse platformCreateBooking(@Valid PlatformToRunnerCustomerBookingRequest request) throws RunnerException;
     CheckCreditLimitResponse checkCreditLimitFromFusion(CreditLimitRequest creditLimitRequest) throws RunnerException;
     V1ShipmentCreationResponse retryForBilling(CommonGetRequest commonGetRequest) throws RunnerException;
+
+    CustomerBookingV3Response findByBookingNumber(String bookingNumber);
 }
