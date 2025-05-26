@@ -1,1 +1,1 @@
-update shipment_details set house_bill = null where shipment_id in ('SNZS25052953','SNZS25052955') and tenant_id  = 583;
+update shipment_details set house_bill = null,updated_at = NOW() where shipment_id in ('SNZS25052953','SNZS25052955') and tenant_id  = 583;
