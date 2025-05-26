@@ -60,6 +60,7 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String REFERENCE_NUMBERS = "REFERENCE_NUMBERS";
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
     public static final String MPK = "MPK";

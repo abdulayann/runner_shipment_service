@@ -30,6 +30,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -104,7 +105,7 @@ public class ContainerV3Util {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
             if (request.getShipmentId() != null) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
+                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
                 request.setTransportMode(shipmentDetails.getTransportMode());
                 request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
@@ -118,7 +119,7 @@ public class ContainerV3Util {
             }
 
             if (request.getConsolidationId() != null) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).orElseThrow(() -> new DataRetrievalFailureException("Consolidation not found"));
                 request.setTransportMode(consolidationDetails.getTransportMode());
                 request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
@@ -186,7 +187,6 @@ public class ContainerV3Util {
             Row row = sheet.createRow(rowIndex++);
             int cellIndex = 0;
             for (Field field : fieldsList) {
-                field.setAccessible(true);
                 Object value = field.get(model);
                 Cell cell = row.createCell(cellIndex++);
                 cell.setCellValue(value != null ? value.toString() : "");

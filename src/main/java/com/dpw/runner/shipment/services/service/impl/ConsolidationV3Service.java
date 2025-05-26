@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
@@ -52,7 +51,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
@@ -95,7 +93,8 @@ import java.util.stream.Stream;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -1128,22 +1127,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
             if (!weightUnit.isEmpty() && !volumeUnit.isEmpty() && !transportMode.isEmpty()) {
                 switch (transportMode) {
-                    case Constants.TRANSPORT_MODE_SEA:
-                    case Constants.TRANSPORT_MODE_RAI:
-                    case Constants.TRANSPORT_MODE_FSA:
-                        BigDecimal volInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-                        vwOb.setChargeable(volInM3.multiply(BigDecimal.valueOf(10)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(10)));
-                        vwOb.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-
+                    case Constants.TRANSPORT_MODE_SEA, Constants.TRANSPORT_MODE_RAI, Constants.TRANSPORT_MODE_FSA:
                         BigDecimal wtInTn = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         wtInTn = wtInTn.divide(BigDecimal.valueOf(1000));
-                        BigDecimal wv = new BigDecimal(convertUnit(Constants.VOLUME, wtInTn, Constants.VOLUME_UNIT_M3, volumeUnit).toString());
-                        vwOb.setVolumeWeight(wv);
-                        vwOb.setVolumeWeightUnit(volumeUnit);
+
+                        vwOb.setChargeable(wtInTn.max(volume));
+                        vwOb.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+                        vwOb.setVolumeWeight(wtInTn);
+                        vwOb.setVolumeWeightUnit(Constants.VOLUME_UNIT_M3);
                         break;
-                    case Constants.TRANSPORT_MODE_AIR:
-                    case Constants.TRANSPORT_MODE_FAS:
-                    case Constants.TRANSPORT_MODE_ROA:
+                    case Constants.TRANSPORT_MODE_AIR, Constants.TRANSPORT_MODE_ROA, Constants.TRANSPORT_MODE_FAS:
                         BigDecimal wtInKG = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
                         BigDecimal vlInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
                         BigDecimal factor = BigDecimal.valueOf(AIR_FACTOR_FOR_VOL_WT);
@@ -1154,11 +1147,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         if (wtInKG.compareTo(wvInKG) < 0) {
                             wtInKG = wvInKG;
                         }
+
                         vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
                         vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
-                        BigDecimal WV = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
-                        vwOb.setVolumeWeight(WV);
-                        vwOb.setVolumeWeightUnit(weightUnit);
+                        vwOb.setVolumeWeight(wvInKG);
+                        vwOb.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
                         break;
                     default:
                 }
