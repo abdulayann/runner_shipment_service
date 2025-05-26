@@ -4,17 +4,16 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
@@ -249,6 +248,20 @@ class CustomerBookingV3ControllerTest {
     void listBookingParties() {
         when(partiesV3Service.list(any())).thenReturn(new ArrayList<>());
         var responseEntity = customerBookingV3Controller.listBookingParties(new ListCommonRequest());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retryForBilling() throws RunnerException {
+        when(customerBookingV3Service.retryForBilling(any())).thenReturn(new V1ShipmentCreationResponse());
+        var responseEntity = customerBookingV3Controller.retryForBilling(1L);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fusionCheckCreditLimit() throws RunnerException {
+        when(customerBookingV3Service.checkCreditLimitFromFusion(any())).thenReturn(new CheckCreditLimitResponse());
+        var responseEntity = customerBookingV3Controller.checkCreditLimitFromFusion(new CreditLimitRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 }

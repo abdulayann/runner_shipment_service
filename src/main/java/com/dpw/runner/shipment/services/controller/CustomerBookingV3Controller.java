@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -158,6 +159,19 @@ public class CustomerBookingV3Controller {
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> retrieveCRPService(@RequestBody @Valid CRPRetrieveRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(crpService.retrieveCRPService(CommonRequestModel.buildRequest(request)));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_SUCCESSFUL, response = CheckCreditLimitResponse.class)})
+    @PostMapping(CustomerBookingConstants.FUSION_CHECK_CREDIT_LIMIT)
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(@RequestBody @Valid CreditLimitRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.checkCreditLimitFromFusion(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREDIT_LIMIT_RETRIEVE_SUCCESSFUL, response = V1ShipmentCreationResponse.class)})
+    @GetMapping(CustomerBookingConstants.RETRY_FOR_BILLING)
+    public ResponseEntity<IRunnerResponse> retryForBilling(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.retryForBilling(CommonGetRequest.builder().id(id).build()));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ContainerResponse.class)})
