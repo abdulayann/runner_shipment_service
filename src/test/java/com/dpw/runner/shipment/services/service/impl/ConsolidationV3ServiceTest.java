@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -135,6 +136,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private KafkaProducer producer;
 
   @Mock
+  private IPackingV3Service packingV3Service;
+
+  @Mock
   private ITrackingServiceAdapter trackingServiceAdapter;
 
   @Mock
@@ -166,6 +170,11 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Mock
   private IContainerService containerService;
+  @Mock
+  private IPartiesDao partiesDao;
+
+  @Mock
+  private CustomKeyGenerator keyGenerator;
 
   @Mock
   private IPackingService packingService;
