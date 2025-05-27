@@ -246,8 +246,8 @@ class ReferenceNumbersDaoTest {
     void saveEntityFromShipment_ReferenceNumberssListHasElements_ReturnsPopulatedList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long shipmentId = 1L;
         List<ReferenceNumbers> referenceNumberss = Collections.singletonList(testData);
-        when(referenceNumbersDao.findById(anyLong())).thenReturn(Optional.of(new ReferenceNumbers()));
-        when(referenceNumbersDao.save(any())).thenReturn(new ReferenceNumbers());
+        lenient().when(referenceNumbersDao.findById(anyLong())).thenReturn(Optional.of(new ReferenceNumbers()));
+        lenient().when(referenceNumbersDao.save(any())).thenReturn(new ReferenceNumbers());
         List<ReferenceNumbers> result = referenceNumbersDao.saveEntityFromShipment(referenceNumberss, shipmentId);
         assertNotNull(result);
         assertFalse(result.isEmpty());
