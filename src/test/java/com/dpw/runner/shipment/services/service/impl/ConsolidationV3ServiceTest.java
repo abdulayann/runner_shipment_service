@@ -5,17 +5,19 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
@@ -31,6 +33,7 @@ import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResp
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
@@ -45,6 +48,7 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
@@ -63,13 +67,13 @@ import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
+import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -85,6 +89,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
@@ -107,26 +112,15 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ConsolidationV3ServiceTest extends CommonMocks {
-  @Mock
-  private ExecutorService executorService;
 
   @Mock
   private CacheManager cacheManager;
-
-  @Mock
-  private CustomKeyGenerator keyGenerator;
 
   @Mock
   private IConsolidationDetailsDao consolidationDetailsDao;
 
   @Mock
   private IConsoleShipmentMappingDao consoleShipmentMappingDao;
-
-  @Mock
-  private IPartiesDao partiesDao;
-
-  @Mock
-  private IPackingsSync packingsADSync;
 
   @Mock
   private ConsolidationValidationV3Util consolidationValidationV3Util;
@@ -151,9 +145,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Mock
   private IPackingDao packingDao;
-
-  @Mock
-  private IPackingV3Service packingV3Service;
 
   @Mock
   private IEventDao eventDao;
@@ -267,12 +258,12 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   private static ModelMapper modelMapperTest = new ModelMapper();
   private ConsolidationDetails consolidationDetails;
-  private List<ModuleValidationFieldType> missingFields;
   private static ShipmentDetails testShipment;
   private static Containers testContainer;
   private static ShipmentSettingsDetails shipmentSettingsDetails;
 
   private MockedStatic<UnitConversionUtility> unitConversionUtilityMockedStatic;
+  private MockedStatic<TenantContext> tenantContextMockedStatic;
 
   @BeforeAll
   static void init() throws IOException {
@@ -298,10 +289,10 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     consolidationDetails = new ConsolidationDetails();
     shipmentSettingsDetails = new ShipmentSettingsDetails();
     customerBookingV3Request = new CustomerBookingV3Request();
-    missingFields = new ArrayList<>();
     testShipment = jsonTestUtility.getTestShipment();
     testContainer = jsonTestUtility.getTestContainer();
     unitConversionUtilityMockedStatic = mockStatic(UnitConversionUtility.class);
+    tenantContextMockedStatic = mockStatic(TenantContext.class);
   }
 
   @AfterEach
@@ -310,6 +301,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     consolidationV3Service.executorServiceMasterData.shutdown();
     if (unitConversionUtilityMockedStatic != null) {
       unitConversionUtilityMockedStatic.close();
+    }
+    if(tenantContextMockedStatic != null){
+      tenantContextMockedStatic.close();
     }
   }
 
@@ -402,7 +396,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     // Setup
     CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
     ConsolidationDetails consoleDetails = testConsol;
-    ConsolidationDetailsResponse expectedResponse = testConsolResponse;
 
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
@@ -496,13 +489,13 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Test
   void testGenerateConsolidationNumber_Success() throws RunnerException {
-    ConsolidationDetails consolidationDetails = testConsol;
+    consolidationDetails = testConsol;
     consolidationDetails.setConsolidationNumber(null);
     consolidationDetails.setReferenceNumber(null);
     consolidationDetails.setBol(null);
     TenantProducts tenantProducts = new TenantProducts();
     tenantProducts.setId(1L);
-    ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+    shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
     shipmentSettingsDetails.setConsolidationLite(false);
     var spyService = Mockito.spy(consolidationV3Service);
     when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(true);
@@ -520,13 +513,13 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Test
   void testGenerateConsolidationNumber_Success1() throws RunnerException {
-    ConsolidationDetails consolidationDetails = testConsol;
+    consolidationDetails = testConsol;
     consolidationDetails.setConsolidationNumber(null);
     consolidationDetails.setReferenceNumber(null);
     consolidationDetails.setBol(null);
     TenantProducts tenantProducts = new TenantProducts();
     tenantProducts.setId(1L);
-    ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+    shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
     shipmentSettingsDetails.setConsolidationLite(false);
     var spyService = Mockito.spy(consolidationV3Service);
     when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(true);
@@ -552,7 +545,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     consolidationDetails.setBol(null);
     TenantProducts tenantProducts = new TenantProducts();
     tenantProducts.setId(1L);
-    ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+    shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
     shipmentSettingsDetails.setConsolidationLite(false);
     var spyService = Mockito.spy(consolidationV3Service);
     when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(false);
@@ -577,7 +570,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     consolidationDetails.setBol(null);
     TenantProducts tenantProducts = new TenantProducts();
     tenantProducts.setId(1L);
-    ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+    shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
     shipmentSettingsDetails.setConsolidationLite(true);
     when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(false);
     var spyService = Mockito.spy(consolidationV3Service);
@@ -591,7 +584,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Test
   void testGenerateCustomBolNumber_Success_Serial() {
-    ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+    shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
     shipmentSettingsDetails.setBolNumberPrefix("CONS");
     shipmentSettingsDetails.setBolNumberGeneration(GenerationType.Serial);
     ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
@@ -604,7 +597,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Test
   void testGenerateCustomBolNumber_Success_Random() {
-    ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+    shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
     shipmentSettingsDetails.setBolNumberPrefix("CONS");
     shipmentSettingsDetails.setBolNumberGeneration(GenerationType.Random);
     ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
@@ -757,7 +750,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
-  void updateLinkedShipmentData_Exception1() throws RunnerException {
+  void updateLinkedShipmentData_Exception1() {
     mockTenantSettings();
 
     consolidationDetails = testConsol;
@@ -864,14 +857,14 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
-  void testCreateConsolidationPayload() throws IOException {
+  void testCreateConsolidationPayload() {
     ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
     consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
     assertNotNull(consolidationDetailsV3Response);
   }
 
   @Test
-  void testCreateConsolidationPayload1() throws IOException {
+  void testCreateConsolidationPayload1() {
     ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
     when(awbDao.findByConsolidationId(any())).thenReturn(List.of(new Awb()));
     consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
@@ -879,7 +872,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
-  void testCreateConsolidationPayload2() throws IOException {
+  void testCreateConsolidationPayload2() {
     testConsol.setBookingStatus(CarrierBookingStatus.Requested.toString());
     ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
     when(awbDao.findByConsolidationId(any()))
@@ -892,7 +885,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
-  void testCreateConsolidationPayload3() throws IOException {
+  void testCreateConsolidationPayload3() {
     ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
     mockShipmentSettings();
     consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
@@ -900,7 +893,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
-  void testCreateConsolidationPayload4() throws IOException {
+  void testCreateConsolidationPayload4() {
     testConsol.setShipmentsList(Set.of(testShipment));
     ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
     mockShipmentSettings();
@@ -909,7 +902,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
-  void testCreateConsolidationPayload5() throws IOException {
+  void testCreateConsolidationPayload5() {
     testShipment.setPacksUnit("BBG");
     testShipment.setContainersList(Set.of(testContainer));
     ShipmentDetails testShipment1 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
@@ -2217,8 +2210,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
 
     List<Awb> shipmentAwbs = Arrays.asList(
-        createAwbWithCargoInfo(401L, "T2"),
-        createAwbWithCargoInfo(402L, "T3")
+        createMawbWithCargoInfo(401L, "T2"),
+        createMawbWithCargoInfo(402L, "T3")
     );
 
     when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
@@ -2273,8 +2266,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
 
     List<Awb> shipmentAwbs = Arrays.asList(
-        createAwbWithCargoInfo(401L, "T2"),
-        createAwbWithCargoInfo(402L, AwbConstants.T1)
+        createMawbWithCargoInfo(401L, "T2"),
+        createMawbWithCargoInfo(402L, AwbConstants.T1)
     );
 
     when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
@@ -2308,9 +2301,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     ConsolidationDetails consolDetails = createConsolidationDetails(consoleId);
 
     List<Awb> shipmentAwbs = Arrays.asList(
-        createAwbWithCargoInfo(401L, AwbConstants.T1),
-        createAwbWithCargoInfo(402L, AwbConstants.T1),
-        createAwbWithCargoInfo(403L, "T2")
+        createMawbWithCargoInfo(401L, AwbConstants.T1),
+        createMawbWithCargoInfo(402L, AwbConstants.T1),
+        createMawbWithCargoInfo(403L, "T2")
     );
 
     when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(mappingList);
@@ -2343,16 +2336,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     return awb;
   }
 
-  private Awb createMawbWithCargoInfo(Long id, String sci) {
-    Awb awb = new Awb();
-    awb.setId(id);
-    AwbCargoInfo cargoInfo = new AwbCargoInfo();
-    cargoInfo.setSci(sci);
-    awb.setAwbCargoInfo(cargoInfo);
-    return awb;
-  }
 
-  private Awb createAwbWithCargoInfo(Long id, String sci) {
+
+  private Awb createMawbWithCargoInfo(Long id, String sci) {
     Awb awb = new Awb();
     awb.setId(id);
     AwbCargoInfo cargoInfo = new AwbCargoInfo();
@@ -2392,9 +2378,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     when(shipmentDao.findShipmentsByIds(any())).thenReturn(shipmentDetailsList);
 
     var spyService = Mockito.spy(consolidationV3Service);
-
-  //Mockito.doNothing().when(spyService).processInterConsoleDetachShipment(any(), any());
-   // Mockito.doReturn(true).when(spyService).isSaveSeaPacks(any(), any(), any(), any());
 
     V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
     v1TenantSettingsResponse.setEnableConsolSplitBillCharge(false);
@@ -2724,7 +2707,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   void addAllTenantDataInSingleCall_Success1() {
     // Arrange
     ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
-    Map<String, Object> masterDataResponse = new HashMap<>();
 
     Set<String> mockTenantIds = Set.of("tenant1", "tenant2");
     Map<String, TenantModel> mockTenantMap = new HashMap<>();
@@ -3061,8 +3043,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     // Arrange
     ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
-
-    Set<String> commodityTypes = Set.of(); // The code initializes it empty, so mimic that
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
         "type1", new EntityTransferCommodityType()
@@ -3459,5 +3439,466 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     assertNull(result);
   }
 
+  @Test
+  void getAllMasterData_NteException(){
+    String source = "network_transfer";
+    Long id = 1L;
 
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.empty());
+
+    assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getAllMasterData(id, source));
+  }
+
+
+  @Test
+  void getAllMasterData_NteException1(){
+    String source = "network_transfer";
+    Long id = 1L;
+
+    consolidationDetails.setTriangulationPartnerList(null);
+    consolidationDetails.setReceivingBranch(2L);
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    when(TenantContext.getCurrentTenant()).thenReturn(1);
+
+    assertThrows(AuthenticationException.class, () -> consolidationV3Service.getAllMasterData(id, source));
+  }
+
+  @Test
+  void getAllMasterData_NteSuccess() throws AuthenticationException, RunnerException {
+    String source = "network_transfer";
+    Long id = 1L;
+
+    consolidationDetails.setTriangulationPartnerList(null);
+    consolidationDetails.setReceivingBranch(1L);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(new ConsolidationDetailsV3Response());
+    when(TenantContext.getCurrentTenant()).thenReturn(1);
+    Map<String, Object> responseMap = consolidationV3Service.getAllMasterData(id, source);
+
+    assertNotNull(responseMap);
+  }
+
+  @Test
+  void getAllMasterData_Exception()  {
+    String source = "source";
+    Long id = 1L;
+
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.empty());
+    assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getAllMasterData(id, source));
+  }
+
+  @Test
+  void retrieveById_Success_WithId_RegularSource() throws RunnerException, AuthenticationException {
+    // Arrange
+    Long id = 1L;
+    CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    request.setId(id);
+
+    ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+
+    when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
+    when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class))
+        .thenReturn(mockResponse);
+
+    // Act
+    ConsolidationDetailsV3Response result = consolidationV3Service.retrieveById(request, "REGULAR_SOURCE");
+
+    // Assert
+    assertNotNull(result);
+
+  }
+
+  @Test
+  void retrieveById_Success_WithGuid_RegularSource() throws RunnerException, AuthenticationException {
+    // Arrange
+    String guidString = "550e8400-e29b-41d4-a716-446655440000";
+    UUID guid = UUID.fromString(guidString);
+    CommonGetRequest request = CommonGetRequest.builder().build();
+    request.setGuid(guidString);
+
+    ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+
+    when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.of(mockConsolidationDetails));
+    when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class))
+        .thenReturn(mockResponse);
+
+
+    // Act
+    ConsolidationDetailsV3Response result = consolidationV3Service.retrieveById(request, "REGULAR_SOURCE");
+
+    // Assert
+    assertNotNull(result);
+  }
+
+  @Test
+  void retrieveById_Success_WithId_NetworkTransferSource() throws RunnerException, AuthenticationException {
+    // Arrange
+    Long id = 1L;
+    CommonGetRequest request = CommonGetRequest.builder().build();
+    request.setId(id);
+
+    ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    consolidationDetails.setTriangulationPartnerList(new ArrayList<>());
+    when(TenantContext.getCurrentTenant()).thenReturn(100);
+    consolidationDetails.setReceivingBranch(100L);
+
+    when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class))
+        .thenReturn(mockResponse);
+
+    // Act
+    ConsolidationDetailsV3Response result = consolidationV3Service.retrieveById(request, NETWORK_TRANSFER);
+
+    // Assert
+    assertNotNull(result);
+    verify(jsonHelper).convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class);
+  }
+
+  @Test
+  void retrieveById_Success_WithBothIdAndGuid_IdTakesPrecedence() throws RunnerException, AuthenticationException {
+    // Arrange
+    Long id = 1L;
+    String guidString = "550e8400-e29b-41d4-a716-446655440000";
+    CommonGetRequest request = CommonGetRequest.builder().build();
+    request.setId(id);
+    request.setGuid(guidString);
+
+    ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+
+    when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
+    when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class))
+        .thenReturn(mockResponse);
+
+    // Act
+    ConsolidationDetailsV3Response result = consolidationV3Service.retrieveById(request, "REGULAR_SOURCE");
+
+    // Assert
+    assertNotNull(result);
+    verify(consolidationDetailsDao).findById(id);
+    verify(consolidationDetailsDao, never()).findByGuid(any(UUID.class));
+  }
+
+  @Test
+  void retrieveById_ThrowsRunnerException_WhenBothIdAndGuidAreNull() {
+    // Arrange
+    CommonGetRequest request = CommonGetRequest.builder().build();
+
+    // Act & Assert
+    RunnerException exception = assertThrows(RunnerException.class,
+        () -> consolidationV3Service.retrieveById(request, "REGULAR_SOURCE"));
+
+    assertEquals("Id and GUID can't be null. Please provide any one !", exception.getMessage());
+    verify(consolidationDetailsDao, never()).findById(any());
+    verify(consolidationDetailsDao, never()).findByGuid(any());
+  }
+
+  @Test
+  void retrieveById_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithId() {
+    // Arrange
+    Long id = 1L;
+    CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    request.setId(id);
+
+    when(consolidationDetailsDao.findById(id)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class,
+        () -> consolidationV3Service.retrieveById(request, "REGULAR_SOURCE"));
+
+    assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    verify(consolidationDetailsDao).findById(id);
+  }
+
+  @Test
+  void retrieveById_ThrowsDataRetrievalFailureException_WhenConsolidationDetailsNotFound_WithGuid() {
+    // Arrange
+    String guidString = "550e8400-e29b-41d4-a716-446655440000";
+    UUID guid = UUID.fromString(guidString);
+    CommonGetRequest request =  CommonGetRequest.builder().guid(guidString).build();
+    request.setGuid(guidString);
+
+    when(consolidationDetailsDao.findByGuid(guid)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class,
+        () -> consolidationV3Service.retrieveById(request, "REGULAR_SOURCE"));
+
+    assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    verify(consolidationDetailsDao).findByGuid(guid);
+  }
+
+  @Test
+  void retrieveById_ThrowsDataRetrievalFailureException_WhenNetworkTransferReturnsEmpty() {
+    // Arrange
+    Long id = 1L;
+    CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    request.setId(id);
+
+    // Act & Assert
+    DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class,
+        () -> consolidationV3Service.retrieveById(request, NETWORK_TRANSFER));
+
+    assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+
+  }
+
+  @Test
+  void retrieveById_ThrowsIllegalArgumentException_WhenGuidIsInvalidFormat() {
+    // Arrange
+    String invalidGuid = "invalid-guid-format";
+    CommonGetRequest request = CommonGetRequest.builder().guid(invalidGuid).build();
+
+
+    // Act & Assert
+    assertThrows(IllegalArgumentException.class,
+        () -> consolidationV3Service.retrieveById(request, "REGULAR_SOURCE"));
+
+    verify(consolidationDetailsDao, never()).findByGuid(any());
+  }
+
+  @Test
+  void retrieveById_HandlesNullSource() throws RunnerException, AuthenticationException {
+    // Arrange
+    Long id = 1L;
+    CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+
+    ConsolidationDetails mockConsolidationDetails =  consolidationDetails;
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+
+    when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
+    when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class))
+        .thenReturn(mockResponse);
+
+    // Act
+    ConsolidationDetailsV3Response result = consolidationV3Service.retrieveById(request, null);
+
+    // Assert
+    assertNotNull(result);
+    verify(consolidationDetailsDao).findById(id);
+  }
+
+  @Test
+  void retrieveById_HandlesEmptyStringSource() throws RunnerException, AuthenticationException {
+    // Arrange
+    Long id = 1L;
+    CommonGetRequest request = CommonGetRequest.builder().build();
+    request.setId(id);
+
+    ConsolidationDetails mockConsolidationDetails = consolidationDetails;
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
+
+    when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
+    when(jsonHelper.convertValue(mockConsolidationDetails, ConsolidationDetailsV3Response.class))
+        .thenReturn(mockResponse);
+
+    // Act
+    ConsolidationDetailsV3Response result = consolidationV3Service.retrieveById(request, "");
+
+    // Assert
+    assertNotNull(result);
+    verify(consolidationDetailsDao).findById(id);
+  }
+
+  @Test
+  void calculateConsoleShipmentTeuCount_ComputesCorrectValues() {
+    // Arrange
+
+    Containers container1 = new Containers();
+    container1.setId(1L);
+    container1.setContainerCount(2L);
+
+    Containers container2 = new Containers();
+    container2.setId(2L);
+    container2.setContainerCount(1L);
+
+    List<Containers> containersList = Arrays.asList(container1, container2);
+    consolidationDetails.setContainersList(containersList);
+
+    ShipmentGridChangeV3Response response = new ShipmentGridChangeV3Response();
+    V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+    Set<Long> assignedContainerIds = new HashSet<>(Collections.singleton(1L));
+
+    EntityTransferContainerType mockType = new EntityTransferContainerType();
+    mockType.setTeu(1.0);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+
+    // Stub internal method calls
+    ContainerResponse containerResponse = new ContainerResponse();
+    containerResponse.setId(1L);
+    when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(containerResponse));
+    when(masterDataUtils.createInBulkContainerTypeRequest(any(), any(), any(), any(), anyMap())).thenReturn(new ArrayList<>());
+    Cache cache = mock(Cache.class);
+    when(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).thenReturn(cache);
+
+    // Act
+    spyService.calculateConsoleShipmentTeuCount(consolidationDetails, response, tenantSettings, assignedContainerIds);
+
+    // Assert
+    assertNotNull(response.getSummaryConsoleTEU());
+    assertNotNull(response.getSummaryShipmentTEU());
+    assertNotNull(response.getSummaryConsolContainer());
+    assertNotNull(response.getSummaryShipmentContainer());
+    assertNotNull(response.getSummaryAssignedTEUs());
+
+  }
+
+
+  @Test
+  void calculateConsoleShipmentTeuCount_ComputesCorrectValues1() {
+    // Arrange
+    Containers container1 = new Containers();
+    container1.setId(1L);
+    container1.setContainerCount(2L);
+
+    Containers container2 = new Containers();
+    container2.setId(2L);
+    container2.setContainerCount(1L);
+    container2.setShipmentsList(Set.of(shipmentDetails));
+
+    List<Containers> containersList = Arrays.asList(container1, container2);
+    consolidationDetails.setContainersList(containersList);
+    consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+
+
+
+    ShipmentGridChangeV3Response response = new ShipmentGridChangeV3Response();
+    V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+    Set<Long> assignedContainerIds = new HashSet<>(Collections.singleton(1L));
+
+    EntityTransferContainerType mockType = new EntityTransferContainerType();
+    mockType.setTeu(1.0);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+
+    // Stub internal method calls
+    ContainerResponse containerResponse = new ContainerResponse();
+    containerResponse.setId(1L);
+    when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(containerResponse));
+    when(masterDataUtils.createInBulkContainerTypeRequest(any(), any(), any(), any(), anyMap())).thenReturn(new ArrayList<>());
+    EntityTransferContainerType entityTransferContainerType = new EntityTransferContainerType();
+    entityTransferContainerType.setTeu(10.0);
+    Mockito.doReturn(entityTransferContainerType).when(spyService).getEntityTransferObjectCache(any(), anyMap());
+    // Act
+    spyService.calculateConsoleShipmentTeuCount(consolidationDetails, response, tenantSettings, assignedContainerIds);
+
+    // Assert
+    assertNotNull(response.getSummaryConsoleTEU());
+    assertNotNull(response.getSummaryShipmentTEU());
+    assertNotNull(response.getSummaryConsolContainer());
+    assertNotNull(response.getSummaryShipmentContainer());
+    assertNotNull(response.getSummaryAssignedTEUs());
+
+  }
+
+  @Test
+  void testAttachShipments_consolePullCall_shouldReturnNotNullWarning() throws RunnerException {
+
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    request.setConsolidationId(100L);
+    request.setShipmentIds(Set.of(1L, 2L));
+    request.setFromConsolidation(false);
+    request.setShipmentRequestedType(null);
+
+    shipmentDetails.setId(1L);
+    shipmentDetails.setTenantId(20);
+    shipmentDetails.setDirection("IMP");
+
+    consolidationDetails.setId(100L);
+    consolidationDetails.setOpenForAttachment(true);
+    consolidationDetails.setTenantId(10);
+    // Mocks
+    lenient().when(shipmentDao.findShipmentsByIds(anySet()))
+        .thenReturn(List.of(shipmentDetails));
+    lenient().when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), anyList(), any(), anySet(), anySet(), any()))
+        .thenReturn(new HashSet<>(List.of(1L)));
+    when(consoleShipmentMappingDao.findAll(any(), any()))
+        .thenReturn(new PageImpl<>(List.of()));
+
+    // other essential mocks
+    doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
+    doNothing().when(awbDao).validateAirMessaging(anyLong());
+    HashSet<Long> hashSet = new HashSet<>();
+    hashSet.add(1L);
+    when(consoleShipmentMappingDao.assignShipments(any(), any(), any(), any(), any(), any(), any())).thenReturn(hashSet);
+    when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
+    when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+    when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
+    mockTenantSettings();
+
+    // method under test
+    String warning = consolidationV3Service.attachShipments(request);
+
+    // assertions
+    assertNotNull(warning);
+  }
+
+  @Test
+  void testAttachShipments_notAllowed_shouldThrowRunnerException() {
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    request.setConsolidationId(100L);
+    request.setShipmentIds(Set.of(1L, 2L));
+    request.setFromConsolidation(false);
+    request.setShipmentRequestedType(null);
+
+    consolidationDetails.setOpenForAttachment(false);
+    when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
+
+    assertThrows(RunnerException.class, () -> consolidationV3Service.attachShipments(request));
+  }
+
+  @Test
+  void testAttachShipments_consolePullCall_shouldReturnNullWarning() throws RunnerException {
+
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    request.setConsolidationId(100L);
+    request.setShipmentIds(Set.of(1L, 2L));
+    request.setFromConsolidation(false);
+    request.setShipmentRequestedType(null);
+
+    shipmentDetails.setId(1L);
+    shipmentDetails.setTenantId(20);
+    shipmentDetails.setDirection("IMP");
+
+    consolidationDetails.setId(100L);
+    consolidationDetails.setOpenForAttachment(true);
+    consolidationDetails.setTenantId(10);
+    consolidationDetails.setInterBranchConsole(true);
+    // Mocks
+    lenient().when(shipmentDao.findShipmentsByIds(anySet()))
+        .thenReturn(List.of(shipmentDetails));
+    lenient().when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), anyList(), any(), anySet(), anySet(), any()))
+        .thenReturn(new HashSet<>(List.of(1L)));
+    when(consoleShipmentMappingDao.findAll(any(), any()))
+        .thenReturn(new PageImpl<>(List.of()));
+
+    // other essential mocks
+    doNothing().when(consolidationValidationV3Util).validateConsolidationIdAndShipmentIds(anyLong(), anyList());
+    doNothing().when(awbDao).validateAirMessaging(anyLong());
+    HashSet<Long> hashSet = new HashSet<>();
+    hashSet.add(1L);
+    when(consoleShipmentMappingDao.assignShipments(any(), any(), any(), any(), any(), any(), any())).thenReturn(hashSet);
+    when(shipmentDao.findShipmentsByIds(any())).thenReturn(new ArrayList<>());
+    when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+    when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+    lenient().when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
+    mockTenantSettings();
+
+
+    // method under test
+    String warning = consolidationV3Service.attachShipments(request);
+
+    // assertions
+    assertNull(warning);
+  }
 }
