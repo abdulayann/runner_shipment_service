@@ -187,6 +187,7 @@ public class ContainerV3Util {
             Row row = sheet.createRow(rowIndex++);
             int cellIndex = 0;
             for (Field field : fieldsList) {
+                field.setAccessible(true);
                 Object value = field.get(model);
                 Cell cell = row.createCell(cellIndex++);
                 cell.setCellValue(value != null ? value.toString() : "");
