@@ -4304,7 +4304,7 @@ public class ShipmentService implements IShipmentService {
         itemRow.createCell(headerMap.get("Order Number")).setCellValue(shipment.getOrderManagementNumber());
         itemRow.createCell(headerMap.get("Status")).setCellValue(String.valueOf(ShipmentStatus.values()[(shipment.getStatus())]));
         itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(shipment.getTransportMode());
-        itemRow.createCell(headerMap.get("Bill Status")).setCellValue(shipment.getBillStatus());
+        itemRow.createCell(headerMap.get("Fin. Status")).setCellValue(shipment.getFileStatus() != null ? shipment.getFileStatus().name() : "");
         itemRow.createCell(headerMap.get("MBL Number")).setCellValue(shipment.getMasterBill());
         itemRow.createCell(headerMap.get("Incoterm")).setCellValue(shipment.getIncoterms());
         itemRow.createCell(headerMap.get("Service Type")).setCellValue(shipment.getServiceType());
