@@ -166,4 +166,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String partner;
     private Boolean borrowed;
     private Long originBranch;
+    private String bookingId;
+    private String bookingStatus;
+    private String bookingNumber;
 }
