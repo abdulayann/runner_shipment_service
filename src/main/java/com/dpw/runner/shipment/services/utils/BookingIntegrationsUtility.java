@@ -686,7 +686,7 @@ public class BookingIntegrationsUtility {
                 .shipmentMovement(shipmentDetails.getDirection())
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
-                .purchaseOrders(getOrdersByShipmentId(shipmentDetails.getShipmentId()))
+                .purchase_orders(getOrdersByShipmentId(shipmentDetails.getShipmentId()))
                 .source(CustomerBookingConstants.RUNNER)
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
