@@ -1657,7 +1657,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     /**
      * Retrieves the container type entity from cache.
      */
-    private Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
+    Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
         if (cacheMap.isEmpty()) {
             var cached = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)
                     .get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
@@ -3457,7 +3457,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return warning;
     }
 
-
     protected void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
         try {
             if(console.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(console.getShipmentType()))
@@ -3551,7 +3550,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         return saveSeaPacks;
     }
-
 
     boolean isSeaPackingList(ShipmentDetails shipmentDetail, List<Packing> packingList) {
         return Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode()) && !listIsNullOrEmpty(packingList);
