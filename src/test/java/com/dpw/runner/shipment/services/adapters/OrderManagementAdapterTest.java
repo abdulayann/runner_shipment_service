@@ -28,7 +28,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpMethod;
@@ -561,7 +560,7 @@ class OrderManagementAdapterTest {
 
         List<PurchaseOrdersResponse> responses = orderManagementAdapter.getOrdersByShipmentId("SHP000125865");
         assertNotNull(responses);
-        assertEquals(orderManagementDTO1.getOrderId(), responses.get(0).getOrderId());
+        assertEquals(orderManagementDTO1.getOrderId(), responses.get(0).getOrder_id());
     }
 
     @Test
