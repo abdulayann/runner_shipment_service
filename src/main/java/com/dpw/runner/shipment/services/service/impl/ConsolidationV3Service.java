@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
+import com.dpw.runner.shipment.services.exception.response.ShipmentDetachResponse;
 import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
@@ -96,6 +97,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static java.util.stream.Collectors.toMap;
@@ -3391,19 +3393,22 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public String detachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> detachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         if(setIsNullOrEmpty(request.getShipmentIds())){
             throw new RunnerException("Select atleast one shipment to detach");
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(request.getConsolidationId());
         if(consol.isPresent())
             return detachShipmentsHelper(consol.get(), request.getShipmentIds(), request.getRemarks());
-        return "Consol is null";
+        return ResponseHelper.buildSuccessResponseWithWarning("Consol is null");
     }
 
-    public String detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = fetchAndValidateShipments(shipmentIds);
-        validateShipmentDetachment(shipmentDetails);
+        ResponseEntity<IRunnerResponse> validationsResponse = validateShipmentDetachment(shipmentDetails);
+        if(validationsResponse != null){
+            return validationsResponse;
+        }
 
         if (Boolean.TRUE.equals(consol.getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
@@ -3454,7 +3459,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .consolidationId(consolidationId).build();
         calculateAchievedValues(request);
 
-        return warning;
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
     protected void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
@@ -3573,18 +3578,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             .orElse(Collections.emptyList());
     }
 
-    private void validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {
-        validateOutstandingDuesForShipments(shipmentDetails);
+    private ResponseEntity<IRunnerResponse> validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {
+        return validateOutstandingDuesForShipments(shipmentDetails);
     }
 
-    protected void validateOutstandingDuesForShipments(List<ShipmentDetails> shipmentDetails) {
+    protected ResponseEntity<IRunnerResponse> validateOutstandingDuesForShipments(List<ShipmentDetails> shipmentDetails) {
         try {
             // Retrieve tenant settings
             V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
 
             // Exit if shipment details are empty or if split billing is not enabled
             if (ObjectUtils.isEmpty(shipmentDetails) || !Boolean.TRUE.equals(tenantSettings.getEnableConsolSplitBillCharge())) {
-                return;
+                return null;
             }
 
             // Filter non-empty shipments with transport mode "AIR" or "SEA"
@@ -3597,7 +3602,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Exit if no eligible shipments found
             if (eligibleShipments.isEmpty()) {
                 log.info("No eligible shipments found for AIR or SEA transport mode.");
-                return;
+                return null;
             }
 
             // Map shipments by their GUIDs for lookup, handle potential null GUIDs
@@ -3620,19 +3625,32 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .filter(summary -> Boolean.TRUE.equals(summary.getDueRemaining()))
                 .toList();
 
+            List<ShipmentDetachResponse> shipmentDetachResponseList = new ArrayList<>();
+
             // If there are shipments with outstanding dues, throw an exception
             if (ObjectUtils.isNotEmpty(summariesWithOutstandingDues)) {
-                List<String> shipmentIdsWithDues = summariesWithOutstandingDues.stream()
+                List<ShipmentDetails> shipmentWithDues = summariesWithOutstandingDues.stream()
                     .map(summary -> {
                         ShipmentDetails shipment = shipmentMapByGuid.get(summary.getModuleGuid());
-                        return (shipment != null) ? shipment.getShipmentId() : null;
+                        return (shipment != null) ? shipment : null;
                     }).filter(Objects::nonNull).toList();
 
-                if (!shipmentIdsWithDues.isEmpty()) {
-                    throw new BillingException("The following House(s) " + String.join(", ", shipmentIdsWithDues)
-                        + " cannot be detached as there are still apportioned costs associated with them.");
+                if (!shipmentWithDues.isEmpty()) {
+
+                    for(ShipmentDetails shipmentDetails1 : shipmentWithDues){
+                        shipmentDetachResponseList.add(ShipmentDetachResponse
+                            .builder()
+                            .shipmentId(shipmentDetails1.getId())
+                            .shipmentNumber(shipmentDetails1.getShipmentId())
+                            .hbl(shipmentDetails1.getHouseBill())
+                            .build());
+                    }
+                    return buildDependentServiceResponse(shipmentDetachResponseList, 0 , 0);
+//                    throw new BillingException("The following House(s) " + String.join(", ", shipmentIdsWithDues)
+//                        + " cannot be detached as there are still apportioned costs associated with them.");
                 }
             }
+            return null;
         }  catch (Exception e) {
             throw new BillingException(e.getMessage(), e);
         }
