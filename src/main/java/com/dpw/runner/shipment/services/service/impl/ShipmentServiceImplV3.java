@@ -1855,7 +1855,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
         shipmentRequest.setContainerAssignedToShipmentCargo(containerAssignedToShipmentCargo);
-        //todo: remove this: aditya
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
@@ -1939,7 +1938,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
-            //TODO: pushing to dependent services
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
             setShipmentFromBooking(shipmentDetails, notesRequest);
 
@@ -2051,7 +2049,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     }
 
-    //todo: add new fields to shipment
     private ShipmentV3Request getShipmentRequestFromBookingV3(CustomerBookingV3Request customerBookingRequest, Set<ConsolidationDetailsRequest> consolidationDetails) {
         return ShipmentV3Request.builder().
                 carrierDetails(CarrierDetailRequest.builder()

@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {CargoController.class})
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CargoControllerTest {
+class CargoControllerTest {
 
     @Mock
     private ICargoService cargoService;
