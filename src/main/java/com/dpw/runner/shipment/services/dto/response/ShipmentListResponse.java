@@ -155,6 +155,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private List<ShipmentOrderResponse> shipmentOrders;
     @JsonIgnore
     private List<ReferenceNumbersResponse> referenceNumbersList;
+    private Set<ConsolidationDetailsResponse> consolidationList;
 
     // dps items
     private String dpsStatus;
