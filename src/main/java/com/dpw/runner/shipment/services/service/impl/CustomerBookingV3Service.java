@@ -334,7 +334,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
         }
         boolean isCreatedInPlatform = !Objects.isNull(oldEntity.get().getIsPlatformBookingCreated()) && oldEntity.get().getIsPlatformBookingCreated();
-        //todo: manual + existing mapper
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setCreatedAt(oldEntity.get().getCreatedAt());
         customerBooking.setCreatedBy(oldEntity.get().getCreatedBy());
@@ -1464,7 +1463,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
             npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
