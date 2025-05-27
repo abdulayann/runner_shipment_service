@@ -81,6 +81,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
+    private Long originBranch;
     private Boolean intraBranch;
     private Integer prevShipmentStatus;
     private Boolean isShipmentReadOnly;
