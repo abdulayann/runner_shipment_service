@@ -17,7 +17,7 @@ public class ShipmentConstants {
     @SuppressWarnings("java:S2386")
     public static final List<String> SHIPMENT_HEADERS = Arrays.asList(
             "Shipment Clone", "Shipment Number", "Order Number", "Status", "Transport Mode",
-            "Bill Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
+            "Fin. Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
             "Delivery Mode", "Consolidation Type", "Activity Type", "Shipment Type", "Carrier",
             "Vessel Name/Flight", "Flight Number", "Voyage/Flight No.", "Paid Place Name",
             "Issued Place Name", "Source1", "Date of Issue", "Date of Receipt", "Country of Origin",
