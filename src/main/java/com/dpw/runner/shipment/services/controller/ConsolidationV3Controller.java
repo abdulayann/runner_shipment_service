@@ -115,8 +115,7 @@ public class ConsolidationV3Controller {
     @PostMapping(ApiConstants.DETACH_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> detachShipments(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         log.info("Received detachShipments request: {} with RequestId: {}", request, LoggerHelper.getRequestIdFromMDC());
-        String warning =  consolidationV3Service.detachShipments(request);
-        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        return consolidationV3Service.detachShipments(request);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})

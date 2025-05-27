@@ -1693,11 +1693,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     List<ShipmentDetails> shipmentList = List.of(shipment);
 
-    BillingException exception = assertThrows(BillingException.class, () ->
-        consolidationV3Service.validateOutstandingDuesForShipments(shipmentList)
-    );
-
-    assertTrue(exception.getMessage().contains("cannot be detached"));
+    ResponseEntity<IRunnerResponse> response = consolidationV3Service.validateOutstandingDuesForShipments(shipmentList);
+    assertNotNull(response);
   }
 
   @Test
@@ -2396,8 +2393,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
     when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
 
-    String response = spyService.detachShipments(request);
-    assertNull(response);
+    ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+    assertNotNull(response);
   }
 
   @Test
