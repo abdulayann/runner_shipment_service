@@ -37,7 +37,6 @@ import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -443,8 +442,8 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         return orderDataList.stream()
                 .map(order -> {
                     PurchaseOrdersResponse po = new PurchaseOrdersResponse();
-                    po.setOrderId(order.getOrderId());
-                    po.setOrderNumber(order.getOrderNumber());
+                    po.setOrder_id(order.getOrderId());
+                    po.setOrder_number(order.getOrderNumber());
                     return po;
                 })
                 .toList();
