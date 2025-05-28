@@ -3288,7 +3288,6 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void addAllCommodityTypesInSingleCall_Success_WithMasterDataResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
@@ -3305,7 +3304,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(masterDataResponse);
 
     // Assert
     assertNotNull(future);
@@ -3317,7 +3316,6 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void addAllCommodityTypesInSingleCall_Success_WithNullMasterDataResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
         "type1", new EntityTransferCommodityType()
@@ -3331,7 +3329,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, null);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(null);
 
     // Assert
     assertNotNull(future);
@@ -3343,7 +3341,6 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void addAllCommodityTypesInSingleCall_ExceptionThrown_ReturnsNullResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
 
     when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
@@ -3351,7 +3348,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(masterDataResponse);
 
     // Assert
     assertNotNull(future);
