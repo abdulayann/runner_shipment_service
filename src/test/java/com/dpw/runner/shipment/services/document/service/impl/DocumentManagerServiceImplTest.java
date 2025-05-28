@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -252,11 +253,11 @@ class DocumentManagerServiceImplTest {
 
     @Test
     void testDownloadDocument() {
-        var mockResponse = ResponseEntity.ok(new byte[1024]);
+        var mockResponse = ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[111]).headers(new HashMap()).build());
         when(documentManagerRestClient.downloadDocument(any())).thenReturn(mockResponse);
         var responseEntity = documentManagerServiceImpl.downloadDocument(CommonRequestModel.builder().data(CommonGetRequest.builder().id(11L).build()).build());
         assertNotNull(responseEntity);
-        assertEquals(mockResponse.getBody(), responseEntity);
+        assertEquals(mockResponse, responseEntity);
     }
 
     @Test

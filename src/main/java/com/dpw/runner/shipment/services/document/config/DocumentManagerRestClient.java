@@ -290,7 +290,7 @@ public class DocumentManagerRestClient {
 
     }
 
-    public ResponseEntity<byte[]> downloadDocument(Object object) {
+    public ResponseEntity<DocumentDownloadResponse> downloadDocument(Object object) {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
@@ -302,7 +302,7 @@ public class DocumentManagerRestClient {
                     httpEntity,
                     byte[].class
             );
-            return ResponseEntity.ok(response.getBody());
+            return ResponseEntity.ok(DocumentDownloadResponse.builder().content(response.getBody()).headers(response.getHeaders()).build());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("downloadDocument", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
