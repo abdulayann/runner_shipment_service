@@ -12,8 +12,8 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
@@ -59,7 +59,7 @@ class ConsolidationV3ControllerTest {
 
   @Test
   void testCreate_shouldReturnSuccessResponse() {
-    ConsolidationDetailsResponse mockResponse = new ConsolidationDetailsResponse();
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
     when(consolidationV3Service.create(any())).thenReturn(mockResponse);
     when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
@@ -72,7 +72,7 @@ class ConsolidationV3ControllerTest {
 
   @Test
   void testCompleteUpdate_shouldReturnSuccessResponse() throws RunnerException {
-    ConsolidationDetailsResponse mockResponse = new ConsolidationDetailsResponse();
+    ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
     when(consolidationV3Service.completeUpdate(any())).thenReturn(mockResponse);
     when(jsonHelper.convertToJson(any())).thenReturn("{}");
 
@@ -116,14 +116,16 @@ class ConsolidationV3ControllerTest {
   void testCalculateAchievedValues_shouldReturnSuccess() throws Exception {
     Long consolidationId = 1L;
     ShipmentGridChangeV3Response mockResponse = new ShipmentGridChangeV3Response();
+    CalculateAchievedValueRequest request = CalculateAchievedValueRequest.builder()
+            .consolidationId(consolidationId).build();
 
-    when(consolidationV3Service.calculateAchievedValues(consolidationId)).thenReturn(mockResponse);
+    when(consolidationV3Service.calculateAchievedValues(request)).thenReturn(mockResponse);
 
-    ResponseEntity<IRunnerResponse> response = controller.calculateAchievedValues(consolidationId);
+    ResponseEntity<IRunnerResponse> response = controller.calculateAchievedValues(request);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
-    verify(consolidationV3Service).calculateAchievedValues(consolidationId);
+    verify(consolidationV3Service).calculateAchievedValues(request);
   }
 
   @Test
@@ -184,6 +186,17 @@ class ConsolidationV3ControllerTest {
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testDetachShipments() throws RunnerException {
+    ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
+    ResponseEntity<IRunnerResponse> result = new ResponseEntity<>(HttpStatus.OK);
+
+    when(consolidationV3Service.detachShipments(request)).thenReturn(result);
+
+    ResponseEntity<IRunnerResponse> response = controller.detachShipments(request);
+    assertNotNull(response);
   }
 }
 

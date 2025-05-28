@@ -12,11 +12,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -26,14 +26,20 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
@@ -58,7 +64,7 @@ public class ConsolidationV3Controller {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ConsolidationDetailsV3Request request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull ConsolidationDetailsV3Request request) {
         log.info("Received Consolidation create request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.create(request));
     }
@@ -109,14 +115,13 @@ public class ConsolidationV3Controller {
     @PostMapping(ApiConstants.DETACH_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> detachShipments(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         log.info("Received detachShipments request: {} with RequestId: {}", request, LoggerHelper.getRequestIdFromMDC());
-        String warning =  consolidationV3Service.detachShipments(request);
-        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+        return consolidationV3Service.detachShipments(request);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_VALUES)
-    public ResponseEntity<IRunnerResponse> calculateAchievedValues(@RequestParam Long consolidationId) throws RunnerException {
-        ShipmentGridChangeV3Response response = consolidationV3Service.calculateAchievedValues(consolidationId);
+    public ResponseEntity<IRunnerResponse> calculateAchievedValues(@RequestBody CalculateAchievedValueRequest request) throws RunnerException {
+        ShipmentGridChangeV3Response response = consolidationV3Service.calculateAchievedValues(request);
         return ResponseHelper.buildSuccessResponse(response);
     }
 
@@ -146,9 +151,15 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
                 consolidationListV3Response.getNumberOfRecords());
     }
-    @PostMapping(ApiConstants.UPDATE_SAILING_SCHEDULE)
-    public ResponseEntity<IRunnerResponse> updateSailingScheduleDataToConsole(@RequestBody @Valid ConsolidationSailingScheduleRequest request) throws RunnerException {
-        log.info("Received updateSailingSchedule request: {}", request);
-        return ResponseHelper.buildSuccessResponse(consolidationV3Service.updateSailingScheduleDataToConsole(request));
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful Consolidation Attachment Flag Update"),
+            @ApiResponse(code = 400, message = "Invalid input - enableFlag cannot be null")
+    })
+    @PostMapping(value = ApiConstants.ATTACHMENT_FLAG)
+    public ResponseEntity<IRunnerResponse> updateConsolidationAttachmentFlag(@RequestParam Boolean enableFlag, @RequestParam Long consolId) {
+        consolidationV3Service.updateConsolidationAttachmentFlag(enableFlag, consolId);
+        return ResponseHelper.buildSuccessResponse();
     }
+
 }

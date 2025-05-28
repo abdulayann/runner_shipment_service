@@ -586,7 +586,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String coLoadCarrierName;
 
     @Column(name = "co_load_bl_number")
-    @Size(max = 64)
+    @Size(max = 50)
     private String coLoadBlNumber;
 
     @Column(name = "issuing_carrier_name")
@@ -618,7 +618,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Boolean controlled;
 
     @Column(name = "controlled_reference_number")
-    @Size(max = 64)
+    @Size(max = 50)
     private String controlledReferenceNumber;
 
     @Column(name = "partner")
@@ -630,7 +630,7 @@ public class ShipmentDetails extends MultiTenancy {
     private Long bookingAgent;
 
     @Column(name = "co_load_bkg_number")
-    @Size(max = 64)
+    @Size(max = 50)
     private String coLoadBkgNumber;
 
     @Column(name = "pickup_at_origin_type")

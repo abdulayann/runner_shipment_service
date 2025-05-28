@@ -9,14 +9,13 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import lombok.Data;
 import lombok.Setter;
-
-import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @Setter
@@ -132,4 +131,5 @@ public class ContainerBaseResponse implements IRunnerResponse {
     private BigDecimal humidity;
     private BigDecimal vents;
     private String assignedContainer;
+    private List<AttachedShipmentResponse> attachedShipmentResponses;
 }

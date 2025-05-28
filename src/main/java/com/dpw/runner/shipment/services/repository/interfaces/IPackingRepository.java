@@ -59,23 +59,56 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
         return findAll(spec, pageable);
     }
 
-    @Query("""
+    @Query(value = """
     SELECT
-        SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
-        SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
-    FROM Packing p
-    WHERE p.shipmentId = :shipmentId
-    """)
+        SUM(CASE
+                WHEN p.container_id IS NOT NULL AND p.container_id > 0
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS assignedCount,
+        SUM(CASE
+                WHEN p.container_id IS NULL
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS unassignedCount
+    FROM packing p
+    WHERE p.shipment_id = ?1 and p.is_deleted = false
+    """, nativeQuery = true)
     PackingAssignmentProjection getPackingAssignmentCountByShipment(@Param("shipmentId") Long shipmentId);
 
-    @Query("""
-            SELECT
-                SUM(CASE WHEN p.containerId IS NOT NULL AND p.containerId > 0 THEN 1 ELSE 0 END) AS assignedCount,
-                SUM(CASE WHEN p.containerId IS NULL THEN 1 ELSE 0 END) AS unassignedCount
-            FROM Packing p
-            WHERE p.consolidationId = :consolId
-            """)
-    PackingAssignmentProjection getPackingAssignmentCountByConsolidation(@Param("consolId") Long consolId);
+    @Query(value = """
+    SELECT
+        SUM(CASE
+                WHEN p.container_id IS NOT NULL AND p.container_id > 0
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS assignedCount,
+        SUM(CASE
+                WHEN p.container_id IS NULL
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS unassignedCount
+    FROM packing p
+    WHERE p.shipment_id = ?1 and p.is_deleted = false and p.tenant_id = ?2
+    """, nativeQuery = true)
+    PackingAssignmentProjection getPackingAssignmentCountByShipmentAndTenant(@Param("shipmentId") Long shipmentId, @Param("tenantId") Integer tenantId);
+
+    @Query(value = """
+    SELECT
+        SUM(CASE
+                WHEN p.container_id IS NOT NULL AND p.container_id > 0
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS assignedCount,
+        SUM(CASE
+                WHEN p.container_id IS NULL
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS unassignedCount
+    FROM packing p
+    WHERE p.shipment_id IN ?1 and is_deleted = false
+    """, nativeQuery = true)
+    PackingAssignmentProjection getPackingAssignmentCountByShipmentIn(@Param("shipmentIds") List<Long> shipmentIds);
 
     @ExcludeTenantFilter
     default PackingAssignmentProjection getPackingAssignmentCountByShipmentWithoutTenantFilter(@Param("shipmentId") Long shipmentId){
@@ -87,5 +120,22 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     @Modifying
     @Query("UPDATE Packing p SET p.containerId = :containerId WHERE p.id IN :packingIds")
     void setPackingIdsToContainer(@Param("packingIds") List<Long> packingIds, @Param("containerId") Long containerId);
+
+    @Query(value = """
+    SELECT
+        SUM(CASE
+                WHEN p.container_id IS NOT NULL AND p.container_id > 0
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS assignedCount,
+        SUM(CASE
+                WHEN p.container_id IS NULL
+                THEN COALESCE(CAST(NULLIF(p.packs, '') AS INTEGER), 0)
+                ELSE 0
+            END) AS unassignedCount
+    FROM packing p
+    WHERE p.shipment_id IN ?1 and p.is_deleted = false and p.tenant_id = ?2
+    """, nativeQuery = true)
+    PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer tenantId);
 }
 

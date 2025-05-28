@@ -1,32 +1,21 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import java.util.List;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Component
 public class ContainerValidationUtil {
-
-    @Autowired
-    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
-
-    @Autowired
-    private IPackingV3Service packingService;
-
-    @Autowired
-    private IShipmentServiceV3 shipmentService;
-
 
     /**
      * Validates a bulk update request for containers.
@@ -83,6 +72,16 @@ public class ContainerValidationUtil {
             throw new RunnerException(String.format(
                     "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
                     shipmentDetails.getShipmentId()));
+        }
+    }
+
+    public void validateBeforeAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap) throws RunnerException {
+        if(shipmentDetailsMap.values().size() > 1) {
+            for(ShipmentDetails shipmentDetails: shipmentDetailsMap.values()) {
+                if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+                    throw new RunnerException("Container being or already assigned to FCL Shipment should be linked to only one shipment");
+                }
+            }
         }
     }
 

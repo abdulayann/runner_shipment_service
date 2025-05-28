@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -33,6 +34,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +43,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -55,19 +56,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.mock;
@@ -102,9 +106,6 @@ class PackingV3ServiceTest extends CommonMocks {
     private PackingV3Util packingV3Util;
     @Mock
     private DependentServiceHelper dependentServiceHelper;
-    @Mock
-    @Qualifier("executorServiceMasterData")
-    ExecutorService executorServiceMasterData;
     @Mock
     private HttpServletResponse httpServletResponse;
 
@@ -151,6 +152,8 @@ class PackingV3ServiceTest extends CommonMocks {
         testShipment.setShipmentType("LCL");
         testShipment.setId(1L);
 
+        packingV3Service.executorServiceMasterData = Executors.newFixedThreadPool(2);
+
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
@@ -158,6 +161,11 @@ class PackingV3ServiceTest extends CommonMocks {
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").multipleShipmentEnabled(true).enableLclConsolidation(true).build());
+    }
+
+    @AfterEach
+    void tearDown() {
+        packingV3Service.executorServiceMasterData.shutdown();
     }
 
     @Test
@@ -479,7 +487,7 @@ class PackingV3ServiceTest extends CommonMocks {
         Page<Packing> page = new PageImpl<>(List.of(packing));
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
-        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projection);
+        when(packingDao.getPackingAssignmentCountByShipmentAndTenant(anyLong(), anyInt())).thenReturn(projection);
 
         PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, null);
 
@@ -500,7 +508,7 @@ class PackingV3ServiceTest extends CommonMocks {
         Page<Packing> page = new PageImpl<>(List.of(packing));
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
-        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(projectionMock);
+        when(packingDao.getPackingAssignmentCountByShipmentAndTenant(anyLong(), anyInt())).thenReturn(projectionMock);
 
         PackingListResponse actualResponse = packingV3Service.fetchShipmentPackages(listCommonRequest, null);
 
@@ -640,6 +648,110 @@ class PackingV3ServiceTest extends CommonMocks {
         packingV3Service.processPacksAfterShipmentAttachment(1L, shipmentDetails);
 
         verify(packingDao, never()).saveAll(any());
+    }
+
+    @Test
+    void testFetchAllMasterDataByKey_shouldRunAllAsyncCallsAndReturnMap() {
+        PackingResponse packingResponse = new PackingResponse();
+
+        // Mock withMdc to return the same Runnable
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Mock all master data helper methods to just modify the map for visibility
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("master", "ok");
+            return null;
+        }).when(packingV3Util).addAllMasterDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("unlocation", "ok");
+            return null;
+        }).when(packingV3Util).addAllUnlocationDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("commodity", "ok");
+            return null;
+        }).when(packingV3Util).addAllCommodityTypesInSingleCall(any(), any());
+
+        Map<String, Object> responseMap = packingV3Service.fetchAllMasterDataByKey(packingResponse);
+
+        // Validate map contains all expected keys
+        assertEquals(3, responseMap.size());
+        assertEquals("ok", responseMap.get("master"));
+        assertEquals("ok", responseMap.get("unlocation"));
+        assertEquals("ok", responseMap.get("commodity"));
+
+        verify(packingV3Util).addAllMasterDataInSingleCall(any(), any());
+        verify(packingV3Util).addAllUnlocationDataInSingleCall(any(), any());
+        verify(packingV3Util).addAllCommodityTypesInSingleCall(any(), any());
+    }
+
+    @Test
+    void testFetchShipmentPackages_invalidEntityId_shouldThrowException() {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setEntityId("");  // or "0"
+
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                packingV3Service.fetchShipmentPackages(listCommonRequest, "xSource")
+        );
+
+        assertEquals("Entity id is empty", exception.getMessage());
+    }
+
+    @Test
+    void testFetchShipmentPackages_withContainers_shouldMapContainerNumbers() {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setEntityId("123");
+        response.setContainerId(1L);
+        response.setContainerNumber("C123");
+
+        ContainerInfoProjection projection = mock(ContainerInfoProjection.class);
+        when(projection.getId()).thenReturn(1L);
+        when(projection.getContainerNumber()).thenReturn("C123");
+
+        Page<Packing> page = new PageImpl<>(List.of(packing));
+        when(packingDao.findAll(any(), any())).thenReturn(page);
+        when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
+        when(containerV3Service.getContainers(List.of(1L))).thenReturn(List.of(projection));
+
+        PackingAssignmentProjection assignmentProjection = mock(PackingAssignmentProjection.class);
+        when(assignmentProjection.getAssignedCount()).thenReturn(1L);
+        when(assignmentProjection.getUnassignedCount()).thenReturn(1L);
+        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(assignmentProjection);
+
+        PackingListResponse actual = packingV3Service.fetchShipmentPackages(listCommonRequest, "xSource");
+
+        assertEquals("C123", actual.getPackings().get(0).getContainerNumber());
+        assertEquals(1L, actual.getAssignedPackageCount());
+        assertEquals(1L, actual.getUnassignedPackageCount());
+    }
+
+    @Test
+    void testFetchShipmentPackages_withoutContainers_shouldSkipMapping() {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setEntityId("1");
+
+        PackingResponse response1 = new PackingResponse();
+        response1.setContainerId(null);  // No container
+        PackingListResponse packingListResponse = new PackingListResponse();
+        packingListResponse.setPackings(List.of(response1));
+
+        Page<Packing> page = new PageImpl<>(List.of(packing));
+        when(packingDao.findAll(any(), any())).thenReturn(page);
+        when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(response);
+        PackingAssignmentProjection assignmentProjection = mock(PackingAssignmentProjection.class);
+        when(assignmentProjection.getAssignedCount()).thenReturn(1L);
+        when(assignmentProjection.getUnassignedCount()).thenReturn(2L);
+        when(packingDao.getPackingAssignmentCountByShipment(anyLong())).thenReturn(assignmentProjection);
+
+        PackingListResponse actual = packingV3Service.fetchShipmentPackages(listCommonRequest, "xSource");
+
+        assertNull(actual.getPackings().get(0).getContainerNumber()); // container mapping not done
+        assertEquals(1L, actual.getAssignedPackageCount());
+        assertEquals(2L, actual.getUnassignedPackageCount());
     }
 
 }

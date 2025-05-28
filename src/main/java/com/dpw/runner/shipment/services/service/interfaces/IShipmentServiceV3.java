@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 
@@ -30,6 +31,10 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface IShipmentServiceV3 {
+
+    List<ShipmentDetailsProjection> findShipmentDetailsByAttachedContainerIds(List<Long> containerIds);
+
+    List<ShipmentDetails> getShipmentsFromId(List<Long> shipmentIds);
 
     NotificationCount getPendingNotificationCount();
 
@@ -72,4 +77,6 @@ public interface IShipmentServiceV3 {
     ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException;
     void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails);
     Long assignFirstBookingContainerToShipmentCargo(List<Containers> expandedContainers, CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
+
+    List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
 }

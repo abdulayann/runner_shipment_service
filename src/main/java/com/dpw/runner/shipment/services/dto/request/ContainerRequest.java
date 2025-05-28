@@ -29,7 +29,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Long loggingId;
     private String containerCode;
     private BigDecimal teu;
-    private Boolean assigned;
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;

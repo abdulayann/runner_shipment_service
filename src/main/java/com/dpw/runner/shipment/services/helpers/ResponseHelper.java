@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -132,6 +133,13 @@ public class ResponseHelper {
                 .body(resource);
     }
     public static ResponseEntity<IRunnerResponse> buildListSuccessContainerResponse(List<ContainerBaseResponse> data, Integer totalPages, Long totalCount) {
+        IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
+                .requestId(LoggerHelper.getRequestIdFromMDC())
+                .data(data).numberOfRecords(totalCount).totalPages(totalPages).build();
+        return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
+    }
+
+    public static ResponseEntity<IRunnerResponse> buildListSuccessBookingResponse(List<CustomerBookingV3Response> data, Integer totalPages, Long totalCount) {
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
                 .data(data).numberOfRecords(totalCount).totalPages(totalPages).build();

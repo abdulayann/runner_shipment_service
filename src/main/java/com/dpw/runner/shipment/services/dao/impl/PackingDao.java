@@ -27,7 +27,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.InvocationTargetException;
@@ -574,9 +573,17 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
-    public PackingAssignmentProjection getPackingAssignmentCountByConsolidation(Long consolId) {
-        return packingRepository.getPackingAssignmentCountByConsolidation(consolId);
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentIn(List<Long> shipmentIds) {
+        return packingRepository.getPackingAssignmentCountByShipmentIn(shipmentIds);
     }
 
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentAndTenant(Long shipmentIds, Integer tenantId) {
+        return packingRepository.getPackingAssignmentCountByShipmentAndTenant(shipmentIds, tenantId);
+    }
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer tenantId) {
+        return packingRepository.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, tenantId);
+    }
 
 }

@@ -1,25 +1,12 @@
 package com.dpw.runner.shipment.services.exception.handler;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
-import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
-import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
-import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
-import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
-import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
-import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
-import com.dpw.runner.shipment.services.exception.exceptions.SectionVisibilityException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.*;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +18,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import java.util.List;
 
 @ControllerAdvice
 @Slf4j
@@ -44,7 +33,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             NotificationException.class,
             GenericException.class,
             ValidationException.class,
-            IllegalArgumentException.class
+            IllegalArgumentException.class,
+            DataRetrievalFailureException.class
     })
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
@@ -76,7 +66,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(InvalidAuthenticationException.class)
-    public final ResponseEntity<IRunnerResponse> handleAuthenticationException(RunnerException ex) {
+    public final ResponseEntity<IRunnerResponse> handleAuthenticationException(InvalidAuthenticationException ex) {
         return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
     }
 
@@ -93,7 +83,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         List<String> errors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .map(x-> x.getField() + ": " + x.getDefaultMessage())
                 .toList();
         String errorMessages = errors.size() > 1
                 ? String.join(" | ", errors)

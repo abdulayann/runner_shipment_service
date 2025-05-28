@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
@@ -27,13 +29,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -47,20 +43,21 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
+import com.dpw.runner.shipment.services.helpers.*;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
@@ -85,6 +82,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -104,6 +103,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("java:S6068")
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ShipmentServiceImplV3Test extends CommonMocks {
@@ -184,6 +184,14 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IHblDao hblDao;
     @Mock
     private IPackingV3Service packingV3Service;
+    @Mock
+    private IContainerV3Service containerV3Service;
+    @Mock
+    private ContainerV3Util containerV3Util;
+    @Mock
+    private CacheManager cacheManager;
+    @Mock
+    private CustomKeyGenerator keyGenerator;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;
@@ -441,7 +449,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(Pair.of(ConsolidationDetailsResponse.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+        doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
@@ -614,8 +622,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         populateShipmentDetails();
         ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
         shipmentRetrieveLiteResponse.setStatus(0);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(123L);
+        consoleShipmentMapping.setConsolidationId(12354L);
 
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.singletonList(consoleShipmentMapping));
+        when(consolidationV3Service.getBookingNumberFromConsol(any())).thenReturn("bookingNumber");
         when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class)))
                 .thenReturn(shipmentRetrieveLiteResponse);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
@@ -2662,7 +2675,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsignee(consignee);
 
         assertThrows(ValidationException.class, () -> {
-            shipmentServiceImplV3.validateBeforeSave(shipment);
+            shipmentServiceImplV3.validateBeforeSave(shipment, null);
         });
     }
 
@@ -2673,7 +2686,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setTransportMode("ROAD");
         shipment.setMasterBill("MASTER-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("MASTER-BILL", shipment.getHouseBill());
     }
@@ -2681,6 +2694,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testValidateBeforeSave_withNullConsignor_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setCoLoadBkgNumber("bkgNumber");
 
         Parties consignee = new Parties();
         consignee.setOrgCode("ORG-1");
@@ -2688,7 +2704,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         shipment.setConsigner(null); // Null consignor
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
     }
 
     @Test
@@ -2699,7 +2715,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("ORIGINAL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("ORIGINAL", shipment.getHouseBill()); // unchanged
     }
@@ -2712,7 +2728,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER-BILL");
         shipment.setHouseBill("HOUSE-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("HOUSE-BILL", shipment.getHouseBill()); // unchanged
     }
@@ -2725,7 +2741,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER-BILL");
         shipment.setHouseBill("HOUSE-BILL");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertNull(shipment.getHouseBill());
     }
@@ -2733,15 +2749,20 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testValidateBeforeSave_withNullConsignee_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setConsigner(new Parties());
         shipment.setConsignee(null); // Consignee is null
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
     }
 
     @Test
     void testValidateBeforeSave_withNullOrgCodes_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setCoLoadBlNumber("coload");
+        ShipmentDetails oldEntity = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -2751,7 +2772,26 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment));
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.validateBeforeSave(shipment, oldEntity));
+    }
+
+    @Test
+    void testValidateBeforeSave_validatePartner() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setMasterBill("masterBill");
+        ShipmentDetails oldEntity = new ShipmentDetails();
+
+        Parties consignor = new Parties();
+        consignor.setOrgCode(null);
+        shipment.setConsigner(consignor);
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-CODE");
+        shipment.setConsignee(consignee);
+
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.validateBeforeSave(shipment, oldEntity));
     }
 
     @Test
@@ -2762,7 +2802,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2775,7 +2815,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2788,7 +2828,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MASTER");
         shipment.setHouseBill("EXISTING");
 
-        shipmentServiceImplV3.validateBeforeSave(shipment);
+        shipmentServiceImplV3.validateBeforeSave(shipment, null);
 
         assertEquals("EXISTING", shipment.getHouseBill());
     }
@@ -2800,7 +2840,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         details.setTransportMode("AIRSEA"); // not AIR, not SEA, not null
         details.setMasterBill("MBL123");
 
-        shipmentServiceImplV3.validateBeforeSave(details);
+        shipmentServiceImplV3.validateBeforeSave(details, null);
 
         assertEquals("MBL123", details.getHouseBill());
     }
@@ -3841,6 +3881,420 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         );
 
         assertEquals("Consolidation type cannot be changed as the original BL has been generated for this shipment.", exception.getMessage());
+    }
+
+    @Test
+    void assignFirstBookingContainerToShipmentCargo_shouldAssignFirstAndResetRest() throws RunnerException {
+        Containers firstContainer = mock(Containers.class);
+        Containers secondContainer = mock(Containers.class);
+        List<Containers> containersList = List.of(firstContainer, secondContainer);
+        CustomerBookingV3Request bookingRequest = mock(CustomerBookingV3Request.class);
+
+        when(firstContainer.getId()).thenReturn(100L);
+
+        Long result = shipmentServiceImplV3.assignFirstBookingContainerToShipmentCargo(containersList, bookingRequest);
+
+        assertEquals(100L, result);
+        verify(containerV3Service).addShipmentCargoToContainerInCreateFromBooking(firstContainer, bookingRequest);
+        verify(containerV3Util).setContainerNetWeight(firstContainer);
+        verify(containerV3Util).resetContainerDataForRecalculation(secondContainer);
+    }
+
+    @Test
+    void findByIdIn_shouldReturnShipmentDetails() {
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ShipmentDetails shipmentDetail = mock(ShipmentDetails.class);
+        List<ShipmentDetails> expectedShipments = List.of(shipmentDetail);
+
+        when(shipmentDao.findByIdIn(shipmentIds)).thenReturn(expectedShipments);
+
+        List<ShipmentDetails> result = shipmentServiceImplV3.findByIdIn(shipmentIds);
+
+        assertEquals(expectedShipments, result);
+        verify(shipmentDao).findByIdIn(shipmentIds);
+    }
+
+    @Test
+    void saveAll_shouldReturnSavedShipments() throws RunnerException {
+        ShipmentDetails shipment1 = mock(ShipmentDetails.class);
+        ShipmentDetails shipment2 = mock(ShipmentDetails.class);
+        List<ShipmentDetails> inputShipments = List.of(shipment1, shipment2);
+        List<ShipmentDetails> savedShipments = List.of(shipment1, shipment2);
+
+        when(shipmentDao.saveAll(inputShipments)).thenReturn(savedShipments);
+
+        List<ShipmentDetails> result = shipmentServiceImplV3.saveAll(inputShipments);
+
+        assertEquals(savedShipments, result);
+        verify(shipmentDao).saveAll(inputShipments);
+    }
+
+    @Test
+    void saveAll_emptyList_shouldReturnEmptyList() throws RunnerException {
+        List<ShipmentDetails> inputShipments = List.of();
+
+        when(shipmentDao.saveAll(inputShipments)).thenReturn(List.of());
+
+        List<ShipmentDetails> result = shipmentServiceImplV3.saveAll(inputShipments);
+
+        assertTrue(result.isEmpty());
+        verify(shipmentDao).saveAll(inputShipments);
+    }
+
+    @Test
+    void findShipmentDetailsByAttachedContainerIds_shouldReturnProjections() {
+        List<Long> containerIds = List.of(10L, 20L);
+        ShipmentDetailsProjection projection = mock(ShipmentDetailsProjection.class);
+        List<ShipmentDetailsProjection> expected = List.of(projection);
+
+        when(shipmentDao.findShipmentDetailsByAttachedContainerIds(containerIds)).thenReturn(expected);
+
+        List<ShipmentDetailsProjection> result = shipmentServiceImplV3.findShipmentDetailsByAttachedContainerIds(containerIds);
+
+        assertEquals(expected, result);
+        verify(shipmentDao).findShipmentDetailsByAttachedContainerIds(containerIds);
+    }
+
+    @Test
+    void findShipmentDetailsByAttachedContainerIds_emptyList_shouldReturnEmptyList() {
+        List<Long> containerIds = List.of();
+
+        when(shipmentDao.findShipmentDetailsByAttachedContainerIds(containerIds)).thenReturn(List.of());
+
+        List<ShipmentDetailsProjection> result = shipmentServiceImplV3.findShipmentDetailsByAttachedContainerIds(containerIds);
+
+        assertTrue(result.isEmpty());
+        verify(shipmentDao).findShipmentDetailsByAttachedContainerIds(containerIds);
+    }
+
+    @Test
+    void getShipmentsFromId_shouldReturnShipments() {
+        List<Long> shipmentIds = List.of(101L, 102L);
+        List<ShipmentDetails> expected = List.of(shipmentDetails);
+
+        when(shipmentDao.getShipmentNumberFromId(shipmentIds)).thenReturn(expected);
+
+        List<ShipmentDetails> result = shipmentServiceImplV3.getShipmentsFromId(shipmentIds);
+
+        assertEquals(expected, result);
+        verify(shipmentDao).getShipmentNumberFromId(shipmentIds);
+    }
+
+    @Test
+    void getShipmentsFromId_emptyList_shouldReturnEmptyList() {
+        List<Long> shipmentIds = List.of();
+
+        when(shipmentDao.getShipmentNumberFromId(shipmentIds)).thenReturn(List.of());
+
+        List<ShipmentDetails> result = shipmentServiceImplV3.getShipmentsFromId(shipmentIds);
+
+        assertTrue(result.isEmpty());
+        verify(shipmentDao).getShipmentNumberFromId(shipmentIds);
+    }
+
+    @Test
+    void testSetContainerTeuCountResponse_withContainers() {
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        Set<Containers> containers = Set.of(createContainer("20GP", 2L, 100L));
+        StringBuilder stringBuilder = new StringBuilder("key");
+
+        Cache mockCache = mock(Cache.class);
+        Cache.ValueWrapper wrapper = mock(Cache.ValueWrapper.class);
+        EntityTransferContainerType containerType = new EntityTransferContainerType();
+        containerType.setTeu(1.5);
+        when(wrapper.get()).thenReturn(containerType);
+        when(mockCache.get(any())).thenReturn(wrapper);
+        when(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)).thenReturn(mockCache);
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(stringBuilder);
+
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+
+        shipmentServiceImplV3.setContainerTeuCountResponse(response, containers);
+
+        assertEquals(2L, response.getContainerCount());
+    }
+
+    @Test
+    void testSetContainerTeuCountResponse_withEmptyContainers() {
+        ShipmentRetrieveLiteResponse response = new ShipmentRetrieveLiteResponse();
+        shipmentServiceImplV3.setContainerTeuCountResponse(response, Collections.emptySet());
+
+        assertNull(response.getTeuCount());
+        assertNull(response.getContainerCount());
+    }
+
+    @Test
+    void testGetEntityTransferObjectCache_fromEmptyCacheMap() {
+        Containers container = createContainer("20GP", 1L, 101L);
+        Map<String, Object> cacheMap = new HashMap<>();
+        StringBuilder stringBuilder = new StringBuilder("key");
+
+        Cache mockCache = mock(Cache.class);
+        Cache.ValueWrapper wrapper = mock(Cache.ValueWrapper.class);
+        when(wrapper.get()).thenReturn(new EntityTransferContainerType());
+        when(mockCache.get(any())).thenReturn(wrapper);
+        when(cacheManager.getCache(any())).thenReturn(mockCache);
+        when(keyGenerator.customCacheKeyForMasterData(any(), any())).thenReturn(stringBuilder);
+
+        Object result = shipmentServiceImplV3.getEntityTransferObjectCache(container, cacheMap);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetEntityTransferObjectCache_fromPopulatedCacheMap() {
+        Containers container = createContainer("40HC", 1L, 102L);
+        EntityTransferContainerType expected = new EntityTransferContainerType();
+        Map<String, Object> cacheMap = new HashMap<>();
+        cacheMap.put("40HC", expected);
+
+        Object result = shipmentServiceImplV3.getEntityTransferObjectCache(container, cacheMap);
+
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testProcessCacheAndContainerResponseList() {
+        Containers container = createContainer("20GP", 1L, 201L);
+        List<Containers> containerList = List.of(container);
+        Set<String> containerTypes = new HashSet<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Map<String, Object> cacheMap = new HashMap<>();
+
+        ContainerResponse containerResponse = new ContainerResponse();
+        containerResponse.setId(201L);
+
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(containerResponse));
+        when(masterDataUtils.createInBulkContainerTypeRequest(any(), any(), any(), any(), any())).thenReturn(List.of("20GP"));
+        when(masterDataUtils.fetchInBulkContainerTypes(Set.of("20GP"))).thenReturn(Map.of("20GP", new EntityTransferContainerType()));
+
+        shipmentServiceImplV3.processCacheAndContainerResponseList(containerList, containerTypes, fieldNameKeyMap, cacheMap);
+
+        assertTrue(containerTypes.contains("20GP"));
+    }
+
+    @Test
+    void testTriggerPushToDownStream_withConsolidationAndMappings_notMatchingShipmentId() {
+        ShipmentDetails shipment = shipmentDetails;
+        shipment.setId(100L);
+        shipment.setConsolidationList(Set.of(consolidationDetails));
+
+        ConsoleShipmentMapping mapping1 = new ConsoleShipmentMapping();
+        mapping1.setShipmentId(999L); // not equal to SHIPMENT_ID
+        mapping1.setConsolidationId(200L);
+
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(mapping1));
+        doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
+
+        assertDoesNotThrow(() -> shipmentServiceImplV3.triggerPushToDownStream(shipment, true));
+    }
+
+    @Test
+    void testTriggerPushToDownStream_withEmptyConsolidationList() {
+        ShipmentDetails shipment = shipmentDetails;
+        shipment.setId(123L);
+        shipment.setConsolidationList(Collections.emptySet());
+
+        shipmentServiceImplV3.triggerPushToDownStream(shipment, false);
+
+        ArgumentCaptor<PushToDownstreamEventDto> captor = ArgumentCaptor.forClass(PushToDownstreamEventDto.class);
+        verify(dependentServiceHelper).pushToKafkaForDownStream(captor.capture(), eq("123"));
+
+        PushToDownstreamEventDto dto = captor.getValue();
+        assertEquals("SHIPMENT", dto.getParentEntityName());
+        assertFalse(dto.getMeta().getIsCreate());
+        assertNull(dto.getTriggers());
+    }
+
+    @Test
+    void testTriggerPushToDownStream_withConsolidation_butNoMappings() {
+        ShipmentDetails shipment = shipmentDetails;
+        shipment.setId(100L);
+        shipment.setConsolidationList(Set.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(Collections.emptyList());
+
+        shipmentServiceImplV3.triggerPushToDownStream(shipment, true);
+
+        ArgumentCaptor<PushToDownstreamEventDto> captor = ArgumentCaptor.forClass(PushToDownstreamEventDto.class);
+        verify(dependentServiceHelper).pushToKafkaForDownStream(captor.capture(), eq("100"));
+
+        PushToDownstreamEventDto dto = captor.getValue();
+        assertEquals(100L, dto.getParentEntityId());
+        assertTrue(dto.getMeta().getIsCreate());
+        assertNull(dto.getTriggers());
+    }
+
+    @Test
+    void testTriggerPushToDownStream_withSameShipmentIdInMapping() {
+        ShipmentDetails shipment = shipmentDetails;
+        shipment.setId(100L);
+        shipment.setConsolidationList(Set.of(consolidationDetails));
+
+        ConsoleShipmentMapping mapping = new ConsoleShipmentMapping();
+        mapping.setShipmentId(100L); // same as current
+        mapping.setConsolidationId(200L);
+
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(mapping));
+
+        shipmentServiceImplV3.triggerPushToDownStream(shipment, true);
+
+        ArgumentCaptor<PushToDownstreamEventDto> captor = ArgumentCaptor.forClass(PushToDownstreamEventDto.class);
+        verify(dependentServiceHelper).pushToKafkaForDownStream(captor.capture(), eq("100"));
+
+        PushToDownstreamEventDto dto = captor.getValue();
+        List<PushToDownstreamEventDto.Triggers> triggers = dto.getTriggers();
+        assertEquals(1, triggers.size());
+        assertEquals(200L, triggers.get(0).getEntityId());
+        assertEquals("CONSOLIDATION", triggers.get(0).getEntityName());
+    }
+
+    private Containers createContainer(String code, Long count, Long id) {
+        Containers container = new Containers();
+        container.setContainerCode(code);
+        container.setContainerCount(count);
+        container.setId(id);
+        return container;
+    }
+    
+    @Test
+    void testSetContainerNumberAndMasterData() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                                .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData1() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        ContainerInfoProjection projection = mock(ContainerInfoProjection.class);
+        when(packingV3Service.getContainerIdNumberMap(any())).thenReturn(Map.of(2L, projection));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData2() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData3() {
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        when(masterDataUtils.fetchInBulkCommodityTypes(any())).thenReturn(Map.of("123", new EntityTransferCommodityType()));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                                .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData1_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        ContainerInfoProjection projection = mock(ContainerInfoProjection.class);
+        when(packingV3Service.getContainerIdNumberMap(any())).thenReturn(Map.of(2L, projection));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData2_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData3_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(new ArrayList<>())
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testSetContainerNumberAndMasterData4_UnAssign() {
+        ShipmentPacksUnAssignContainerTrayDto response = new ShipmentPacksUnAssignContainerTrayDto();
+        response.setShipmentsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.builder()
+                .packsList(List.of(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.builder()
+                        .containerNumber("")
+                        .containerId(2L)
+                        .commodity("123")
+                        .build()))
+                .build()));
+        Set<Long> containerIds = new HashSet<>();
+        containerIds.add(1L);
+        when(masterDataUtils.fetchInBulkCommodityTypes(any())).thenReturn(Map.of("123", new EntityTransferCommodityType()));
+        shipmentServiceImplV3.setContainerNumberAndMasterData(response, containerIds);
+        assertNotNull(response);
     }
 
     private AdditionalDetails getMockAdditionalDetails(LocalDateTime mockDateTime, Boolean isDocTurnedOverToCustomer,

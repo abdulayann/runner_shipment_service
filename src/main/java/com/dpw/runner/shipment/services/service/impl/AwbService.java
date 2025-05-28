@@ -84,7 +84,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUM
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
 @Service
@@ -1723,6 +1722,9 @@ public class AwbService implements IAwbService {
     }
 
     private String getCountryCode(String country) {
+        if (StringUtility.isEmpty(country)) {
+            return null;
+        }
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
         List<Object> subCriteria1 = Arrays.asList(
@@ -3937,7 +3939,7 @@ public class AwbService implements IAwbService {
             if (!orgList.isEmpty()) {
 
                 // fetch all address for default org
-                List<EntityTransferAddress> addressList = getEntityTransferAddressList(tenantModel);
+                List<EntityTransferAddress> addressList = getDefaultAddress(tenantModel);
                 Map<Long, EntityTransferAddress> issuingAgentAddressIdToEntityMap = getIssuingAgentAddressIdToEntityMap(addressList);
                 awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
                 Long defaultAddressId = tenantModel.getDefaultAddressId();
@@ -3965,7 +3967,7 @@ public class AwbService implements IAwbService {
                         constructIssuingAgentAddress(awbShipmentInfo, addressMap, alpha2DigitToCountry);
                     }
                 }
-                setExecutedAtWithCargoInfo(awbCargoInfo, orgList);
+                setExecutedAtWithCargoInfo(awbCargoInfo, orgList, addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build()));
             }
 
         } catch (Exception e) {
@@ -3986,15 +3988,15 @@ public class AwbService implements IAwbService {
         return Optional.of(addressList.stream().collect(Collectors.toMap(EntityTransferAddress::getId, entity -> entity))).orElse(new HashMap<>());
     }
 
-    private void setExecutedAtWithCargoInfo(AwbCargoInfo awbCargoInfo, List<EntityTransferOrganizations> orgList) {
+    private void setExecutedAtWithCargoInfo(AwbCargoInfo awbCargoInfo, List<EntityTransferOrganizations> orgList, EntityTransferAddress address) {
         if (awbCargoInfo != null) {
-            String country = orgList.get(0) != null ?
-                    orgList.get(0).getCountry() : null;
-            if (country != null)
-                awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-            String city = orgList.get(0) != null ? stringValueOf(orgList.get(0).getCity()) : null;
-            if (StringUtility.isNotEmpty(city))
-                executedAt = setUnLocationDataWithDiarcties(city);
+            EntityTransferOrganizations org = orgList.get(0) != null ? orgList.get(0) : EntityTransferOrganizations.builder().build();
+            awbCargoInfo.setCustomOriginCode(getCountryCode(org.getCountry()));
+            // Set Executed At
+            if (StringUtility.isNotEmpty(address.getCity()))
+                executedAt = setUnLocationDataWithDiarcties(address.getCity());
+            else if (StringUtility.isNotEmpty(org.getCity()))
+                executedAt = setUnLocationDataWithDiarcties(org.getCity());
             else
                 executedAt = null;
         }
@@ -4015,7 +4017,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setIssuingAgentCountryName(alpha2DigitToCountry != null ? alpha2DigitToCountry.get(country) : null);
     }
 
-    private List<EntityTransferAddress> getEntityTransferAddressList(TenantModel tenantModel) {
+    private List<EntityTransferAddress> getDefaultAddress(TenantModel tenantModel) {
         List<EntityTransferAddress> addressList = new ArrayList<>();
         if (tenantModel.getDefaultAddressId() != null) {
             CommonV1ListRequest addressRequest = new CommonV1ListRequest();

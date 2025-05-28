@@ -21,7 +21,7 @@ public class ApiConstants {
     public static final String CONSOLIDATION_API_UPDATE_BULK = "consolidation/update/bulk";
     public static final String UPDATE_SAILING_SCHEDULE = "update-sailing-schedule";
 
-    public static final String GET_CONTAINER_DETAILS = "/get/containerDetails";
+    public static final String GET_CARGO_DETAILS = "/get/cargoDetails";
 
 
     public static final String API_CREATE = "/create";
@@ -39,6 +39,7 @@ public class ApiConstants {
     public static final String API_RETRIEVE = "/retrieve";
 
     public static final String API_RETRIEVE_BY_ID = "/retrieve/id";
+    public static final String API_RETRIEVE_BY_BOOKING_NUMBER = "/retrieve/booking-number";
 
     public static final String API_GET_NEXT_MAWB = "/retrieve/nextmawb/id";
     public static final String API_CLONE = "/clone";
@@ -137,6 +138,7 @@ public class ApiConstants {
     public static final String RETIEVE_BY_MAWB_ID = "/get/mawbId";
     public static final String VALIDATE_MAWB = "/validate-mawb";
     public static final String AUTO_ATTACH_CONSOLIDATION = "/auto-attach-Consolidation";
+    public static final String ATTACHMENT_FLAG = "/attachment-flag";
     public static final String API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE = "Container Details uploaded successfully.";
     public static final String API_UPLOAD_CONTAINER_EVENTS_SUCCESS_MESSAGE = "Container Events uploaded successfully.";
 

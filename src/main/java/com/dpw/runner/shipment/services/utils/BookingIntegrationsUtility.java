@@ -47,10 +47,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.Status;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
@@ -205,6 +202,7 @@ public class BookingIntegrationsUtility {
         PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
                 .booking_reference_code(bookingReference)
                 .load(loadRequests)
+                .source(CustomerBookingConstants.RUNNER)
                 .build();
 
         return CommonRequestModel.buildRequest(platformUpdateRequest);
@@ -697,7 +695,7 @@ public class BookingIntegrationsUtility {
                 .shipmentMovement(shipmentDetails.getDirection())
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
-                .purchaseOrders(getOrdersByShipmentId(shipmentDetails.getShipmentId()))
+                .purchase_orders(getOrdersByShipmentId(shipmentDetails.getShipmentId()))
                 .source(CustomerBookingConstants.RUNNER)
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
@@ -1106,6 +1104,7 @@ public class BookingIntegrationsUtility {
     private CommonRequestModel createPlatformDocumentRequest(String bookingReference, DocumentDto.Document document) {
         PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
                 .booking_reference_code(bookingReference)
+                .source(CustomerBookingConstants.RUNNER)
                 .document_meta(List.of(
                         DocumentMetaDTO.builder()
                                 .name(document.getFileName())

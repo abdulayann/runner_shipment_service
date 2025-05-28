@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class ShipmentConstants {
@@ -16,7 +17,7 @@ public class ShipmentConstants {
     @SuppressWarnings("java:S2386")
     public static final List<String> SHIPMENT_HEADERS = Arrays.asList(
             "Shipment Clone", "Shipment Number", "Order Number", "Status", "Transport Mode",
-            "Bill Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
+            "Fin. Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
             "Delivery Mode", "Consolidation Type", "Activity Type", "Shipment Type", "Carrier",
             "Vessel Name/Flight", "Flight Number", "Voyage/Flight No.", "Paid Place Name",
             "Issued Place Name", "Source1", "Date of Issue", "Date of Receipt", "Country of Origin",
@@ -147,7 +148,10 @@ public class ShipmentConstants {
             Map.entry("routingPol", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pol").build()),
             Map.entry("routingPolCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(ORIGIN_PORT_LOC_CODE).build()),
             Map.entry("routingPod", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pod").build()),
-            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build())
+            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
+            Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
+            Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
+
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";

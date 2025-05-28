@@ -55,4 +55,8 @@ public interface IConsolidationDetailsDao {
     void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId);
 
     void updateSailingScheduleRelatedInfoForAir(ConsolidationSailingScheduleRequest request, Long consolidationId);
+
+    String getBookingNumberFromConsol(Long consolidationId);
+
+    void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId);
 }

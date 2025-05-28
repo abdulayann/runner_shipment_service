@@ -60,6 +60,7 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String REFERENCE_NUMBERS = "REFERENCE_NUMBERS";
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
     public static final String MPK = "MPK";
@@ -644,6 +645,9 @@ public class Constants {
     public static final String TESLA = "Tesla";
     public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
     public static final String CONTAINS = "CONTAINS";
+    public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
+    public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
+    public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
 
     private Constants() {
     }

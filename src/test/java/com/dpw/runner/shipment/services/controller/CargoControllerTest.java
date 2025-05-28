@@ -1,11 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.dto.request.ContainerDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.ContainerDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
+import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.service.impl.CargoService;
 import com.dpw.runner.shipment.services.service.interfaces.ICargoService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,8 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -26,7 +21,7 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {CargoController.class})
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CargoControllerTest {
+class CargoControllerTest {
 
     @Mock
     private ICargoService cargoService;
@@ -36,8 +31,8 @@ public class CargoControllerTest {
     
     @Test
     void getContainerDetailsSuccess() throws RunnerException {
-        when(cargoService.getContainerDetails(any())).thenReturn(new ContainerDetailsResponse());
-        var responseEntity = cargoController.getContainerDetails(new ContainerDetailsRequest());
+        when(cargoService.getCargoDetails(any())).thenReturn(new CargoDetailsResponse());
+        var responseEntity = cargoController.getCargoDetails(new CargoDetailsRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 }

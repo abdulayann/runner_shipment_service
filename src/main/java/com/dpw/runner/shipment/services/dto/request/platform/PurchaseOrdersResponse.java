@@ -12,6 +12,6 @@ import java.io.Serializable;
 @NoArgsConstructor
 @Builder
 public class PurchaseOrdersResponse implements Serializable {
-    private String orderId;
-    private String orderNumber;
+    private String order_id;
+    private String order_number;
 }

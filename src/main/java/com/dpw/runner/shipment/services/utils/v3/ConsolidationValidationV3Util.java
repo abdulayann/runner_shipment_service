@@ -1,4 +1,11 @@
-package com.dpw.runner.shipment.services.utils;
+package com.dpw.runner.shipment.services.utils.v3;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -7,22 +14,21 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -73,6 +79,22 @@ public class ConsolidationValidationV3Util {
             List<ShipmentDetails> shipmentDetailsList,
             boolean fromConsolidation) throws RunnerException {
 
+        for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+            if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())) {
+                String joinedConsolidationNumbers = shipmentDetails.getConsolidationList().stream()
+                        .map(ConsolidationDetails::getConsolidationNumber).collect(Collectors.joining(","));
+                throw new IllegalArgumentException("Shipment is already attached to Consolidation - "+ joinedConsolidationNumbers);
+            }
+
+            if(Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipmentDetails.getJobType())) {
+                throw new IllegalArgumentException("Selected shipment is a Direct Shipment, Please select different shipment.");
+            }
+
+            if(Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue()) || Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.NonMovement.getValue()) ) {
+                throw new IllegalArgumentException("Selected shipment is in Cancelled/ Non Movement state Shipment, Please select different shipment.");
+            }
+        }
+
         // Count existing linked shipments (null-safe)
         int existingShipments = Optional.ofNullable(consolidationDetails.getShipmentsList())
                 .map(Set::size)
@@ -87,22 +109,29 @@ public class ConsolidationValidationV3Util {
         }
 
         // Check if any of the shipments is already attached to a different consolidation
-        if (!listIsNullOrEmpty(consoleShipmentMappings)) {
-            for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
-                if (!consoleShipmentMapping.getConsolidationId().equals(consolidationId)
-                        && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
-                    throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
-                }
-            }
-        }
+        validateMultipleConsolidationAttach(consoleShipmentMappings, consolidationId);
 
         // Validate Air DG hazardous conditions between console and shipments
         validateAirDgHazardousForConsoleAndShipment(consolidationDetails, shipmentIds, shipmentDetailsList, fromConsolidation, existingShipments);
 
         // Validate DPS implications (e.g., check if CONCR implication already exists for a shipment)
+        validateDPSEvent(shipmentDetailsList);
+    }
+
+        private void validateMultipleConsolidationAttach(List<ConsoleShipmentMapping> consoleShipmentMappings, Long consolidationId) throws RunnerException {
+        if (!listIsNullOrEmpty(consoleShipmentMappings)) {
+            for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
+                if (!consoleShipmentMapping.getConsolidationId().equals(consolidationId)
+                    && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
+                    throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
+                }
+            }
+        }
+    }
+    private void validateDPSEvent(List<ShipmentDetails> shipmentDetailsList) throws RunnerException {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(
-                    Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
+                Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
                 throw new RunnerException(DpsConstants.DPS_ERROR_2 + " : " + shipmentDetails.getShipmentId());
             }
         }

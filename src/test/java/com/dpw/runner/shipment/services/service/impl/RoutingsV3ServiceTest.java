@@ -51,19 +51,27 @@ import org.springframework.data.domain.PageImpl;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.any;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -106,7 +114,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
     private static JsonTestUtility jsonTestUtility;
 
     @BeforeAll
-    static void init(){
+    static void init() {
         try {
             jsonTestUtility = new JsonTestUtility();
         } catch (IOException e) {
@@ -118,6 +126,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
     void tearDown() {
         routingsService.executorServiceMasterData.shutdown();
     }
+
     @BeforeEach
     void setUp() {
         routingsRequest = RoutingsRequest.builder()
@@ -135,7 +144,6 @@ class RoutingsV3ServiceTest extends CommonMocks {
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().enableRouteMaster(true).build());
     }
-
 
 
     @Test
@@ -160,13 +168,13 @@ class RoutingsV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCreate_NullRequestError(){
+    void testCreate_NullRequestError() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         assertThrows(RunnerException.class, () -> routingsService.create(commonRequestModel, Constants.SHIPMENT));
     }
 
     @Test
-    void testCreate_DaoSaveError(){
+    void testCreate_DaoSaveError() {
         routingsRequest.setShipmentId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(routingsRequest);
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
@@ -196,13 +204,13 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
-       // when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
+        // when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
         var resp = routingsService.update(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
 
     @Test
-    void testUpdate_DaoError(){
+    void testUpdate_DaoError() {
         routingsRequest.setShipmentId(1L);
         routingsRequest.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(routingsRequest);
@@ -211,7 +219,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdate_DaoSaveError(){
+    void testUpdate_DaoSaveError() {
         routingsRequest.setShipmentId(1L);
         routingsRequest.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(routingsRequest);
@@ -248,7 +256,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         when(routingsDao.findById(anyLong())).thenReturn(Optional.of(routings));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
-        Mockito.doThrow(new RuntimeException("Error")).when(routingsDao).delete(routings);
+        doThrow(new RuntimeException("Error")).when(routingsDao).delete(routings);
         assertThrows(RunnerException.class, () -> routingsService.delete(commonRequestModel, Constants.SHIPMENT));
     }
 
@@ -362,6 +370,48 @@ class RoutingsV3ServiceTest extends CommonMocks {
         assertEquals(1, result.getRoutingsResponseList().size());
         verify(auditLogService, atLeastOnce()).addAuditLog(any());
     }
+
+    @Test
+    void deleteInheritedRoutingsFromShipment_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setConsolidationId(1L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setInheritedFromConsolidation(Boolean.TRUE);
+        Routings routings1 = new Routings();
+        routings1.setId(3l);
+        routings1.setConsolidationId(1L);
+        routings1.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+
+        Routings routings2 = new Routings();
+        routings2.setId(3l);
+        routings2.setConsolidationId(1L);
+        routings2.setCarriage(RoutingCarriage.ON_CARRIAGE);
+
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routings);
+        routingsList.add(routings1);
+        routingsList.add(routings2);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .routingsList(routingsList)
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        shipmentDetailsList.add(shipmentDetails);
+        routingsService.deleteInheritedRoutingsFromShipment(shipmentDetailsList);
+
+        verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+
     @Test
     void testDeleteBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         routingsRequest.setId(2L);
@@ -414,5 +464,128 @@ class RoutingsV3ServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(2L);
         when(routingsDao.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(DataRetrievalFailureException.class, () -> routingsService.getAllMasterData(commonRequestModel, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testGetMasterDataForList_success() {
+        List<RoutingsResponse> mockResponse = List.of(new RoutingsResponse());
+        // Stub the MDC wrapper to return the original runnable
+        Mockito.lenient().when(masterDataUtils.withMdc(Mockito.any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        Map<String, Object> result = routingsService.getMasterDataForList(mockResponse);
+
+        // Assert
+        assertNotNull(result);
+        // We can also verify that methods were called
+        verify(routingV3Util).addAllUnlocationInSingleCallList(any(), any());
+        verify(routingV3Util).addAllMasterDataInSingleCallList(any(), any());
+        verify(routingV3Util).addAllVesselInSingleCallList(any(), any());
+    }
+    private CarrierDetails carrierDetailsWithDates(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd) {
+        CarrierDetails details = new CarrierDetails();
+        details.setEta(eta);
+        details.setEtd(etd);
+        details.setAta(ata);
+        details.setAtd(atd);
+        return details;
+    }
+
+    @Test
+    void testOldNullNewAllNullDates_returnsFalse() {
+        CarrierDetails newDetails = carrierDetailsWithDates(null, null, null, null);
+        boolean result = routingsService.isValidDateChange(newDetails, null);
+        assertFalse(result);
+    }
+
+    @Test
+    void testOldNullNewWithEta_returnsTrue() {
+        CarrierDetails newDetails = carrierDetailsWithDates(LocalDateTime.now(), null, null, null);
+        boolean result = routingsService.isValidDateChange(newDetails, null);
+        assertTrue(result);
+    }
+
+    @Test
+    void testBothNotNullDatesSame_returnsFalse() {
+        LocalDateTime now = LocalDateTime.now();
+        CarrierDetails oldDetails = carrierDetailsWithDates(now, now, now, now);
+        CarrierDetails newDetails = carrierDetailsWithDates(now, now, now, now);
+
+        boolean result = routingsService.isValidDateChange(newDetails, oldDetails);
+        assertFalse(result);
+    }
+
+    @Test
+    void testBothNotNullEtaChanged_returnsTrue() {
+        LocalDateTime now = LocalDateTime.now();
+        CarrierDetails oldDetails = carrierDetailsWithDates(now, now, now, now);
+        CarrierDetails newDetails = carrierDetailsWithDates(now.plusDays(1), now, now, now);
+
+        boolean result = routingsService.isValidDateChange(newDetails, oldDetails);
+        assertTrue(result);
+    }
+
+    @Test
+    void testNewNullOldNotNull_returnsFalse() {
+        CarrierDetails oldDetails = carrierDetailsWithDates(LocalDateTime.now(), null, null, null);
+        boolean result = routingsService.isValidDateChange(null, oldDetails);
+        assertFalse(result);
+    }
+    private Routings routing(Boolean inherited) {
+        Routings r = new Routings();
+        r.setInheritedFromConsolidation(inherited);
+        return r;
+    }
+
+    @Test
+    void testLastIndexNegative_shouldAddToResult() {
+        List<Routings> result = new ArrayList<>();
+        List<Routings> newToAppendAtEnd = new ArrayList<>();
+        List<Routings> buffer = List.of(routing(false));
+        Routings current = routing(false);
+
+        routingsService.setMainCarriageInheritedIndexPosition(result, newToAppendAtEnd, buffer, current, -1, true);
+
+        assertEquals(1, result.size());
+        assertTrue(newToAppendAtEnd.isEmpty());
+    }
+
+    @Test
+    void testDifferentInheritedFlags_shouldAddToResult() {
+        List<Routings> result = new ArrayList<>(List.of(routing(false)));
+        List<Routings> newToAppendAtEnd = new ArrayList<>();
+        List<Routings> buffer = List.of(routing(false));
+        Routings current = routing(true);
+
+        routingsService.setMainCarriageInheritedIndexPosition(result, newToAppendAtEnd, buffer, current, 0, true);
+
+        assertEquals(2, result.size());
+        assertTrue(newToAppendAtEnd.isEmpty());
+    }
+
+    @Test
+    void testBothInheritedTrue_shouldAddToNewToAppendAtEnd() {
+        List<Routings> result = new ArrayList<>(List.of(routing(true)));
+        List<Routings> newToAppendAtEnd = new ArrayList<>();
+        List<Routings> buffer = List.of(routing(false));
+        Routings current = routing(true);
+
+        routingsService.setMainCarriageInheritedIndexPosition(result, newToAppendAtEnd, buffer, current, 0, true);
+
+        assertEquals(1, result.size());
+        assertEquals(1, newToAppendAtEnd.size());
+    }
+
+    @Test
+    void testCanInsertFalse_shouldAddToNewToAppendAtEnd() {
+        List<Routings> result = new ArrayList<>(List.of(routing(true)));
+        List<Routings> newToAppendAtEnd = new ArrayList<>();
+        List<Routings> buffer = List.of(routing(false));
+        Routings current = routing(true);
+
+        routingsService.setMainCarriageInheritedIndexPosition(result, newToAppendAtEnd, buffer, current, 0, false);
+
+        assertEquals(1, result.size());
+        assertEquals(1, newToAppendAtEnd.size());
     }
 }

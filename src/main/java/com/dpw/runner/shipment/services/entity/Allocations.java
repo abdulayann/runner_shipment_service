@@ -66,5 +66,24 @@ public class Allocations extends MultiTenancy {
     @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
     private String maxTempUnit;
 
+    @Column(name = "weight_volume")
+    private BigDecimal weightVolume;
+
+    @Column(name = "weight_volume_unit")
+    private String weightVolumeUnit;
+
+    @Column(name = "packs")
+    private Integer packs;
+
+    @Column(name = "packs_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String packsType;
+
+    @Column(name = "container_count")
+    private Integer containerCount;
+
+    @Column(name = "teu_count")
+    private BigDecimal teuCount;
+
 
 }
