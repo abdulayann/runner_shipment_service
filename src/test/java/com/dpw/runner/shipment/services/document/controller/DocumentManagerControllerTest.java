@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.document.controller;
 
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
@@ -20,6 +21,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -143,7 +145,7 @@ class DocumentManagerControllerTest {
     @Test
     void testDownloadDocument() {
         // Mock
-        when(documentManagerService.downloadDocument(any())).thenReturn(new byte[] {});
+        when(documentManagerService.downloadDocument(any())).thenReturn(ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[1024]).headers(new HashMap()).build()));
         // Test
         var responseEntity = documentManagerController.downloadDocument(123L);
         // Assert
