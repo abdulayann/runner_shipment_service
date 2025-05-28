@@ -460,8 +460,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetailsV3Response consolidationDetailsV3Response = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsV3Response.class);
 
         if (!isFromET) {
-            triggerPushToDownStream(consolidationDetails, null, true, Constants.CONSOLIDATION_AFTER_SAVE);
-            triggerPushToDownStream(consolidationDetails, null, true, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
+            triggerPushToDownStream(consolidationDetails, null, Constants.CONSOLIDATION_AFTER_SAVE);
+            triggerPushToDownStream(consolidationDetails, null, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
         }
 
         return consolidationDetailsV3Response;
@@ -495,8 +495,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         Pair<ConsolidationDetails, Long> consolidationDetailsLongPair = Pair.of(consolidationDetails, containerAssignedToShipmentCargo);
 
-        triggerPushToDownStream(consolidationDetails, null, true, Constants.CONSOLIDATION_AFTER_SAVE);
-        triggerPushToDownStream(consolidationDetails, null, true, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
+        triggerPushToDownStream(consolidationDetails, null, Constants.CONSOLIDATION_AFTER_SAVE);
+        triggerPushToDownStream(consolidationDetails, null, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
 
         return consolidationDetailsLongPair;
     }
@@ -546,8 +546,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             ConsolidationDetailsV3Response consolidationDetailsV3Response = jsonHelper.convertValue(entity, ConsolidationDetailsV3Response.class);
 
             if (!isFromET) {
-                triggerPushToDownStream(entity, oldConvertedConsolidation, false, Constants.CONSOLIDATION_AFTER_SAVE);
-                triggerPushToDownStream(entity, oldConvertedConsolidation, false, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
+                triggerPushToDownStream(entity, oldConvertedConsolidation, Constants.CONSOLIDATION_AFTER_SAVE);
+                triggerPushToDownStream(entity, oldConvertedConsolidation, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
             }
 
             return consolidationDetailsV3Response;
@@ -559,7 +559,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails, Boolean isCreate, String sourceInfo) {
+    private void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
+        String sourceInfo) {
         PushToDownstreamEventDto pushToDownstreamEventDto = null;
 
         if (Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING.equalsIgnoreCase(sourceInfo)) {
@@ -1152,7 +1153,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         long shipmentCont = 0L;
 
         // Check if the containers list is not null or empty before proceeding.
-        if (consolidationDetails.getContainersList() != null && !consolidationDetails.getContainersList().isEmpty()) {
+        if (!CollectionUtils.isEmpty(consolidationDetails.getContainersList())) {
 
             // Initialize cache maps for storing container-related data and mappings.
             Map<String, Object> cacheMap = new HashMap<>();
@@ -3328,10 +3329,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
 
         String warning = null;
-        if(remarks != null){
-            //TODO : Sendemail phase2 intra branch
-        }
-        if(!shipmentRequestedTypes.isEmpty()) {
+
+        if(remarks != null && !shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);

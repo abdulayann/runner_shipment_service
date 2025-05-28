@@ -98,15 +98,18 @@ public class PushToDownstreamService implements IPushToDownstreamService {
                 this.pushContainerData(message, transactionId);
             }
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(message.getParentEntityName())) {
-            if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
-                this.pushConsolidationData(message, transactionId);
-            }
-            if (Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
-                this.pushConsolidationDataToTracking(message, transactionId);
-            }
-
+            pushConsolidationDataToService(message, transactionId);
         } else if(Objects.equals(message.getParentEntityName(), Constants.CUSTOMER_BOOKING)) {
             this.pushCustomerBookingDataToPlatform(message, transactionId);
+        }
+    }
+
+    private void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId){
+        if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+            this.pushConsolidationData(message, transactionId);
+        }
+        if (Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+            this.pushConsolidationDataToTracking(message, transactionId);
         }
     }
 
@@ -196,7 +199,6 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     @Override
     public void pushConsolidationDataToTracking(PushToDownstreamEventDto eventDto, String transactionId) {
         Long parentEntityId = eventDto.getParentEntityId();
-        Boolean isCreate = eventDto.getMeta().getIsCreate();
         Integer tenantId = eventDto.getMeta().getTenantId();
 
         TenantContext.setCurrentTenant(tenantId);
