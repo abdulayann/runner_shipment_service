@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -253,7 +254,7 @@ class DocumentManagerServiceImplTest {
 
     @Test
     void testDownloadDocument() {
-        var mockResponse = ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[111]).headers(new HashMap()).build());
+        var mockResponse = ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[111]).headers(new HttpHeaders()).build());
         when(documentManagerRestClient.downloadDocument(any())).thenReturn(mockResponse);
         var responseEntity = documentManagerServiceImpl.downloadDocument(CommonRequestModel.builder().data(CommonGetRequest.builder().id(11L).build()).build());
         assertNotNull(responseEntity);
