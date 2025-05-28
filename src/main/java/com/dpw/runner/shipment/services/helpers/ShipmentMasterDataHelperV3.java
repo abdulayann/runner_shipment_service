@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BILLING_DATA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINERS_LIST;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.JOB_TYPE;
+
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -9,21 +13,17 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BILLING_DATA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINERS_LIST;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
@@ -51,6 +51,13 @@ public class ShipmentMasterDataHelperV3 {
                 CompletableFuture<Void> containerDataFuture = CompletableFuture.completedFuture(null);
                 if(includeColumns.contains(CONTAINERS_LIST))
                     containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setContainerTeuData(lst, responseList)), executorServiceMasterData);
+
+                CompletableFuture<Void> shipmentTypeMasterDataFuture = CompletableFuture.completedFuture(null);
+                if (includeColumns.contains(JOB_TYPE)) {
+                    shipmentTypeMasterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setShipmentTypeMasterData(responseList)),
+                            executorServiceMasterData);
+                }
+
                 CompletableFuture<Void> billDataFuture = CompletableFuture.completedFuture(null);
                 if(includeColumns.contains(BILLING_DATA) && responseList!=null && !(responseList.get(0) instanceof AttachListShipmentResponse)){
                     billDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchBillDataForShipments(lst, responseList)), executorServiceMasterData);
@@ -59,7 +66,7 @@ public class ShipmentMasterDataHelperV3 {
                 CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
                 if (Boolean.TRUE.equals(includeTenantData))
                     tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
-                CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture, tenantDataFuture).join();
+                CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture, tenantDataFuture, shipmentTypeMasterDataFuture).join();
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
