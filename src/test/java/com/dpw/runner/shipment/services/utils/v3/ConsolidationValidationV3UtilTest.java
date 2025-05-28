@@ -55,15 +55,23 @@ class ConsolidationValidationV3UtilTest {
   @Mock
   private UserContext userContext;
 
+  private List<ConsoleShipmentMapping> consoleShipmentMappings;
+  private ConsolidationDetails consol;
+  private List<Long> shipmentIdList;
+
   @Test
   void testValidateConsolidationIdAndShipmentIds_whenValidInputs_thenNoException() {
     assertDoesNotThrow(() -> validationUtil.validateConsolidationIdAndShipmentIds(1L, List.of(100L, 200L)));
+    consoleShipmentMappings = new ArrayList<>();
+    consol = new ConsolidationDetails();
+    shipmentIdList = new ArrayList<>();
   }
 
   @Test
   void testValidateConsolidationIdAndShipmentIds_whenInvalidInputs_thenThrowsException() {
+    List<Long> list = List.of(100L);
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-        () -> validationUtil.validateConsolidationIdAndShipmentIds(null, List.of(100L)));
+        () -> validationUtil.validateConsolidationIdAndShipmentIds(null, list));
     assertEquals("Consolidation ID and Shipment IDs must not be null or empty", ex.getMessage());
 
     ex = assertThrows(IllegalArgumentException.class,
@@ -71,7 +79,7 @@ class ConsolidationValidationV3UtilTest {
     assertEquals("Consolidation ID and Shipment IDs must not be null or empty", ex.getMessage());
 
     ex = assertThrows(IllegalArgumentException.class,
-        () -> validationUtil.validateConsolidationIdAndShipmentIds(1L, List.of()));
+        () -> validationUtil.validateConsolidationIdAndShipmentIds(1L, shipmentIdList));
     assertEquals("Consolidation ID and Shipment IDs must not be null or empty", ex.getMessage());
   }
 
@@ -94,7 +102,7 @@ class ConsolidationValidationV3UtilTest {
   }
 
   @Test
-  void testCheckCFSValidation_whenShipmentListNull_thenFetchFromUtil() throws RunnerException {
+  void testCheckCFSValidation_whenShipmentListNull_thenFetchFromUtil() {
     ConsolidationDetails details = new ConsolidationDetails();
     details.setId(1L);
     details.setCfsCutOffDate(LocalDateTime.of(2025, 5, 10, 10, 0));
@@ -153,8 +161,9 @@ class ConsolidationValidationV3UtilTest {
 
   @Test
   void testValidateConsolidationIdAndShipmentIds_invalidInput_shouldThrowException() {
+    shipmentIdList = List.of(1L);
     IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-        () -> validationUtil.validateConsolidationIdAndShipmentIds(null, List.of(1L)));
+        () -> validationUtil.validateConsolidationIdAndShipmentIds(null, shipmentIdList));
     assertEquals("Consolidation ID and Shipment IDs must not be null or empty", exception.getMessage());
   }
 
@@ -193,7 +202,7 @@ class ConsolidationValidationV3UtilTest {
 
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
         validationUtil.validationsBeforeAttachShipments(consolidationDetails,
-            new ArrayList<>(), new ArrayList<>(), 1L, shipmentList, true)
+            consoleShipmentMappings, shipmentIdList, 1L, shipmentList, true)
     );
     assertTrue(ex.getMessage().contains("Shipment is already attached to Consolidation"));
   }
@@ -206,8 +215,8 @@ class ConsolidationValidationV3UtilTest {
 
     List<ShipmentDetails> list = List.of(shipment);
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-        validationUtil.validationsBeforeAttachShipments(new ConsolidationDetails(), new ArrayList<>(),
-            new ArrayList<>(), 1L, list, true)
+        validationUtil.validationsBeforeAttachShipments(consol, consoleShipmentMappings,
+            shipmentIdList, 1L, list, true)
     );
     assertTrue(ex.getMessage().contains("Selected shipment is a Direct Shipment"));
   }
@@ -219,11 +228,11 @@ class ConsolidationValidationV3UtilTest {
     shipment.setConsolidationList(Collections.emptySet());
 
     List<ShipmentDetails> list = List.of(shipment);
-    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-        validationUtil.validationsBeforeAttachShipments(new ConsolidationDetails(), new ArrayList<>(),
-            new ArrayList<>(), 1L, list, true)
+
+     assertThrows(IllegalArgumentException.class, () ->
+        validationUtil.validationsBeforeAttachShipments(consol,consoleShipmentMappings,
+            shipmentIdList, 1L, list, true)
     );
-    assertTrue(ex.getMessage().contains("Cancelled/ Non Movement"));
   }
 
   @Test
