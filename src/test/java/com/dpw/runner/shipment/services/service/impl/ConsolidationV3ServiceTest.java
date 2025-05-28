@@ -1104,7 +1104,7 @@ if (unitConversionUtilityMockedStatic != null) {
     BigDecimal volume = new BigDecimal("2.0");
 
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
-        .thenReturn(new BigDecimal("1000"));
+        .thenReturn(weight);
 
     // When
     VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
@@ -1960,7 +1960,7 @@ if (unitConversionUtilityMockedStatic != null) {
     shipment.setShipmentId("SH123");
     shipment.setContainersList(null); // no containers assigned
 
-    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of());
+    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, true);
     assertTrue(result);
   }
 
@@ -1984,7 +1984,7 @@ if (unitConversionUtilityMockedStatic != null) {
     // assuming isSeaPackingList returns true
 
     RunnerException ex = assertThrows(RunnerException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of(container));
+      consolidationV3Service.isSaveSeaPacks(shipment, true);
     });
 
     assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
@@ -2004,7 +2004,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
 
     RunnerException ex = assertThrows(RunnerException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of(container));
+      consolidationV3Service.isSaveSeaPacks(shipment, true);
     });
 
     assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
@@ -2071,6 +2071,8 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails console = new ConsolidationDetails();
     console.setShipmentType(type);
     console.setInterBranchConsole(interBranch);
+    console.setIsInland(isAccepted?Boolean.TRUE:Boolean.FALSE);
+
     // Stub isConsoleAccepted if needed via spy or override
     return console;
   }
@@ -3286,7 +3288,6 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void addAllCommodityTypesInSingleCall_Success_WithMasterDataResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
@@ -3303,7 +3304,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(masterDataResponse);
 
     // Assert
     assertNotNull(future);
@@ -3315,7 +3316,6 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void addAllCommodityTypesInSingleCall_Success_WithNullMasterDataResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
         "type1", new EntityTransferCommodityType()
@@ -3329,7 +3329,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, null);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(null);
 
     // Assert
     assertNotNull(future);
@@ -3341,7 +3341,6 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void addAllCommodityTypesInSingleCall_ExceptionThrown_ReturnsNullResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
 
     when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
@@ -3349,7 +3348,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(masterDataResponse);
 
     // Assert
     assertNotNull(future);
@@ -4163,8 +4162,8 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void testSendImportShipmentPullAttachmentEmail() {
     // setup
-    ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-    ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+    shipmentDetails = ShipmentDetails.builder().build();
+    consolidationDetails = ConsolidationDetails.builder().build();
     List<EmailTemplatesRequest> emailTemplatesRequestsModel = new ArrayList<>();
     emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
 
@@ -4345,6 +4344,7 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void testPendingNotificationData1() {
     when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
-    assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getPendingNotificationData(CommonGetRequest.builder().id(1L).build()));
+    CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+    assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getPendingNotificationData(getRequest));
   }
 }

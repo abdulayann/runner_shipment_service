@@ -54,6 +54,7 @@ import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -701,34 +702,61 @@ public class PackingV3Service implements IPackingV3Service {
 
     }
 
-    @Override
-    public PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest request) {
-        List<Packing> packingList;
-        String transportMode;
+    @Data
+    @Builder
+    private static class PackingContext {
+        private List<Packing> packingList;
+        private String transportMode;
+        private String module;
+        private Long entityId;
+    }
 
+    private PackingContext extractPackingContext(CalculatePackSummaryRequest request) {
         Long consolidationId = request.getConsolidationId();
         Long shipmentId = request.getShipmentId();
-        String module;
 
         if (ObjectUtils.isNotEmpty(consolidationId)) {
-            ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
-                    .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
-
-            packingList = consolidation.getPackingList();
-            transportMode = consolidation.getTransportMode();
-            module = Constants.CONSOLIDATION;
-
+            return createConsolidationContext(consolidationId);
         } else if (ObjectUtils.isNotEmpty(shipmentId)) {
-            ShipmentDetails shipment = shipmentService.findById(shipmentId)
-                    .orElseThrow(() -> new IllegalArgumentException("No Shipment found with Id: " + shipmentId));
-
-            packingList = shipment.getPackingList();
-            transportMode = shipment.getTransportMode();
-            module = Constants.SHIPMENT;
-
+            return createShipmentContext(shipmentId);
         } else {
             throw new IllegalArgumentException("Either Consolidation Id or Shipment Id must be provided.");
         }
+    }
+
+    private PackingContext createConsolidationContext(Long consolidationId) {
+        ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
+            .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
+
+        return PackingContext.builder()
+            .packingList(consolidation.getPackingList())
+            .transportMode(consolidation.getTransportMode())
+            .module(Constants.CONSOLIDATION)
+            .entityId(consolidationId)
+            .build();
+    }
+
+    private PackingContext createShipmentContext(Long shipmentId) {
+        ShipmentDetails shipment = shipmentService.findById(shipmentId)
+            .orElseThrow(() -> new IllegalArgumentException("No Shipment found with Id: " + shipmentId));
+
+        return PackingContext.builder()
+            .packingList(shipment.getPackingList())
+            .transportMode(shipment.getTransportMode())
+            .module(Constants.SHIPMENT)
+            .entityId(shipmentId)
+            .build();
+    }
+
+    @Override
+    public PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest request) {
+        PackingContext packingContext = extractPackingContext(request);
+        List<Packing> packingList = packingContext.getPackingList();
+        String transportMode = packingContext.getTransportMode();
+        String module = packingContext.getModule();
+
+        Long consolidationId = request.getConsolidationId();
+        Long shipmentId = request.getShipmentId();
 
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();
@@ -800,15 +828,7 @@ public class PackingV3Service implements IPackingV3Service {
             List<String> sortedUnits = new ArrayList<>(unitCountMap.keySet());
             Collections.sort(sortedUnits);
             updatePacksCount(sortedUnits, unitCountMap, packsCount, tenantSettings);
-            PackingAssignmentProjection assignedPackages = null;
-            if (module.equals(Constants.CONSOLIDATION)) {
-                List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
-                if (!ObjectUtils.isEmpty(consolidationDetailsEntity)) {
-                    List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
-                    assignedPackages = packingDao.getPackingAssignmentCountByShipmentIn(shipmentIds);
-                }
-            } else
-                assignedPackages = packingDao.getPackingAssignmentCountByShipment(shipmentId);
+            PackingAssignmentProjection assignedPackages = getAssignedPackages(module, consolidationId, shipmentId);
 
             // Fill response
             response.setDgPacks(dgPacks);
@@ -830,13 +850,32 @@ public class PackingV3Service implements IPackingV3Service {
             setChargeableWeightAndUnit(transportMode, chargeableWeight, totalVolume, toVolumeUnit, totalWeight, toWeightUnit, response, tenantSettings);
 
             // Set assigned and unassigned packages
-            response.setAssignedPackageCount(assignedPackages != null && assignedPackages.getAssignedCount() != null ? assignedPackages.getAssignedCount() : 0);
-            response.setUnassignedPackageCount(assignedPackages != null && assignedPackages.getUnassignedCount() != null ? assignedPackages.getUnassignedCount() : 0);
+            setPackageCount(assignedPackages, response);
 
             return response;
         } catch (Exception e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
+    }
+
+    private PackingAssignmentProjection getAssignedPackages(String module, Long consolidationId, Long shipmentId){
+        PackingAssignmentProjection assignedPackages = null;
+        if (module.equals(Constants.CONSOLIDATION)) {
+            List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+            if (!ObjectUtils.isEmpty(consolidationDetailsEntity)) {
+                List<Long> shipmentIds = consolidationDetailsEntity.stream().filter(ConsoleShipmentMapping::getIsAttachmentDone).map(ConsoleShipmentMapping::getShipmentId).toList();
+                assignedPackages = packingDao.getPackingAssignmentCountByShipmentIn(shipmentIds);
+            }
+        } else {
+            assignedPackages = packingDao.getPackingAssignmentCountByShipment(shipmentId);
+        }
+
+        return assignedPackages;
+    }
+
+    private void setPackageCount(PackingAssignmentProjection assignedPackages, PackSummaryV3Response response){
+        response.setAssignedPackageCount(assignedPackages != null && assignedPackages.getAssignedCount() != null ? assignedPackages.getAssignedCount() : 0);
+        response.setUnassignedPackageCount(assignedPackages != null && assignedPackages.getUnassignedCount() != null ? assignedPackages.getUnassignedCount() : 0);
     }
 
     private void setChargeableWeightAndUnit(String transportMode, double chargeableWeight, double totalVolume, String toVolumeUnit,

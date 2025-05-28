@@ -427,24 +427,6 @@ public class ContainerV3Service implements IContainerV3Service {
 
             triggerPushToDownStream(container, isCreate, Constants.CONTAINER_AFTER_SAVE);
 
-            // REMOVE AFTER SUCCESS OF INTERNAL KAFKA
-            /* // Build Kafka message payload
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(container, isCreate);
-
-            // Serialize payload to JSON
-            String message = jsonHelper.convertToJson(kafkaResponse);
-
-            // Generate a unique key for Kafka message for traceability
-            String messageKey = UUID.randomUUID().toString();
-
-            // Send message to Kafka
-            producer.produceToKafka(message, containerKafkaQueue, messageKey);
-
-            // Log success for traceability
-            log.info("Pushed container update to Kafka | containerId={} | tenantId={} | key={}",
-                    container.getId(), container.getTenantId(), messageKey);
-
-             */
         } catch (Exception ex) {
             // Log failure with detailed error message and exception stack trace
             log.error("Failed to push container update to Kafka | containerId={} | error={}",

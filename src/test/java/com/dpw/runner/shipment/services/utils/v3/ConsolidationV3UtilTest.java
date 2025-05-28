@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -11,7 +9,6 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
@@ -19,7 +16,6 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.nimbusds.jose.util.Pair;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +31,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class ConsolidationV3UtilTest {
+class ConsolidationV3UtilTest {
 
   @Mock
   private CommonUtils commonUtils;
@@ -119,9 +115,6 @@ public class ConsolidationV3UtilTest {
         .thenReturn(List.of(consoleShipmentMapping));
     ShipmentDetails shipmentDetails = new ShipmentDetails();
     PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(List.of(shipmentDetails));
-
-    ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
-    Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listReq, ShipmentDetails.class);
 
     when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
 

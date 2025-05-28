@@ -1,5 +1,21 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -11,10 +27,14 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.MawbStocks;
+import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -26,12 +46,29 @@ import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepo
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -39,14 +76,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ConsolidationDaoTest extends CommonMocks {
@@ -83,14 +112,11 @@ class ConsolidationDaoTest extends CommonMocks {
     private static JsonTestUtility jsonTestUtility;
     private static ConsolidationDetails testConsol;
 
-    private static ObjectMapper objectMapperTest;
-    private static ConsolidationDetailsRequest testConsolRequest;
 
     @BeforeAll
     static void init(){
         try {
             jsonTestUtility = new JsonTestUtility();
-            objectMapperTest = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -101,7 +127,6 @@ class ConsolidationDaoTest extends CommonMocks {
         MockitoAnnotations.openMocks(this);
         TenantContext.setCurrentTenant(1);
         testConsol = jsonTestUtility.getTestConsolidation();
-        testConsolRequest = objectMapperTest.convertValue(testConsol , ConsolidationDetailsRequest.class);
         var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
         PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
         UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
@@ -451,7 +476,7 @@ class ConsolidationDaoTest extends CommonMocks {
         var spyService = Mockito.spy(consolidationsDao);
         doReturn(Optional.of(consolidationDetails)).when(spyService).findById(anyLong());
         doReturn(consolidationDetails).when(consolidationRepository).save(any());
-        //doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
+
         doReturn(new PageImpl<>(List.of())).when(mawbStocksLinkDao).findAll(any(), any());
         doReturn(mawbStocks).when(mawbStocksDao).save(any());
         mockShipmentSettings();
@@ -1038,58 +1063,55 @@ class ConsolidationDaoTest extends CommonMocks {
         assertTrue(errors.contains("First load or Last Discharge can not be null."));
     }
 
-    @Test
-    void applyConsolidationValidationsExpTest_CountryAirCargoSecurityV3() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+    @ParameterizedTest
+    @MethodSource("provideConsolidationValidationScenarios")
+    void applyConsolidationValidationsExpTest_CountryAirCargoSecurityV3Parameterized(
+        boolean shipmentHazardous,
+        boolean consolidationHazardous,
+        String expectedError
+    ) {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+            ShipmentSettingsDetails.builder()
+                .countryAirCargoSecurity(true)
+                .restrictedLocationsEnabled(true)
+                .build()
+        );
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(true).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+            .containsHazardous(shipmentHazardous)
+            .build();
 
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
-                .hazardous(false)
-                .transportMode(Constants.TRANSPORT_MODE_AIR)
-                .shipmentsList(Set.of(shipmentDetails))
-                .shipmentType(Constants.DIRECTION_EXP)
-                .build();
+            .hazardous(consolidationHazardous)
+            .transportMode(Constants.TRANSPORT_MODE_AIR)
+            .shipmentsList(Set.of(shipmentDetails))
+            .shipmentType(Constants.DIRECTION_EXP)
+            .build();
 
-        mockShipmentSettings();
+        mockShipmentSettings(); // Ensure this is available as a mock/stub in the test context
         Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails);
-        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
+
+        assertTrue(errors.contains(expectedError));
     }
 
-    @Test
-    void applyConsolidationValidationsExpTest_CountryAirCargoSecurity2V3() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
-
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false).build();
-
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
-                .hazardous(true)
-                .transportMode(Constants.TRANSPORT_MODE_AIR)
-                .shipmentsList(Set.of(shipmentDetails))
-                .shipmentType(Constants.DIRECTION_EXP)
-                .build();
-
-        mockShipmentSettings();
-        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails);
-        assertTrue(errors.contains("Consolidation cannot be marked as DG. Please attach at least one DG Shipment."));
-    }
-
-    @Test
-    void applyConsolidationValidationsExpTest_CountryAirCargoSecurity3V3() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
-
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false).build();
-
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
-                .hazardous(true)
-                .transportMode(Constants.TRANSPORT_MODE_AIR)
-                .shipmentsList(Set.of(shipmentDetails))
-                .shipmentType(Constants.DIRECTION_EXP)
-                .build();
-
-        mockShipmentSettings();
-        Set<String> errors = consolidationsDao.applyConsolidationValidationsV3(consolidationDetails);
-        assertTrue(errors.contains("First load or Last Discharge can not be null."));
+    static Stream<Arguments> provideConsolidationValidationScenarios() {
+        return Stream.of(
+            Arguments.of(
+                true, // shipmentHazardous
+                false, // consolidationHazardous
+                "You don't have Air Security permission to create or update AIR EXP Consolidation."
+            ),
+            Arguments.of(
+                false,
+                true,
+                "Consolidation cannot be marked as DG. Please attach at least one DG Shipment."
+            ),
+            Arguments.of(
+                false,
+                true,
+                "First load or Last Discharge can not be null."
+            )
+        );
     }
 
     @Test
