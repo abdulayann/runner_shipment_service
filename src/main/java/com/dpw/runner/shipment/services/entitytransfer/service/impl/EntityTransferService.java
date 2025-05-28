@@ -455,6 +455,7 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentDetails shipment = shipmentDetails.get();
         var entityTransferPayload = prepareShipmentPayload(shipment);
         entityTransferPayload.setDirection(Constants.IMP);
+        entityTransferPayload.setAdditionalDocs(sendFileToExternalRequest.getAdditionalDocs());
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
         prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
 
@@ -468,8 +469,12 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         ConsolidationDetails console = consolidationDetails.get();
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .additionalDocs(sendFileToExternalRequest.getAdditionalDocs())
+                .shipAdditionalDocs(sendFileToExternalRequest.getShipAdditionalDocs())
+                .build();
 
-        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, new SendConsolidationRequest());
+        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, sendConsolidationRequest);
         entityTransferPayload.setShipmentType(Constants.IMP);
         if(!entityTransferPayload.getShipmentsList().isEmpty()) {
             for (var ship : console.getShipmentsList()) {
