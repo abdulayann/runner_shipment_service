@@ -4,9 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.http.HttpHeaders;
 
 import java.io.Serializable;
-import java.util.Map;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -14,5 +14,5 @@ import java.util.Map;
 public class DocumentDownloadResponse implements  Serializable {
 
     byte[] content;
-    Map headers;
+    HttpHeaders headers;
 }

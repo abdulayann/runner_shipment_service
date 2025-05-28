@@ -93,7 +93,8 @@ public class DocumentManagerController {
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(docId).build();
             var response = documentManagerService.downloadDocument(CommonRequestModel.buildRequest(request));
-            return ResponseHelper.buildFileResponse(Objects.requireNonNull(response.getBody()).getContent(), MediaType.APPLICATION_OCTET_STREAM, HttpHeaders.CONTENT_DISPOSITION, StringUtility.convertToString(Objects.requireNonNull(response.getBody()).getHeaders().get(HttpHeaders.CONTENT_DISPOSITION)));
+            return ResponseHelper.buildFileResponse(Objects.requireNonNull(response.getBody()).getContent(), MediaType.APPLICATION_OCTET_STREAM, HttpHeaders.CONTENT_DISPOSITION,
+                    StringUtility.convertToString(Objects.requireNonNull(response.getBody()).getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION)));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;

@@ -15,13 +15,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
-import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -145,7 +145,7 @@ class DocumentManagerControllerTest {
     @Test
     void testDownloadDocument() {
         // Mock
-        when(documentManagerService.downloadDocument(any())).thenReturn(ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[1024]).headers(new HashMap()).build()));
+        when(documentManagerService.downloadDocument(any())).thenReturn(ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[1024]).headers(new HttpHeaders()).build()));
         // Test
         var responseEntity = documentManagerController.downloadDocument(123L);
         // Assert
