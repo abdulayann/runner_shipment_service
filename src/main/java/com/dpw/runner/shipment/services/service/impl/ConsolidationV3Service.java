@@ -1181,7 +1181,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     shipmentCont = getShipmentContainerCount(containers, shipmentCont);
 
                     // If container type has a valid TEU value, update console, assigned, and shipment TEU counts accordingly
-                    if (entityTransferContainerType != null && entityTransferContainerType.getTeu() != null) {
+                    if (isEntityTransferContainerTypeTeu(entityTransferContainerType)) {
 
                         // Update the console TEU count by multiplying container count with the TEU value.
                         consoleTeu += (containers.getContainerCount() * entityTransferContainerType.getTeu());
@@ -1207,6 +1207,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setSummaryAssignedTEUs(totalAssignedConsoleTeu + " / "+totalConsolTeu);
     }
 
+    private boolean isEntityTransferContainerTypeTeu(EntityTransferContainerType entityTransferContainerType){
+        return entityTransferContainerType != null && entityTransferContainerType.getTeu() != null;
+    }
     /**
      * Calculates the total console container count based on the container category. If the category is LCL (Less than Container Load), it counts unique container numbers.
      * Otherwise, it sums up the container count directly.
@@ -2689,14 +2692,34 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    protected void calculateShipmentWtVol(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response consolidationDetailsV3Response) throws RunnerException {
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+    private String determineWeightChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
         String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
         if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+        return weightChargeableUnit;
+    }
+
+    private String determineVolumeChargeableUnit(ShipmentSettingsDetails shipmentSettingsDetails){
         String volumeChargeableUnit = Constants.VOLUME_UNIT_M3;
         if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
             volumeChargeableUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+        return volumeChargeableUnit;
+    }
+
+    private void updateContainerMap(ShipmentDetails shipmentDetails, Map<Long, Containers> containersMap){
+        if(!setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+            for(Containers containers: shipmentDetails.getContainersList()) {
+                if(!containersMap.containsKey(containers.getId()))
+                    containersMap.put(containers.getId(), containers);
+            }
+        }
+    }
+
+    protected void calculateShipmentWtVol(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response consolidationDetailsV3Response) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        String weightChargeableUnit = determineWeightChargeableUnit(shipmentSettingsDetails);
+        String volumeChargeableUnit = determineVolumeChargeableUnit(shipmentSettingsDetails);
+
         BigDecimal sumWeight = new BigDecimal(0);
         BigDecimal sumVolume = new BigDecimal(0);
         Integer packs = 0;
@@ -2715,12 +2738,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     packsType = shipmentDetails.getPacksUnit();
                 else if(!isStringNullOrEmpty(shipmentDetails.getPacksUnit()) && !Objects.equals(packsType, shipmentDetails.getPacksUnit()))
                     packsType = PackingConstants.PKG;
-                if(!setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                    for(Containers containers: shipmentDetails.getContainersList()) {
-                        if(!containersMap.containsKey(containers.getId()))
-                            containersMap.put(containers.getId(), containers);
-                    }
-                }
+                updateContainerMap(shipmentDetails, containersMap);
             }
         }
 
@@ -2776,7 +2794,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetailsV3Response, response)), executorService);
         var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetailsV3Response, response)), executorService);
         var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(consolidationDetailsV3Response, response)), executorService);
-        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(consolidationDetailsV3Response, response)), executorService);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(response)), executorService);
         var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetailsV3Response, response)), executorService);
         var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetailsV3Response, response)), executorService);
         var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllVesselDataInSingleCall(consolidationDetailsV3Response, response)), executorService);
@@ -2869,7 +2887,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    protected CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(ConsolidationDetailsV3Response consolidationDetailsV3Response, Map<String, Object> masterDataResponse) {
+    protected CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(
+        Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3464,7 +3483,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return Constants.TRANSPORT_MODE_SEA.equals(shipmentDetail.getTransportMode()) && !listIsNullOrEmpty(packingList);
     }
 
-    private Map<Long, ShipmentDetails> getShipmentDetailsMap(List<ShipmentDetails> shipmentDetails) throws RunnerException {
+    private Map<Long, ShipmentDetails> getShipmentDetailsMap(List<ShipmentDetails> shipmentDetails){
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
         for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
             shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
@@ -3528,7 +3547,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             List<ShipmentDetachResponse> shipmentDetachResponseList = new ArrayList<>();
 
-            // If there are shipments with outstanding dues, throw an exception
+
             if (ObjectUtils.isNotEmpty(summariesWithOutstandingDues)) {
                 List<ShipmentDetails> shipmentWithDues = summariesWithOutstandingDues.stream()
                     .map(summary -> {
@@ -3547,8 +3566,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                             .build());
                     }
                     return buildDependentServiceResponse(shipmentDetachResponseList, 0 , 0);
-//                    throw new BillingException("The following House(s) " + String.join(", ", shipmentIdsWithDues)
-//                        + " cannot be detached as there are still apportioned costs associated with them.");
                 }
             }
             return null;
