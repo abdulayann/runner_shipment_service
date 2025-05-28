@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -177,6 +178,13 @@ class PackingV3ControllerTest {
     void getAllMasterData() {
         when(packingV3Service.getAllMasterData(anyLong(), eq(null))).thenReturn(new HashMap<>());
         var response = packingV3Controller.getAllMasterData(1L, null);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void calculatePackSummary() {
+        CalculatePackSummaryRequest calculatePackSummaryRequest = new CalculatePackSummaryRequest();
+        var response = packingV3Controller.calculatePackSummary(calculatePackSummaryRequest);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }
