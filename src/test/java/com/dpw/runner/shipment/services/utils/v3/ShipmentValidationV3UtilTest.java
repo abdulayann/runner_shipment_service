@@ -8,8 +8,10 @@ import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -29,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -397,4 +400,182 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         assertDoesNotThrow(() ->
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, Set.of(cd)));
     }
+
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_withNullOrgCodes_shouldNotThrow() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setCoLoadBlNumber("coload");
+        ShipmentDetails oldEntity = new ShipmentDetails();
+
+        Parties consignor = new Parties();
+        consignor.setOrgCode(null);
+        shipment.setConsigner(consignor);
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-CODE");
+        shipment.setConsignee(consignee);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_validatePartner() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setMasterBill("masterBill");
+        ShipmentDetails oldEntity = new ShipmentDetails();
+
+        Parties consignor = new Parties();
+        consignor.setOrgCode(null);
+        shipment.setConsigner(consignor);
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-CODE");
+        shipment.setConsignee(consignee);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_withNullConsignor_shouldNotThrow() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setCoLoadBkgNumber("bkgNumber");
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-1");
+        shipment.setConsignee(consignee);
+
+        shipment.setConsigner(null); // Null consignor
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForControlledFields_AIR() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setControlled(true);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForControlledFields_AIR1() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setControlledReferenceNumber("TEST");
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForControlledFields_EmptyControlled_AIR1() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForControlledFields_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setControlled(true);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_AIR() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setFmcTlcId("Test");
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyFmcTlcId_AIR() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_Origin_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCarrierDetails(CarrierDetails.builder()
+                .originLocCode("USPOR")
+                .destinationLocCode("ERTEW")
+                .build());
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_Destination_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCarrierDetails(CarrierDetails.builder()
+                .originLocCode("ERTTR")
+                .destinationLocCode("USPOR")
+                .build());
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCarrierDetails(CarrierDetails.builder()
+                .originLocCode("ERTTR")
+                .destinationLocCode("CAPOR")
+                .build());
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+    @Test
+    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyDestination_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCarrierDetails(CarrierDetails.builder()
+                .originLocCode("ERTTR")
+                .build());
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("shipmentCutoffPayloads")
+    void testValidationForCutOffFields(ShipmentDetails shipment) {
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    private static Stream<Arguments> shipmentCutoffPayloads() {
+        return Stream.of(Arguments.of(ShipmentDetails.builder().terminalCutoff(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().verifiedGrossMassCutoff(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().shippingInstructionCutoff(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().dgCutoff(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().reeferCutoff(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().earliestEmptyEquipmentPickUp(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().latestFullEquipmentDeliveredToCarrier(LocalDateTime.now()).build()),
+                Arguments.of(ShipmentDetails.builder().earliestDropOffFullEquipmentToCarrier(LocalDateTime.now()).build()));
+    }
+
+    @Test
+    void testValidationForCutOffFields() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setLatestArrivalTime(LocalDateTime.now());
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
 }
