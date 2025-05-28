@@ -910,4 +910,22 @@ class PackingDaoTest {
         verify(packingRepository).setPackingIdsToContainer(packingIds, containerId);
     }
 
+    @Test
+    void testGetPackingAssignmentCountByShipmentIn() {
+        PackingAssignmentProjection packingAssignmentProjection = packingDao.getPackingAssignmentCountByShipmentIn(List.of(1L, 2L));
+        assertNull(packingAssignmentProjection);
+    }
+
+    @Test
+    void testGetPackingAssignmentCountByShipmentAndTenant() {
+        PackingAssignmentProjection packingAssignmentProjection = packingDao.getPackingAssignmentCountByShipmentAndTenant(1L, 2);
+        assertNull(packingAssignmentProjection);
+    }
+
+    @Test
+    void testGetPackingAssignmentCountByShipmentInAndTenant() {
+        PackingAssignmentProjection packingAssignmentProjection = packingDao.getPackingAssignmentCountByShipmentInAndTenant(List.of(1L, 2L), 2);
+        assertNull(packingAssignmentProjection);
+    }
+
 }
