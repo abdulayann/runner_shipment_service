@@ -1352,6 +1352,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         // Validation for Partner fields for 'STD' Shipment
         this.validationForPartnerFields(shipmentDetails, oldEntity);
 
+        // Validation for Controlled Value
+        this.validationForControlledFields(shipmentDetails);
+
+    }
+
+    private void validationForControlledFields(ShipmentDetails shipmentDetails) {
+        if(!Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && (shipmentDetails.getControlled() != null || StringUtility.isNotEmpty(shipmentDetails.getControlledReferenceNumber()))) {
+            throw new ValidationException("Controlled and Controlled Reference Number can be selected for Sea Transport Mode only");
+        }
+        if(shipmentDetails.getControlled() != null && StringUtility.isEmpty(shipmentDetails.getControlledReferenceNumber())) {
+            throw new ValidationException("If value in Controlled is selected please enter value in Controlled Reference Number");
+        }
     }
 
     private void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
