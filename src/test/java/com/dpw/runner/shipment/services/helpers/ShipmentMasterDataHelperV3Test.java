@@ -1,9 +1,22 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BILLING_DATA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINERS_LIST;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.JOB_TYPE;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,17 +26,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Executors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BILLING_DATA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINERS_LIST;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -64,10 +66,10 @@ class ShipmentMasterDataHelperV3Test {
     void testGetMasterDataForList1() {
         List<ShipmentDetails> lst = new ArrayList<>(List.of(new ShipmentDetails()));
         List<IRunnerResponse> responseList = new ArrayList<>(List.of(new ShipmentListResponse()));
-        Set<String> includeColumns = new HashSet<>(List.of(CONTAINERS_LIST, BILLING_DATA));
+        Set<String> includeColumns = new HashSet<>(List.of(CONTAINERS_LIST, BILLING_DATA, JOB_TYPE));
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         shipmentMasterDataHelperV3.getMasterDataForList(lst, responseList, true, true, includeColumns);
-        verify(masterDataUtils, times(5)).withMdc(any());
+        verify(masterDataUtils, times(6)).withMdc(any());
     }
 
     @Test

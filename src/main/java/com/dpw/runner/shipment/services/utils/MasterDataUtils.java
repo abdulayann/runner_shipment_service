@@ -310,6 +310,47 @@ public class MasterDataUtils{
         }
     }
 
+    public void setShipmentTypeMasterData(List<IRunnerResponse> responseList) {
+        // Step 1: Prepare unique master list requests
+        Set<MasterListRequest> masterListRequests = responseList.stream()
+                .filter(ShipmentListResponse.class::isInstance)
+                .map(r -> (ShipmentListResponse) r)
+                .map(ShipmentListResponse::getJobType)
+                .filter(Objects::nonNull)
+                .map(jobType -> MasterListRequest.builder()
+                        .ItemType(MasterDataType.SHIPMENT_TYPE.getDescription())
+                        .ItemValue(jobType)
+                        .build())
+                .collect(Collectors.toSet());
+
+        MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+        masterListRequestV2.setMasterListRequests(new ArrayList<>(masterListRequests));
+
+        // Step 2: Fetch master data from cache
+        Map<String, EntityTransferMasterLists> masterDataMap = fetchMasterListFromCache(masterListRequestV2);
+
+        // Step 3: Build JobType -> Description map
+        Map<String, String> jobTypeToDescriptionMap = new HashMap<>();
+        for (MasterListRequest request : masterListRequests) {
+            String key = MasterDataType.SHIPMENT_TYPE.name() + "#" + request.getItemValue();
+            EntityTransferMasterLists masterData = masterDataMap.get(key);
+            if (masterData != null) {
+                jobTypeToDescriptionMap.put(request.getItemValue(), masterData.getItemDescription());
+            }
+        }
+
+        // Step 4: Set the master data back into responses
+        for (IRunnerResponse response : responseList) {
+            if (response instanceof ShipmentListResponse shipmentResponse) {
+                String jobType = shipmentResponse.getJobType();
+                if (jobType != null && jobTypeToDescriptionMap.containsKey(jobType)) {
+                    Map<String, String> map = Map.of(jobType, jobTypeToDescriptionMap.get(jobType));
+                    shipmentResponse.setShipmentTypeMasterData(map);
+                }
+            }
+        }
+    }
+
     private void setTenantsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (response instanceof ShipmentListResponse shipmentListResponse) {
             shipmentListResponse.setTenantMasterData(new HashMap<>());

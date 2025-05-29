@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.document.controller;
 
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
@@ -14,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -143,7 +145,7 @@ class DocumentManagerControllerTest {
     @Test
     void testDownloadDocument() {
         // Mock
-        when(documentManagerService.downloadDocument(any())).thenReturn(new byte[] {});
+        when(documentManagerService.downloadDocument(any())).thenReturn(ResponseEntity.ok(DocumentDownloadResponse.builder().content(new byte[1024]).headers(new HttpHeaders()).build()));
         // Test
         var responseEntity = documentManagerController.downloadDocument(123L);
         // Assert
