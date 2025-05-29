@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -224,8 +225,7 @@ class ContainerV3ServiceTest extends CommonMocks {
             argument.run();
             return mockRunnable;
         });
-//        doNothing().when(shipmentsContainersMappingDao)
-//            .assignShipments(any(), any(), eq(false));
+
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
         ContainerResponse response = containerV3Service.create(containerV3Request, "CONSOLIDATION");
         assertNotNull(response);
@@ -376,7 +376,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void calculateContainerSummaryTestThrowsException() throws RunnerException{
+    void calculateContainerSummaryTestThrowsException(){
         assertThrows(RunnerException.class, () -> containerV3Service.calculateContainerSummary(null, null, "CONSOLIDATION"));
     }
 
@@ -681,6 +681,12 @@ class ContainerV3ServiceTest extends CommonMocks {
         testContainer.setId(1L);
         testContainer.setContainerNumber("CONT-123");
         assertDoesNotThrow(() -> containerV3Service.addShipmentCargoToContainerInCreateFromBooking(testContainer, customerBookingV3Request));
+    }
+
+    @Test
+    void testNullShipmentConsoleId_Creation(){
+        ContainerV3Request request = new ContainerV3Request();
+        assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
     }
 
 }
