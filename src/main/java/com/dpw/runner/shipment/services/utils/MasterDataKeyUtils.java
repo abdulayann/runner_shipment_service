@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrE
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
@@ -61,6 +62,8 @@ public class MasterDataKeyUtils {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
                                 response.put(value, object.getLookupDesc());
+                                response.put(value + Constants.CODE, object.getLocCode());
+                                response.put(value + Constants.IATA_CODE, object.getIATACode());
                                 break;
                             case CacheConstants.UNLOCATIONS_AWB:
                                 EntityTransferUnLocations obj = (EntityTransferUnLocations) cache;
@@ -84,6 +87,8 @@ public class MasterDataKeyUtils {
                             case CacheConstants.CARRIER:
                                 EntityTransferCarrier object5 = (EntityTransferCarrier) cache;
                                 response.put(value, object5.getItemDescription());
+                                response.put(value + Constants.SCAC_CODE, object5.getIdentifier1());
+                                response.put(value + Constants.IATA_CODE, object5.getIATACode());
                                 break;
                             case CacheConstants.CURRENCIES:
                                 EntityTransferCurrency object6 = (EntityTransferCurrency) cache;
