@@ -7,5 +7,5 @@ ON CONFLICT (entity, lifecycle_hook, tenant_id)
 DO UPDATE SET schema_validator = EXCLUDED.schema_validator;
 
 
-Update validations set schema_validator = '{"properties": {"shipmentType": {"required": true}, "department": {"required": true}, "containerCategory": {"required": true}, "transportMode": {"required": true}, "carrierDetails": {"type": "object", "properties": {"origin": {"required": true}, "destination": {"required": true}, "flightNumber": {"errors": {"pattern": "Please provide proper Flight number"}, "pattern": "(\\d{4}[A-Z]|\\d{4}|\\d{3}[A-Z]|\\d{3})"}}}, "consolidationType": {"required": true}}}'
+Update validations set schema_validator = '{"properties": {"shipmentType": {"required": true}, "containerCategory": {"required": true}, "transportMode": {"required": true}, "carrierDetails": {"type": "object", "properties": {"origin": {"required": true}, "destination": {"required": true}, "flightNumber": {"errors": {"pattern": "Please provide proper Flight number"}, "pattern": "(\\d{4}[A-Z]|\\d{4}|\\d{3}[A-Z]|\\d{3})"}}}, "consolidationType": {"required": true}}}'
 where entity = 'CONSOLIDATION';
