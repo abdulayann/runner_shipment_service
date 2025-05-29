@@ -54,7 +54,7 @@ class ShipmentMasterDataHelperV3Test {
         Set<String> includeColumns = new HashSet<>();
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         shipmentMasterDataHelperV3.getMasterDataForList(lst, responseList, true, true, includeColumns);
-        verify(masterDataUtils, times(3)).withMdc(any());
+        verify(masterDataUtils, times(4)).withMdc(any());
     }
 
     private void mockRunnable() {
@@ -69,7 +69,7 @@ class ShipmentMasterDataHelperV3Test {
         Set<String> includeColumns = new HashSet<>(List.of(CONTAINERS_LIST, BILLING_DATA, JOB_TYPE));
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         shipmentMasterDataHelperV3.getMasterDataForList(lst, responseList, true, true, includeColumns);
-        verify(masterDataUtils, times(6)).withMdc(any());
+        verify(masterDataUtils, times(7)).withMdc(any());
     }
 
     @Test

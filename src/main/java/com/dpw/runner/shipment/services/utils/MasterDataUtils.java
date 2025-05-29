@@ -248,6 +248,58 @@ public class MasterDataUtils{
         }
     }
 
+    public void fetchCarriersForList(List<IRunnerResponse> responseList) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            double startTime = System.currentTimeMillis();
+            Set<String> carriers = new HashSet<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            for (IRunnerResponse response : responseList) {
+                getCarriersFromResponse(response, carriers, fieldNameKeyMap, cacheMap);
+            }
+
+            Map<String, EntityTransferCarrier> v1Data = fetchInBulkCarriers(carriers);
+            pushToCache(v1Data, CacheConstants.CARRIER, carriers, new EntityTransferCarrier(), cacheMap);
+
+            for (IRunnerResponse response : responseList) {
+                setCarriersMasterData(response, fieldNameKeyMap, cacheMap);
+            }
+            log.info("Time taken to fetch carrier Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.MASTERDATA_CARRIER, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchCarrierForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+    }
+
+    private void getCarriersFromResponse(IRunnerResponse response, Set<String> carriers, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (response instanceof ShipmentListResponse shipmentListResponse) {
+            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getShippingLine())) {
+                carriers.addAll(createInBulkCarriersRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
+            }
+        }
+        else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getShippingLine())) {
+                carriers.addAll(createInBulkCarriersRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
+            }
+        }
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
+            carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
+        }
+    }
+
+    private void setCarriersMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (response instanceof ShipmentListResponse shipmentListResponse) {
+            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getShippingLine()))
+                shipmentListResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getShippingLine()))
+                consolidationListResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
+            consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+    }
+
     private void setVesselsMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (response instanceof ShipmentListResponse shipmentListResponse) {
             if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getVessel()))
@@ -1354,6 +1406,8 @@ public class MasterDataUtils{
                     case CacheConstants.CARRIER:
                         EntityTransferCarrier object5 = (EntityTransferCarrier) cache;
                         fieldNameMasterDataMap.put(key, object5.getItemDescription());
+                        fieldNameMasterDataMap.put(key + Constants.SCAC_CODE, object5.getIdentifier1());
+                        fieldNameMasterDataMap.put(key + Constants.IATA_CODE, object5.getIATACode());
                         break;
                     case CacheConstants.CURRENCIES:
                         EntityTransferCurrency object6 = (EntityTransferCurrency) cache;
