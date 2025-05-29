@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CargoServiceTest {
+class CargoServiceTest {
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;

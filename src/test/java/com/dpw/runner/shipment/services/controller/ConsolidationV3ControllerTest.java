@@ -191,7 +191,8 @@ class ConsolidationV3ControllerTest {
   @Test
   void testDetachShipments() throws RunnerException {
     ShipmentConsoleAttachDetachV3Request request = new ShipmentConsoleAttachDetachV3Request();
-    String result = "Result";
+    ResponseEntity<IRunnerResponse> result = new ResponseEntity<>(HttpStatus.OK);
+
     when(consolidationV3Service.detachShipments(request)).thenReturn(result);
 
     ResponseEntity<IRunnerResponse> response = controller.detachShipments(request);

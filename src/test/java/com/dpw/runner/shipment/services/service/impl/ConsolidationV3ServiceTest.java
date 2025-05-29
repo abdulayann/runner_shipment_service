@@ -8,11 +8,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -20,44 +16,28 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -70,10 +50,10 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.math.BigDecimal;
-import java.util.concurrent.CompletableFuture;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -82,11 +62,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -94,15 +70,17 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -300,7 +278,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     customerBookingV3Request = new CustomerBookingV3Request();
     testShipment = jsonTestUtility.getTestShipment();
     testContainer = jsonTestUtility.getTestContainer();
-    unitConversionUtilityMockedStatic = mockStatic(UnitConversionUtility.class);
+unitConversionUtilityMockedStatic = mockStatic(UnitConversionUtility.class);
     tenantContextMockedStatic = mockStatic(TenantContext.class);
   }
 
@@ -308,7 +286,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   void tearDown() {
     consolidationV3Service.executorService.shutdown();
     consolidationV3Service.executorServiceMasterData.shutdown();
-    if (unitConversionUtilityMockedStatic != null) {
+if (unitConversionUtilityMockedStatic != null) {
       unitConversionUtilityMockedStatic.close();
     }
     if(tenantContextMockedStatic != null){
@@ -409,6 +387,27 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    mockShipmentSettings();
+    var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+    assertNotNull(response);
+  }
+
+  @Test
+  void testCreateFromBooking_Success1() {
+    // Setup
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+    ConsolidationDetails consoleDetails = testConsol;
+    ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+    customerBookingV3Request.setContainersList(List.of(containerV3Request));
+    customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+
+    when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
     mockShipmentSettings();
     var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
 
@@ -648,6 +647,28 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     when(consoleShipmentMappingDao.findByShipmentIdAll(any())).thenReturn(List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build()));
     when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
     mockShipmentSettings();
+    ConsolidationListV3Response response = consolidationV3Service.getAutoAttachConsolidationDetails(commonRequestModel);
+    assertNotNull(response);
+  }
+
+  @Test
+  void testGetAutoAttachConsolidationDetails_Success4() {
+    AutoAttachConsolidationV3Request request = new AutoAttachConsolidationV3Request();
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(true);
+    mockShipmentSettings();
+    ConsolidationListV3Response response = consolidationV3Service.getAutoAttachConsolidationDetails(commonRequestModel);
+    assertNotNull(response);
+  }
+
+  @Test
+  void testGetAutoAttachConsolidationDetails_Success5() {
+    AutoAttachConsolidationV3Request request = new AutoAttachConsolidationV3Request();
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+    when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testConsol)));
+    mockShipmentSettings();
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationListV3Response response = consolidationV3Service.getAutoAttachConsolidationDetails(commonRequestModel);
     assertNotNull(response);
   }
@@ -911,6 +932,41 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
+  void testCreateConsolidationPayload4_() throws RunnerException {
+    testShipment.setWeight(BigDecimal.TEN);
+    testShipment.setWeightUnit("KG");
+    testShipment.setNoOfPacks(2);
+    testShipment.setPacksUnit("BBG");
+    testShipment.setVolume(BigDecimal.TEN);
+    ShipmentDetails testShipment2 = objectMapperTest.convertValue(testShipment, ShipmentDetails.class);
+    testShipment2.setId(5L);
+    testConsol.setShipmentsList(new HashSet<>(Set.of(testShipment, testShipment2)));
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
+    mockShipmentSettings();
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.TEN);
+    consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+    assertNotNull(consolidationDetailsV3Response);
+  }
+
+  @Test
+  void testCreateConsolidationPayload5_() throws RunnerException {
+    testShipment.setWeight(BigDecimal.TEN);
+    testShipment.setWeightUnit("KG");
+    testShipment.setNoOfPacks(null);
+    testShipment.setPacksUnit(null);
+    testShipment.setVolume(BigDecimal.TEN);
+    testShipment.setContainersList(Set.of(testContainer));
+    testConsol.setShipmentsList(Set.of(testShipment));
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = objectMapperTest.convertValue(testConsol, ConsolidationDetailsV3Response.class);
+    mockShipmentSettings();
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.TEN);
+    consolidationV3Service.createConsolidationPayload(testConsol, consolidationDetailsV3Response);
+    assertNotNull(consolidationDetailsV3Response);
+  }
+
+  @Test
   void testCreateConsolidationPayload5() {
     testShipment.setPacksUnit("BBG");
     testShipment.setContainersList(Set.of(testContainer));
@@ -1048,7 +1104,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     BigDecimal volume = new BigDecimal("2.0");
 
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
-        .thenReturn(new BigDecimal("1000"));
+        .thenReturn(weight);
 
     // When
     VolumeWeightChargeable result = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
@@ -1643,6 +1699,110 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers1() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setVerifiedGrossMassCutoff(LocalDateTime.now());
+    oldEntity.setVerifiedGrossMassCutoff(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers2() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setShipInstructionCutoff(LocalDateTime.now());
+    oldEntity.setShipInstructionCutoff(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers3() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setHazardousBookingCutoff(LocalDateTime.now());
+    oldEntity.setHazardousBookingCutoff(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers4() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setReeferCutoff(LocalDateTime.now());
+    oldEntity.setReeferCutoff(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers5() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setEarliestEmptyEquPickUp(LocalDateTime.now());
+    oldEntity.setEarliestEmptyEquPickUp(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers6() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setLatestFullEquDeliveredToCarrier(LocalDateTime.now());
+    oldEntity.setLatestFullEquDeliveredToCarrier(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers7() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setEarliestDropOffFullEquToCarrier(LocalDateTime.now());
+    oldEntity.setEarliestDropOffFullEquToCarrier(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
+  void canProcesscutOffFields_shouldReturnTrue_whenAnyCutoffFieldDiffers8() {
+    ConsolidationDetails newEntity = new ConsolidationDetails();
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+
+    newEntity.setLatDate(LocalDateTime.now());
+    oldEntity.setLatDate(LocalDateTime.now().minusDays(1));
+
+    boolean result = consolidationV3Service.canProcesscutOffFields(newEntity, oldEntity);
+
+    assertTrue(result);
+  }
+
+  @Test
   void canProcesscutOffFields_shouldReturnFalse_whenAllFieldsAreEqual() {
     LocalDateTime cutoffTime = LocalDateTime.now();
 
@@ -1693,11 +1853,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     List<ShipmentDetails> shipmentList = List.of(shipment);
 
-    BillingException exception = assertThrows(BillingException.class, () ->
-        consolidationV3Service.validateOutstandingDuesForShipments(shipmentList)
-    );
-
-    assertTrue(exception.getMessage().contains("cannot be detached"));
+    ResponseEntity<IRunnerResponse> response = consolidationV3Service.validateOutstandingDuesForShipments(shipmentList);
+    assertNotNull(response);
   }
 
   @Test
@@ -1803,7 +1960,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     shipment.setShipmentId("SH123");
     shipment.setContainersList(null); // no containers assigned
 
-    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of());
+    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, true);
     assertTrue(result);
   }
 
@@ -1827,7 +1984,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     // assuming isSeaPackingList returns true
 
     RunnerException ex = assertThrows(RunnerException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of(container));
+      consolidationV3Service.isSaveSeaPacks(shipment, true);
     });
 
     assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
@@ -1847,7 +2004,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
 
     RunnerException ex = assertThrows(RunnerException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, List.of(), true, List.of(container));
+      consolidationV3Service.isSaveSeaPacks(shipment, true);
     });
 
     assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
@@ -1914,6 +2071,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     ConsolidationDetails console = new ConsolidationDetails();
     console.setShipmentType(type);
     console.setInterBranchConsole(interBranch);
+    console.setIsInland(isAccepted?Boolean.TRUE:Boolean.FALSE);
+
     // Stub isConsoleAccepted if needed via spy or override
     return console;
   }
@@ -2396,8 +2555,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     lenient().when(jsonHelper.convertToJson(any())).thenReturn("JSON");
     when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
 
-    String response = spyService.detachShipments(request);
-    assertNull(response);
+    ResponseEntity<IRunnerResponse> response = spyService.detachShipments(request);
+    assertNotNull(response);
   }
 
   @Test
@@ -2761,6 +2920,85 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   }
 
   @Test
+  void addAllVesselDataInSingleCall_Success() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    consolidationDetailsV3Response.setCarrierDetails(new CarrierDetailResponse());
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    Set<String> mockVessels = Set.of("tenant1", "tenant2");
+    Map<String, EntityTransferVessels> mockTenantMap = new HashMap<>();
+    mockTenantMap.put("tenant1", new EntityTransferVessels());
+    mockTenantMap.put("tenant2", new EntityTransferVessels());
+
+    when(masterDataUtils.createInBulkVesselsRequest(
+            any(), any(), any(), anyString(), anyMap()))
+            .thenReturn(new ArrayList<>(mockVessels));
+
+    when(masterDataUtils.fetchInBulkVessels(any()))
+            .thenReturn(mockTenantMap);
+
+    doNothing().when(masterDataUtils).pushToCache(
+            anyMap(), eq(CacheConstants.VESSELS), anySet(), any(), anyMap());
+
+    doNothing().when(masterDataKeyUtils).setMasterDataValue(
+            anyMap(), eq(CacheConstants.VESSELS), anyMap(), anyMap());
+
+    // Act
+    CompletableFuture<Map<String, EntityTransferVessels>> resultFuture =
+            consolidationV3Service.addAllVesselDataInSingleCall(consolidationDetailsV3Response, masterDataResponse);
+
+    // Assert
+    assertNotNull(resultFuture);
+    Map<String, EntityTransferVessels> result = resultFuture.join();
+    assertNotNull(result);
+    assertEquals(0, result.size());
+  }
+
+  @Test
+  void addAllVesselDataInSingleCall_Success1() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+
+    Set<String> mockTenantIds = Set.of("tenant1", "tenant2");
+    Map<String, EntityTransferVessels> mockVessels = new HashMap<>();
+    mockVessels.put("tenant1", new EntityTransferVessels());
+    mockVessels.put("tenant2", new EntityTransferVessels());
+
+    when(masterDataUtils.createInBulkVesselsRequest(
+            any(), any(), any(), anyString(), anyMap()))
+            .thenReturn(new ArrayList<>(mockTenantIds));
+
+    when(masterDataUtils.fetchInBulkVessels(mockTenantIds))
+            .thenReturn(mockVessels);
+
+    when(masterDataUtils.setMasterData(anyMap(),anyString(), anyMap()))
+            .thenReturn(new HashMap<>());
+    doNothing().when(masterDataUtils).pushToCache(
+            anyMap(), eq(CacheConstants.VESSELS), anySet(), any(), anyMap());
+
+    // Act
+    CompletableFuture<Map<String, EntityTransferVessels>> resultFuture =
+            consolidationV3Service.addAllVesselDataInSingleCall(consolidationDetailsV3Response, null);
+
+    // Assert
+    assertNotNull(resultFuture);
+  }
+  @Test
+  void addAllVesselDataInSingleCall_Failure_ReturnsNullFuture() {
+    // Arrange
+    ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
+    Map<String, Object> masterDataResponse = new HashMap<>();
+
+    // Act
+    CompletableFuture<Map<String, EntityTransferVessels>> resultFuture =
+            consolidationV3Service.addAllVesselDataInSingleCall(consolidationDetailsV3Response, masterDataResponse);
+
+    // Assert
+    assertNotNull(resultFuture);
+  }
+
+  @Test
   void addAllOrganizationDataInSingleCall_CreateInBulkThrowsException_ReturnsNull() {
     // Arrange
     ConsolidationDetailsV3Response consolidationDetailsV3Response = new ConsolidationDetailsV3Response();
@@ -3050,7 +3288,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   @Test
   void addAllCommodityTypesInSingleCall_Success_WithMasterDataResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
@@ -3067,7 +3304,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(masterDataResponse);
 
     // Assert
     assertNotNull(future);
@@ -3079,7 +3316,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   @Test
   void addAllCommodityTypesInSingleCall_Success_WithNullMasterDataResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
 
     Map<String, EntityTransferCommodityType> v1Data = Map.of(
         "type1", new EntityTransferCommodityType()
@@ -3093,7 +3329,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, null);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(null);
 
     // Assert
     assertNotNull(future);
@@ -3105,7 +3341,6 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   @Test
   void addAllCommodityTypesInSingleCall_ExceptionThrown_ReturnsNullResponse() {
     // Arrange
-    ConsolidationDetailsV3Response response = new ConsolidationDetailsV3Response();
     Map<String, Object> masterDataResponse = new HashMap<>();
 
     when(masterDataUtils.fetchInBulkCommodityTypes(anyList()))
@@ -3113,7 +3348,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     // Act
     CompletableFuture<ResponseEntity<IRunnerResponse>> future =
-        consolidationV3Service.addAllCommodityTypesInSingleCall(response, masterDataResponse);
+        consolidationV3Service.addAllCommodityTypesInSingleCall(masterDataResponse);
 
     // Assert
     assertNotNull(future);
@@ -3909,5 +4144,207 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
     // assertions
     assertNull(warning);
+  }
+
+  @Test
+  void testCanProcessConsole() {
+    // setup
+    ConsolidationDetails console = ConsolidationDetails.builder().shipmentType("HSE").carrierDetails(CarrierDetails.builder().build()).build();
+    ConsolidationDetails oldEntity = ConsolidationDetails.builder().shipmentType("HSE").carrierDetails(CarrierDetails.builder().build()).build();
+
+    // method under test
+    boolean result = consolidationV3Service.canProcessConsole(console, oldEntity);
+
+    // assertions
+    assertFalse(result);
+  }
+
+  @Test
+  void testSendImportShipmentPullAttachmentEmail() {
+    // setup
+    shipmentDetails = ShipmentDetails.builder().build();
+    consolidationDetails = ConsolidationDetails.builder().build();
+    List<EmailTemplatesRequest> emailTemplatesRequestsModel = new ArrayList<>();
+    emailTemplatesRequestsModel.add(EmailTemplatesRequest.builder().build());
+
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    // method under test
+    ResponseEntity<IRunnerResponse> result = consolidationV3Service.sendImportShipmentPullAttachmentEmail(shipmentDetails, consolidationDetails, emailTemplatesRequestsModel);
+
+    // assertions
+    assertNotNull(result);
+  }
+
+  @Test
+  void testSendEmailForPullRequested() {
+    when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    // method under test
+    assertDoesNotThrow(() -> consolidationV3Service.sendEmailForPullRequested(testConsol, List.of(1L), new HashSet<>()));
+  }
+
+  @Test
+  void testGetSummaryDgPacks() {
+    // Setup
+    List<Packing> packingList = List.of(new Packing());
+
+    // method under test
+    String result = consolidationV3Service.getSummaryDgPacks(packingList);
+
+    assertNotNull(result);
+  }
+
+  @Test
+  void testGetSummaryDgPacks1() {
+    // Setup
+    Packing packing = new Packing();
+    packing.setHazardous(true);
+    List<Packing> packingList = List.of(packing);
+
+    // method under test
+    String result = consolidationV3Service.getSummaryDgPacks(packingList);
+
+    assertNotNull(result);
+  }
+
+  @Test
+  void testGetSummaryDGShipments() {
+    // Setup
+    Set<ShipmentDetails> shipmentDetailsList = Set.of(new ShipmentDetails());
+
+    // method under test
+    String result = consolidationV3Service.getSummaryDGShipments(shipmentDetailsList);
+
+    assertNotNull(result);
+  }
+
+  @Test
+  void testCalculateConsoleUtilization() throws RunnerException {
+    // method under test
+    ConsolidationDetails result = consolidationV3Service.calculateConsolUtilization(testConsol);
+
+    assertNotNull(result);
+  }
+
+  @Test
+  void testCalculateConsoleUtilization1() throws RunnerException {
+    // method under test
+    Allocations allocations = new Allocations();
+    allocations.setWeight(BigDecimal.ONE);
+    allocations.setVolume(BigDecimal.ONE);
+    allocations.setWeightUnit("KG");
+    allocations.setVolumeUnit("M3");
+    testConsol.setAllocations(allocations);
+    AchievedQuantities achievedQuantities = new AchievedQuantities();
+    achievedQuantities.setConsolidatedWeight(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedVolume(BigDecimal.ONE);
+    achievedQuantities.setWeightUtilization("100");
+    achievedQuantities.setVolumeUtilization("100");
+    achievedQuantities.setConsolidatedWeightUnit("KG");
+    achievedQuantities.setConsolidatedVolumeUnit("M3");
+    testConsol.setAchievedQuantities(achievedQuantities);
+    testConsol.setAllocations(allocations);
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any())).thenReturn(BigDecimal.ONE);
+    ConsolidationDetails result = consolidationV3Service.calculateConsolUtilization(testConsol);
+
+    assertNotNull(result);
+  }
+
+  @Test
+  void testProcessInterConsoleAttachShipment() {
+    // Setup
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setInterBranchConsole(true);
+    List<ShipmentDetails> shipments = List.of(new ShipmentDetails());
+
+
+    // method under test
+    consolidationV3Service.processInterConsoleAttachShipment(console, shipments);
+
+    assertNotNull(console);
+  }
+
+  @Test
+  void testProcessInterConsoleAttachShipment1() {
+    // Setup
+    testConsol.setInterBranchConsole(true);
+    testConsol.setShipmentType(Constants.DIRECTION_EXP);
+    testShipment.setShipmentType(Constants.DIRECTION_EXP);
+    List<ShipmentDetails> shipments = List.of(testShipment);
+    testConsol.setShipmentsList(Set.of(testShipment));
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+    mockShipmentSettings();
+    // method under test
+    consolidationV3Service.processInterConsoleAttachShipment(testConsol, shipments);
+
+    assertNotNull(testConsol);
+  }
+
+  @Test
+  void testProcessInterConsoleAttachShipment2() {
+    // Setup
+    testConsol.setInterBranchConsole(true);
+    testConsol.setReceivingBranch(1L);
+    testConsol.setShipmentType(Constants.DIRECTION_EXP);
+    testShipment.setShipmentType(Constants.DIRECTION_EXP);
+    List<ShipmentDetails> shipments = List.of(testShipment);
+    testConsol.setShipmentsList(Set.of(testShipment));
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+    mockShipmentSettings();
+    // method under test
+    consolidationV3Service.processInterConsoleAttachShipment(testConsol, shipments);
+
+    assertNotNull(testConsol);
+  }
+
+  @Test
+  void testProcessInterConsoleAttachShipment3() {
+    // Setup
+    testConsol.setInterBranchConsole(true);
+    testConsol.setReceivingBranch(1L);
+    testConsol.setShipmentType(Constants.DIRECTION_EXP);
+    testShipment.setShipmentType(Constants.DIRECTION_EXP);
+    testShipment.setReceivingBranch(1L);
+    List<ShipmentDetails> shipments = List.of(testShipment);
+    testConsol.setShipmentsList(Set.of(testShipment));
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+    mockShipmentSettings();
+    // method under test
+    consolidationV3Service.processInterConsoleAttachShipment(testConsol, shipments);
+
+    assertNotNull(testConsol);
+  }
+
+  @Test
+  void testProcessInterConsoleAttachShipment4() {
+    // Setup
+    testConsol.setInterBranchConsole(true);
+    testConsol.setReceivingBranch(1L);
+    testConsol.setShipmentType(Constants.DIRECTION_EXP);
+    testShipment.setShipmentType(Constants.DIRECTION_EXP);
+    testShipment.setReceivingBranch(2L);
+    List<ShipmentDetails> shipments = List.of(testShipment);
+    testConsol.setShipmentsList(Set.of(testShipment));
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+    mockShipmentSettings();
+    // method under test
+    consolidationV3Service.processInterConsoleAttachShipment(testConsol, shipments);
+
+    assertNotNull(testConsol);
+  }
+
+  @Test
+  void testPendingNotificationData() {
+    when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    ConsolidationPendingNotificationResponse result = consolidationV3Service.getPendingNotificationData(CommonGetRequest.builder().id(1L).build());
+    assertNull(result);
+  }
+
+  @Test
+  void testPendingNotificationData1() {
+    when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+    CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
+    assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getPendingNotificationData(getRequest));
   }
 }

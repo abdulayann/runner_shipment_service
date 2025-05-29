@@ -17,7 +17,7 @@ public class ShipmentConstants {
     @SuppressWarnings("java:S2386")
     public static final List<String> SHIPMENT_HEADERS = Arrays.asList(
             "Shipment Clone", "Shipment Number", "Order Number", "Status", "Transport Mode",
-            "Bill Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
+            "Fin. Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
             "Delivery Mode", "Consolidation Type", "Activity Type", "Shipment Type", "Carrier",
             "Vessel Name/Flight", "Flight Number", "Voyage/Flight No.", "Paid Place Name",
             "Issued Place Name", "Source1", "Date of Issue", "Date of Receipt", "Country of Origin",
@@ -149,7 +149,8 @@ public class ShipmentConstants {
             Map.entry("routingPolCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(ORIGIN_PORT_LOC_CODE).build()),
             Map.entry("routingPod", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pod").build()),
             Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(DESTINATION_PORT_LOC_CODE).build()),
-            Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build())
+            Map.entry("consolidationList", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("consolidationList").build()),
+            Map.entry("fileStatus", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(Set.class).fieldName("fileStatus").build())
 
     );
     public static final String LIST = "/list";

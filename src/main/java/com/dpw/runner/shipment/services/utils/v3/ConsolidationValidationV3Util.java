@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.utils;
+package com.dpw.runner.shipment.services.utils.v3;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT;
@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -108,22 +109,29 @@ public class ConsolidationValidationV3Util {
         }
 
         // Check if any of the shipments is already attached to a different consolidation
-        if (!listIsNullOrEmpty(consoleShipmentMappings)) {
-            for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
-                if (!consoleShipmentMapping.getConsolidationId().equals(consolidationId)
-                        && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
-                    throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
-                }
-            }
-        }
+        validateMultipleConsolidationAttach(consoleShipmentMappings, consolidationId);
 
         // Validate Air DG hazardous conditions between console and shipments
         validateAirDgHazardousForConsoleAndShipment(consolidationDetails, shipmentIds, shipmentDetailsList, fromConsolidation, existingShipments);
 
         // Validate DPS implications (e.g., check if CONCR implication already exists for a shipment)
+        validateDPSEvent(shipmentDetailsList);
+    }
+
+        private void validateMultipleConsolidationAttach(List<ConsoleShipmentMapping> consoleShipmentMappings, Long consolidationId) throws RunnerException {
+        if (!listIsNullOrEmpty(consoleShipmentMappings)) {
+            for (ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
+                if (!consoleShipmentMapping.getConsolidationId().equals(consolidationId)
+                    && Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
+                    throw new RunnerException("Multiple consolidations are attached to the shipment, please verify.");
+                }
+            }
+        }
+    }
+    private void validateDPSEvent(List<ShipmentDetails> shipmentDetailsList) throws RunnerException {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(
-                    Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
+                Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
                 throw new RunnerException(DpsConstants.DPS_ERROR_2 + " : " + shipmentDetails.getShipmentId());
             }
         }

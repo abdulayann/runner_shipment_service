@@ -1348,23 +1348,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setHouseBill(null);
             }
         }
-
-        // Validation for Partner fields for 'STD' Shipment
-        this.validationForPartnerFields(shipmentDetails, oldEntity);
-
-    }
-
-    private void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
-        String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
-        String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);
-        String masterBill = Optional.ofNullable(oldEntity).map(ShipmentDetails::getMasterBill).orElse(null);
-        if(!Objects.equals(shipmentDetails.getCoLoadBlNumber(), coloadBlNumber) || !Objects.equals(shipmentDetails.getCoLoadBkgNumber(), coloadBkgNumber)) {
-            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent BkgNumber, BL No/AWB No. for STD shipments");
-        }
-        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
-            throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
-        }
+        // Validate all shipment fields before creation or updation
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipmentDetails, oldEntity);
     }
 
     private CompletableFuture<Void> getPopulateUnlocCodeFuture(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
@@ -1855,7 +1840,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
         shipmentRequest.setContainerAssignedToShipmentCargo(containerAssignedToShipmentCargo);
-        //todo: remove this: aditya
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
@@ -1939,7 +1923,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
-            //TODO: pushing to dependent services
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
             setShipmentFromBooking(shipmentDetails, notesRequest);
 
@@ -2051,7 +2034,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     }
 
-    //todo: add new fields to shipment
     private ShipmentV3Request getShipmentRequestFromBookingV3(CustomerBookingV3Request customerBookingRequest, Set<ConsolidationDetailsRequest> consolidationDetails) {
         return ShipmentV3Request.builder().
                 carrierDetails(CarrierDetailRequest.builder()

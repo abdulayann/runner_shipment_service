@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
 import org.apache.http.auth.AuthenticationException;
+import org.springframework.http.ResponseEntity;
 
 public interface IConsolidationV3Service {
     ShipmentGridChangeV3Response calculateAchievedValues(CalculateAchievedValueRequest request) throws RunnerException;
@@ -38,7 +40,7 @@ public interface IConsolidationV3Service {
     ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
     ConsolidationListV3Response list(ListCommonRequest listCommonRequest, boolean getMasterData);
     ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
-    String detachShipments(@Valid ShipmentConsoleAttachDetachV3Request request)
+    ResponseEntity<IRunnerResponse> detachShipments(@Valid ShipmentConsoleAttachDetachV3Request request)
         throws RunnerException;
     ConsolidationDetails getConsolidationById(Long consolidationId);
     Optional<ConsolidationDetails> findById(Long consolidationId);

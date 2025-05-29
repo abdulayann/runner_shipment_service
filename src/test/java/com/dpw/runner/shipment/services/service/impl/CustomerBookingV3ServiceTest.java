@@ -89,7 +89,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class CustomerBookingV3ServiceTest extends CommonMocks {
+class CustomerBookingV3ServiceTest extends CommonMocks {
 
     @InjectMocks
     private CustomerBookingV3Service customerBookingService;
@@ -742,7 +742,7 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         verify(customerBookingDao, times(1)).save(customerBooking);
         assertNotNull(response);
         assertEquals("DBAR-5586091-311749", response.getBookingNumber());
-        assertTrue(response.getCharges().isEmpty()); // Since bookingCharges in request was empty
+        assertTrue(response.getCharges().isEmpty());
     }
 
     @Test
@@ -881,7 +881,7 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testDeleteBookingIdIsNull() {
+    void testDeleteBookingIdIsNull() {
         Long bookingId = null; // Null booking ID
 
         // Test the behavior when bookingId is null
@@ -1022,8 +1022,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(objectMapper.convertValue(customerBooking, CustomerBookingV3Response.class));
         CustomerBookingV3Response response = customerBookingService.retrieveById(CommonGetRequest.builder().id(123L).build());
         assertNotNull(response);
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.PENDING_FOR_KYC);
+        assertEquals(202861, response.getId());
+        assertEquals(BookingStatus.PENDING_FOR_KYC, response.getBookingStatus());
     }
 
     @Test
@@ -1033,8 +1033,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(objectMapper.convertValue(customerBooking, CustomerBookingV3Response.class));
         CustomerBookingV3Response response =  customerBookingService.retrieveById(commonGetRequest);
         assertNotNull(response);
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.PENDING_FOR_KYC);
+        assertEquals(202861,response.getId());
+        assertEquals( BookingStatus.PENDING_FOR_KYC, response.getBookingStatus());
     }
 
     @Test
@@ -1042,8 +1042,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(orderManagementAdapter.getOrderForBookingV3(any())).thenReturn(objectMapper.convertValue(customerBooking, CustomerBookingV3Response.class));
         CustomerBookingV3Response response = customerBookingService.retrieveByOrderId("12312");
         assertNotNull(response);
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.PENDING_FOR_KYC);
+        assertEquals(202861, response.getId());
+        assertEquals(BookingStatus.PENDING_FOR_KYC, response.getBookingStatus());
     }
 
     @Test
@@ -1065,8 +1065,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
         CustomerBookingV3Response response = customerBookingService.retrieveById(CommonGetRequest.builder().id(123L).build());
         assertNotNull(response);
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT);
+        assertEquals(202861, response.getId());
+        assertEquals(BookingStatus.READY_FOR_SHIPMENT, response.getBookingStatus());
     }
 
     @Test
@@ -1080,8 +1080,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingV3Response.class));
         mockTenantSettings();
         CustomerBookingV3Response response = customerBookingService.retrieveById(CommonGetRequest.builder().id(123L).build());
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT);
+        assertEquals(202861, response.getId());
+        assertEquals( BookingStatus.READY_FOR_SHIPMENT, response.getBookingStatus());
     }
 
     @Test
@@ -1096,8 +1096,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingV3Response.class));
         mockTenantSettings();
         CustomerBookingV3Response response = customerBookingService.retrieveById(CommonGetRequest.builder().id(123L).build());
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT);
+        assertEquals(202861, response.getId());
+        assertEquals( BookingStatus.READY_FOR_SHIPMENT, response.getBookingStatus());
     }
 
     @Test
@@ -1112,8 +1112,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingV3Response.class));
         mockTenantSettings();
         CustomerBookingV3Response response = customerBookingService.retrieveById(CommonGetRequest.builder().id(123L).build());
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT);
+        assertEquals(202861,response.getId());
+        assertEquals( BookingStatus.READY_FOR_SHIPMENT, response.getBookingStatus());
     }
 
     @Test
@@ -1133,8 +1133,8 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingV3Response.class));
         mockTenantSettings();
         CustomerBookingV3Response response = customerBookingService.retrieveById(CommonGetRequest.builder().id(123L).build());
-        assertEquals(response.getId(), 202861);
-        assertEquals(response.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT);
+        assertEquals(202861,response.getId());
+        assertEquals(BookingStatus.READY_FOR_SHIPMENT, response.getBookingStatus());
     }
 
     @Test
@@ -1382,7 +1382,7 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
 
         // Act
         ValidationException exception = assertThrows(ValidationException.class, () -> customerBookingService.update(request));
-        assertEquals(exception.getMessage(), "User does not have Air Security permission to create AIR EXP Shipment from Booking.");
+        assertEquals("User does not have Air Security permission to create AIR EXP Shipment from Booking.", exception.getMessage());
     }
 
     @Test
@@ -1481,7 +1481,7 @@ public class CustomerBookingV3ServiceTest extends CommonMocks {
 
         // Act
         ValidationException exception = assertThrows(ValidationException.class, () -> customerBookingService.update(request));
-        assertEquals(exception.getMessage(), "User does not have AIR DG Permission to create AIR Shipment from Booking");
+        assertEquals("User does not have AIR DG Permission to create AIR Shipment from Booking", exception.getMessage());
     }
 
     @Test

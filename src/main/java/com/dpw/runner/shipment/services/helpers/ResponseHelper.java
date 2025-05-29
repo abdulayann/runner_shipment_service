@@ -145,5 +145,14 @@ public class ResponseHelper {
                 .data(data).numberOfRecords(totalCount).totalPages(totalPages).build();
         return new ResponseEntity<>(runnerResponse, HttpStatus.OK);
     }
+
+    public static ResponseEntity<IRunnerResponse> buildFileResponse(byte[] bytes, MediaType contentType, String header, String headerValue) {
+        ByteArrayResourceResponse resource = new ByteArrayResourceResponse(bytes);
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .contentLength(resource.contentLength())
+                .header(header,headerValue)
+                .body(resource);
+    }
 }
 

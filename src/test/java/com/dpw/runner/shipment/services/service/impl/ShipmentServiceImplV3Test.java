@@ -2692,22 +2692,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testValidateBeforeSave_withNullConsignor_shouldNotThrow() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
-        shipment.setCoLoadBkgNumber("bkgNumber");
-
-        Parties consignee = new Parties();
-        consignee.setOrgCode("ORG-1");
-        shipment.setConsignee(consignee);
-
-        shipment.setConsigner(null); // Null consignor
-
-        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
-    }
-
-    @Test
     void testValidateBeforeSave_withNonDRTJobType_shouldNotChangeHouseBill() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setJobType("OTHER_TYPE");
@@ -2755,43 +2739,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsignee(null); // Consignee is null
 
         assertDoesNotThrow(() -> shipmentServiceImplV3.validateBeforeSave(shipment, null));
-    }
-
-    @Test
-    void testValidateBeforeSave_withNullOrgCodes_shouldNotThrow() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
-        shipment.setCoLoadBlNumber("coload");
-        ShipmentDetails oldEntity = new ShipmentDetails();
-
-        Parties consignor = new Parties();
-        consignor.setOrgCode(null);
-        shipment.setConsigner(consignor);
-
-        Parties consignee = new Parties();
-        consignee.setOrgCode("ORG-CODE");
-        shipment.setConsignee(consignee);
-
-        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.validateBeforeSave(shipment, oldEntity));
-    }
-
-    @Test
-    void testValidateBeforeSave_validatePartner() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
-        shipment.setMasterBill("masterBill");
-        ShipmentDetails oldEntity = new ShipmentDetails();
-
-        Parties consignor = new Parties();
-        consignor.setOrgCode(null);
-        shipment.setConsigner(consignor);
-
-        Parties consignee = new Parties();
-        consignee.setOrgCode("ORG-CODE");
-        shipment.setConsignee(consignee);
-
-        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.validateBeforeSave(shipment, oldEntity));
     }
 
     @Test

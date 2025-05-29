@@ -49,11 +49,9 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPartiesV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersV3Service;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Optional;
 import javax.validation.Valid;
@@ -115,7 +113,7 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
-    public ResponseEntity<IRunnerResponse> updateBooking(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public ResponseEntity<IRunnerResponse> updateBooking(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
     }
 
@@ -147,14 +145,14 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, response = CustomerBookingV3Response.class, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_BOOKING_NUMBER)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
-    public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam String bookingNumber) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> retrieveById(@RequestParam String bookingNumber) {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.findByBookingNumber(bookingNumber));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_CANCEL_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_CANCEL + "')")
-    public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
     }
 

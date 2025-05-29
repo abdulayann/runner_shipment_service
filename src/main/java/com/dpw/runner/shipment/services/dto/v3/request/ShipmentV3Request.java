@@ -113,6 +113,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private List<PartiesRequest> shipmentAddresses;
     private String flightStatus;
     private Boolean containsHazardous;
+    @Size(max = 10, message = "Max size is 10 for fmcTlcId")
     private String fmcTlcId;
     private String commodity;
     private Long orderNumber;
