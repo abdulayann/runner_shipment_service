@@ -578,4 +578,125 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
+    @Test
+    void testValidationFields_newShipment_allFieldsNull() {
+        ShipmentDetails newShipment = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
+    }
+
+    @Test
+    void testValidationFields_newShipment_etaPresent_shouldThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails newShipment = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().eta(now).build())
+                .build();
+
+        ValidationException ex = assertThrows(ValidationException.class, () -> {
+            shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null);
+        });
+        assertEquals("Update not allowed for ETA", ex.getMessage());
+    }
+
+    @Test
+    void testValidationFields_newShipment_ataPresent_shouldThrow() {
+        LocalDateTime now = LocalDateTime.now();
+        ShipmentDetails newShipment = ShipmentDetails.builder()
+                .carrierDetails(CarrierDetails.builder().ata(now).build())
+                .build();
+
+        ValidationException ex = assertThrows(ValidationException.class, () -> {
+            shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null);
+        });
+        assertEquals("Update not allowed for ATA", ex.getMessage());
+    }
+
+    @Test
+    void testValidationFields_updateShipment_allFieldsSame_shouldPass() {
+        LocalDateTime now = LocalDateTime.now();
+
+        CarrierDetails oldCarrier = CarrierDetails.builder()
+                .eta(now)
+                .ata(now)
+                .etd(now)
+                .atd(now)
+                .build();
+
+        CarrierDetails newCarrier = CarrierDetails.builder()
+                .eta(now)
+                .ata(now)
+                .etd(now)
+                .atd(now)
+                .build();
+
+        ShipmentDetails oldShipment = ShipmentDetails.builder().carrierDetails(oldCarrier).build();
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(newCarrier).build();
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, oldShipment));
+    }
+
+    @Test
+    void testValidationFields_updateShipment_etaChanged_shouldThrow() {
+        LocalDateTime oldTime = LocalDateTime.now();
+        LocalDateTime newTime = oldTime.plusDays(1);
+
+        CarrierDetails oldCarrier = CarrierDetails.builder().eta(oldTime).build();
+        CarrierDetails newCarrier = CarrierDetails.builder().eta(newTime).build();
+
+        ShipmentDetails oldShipment = ShipmentDetails.builder().carrierDetails(oldCarrier).build();
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(newCarrier).build();
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, oldShipment));
+        assertEquals("Update not allowed for ETA", ex.getMessage());
+    }
+
+    @Test
+    void testValidationFields_updateShipment_ataChanged_shouldThrow() {
+        LocalDateTime oldTime = LocalDateTime.now();
+        LocalDateTime newTime = oldTime.plusHours(5);
+
+        CarrierDetails oldCarrier = CarrierDetails.builder().ata(oldTime).build();
+        CarrierDetails newCarrier = CarrierDetails.builder().ata(newTime).build();
+
+        ShipmentDetails oldShipment = ShipmentDetails.builder().carrierDetails(oldCarrier).build();
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(newCarrier).build();
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, oldShipment));
+        assertEquals("Update not allowed for ATA", ex.getMessage());
+    }
+
+    @Test
+    void testValidationFields_updateShipment_newCarrier_null_shouldNotThrow() {
+        CarrierDetails oldCarrier = CarrierDetails.builder()
+                .eta(null)
+                .ata(null)
+                .etd(null)
+                .atd(null)
+                .build();
+
+        ShipmentDetails oldShipment = ShipmentDetails.builder().carrierDetails(oldCarrier).build();
+        ShipmentDetails newShipment = ShipmentDetails.builder().build(); // newCarrier = null
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, oldShipment));
+    }
+
+    @Test
+    void testValidationFields_bothCarrierDetails_null_shouldReturnEarly() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().build();
+        ShipmentDetails oldShipment = ShipmentDetails.builder().build();
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, oldShipment));
+    }
+
+    @Test
+    void testValidationFields_oldEntityNull_newCarrierNull_shouldPass() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().build(); // carrierDetails null
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
+    }
+
 }

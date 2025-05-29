@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -119,6 +120,8 @@ public class ShipmentValidationV3Util {
         this.validationForFmcTlcFields(shipmentDetails);
         // Validation for cutoffFields
         this.validationForCutOffFields(shipmentDetails);
+        // Validation for ETA, ETD, ATA and ATD fields
+        this.validationETAETDATAATDFields(shipmentDetails, oldEntity);
     }
 
     public void validationForControlledFields(ShipmentDetails shipmentDetails) {
@@ -140,6 +143,44 @@ public class ShipmentValidationV3Util {
         }
         if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
             throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
+        }
+    }
+
+    public void validationETAETDATAATDFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        CarrierDetails newCarrier = shipmentDetails.getCarrierDetails();
+
+        if (newCarrier == null && (oldEntity == null || oldEntity.getCarrierDetails() == null)) return;
+
+        if (oldEntity == null) {
+            // Create: Ensure no values are present
+            validateFieldAbsent(newCarrier.getEta(), "ETA");
+            validateFieldAbsent(newCarrier.getAta(), "ATA");
+            validateFieldAbsent(newCarrier.getEtd(), "ETD");
+            validateFieldAbsent(newCarrier.getAtd(), "ATD");
+        } else {
+            CarrierDetails oldCarrier = Optional.of(oldEntity)
+                    .map(ShipmentDetails::getCarrierDetails)
+                    .orElse(null);
+
+            if (oldCarrier == null) oldCarrier = new CarrierDetails();
+            if (newCarrier == null) newCarrier = new CarrierDetails();
+
+            validateFieldUnchanged(newCarrier.getEta(), oldCarrier.getEta(), "ETA");
+            validateFieldUnchanged(newCarrier.getAta(), oldCarrier.getAta(), "ATA");
+            validateFieldUnchanged(newCarrier.getEtd(), oldCarrier.getEtd(), "ETD");
+            validateFieldUnchanged(newCarrier.getAtd(), oldCarrier.getAtd(), "ATD");
+        }
+    }
+
+    private void validateFieldAbsent(Object field, String fieldName) {
+        if (field != null) {
+            throw new ValidationException("Update not allowed for " + fieldName);
+        }
+    }
+
+    private void validateFieldUnchanged(Object newVal, Object oldVal, String fieldName) {
+        if (!Objects.equals(newVal, oldVal)) {
+            throw new ValidationException("Update not allowed for " + fieldName);
         }
     }
 
