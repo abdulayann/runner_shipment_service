@@ -5,13 +5,12 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
+import lombok.*;
+
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Set;
 import java.util.UUID;
-import javax.validation.constraints.Size;
-
-import lombok.*;
 
 @Getter
 @Setter
@@ -134,4 +133,7 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private Boolean marinePollutant = false;
   private ContainerPraStatus praStatus;
   private Boolean openForAttachment;
+  private BigDecimal humidity;
+  private BigDecimal vents;
+  private BigDecimal teu;
 }
