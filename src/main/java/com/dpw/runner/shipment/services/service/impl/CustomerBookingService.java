@@ -1157,7 +1157,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return responseList;
     }
 
-    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
+    private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
             npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
