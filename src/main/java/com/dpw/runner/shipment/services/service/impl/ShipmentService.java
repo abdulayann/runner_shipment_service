@@ -4137,6 +4137,9 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails.setIsInland(false);
             consolidationDetails.setCarrierBookingRef(shipmentDetails.getBookingNumber());
             consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            consolidationDetails.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    shipmentDetails.getTransportMode(), shipmentDetails.getDirection(), MdmConstants.CONSOLIDATION_MODULE
+            ));
             if(StringUtility.isNotEmpty(shipmentDetails.getMasterBill())) {
                 consolidationDetails.setBol(shipmentDetails.getMasterBill());
             }
