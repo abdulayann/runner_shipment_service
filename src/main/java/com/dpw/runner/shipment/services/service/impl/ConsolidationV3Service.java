@@ -3312,7 +3312,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             commonUtils.setInterBranchContextForHub();
         }
 
-        boolean saveSeaPacks = false;
         Long consolidationId = consol.getId();
         List<Packing> packingList = new ArrayList<>();
         List<Long> shipmentIdList = new ArrayList<>(shipmentIds);
@@ -3321,9 +3320,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIdList);
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
             List<Containers> allContainersList = new ArrayList<>();
+
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
-                saveSeaPacks = isSaveSeaPacks(shipmentDetail, saveSeaPacks);
+                validateDetachedShipment(shipmentDetail);
                 shipmentsContainersMappingDao.detachListShipments(allContainersList.stream().map(Containers::getId).toList(), removedShipmentIds, false);
                 containerDao.saveAll(allContainersList);
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerService.afterSaveList(allContainersList, false)), executorService);
@@ -3332,6 +3332,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     packingList = getPackingList(shipmentDetail, packingList);
                     setEventsList(shipmentDetail);
                     shipmentDetail.setMasterBill(null);
+                    shipmentDetail.setConsolRef(null);
                     this.createLogHistoryForShipment(shipmentDetail);
                 }
             }
@@ -3423,30 +3424,29 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return packingList;
     }
 
-    protected boolean isSaveSeaPacks(ShipmentDetails shipmentDetail, boolean saveSeaPacks) throws RunnerException {
+    protected void validateDetachedShipment(ShipmentDetails shipmentDetail) throws RunnerException {
         if (shipmentDetail == null || shipmentDetail.getContainersList() == null) {
-            return saveSeaPacks;
+            return;
         }
 
         List<Containers> containersList = new ArrayList<>(shipmentDetail.getContainersList());
-        Map<Long, String> containerIdNumberMap = buildContainerIdNumberMap(containersList);
+        Map<Long, Containers> containerIdMap = buildContainerIdMap(containersList);
 
-        validatePacksAgainstContainers(shipmentDetail, containerIdNumberMap);
+        validatePacksAgainstContainers(shipmentDetail, containerIdMap);
         validateContainersAttachedToShipment(shipmentDetail, containersList);
 
-        return saveSeaPacks;
     }
 
-    private Map<Long, String> buildContainerIdNumberMap(List<Containers> containersList) {
+    private Map<Long, Containers> buildContainerIdMap(List<Containers> containersList) {
         return containersList.stream()
-            .filter(c -> c.getId() != null && c.getContainerNumber() != null)
+            .filter(c -> c.getId() != null)
             .collect(Collectors.toMap(
                 Containers::getId,
-                Containers::getContainerNumber
+                Function.identity()
             ));
     }
 
-    private void validatePacksAgainstContainers(ShipmentDetails shipmentDetail, Map<Long, String> containerIdNumberMap) throws RunnerException {
+    private void validatePacksAgainstContainers(ShipmentDetails shipmentDetail, Map<Long, Containers> containersMap){
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetail.getId());
 
         if (!isSeaPackingList(shipmentDetail, packings)) {
@@ -3455,24 +3455,30 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         for (Packing packing : packings) {
             if (packing.getContainerId() != null) {
+                Containers containers  = containersMap.get(packing.getContainerId());
+                String containerNumber = packing.getPacksType();
+                if(containers != null) {
+                    containerNumber = containers.getContainerNumber() != null ? containers.getContainerNumber() : containers.getContainerCode();
+                }
                 String errorMsg = String.format(
-                    "Selected Shipment - %s - %d packs is assigned to the container(s): %s. Please unassign to detach.",
+                    "Selected Shipment - %s - %s packs is assigned to the container(s): %s. Please unassign to detach.",
                     shipmentDetail.getShipmentId(),
-                    packing.getInnerPacksCount(),
-                    containerIdNumberMap.get(packing.getContainerId())
+                    packing.getPacks(),
+                    containerNumber
                 );
                 throw new ValidationException(errorMsg);
             }
         }
     }
 
-    private void validateContainersAttachedToShipment(ShipmentDetails shipmentDetail, List<Containers> containersList) throws RunnerException {
+    private void validateContainersAttachedToShipment(ShipmentDetails shipmentDetail, List<Containers> containersList) {
         for (Containers container : containersList) {
-            if (container.getContainerNumber() != null) {
+            if (container.getId() != null) {
+                String containerNumber = container.getContainerNumber() != null ? container.getContainerNumber() : container.getContainerCode();
                 String errorMsg = String.format(
                     "Selected Shipment - %s is assigned with mentioned container : %s, Please unassign to detach the same.",
                     shipmentDetail.getShipmentId(),
-                    container.getContainerNumber()
+                    containerNumber
                 );
                 throw new ValidationException(errorMsg);
             }
