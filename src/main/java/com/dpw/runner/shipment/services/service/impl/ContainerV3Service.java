@@ -152,6 +152,14 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional
     public ContainerResponse create(ContainerV3Request containerRequest, String module) {
+        if (containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
+            throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
+        }
+
+        if(containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
+            throw new ValidationException("Only one of ConsolidationId or ShipmentsId should be provided, not both.");
+        }
+
         List<Containers> containersList = getSiblingContainers(containerRequest);
         containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
         String requestId = LoggerHelper.getRequestIdFromMDC();
