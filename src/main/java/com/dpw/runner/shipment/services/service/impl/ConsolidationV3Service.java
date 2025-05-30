@@ -3418,7 +3418,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return packingList;
     }
 
-    protected void validateDetachedShipment(ShipmentDetails shipmentDetail) throws RunnerException {
+    protected void validateDetachedShipment(ShipmentDetails shipmentDetail)  {
         if (shipmentDetail == null || shipmentDetail.getContainersList() == null) {
             return;
         }
