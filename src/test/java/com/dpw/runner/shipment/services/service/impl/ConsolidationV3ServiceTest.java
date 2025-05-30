@@ -1983,7 +1983,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
     // assuming isSeaPackingList returns true
 
-    RunnerException ex = assertThrows(RunnerException.class, () -> {
+    ValidationException ex = assertThrows(ValidationException.class, () -> {
       consolidationV3Service.isSaveSeaPacks(shipment, true);
     });
 
@@ -2003,7 +2003,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
 
-    RunnerException ex = assertThrows(RunnerException.class, () -> {
+    ValidationException ex = assertThrows(ValidationException.class, () -> {
       consolidationV3Service.isSaveSeaPacks(shipment, true);
     });
 
