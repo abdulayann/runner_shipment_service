@@ -3290,6 +3290,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         if(setIsNullOrEmpty(request.getShipmentIds())){
             throw new RunnerException("Select atleast one shipment to detach");
@@ -3460,7 +3461,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     packing.getInnerPacksCount(),
                     containerIdNumberMap.get(packing.getContainerId())
                 );
-                throw new RunnerException(errorMsg);
+                throw new ValidationException(errorMsg);
             }
         }
     }
@@ -3473,7 +3474,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     shipmentDetail.getShipmentId(),
                     container.getContainerNumber()
                 );
-                throw new RunnerException(errorMsg);
+                throw new ValidationException(errorMsg);
             }
         }
     }
