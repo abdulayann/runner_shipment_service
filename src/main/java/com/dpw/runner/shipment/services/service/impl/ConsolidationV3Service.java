@@ -3315,18 +3315,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Long consolidationId = consol.getId();
         List<Packing> packingList = new ArrayList<>();
         List<Long> shipmentIdList = new ArrayList<>(shipmentIds);
-        List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && !shipmentIds.isEmpty()) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIdList);
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
-            List<Containers> allContainersList = new ArrayList<>();
-
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
                 validateDetachedShipment(shipmentDetail);
-                shipmentsContainersMappingDao.detachListShipments(allContainersList.stream().map(Containers::getId).toList(), removedShipmentIds, false);
-                containerDao.saveAll(allContainersList);
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerService.afterSaveList(allContainersList, false)), executorService);
 
                 if(shipmentDetail != null) {
                     packingList = getPackingList(shipmentDetail, packingList);
@@ -3337,7 +3331,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 }
             }
 
-            shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
+            List<ShipmentDetails> shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
             //delete routings from shipment which has isFromConsolidation as true
             routingsV3Service.deleteInheritedRoutingsFromShipment(shipmentDetailsToSave);
