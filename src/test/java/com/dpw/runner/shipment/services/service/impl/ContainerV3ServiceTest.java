@@ -689,4 +689,11 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
     }
 
+    @Test
+    void testNonNullShipmentConsoleId_Creation(){
+        ContainerV3Request request = new ContainerV3Request();
+        request.setShipmentsId(1L);
+        request.setConsolidationId(1L);
+        assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
+    }
 }
