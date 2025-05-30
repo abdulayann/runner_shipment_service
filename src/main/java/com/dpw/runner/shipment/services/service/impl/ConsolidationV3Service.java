@@ -3331,6 +3331,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     packingList = getPackingList(shipmentDetail, packingList);
                     setEventsList(shipmentDetail);
                     shipmentDetail.setMasterBill(null);
+                    shipmentDetail.setConsolRef(null);
                     this.createLogHistoryForShipment(shipmentDetail);
                 }
             }
