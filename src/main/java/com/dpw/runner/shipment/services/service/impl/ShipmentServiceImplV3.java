@@ -1419,6 +1419,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData, List<ShipmentListResponse> shipmentListResponses, Set<String> includeColumns, Boolean notificationFlag) {
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
         // Pending Notification Count
@@ -1447,6 +1448,23 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
             if (includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders()))
                 response.setOrdersCount(ship.getShipmentOrders().size());
+
+            if (ObjectUtils.isNotEmpty(response.getWeight())) {
+                response.setWeightFormatted(IReport.convertToWeightNumberFormat(response.getWeight(), tenantSettings));
+            }
+
+            if (ObjectUtils.isNotEmpty(response.getVolume())) {
+                response.setVolumeFormatted(IReport.convertToVolumeNumberFormat(response.getVolume(), tenantSettings));
+            }
+
+            if (ObjectUtils.isNotEmpty(response.getVolumetricWeight())) {
+                response.setVolumetricWeightFormatted(IReport.convertToWeightNumberFormat(response.getVolumetricWeight(), tenantSettings));
+            }
+
+            if (ObjectUtils.isNotEmpty(response.getChargable())) {
+                response.setChargableFormatted(IReport.convertToWeightNumberFormat(response.getChargable(), tenantSettings));
+            }
+
             responseList.add(response);
         });
         shipmentMasterDataHelper.getMasterDataForList(lst, responseList, getMasterData, true, includeColumns);
