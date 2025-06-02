@@ -2639,6 +2639,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
         calculateAchievedValuesForRetrieve(consoleDetails);
         ConsolidationDetailsV3Response response = jsonHelper.convertValue(consoleDetails, ConsolidationDetailsV3Response.class);
+        List<Routings> routingsList = consoleDetails.getRoutingsList();
+        if (!CollectionUtils.isEmpty(routingsList)) {
+            boolean isMainCarriagePresent = routingsList.stream()
+                    .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+            response.setMainCarriageAvailable(isMainCarriagePresent);
+        }
         if(!Objects.equals(source, NETWORK_TRANSFER))
             setPendingActionCountInResponse(consoleDetails, response);
         createConsolidationPayload(consoleDetails, response);

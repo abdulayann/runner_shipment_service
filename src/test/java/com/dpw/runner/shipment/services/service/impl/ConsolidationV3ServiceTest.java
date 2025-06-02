@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -3783,7 +3784,10 @@ if (unitConversionUtilityMockedStatic != null) {
     Long id = 1L;
     CommonGetRequest request = CommonGetRequest.builder().build();
     request.setId(id);
-
+    Routings routings = new Routings();
+    routings.setId(1L);
+    routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+    consolidationDetails.setRoutingsList(List.of(routings));
     ConsolidationDetails mockConsolidationDetails = consolidationDetails;
     ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
 
