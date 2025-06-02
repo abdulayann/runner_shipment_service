@@ -171,5 +171,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Boolean borrowed;
     private Long originBranch;
     private Long shipmentsCount;
-    private boolean isMainCarriageAvailable = false;
+    private Boolean isMainCarriageAvailable = Boolean.FALSE;
 }
