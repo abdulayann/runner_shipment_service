@@ -118,6 +118,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -555,6 +556,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         //add isPacksAvailable flag
         if (!CollectionUtils.isEmpty(shipmentDetailsEntity.getPackingList())) {
             response.setIsPacksAvailable(Boolean.TRUE);
+        }
+        List<Routings> routingsList = shipmentDetailsEntity.getRoutingsList();
+        if (!CollectionUtils.isEmpty(routingsList)) {
+            boolean isMainCarriagePresent = routingsList.stream()
+                    .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+            response.setIsMainCarriageAvailable(isMainCarriagePresent);
         }
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());

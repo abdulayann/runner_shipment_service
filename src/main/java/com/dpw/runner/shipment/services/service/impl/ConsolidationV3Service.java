@@ -2643,7 +2643,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (!CollectionUtils.isEmpty(routingsList)) {
             boolean isMainCarriagePresent = routingsList.stream()
                     .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-            response.setMainCarriageAvailable(isMainCarriagePresent);
+            response.setIsMainCarriageAvailable(isMainCarriagePresent);
         }
         if(!Objects.equals(source, NETWORK_TRANSFER))
             setPendingActionCountInResponse(consoleDetails, response);

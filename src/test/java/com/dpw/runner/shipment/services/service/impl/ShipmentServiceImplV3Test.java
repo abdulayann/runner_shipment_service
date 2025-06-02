@@ -40,6 +40,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -192,6 +193,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private CacheManager cacheManager;
     @Mock
     private CustomKeyGenerator keyGenerator;
+    @Mock
+    private IDpsEventService dpsEventService;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;
@@ -485,7 +488,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void retrieveByIdOrGuidTest() throws RunnerException {
         ShipmentV3Request request = new ShipmentV3Request();
         request.setId(1L);
-
+        Routings routings = new Routings();
+        routings.setId(1L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        shipmentDetails.setRoutingsList(List.of(routings));
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
 
         Optional<ShipmentDetails> result = shipmentServiceImplV3.retrieveByIdOrGuid(request);
@@ -746,6 +752,38 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 () -> shipmentServiceImplV3.retrieveById(requestModel, false, "SOME_SOURCE"));
     }
 
+    @Test
+    void retrieveByIdTest() throws RunnerException, AuthenticationException {
+        Routings routings = new Routings();
+        routings.setId(1L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        shipmentDetails.setRoutingsList(List.of(routings));
+
+
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        var shipId = 1L;
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(shipId);
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(anyList(), anyString())).thenReturn(Map.of(1L, 5));
+
+        when(modelMapper.map(any(), any())).thenReturn(ShipmentRetrieveLiteResponse.builder().build());
+
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+
+        ShipmentRetrieveLiteResponse result = shipmentServiceImplV3.retrieveById(commonRequestModel, false, null);
+
+        assertNotNull(result);
+    }
     @Test
     void test_changeConsolidationDGValues_makeConsoleDG_true() {
         Long consolidationId = 1L;
