@@ -41,7 +41,7 @@ configMap:
     NEW_RELIC_LOG_ENABLED: true
     NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: true
     NEW_RELIC_LOG_LEVEL: info
-    SPRING_CONFIG_LOCATION: file:///app/
+    SPRING_CONFIG_LOCATION: file:///app/resources/
 
 # Horizontal Pod Autoscaler (HPA) configuration
 hpa:
