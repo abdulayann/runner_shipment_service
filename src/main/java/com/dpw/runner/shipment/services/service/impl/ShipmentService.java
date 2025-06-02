@@ -2300,32 +2300,54 @@ public class ShipmentService implements IShipmentService {
 
     private void processIsNewConsolAttached(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isCreate, MutableBoolean isNewConsolAttached, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
         if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
-            ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().iterator().next();
-            List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidationDetails1.getId());
-            consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false, false);
-            dgValidations(shipmentDetails, consolidationDetails1, 1);
-            if (shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails1.getLatDate() != null && consolidationDetails1.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
-                throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
-            }
-            shipmentDetails.setMasterBill(consolidationDetails1.getBol());
-            shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
-            setBookingNumberInShipment(shipmentDetails, consolidationDetails1);
-            processCarrierDetailsForShipmentConsole(shipmentDetails, consolidationDetails1);
-            processInterBranchConsoleInBeforeSave(shipmentDetails, consolidationDetails1);
-            ConsolidationDetails console = shipmentDetails.getConsolidationList().iterator().next();
-            if (!Objects.isNull(console) && !Objects.isNull(console.getId()))
-                awbDao.validateAirMessaging(console.getId());
-            deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
+            handleNewConsoleAttachment(shipmentDetails, isCreate);
         } else {
-            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
-                    shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
-                    shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
-                }
-            if (!Objects.isNull(oldShipmentDetails) && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty()) {
-                ConsolidationDetails oldConsole = oldShipmentDetails.getConsolidationList().iterator().next();
-                if (oldConsole != null && oldConsole.getId() != null) {
-                    awbDao.validateAirMessaging(oldConsole.getId());
-                }
+            handleExistingConsoleOrRouting(shipmentDetails, oldShipmentDetails, isRouteMasterEnabled, mainCarriageRoutings);
+        }
+    }
+
+    private void handleNewConsoleAttachment(ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
+        ConsolidationDetails consolidation = shipmentDetails.getConsolidationList().iterator().next();
+        List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidation.getId());
+        consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false, false);
+        dgValidations(shipmentDetails, consolidation, 1);
+        validateCargoDeliveryDate(shipmentDetails, consolidation);
+        shipmentDetails.setMasterBill(consolidation.getBol());
+        shipmentDetails.setDirection(consolidation.getShipmentType());
+        setBookingNumberInShipment(shipmentDetails, consolidation);
+        processCarrierDetailsForShipmentConsole(shipmentDetails, consolidation);
+        processInterBranchConsoleInBeforeSave(shipmentDetails, consolidation);
+        validateAirMessagingIfConsoleExists(shipmentDetails);
+        deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
+    }
+
+    private void validateCargoDeliveryDate(ShipmentDetails shipmentDetails, ConsolidationDetails consolidation) throws RunnerException {
+        if (shipmentDetails.getCargoDeliveryDate() != null &&
+                consolidation.getLatDate() != null &&
+                consolidation.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
+            throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
+        }
+    }
+
+    private void validateAirMessagingIfConsoleExists(ShipmentDetails shipmentDetails) throws RunnerException {
+        ConsolidationDetails console = shipmentDetails.getConsolidationList().iterator().next();
+        if (console != null && console.getId() != null) {
+            awbDao.validateAirMessaging(console.getId());
+        }
+    }
+
+    private void handleExistingConsoleOrRouting(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) &&
+                Boolean.TRUE.equals(isRouteMasterEnabled) &&
+                mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
+
+            shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
+            shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
+        }
+        if (oldShipmentDetails != null && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty()) {
+            ConsolidationDetails oldConsole = oldShipmentDetails.getConsolidationList().iterator().next();
+            if (oldConsole != null && oldConsole.getId() != null) {
+                awbDao.validateAirMessaging(oldConsole.getId());
             }
         }
     }
