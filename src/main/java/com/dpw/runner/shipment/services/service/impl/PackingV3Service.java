@@ -643,7 +643,7 @@ public class PackingV3Service implements IPackingV3Service {
     public void processPackingListResponse(PackingListResponse packingListResponse, Map<Long, ContainerInfoProjection> containerIdContainerNumberMap) {
         for (PackingResponse item : packingListResponse.getPackings()) {
             Long containerId = item.getContainerId();
-            if (containerId != null) {
+            if (containerId != null && containerIdContainerNumberMap.containsKey(containerId)) {
                 item.setContainerNumber(containerIdContainerNumberMap.get(containerId).getContainerNumber());
             }
         }
