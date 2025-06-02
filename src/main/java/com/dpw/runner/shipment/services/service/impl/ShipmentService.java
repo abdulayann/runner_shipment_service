@@ -2171,7 +2171,7 @@ public class ShipmentService implements IShipmentService {
         validateBeforeSave(shipmentDetails);
 
 
-        processIsNewConsolAttached(shipmentDetails, isCreate, isNewConsolAttached, isRouteMasterEnabled, mainCarriageRoutings);
+        processIsNewConsolAttached(shipmentDetails, oldEntity, isCreate, isNewConsolAttached, isRouteMasterEnabled, mainCarriageRoutings);
 
         processBranchesAndPartner(shipmentDetails);
 
@@ -2298,7 +2298,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setDocumentationPartner(null);
     }
 
-    private void processIsNewConsolAttached(ShipmentDetails shipmentDetails, boolean isCreate, MutableBoolean isNewConsolAttached, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
+    private void processIsNewConsolAttached(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isCreate, MutableBoolean isNewConsolAttached, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
         if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().iterator().next();
             List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidationDetails1.getId());
@@ -2321,6 +2321,12 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
                     shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
                 }
+            if (!Objects.isNull(oldShipmentDetails) && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty()) {
+                ConsolidationDetails oldConsole = oldShipmentDetails.getConsolidationList().iterator().next();
+                if (oldConsole != null && oldConsole.getId() != null) {
+                    awbDao.validateAirMessaging(oldConsole.getId());
+                }
+            }
         }
     }
 
