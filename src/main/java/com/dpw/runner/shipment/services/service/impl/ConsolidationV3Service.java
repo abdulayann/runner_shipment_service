@@ -216,6 +216,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -746,13 +747,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, consolidationAddressRequest);
 
-        // REMOVE AFTER SUCCESS OF INTERNAL KAFKA
-        /*
-        if(!isFromET) {
-            pushShipmentDataToDependentService(consolidationDetails, isCreate, oldEntity);
-            this.pushAllShipmentDataToDependentService(consolidationDetails);
-        }
-        */
+
         try {
             if (Boolean.FALSE.equals(isFromBooking))
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
@@ -812,14 +807,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void processRequestLists(ConsolidationDetails consolidationDetails, Boolean isCreate, Boolean isFromBooking, List<ReferenceNumbersRequest> referenceNumbersRequestList, Long id,
                                      List<PartiesRequest> consolidationAddressRequest) throws RunnerException {
+        boolean create = !Boolean.TRUE.equals(isFromBooking) && isCreate;
         if (referenceNumbersRequestList != null) {
-            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
+
+            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, create), id);
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (consolidationAddressRequest != null) {
-            if(Boolean.TRUE.equals(isFromBooking)) isCreate = false;
             List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddressRequest, Parties.class,
-                isCreate), id, Constants.CONSOLIDATION_ADDRESSES);
+                create), id, Constants.CONSOLIDATION_ADDRESSES);
             consolidationDetails.setConsolidationAddresses(updatedParties);
         }
     }
@@ -1337,11 +1333,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
                 List<ShipmentDetails> shipmentDetailsList = findShipmentForTrackingService(consolidationDetails, oldEntity);
                 for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                    UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
+                    UniversalTrackingPayload universalTrackingPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
                             consolidationDetails, shipmentDetails);
                     List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                    if (_utPayload != null) {
-                        trackingPayloads.add(_utPayload);
+                    if (universalTrackingPayload != null) {
+                        trackingPayloads.add(universalTrackingPayload);
                         var jsonBody = jsonHelper.convertToJson(trackingPayloads);
                         log.info(
                                 "Producing tracking service payload from consolidation with RequestId: {} and payload: {}",
@@ -1374,7 +1370,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     public List<ShipmentDetails> findShipmentForTrackingService(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
-        if(oldEntity == null) return null;
+        if(oldEntity == null) return Collections.emptyList();
 
         // check MBL / MAWB / Carrier Scac change
         if(isMasterDataChange(consolidationDetails, oldEntity)){
@@ -1552,8 +1548,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
         if (cacheMap.isEmpty()) {
-            var cached = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA)
-                    .get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
+            Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+            if(cache == null) return null;
+            var cached = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
             return cached != null ? cached.get() : null;
         } else {
             return cacheMap.get(containers.getContainerCode());
@@ -1592,7 +1589,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public String attachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
 
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
-        HashSet<Long> attachedShipmentIds = new HashSet<>();
         boolean isConsolePullCall = false;
 
         // Extract request details
@@ -1680,7 +1676,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 fromConsolidation);
 
         // Attach the shipments and track those that were successfully attached
-        attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds,
+        HashSet<Long> attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds,
                 consoleShipmentMappings, interBranchRequestedShipIds, interBranchApprovedShipIds, interBranchImportShipmentMap);
 
         // Collect party details from attached shipments for further processing (agents, parties)
@@ -1744,8 +1740,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private List<ConsoleShipmentMapping> getConsoleShipmentMappingsFromShipmentIds(List<Long> shipmentIds) {
         ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, shipmentIds, "IN");
         Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent();
-        return consoleShipmentMappings;
+        return consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent();
     }
 
 
@@ -2455,19 +2450,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return agentCount;
     }
 
-    /**
-     * Updates packing and event records with consolidation ID if applicable.
-     * <p>
-     * - For AIR mode shipments, sets consolidation ID on all packing entries. - Sets consolidation ID on qualifying events based on transport mode.
-     *
-     * @param consolidationId the ID of the consolidation
-     * @param shipmentDetails the shipment whose packing and events are to be processed
-     */
-    private void processConsolePackingAndEvents(Long consolidationId, ShipmentDetails shipmentDetails) {
-
-        packingV3Service.processPacksAfterShipmentAttachment(consolidationId, shipmentDetails);
-        eventV3Service.processEventsAfterShipmentAttachment(consolidationId, shipmentDetails);
-    }
 
     /**
      * Processes the given list of shipment details during consolidation.
@@ -2588,8 +2570,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (consol.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        ConsolidationDetails consolidationDetails = consol.get();
-        return consolidationDetails;
+        return consol.get();
     }
 
     private Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException {
