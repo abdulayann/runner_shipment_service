@@ -12,7 +12,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -145,7 +145,7 @@ class ContainerValidationUtilTest extends CommonMocks {
     void testValidateCanAssignPackageToContainer() {
         testShipment.setId(1L);
         testShipment.setContainerAssignedToShipmentCargo(1L);
-        assertThrows(RunnerException.class, () -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment));
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment));
     }
 
     @Test
@@ -171,7 +171,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
-        assertThrows(RunnerException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
     }
 
     @Test
