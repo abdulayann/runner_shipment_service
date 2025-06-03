@@ -151,7 +151,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional
-    public ContainerResponse create(ContainerV3Request containerRequest, String module) {
+    public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
         if (containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
             throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
         }
@@ -170,6 +170,9 @@ public class ContainerV3Service implements IContainerV3Service {
         Containers container = jsonHelper.convertValue(containerRequest, Containers.class);
         log.debug("Converted container request to entity | Entity: {}", container);
 
+        // before save operations
+        containerV3Util.containerBeforeSave(new ArrayList<>(List.of(container)));
+
         // Save to DB
         Containers savedContainer = containerDao.save(container);
         log.info("Saved container entity to DB | Container ID: {} | Request ID: {}", savedContainer.getId(), requestId);
@@ -187,12 +190,15 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional
-    public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) {
+    public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
         // Convert the request DTOs to entity models for persistence
         List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
+
+        // before save operations
+        containerV3Util.containerBeforeSave(originalContainers);
 
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);

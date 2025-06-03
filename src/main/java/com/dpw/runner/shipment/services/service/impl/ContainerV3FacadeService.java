@@ -3,13 +3,15 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -27,7 +29,7 @@ public class ContainerV3FacadeService {
      * @return BulkContainerResponse containing the result of all create/update operations.
      */
     @Transactional
-    public BulkContainerResponse createUpdateContainer(List<ContainerV3Request> containerRequestList, String module) {
+    public BulkContainerResponse createUpdateContainer(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         BulkContainerResponse finalResponse = new BulkContainerResponse();
 
         // Separate requests into create and update lists based on whether ID is present

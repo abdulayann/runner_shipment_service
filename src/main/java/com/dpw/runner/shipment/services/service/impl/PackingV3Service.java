@@ -1245,7 +1245,7 @@ public class PackingV3Service implements IPackingV3Service {
         Set<Long> containerIdsToUpdate = new HashSet<>();
         packings.forEach(e -> {
             if (Objects.nonNull(e.getContainerId()))
-                containerIdsToUpdate.add(e.getId());
+                containerIdsToUpdate.add(e.getContainerId());
         });
         if (Objects.nonNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
             containerIdsToUpdate.add(shipmentDetails.getContainerAssignedToShipmentCargo());

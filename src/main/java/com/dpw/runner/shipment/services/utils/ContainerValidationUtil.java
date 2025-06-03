@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -69,7 +70,7 @@ public class ContainerValidationUtil {
 
     public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
-            throw new RunnerException(String.format(
+            throw new ValidationException(String.format(
                     "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
                     shipmentDetails.getShipmentId()));
         }
@@ -79,7 +80,7 @@ public class ContainerValidationUtil {
         if(shipmentDetailsMap.values().size() > 1) {
             for(ShipmentDetails shipmentDetails: shipmentDetailsMap.values()) {
                 if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
-                    throw new RunnerException("Container being or already assigned to FCL Shipment should be linked to only one shipment");
+                    throw new ValidationException("Container being or already assigned to FCL Shipment should be linked to only one shipment");
                 }
             }
         }
