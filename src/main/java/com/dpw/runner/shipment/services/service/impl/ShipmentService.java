@@ -2322,9 +2322,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void validateCargoDeliveryDate(ShipmentDetails shipmentDetails, ConsolidationDetails consolidation) throws RunnerException {
-        if (shipmentDetails.getCargoDeliveryDate() != null &&
-                consolidation.getLatDate() != null &&
-                consolidation.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
+        if (shipmentDetails.getCargoDeliveryDate() != null && consolidation.getLatDate() != null && consolidation.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
             throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
         }
     }
@@ -2337,10 +2335,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void handleExistingConsoleOrRouting(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) &&
-                Boolean.TRUE.equals(isRouteMasterEnabled) &&
-                mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
-
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
             shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
             shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
         }

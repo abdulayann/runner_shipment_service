@@ -3973,6 +3973,42 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void completeUpdateThrowsExceptionConsolidationListNotEmpty_success() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+        consolidationDetails2.setLatDate(LocalDateTime.now());
+
+        shipmentDetails.setId(1L);
+        shipmentDetails.setCargoDeliveryDate(LocalDateTime.now().minusDays(1));
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails1)));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                shipmentDetails
+                                        .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                                        .setSourceTenantId(1L)
+                                        .setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails2)))
+                                        .setContainersList(new HashSet<>())));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertThrows(ValidationException.class, () -> shipmentService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
     void completeUpdateConsolidationListNotEmpty_success_Air() throws RunnerException {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setId(1L);
@@ -4231,6 +4267,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
         mockShipmentSettings();
         mockTenantSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(Boolean.TRUE).setEnableRouteMaster(Boolean.TRUE);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
