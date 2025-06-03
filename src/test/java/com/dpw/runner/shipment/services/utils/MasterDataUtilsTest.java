@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -8,9 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -138,7 +143,7 @@ class MasterDataUtilsTest {
 
 
     @BeforeAll
-    static void init() throws IOException, NoSuchFieldException, IllegalAccessException {
+    static void init() throws IOException {
 
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
@@ -2710,5 +2715,127 @@ class MasterDataUtilsTest {
         assertNotNull(response);
     }
 
+    @Test
+    void fetchCarriersForList_withShipmentListResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("MSC")
+                .build();
+
+        ShipmentListResponse shipmentListResponse = ShipmentListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(shipmentListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withShipmentListResponse_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine(null)
+                .build();
+
+        ShipmentListResponse shipmentListResponse = ShipmentListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(shipmentListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withShipmentListResponse_carrierDetails_null() {
+        ShipmentListResponse shipmentListResponse = ShipmentListResponse.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(shipmentListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationListResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("Evergreen")
+                .build();
+
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationListResponse_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder().id(1L).build();
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationListResponse_carrierDetails_null() {
+        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationListResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationDetailsResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("Maersk Line") // also needed for setting master data
+                .build();
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationDetailsResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationDetailsResponse_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine(null)
+                .build();
+
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationDetailsResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withConsolidationDetailsResponse_carrierDetails_null() {
+        ConsolidationDetailsResponse consolidationDetailsResponse = ConsolidationDetailsResponse.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(consolidationDetailsResponse)));
+    }
+
+    @Test
+    void fetchCarriersForList_withException_shouldCatchGracefully() {
+        List<IRunnerResponse> responses = List.of(mock(ShipmentListResponse.class));
+
+        // Use a spy here if mocking inside the method (fetchInBulkCarriers)
+        MasterDataUtils masterDataUtilsSpy = spy(masterDataUtils);
+        doThrow(new RuntimeException("Simulated failure")).when(masterDataUtilsSpy).fetchInBulkCarriers(any());
+        assertDoesNotThrow(() -> masterDataUtilsSpy.fetchCarriersForList(responses));
+    }
 
 }
