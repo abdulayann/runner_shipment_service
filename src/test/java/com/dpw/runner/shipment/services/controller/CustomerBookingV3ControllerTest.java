@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
@@ -140,14 +139,14 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void createBookingContainers() {
+    void createBookingContainers() throws RunnerException {
         when(containerV3Service.create(any(), any())).thenReturn(new ContainerResponse());
         var responseEntity = customerBookingV3Controller.createBookingContainers(new ContainerV3Request());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void updateBookingContainers() {
+    void updateBookingContainers() throws RunnerException {
         when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
         var responseEntity = customerBookingV3Controller.updateBookingContainers(List.of(new ContainerV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());

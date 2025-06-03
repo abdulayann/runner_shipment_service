@@ -1,12 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -23,7 +16,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,6 +25,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class ContainerV3ControllerTest {
@@ -53,7 +50,7 @@ class ContainerV3ControllerTest {
   private JsonHelper jsonHelper;
 
   @Test
-  void testCreateFromShipment() {
+  void testCreateFromShipment() throws RunnerException {
     ContainerV3Request request = new ContainerV3Request();
     BulkContainerResponse bulkContainerResponse = new BulkContainerResponse();
 
@@ -66,7 +63,7 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void testCreateFromConsolidation() {
+  void testCreateFromConsolidation() throws RunnerException {
     ContainerV3Request request = new ContainerV3Request();
     BulkContainerResponse bulkContainerResponse = new BulkContainerResponse();
 
@@ -79,7 +76,7 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void testUpdateBulk() {
+  void testUpdateBulk() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
 
