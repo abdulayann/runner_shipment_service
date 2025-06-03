@@ -2774,6 +2774,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     protected void calculateShipmentWtVol(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response consolidationDetailsV3Response) throws RunnerException {
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        consolidationDetailsV3Response.setShipmentWtVolResponse(shipmentWtVolResponse);
+        consolidationDetailsV3Response.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
+    }
+
+    protected ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails) throws RunnerException {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         String weightChargeableUnit = determineWeightChargeableUnit(shipmentSettingsDetails);
         String volumeChargeableUnit = determineVolumeChargeableUnit(shipmentSettingsDetails);
@@ -2781,8 +2787,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         BigDecimal sumWeight = new BigDecimal(0);
         BigDecimal sumVolume = new BigDecimal(0);
         Integer packs = 0;
+        Integer dgPacks = 0;
         String packsType = null;
+        String dgPacksType = null;
         Integer noOfCont = 0;
+        Integer dgContCount = 0;
         BigDecimal teus = BigDecimal.ZERO;
         Long shipmentsCount = 0L;
         Map<Long, Containers> containersMap = new HashMap<>();
@@ -2804,25 +2813,33 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             noOfCont++;
             if(Objects.nonNull(containers.getTeu()))
                 teus = teus.add(containers.getTeu());
+            if(Boolean.TRUE.equals(containers.getHazardous()))
+                dgContCount++;
         }
 
         String transportMode = consolidationDetails.getTransportMode();
         VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
 
-        consolidationDetailsV3Response.setShipmentWtVolResponse(new ShipmentWtVolResponse());
-        consolidationDetailsV3Response.setShipmentsCount(shipmentsCount);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setWeight(sumWeight);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setWeightUnit(weightChargeableUnit);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setVolume(sumVolume);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setVolumeUnit(volumeChargeableUnit);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setPacks(packs);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setPacksType(packsType);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setChargable(vwOb.getChargeable());
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setChargeableUnit(vwOb.getChargeableUnit());
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setWeightVolume(vwOb.getVolumeWeight());
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setContainerCount(noOfCont);
-        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
+        return ShipmentWtVolResponse.builder()
+                .weight(sumWeight)
+                .weightUnit(weightChargeableUnit)
+                .volume(sumVolume)
+                .volumeUnit(volumeChargeableUnit)
+                .packs(packs)
+                .packsType(packsType)
+                .chargable(vwOb.getChargeable())
+                .chargeableUnit(vwOb.getChargeableUnit())
+                .weightVolume(vwOb.getVolumeWeight())
+                .weightVolumeUnit(vwOb.getVolumeWeightUnit())
+                .containerCount(noOfCont)
+                .teuCount(teus)
+                .dgContainerCount(dgContCount)
+                .shipmentsCount(shipmentsCount)
+                .build();
+        // TODO: update dg packages and slac count when fields got added in shipment as well
+//        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
+//        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
+//        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
     }
 
     @Override

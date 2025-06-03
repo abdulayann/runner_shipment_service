@@ -5,11 +5,17 @@ import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ShipmentWtVolResponse implements IRunnerResponse {
 
     @JsonSerialize(using = CustomWeightValueSerializer.class)
@@ -28,4 +34,9 @@ public class ShipmentWtVolResponse implements IRunnerResponse {
     private String packsType;
     private Integer containerCount;
     private BigDecimal teuCount;
+    private Integer dgContainerCount;
+    private Integer dgPacks;
+    private String dgPacksType;
+    private Integer slacCount;
+    private Long shipmentsCount;
 }
