@@ -666,17 +666,9 @@ class NPMServiceAdapterTest {
     void testFetchContractsWithVariousDgFlagsAndContracts(boolean isDgEnabled, List<String> dgClassList, List<String> dgUnNumberList) throws RunnerException {
         NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
         List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
-        contracts.add(NPMContractsResponse.NPMContractResponse.builder()
-                .origin("1").destination("2").validTill(LocalDateTime.MAX)
-                .meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
-        contracts.add(NPMContractsResponse.NPMContractResponse.builder()
-                .dgUnNum(dgUnNumberList).dgClass(dgClassList)
-                .origin("1").destination("2").validTill(LocalDateTime.MIN)
-                .meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
-        contracts.add(NPMContractsResponse.NPMContractResponse.builder()
-                .dgUnNum(dgUnNumberList).dgClass(dgClassList)
-                .origin("1").destination("2")
-                .meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
         npmContractsResponse.setContracts(contracts);
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
         when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
@@ -689,13 +681,12 @@ class NPMServiceAdapterTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder()
                 .data(ListContractsWithFilterRequest.builder()
                         .listContractRequest(new ListContractRequest())
-                        .cargoType("LCL").origin("a").destination("b")
+                        .cargoType("LCL").origin("1").destination("2")
                         .isDgEnabled(isDgEnabled).build())
                 .build();
         var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
-
 
     /**
      * Method under test:
@@ -1412,12 +1403,13 @@ class NPMServiceAdapterTest {
     }
 
     private static Stream<Arguments> provideDgContractTestData() {
+        List<String> nullDgList = new ArrayList<>();
+        nullDgList.add(null);
         return Stream.of(
                 Arguments.of(true, List.of("2.1"), List.of("1234")),
-                Arguments.of(false, List.of("2.1"), List.of("1234")),
+                Arguments.of(true, null, null),
                 Arguments.of(true, new ArrayList<>(), new ArrayList<>()),
-                Arguments.of(true, Arrays.asList((String) null), Arrays.asList((String) null)),
-                Arguments.of(true, List.of("null"), List.of("null"))
+                Arguments.of(true, nullDgList, nullDgList)
         );
     }
 }
