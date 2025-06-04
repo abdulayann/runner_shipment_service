@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -1954,18 +1955,18 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
-  void testIsSaveSeaPacks_whenNoContainersAssigned_shouldReturnTrue() throws RunnerException {
+  void testValidateDetachedShipment_whenNoContainersAssigned_shouldReturnTrue() throws RunnerException {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH123");
     shipment.setContainersList(null); // no containers assigned
 
-    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, true);
-    assertTrue(result);
+    consolidationV3Service.validateDetachedShipment(shipment);
+    assertEquals(1L, shipment.getId());
   }
 
   @Test
-  void testIsSaveSeaPacks_whenPackingAttachedToContainer_shouldThrowRunnerException() {
+  void testValidateDetachedShipment_whenPackingAttachedToContainer_shouldThrowRunnerException() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setTransportMode(TRANSPORT_MODE_SEA);
@@ -1983,15 +1984,15 @@ if (unitConversionUtilityMockedStatic != null) {
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of(packing));
     // assuming isSeaPackingList returns true
 
-    RunnerException ex = assertThrows(RunnerException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, true);
+    ValidationException ex = assertThrows(ValidationException.class, () -> {
+      consolidationV3Service.validateDetachedShipment(shipment);
     });
 
     assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
   }
 
   @Test
-  void testIsSaveSeaPacks_whenContainerStillAttachedToShipment_shouldThrowRunnerException() {
+  void testValidateDetachedShipment_whenContainerStillAttachedToShipment_shouldThrowRunnerException() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH567");
@@ -2003,8 +2004,8 @@ if (unitConversionUtilityMockedStatic != null) {
 
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
 
-    RunnerException ex = assertThrows(RunnerException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, true);
+    ValidationException ex = assertThrows(ValidationException.class, () -> {
+      consolidationV3Service.validateDetachedShipment(shipment);
     });
 
     assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
@@ -3783,7 +3784,10 @@ if (unitConversionUtilityMockedStatic != null) {
     Long id = 1L;
     CommonGetRequest request = CommonGetRequest.builder().build();
     request.setId(id);
-
+    Routings routings = new Routings();
+    routings.setId(1L);
+    routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+    consolidationDetails.setRoutingsList(List.of(routings));
     ConsolidationDetails mockConsolidationDetails = consolidationDetails;
     ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
 

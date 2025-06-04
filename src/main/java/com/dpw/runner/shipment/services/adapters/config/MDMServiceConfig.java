@@ -9,6 +9,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
+
 @Configuration
 public class MDMServiceConfig {
 
@@ -23,6 +25,7 @@ public class MDMServiceConfig {
             headers.set(ApiConstants.X_API_KEY, apiKey);
             headers.add("Authorization", RequestAuthContext.getAuthToken());
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setAccept(List.of(MediaType.APPLICATION_JSON));
             return execution.execute(request, body);
         });
 

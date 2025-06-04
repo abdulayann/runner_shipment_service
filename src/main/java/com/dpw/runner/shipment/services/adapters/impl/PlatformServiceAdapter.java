@@ -36,6 +36,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
                                   @Value("${platform.baseUrl}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
+        this.restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
     }
 
     @Override
@@ -44,10 +45,9 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         String url = baseUrl + "/booking/external";
         log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJsonWithNulls(request));
-        restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), Object.class);
-        log.info("Response for endpoint url: {}, : {}", url, jsonHelper.convertToJson(responseEntity.getBody()));
-        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), String.class);
+        log.info("Response for endpoint url: {}, : {}", url, responseEntity.getBody());
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 
     @Override
@@ -56,8 +56,8 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- RequestPayload: {}", jsonHelper.convertToJson(request));
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJson(request));
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
-        log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- ResponsePayload: {}", jsonHelper.convertToJson(responseEntity));
-        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
+        ResponseEntity<String> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), String.class);
+        log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- ResponsePayload: {}", responseEntity.getBody());
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 }
