@@ -4181,7 +4181,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(mapping1));
         doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.triggerPushToDownStream(shipment, true));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.triggerPushToDownStream(shipment, null, true));
     }
 
     @Test
@@ -4190,7 +4190,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setId(123L);
         shipment.setConsolidationList(Collections.emptySet());
 
-        shipmentServiceImplV3.triggerPushToDownStream(shipment, false);
+        shipmentServiceImplV3.triggerPushToDownStream(shipment, null, false);
 
         ArgumentCaptor<PushToDownstreamEventDto> captor = ArgumentCaptor.forClass(PushToDownstreamEventDto.class);
         verify(dependentServiceHelper).pushToKafkaForDownStream(captor.capture(), eq("123"));
@@ -4208,7 +4208,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setConsolidationList(Set.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(Collections.emptyList());
 
-        shipmentServiceImplV3.triggerPushToDownStream(shipment, true);
+        shipmentServiceImplV3.triggerPushToDownStream(shipment, null, true);
 
         ArgumentCaptor<PushToDownstreamEventDto> captor = ArgumentCaptor.forClass(PushToDownstreamEventDto.class);
         verify(dependentServiceHelper).pushToKafkaForDownStream(captor.capture(), eq("100"));
@@ -4231,7 +4231,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(mapping));
 
-        shipmentServiceImplV3.triggerPushToDownStream(shipment, true);
+        shipmentServiceImplV3.triggerPushToDownStream(shipment, null, true);
 
         ArgumentCaptor<PushToDownstreamEventDto> captor = ArgumentCaptor.forClass(PushToDownstreamEventDto.class);
         verify(dependentServiceHelper).pushToKafkaForDownStream(captor.capture(), eq("100"));
