@@ -2067,7 +2067,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setBookingAgent(console.getBookingAgent());
         shipmentDetails.setCoLoadBkgNumber(console.getCoLoadBookingReference());
         shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
-        shipmentDetails.setShipmentType(console.getContainerCategory());
+//        shipmentDetails.setShipmentType(console.getContainerCategory());
         if(shipmentDetails.getAdditionalDetails() != null) {
             shipmentDetails.getAdditionalDetails().setDeliveryMode(console.getDeliveryMode());
         }
