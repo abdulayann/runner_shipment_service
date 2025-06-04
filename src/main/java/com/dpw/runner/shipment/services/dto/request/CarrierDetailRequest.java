@@ -51,4 +51,5 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String destinationLocCode;
     private String originPortLocCode;
     private String destinationPortLocCode;
+    private String scacCode;
 }
