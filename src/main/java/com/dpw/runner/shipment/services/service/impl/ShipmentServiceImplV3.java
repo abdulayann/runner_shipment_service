@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
@@ -2264,15 +2265,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     public void populateOriginDestinationAgentDetailsForBookingShipment(ShipmentDetails shipmentDetails) {
-        ConsolidationDetails consolidationDetails = null;
-        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
-            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
-        }
+        ConsolidationDetails consolidationDetails = getConsolidationDetails(shipmentDetails);
         if (consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             boolean consolUpdated = false;
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
-                setOriginBranchFromExportBroker(shipmentDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
                 consolUpdated = true;
@@ -2288,15 +2285,25 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (consolUpdated) {
                 consolidationDetailsDao.save(consolidationDetails, false);
             }
+        } else if (consolidationDetails != null && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            setOriginBranchFromExportBroker(shipmentDetails);
         }
         if (consolidationDetails == null) {
             populateImportExportBrokerForShipment(shipmentDetails);
         }
     }
 
+    private ConsolidationDetails getConsolidationDetails(ShipmentDetails shipmentDetails) {
+        ConsolidationDetails consolidationDetails = null;
+        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        }
+        return consolidationDetails;
+    }
+
     private void setOriginBranchFromExportBroker(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null)
-            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getTenantId()));
+        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData()!=null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get("TenantId")!=null)
+            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get("TenantId").toString()));
     }
 
     private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
@@ -2326,7 +2333,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setAdditionalDetails(new AdditionalDetails());
             }
             shipmentDetails.getAdditionalDetails().setExportBroker(v1ServiceUtil.getDefaultAgentOrgParty(null));
-            setOriginBranchFromExportBroker(shipmentDetails);
+            if(shipmentDetails.getTransportMode()!=null && Objects.equals(shipmentDetails.getTransportMode(), TRANSPORT_MODE_AIR))
+                setOriginBranchFromExportBroker(shipmentDetails);
         } else if (Constants.DIRECTION_IMP.equals(shipmentDetails.getDirection()) &&
                 (shipmentDetails.getAdditionalDetails() == null || !CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker()))) {
             if (shipmentDetails.getAdditionalDetails() == null) {
