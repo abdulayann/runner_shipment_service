@@ -5,4 +5,4 @@ org_data = '{"Id": 138609, "City": "Vancouver", "Guid": "784cb83c-c456-47cd-84b3
 address_id = '211765',
 address_code = 'FRO00021710',
 address_data = '{"Id": 211765, "City": "Vancouver", "Email": "amy@intersource.cn", "State": "British Columbia", "label": "FRO00021710", "value": "FRO00021710", "Country": "CAN", "OrgGuid": "784cb83c-c456-47cd-84b3-cc1a02215c81", "Address1": "140-8380 Ontario Street", "OrgSource": "CRP", "AddressType": 2, "CompanyName": "INTER SOURCE TRADING CORPORATION", "OrgFullName": "INTER SOURCE TRADING CORPORATION", "OrgPayables": false, "ZipPostCode": "V5X 0K5", "TaxRegNumber": "850196940", "OrgReceivables": true, "OrgActiveClient": true, "AddressShortCode": "FRO00021710", "OrgOrganizationCode": "FRC00021079"}'
-where id in (select customer_id from customer_booking where id = 54929);
+where id in (select customer_id from customer_booking where id = 40733);
