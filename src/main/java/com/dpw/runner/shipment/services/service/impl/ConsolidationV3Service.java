@@ -2581,7 +2581,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @throws DataRetrievalFailureException if no consolidation exists for the given ID
      */
     @NotNull
-    private ConsolidationDetails fetchConsolidationDetails(Long consolidationId) {
+    @Override
+    public ConsolidationDetails fetchConsolidationDetails(Long consolidationId) {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
         if (consol.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
