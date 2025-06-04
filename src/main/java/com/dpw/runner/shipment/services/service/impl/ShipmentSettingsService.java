@@ -453,6 +453,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getHasNoUtilization() == null) {
                 request.setHasNoUtilization(oldEntity.get().getHasNoUtilization());
             }
+            if(request.getIsExternalFileTransferEnabled() == null) {
+                request.setIsExternalFileTransferEnabled(oldEntity.get().getIsExternalFileTransferEnabled());
+            }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
             return getfuncResponseEntity(oldEntity, request, shipmentSettingsDetails);
