@@ -244,4 +244,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Long containerAssignedToShipmentCargo;
     private Long consolidationId;
     private String consolBookingNumber;
+    private Boolean isMainCarriageAvailable = Boolean.FALSE;
+
 }

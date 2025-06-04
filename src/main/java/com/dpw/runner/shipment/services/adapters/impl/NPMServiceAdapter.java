@@ -721,12 +721,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromPacks(NPMFetchOffersRequestFromUI request, NPMFetchOffersRequestFromUI.Pack p,
                                                                           String offerType) {
+        List<String> dgClassList = request.getContractsInfo().getDgClass();
+        List<String> dgUnNumList = request.getContractsInfo().getDgUnNum();
+
+        boolean isDangerous = dgClassList != null && !dgClassList.isEmpty();
+        String dgCode = isDangerous ? dgClassList.iterator().next() : null;
+        String unNumber = (dgUnNumList != null && !dgUnNumList.isEmpty()) ? dgUnNumList.iterator().next() : null;
+
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(p.getPackageType())
                         .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)?p.getCommodity():null)
                         .commodity(NPMConstants.OFFERS_V8.equals(offerType)?p.getCommodity():null)
+                        .is_dangerous(isDangerous)
+                        .code(dgCode)
+                        .un_number(unNumber)
                         .build())
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .chargeable(p.getChargeable())
@@ -745,12 +755,22 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private NPMFetchOffersRequest.LoadInformation createLoadInfoFromContainers(NPMFetchOffersRequestFromUI request,
                                                                                NPMFetchOffersRequestFromUI.Container containerFromRequest,
                                                                                String offerType) {
+        List<String> dgClassList = request.getContractsInfo().getDgClass();
+        List<String> dgUnNumList = request.getContractsInfo().getDgUnNum();
+
+        boolean isDangerous = dgClassList != null && !dgClassList.isEmpty();
+        String dgCode = isDangerous ? dgClassList.iterator().next() : null;
+        String unNumber = (dgUnNumList != null && !dgUnNumList.isEmpty()) ? dgUnNumList.iterator().next() : null;
+
         return NPMFetchOffersRequest.LoadInformation.builder()
                 .load_detail(NPMFetchOffersRequest.LoadDetail.builder()
                         .load_type(request.getCargoType())
                         .cargo_type(containerFromRequest.getContainerType())
                         .product_category_code(NPMConstants.OFFERS_V2.equals(offerType)? containerFromRequest.getCommodityCode() : null)
                         .commodity(NPMConstants.OFFERS_V8.equals(offerType)? containerFromRequest.getCommodityCode() : null)
+                        .is_dangerous(isDangerous)
+                        .code(dgCode)
+                        .un_number(unNumber)
                         .build())
                 .load_attributes(NPMFetchOffersRequest.LoadAttributes.builder()
                         .delta_quantity(containerFromRequest.getQuantity())
