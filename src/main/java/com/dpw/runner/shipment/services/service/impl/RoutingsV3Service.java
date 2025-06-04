@@ -328,12 +328,18 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setEtd(firstLeg.getEtd());
         carrierDetails.setAtd(firstLeg.getAtd());
         carrierDetails.setOriginPort(firstLeg.getPol());
-        carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
+        carrierDetails.setOriginLocCode(firstLeg.getOriginPortLocCode());
+        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsOriginPort())){
+            carrierDetails.setOrigin(carrierDetails.getOriginPort());
+        }
 
         carrierDetails.setEta(lastLeg.getEta());
         carrierDetails.setAta(lastLeg.getAta());
         carrierDetails.setDestinationPort(lastLeg.getPod());
         carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
+        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())){
+            carrierDetails.setDestination(carrierDetails.getDestinationPort());
+        }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));

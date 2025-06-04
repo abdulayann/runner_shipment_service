@@ -716,4 +716,45 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
     }
 
+    @Test
+    void testValidationForPolPodFields_Exception1() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("xyz");
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Exception2() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(true);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("xyz");
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Success() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("abc");
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(true);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("abc");
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Success1() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(false);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("abc");
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(false);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("abc");
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
 }
