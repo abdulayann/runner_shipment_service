@@ -983,8 +983,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
         if (Boolean.TRUE.equals(filter.getIsDgEnabled())) {
             List<String> dgClass = contract.getDgClass();
-            return dgClass != null && !dgClass.isEmpty() &&
-                    !(dgClass.size() == 1 && "NULL".equalsIgnoreCase(dgClass.get(0)));
+            return dgClass != null && !dgClass.isEmpty() && dgClass.get(0) != null && !dgClass.get(0).trim().isEmpty() && !"null".equalsIgnoreCase(dgClass.get(0).trim());
         }
         return true;
     }
