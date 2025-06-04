@@ -1241,6 +1241,17 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
+    public String getCarrierItemValueFromSCAC(String carrierSCACCode) {
+        if(isStringNullOrEmpty(carrierSCACCode))
+            return null;
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add(carrierSCACCode);
+        Map<String, EntityTransferCarrier> map = fetchInBulkCarriersBySCACCode(carrierCodes);
+        if(map.containsKey(carrierSCACCode))
+            return map.get(carrierSCACCode).ItemValue;
+        return null;
+    }
+
     public void pushToCache (Map<String, ?> v1Data, String type, Set<String> keys, Object object, Map<String, Object> cacheMap) {
         if (Objects.isNull(v1Data))
             return;
