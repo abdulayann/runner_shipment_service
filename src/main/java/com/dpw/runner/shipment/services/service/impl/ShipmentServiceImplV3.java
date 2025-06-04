@@ -1425,57 +1425,95 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData, List<ShipmentListResponse> shipmentListResponses, Set<String> includeColumns, Boolean notificationFlag) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData,
+            List<ShipmentListResponse> shipmentListResponses,
+            Set<String> includeColumns, Boolean notificationFlag) {
         V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
-        // Pending Notification Count
-        if (Boolean.TRUE.equals(notificationFlag)) {
-            List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
-            var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
-            var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
-            shipmentListResponses.forEach(response -> {
-                int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
-                response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
-            });
-        }
 
-        List<Long> shipmentIds = shipmentListResponses.stream().map(ShipmentListResponse::getId).distinct().toList();
-        List<CustomerBookingProjection> bookingProjections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIds);
-        Map<Long, Long> shipmentIdToBookingIdMap = bookingProjections.stream()
-                .collect(Collectors.toMap(CustomerBookingProjection::getShipmentId, CustomerBookingProjection::getId));
+        // Handle pending notifications
+        handlePendingNotifications(lst, shipmentListResponses, notificationFlag);
 
+        // Get booking mappings
+        Map<Long, Long> shipmentIdToBookingIdMap = getShipmentToBookingIdMap(shipmentListResponses);
+
+        // Process each response
         shipmentListResponses.forEach(response -> {
             var ship = shipmentDetailsMap.get(response.getId());
-            Optional.ofNullable(shipmentIdToBookingIdMap.get(response.getId()))
-                    .ifPresent(response::setBookingId);
-            if (includeColumns.contains(SHIPPER_REFERENCE))
-                setShipperReferenceNumber(response, ship);
-            if (includeColumns.contains(SHIPMENT_STATUS_FIELDS) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length)
-                response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
-            if (includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders()))
-                response.setOrdersCount(ship.getShipmentOrders().size());
-
-            if (ObjectUtils.isNotEmpty(response.getWeight())) {
-                response.setWeightFormatted(IReport.convertToWeightNumberFormat(response.getWeight(), tenantSettings));
-            }
-
-            if (ObjectUtils.isNotEmpty(response.getVolume())) {
-                response.setVolumeFormatted(IReport.convertToVolumeNumberFormat(response.getVolume(), tenantSettings));
-            }
-
-            if (ObjectUtils.isNotEmpty(response.getVolumetricWeight())) {
-                response.setVolumetricWeightFormatted(IReport.convertToWeightNumberFormat(response.getVolumetricWeight(), tenantSettings));
-            }
-
-            if (ObjectUtils.isNotEmpty(response.getChargable())) {
-                response.setChargableFormatted(IReport.convertToWeightNumberFormat(response.getChargable(), tenantSettings));
-            }
-
+            processShipmentResponse(response, ship, includeColumns, shipmentIdToBookingIdMap, tenantSettings);
             responseList.add(response);
         });
+
         shipmentMasterDataHelper.getMasterDataForList(lst, responseList, getMasterData, true, includeColumns);
         return responseList;
+    }
+
+    private void handlePendingNotifications(List<ShipmentDetails> lst, List<ShipmentListResponse> shipmentListResponses, Boolean notificationFlag) {
+        if (!Boolean.TRUE.equals(notificationFlag)) {
+            return;
+        }
+
+        List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
+
+        shipmentListResponses.forEach(response -> {
+            int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
+            response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+        });
+    }
+
+    private Map<Long, Long> getShipmentToBookingIdMap(List<ShipmentListResponse> shipmentListResponses) {
+        List<Long> shipmentIds = shipmentListResponses.stream().map(ShipmentListResponse::getId).distinct().toList();
+        List<CustomerBookingProjection> bookingProjections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIds);
+        return bookingProjections.stream()
+                .collect(Collectors.toMap(CustomerBookingProjection::getShipmentId, CustomerBookingProjection::getId));
+    }
+
+    private void processShipmentResponse(ShipmentListResponse response, ShipmentDetails ship, Set<String> includeColumns,
+            Map<Long, Long> shipmentIdToBookingIdMap, V1TenantSettingsResponse tenantSettings) {
+        // Set booking ID
+        Optional.ofNullable(shipmentIdToBookingIdMap.get(response.getId()))
+                .ifPresent(response::setBookingId);
+
+        // Handle conditional fields
+        handleConditionalFields(response, ship, includeColumns);
+
+        // Format weight and volume fields
+        formatWeightAndVolumeFields(response, tenantSettings);
+    }
+
+    private void handleConditionalFields(ShipmentListResponse response, ShipmentDetails ship, Set<String> includeColumns) {
+        if (includeColumns.contains(SHIPPER_REFERENCE)) {
+            setShipperReferenceNumber(response, ship);
+        }
+
+        if (includeColumns.contains(SHIPMENT_STATUS_FIELDS) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length) {
+            response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
+        }
+
+        if (includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders())) {
+            response.setOrdersCount(ship.getShipmentOrders().size());
+        }
+    }
+
+    private void formatWeightAndVolumeFields(ShipmentListResponse response, V1TenantSettingsResponse tenantSettings) {
+        if (ObjectUtils.isNotEmpty(response.getWeight())) {
+            response.setWeightFormatted(IReport.convertToWeightNumberFormat(response.getWeight(), tenantSettings));
+        }
+
+        if (ObjectUtils.isNotEmpty(response.getVolume())) {
+            response.setVolumeFormatted(IReport.convertToVolumeNumberFormat(response.getVolume(), tenantSettings));
+        }
+
+        if (ObjectUtils.isNotEmpty(response.getVolumetricWeight())) {
+            response.setVolumetricWeightFormatted(IReport.convertToWeightNumberFormat(response.getVolumetricWeight(), tenantSettings));
+        }
+
+        if (ObjectUtils.isNotEmpty(response.getChargable())) {
+            response.setChargableFormatted(IReport.convertToWeightNumberFormat(response.getChargable(), tenantSettings));
+        }
     }
 
     private void setShipperReferenceNumber(ShipmentListResponse response, ShipmentDetails ship) {
