@@ -7,6 +7,8 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -44,7 +46,9 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private Boolean isShipperOwned;
   private Boolean isEmpty;
   @NonNull
-  private Long containerCount;
+  @Max(value = 1, message = "Container count cannot be more than 1")
+  @Min(value = 1, message = "Container count cannot be less than 1")
+  private Long containerCount = 1L;
   private String carrierSealNumber;
   private String shipperSealNumber;
   private String terminalOperatorSealNumber;
