@@ -197,7 +197,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
                 .carrierDetails(new CarrierDetails())
                 .build();
         //mockShipmentSettings();
-
+        shipmentDetails.getCarrierDetails().setIsSameAsDestinationPort(true);
+        shipmentDetails.getCarrierDetails().setIsSameAsOriginPort(true);
         when(routingsDao.findById(anyLong())).thenReturn(Optional.of(oldEntity));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(oldEntity);
         when(jsonHelper.convertValue(routingsRequest, Routings.class)).thenReturn(routings);
