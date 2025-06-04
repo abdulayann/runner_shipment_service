@@ -122,6 +122,22 @@ public class ShipmentValidationV3Util {
         this.validationForCutOffFields(shipmentDetails);
         // Validation for ETA, ETD, ATA and ATD fields
         this.validationETAETDATAATDFields(shipmentDetails, oldEntity);
+        // Validation for Same as Pol Pod flag
+        this.validationForPolPodFields(shipmentDetails);
+    }
+
+    public void validationForPolPodFields(ShipmentDetails shipmentDetails){
+        if(Objects.isNull(shipmentDetails.getCarrierDetails())){
+            return;
+        }
+        if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsOriginPort())
+                && !Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getOrigin())) {
+            throw new ValidationException("If origin is selected as same as OriginPort then value in origin and originPort should pe same");
+        }
+        if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsDestinationPort())
+                && !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), shipmentDetails.getCarrierDetails().getDestination())) {
+            throw new ValidationException("If destination is selected as same as DestinationPort then value in destination and destinationPort should pe same");
+        }
     }
 
     public void validationForControlledFields(ShipmentDetails shipmentDetails) {

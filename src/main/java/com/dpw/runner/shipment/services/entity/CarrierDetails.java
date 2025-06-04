@@ -147,4 +147,10 @@ public class CarrierDetails extends MultiTenancy {
     @Size(max=64, message = "max size is 64 for destination_port_loc_code")
     @Column(name = "destination_port_loc_code")
     private String destinationPortLocCode;
+
+    @Column(name = "is_same_as_origin_port")
+    private Boolean isSameAsOriginPort;
+
+    @Column(name = "is_same_as_destination_port")
+    private Boolean isSameAsDestinationPort;
 }
