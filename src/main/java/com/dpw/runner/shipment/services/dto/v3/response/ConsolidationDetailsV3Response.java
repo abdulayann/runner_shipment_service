@@ -140,6 +140,7 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
     private Boolean hazardous;
+    private Boolean reefer;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
     private Boolean creatingFromDgShipment;
@@ -171,4 +172,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Boolean borrowed;
     private Long originBranch;
     private Long shipmentsCount;
+    private Boolean isMainCarriageAvailable = Boolean.FALSE;
 }

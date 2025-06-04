@@ -9,9 +9,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -28,16 +26,11 @@ import java.util.List;
 @Slf4j
 public class EventsV3Controller {
     private final IEventsV3Service eventService;
-    private final ApiKeyAuthenticationService authenticationService;
-    private final IEventsSync eventsSync;
-    private class MyResponseClass extends RunnerResponse<EventsResponse> {}
     private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
-    public EventsV3Controller(IEventsV3Service eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
+    public EventsV3Controller(IEventsV3Service eventService) {
         this.eventService = eventService;
-        this.eventsSync = eventsSync;
-        this.authenticationService = authenticationService;
     }
 
     @ApiResponses(value = {

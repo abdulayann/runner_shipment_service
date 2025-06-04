@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
@@ -118,6 +119,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -555,6 +557,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         //add isPacksAvailable flag
         if (!CollectionUtils.isEmpty(shipmentDetailsEntity.getPackingList())) {
             response.setIsPacksAvailable(Boolean.TRUE);
+        }
+        List<Routings> routingsList = shipmentDetailsEntity.getRoutingsList();
+        if (!CollectionUtils.isEmpty(routingsList)) {
+            boolean isMainCarriagePresent = routingsList.stream()
+                    .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+            response.setIsMainCarriageAvailable(isMainCarriagePresent);
         }
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
@@ -1418,39 +1426,95 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData, List<ShipmentListResponse> shipmentListResponses, Set<String> includeColumns, Boolean notificationFlag) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData,
+            List<ShipmentListResponse> shipmentListResponses,
+            Set<String> includeColumns, Boolean notificationFlag) {
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
-        // Pending Notification Count
-        if (Boolean.TRUE.equals(notificationFlag)) {
-            List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
-            var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
-            var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
-            shipmentListResponses.forEach(response -> {
-                int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
-                response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
-            });
-        }
 
-        List<Long> shipmentIds = shipmentListResponses.stream().map(ShipmentListResponse::getId).distinct().toList();
-        List<CustomerBookingProjection> bookingProjections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIds);
-        Map<Long, Long> shipmentIdToBookingIdMap = bookingProjections.stream()
-                .collect(Collectors.toMap(CustomerBookingProjection::getShipmentId, CustomerBookingProjection::getId));
+        // Handle pending notifications
+        handlePendingNotifications(lst, shipmentListResponses, notificationFlag);
 
+        // Get booking mappings
+        Map<Long, Long> shipmentIdToBookingIdMap = getShipmentToBookingIdMap(shipmentListResponses);
+
+        // Process each response
         shipmentListResponses.forEach(response -> {
             var ship = shipmentDetailsMap.get(response.getId());
-            Optional.ofNullable(shipmentIdToBookingIdMap.get(response.getId()))
-                    .ifPresent(response::setBookingId);
-            if (includeColumns.contains(SHIPPER_REFERENCE))
-                setShipperReferenceNumber(response, ship);
-            if (includeColumns.contains(SHIPMENT_STATUS_FIELDS) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length)
-                response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
-            if (includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders()))
-                response.setOrdersCount(ship.getShipmentOrders().size());
+            processShipmentResponse(response, ship, includeColumns, shipmentIdToBookingIdMap, tenantSettings);
             responseList.add(response);
         });
+
         shipmentMasterDataHelper.getMasterDataForList(lst, responseList, getMasterData, true, includeColumns);
         return responseList;
+    }
+
+    private void handlePendingNotifications(List<ShipmentDetails> lst, List<ShipmentListResponse> shipmentListResponses, Boolean notificationFlag) {
+        if (!Boolean.TRUE.equals(notificationFlag)) {
+            return;
+        }
+
+        List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
+
+        shipmentListResponses.forEach(response -> {
+            int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
+            response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+        });
+    }
+
+    private Map<Long, Long> getShipmentToBookingIdMap(List<ShipmentListResponse> shipmentListResponses) {
+        List<Long> shipmentIds = shipmentListResponses.stream().map(ShipmentListResponse::getId).distinct().toList();
+        List<CustomerBookingProjection> bookingProjections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIds);
+        return bookingProjections.stream()
+                .collect(Collectors.toMap(CustomerBookingProjection::getShipmentId, CustomerBookingProjection::getId));
+    }
+
+    private void processShipmentResponse(ShipmentListResponse response, ShipmentDetails ship, Set<String> includeColumns,
+            Map<Long, Long> shipmentIdToBookingIdMap, V1TenantSettingsResponse tenantSettings) {
+        // Set booking ID
+        Optional.ofNullable(shipmentIdToBookingIdMap.get(response.getId()))
+                .ifPresent(response::setBookingId);
+
+        // Handle conditional fields
+        handleConditionalFields(response, ship, includeColumns);
+
+        // Format weight and volume fields
+        formatWeightAndVolumeFields(response, tenantSettings);
+    }
+
+    private void handleConditionalFields(ShipmentListResponse response, ShipmentDetails ship, Set<String> includeColumns) {
+        if (includeColumns.contains(SHIPPER_REFERENCE)) {
+            setShipperReferenceNumber(response, ship);
+        }
+
+        if (includeColumns.contains(SHIPMENT_STATUS_FIELDS) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length) {
+            response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
+        }
+
+        if (includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders())) {
+            response.setOrdersCount(ship.getShipmentOrders().size());
+        }
+    }
+
+    private void formatWeightAndVolumeFields(ShipmentListResponse response, V1TenantSettingsResponse tenantSettings) {
+        if (ObjectUtils.isNotEmpty(response.getWeight())) {
+            response.setWeightFormatted(IReport.convertToWeightNumberFormat(response.getWeight(), tenantSettings));
+        }
+
+        if (ObjectUtils.isNotEmpty(response.getVolume())) {
+            response.setVolumeFormatted(IReport.convertToVolumeNumberFormat(response.getVolume(), tenantSettings));
+        }
+
+        if (ObjectUtils.isNotEmpty(response.getVolumetricWeight())) {
+            response.setVolumetricWeightFormatted(IReport.convertToWeightNumberFormat(response.getVolumetricWeight(), tenantSettings));
+        }
+
+        if (ObjectUtils.isNotEmpty(response.getChargable())) {
+            response.setChargableFormatted(IReport.convertToWeightNumberFormat(response.getChargable(), tenantSettings));
+        }
     }
 
     private void setShipperReferenceNumber(ShipmentListResponse response, ShipmentDetails ship) {
@@ -2201,15 +2265,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     public void populateOriginDestinationAgentDetailsForBookingShipment(ShipmentDetails shipmentDetails) {
-        ConsolidationDetails consolidationDetails = null;
-        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
-            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
-        }
+        ConsolidationDetails consolidationDetails = getConsolidationDetails(shipmentDetails);
         if (consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             boolean consolUpdated = false;
             if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 setExportBrokerForInterBranchConsole(shipmentDetails, consolidationDetails);
-                setOriginBranchFromExportBroker(shipmentDetails);
             } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
                 consolUpdated = true;
@@ -2225,15 +2285,25 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (consolUpdated) {
                 consolidationDetailsDao.save(consolidationDetails, false);
             }
+        } else if (consolidationDetails != null && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            setOriginBranchFromExportBroker(shipmentDetails);
         }
         if (consolidationDetails == null) {
             populateImportExportBrokerForShipment(shipmentDetails);
         }
     }
 
+    private ConsolidationDetails getConsolidationDetails(ShipmentDetails shipmentDetails) {
+        ConsolidationDetails consolidationDetails = null;
+        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        }
+        return consolidationDetails;
+    }
+
     private void setOriginBranchFromExportBroker(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null)
-            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getTenantId()));
+        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getExportBroker() != null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData()!=null && shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get("TenantId")!=null)
+            shipmentDetails.setOriginBranch(Long.valueOf(shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get("TenantId").toString()));
     }
 
     private void setExportBrokerForInterBranchConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
@@ -2263,7 +2333,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setAdditionalDetails(new AdditionalDetails());
             }
             shipmentDetails.getAdditionalDetails().setExportBroker(v1ServiceUtil.getDefaultAgentOrgParty(null));
-            setOriginBranchFromExportBroker(shipmentDetails);
+            if(shipmentDetails.getTransportMode()!=null && Objects.equals(shipmentDetails.getTransportMode(), TRANSPORT_MODE_AIR))
+                setOriginBranchFromExportBroker(shipmentDetails);
         } else if (Constants.DIRECTION_IMP.equals(shipmentDetails.getDirection()) &&
                 (shipmentDetails.getAdditionalDetails() == null || !CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker()))) {
             if (shipmentDetails.getAdditionalDetails() == null) {

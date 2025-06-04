@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Set;
 
 public interface IContainerV3Service {
-    ContainerResponse create(ContainerV3Request containerRequest, String module);
+    ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException;
 
-    BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module);
+    BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
     BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module);
 

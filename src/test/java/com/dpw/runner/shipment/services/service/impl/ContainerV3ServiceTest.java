@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
@@ -212,7 +213,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testContainerCreate(){
+    void testContainerCreate() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(testContainer);
@@ -224,15 +225,14 @@ class ContainerV3ServiceTest extends CommonMocks {
             argument.run();
             return mockRunnable;
         });
-//        doNothing().when(shipmentsContainersMappingDao)
-//            .assignShipments(any(), any(), eq(false));
+
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
         ContainerResponse response = containerV3Service.create(containerV3Request, "CONSOLIDATION");
         assertNotNull(response);
     }
 
     @Test
-    void testContainerUpdate(){
+    void testContainerUpdate() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class)));
@@ -241,7 +241,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testContainerUpdate2(){
+    void testContainerUpdate2() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).
@@ -376,7 +376,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void calculateContainerSummaryTestThrowsException() throws RunnerException{
+    void calculateContainerSummaryTestThrowsException(){
         assertThrows(RunnerException.class, () -> containerV3Service.calculateContainerSummary(null, null, "CONSOLIDATION"));
     }
 
@@ -683,4 +683,17 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertDoesNotThrow(() -> containerV3Service.addShipmentCargoToContainerInCreateFromBooking(testContainer, customerBookingV3Request));
     }
 
+    @Test
+    void testNullShipmentConsoleId_Creation(){
+        ContainerV3Request request = new ContainerV3Request();
+        assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
+    }
+
+    @Test
+    void testNonNullShipmentConsoleId_Creation(){
+        ContainerV3Request request = new ContainerV3Request();
+        request.setShipmentsId(1L);
+        request.setConsolidationId(1L);
+        assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
+    }
 }
