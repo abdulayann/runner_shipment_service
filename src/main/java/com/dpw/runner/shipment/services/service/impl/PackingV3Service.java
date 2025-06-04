@@ -191,7 +191,7 @@ public class PackingV3Service implements IPackingV3Service {
         log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
         afterSave(List.of(savedPacking), module, shipmentDetails, consolidationId);
         // Triggering Event for shipment and console for DependentServices update
-        pushToDependentServices(List.of(savedPacking), module);
+        pushToDependentServices(List.of(savedPacking), true, module);
         return response;
     }
 
@@ -247,9 +247,12 @@ public class PackingV3Service implements IPackingV3Service {
 
         recordAuditLogs(List.of(oldConvertedPacking), List.of(updatedPacking), DBOperationType.UPDATE, parentResult);
         afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationId);
-
+        boolean isAutoSell = false;
+        if (!Objects.equals(oldConvertedPacking.getPacksType(), updatedPacking.getPacksType()) || !Objects.equals(oldConvertedPacking.getPacks(), updatedPacking.getPacks())) {
+            isAutoSell = true;
+        }
         // Triggering Event for shipment and console for DependentServices update
-        pushToDependentServices(List.of(updatedPacking), module);
+        pushToDependentServices(List.of(updatedPacking), isAutoSell, module);
         return convertEntityToDto(updatedPacking);
     }
 
@@ -275,7 +278,7 @@ public class PackingV3Service implements IPackingV3Service {
         afterSave(List.of(packing), module, null, null);
 
         // Triggering Event for shipment and console for DependentServices update
-        pushToDependentServices(List.of(packing), module);
+        pushToDependentServices(List.of(packing), true, module);
         return packsType != null
                 ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
                 : String.format("Packing %s deleted successfully!", packs);
@@ -342,12 +345,23 @@ public class PackingV3Service implements IPackingV3Service {
         recordAuditLogs(oldConvertedPackings, savedUpdatedPackings, DBOperationType.UPDATE, parentResult);
         recordAuditLogs(null, savedNewPackings, DBOperationType.CREATE, parentResult);
 
+        boolean isAutoSell = false;
+        Map<UUID, Packing> oldPackings = oldConvertedPackings.stream().collect(Collectors.toMap(Packing::getGuid, packing->packing,(packing1, packing2)->packing1));
+
+        for(Packing packing: updatedPackings) {
+            Packing packing1 = oldPackings.get(packing.getGuid());
+            if (!Objects.equals(packing1.getPacksType(), packing.getPacksType()) || !Objects.equals(packing1.getPacks(), packing.getPacks())) {
+                isAutoSell = true;
+                break;
+            }
+        }
+
         // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
         afterSave(allSavedPackings, module, shipmentDetails, consolidationId);
 
         // Triggering Event for shipment and console for DependentServices update
-        pushToDependentServices(allSavedPackings, module);
+        pushToDependentServices(allSavedPackings,isAutoSell, module);
 
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
@@ -355,18 +369,21 @@ public class PackingV3Service implements IPackingV3Service {
                 .build();
     }
 
-    private void pushToDependentServices(List<Packing> packings, String module) {
+    private void pushToDependentServices(List<Packing> packings, boolean isAutoSell, String module) {
         if (Objects.equals(module, SHIPMENT)) {
             Long shipId = packings.get(0).getShipmentId();
             Long consoleId = packings.stream().map(Packing::getConsolidationId).filter(Objects::nonNull).findFirst().orElse(null);
-            triggerPushToDownStreamForShipment(shipId, consoleId);
+            triggerPushToDownStreamForShipment(shipId, consoleId, isAutoSell);
         }
     }
 
-    private void triggerPushToDownStreamForShipment(Long shipmentId, Long consoleId) {
+    private void triggerPushToDownStreamForShipment(Long shipmentId, Long consoleId, boolean isAutoSell) {
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(shipmentId)
                 .parentEntityName(SHIPMENT)
+                .meta(PushToDownstreamEventDto.Meta.builder()
+                        .isAutoSellRequired(isAutoSell)
+                        .build())
                 .build();
         if (consoleId != null) {
             PushToDownstreamEventDto.Triggers triggers = PushToDownstreamEventDto.Triggers.builder()
@@ -418,7 +435,7 @@ public class PackingV3Service implements IPackingV3Service {
         afterSave(packingsToDelete, module, null, null);
 
         // Triggering Event for shipment and console for DependentServices update
-        pushToDependentServices(packingsToDelete, module);
+        pushToDependentServices(packingsToDelete, true, module);
         // Return the response with status message
         return BulkPackingResponse.builder()
                 .message(prepareBulkDeleteMessage(packingsToDelete))

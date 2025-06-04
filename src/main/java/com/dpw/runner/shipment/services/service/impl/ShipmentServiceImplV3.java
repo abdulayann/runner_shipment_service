@@ -670,7 +670,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             );
 
             // Trigger Kafka event for PushToDownStreamServices
-            this.triggerPushToDownStream(shipmentDetails, true);
+            this.triggerPushToDownStream(shipmentDetails, null, true);
         } catch (Exception e) {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(e.getMessage());
@@ -738,7 +738,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, isFromET);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             // Trigger Kafka event for PushToDownStreamServices
-            this.triggerPushToDownStream(entity, false);
+            this.triggerPushToDownStream(entity, oldConvertedShipment,false);
             log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
             return jsonHelper.convertValue(entity, ShipmentDetailsV3Response.class);
         } catch (Exception e) {
@@ -923,17 +923,33 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         log.info("shipment afterSave end..... ");
     }
 
-    protected void triggerPushToDownStream(ShipmentDetails shipmentDetails, Boolean isCreate) {
+    protected void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
         if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
             consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
         }
 
+        boolean isAutoSell = false;
+        if (oldShipment != null) {
+            CarrierDetails oldCarrier = oldShipment.getCarrierDetails();
+            CarrierDetails newCarrier = shipmentDetails.getCarrierDetails();
+
+            String oldOrigin = oldCarrier != null ? oldCarrier.getOrigin() : null;
+            String oldDestination = oldCarrier != null ? oldCarrier.getDestination() : null;
+            String newOrigin = newCarrier != null ? newCarrier.getOrigin() : null;
+            String newDestination = newCarrier != null ? newCarrier.getDestination() : null;
+
+            if (!Objects.equals(oldOrigin, newOrigin) || !Objects.equals(oldDestination, newDestination)) {
+                isAutoSell = true;
+            }
+
+        }
         PushToDownstreamEventDto pushToDownstreamEventDto = PushToDownstreamEventDto.builder()
                 .parentEntityId(shipmentDetails.getId())
                 .parentEntityName(SHIPMENT)
                 .meta(PushToDownstreamEventDto.Meta.builder()
                         .isCreate(isCreate)
+                        .isAutoSellRequired(isAutoSell)
                         .build())
                 .build();
         if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
