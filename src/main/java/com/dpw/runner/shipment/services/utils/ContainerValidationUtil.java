@@ -1,22 +1,30 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
 public class ContainerValidationUtil {
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     /**
      * Validates a bulk update request for containers.
@@ -46,10 +54,6 @@ public class ContainerValidationUtil {
     public void validateDeleteBulkRequest(List<ContainerV3Request> requests) {
         if (requests == null || requests.isEmpty()) {
             throw new IllegalArgumentException("Bulk update request cannot be null or empty.");
-        }
-
-        if (requests.stream().anyMatch(cr -> !Boolean.TRUE.equals(cr.getOpenForAttachment()))) {
-            throw new IllegalArgumentException("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off");
         }
     }
 
@@ -87,4 +91,26 @@ public class ContainerValidationUtil {
     }
 
 
+    public void validateOpenForAttachment(List<Containers> containersToDelete) {
+        if (containersToDelete == null || containersToDelete.isEmpty()) {
+            return;
+        }
+
+        Set<Long> consolIds = containersToDelete.stream()
+                .map(Containers::getConsolidationId)
+                .filter(Objects::nonNull).collect(Collectors.toSet());
+
+        // Check if we have any valid consolidation IDs to process
+        if (consolIds.isEmpty()) {
+            return;
+        }
+
+        List<ConsolidationDetails> consolidationsByIds = consolidationDetailsDao.findConsolidationsByIds(consolIds);
+
+        // Add null check for the returned list and individual objects
+        if (ObjectUtils.isNotEmpty(consolidationsByIds) &&
+                consolidationsByIds.stream().anyMatch(cd -> cd != null && !Boolean.TRUE.equals(cd.getOpenForAttachment()))) {
+            throw new IllegalArgumentException("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off");
+        }
+    }
 }

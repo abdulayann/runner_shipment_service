@@ -1,13 +1,21 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -15,6 +23,13 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,22 +38,18 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
 class ContainerValidationUtilTest extends CommonMocks {
+
+    @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     private static ObjectMapper objectMapper;
 
@@ -130,12 +141,6 @@ class ContainerValidationUtilTest extends CommonMocks {
     }
 
     @Test
-    void testValidateDeleteBulkRequest2() {
-        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).openForAttachment(false).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
-        assertThrows(IllegalArgumentException.class, () -> containerValidationUtil.validateDeleteBulkRequest(containerV3Requests));
-    }
-
-    @Test
     void testValidateDeleteBulkRequest3() {
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).openForAttachment(true).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
         assertDoesNotThrow(() -> containerValidationUtil.validateDeleteBulkRequest(containerV3Requests));
@@ -183,6 +188,136 @@ class ContainerValidationUtilTest extends CommonMocks {
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
         assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+    }
+
+    @Test
+    void testValidateOpenForAttachment_Success() {
+        // Arrange
+        List<Containers> containersToDelete = List.of(
+                Containers.builder().consolidationId(1L).build(),
+                Containers.builder().consolidationId(2L).build()
+        );
+
+        List<ConsolidationDetails> consolidationDetails = List.of(
+                ConsolidationDetails.builder().openForAttachment(true).build(),
+                ConsolidationDetails.builder().openForAttachment(true).build()
+        );
+
+        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
+                .thenReturn(consolidationDetails);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
+    }
+
+    @Test
+    void testValidateOpenForAttachment_ThrowsException_WhenOpenForAttachmentIsFalse() {
+        // Arrange
+        List<Containers> containersToDelete = List.of(
+                Containers.builder().consolidationId(1L).build(),
+                Containers.builder().consolidationId(2L).build()
+        );
+
+        List<ConsolidationDetails> consolidationDetails = List.of(
+                ConsolidationDetails.builder().openForAttachment(true).build(),
+                ConsolidationDetails.builder().openForAttachment(false).build() // This should trigger exception
+        );
+
+        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
+                .thenReturn(consolidationDetails);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
+
+        assertEquals("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off",
+                exception.getMessage());
+    }
+
+    @Test
+    void testValidateOpenForAttachment_ThrowsException_WhenOpenForAttachmentIsNull() {
+        // Arrange
+        List<Containers> containersToDelete = List.of(
+                Containers.builder().consolidationId(1L).build()
+        );
+
+        List<ConsolidationDetails> consolidationDetails = List.of(
+                ConsolidationDetails.builder().openForAttachment(null).build() // null should be treated as false
+        );
+
+        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+                .thenReturn(consolidationDetails);
+
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
+
+        assertEquals("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off",
+                exception.getMessage());
+    }
+
+    @Test
+    void testValidateOpenForAttachment_DoesNotThrow_WhenContainersListIsNull() {
+        // Act & Assert
+        assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(null));
+
+        // Verify DAO is not called
+        Mockito.verify(consolidationDetailsDao, Mockito.never()).findConsolidationsByIds(Mockito.any());
+    }
+
+    @Test
+    void testValidateOpenForAttachment_DoesNotThrow_WhenContainersListIsEmpty() {
+        // Act & Assert
+        assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(Collections.emptyList()));
+
+        // Verify DAO is not called
+        Mockito.verify(consolidationDetailsDao, Mockito.never()).findConsolidationsByIds(Mockito.any());
+    }
+
+    @Test
+    void testValidateOpenForAttachment_DoesNotThrow_WhenAllConsolidationIdsAreNull() {
+        // Arrange
+        List<Containers> containersToDelete = List.of(
+                Containers.builder().consolidationId(null).build(),
+                Containers.builder().consolidationId(null).build()
+        );
+
+        // Act & Assert
+        assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
+
+        // Verify DAO is not called since no valid consolidation IDs exist
+        Mockito.verify(consolidationDetailsDao, Mockito.never()).findConsolidationsByIds(Mockito.any());
+    }
+
+    @Test
+    void testValidateOpenForAttachment_HandlesNullConsolidationDetailsInList() {
+        // Arrange
+        List<Containers> containersToDelete = List.of(
+                Containers.builder().consolidationId(1L).build()
+        );
+
+        List<ConsolidationDetails> consolidationDetails = new ArrayList<>();
+        consolidationDetails.add(null); // Add null object to list
+
+        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+                .thenReturn(consolidationDetails);
+
+        // Act & Assert - should not throw since null objects are filtered out
+        assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
+    }
+
+    @Test
+    void testValidateOpenForAttachment_HandlesNullResponseFromDao() {
+        // Arrange
+        List<Containers> containersToDelete = List.of(
+                Containers.builder().consolidationId(1L).build()
+        );
+
+        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+                .thenReturn(null); // DAO returns null
+
+        // Act & Assert - should not throw when DAO returns null
+        assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
     }
 
 }
