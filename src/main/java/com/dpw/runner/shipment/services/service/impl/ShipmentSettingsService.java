@@ -453,9 +453,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getHasNoUtilization() == null) {
                 request.setHasNoUtilization(oldEntity.get().getHasNoUtilization());
             }
-            if(request.getIsExternalFileTransferEnabled() == null) {
-                request.setIsExternalFileTransferEnabled(oldEntity.get().getIsExternalFileTransferEnabled());
-            }
+            setExistingFieldNotInV1(request, oldEntity.get());
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
             return getfuncResponseEntity(oldEntity, request, shipmentSettingsDetails);
@@ -464,6 +462,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new GenericException(e);
+        }
+    }
+
+    private void setExistingFieldNotInV1(ShipmentSettingRequest request, ShipmentSettingsDetails oldEntity){
+        if(request.getIsExternalFileTransferEnabled() == null) {
+            request.setIsExternalFileTransferEnabled(oldEntity.getIsExternalFileTransferEnabled());
         }
     }
 
