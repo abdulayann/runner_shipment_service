@@ -28,6 +28,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_N
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
@@ -112,7 +113,10 @@ public class ShipmentValidationV3Util {
     }
 
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        // Validation for Partner fields for 'STD' Shipment
+        if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
+            throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
+        }
+        // Validation for Partner fields
         this.validationForPartnerFields(shipmentDetails, oldEntity);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
@@ -134,6 +138,9 @@ public class ShipmentValidationV3Util {
     }
 
     public void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !isStringNullOrEmpty(shipmentDetails.getCoLoadBlNumber())) {
+            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent AWB No. for AIR shipments");
+        }
         if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
         String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
         String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);
