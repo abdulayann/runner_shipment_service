@@ -1249,9 +1249,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         if (!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getExportBroker(), i.getAdditionalDetails().getExportBroker())) {
             i.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getExportBroker()));
+            i.setOriginBranch(shipment.getOriginBranch());
         }
         if (!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getImportBroker(), i.getAdditionalDetails().getImportBroker())) {
             i.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getImportBroker()));
+            i.setReceivingBranch(shipment.getReceivingBranch());
         }
     }
 
@@ -1260,11 +1262,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (shipment.getAdditionalDetails() != null) {
                 if (!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getExportBroker(), consolidationDetails.getSendingAgent())) {
                     consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getExportBroker()));
-                    consolidationDetails.setOriginBranch(shipment.getOriginBranch());
                 }
                 if (!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getImportBroker(), consolidationDetails.getReceivingAgent())) {
                     consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getImportBroker()));
-                    consolidationDetails.setReceivingBranch(shipment.getReceivingBranch());
                 }
             } else {
                 consolidationDetails.setSendingAgent(null);

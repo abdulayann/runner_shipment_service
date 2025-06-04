@@ -759,8 +759,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             if (Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
-                if(consolidationDetails.getSendingAgent() != null)
-                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getTenantId()));
+                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getOrgData().get("TenantId") != null)
+                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getOrgData().get("TenantId").toString()));
             } else if (Constants.DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
                 consolidationDetails.setReceivingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
             }
@@ -2109,7 +2109,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         syncMainCarriageRoutingToShipment(console.getRoutingsList(), shipmentDetails);
 
         // Update export/import brokers if inter-branch logic applies
-        updateInterBranchConsoleData(console, shipmentDetails);
+        updateNonInterBranchConsoleData(console, shipmentDetails);
     }
 
     /**
@@ -2122,7 +2122,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @param console The consolidation object containing sending and receiving agents
      * @param sd      The shipment details to update with broker info
      */
-    private void updateInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails sd) {
+    private void updateNonInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails sd) {
         // Proceed only if it's NOT an inter-branch console
         if (!Boolean.TRUE.equals(console.getInterBranchConsole())) {
 
