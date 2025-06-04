@@ -227,13 +227,25 @@ public class ContainerV3Service implements IContainerV3Service {
         // Convert the request DTOs to entity models for persistence
         List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
 
+        List<Containers> containersList = getSiblingContainers(containerRequestList.get(0));
+
+        boolean isAutoSell = false;
+
+        Map<UUID, Containers> oldContainers = containersList.stream().collect(Collectors.toMap(Containers::getGuid, container->container,(container1, container2)->container1));
+
+        for (Containers containers: originalContainers) {
+            Containers containers1 = oldContainers.get(containers.getGuid());
+            if (!Objects.equals(containers1.getContainerCount(), containers.getContainerCount()) || !Objects.equals(containers1.getContainerCode(), containers.getContainerCode())) {
+                isAutoSell = true;
+                break;
+            }
+        }
         // before save operations
         containerV3Util.containerBeforeSave(originalContainers);
-
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
-        runAsyncPostSaveOperations(updatedContainers, module);
+        runAsyncPostSaveOperations(updatedContainers,isAutoSell, module);
 
         // Add audit logs for all updated containers
         recordAuditLogs(originalContainers, updatedContainers, DBOperationType.UPDATE);
@@ -462,17 +474,18 @@ public class ContainerV3Service implements IContainerV3Service {
      * Any failures during Kafka operations are logged.
      * </p>
      *
-     * @param container the container entity that was persisted
-     * @param isCreate  true if the container was newly created; false if updated
+     * @param container             the container entity that was persisted
+     * @param isAutoSell
+     * @param isCreate              true if the container was newly created; false if updated
      */
-    private void afterSave(Containers container, boolean isCreate) {
+    private void afterSave(Containers container, boolean isAutoSell, boolean isCreate) {
         try {
             // Set tenant from context if not already present on the container
             if (container.getTenantId() == null) {
                 container.setTenantId(TenantContext.getCurrentTenant());
             }
 
-            triggerPushToDownStream(container, isCreate, Constants.CONTAINER_AFTER_SAVE);
+            triggerPushToDownStream(container, isAutoSell, isCreate, Constants.CONTAINER_AFTER_SAVE);
 
         } catch (Exception ex) {
             // Log failure with detailed error message and exception stack trace
@@ -481,7 +494,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void triggerPushToDownStream(Containers container, Boolean isCreate, String sourceInfo) {
+    private void triggerPushToDownStream(Containers container, Boolean isAutoSell, boolean isCreate, String sourceInfo) {
         String transactionId = UUID.randomUUID().toString();
 
         log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | containerId={} | isCreate={} | transactionId={}",
@@ -492,6 +505,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .parentEntityName(CONTAINER)
                 .meta(PushToDownstreamEventDto.Meta.builder()
                         .sourceInfo(sourceInfo)
+                        .isAutoSellRequired(isAutoSell)
                         .tenantId(container.getTenantId())
                         .isCreate(isCreate).build()).build();
 
@@ -955,7 +969,7 @@ public class ContainerV3Service implements IContainerV3Service {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         futures.add(CompletableFuture.runAsync(
-                masterDataUtils.withMdc(() -> afterSave(container, true)),
+                masterDataUtils.withMdc(() -> afterSave(container, true, true)),
                 executorService
         ));
 
@@ -973,17 +987,17 @@ public class ContainerV3Service implements IContainerV3Service {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
-    private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
+    private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
-        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
+        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
         CompletableFuture.allOf(afterSaveFuture).join();
     }
 
-    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers) {
+    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers, boolean isAutoSell) {
         return CompletableFuture.allOf(
                 containers.stream()
                         .map(container -> CompletableFuture.runAsync(
-                                masterDataUtils.withMdc(() -> afterSave(container, false)),
+                                masterDataUtils.withMdc(() -> afterSave(container, isAutoSell, false)),
                                 executorService
                         ))
                         .toArray(CompletableFuture[]::new)
@@ -1025,7 +1039,7 @@ public class ContainerV3Service implements IContainerV3Service {
     public void afterSaveList(List<Containers> containers, boolean isCreate) {
         if (containers != null && !containers.isEmpty()) {
             for (Containers container : containers) {
-                afterSave(container, isCreate);
+                afterSave(container, false, isCreate);
             }
         }
     }
