@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -3328,10 +3329,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void testEmptyConsolidationList_shouldPopulateImportExportBroker() {
         shipmentDetails.setConsolidationList(null);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
-
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantId", 1);
         Parties exportParty = new Parties();
         exportParty.setOrgId("1");
         exportParty.setTenantId(1);
+        exportParty.setOrgData(orgData);
         when(v1ServiceUtil.getDefaultAgentOrgParty(null)).thenReturn(exportParty);
 
         shipmentServiceImplV3.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);

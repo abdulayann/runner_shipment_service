@@ -409,8 +409,6 @@ public class V1ServiceUtil {
             if(organizationMap.containsKey("OrganizationCode"))
                 request.setOrgCode(String.valueOf(organizationMap.get("OrganizationCode")));
             request.setOrgData(organizationMap);
-            if(organizationMap.containsKey("TenantId"))
-                request.setTenantId((Integer) organizationMap.get("TenantId"));
 
             CommonV1ListRequest addressRequest = createCriteriaForTwoFields("Id", addressId, "Active", Boolean.TRUE);
             V1DataResponse v1AddressResponse = v1Service.addressList(addressRequest);
