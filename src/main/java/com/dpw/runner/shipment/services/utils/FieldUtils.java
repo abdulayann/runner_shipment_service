@@ -72,11 +72,7 @@ public class FieldUtils {
             for (Field field : fieldClassDto.getClazz().getDeclaredFields()) {
                 // Check if the field has any Hibernate relationship annotation
                 if (isTenantIdDataField(field)) {
-                    if (StringUtility.isNotEmpty(fieldClassDto.getFieldRef())) {
-                        fields.add(fieldClassDto.getFieldRef() + field.getName());
-                    } else {
-                        fields.add(field.getName());
-                    }
+                    fields.add(field.getName());
                 }
             }
         }

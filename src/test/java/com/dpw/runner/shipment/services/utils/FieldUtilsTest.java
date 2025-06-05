@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.junit.jupiter.api.Test;
@@ -9,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FieldUtilsTest {
@@ -20,7 +18,7 @@ class FieldUtilsTest {
     void testGetNonRelationshipFields() {
         Class<Containers> clazz = Containers.class;
         List<String> actualNonRelationshipFields = FieldUtils.getNonRelationshipFields(clazz);
-        assertFalse(actualNonRelationshipFields.isEmpty());
+        assertTrue(actualNonRelationshipFields.size()>0);
     }
     @Test
     void testGetMasterDataAnnotationFields() {
@@ -41,7 +39,7 @@ class FieldUtilsTest {
         ArrayList<FieldClassDto> classes = new ArrayList<>();
         classes.add(fieldClassDto);
         List<String> actualMasterDataAnnotationFields = FieldUtils.getMasterDataAnnotationFields(classes);
-        assertFalse(actualMasterDataAnnotationFields.isEmpty());
+        assertTrue(actualMasterDataAnnotationFields.size() > 0);
     }
     @Test
     void testGetMasterDataAnnotationFieldsWithNonNullParentRef() {
@@ -53,7 +51,7 @@ class FieldUtilsTest {
         ArrayList<FieldClassDto> classes = new ArrayList<>();
         classes.add(fieldClassDto);
         List<String> actualMasterDataAnnotationFields = FieldUtils.getMasterDataAnnotationFields(classes);
-        assertFalse(actualMasterDataAnnotationFields.isEmpty());
+        assertTrue(actualMasterDataAnnotationFields.size() > 0);
     }
     @Test
     void testGetTenantIdAnnotationField() {
@@ -62,15 +60,9 @@ class FieldUtilsTest {
         fieldClassDto.setClazz(clazz);
         fieldClassDto.setFieldRef(null);
 
-        FieldClassDto fieldClassDto1 = new FieldClassDto();
-        Class<AdditionalDetails> clazz1 = AdditionalDetails.class;
-        fieldClassDto1.setClazz(clazz1);
-        fieldClassDto1.setFieldRef("additionalDetails.");
-
         ArrayList<FieldClassDto> classes = new ArrayList<>();
         classes.add(fieldClassDto);
-        classes.add(fieldClassDto1);
         List<String> actualTenantIdAnnotationFields = FieldUtils.getTenantIdAnnotationFields(classes);
-        assertFalse(actualTenantIdAnnotationFields.isEmpty());
+        assertTrue(actualTenantIdAnnotationFields.size() > 0);
     }
 }

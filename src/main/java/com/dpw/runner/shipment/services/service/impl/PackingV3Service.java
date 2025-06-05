@@ -745,14 +745,8 @@ public class PackingV3Service implements IPackingV3Service {
         ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
             .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
 
-        List<Packing> packingList = new ArrayList<>();
-
-        for(ShipmentDetails shipmentDetails : consolidation.getShipmentsList()){
-             packingList.addAll(shipmentDetails.getPackingList());
-        }
-
         return PackingContext.builder()
-            .packingList(packingList)
+            .packingList(consolidation.getPackingList())
             .transportMode(consolidation.getTransportMode())
             .module(Constants.CONSOLIDATION)
             .entityId(consolidationId)
