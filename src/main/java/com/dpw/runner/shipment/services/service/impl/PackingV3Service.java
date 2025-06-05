@@ -142,9 +142,6 @@ public class PackingV3Service implements IPackingV3Service {
     private DependentServiceHelper dependentServiceHelper;
 
     @Autowired
-    private IConsolidationService consolidationService;
-
-    @Autowired
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired
@@ -1164,22 +1161,11 @@ public class PackingV3Service implements IPackingV3Service {
         if (isStringNullOrEmpty(response.getTransportMode()))
             return response;
         if (!isStringNullOrEmpty(response.getWeightUnit()) && !isStringNullOrEmpty(response.getVolumeUnit())) {
-            VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), response.getWeight(), response.getVolume());
-            response.setChargable(vwOb.getChargeable());
-            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
-                response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
-            }
-            response.setChargeableUnit(vwOb.getChargeableUnit());
-            if (Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && !isStringNullOrEmpty(response.getShipmentType()) && Constants.SHIPMENT_TYPE_LCL.equals(response.getShipmentType())) {
-                double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
-                double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
-                response.setChargable(BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3)));
-                response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-                vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
-            }
-
-            response.setVolumetricWeight(vwOb.getVolumeWeight());
-            response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
+            VolumeWeightChargeable weightChargeable = consolidationV3Service.calculateVolumeWeight(response.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), response.getWeight(), response.getVolume());
+            response.setChargable(weightChargeable.getChargeable());
+            response.setChargeableUnit(weightChargeable.getChargeableUnit());
+            response.setVolumetricWeight(weightChargeable.getVolumeWeight());
+            response.setVolumetricWeightUnit(weightChargeable.getVolumeWeightUnit());
         }
         return response;
     }
