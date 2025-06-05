@@ -340,8 +340,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setAta(lastLeg.getAta());
         carrierDetails.setDestinationPort(lastLeg.getPod());
         carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
-        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())){
+        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())) {
             carrierDetails.setDestination(carrierDetails.getDestinationPort());
+            carrierDetails.setDestinationLocCode(carrierDetails.getDestinationPortLocCode());
         }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
