@@ -29,7 +29,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -3531,6 +3533,50 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
+    @Override
+    public ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException {
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(request.getRoutings());
+        Optional<RoutingsRequest> firstRouting = request.getRoutings().stream().findFirst();
+        if (firstRouting.isEmpty()) {
+            return new ShipmentSailingScheduleResponse();
+        }
+        Long consolidationId = firstRouting.get().getConsolidationId();
+        bulkUpdateRoutingsRequest.setEntityId(consolidationId);
+        routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
+
+        //update shipment fields
+        Optional<ConsolidationDetails> consolidationDetailsEntity = consolidationDetailsDao.findById(consolidationId);
+        if (consolidationDetailsEntity.isEmpty())
+            return new ShipmentSailingScheduleResponse();
+        ConsolidationDetails consolidationDetails = consolidationDetailsEntity.get();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+            updateCutoffDetailsToShipment(request, shipmentDetails);
+            shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+            shipmentDetailsList.add(shipmentDetails);
+        }
+        shipmentV3Service.saveAll(shipmentDetailsList);
+        return new ShipmentSailingScheduleResponse();
+    }
+
+    private void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ShipmentDetails shipmentDetails){
+        String transportMode = shipmentDetails.getTransportMode();
+
+        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
+            shipmentDetails.setTerminalCutoff(request.getTerminalCutoff());
+            shipmentDetails.setVerifiedGrossMassCutoff(request.getVerifiedGrossMassCutoff());
+            shipmentDetails.setShippingInstructionCutoff(request.getShippingInstructionCutoff());
+            shipmentDetails.setDgCutoff(request.getDgCutoff());
+            shipmentDetails.setReeferCutoff(request.getReeferCutoff());
+            shipmentDetails.setEarliestEmptyEquipmentPickUp(request.getEarliestEmptyEquipmentPickUp());
+            shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(request.getLatestFullEquipmentDeliveredToCarrier());
+            shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(request.getEarliestDropOffFullEquipmentToCarrier());
+        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+            shipmentDetails.setLatestArrivalTime(request.getLatestArrivalTime());
+        }
+    }
     protected boolean canProcesscutOffFields(ConsolidationDetails consol, ConsolidationDetails oldEntity) {
         return !Objects.equals(consol.getTerminalCutoff(), oldEntity.getTerminalCutoff()) ||
             !Objects.equals(consol.getVerifiedGrossMassCutoff(), oldEntity.getVerifiedGrossMassCutoff()) ||
