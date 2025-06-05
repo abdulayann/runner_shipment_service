@@ -4469,6 +4469,7 @@ if (unitConversionUtilityMockedStatic != null) {
     request.setShipmentIds(null); // all shipments
 
     ShipmentDetails shipment1 = new ShipmentDetails();
+    shipment1.setId(1L);
     shipment1.setWeight(BigDecimal.valueOf(10));
     shipment1.setWeightUnit("KG");
     shipment1.setVolume(BigDecimal.valueOf(2));
@@ -4476,8 +4477,17 @@ if (unitConversionUtilityMockedStatic != null) {
     shipment1.setNoOfPacks(5);
     shipment1.setPacksUnit("BOX");
 
+    ShipmentDetails shipment2 = new ShipmentDetails();
+    shipment1.setId(2L);
+    shipment2.setWeight(BigDecimal.valueOf(11));
+    shipment2.setWeightUnit("KG");
+    shipment2.setVolume(BigDecimal.valueOf(3));
+    shipment2.setVolumeUnit("M3");
+    shipment2.setNoOfPacks(5);
+    shipment2.setPacksUnit("Parcel");
+
     ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-    consolidationDetails.setShipmentsList(Set.of(shipment1));
+    consolidationDetails.setShipmentsList(Set.of(shipment1,shipment2));
     consolidationDetails.setOverride(false);
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
     consolidationDetails.setAchievedQuantities(new AchievedQuantities());
@@ -4509,9 +4519,9 @@ if (unitConversionUtilityMockedStatic != null) {
 
     // Assert
     assertNotNull(response);
-    assertEquals(1, response.getSummaryShipmentsCount(), "Should have 1 shipment in summary");
-    assertEquals(5, response.getTotalPacks(), "Total packs should be 5");
-    assertEquals("BOX", response.getPackType(), "Pack type should be BOX");
+    assertEquals(2, response.getSummaryShipmentsCount(), "Should have 2 shipments in summary");
+    assertEquals(10, response.getTotalPacks(), "Total packs should be 10");
+    assertEquals("PKG", response.getPackType(), "Pack type should be BOX");
     assertTrue(response.getSummaryWeight().contains("KG"), "Summary weight should contain KG");
     assertTrue(response.getSummaryVolume().contains("M3"), "Summary volume should contain M3");
   }
