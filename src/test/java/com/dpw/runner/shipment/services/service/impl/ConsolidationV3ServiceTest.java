@@ -844,8 +844,6 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(new BigDecimal("1000"));
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
-    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
-    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
     when(jsonHelper.convertToJson(any())).thenReturn("ABC");
     when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
     when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
@@ -873,8 +871,6 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(new BigDecimal("1000"));
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
-    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
-    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
     when(jsonHelper.convertToJson(any())).thenReturn("ABC");
     when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
     doThrow(new GenericException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
