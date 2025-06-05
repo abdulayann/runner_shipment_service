@@ -17,6 +17,8 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
@@ -36,14 +38,17 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,17 +65,22 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
@@ -139,6 +149,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private IQuoteContractsService quoteContractsService;
     @Mock
     private DependentServiceHelper dependentServiceHelper;
+    @Mock
+    private MasterDataKeyUtils masterDataKeyUtils;
 
     @Mock
     private INotesDao notesDao;
@@ -2555,4 +2567,735 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(creditLimitRequest));
         assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
     }
+
+
+    @Test
+    void testAddAllMasterDataInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+        customerBookingV3Response.setReferenceNumbersList(List.of(new ReferenceNumbersResponse()));
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        customerBookingV3Response.setPackingList(List.of(new PackingResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllMasterDataInSingleCallResult = customerBookingService
+                .addAllMasterDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllMasterDataInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllMasterDataInSingleCallResult = customerBookingService
+                .addAllMasterDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils, atLeast(1)).createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(),
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
+        verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllMasterDataInSingleCall3() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllMasterDataInSingleCallResult = customerBookingService
+                .addAllMasterDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils, atLeast(1)).createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(),
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
+        verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllMasterDataInSingleCall4() throws InterruptedException, ExecutionException {
+        // Arrange
+        when(masterDataUtils.createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInBulkMasterList(Mockito.<MasterListRequestV2>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllMasterDataInSingleCallResult = customerBookingService
+                .addAllMasterDataInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils, atLeast(1)).createInBulkMasterListRequest(Mockito.<IRunnerResponse>any(),
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
+        verify(masterDataUtils).fetchInBulkMasterList(isA(MasterListRequestV2.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllMasterDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+
+    @Test
+    void testAddAllUnlocationDataInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkUnlocations(Mockito.<Set<String>>any(), Mockito.<String>any()))
+                .thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllUnlocationDataInSingleCallResult = customerBookingService
+                .addAllUnlocationDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllUnlocationDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllUnlocationDataInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkUnlocations(Mockito.<Set<String>>any(), Mockito.<String>any()))
+                .thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        customerBookingV3Response.setPackingList(List.of(new PackingResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllUnlocationDataInSingleCallResult = customerBookingService
+                .addAllUnlocationDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllUnlocationDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllUnlocationDataInSingleCall3() throws InterruptedException, ExecutionException {
+        // Arrange
+        when(masterDataUtils.fetchInBulkUnlocations(Mockito.<Set<String>>any(), Mockito.<String>any()))
+                .thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        customerBookingV3Response.setPackingList(List.of(new PackingResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllUnlocationDataInSingleCallResult = customerBookingService
+                .addAllUnlocationDataInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllUnlocationDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllCarrierDataInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkCarriers(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllCarrierDataInSingleCallResult = customerBookingService
+                .addAllCarrierDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkCarriers(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllCarrierDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllCarrierDataInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        when(masterDataUtils.fetchInBulkCarriers(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllCarrierDataInSingleCallResult = customerBookingService
+                .addAllCarrierDataInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkCarriers(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllCarrierDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllCurrencyDataInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkCurrencyRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInCurrencyList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllCurrencyDataInSingleCallResult = customerBookingService
+                .addAllCurrencyDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInCurrencyList(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllCurrencyDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllCurrencyDataInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkCurrencyRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInCurrencyList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllCurrencyDataInSingleCallResult = customerBookingService
+                .addAllCurrencyDataInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils).fetchInCurrencyList(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllCurrencyDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllTenantDataInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInTenantsList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllTenantDataInSingleCallResult = customerBookingService
+                .addAllTenantDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInTenantsList(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllTenantDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllTenantDataInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInTenantsList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllTenantDataInSingleCallResult = customerBookingService
+                .addAllTenantDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils, atLeast(1)).createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(),
+                Mockito.<Class<Object>>any(), isA(Map.class), Mockito.<String>any(), isA(Map.class));
+        verify(masterDataUtils).fetchInTenantsList(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllTenantDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllTenantDataInSingleCall3() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.createInBulkTenantsRequest(Mockito.<IRunnerResponse>any(), Mockito.<Class<Object>>any(),
+                Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(), Mockito.<Map<String, Object>>any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInTenantsList(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllTenantDataInSingleCallResult = customerBookingService
+                .addAllTenantDataInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils).fetchInTenantsList(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllTenantDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllContainerTypesInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkContainerTypes(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllContainerTypesInSingleCallResult = customerBookingService
+                .addAllContainerTypesInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkContainerTypes(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllContainerTypesInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllContainerTypesInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkContainerTypes(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllContainerTypesInSingleCallResult = customerBookingService
+                .addAllContainerTypesInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkContainerTypes(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllContainerTypesInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllSalesAgentInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInSalesAgentList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllSalesAgentInSingleCallResult = customerBookingService
+                .addAllSalesAgentInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInSalesAgentList(isA(List.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllSalesAgentInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllSalesAgentInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInSalesAgentList(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllSalesAgentInSingleCallResult = customerBookingService
+                .addAllSalesAgentInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils).fetchInSalesAgentList(isA(List.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllSalesAgentInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllVesselDataInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkVessels(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllVesselDataInSingleCallResult = customerBookingService
+                .addAllVesselDataInSingleCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkVessels(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllVesselDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllVesselDataInSingleCall2() throws InterruptedException, ExecutionException {
+        // Arrange
+        when(masterDataUtils.fetchInBulkVessels(Mockito.<Set<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setContainersList(List.of(new ContainerResponse()));
+        customerBookingV3Response.setCarrierDetails(CarrierDetailResponse.builder().build());
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllVesselDataInSingleCallResult = customerBookingService
+                .addAllVesselDataInSingleCall(customerBookingV3Response, null);
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkVessels(isA(Set.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllVesselDataInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
+    void testAddAllOrganizationDataInSingleCall_Success () throws ExecutionException, InterruptedException {
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        when(masterDataUtils.createInBulkOrganizationRequest(any(), any(), anyMap(), anyString(), anyMap())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInOrganizations(anySet(), anyString())).thenReturn(new HashMap<>());
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllOrganizationDataInSingleCallResult =  customerBookingService.addAllOrganizationDataInSingleCall(customerBookingV3Response, null);
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllOrganizationDataInSingleCallResult.get();
+
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+    }
+
+    @Test
+    void testAddAllOrganizationDataInSingleCall_Error () throws ExecutionException, InterruptedException {
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        when(masterDataUtils.createInBulkOrganizationRequest(any(), any(), anyMap(), anyString(), anyMap())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.fetchInOrganizations(anySet(), anyString())).thenThrow(new RuntimeException());
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllOrganizationDataInSingleCallResult =  customerBookingService.addAllOrganizationDataInSingleCall(customerBookingV3Response, null);
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllOrganizationDataInSingleCallResult.get();
+
+        assertNull(getResult);
+    }
+
+    @Test
+    void testGetAllMasterData_whenShipmentExists_shouldReturnMasterDataMap() {
+        // Given
+        Long bookingId = 123L;
+
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        Map<String, Object> dummyMasterData = Map.of("key1", "value1");
+
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(customerBooking));
+
+        when(commonUtils.setIncludedFieldsToResponse(eq(customerBooking), anySet(), any(CustomerBookingV3Response.class)))
+                .thenReturn(customerBookingV3Response);
+
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(customerBookingV3Response));
+
+        Map<String, Object> result = spyService.getAllMasterData(bookingId);
+
+        assertNotNull(result);
+        assertEquals("value1", result.get("key1"));
+
+        verify(customerBookingDao).findById(bookingId);
+        verify(commonUtils).setIncludedFieldsToResponse(eq(customerBooking), anySet(), any(CustomerBookingV3Response.class));
+        verify(spyService).fetchAllMasterDataByKey(customerBookingV3Response);
+    }
+
+    //@Test
+    void testFetchAllMasterDataByKey_shouldRunAllAsyncCallsAndReturnMap() {
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+
+        CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
+
+        // Mock withMdc to return the same Runnable
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Mock all master data helper methods to just modify the map for visibility
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("master", "ok");
+            return null;
+        }).when(spyService).addAllMasterDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("unlocation", "ok");
+            return null;
+        }).when(spyService).addAllUnlocationDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("carrier", "ok");
+            return null;
+        }).when(spyService).addAllCarrierDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("currency", "ok");
+            return null;
+        }).when(spyService).addAllCurrencyDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("tenant", "ok");
+            return null;
+        }).when(spyService).addAllTenantDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("containerType", "ok");
+            return null;
+        }).when(spyService).addAllContainerTypesInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("chargeType", "ok");
+            return null;
+        }).when(spyService).addAllChargeTypesInSingleMDMCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("salesAgent", "ok");
+            return null;
+        }).when(spyService).addAllSalesAgentInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("vessel", "ok");
+            return null;
+        }).when(spyService).addAllVesselDataInSingleCall(any(), any());
+
+        doAnswer(invocation -> {
+            Map<String, Object> map = invocation.getArgument(1);
+            map.put("organization", "ok");
+            return null;
+        }).when(spyService).addAllOrganizationDataInSingleCall(any(), any());
+
+        // Call method under test
+        Map<String, Object> responseMap = customerBookingService.fetchAllMasterDataByKey(customerBookingV3Response);
+
+        // Validate map contains all expected keys
+        assertEquals(10, responseMap.size());
+        assertEquals("ok", responseMap.get("master"));
+        assertEquals("ok", responseMap.get("unlocation"));
+        assertEquals("ok", responseMap.get("carrier"));
+        assertEquals("ok", responseMap.get("currency"));
+        assertEquals("ok", responseMap.get("tenant"));
+        assertEquals("ok", responseMap.get("containerType"));
+        assertEquals("ok", responseMap.get("chargeType"));
+        assertEquals("ok", responseMap.get("salesAgent"));
+        assertEquals("ok", responseMap.get("vessel"));
+        assertEquals("ok", responseMap.get("organization"));
+
+        // Optional: verify method calls
+        verify(customerBookingService).addAllMasterDataInSingleCall(any(), any());
+        verify(customerBookingService).addAllUnlocationDataInSingleCall(any(), any());
+        verify(customerBookingService).addAllCarrierDataInSingleCall(any(), any());
+        verify(customerBookingService).addAllCurrencyDataInSingleCall(any(), any());
+        verify(customerBookingService).addAllTenantDataInSingleCall(any(), any());
+        verify(customerBookingService).addAllContainerTypesInSingleCall(any(), any());
+        verify(customerBookingService).addAllChargeTypesInSingleMDMCall(any(), any());
+        verify(customerBookingService).addAllSalesAgentInSingleCall(any(), any());
+        verify(customerBookingService).addAllVesselDataInSingleCall(any(), any());
+        verify(customerBookingService).addAllOrganizationDataInSingleCall(any(), any());
+    }
+
 }
