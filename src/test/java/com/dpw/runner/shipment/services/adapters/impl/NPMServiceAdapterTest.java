@@ -41,6 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +61,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -575,6 +579,111 @@ class NPMServiceAdapterTest {
         when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).cargoType("LCL").origin("a").destination("b").build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContracts4() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).cargoType("LCL").origin("a").destination("b").build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContracts5() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).cargoType("LCL").origin("1").destination("1").build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContractsWithNoNpmContractsResponse() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideDgContractTestData")
+    void testFetchContractsWithVariousDgFlagsAndContracts(boolean isDgEnabled, List<String> dgClassList, List<String> dgUnNumberList) throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        unlocations.add(new UnlocationsResponse() {{ setLocationsReferenceGUID("1"); }});
+        unlocations.add(new UnlocationsResponse() {{ setLocationsReferenceGUID("2"); }});
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocations.get(0)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(ListContractsWithFilterRequest.builder()
+                        .listContractRequest(new ListContractRequest())
+                        .cargoType("LCL").origin("1").destination("2")
+                        .isDgEnabled(isDgEnabled).build())
+                .build();
         var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1291,5 +1400,16 @@ class NPMServiceAdapterTest {
         assertEquals("Origin1", contracts.get(0).getOrigin());
         assertEquals("Destination1", contracts.get(0).getDestination());
         assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    private static Stream<Arguments> provideDgContractTestData() {
+        List<String> nullDgList = new ArrayList<>();
+        nullDgList.add(null);
+        return Stream.of(
+                Arguments.of(true, List.of("2.1"), List.of("1234")),
+                Arguments.of(true, null, null),
+                Arguments.of(true, new ArrayList<>(), new ArrayList<>()),
+                Arguments.of(true, nullDgList, nullDgList)
+        );
     }
 }
