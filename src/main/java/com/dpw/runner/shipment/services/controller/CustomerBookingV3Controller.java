@@ -3,14 +3,7 @@ package com.dpw.runner.shipment.services.controller;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
-import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
-import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -60,14 +53,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -326,5 +312,11 @@ public class CustomerBookingV3Controller {
         List<PartiesResponse> partiesList = partiesV3Service.list(listCommonRequest);
         List<IRunnerResponse> responseList = partiesList.stream().map(p -> (IRunnerResponse) p).toList();
         return ResponseHelper.buildListSuccessResponse(responseList);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long bookingId) {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getAllMasterData(bookingId));
     }
 }
