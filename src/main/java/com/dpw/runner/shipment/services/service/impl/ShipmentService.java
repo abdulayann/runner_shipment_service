@@ -5890,7 +5890,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
             long start = System.currentTimeMillis();
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails.")));
-            includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null))));
+            includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails."))));
             includeColumns.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS);
             ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns.stream().collect(Collectors.toSet()), new ShipmentDetailsResponse());
             log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
