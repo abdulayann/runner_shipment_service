@@ -1859,6 +1859,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (isConsoleCreationNeededV3(customerBookingRequest)) {
             ConsolidationDetailsV3Request consolidationDetailsV3Request = ConsolidationDetailsV3Request.builder().
                     carrierDetails(CarrierDetailRequest.builder()
+                            .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                            .destination(customerBookingRequest.getCarrierDetails().getDestination())
                             .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
                             .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
                             .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
@@ -1868,6 +1870,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .ata(customerBookingRequest.getCarrierDetails().getAta())
                             .atd(customerBookingRequest.getCarrierDetails().getAtd())
                             .build()).
+                    consolidationType("STD").
                     transportMode(customerBookingRequest.getTransportType()).
                     containerCategory(customerBookingRequest.getCargoType()).
                     shipmentType(customerBookingRequest.getDirection()).
