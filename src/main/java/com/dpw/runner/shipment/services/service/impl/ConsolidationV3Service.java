@@ -918,147 +918,133 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeV3Response response, Set<ShipmentDetails> shipmentDetailsList)
             throws RunnerException {
 
-        // Skip processing if consolidation is set to override mode
         if (Boolean.TRUE.equals(consolidationDetails.getOverride())) {
             return;
         }
 
-        // Retrieve shipment settings and tenant settings from the context
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
-        // Get unique container IDs from the list
-        List<Long> containerIds = new ArrayList<>();
-        if (consolidationDetails.getContainersList() != null) {
-            containerIds = consolidationDetails.getContainersList().stream()
-                .map(Containers::getId)
-                .distinct()
-                .toList();
-        }
-
-        // Fetch container IDs attached to packing or shipment
+        List<Long> containerIds = getContainerIds(consolidationDetails);
         Set<Long> assignedContainerIds = new HashSet<>(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(containerIds));
 
-        // Set default units for weight and volume chargeable quantities
-        String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
-        if (ObjectUtils.isNotEmpty(shipmentSettingsDetails.getWeightChargeableUnit())) {
-            weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
-        }
+        String weightChargeableUnit = getOrDefault(shipmentSettingsDetails.getWeightChargeableUnit(), Constants.WEIGHT_UNIT_KG);
+        String volumeChargeableUnit = getOrDefault(shipmentSettingsDetails.getVolumeChargeableUnit(), Constants.VOLUME_UNIT_M3);
 
-        String volumeChargeableUnit = Constants.VOLUME_UNIT_M3;
-        if (ObjectUtils.isNotEmpty(shipmentSettingsDetails.getVolumeChargeableUnit())) {
-            volumeChargeableUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
-        }
+        AggregationResult aggregationResult = aggregateShipments(shipmentDetailsList, weightChargeableUnit, volumeChargeableUnit);
 
-        // Initialize total weight and volume as zero
-        BigDecimal sumWeight = new BigDecimal(0);
-        BigDecimal sumVolume = new BigDecimal(0);
-        Integer packs = 0;
-        String packsType = null;
-
-        // Accumulate weight and volume from the shipment details list
-        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
-            for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                // Convert weight to the chargeable unit and add to the sum
-                sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(),
-                        shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
-
-                // Convert volume to the chargeable unit and add to the sum
-                sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(),
-                        shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
-
-                // Package count calculation: Add number of packs, treating null values as zero
-                packs = packs + (shipmentDetails.getNoOfPacks() != null ? shipmentDetails.getNoOfPacks() : 0);
-
-                // Package type handling: Determine the appropriate package unit type
-                if (isStringNullOrEmpty(packsType))
-                {
-                    packsType = shipmentDetails.getPacksUnit();
-                } else if (!isStringNullOrEmpty(shipmentDetails.getPacksUnit()) && !Objects.equals(packsType, shipmentDetails.getPacksUnit()))
-                {
-                    // If package types differ across shipments, use generic "PKG" as default
-                    packsType = PackingConstants.PKG;
-                }
-
-            }
-            // Update the response with the count of processed shipments
-            response.setSummaryShipmentsCount(shipmentDetailsList.size());
-        } else {
-            // Set the shipment count to zero if the list is empty
-            response.setSummaryShipmentsCount(0);
-        }
-
-        // Calculate the TEU count for the consolidation and update the response
+        response.setSummaryShipmentsCount(aggregationResult.shipmentCount);
         calculateConsoleShipmentTeuCount(consolidationDetails, response, v1TenantSettingsResponse, assignedContainerIds);
 
-        // Initialize achieved quantities if not already set
         if (consolidationDetails.getAchievedQuantities() == null) {
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
         }
 
-        // Update the consolidation details with calculated weight and volume
-        consolidationDetails.getAchievedQuantities().setConsolidatedWeight(sumWeight);
+        consolidationDetails.getAchievedQuantities().setConsolidatedWeight(aggregationResult.sumWeight);
         consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(weightChargeableUnit);
-        consolidationDetails.getAchievedQuantities().setConsolidatedVolume(sumVolume);
+        consolidationDetails.getAchievedQuantities().setConsolidatedVolume(aggregationResult.sumVolume);
         consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(volumeChargeableUnit);
 
-        // Calculate utilization for the consolidation
         consolidationDetails = calculateConsolUtilization(consolidationDetails);
 
-        // Retrieve the transport mode from consolidation details
-        String transportMode = consolidationDetails.getTransportMode();
-
-        // Initialize allocations if not already set
         if (consolidationDetails.getAllocations() == null) {
             consolidationDetails.setAllocations(new Allocations());
         }
 
-        // Calculate the volume-weight-based chargeable quantity
-        VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
+        String transportMode = consolidationDetails.getTransportMode();
+        VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, aggregationResult.sumWeight, aggregationResult.sumVolume);
 
-        // Update the achieved quantities with chargeable weight and unit
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
 
-        // Handle special case for SEA transport mode with LCL container category
-        if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+        if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) &&
                 Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
-
-            // Convert weight to KG and volume to M3
-            BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(),
-                    consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
-            BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(),
-                    consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
-
-            // Set the charge quantity as the maximum of weight (in tonnes) or volume (in M3)
-            consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(winKg.divide(BigDecimal.valueOf(1000)).max(vinM3));
-            consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(Constants.VOLUME_UNIT_M3);
+            applyLclSeaOverrides(consolidationDetails);
         }
 
-        // Update the weight-volume ratio in the achieved quantities
         consolidationDetails.getAchievedQuantities().setWeightVolume(vwOb.getVolumeWeight());
         consolidationDetails.getAchievedQuantities().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
         consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
 
-        // Update the response object with allocation and achieved quantities data
         response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
-        response.setSummaryWeight(IReport.convertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
-        response.setSummaryVolume(IReport.convertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
+        response.setSummaryWeight(IReport.convertToWeightNumberFormat(aggregationResult.sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
+        response.setSummaryVolume(IReport.convertToVolumeNumberFormat(aggregationResult.sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
         response.setSummaryDGShipments(getSummaryDGShipments(shipmentDetailsList));
         response.setSummaryContainer(getSummaryContainer(consolidationDetails.getContainersList(), assignedContainerIds));
         response.setSummaryDgPacks(getSummaryDgPacks(consolidationDetails.getPackingList()));
-        response.setTotalPacks(packs);
-        response.setPackType(packsType);
+        response.setTotalPacks(aggregationResult.packs);
+        response.setPackType(aggregationResult.packsType);
 
-        // Calculate and set the chargeable weight if applicable
         if (canSetChargableWeight(consolidationDetails)) {
-            double volInM3 = convertUnit(Constants.VOLUME, sumVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
-            double wtInKg = convertUnit(Constants.MASS, sumWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+            double volInM3 = convertUnit(Constants.VOLUME, aggregationResult.sumVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+            double wtInKg = convertUnit(Constants.MASS, aggregationResult.sumWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
             double chargeableWeight = Math.max(wtInKg / 1000, volInM3);
             chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
             response.setSummaryChargeableWeight(chargeableWeight + " " + Constants.VOLUME_UNIT_M3);
         }
+    }
+
+    private String getOrDefault(String unit, String defaultUnit) {
+        return ObjectUtils.isNotEmpty(unit) ? unit : defaultUnit;
+    }
+
+    private List<Long> getContainerIds(ConsolidationDetails details) {
+        if (details.getContainersList() == null) return new ArrayList<>();
+        return details.getContainersList().stream()
+                .map(Containers::getId)
+                .distinct()
+                .toList();
+    }
+
+    private void applyLclSeaOverrides(ConsolidationDetails consolidationDetails) throws RunnerException {
+        BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS,
+                consolidationDetails.getAllocations().getWeight(),
+                consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
+        BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME,
+                consolidationDetails.getAllocations().getVolume(),
+                consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
+        consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(winKg.divide(BigDecimal.valueOf(1000)).max(vinM3));
+        consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(Constants.VOLUME_UNIT_M3);
+    }
+
+    private static class AggregationResult {
+        BigDecimal sumWeight;
+        BigDecimal sumVolume;
+        int packs;
+        String packsType;
+        int shipmentCount;
+    }
+
+    private AggregationResult aggregateShipments(Set<ShipmentDetails> shipments, String weightUnit, String volumeUnit) throws RunnerException {
+        AggregationResult result = new AggregationResult();
+        result.sumWeight = BigDecimal.ZERO;
+        result.sumVolume = BigDecimal.ZERO;
+        result.packs = 0;
+        result.packsType = null;
+        result.shipmentCount = 0;
+
+        if (ObjectUtils.isNotEmpty(shipments)) {
+            for (ShipmentDetails sd : shipments) {
+                result.sumWeight = result.sumWeight.add(
+                        new BigDecimal(convertUnit(Constants.MASS, sd.getWeight(), sd.getWeightUnit(), weightUnit).toString()));
+                result.sumVolume = result.sumVolume.add(
+                        new BigDecimal(convertUnit(Constants.VOLUME, sd.getVolume(), sd.getVolumeUnit(), volumeUnit).toString()));
+                result.packs += (sd.getNoOfPacks() != null ? sd.getNoOfPacks() : 0);
+                result.packsType = determinePackType(result.packsType, sd.getPacksUnit());
+            }
+            result.shipmentCount = shipments.size();
+        }
+
+        return result;
+    }
+
+    private String determinePackType(String existing, String incoming) {
+        if (isStringNullOrEmpty(existing)) return incoming;
+        if (!isStringNullOrEmpty(incoming) && !Objects.equals(existing, incoming)) {
+            return PackingConstants.PKG;
+        }
+        return existing;
     }
 
     /**
