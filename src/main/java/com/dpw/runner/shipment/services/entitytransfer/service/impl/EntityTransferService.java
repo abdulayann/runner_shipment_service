@@ -477,7 +477,7 @@ public class EntityTransferService implements IEntityTransferService {
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, sendConsolidationRequest);
         entityTransferPayload.setShipmentType(Constants.IMP);
         if(!entityTransferPayload.getShipmentsList().isEmpty()) {
-            for (var ship : console.getShipmentsList()) {
+            for (var ship : entityTransferPayload.getShipmentsList()) {
                 ship.setDirection(Constants.IMP);
             }
         }
