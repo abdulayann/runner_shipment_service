@@ -6,7 +6,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -524,6 +527,68 @@ class CargoServiceTest {
         assertEquals(BigDecimal.valueOf(3.0), response.getVolume());
         assertEquals(5, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(480), response.getVolumetricWeight());
+        assertEquals("KG", response.getVolumetricWeightUnit());
+    }
+
+    @Test
+    void testCalculateChargeable_ForAirTransport_ShouldRoundOff() throws RunnerException {
+        CargoChargeableRequest request = new CargoChargeableRequest();
+        request.setTransportMode("AIR");
+        request.setWeightUnit("KG");
+        request.setVolumeUnit("M3");
+        request.setWeight(new BigDecimal("120.4"));
+        request.setVolume(new BigDecimal("2.5"));
+
+        VolumeWeightChargeable vwMock = new VolumeWeightChargeable();
+        vwMock.setChargeable(new BigDecimal("123.3")); // will be rounded to 123.5
+        vwMock.setChargeableUnit("KG");
+        vwMock.setVolumeWeight(new BigDecimal("100.0"));
+        vwMock.setVolumeWeightUnit("KG");
+
+        Mockito.when(consolidationService.calculateVolumeWeight(
+                eq("AIR"), eq("KG"), eq("M3"),
+                eq(new BigDecimal("120.4")), eq(new BigDecimal("2.5"))
+        )).thenReturn(vwMock);
+
+        CargoChargeableResponse response = cargoService.calculateChargeable(request);
+
+        assertNotNull(response);
+        assertEquals(new BigDecimal("120.4"), response.getWeight());
+        assertEquals("KG", response.getWeightUnit());
+        assertEquals(new BigDecimal("123.5"), response.getChargeable()); // Rounded up
+        assertEquals("KG", response.getChargeableUnit());
+        assertEquals(new BigDecimal("100.0"), response.getVolumetricWeight());
+        assertEquals("KG", response.getVolumetricWeightUnit());
+    }
+
+    @Test
+    void testCalculateChargeable_ForSeaTransport_NoRounding() throws RunnerException {
+        CargoChargeableRequest request = new CargoChargeableRequest();
+        request.setTransportMode("SEA");
+        request.setWeightUnit("KG");
+        request.setVolumeUnit("M3");
+        request.setWeight(new BigDecimal("500.0"));
+        request.setVolume(new BigDecimal("10.0"));
+
+        VolumeWeightChargeable vwMock = new VolumeWeightChargeable();
+        vwMock.setChargeable(new BigDecimal("510.75"));
+        vwMock.setChargeableUnit("KG");
+        vwMock.setVolumeWeight(new BigDecimal("120.0"));
+        vwMock.setVolumeWeightUnit("KG");
+
+        Mockito.when(consolidationService.calculateVolumeWeight(
+                eq("SEA"), eq("KG"), eq("M3"),
+                eq(new BigDecimal("500.0")), eq(new BigDecimal("10.0"))
+        )).thenReturn(vwMock);
+
+        CargoChargeableResponse response = cargoService.calculateChargeable(request);
+
+        assertNotNull(response);
+        assertEquals(new BigDecimal("500.0"), response.getWeight());
+        assertEquals("KG", response.getWeightUnit());
+        assertEquals(new BigDecimal("510.75"), response.getChargeable()); // No rounding
+        assertEquals("KG", response.getChargeableUnit());
+        assertEquals(new BigDecimal("120.0"), response.getVolumetricWeight());
         assertEquals("KG", response.getVolumetricWeightUnit());
     }
 
