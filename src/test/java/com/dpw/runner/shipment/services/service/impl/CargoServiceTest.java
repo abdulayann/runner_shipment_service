@@ -223,9 +223,7 @@ class CargoServiceTest {
 
     @Test
     void testGetCargoDetailsForCustomerBooking_WithContainersAndPackings() throws RunnerException {
-        CargoDetailsRequest request = new CargoDetailsRequest();
-        request.setEntityId("1");
-        request.setEntityType("BOOKING");
+        CargoDetailsRequest request = createRequest("BOOKING", "1");
 
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
@@ -263,8 +261,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -273,9 +271,7 @@ class CargoServiceTest {
 
     @Test
     void testGetCargoDetailsForCustomerBooking_WithContainersAndPackings_ForSeaTransport() throws RunnerException {
-        CargoDetailsRequest request = new CargoDetailsRequest();
-        request.setEntityId("1");
-        request.setEntityType("BOOKING");
+        CargoDetailsRequest request = createRequest("BOOKING", "1");
 
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
@@ -314,8 +310,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(2.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -324,9 +320,7 @@ class CargoServiceTest {
 
     @Test
     void testGetCargoDetailsForCustomerBooking_WithContainersAndPackings_WithNullSeaTransport() throws RunnerException {
-        CargoDetailsRequest request = new CargoDetailsRequest();
-        request.setEntityId("1");
-        request.setEntityType("BOOKING");
+        CargoDetailsRequest request = createRequest("BOOKING", "1");
 
         CustomerBooking booking = new CustomerBooking();
         booking.setTransportType("AIR");
@@ -358,16 +352,14 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
     }
 
     @Test
     void testGetCargoDetailsForShipment_WithContainersAndPackings() throws RunnerException {
-        CargoDetailsRequest request = new CargoDetailsRequest();
-        request.setEntityId("1");
-        request.setEntityType("SHIPMENT");
+        CargoDetailsRequest request = createRequest("SHIPMENT", "1");
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
@@ -405,8 +397,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -415,9 +407,7 @@ class CargoServiceTest {
 
     @Test
     void testGetCargoDetailsForConsolidation_WithContainersAndPackings() throws RunnerException {
-        CargoDetailsRequest request = new CargoDetailsRequest();
-        request.setEntityId("1");
-        request.setEntityType("CONSOLIDATION");
+        CargoDetailsRequest request = createRequest("CONSOLIDATION", "1");
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setTransportMode("AIR");
@@ -455,13 +445,66 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
         assertEquals("KG", response.getVolumetricWeightUnit());
     }
+
+    @Test
+    void testGetCargoDetailsForCustomerBooking_MissingWeightForAir() throws RunnerException {
+        CargoDetailsRequest request = createRequest("BOOKING", "1");
+
+        CustomerBooking booking = new CustomerBooking();
+        booking.setTransportType("AIR");
+        booking.setCargoType("LCL");
+
+        Containers container = new Containers();
+        container.setContainerCode("20GP");
+        container.setContainerCount(1L);
+        booking.setContainersList(List.of(container));
+
+        Packing packing = new Packing();
+        packing.setWeight(null);
+        packing.setWeightUnit("KG");
+        packing.setVolume(BigDecimal.valueOf(3));
+        packing.setVolumeUnit("M3");
+        packing.setPacks("5");
+        booking.setPackingList(List.of(packing));
+
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("20GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        DependentServiceResponse dependentServiceResponse = new DependentServiceResponse();
+        dependentServiceResponse.setData(List.of(mdmContainerTypeResponse));
+
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
+
+        VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
+        vwOb.setChargeable(null);
+        vwOb.setChargeableUnit("KG");
+        vwOb.setVolumeWeight(BigDecimal.valueOf(480));
+        vwOb.setVolumeWeightUnit("KG");
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(vwOb);
+
+        CargoDetailsResponse response = cargoService.getCargoDetails(request);
+
+        assertEquals(1, response.getContainers());
+        assertEquals(BigDecimal.valueOf(2.0), response.getTeuCount());
+        assertNull(response.getWeight());
+        assertNull(response.getChargable());
+        assertEquals(BigDecimal.valueOf(3.0), response.getVolume());
+        assertEquals(5, response.getNoOfPacks());
+        assertEquals(BigDecimal.valueOf(480), response.getVolumetricWeight());
+        assertEquals("KG", response.getVolumetricWeightUnit());
+    }
+
 
     private CargoDetailsRequest createRequest(String entityType, String entityId) {
         CargoDetailsRequest request = new CargoDetailsRequest();
