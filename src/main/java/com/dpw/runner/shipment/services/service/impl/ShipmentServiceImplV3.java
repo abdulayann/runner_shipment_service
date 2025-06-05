@@ -549,6 +549,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
         // set dps implications
         response.setImplicationList(implications);
+        setConsolBookingNumber(shipmentId, response);
+        setDgPackCountAndType(shipmentDetailsEntity, response);
+        setMainCarriageFlag(shipmentDetailsEntity, response);
+        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
+        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
+        return response;
+    }
+
+    private void setConsolBookingNumber(Long shipmentId, ShipmentRetrieveLiteResponse response) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
         if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
             Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
@@ -556,19 +565,39 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             String bookingNumber = consolidationV3Service.getBookingNumberFromConsol(consolidationId);
             response.setConsolBookingNumber(bookingNumber);
         }
-        //add isPacksAvailable flag
-        if (!CollectionUtils.isEmpty(shipmentDetailsEntity.getPackingList())) {
-            response.setIsPacksAvailable(Boolean.TRUE);
-        }
+    }
+
+    private void setMainCarriageFlag(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
         List<Routings> routingsList = shipmentDetailsEntity.getRoutingsList();
         if (!CollectionUtils.isEmpty(routingsList)) {
             boolean isMainCarriagePresent = routingsList.stream()
                     .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
             response.setIsMainCarriageAvailable(isMainCarriagePresent);
         }
-        response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
-        response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
-        return response;
+    }
+
+    private static void setDgPackCountAndType(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+        List<Packing> packingList = shipmentDetailsEntity.getPackingList();
+        if (!CollectionUtils.isEmpty(packingList)) {
+            response.setIsPacksAvailable(Boolean.TRUE);
+            int dgPackCount = 0;
+            String dgPackUnit = Constants.PACKAGES;
+            Set<String> dgPacksUnitSet = new HashSet<>();
+            int totalHazardousPackCount = packingList.stream()
+                    .filter(Packing::getHazardous)
+                    .mapToInt(p -> {
+                        try {
+                            dgPacksUnitSet.add(p.getPacksType());
+                            return Integer.parseInt(p.getPacks());
+                        } catch (NumberFormatException e) {
+                            return 0; // or handle differently if needed
+                        }
+                    })
+                    .sum();
+            if (dgPacksUnitSet.size() == 1) {
+                response.setDgPacksUnit(packingList.get(0).getPacksType());
+            }
+        }
     }
 
     protected void setContainerTeuCountResponse(ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse, Set<Containers> containersList) {
@@ -643,7 +672,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (request == null) {
             log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-
+        if (!Objects.equals(request.getTransportMode(), TRANSPORT_MODE_AIR)) {
+            request.setSlac(null);
+        }
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
 
         try {
@@ -699,6 +730,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         long start = System.currentTimeMillis();
         log.info("{} | starts completeUpdateShipment....", LoggerHelper.getRequestIdFromMDC());
         long mid = System.currentTimeMillis();
+        if (!Objects.equals(shipmentRequest.getTransportMode(), TRANSPORT_MODE_AIR)) {
+            shipmentRequest.setSlac(null);
+        }
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
         log.info("{} | completeUpdateShipment db query: retrieveByIdOrGuid.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
         if (oldEntity.isEmpty()) {
@@ -738,7 +772,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, isFromET);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             // Trigger Kafka event for PushToDownStreamServices
-            this.triggerPushToDownStream(entity, oldConvertedShipment,false);
+            this.triggerPushToDownStream(entity, oldConvertedShipment, false);
             log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
             return jsonHelper.convertValue(entity, ShipmentDetailsV3Response.class);
         } catch (Exception e) {
