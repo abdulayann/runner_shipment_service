@@ -47,6 +47,8 @@ public class NPMContractsResponse implements IRunnerResponse {
         private List<String> dgClass;
         @JsonProperty("dg_un_num")
         private List<String> dgUnNum;
+        @JsonProperty("load_types")
+        private List<String> loadTypes;
     }
 }
 

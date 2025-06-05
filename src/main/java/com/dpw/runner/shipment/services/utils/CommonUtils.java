@@ -1616,6 +1616,9 @@ public class CommonUtils {
 
     public void updateRoutingUnLocData(List<Routings> routingsList, Map<String, EntityTransferUnLocations> unlocationsMap) {
         try {
+            if(Objects.isNull(routingsList)) {
+                return ;
+            }
             for (var routing : routingsList) {
                 EntityTransferUnLocations pol = unlocationsMap.get(routing.getPol());
                 EntityTransferUnLocations pod = unlocationsMap.get(routing.getPod());

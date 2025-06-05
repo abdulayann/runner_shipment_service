@@ -472,7 +472,7 @@ public class EntityTransferService implements IEntityTransferService {
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, new SendConsolidationRequest());
         entityTransferPayload.setShipmentType(Constants.IMP);
         if(!entityTransferPayload.getShipmentsList().isEmpty()) {
-            for (var ship : console.getShipmentsList()) {
+            for (var ship : entityTransferPayload.getShipmentsList()) {
                 ship.setDirection(Constants.IMP);
             }
         }
@@ -917,8 +917,8 @@ public class EntityTransferService implements IEntityTransferService {
     private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails, Map<UUID, Long> oldVsNewShipIds) throws RunnerException {
         SyncingContext.setContext(false);
         List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
-        Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
-        Map<UUID, UUID> oldPackVsOldContGuidMap = entityTransferConsolidationDetails.getPackingVsContainerGuid();
+        Map<UUID, List<UUID>> oldContVsOldShipGuidMap = Optional.ofNullable(entityTransferConsolidationDetails.getContainerVsShipmentGuid()).orElse(new HashMap<>());
+        Map<UUID, UUID> oldPackVsOldContGuidMap = Optional.ofNullable(entityTransferConsolidationDetails.getPackingVsContainerGuid()).orElse(new HashMap<>());
 
         Map<UUID, UUID> newVsOldPackingGuid = new HashMap<>();
         Map<UUID, UUID> newVsOldContainerGuid = new HashMap<>();

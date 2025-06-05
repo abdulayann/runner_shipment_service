@@ -652,8 +652,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if(!Boolean.TRUE.equals(isCreate)){
             // This method will only work for non air transport modes , validation check moved inside the method
-            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeV3Response(), oldEntity.getShipmentsList());
-            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
+            updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
 
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
@@ -884,8 +883,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             if (Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
-                if(consolidationDetails.getSendingAgent() != null)
-                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getTenantId()));
+                if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgData() != null && consolidationDetails.getSendingAgent().getOrgData().get("TenantId") != null)
+                    consolidationDetails.setOriginBranch(Long.valueOf(consolidationDetails.getSendingAgent().getOrgData().get("TenantId").toString()));
             } else if (Constants.DIRECTION_IMP.equals(consolidationDetails.getShipmentType()) && !CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
                 consolidationDetails.setReceivingAgent(v1ServiceUtil.getDefaultAgentOrgParty(null));
             }
@@ -2251,7 +2250,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         syncMainCarriageRoutingToShipment(console.getRoutingsList(), shipmentDetails);
 
         // Update export/import brokers if inter-branch logic applies
-        updateInterBranchConsoleData(console, shipmentDetails);
+        updateNonInterBranchConsoleData(console, shipmentDetails);
     }
 
     /**
@@ -2264,7 +2263,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @param console The consolidation object containing sending and receiving agents
      * @param sd      The shipment details to update with broker info
      */
-    private void updateInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails sd) {
+    private void updateNonInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails sd) {
         // Proceed only if it's NOT an inter-branch console
         if (!Boolean.TRUE.equals(console.getInterBranchConsole())) {
 
@@ -2635,7 +2634,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         ConsolidationDetails consoleDetails = consolidationDetails.get();
         log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
-        calculateAchievedValuesForRetrieve(consoleDetails);
         ConsolidationDetailsV3Response response = jsonHelper.convertValue(consoleDetails, ConsolidationDetailsV3Response.class);
         List<Routings> routingsList = consoleDetails.getRoutingsList();
         if (!CollectionUtils.isEmpty(routingsList)) {
@@ -2655,14 +2653,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.getId()), CONSOLIDATION);
         int pendingCount = map.getOrDefault(consolidationDetails.getId(), 0) + notificationMap.getOrDefault(consolidationDetails.getId(), 0);
         response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
-    }
-
-    private void calculateAchievedValuesForRetrieve(ConsolidationDetails consolidationDetails) {
-        try {
-            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeV3Response(), consolidationDetails.getShipmentsList());
-        } catch (Exception e) {
-            log.error("Error while calculating achieved values for Consolidation with Id " + consolidationDetails.getId());
-        }
     }
 
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response consolidationDetailsV3Response) {
@@ -3353,9 +3343,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             warning = "Mail Template not found, please inform the region users individually";
         }
         processInterConsoleDetachShipment(consol, shipmentIdList);
-        CalculateAchievedValueRequest request = CalculateAchievedValueRequest.builder()
-                .consolidationId(consolidationId).build();
-        calculateAchievedValues(request);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
