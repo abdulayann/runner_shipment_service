@@ -3533,6 +3533,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public ShipmentSailingScheduleResponse updateSailingScheduleDataToShipment(ShipmentSailingScheduleRequest request) throws RunnerException {
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
@@ -3557,6 +3558,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
             shipmentDetailsList.add(shipmentDetails);
         }
+        updateCutoffDetailsToShipment(request, consolidationDetails);
+        save(consolidationDetails, false);
         shipmentV3Service.saveAll(shipmentDetailsList);
         return new ShipmentSailingScheduleResponse();
     }
@@ -3577,6 +3580,24 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setLatestArrivalTime(request.getLatestArrivalTime());
         }
     }
+
+    private void updateCutoffDetailsToShipment(ShipmentSailingScheduleRequest request, ConsolidationDetails consolidationDetails){
+        String transportMode = consolidationDetails.getTransportMode();
+
+        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
+            consolidationDetails.setTerminalCutoff(request.getTerminalCutoff());
+            consolidationDetails.setVerifiedGrossMassCutoff(request.getVerifiedGrossMassCutoff());
+            consolidationDetails.setShipInstructionCutoff(request.getShippingInstructionCutoff());
+            consolidationDetails.setHazardousBookingCutoff(request.getDgCutoff());
+            consolidationDetails.setReeferCutoff(request.getReeferCutoff());
+            consolidationDetails.setEarliestEmptyEquPickUp(request.getEarliestEmptyEquipmentPickUp());
+            consolidationDetails.setLatestFullEquDeliveredToCarrier(request.getLatestFullEquipmentDeliveredToCarrier());
+            consolidationDetails.setEarliestDropOffFullEquToCarrier(request.getEarliestDropOffFullEquipmentToCarrier());
+        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+            consolidationDetails.setLatDate(request.getLatestArrivalTime());
+        }
+    }
+
     protected boolean canProcesscutOffFields(ConsolidationDetails consol, ConsolidationDetails oldEntity) {
         return !Objects.equals(consol.getTerminalCutoff(), oldEntity.getTerminalCutoff()) ||
             !Objects.equals(consol.getVerifiedGrossMassCutoff(), oldEntity.getVerifiedGrossMassCutoff()) ||

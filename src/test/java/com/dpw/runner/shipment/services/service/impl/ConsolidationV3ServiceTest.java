@@ -28,7 +28,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
@@ -4351,4 +4353,91 @@ if (unitConversionUtilityMockedStatic != null) {
     CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
     assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getPendingNotificationData(getRequest));
   }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_SEARequest_shouldUpdateAndReturnResponse() throws RunnerException {
+    // Prepare routing and request
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    List<RoutingsRequest> routingList = List.of(routing);
+    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    request.setRoutings(routingList);
+    request.setCarrier("MAERSK");
+
+    // Mock consolidation details
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    CarrierDetails carrierDetails = new CarrierDetails();
+    shipment1.setCarrierDetails(carrierDetails);
+    shipment1.setTransportMode(TRANSPORT_MODE_SEA);
+
+
+    ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setShipmentsList(Set.of(shipment1));
+    consolidation.setTransportMode(TRANSPORT_MODE_SEA);
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
+
+    // Execute
+    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    // Verify
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_AIRRequest_shouldUpdateAndReturnResponse() throws RunnerException {
+    // Prepare routing and request
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    List<RoutingsRequest> routingList = List.of(routing);
+    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    request.setRoutings(routingList);
+    request.setCarrier("MAERSK");
+
+    // Mock consolidation details
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    CarrierDetails carrierDetails = new CarrierDetails();
+    shipment1.setCarrierDetails(carrierDetails);
+    shipment1.setTransportMode(TRANSPORT_MODE_AIR);
+
+
+    ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setTransportMode(TRANSPORT_MODE_AIR);
+    consolidation.setShipmentsList(Set.of(shipment1));
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
+
+    // Execute
+    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    // Verify
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_emptyRouting_shouldReturnEmptyResponse() throws RunnerException {
+    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    request.setRoutings(Collections.emptyList());
+
+    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_consolidationNotFound_shouldReturnEmptyResponse() throws RunnerException {
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    request.setRoutings(List.of(routing));
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+    verify(routingsV3Service).updateBulk(any(BulkUpdateRoutingsRequest.class), eq("CONSOLIDATION"));
+    verify(shipmentV3Service, never()).saveAll(any());
+  }
+
 }
