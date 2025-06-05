@@ -429,12 +429,24 @@ public class ShipmentDao implements IShipmentDao {
     private void addOriginDestinationValidationsError(ShipmentDetails request, Set<String> errors) {
         if (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || isStringNullOrEmpty(request.getCarrierDetails().getDestination()))
             errors.add("Origin and Destination fields are mandatory.");
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOrigin(), request.getCarrierDetails().getDestination())) {
+            errors.add("Origin and Destination fields cannot be same.");
+        }
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOrigin(), request.getCarrierDetails().getDestinationPort())) {
+            errors.add("Origin and POD fields cannot be same.");
+        }
     }
 
     private void addPolPodValidationsErrors(ShipmentDetails request, Set<String> errors) {
         if ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) &&
                 (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort())))
             errors.add("POL and POD fields are mandatory.");
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
+            errors.add("POL and POD fields cannot be same.");
+        }
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
+            errors.add("POL and Destination fields cannot be same.");
+        }
     }
 
     private void addContainerNumberValidationsErrors(ShipmentDetails request, Set<String> errors) {
