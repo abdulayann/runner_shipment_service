@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 
 import javax.validation.Valid;
+import java.util.Map;
 
 public interface ICustomerBookingV3Service {
     CustomerBookingV3Response create(CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
@@ -23,6 +24,6 @@ public interface ICustomerBookingV3Service {
     PlatformToRunnerCustomerBookingResponse platformCreateBooking(@Valid PlatformToRunnerCustomerBookingRequest request) throws RunnerException;
     CheckCreditLimitResponse checkCreditLimitFromFusion(CreditLimitRequest creditLimitRequest) throws RunnerException;
     V1ShipmentCreationResponse retryForBilling(CommonGetRequest commonGetRequest) throws RunnerException;
-
+    Map<String, Object> getAllMasterData(Long bookingId);
     CustomerBookingV3Response findByBookingNumber(String bookingNumber);
 }
