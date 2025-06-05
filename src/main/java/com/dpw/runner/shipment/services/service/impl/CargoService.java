@@ -171,14 +171,14 @@ public class CargoService implements ICargoService {
         return !isStringNullOrEmpty(p.getPacks()) ? Integer.parseInt(p.getPacks()) : 0;
     }
 
-    private void addDistinctPackType(Set<String> distinctPackTypes, Packing p) {
-        if (!isStringNullOrEmpty(p.getPacksType())) {
-            distinctPackTypes.add(p.getPacksType());
+    private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
+        if (!isStringNullOrEmpty(packing.getPacksType())) {
+            distinctPackTypes.add(packing.getPacksType());
         }
     }
 
-    private String getPackUnit(Set<String> types) {
-        return (types.size() == 1) ? types.iterator().next() : PACKAGES;
+    private String getPackUnit(Set<String> packTypes) {
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
     }
 
     private CargoDetailsResponse calculateVW(CargoDetailsResponse response, boolean isWeightMissing) throws RunnerException {
