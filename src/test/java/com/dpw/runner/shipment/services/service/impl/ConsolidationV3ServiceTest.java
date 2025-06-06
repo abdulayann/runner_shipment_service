@@ -69,11 +69,13 @@ import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -93,8 +95,11 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -2063,7 +2068,7 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
-  void testValidateDetachedShipment_whenNoContainersAssigned_shouldReturnTrue() throws RunnerException {
+  void testValidateDetachedShipment_whenNoContainersAssigned_shouldReturnTrue() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH123");
@@ -4486,14 +4491,14 @@ if (unitConversionUtilityMockedStatic != null) {
     shipment2.setNoOfPacks(5);
     shipment2.setPacksUnit("Parcel");
 
-    ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+    consolidationDetails = new ConsolidationDetails();
     consolidationDetails.setShipmentsList(Set.of(shipment1,shipment2));
     consolidationDetails.setOverride(false);
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
     consolidationDetails.setAchievedQuantities(new AchievedQuantities());
     consolidationDetails.setAllocations(new Allocations());
 
-    ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+    shipmentSettingsDetails = new ShipmentSettingsDetails();
     shipmentSettingsDetails.setWeightChargeableUnit("KG");
     shipmentSettingsDetails.setVolumeChargeableUnit("M3");
 
@@ -4525,4 +4530,91 @@ if (unitConversionUtilityMockedStatic != null) {
     assertTrue(response.getSummaryWeight().contains("KG"), "Summary weight should contain KG");
     assertTrue(response.getSummaryVolume().contains("M3"), "Summary volume should contain M3");
   }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_SEARequest_shouldUpdateAndReturnResponse() throws RunnerException {
+    // Prepare routing and request
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    List<RoutingsRequest> routingList = List.of(routing);
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(routingList);
+    request.setCarrier("MAERSK");
+
+    // Mock consolidation details
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    CarrierDetails carrierDetails = new CarrierDetails();
+    shipment1.setCarrierDetails(carrierDetails);
+    shipment1.setTransportMode(TRANSPORT_MODE_SEA);
+
+
+    ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setShipmentsList(Set.of(shipment1));
+    consolidation.setTransportMode(TRANSPORT_MODE_SEA);
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
+
+    // Execute
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    // Verify
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_AIRRequest_shouldUpdateAndReturnResponse() throws RunnerException {
+    // Prepare routing and request
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    List<RoutingsRequest> routingList = List.of(routing);
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(routingList);
+    request.setCarrier("MAERSK");
+
+    // Mock consolidation details
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    CarrierDetails carrierDetails = new CarrierDetails();
+    shipment1.setCarrierDetails(carrierDetails);
+    shipment1.setTransportMode(TRANSPORT_MODE_AIR);
+
+
+    ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setTransportMode(TRANSPORT_MODE_AIR);
+    consolidation.setShipmentsList(Set.of(shipment1));
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
+
+    // Execute
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    // Verify
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_emptyRouting_shouldReturnEmptyResponse() throws RunnerException {
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(Collections.emptyList());
+
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_consolidationNotFound_shouldReturnEmptyResponse() throws RunnerException {
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(List.of(routing));
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+    verify(routingsV3Service).updateBulk(any(BulkUpdateRoutingsRequest.class), eq("CONSOLIDATION"));
+    verify(shipmentV3Service, never()).saveAll(any());
+  }
+
 }
