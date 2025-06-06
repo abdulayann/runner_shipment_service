@@ -3225,7 +3225,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
                 .thenReturn(customerBookingV3Response);
 
         CustomerBookingV3Service spyService = Mockito.spy(customerBookingService);
-        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(customerBookingV3Response));
+        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(customerBookingV3Response);
 
         Map<String, Object> result = spyService.getAllMasterData(bookingId);
 
