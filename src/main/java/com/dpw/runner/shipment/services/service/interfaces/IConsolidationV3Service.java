@@ -37,6 +37,7 @@ public interface IConsolidationV3Service {
     void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity);
+    ConsolidationDetails fetchConsolidationDetails(Long consolidationId);
     ConsolidationDetailsV3Response retrieveById(CommonGetRequest commonGetRequest, String source) throws RunnerException, AuthenticationException;
     Map<String, Object> getAllMasterData(Long id, String source) throws RunnerException, AuthenticationException;
     ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
