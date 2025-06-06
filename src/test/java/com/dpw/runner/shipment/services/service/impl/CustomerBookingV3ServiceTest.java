@@ -52,6 +52,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
@@ -178,8 +180,16 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         customerBookingRequest = jsonTestUtility.getCustomerBookingV3Request();
         customerBooking = jsonTestUtility.getCustomerBooking();
         testParties = jsonTestUtility.getParties();
+        customerBookingService.executorService = Executors.newFixedThreadPool(2);
+        customerBookingService.executorServiceMasterData = Executors.newFixedThreadPool(2);
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).FetchRatesMandate(Boolean.FALSE).ShipmentServiceV2Enabled(Boolean.TRUE).countryAirCargoSecurity(Boolean.TRUE).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().hasNoUtilization(true).isAlwaysUtilization(Boolean.TRUE).build());
+    }
+
+    @AfterEach
+    void tearDown() {
+        customerBookingService.executorService.shutdown();
+        customerBookingService.executorServiceMasterData.shutdown();
     }
 
     @Test
@@ -3018,6 +3028,34 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testAddAllChargeTypesInSingleCall() throws InterruptedException, ExecutionException {
+        // Arrange
+        doNothing().when(masterDataKeyUtils)
+                .setMasterDataValue(Mockito.<Map<String, Map<String, String>>>any(), Mockito.<String>any(),
+                        Mockito.<Map<String, Object>>any(), Mockito.<Map<String, Object>>any());
+        when(masterDataUtils.fetchInBulkChargeTypes(Mockito.<List<String>>any())).thenReturn(new HashMap<>());
+        doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setBookingCharges(List.of(new BookingChargesResponse()));
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllChargeTypesInSingleCallResult = customerBookingService
+                .addAllChargeTypesInSingleMDMCall(customerBookingV3Response, new HashMap<>());
+
+        // Assert
+        verify(masterDataUtils).fetchInBulkChargeTypes(isA(List.class));
+        ResponseEntity<IRunnerResponse> getResult = actualAddAllChargeTypesInSingleCallResult.get();
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getError());
+        assertNull(((RunnerResponse<Object>) getResult.getBody()).getRequestId());
+        assertEquals(0, ((RunnerResponse<Object>) getResult.getBody()).getPageNo());
+        assertEquals(0L, ((RunnerResponse<Object>) getResult.getBody()).getCount());
+        assertEquals(HttpStatus.OK, getResult.getStatusCode());
+        assertTrue(((RunnerResponse<Object>) getResult.getBody()).isSuccess());
+        assertTrue(((Map<Object, Object>) ((RunnerResponse<Object>) getResult.getBody()).getData()).isEmpty());
+        assertTrue(getResult.hasBody());
+        assertTrue(getResult.getHeaders().isEmpty());
+    }
+
+    @Test
     void testAddAllContainerTypesInSingleCall2() throws InterruptedException, ExecutionException {
         // Arrange
         doNothing().when(masterDataKeyUtils)
@@ -3199,7 +3237,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         verify(spyService).fetchAllMasterDataByKey(customerBookingV3Response);
     }
 
-    //@Test
+    @Test
     void testFetchAllMasterDataByKey_shouldRunAllAsyncCallsAndReturnMap() {
         CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
 
@@ -3270,7 +3308,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         }).when(spyService).addAllOrganizationDataInSingleCall(any(), any());
 
         // Call method under test
-        Map<String, Object> responseMap = customerBookingService.fetchAllMasterDataByKey(customerBookingV3Response);
+        Map<String, Object> responseMap = spyService.fetchAllMasterDataByKey(customerBookingV3Response);
 
         // Validate map contains all expected keys
         assertEquals(10, responseMap.size());
@@ -3286,16 +3324,16 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         assertEquals("ok", responseMap.get("organization"));
 
         // Optional: verify method calls
-        verify(customerBookingService).addAllMasterDataInSingleCall(any(), any());
-        verify(customerBookingService).addAllUnlocationDataInSingleCall(any(), any());
-        verify(customerBookingService).addAllCarrierDataInSingleCall(any(), any());
-        verify(customerBookingService).addAllCurrencyDataInSingleCall(any(), any());
-        verify(customerBookingService).addAllTenantDataInSingleCall(any(), any());
-        verify(customerBookingService).addAllContainerTypesInSingleCall(any(), any());
-        verify(customerBookingService).addAllChargeTypesInSingleMDMCall(any(), any());
-        verify(customerBookingService).addAllSalesAgentInSingleCall(any(), any());
-        verify(customerBookingService).addAllVesselDataInSingleCall(any(), any());
-        verify(customerBookingService).addAllOrganizationDataInSingleCall(any(), any());
+        verify(spyService).addAllMasterDataInSingleCall(any(), any());
+        verify(spyService).addAllUnlocationDataInSingleCall(any(), any());
+        verify(spyService).addAllCarrierDataInSingleCall(any(), any());
+        verify(spyService).addAllCurrencyDataInSingleCall(any(), any());
+        verify(spyService).addAllTenantDataInSingleCall(any(), any());
+        verify(spyService).addAllContainerTypesInSingleCall(any(), any());
+        verify(spyService).addAllChargeTypesInSingleMDMCall(any(), any());
+        verify(spyService).addAllSalesAgentInSingleCall(any(), any());
+        verify(spyService).addAllVesselDataInSingleCall(any(), any());
+        verify(spyService).addAllOrganizationDataInSingleCall(any(), any());
     }
 
 }
