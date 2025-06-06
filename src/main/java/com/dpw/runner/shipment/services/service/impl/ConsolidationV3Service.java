@@ -1389,13 +1389,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Map<Long, String> containerMap = new HashMap<>();
 
         if(ObjectUtils.isNotEmpty(oldContainerList)) {
-            oldContainerMap = oldContainerList.stream()
-                    .collect(toMap(Containers::getId, Containers::getContainerNumber));
+            for (Containers c : oldContainerList) {
+                if (c.getId() != null) {
+                    oldContainerMap.put(c.getId(), c.getContainerNumber());
+                }
+            }
         }
 
         if(ObjectUtils.isNotEmpty(containersList)) {
-            containerMap = containersList.stream()
-                    .collect(toMap(Containers::getId, Containers::getContainerNumber));
+            for (Containers c : containersList) {
+                if (c.getId() != null) {
+                    containerMap.put(c.getId(), c.getContainerNumber()); // allow null containerNumber
+                }
+            }
         }
 
         List<Long> containerIds = new ArrayList<>();
