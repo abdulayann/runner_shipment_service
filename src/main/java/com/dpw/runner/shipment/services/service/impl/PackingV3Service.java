@@ -713,7 +713,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     private PackingContext extractPackingContext(CalculatePackSummaryRequest request) {
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         if (ObjectUtils.isNotEmpty(consolidationId)) {
             return createConsolidationContext(consolidationId);
@@ -762,7 +762,7 @@ public class PackingV3Service implements IPackingV3Service {
         String module = packingContext.getModule();
 
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();
