@@ -3,7 +3,9 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.CargoConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -39,9 +41,15 @@ public class CargoController {
     @ApiResponses(value = {
             @ApiResponse(code = 200, response = CargoDetailsResponse.class, message = CargoConstants.GET_CONTAINER_DETAILS_SUCCESS)
     })
-    @PostMapping((ApiConstants.GET_CARGO_DETAILS))
+    @PostMapping(ApiConstants.GET_CARGO_DETAILS)
     public ResponseEntity<IRunnerResponse> getCargoDetails(@RequestBody @NonNull @Valid CargoDetailsRequest cargoDetailsRequest) throws RunnerException {
         CargoDetailsResponse cargoDetailsResponse = cargoService.getCargoDetails(cargoDetailsRequest);
         return ResponseHelper.buildSuccessResponse(cargoDetailsResponse);
     }
+
+    @PostMapping(ApiConstants.GET_CARGO_CHARGEABLE)
+    public ResponseEntity<IRunnerResponse> calculateChargeable(@RequestBody CargoChargeableRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(cargoService.calculateChargeable(request));
+    }
+
 }

@@ -7,7 +7,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -64,6 +66,7 @@ public class CargoService implements ICargoService {
         List<Packing> packings = fetchPackings(entityType, entityId);
         response.setTransportMode(fetchTransportType(entityType, entityId));
         response.setShipmentType(fetchShipmentType(entityType, entityId));
+
         if(!packings.isEmpty()) {
             calculateCargoDetails(packings, response);
         }
@@ -72,6 +75,31 @@ public class CargoService implements ICargoService {
             response.setContainers(getTotalContainerCount(containers));
             response.setTeuCount(getTotalTeu(containers, codeTeuMap));
         }
+        return response;
+    }
+
+    @Override
+    public CargoChargeableResponse calculateChargeable(CargoChargeableRequest request) throws RunnerException {
+        VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(
+                request.getTransportMode(),
+                request.getWeightUnit(),
+                request.getVolumeUnit(),
+                request.getWeight(),
+                request.getVolume()
+        );
+
+        BigDecimal chargeable = vwOb.getChargeable();
+        if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(request.getTransportMode())) {
+            chargeable = BigDecimal.valueOf(roundOffAirShipment(chargeable.doubleValue()));
+        }
+
+        CargoChargeableResponse response = new CargoChargeableResponse();
+        response.setWeight(request.getWeight());
+        response.setWeightUnit(request.getWeightUnit());
+        response.setChargeable(chargeable);
+        response.setChargeableUnit(vwOb.getChargeableUnit());
+        response.setVolumetricWeight(vwOb.getVolumeWeight());
+        response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         return response;
     }
 
@@ -99,28 +127,21 @@ public class CargoService implements ICargoService {
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
         boolean isWeightMissing = false;
+        Set<String> distinctPackTypes = new HashSet<>();
+
         for (Packing p : packings) {
-            if (p.getWeight() == null && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode())) {
-                isWeightMissing = true;
-            } else if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
-                totalWeight = totalWeight.add(new BigDecimal(
-                        convertUnit(MASS, p.getWeight(), p.getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString()
-                ));
-            }
-            if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
-                totalVolume = totalVolume.add(new BigDecimal(
-                        convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString()
-                ));
-            }
-            if (!isStringNullOrEmpty(p.getPacks())) {
-                totalPacks += Integer.parseInt(p.getPacks());
-            }
+            isWeightMissing |= isAirWeightMissing(p, response);
+            totalWeight = totalWeight.add(getConvertedWeight(p));
+            totalVolume = totalVolume.add(getConvertedVolume(p));
+            totalPacks += getPackCount(p);
+            addDistinctPackType(distinctPackTypes, p);
         }
-        response.setVolume(totalVolume);
-        response.setNoOfPacks(totalPacks);
+
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-        response.setPacksUnit(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode()) ? PIECES : PACKAGES);
+        response.setVolume(totalVolume);
+        response.setNoOfPacks(totalPacks);
+        response.setPacksUnit(getPackUnit(distinctPackTypes));
 
         if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode()) && isWeightMissing) {
             response.setWeight(null);
@@ -129,6 +150,36 @@ public class CargoService implements ICargoService {
             response.setWeight(totalWeight);
         }
         calculateVW(response, isWeightMissing);
+    }
+
+    private boolean isAirWeightMissing(Packing p, CargoDetailsResponse r) {
+        return p.getWeight() == null && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(r.getTransportMode());
+    }
+
+    private BigDecimal getConvertedWeight(Packing p) throws RunnerException {
+        return (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit()))
+                ? new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString())
+                : BigDecimal.ZERO;
+    }
+
+    private BigDecimal getConvertedVolume(Packing p) throws RunnerException {
+        return (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit()))
+                ? new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString())
+                : BigDecimal.ZERO;
+    }
+
+    private int getPackCount(Packing p) {
+        return !isStringNullOrEmpty(p.getPacks()) ? Integer.parseInt(p.getPacks()) : 0;
+    }
+
+    private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
+        if (!isStringNullOrEmpty(packing.getPacksType())) {
+            distinctPackTypes.add(packing.getPacksType());
+        }
+    }
+
+    private String getPackUnit(Set<String> packTypes) {
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
     }
 
     private CargoDetailsResponse calculateVW(CargoDetailsResponse response, boolean isWeightMissing) throws RunnerException {
