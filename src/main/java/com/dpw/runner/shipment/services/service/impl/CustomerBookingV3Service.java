@@ -153,7 +153,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final ModelMapper modelMapper;
     private final DependentServiceHelper dependentServiceHelper;
     private final IFusionServiceAdapter fusionServiceAdapter;
-    private final MasterDataHelper masterDataHelper;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -196,8 +195,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     IV1Service v1Service,
                                     ModelMapper modelMapper,
                                     DependentServiceHelper dependentServiceHelper,
-                                    IFusionServiceAdapter fusionServiceAdapter,
-                                    MasterDataHelper masterDataHelper){
+                                    IFusionServiceAdapter fusionServiceAdapter){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -221,7 +219,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.modelMapper = modelMapper;
         this.dependentServiceHelper = dependentServiceHelper;
         this.fusionServiceAdapter = fusionServiceAdapter;
-        this.masterDataHelper = masterDataHelper;
     }
 
     @Override
