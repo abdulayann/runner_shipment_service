@@ -32,17 +32,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
@@ -2896,4 +2886,44 @@ class MasterDataUtilsTest {
         doThrow(new RuntimeException("Simulated failure")).when(masterDataUtilsSpy).fetchInBulkCarriers(any());
         assertDoesNotThrow(() -> masterDataUtilsSpy.fetchCarriersForList(responses));
     }
+
+    @Test
+    void fetchCarriersForList_withCustomerBookingResponse_shippingLine_present() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine("MSC")
+                .build();
+
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+        when(cache.get(any())).thenReturn(EntityTransferCarrier::new);
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
+    }
+
+    @Test
+    void fetchCarriersForList_withCustomerBookingV3Response_shippingLine_null() {
+        CarrierDetailResponse carrierDetailResponse = CarrierDetailResponse.builder()
+                .id(1L)
+                .shippingLine(null)
+                .build();
+
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder()
+                .carrierDetails(carrierDetailResponse)
+                .build();
+
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
+    }
+
+    @Test
+    void fetchCarriersForList_withCustomerBookingV3Response_carrierDetails_null() {
+        CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
+        assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
+    }
+
 }
