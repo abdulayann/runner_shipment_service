@@ -263,7 +263,24 @@ import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.JobState;
+import com.dpw.runner.shipment.services.entity.enums.JobType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -1084,6 +1101,13 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
             shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
+
+        // Check carrier name presence in Master Data and Populate the respective in Shipment request before proceeding
+        String scacCodeFromIntraa = request.getCarrierDetails().getScacCode();
+        if (scacCodeFromIntraa != null) {
+            String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
+            request.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+        }
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -2020,6 +2044,13 @@ public class ShipmentService implements IShipmentService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
+        // Check carrier name presence in Master Data and Populate the respective in Shipment request before proceeding
+        String scacCodeFromIntraa = shipmentRequest.getCarrierDetails().getScacCode();
+        if (scacCodeFromIntraa != null) {
+            String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
+            shipmentRequest.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+        }
+
         try {
             mid = System.currentTimeMillis();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -2061,6 +2092,14 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
+    }
+
+    private String getCarrierNameFromMasterDataUsingScacCodeFromIntraa(String scacCode) {
+        String carrierItemValueFromSCAC = masterDataUtils.getCarrierItemValueFromSCAC(scacCode);
+        if (carrierItemValueFromSCAC == null) {
+            throw new IllegalArgumentException("Data not present in Carrier Master data");
+        }
+        return carrierItemValueFromSCAC;
     }
 
     @Override
