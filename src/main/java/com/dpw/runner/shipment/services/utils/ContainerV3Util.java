@@ -335,8 +335,7 @@ public class ContainerV3Util {
     public void setContainerNetWeight(Containers container) throws RunnerException {
         if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO)
                 && !isStringNullOrEmpty(container.getTareWeightUnit())) {
-            if(container.getNetWeight() == null)
-                container.setNetWeight(BigDecimal.ZERO);
+            container.setNetWeight(BigDecimal.ZERO);
             if(isStringNullOrEmpty(container.getNetWeightUnit())) {
                 container.setNetWeightUnit(
                         isStringNullOrEmpty(container.getGrossWeightUnit()) ?
