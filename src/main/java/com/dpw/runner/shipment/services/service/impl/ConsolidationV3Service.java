@@ -3553,10 +3553,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetails consolidationDetails = consolidationDetailsEntity.get();
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-        for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-            updateCutoffDetailsToShipment(request, shipmentDetails);
-            shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
-            shipmentDetailsList.add(shipmentDetails);
+        if(consolidationDetails.getShipmentsList() != null) {
+            for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                updateCutoffDetailsToShipment(request, shipmentDetails);
+                shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+                shipmentDetailsList.add(shipmentDetails);
+            }
         }
         updateCutoffDetailsToShipment(request, consolidationDetails);
         save(consolidationDetails, false);
