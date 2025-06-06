@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
@@ -19,6 +20,8 @@ import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.nimbusds.jose.util.Pair;
+
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,4 +56,6 @@ public interface IConsolidationV3Service {
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId);
     ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException;
+
+    VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
 }

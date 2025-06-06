@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -99,7 +100,7 @@ class PackingV3ServiceTest extends CommonMocks {
     @Mock
     private IAuditLogService auditLogService;
     @Mock
-    private IConsolidationService consolidationService;
+    private IConsolidationV3Service consolidationService;
     @Mock
     private MasterDataUtils masterDataUtils;
     @Mock
