@@ -18,17 +18,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -283,6 +273,10 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
+        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response){
+            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+                carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
+            }
         }
     }
 
@@ -297,6 +291,11 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response) {
+            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+                customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+            }
         }
     }
 

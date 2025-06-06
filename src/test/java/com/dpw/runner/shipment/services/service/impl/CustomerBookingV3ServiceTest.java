@@ -968,14 +968,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testListWithNullRequest_throwsDataRetrievalFailureException() {
         // Test & Assert
-        Throwable t = assertThrows(RunnerException.class, () -> customerBookingService.list(null));
+        Throwable t = assertThrows(RunnerException.class, () -> customerBookingService.list(null, Boolean.TRUE));
         assertEquals(DaoConstants.DAO_INVALID_REQUEST_MSG, t.getMessage());
     }
 
     @Test
     void testListWithEmptyException() throws RunnerException {
         // Test
-        Throwable t = assertThrows(RunnerException.class, () -> customerBookingService.list(null));
+        Throwable t = assertThrows(RunnerException.class, () -> customerBookingService.list(null, Boolean.TRUE));
         assertEquals(DaoConstants.DAO_INVALID_REQUEST_MSG, t.getMessage());
     }
 
@@ -983,7 +983,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     void testListWithNoResultWhenFindAllThrowsException() throws RunnerException {
         when(customerBookingDao.findAll(any(), any())).thenThrow(new RuntimeException());
         // Test
-        Throwable t = assertThrows(RunnerException.class, () -> customerBookingService.list(new ListCommonRequest()));
+        Throwable t = assertThrows(RunnerException.class, () -> customerBookingService.list(new ListCommonRequest(), Boolean.TRUE));
         assertEquals(DAO_GENERIC_LIST_EXCEPTION_MSG, t.getMessage());
     }
 
@@ -991,7 +991,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     void testListWithNoResult() throws RunnerException {
         when(customerBookingDao.findAll(any(), any())).thenReturn(Page.empty());
         // Test
-        CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest());
+        CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest(), Boolean.TRUE);
         // Assert
         assertNotNull(response);
         assertTrue(response.getCustomerBookingV3Responses().isEmpty());
@@ -1004,7 +1004,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(customerBooking)));
         when(jsonHelper.convertValueToList(any(), eq(CustomerBookingV3Response.class))).thenReturn(List.of(customerBookingV3Response));
         // Test
-        CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest());
+        CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest(), Boolean.TRUE);
         // Assert
         assertNotNull(response);
         assertFalse(response.getCustomerBookingV3Responses().isEmpty());
