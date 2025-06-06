@@ -27,7 +27,7 @@ import java.util.UUID;
 @SuppressWarnings("java:S6539")
 public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailV3Request additionalDetails;
-    @Size(max=2048, message = "max size is 2048 for additional terms")
+    @Size(max=50000, message = "max size is 50000 for additional terms")
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
