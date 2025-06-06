@@ -1382,34 +1382,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return findContainerNumberChangeShipment(consolidationDetails, oldEntity);
     }
 
-    private List<ShipmentDetails> findContainerNumberChangeShipment(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
-        List<Containers> containersList = consolidationDetails.getContainersList();
-        List<Containers> oldContainerList = oldEntity.getContainersList();
-        Map<Long, String> oldContainerMap = new HashMap<>();
-        Map<Long, String> containerMap = new HashMap<>();
-
-        if(ObjectUtils.isNotEmpty(oldContainerList)) {
-            for (Containers c : oldContainerList) {
-                if (c.getId() != null) {
-                    oldContainerMap.put(c.getId(), c.getContainerNumber());
-                }
-            }
-        }
-
-        if(ObjectUtils.isNotEmpty(containersList)) {
-            for (Containers c : containersList) {
-                if (c.getId() != null) {
-                    containerMap.put(c.getId(), c.getContainerNumber()); // allow null containerNumber
-                }
-            }
-        }
+    private List<ShipmentDetails> findContainerNumberChangeShipment(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        Map<Long, String> oldContainerMap = buildContainerMap(oldEntity.getContainersList());
+        Map<Long, String> containerMap = buildContainerMap(consolidationDetails.getContainersList());
 
         List<Long> containerIds = new ArrayList<>();
-        for(Long id : oldContainerMap.keySet()){
+        for (Long id : oldContainerMap.keySet()) {
             String oldContainerNumber = oldContainerMap.get(id);
             String newContainerNumber = containerMap.getOrDefault(id, null);
 
-            if(newContainerNumber == null) continue;
+            if (newContainerNumber == null) {
+                continue;
+            }
 
             if (!Objects.equals(oldContainerNumber, newContainerNumber)) {
                 containerIds.add(id);
@@ -1423,6 +1407,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .collect(Collectors.toSet());
 
         return shipmentDao.findShipmentsByIds(shipmentIds);
+    }
+
+    private Map<Long, String> buildContainerMap(List<Containers> containers) {
+        Map<Long, String> containerMap = new HashMap<>();
+        if (ObjectUtils.isNotEmpty(containers)) {
+            for (Containers c : containers) {
+                if (c.getId() != null) {
+                    containerMap.put(c.getId(), c.getContainerNumber());
+                }
+            }
+        }
+        return containerMap;
     }
 
     private boolean isMasterDataChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
