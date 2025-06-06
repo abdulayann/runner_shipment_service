@@ -27,10 +27,10 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
-import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
@@ -1957,7 +1957,7 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
-  void testValidateDetachedShipment_whenNoContainersAssigned_shouldReturnTrue() throws RunnerException {
+  void testValidateDetachedShipment_whenNoContainersAssigned_shouldReturnTrue() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH123");
@@ -4360,7 +4360,7 @@ if (unitConversionUtilityMockedStatic != null) {
     RoutingsRequest routing = new RoutingsRequest();
     routing.setConsolidationId(1L);
     List<RoutingsRequest> routingList = List.of(routing);
-    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
     request.setRoutings(routingList);
     request.setCarrier("MAERSK");
 
@@ -4378,7 +4378,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
 
     // Execute
-    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
 
     // Verify
     assertNotNull(response);
@@ -4390,7 +4390,7 @@ if (unitConversionUtilityMockedStatic != null) {
     RoutingsRequest routing = new RoutingsRequest();
     routing.setConsolidationId(1L);
     List<RoutingsRequest> routingList = List.of(routing);
-    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
     request.setRoutings(routingList);
     request.setCarrier("MAERSK");
 
@@ -4408,7 +4408,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
 
     // Execute
-    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
 
     // Verify
     assertNotNull(response);
@@ -4416,10 +4416,10 @@ if (unitConversionUtilityMockedStatic != null) {
 
   @Test
   void testUpdateSailingScheduleDataToShipment_emptyRouting_shouldReturnEmptyResponse() throws RunnerException {
-    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
     request.setRoutings(Collections.emptyList());
 
-    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
 
     assertNotNull(response);
   }
@@ -4428,12 +4428,12 @@ if (unitConversionUtilityMockedStatic != null) {
   void testUpdateSailingScheduleDataToShipment_consolidationNotFound_shouldReturnEmptyResponse() throws RunnerException {
     RoutingsRequest routing = new RoutingsRequest();
     routing.setConsolidationId(1L);
-    ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
     request.setRoutings(List.of(routing));
 
     when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
 
-    ShipmentSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
 
     assertNotNull(response);
     verify(routingsV3Service).updateBulk(any(BulkUpdateRoutingsRequest.class), eq("CONSOLIDATION"));
