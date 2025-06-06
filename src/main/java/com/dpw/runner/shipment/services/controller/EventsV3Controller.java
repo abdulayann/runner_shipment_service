@@ -46,13 +46,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventsV3Controller {
 
     private final IEventsV3Service eventService;
-    private final ApiKeyAuthenticationService authenticationService;
     private final IEventsSync eventsSync;
 
     @Autowired
     public EventsV3Controller(IEventsV3Service eventService, ApiKeyAuthenticationService authenticationService, IEventsSync eventsSync) {
         this.eventService = eventService;
-        this.authenticationService = authenticationService;
         this.eventsSync = eventsSync;
     }
 
