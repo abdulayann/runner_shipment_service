@@ -65,5 +65,4 @@ public class CustomerBookingConstants {
     public static final String RESPONSE = "RESPONSE";
     public static final String REQUEST = "REQUEST";
     public static final String SHIPMENT_NOT_CREATED = "Shipment Not created";
-    public static final String CUSTOMER_BOOKING_NULL_FOR_ID_ERROR = "Shipment Details is null for Id {}";
 }
