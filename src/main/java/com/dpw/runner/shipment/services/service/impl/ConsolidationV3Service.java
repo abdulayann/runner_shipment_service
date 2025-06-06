@@ -98,6 +98,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -136,6 +137,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -3647,6 +3649,74 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetailsDao.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
         } catch (Exception e) {
             throw new IllegalArgumentException(e.getMessage());
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
+        ConsolidationSailingScheduleRequest request) throws RunnerException {
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(request.getRoutings());
+        Optional<RoutingsRequest> firstRouting = request.getRoutings().stream().findFirst();
+        if (firstRouting.isEmpty()) {
+            return new ConsolidationSailingScheduleResponse();
+        }
+        Long consolidationId = firstRouting.get().getConsolidationId();
+        bulkUpdateRoutingsRequest.setEntityId(consolidationId);
+        routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
+
+        //update shipment fields
+        Optional<ConsolidationDetails> consolidationDetailsEntity = consolidationDetailsDao.findById(consolidationId);
+        if (consolidationDetailsEntity.isEmpty())
+            return new ConsolidationSailingScheduleResponse();
+        ConsolidationDetails consolidationDetails = consolidationDetailsEntity.get();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        if(consolidationDetails.getShipmentsList() != null) {
+            for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                updateCutoffDetailsToShipment(request, shipmentDetails);
+                shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+                shipmentDetailsList.add(shipmentDetails);
+            }
+        }
+        updateCutoffDetailsToShipment(request, consolidationDetails);
+        save(consolidationDetails, false);
+        shipmentV3Service.saveAll(shipmentDetailsList);
+        return new ConsolidationSailingScheduleResponse();
+    }
+
+    private void updateCutoffDetailsToShipment(ConsolidationSailingScheduleRequest request, ShipmentDetails shipmentDetails){
+        String transportMode = shipmentDetails.getTransportMode();
+
+        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
+            shipmentDetails.setTerminalCutoff(request.getTerminalCutoff());
+            shipmentDetails.setVerifiedGrossMassCutoff(request.getVerifiedGrossMassCutoff());
+            shipmentDetails.setShippingInstructionCutoff(request.getShippingInstructionCutoff());
+            shipmentDetails.setDgCutoff(request.getDgCutoff());
+            shipmentDetails.setReeferCutoff(request.getReeferCutoff());
+            shipmentDetails.setEarliestEmptyEquipmentPickUp(request.getEarliestEmptyEquipmentPickUp());
+            shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(request.getLatestFullEquipmentDeliveredToCarrier());
+            shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(request.getEarliestDropOffFullEquipmentToCarrier());
+        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+            shipmentDetails.setLatestArrivalTime(request.getLatestArrivalTime());
+        }
+    }
+
+    private void updateCutoffDetailsToShipment(ConsolidationSailingScheduleRequest request, ConsolidationDetails consolidationDetails){
+        String transportMode = consolidationDetails.getTransportMode();
+
+        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
+            consolidationDetails.setTerminalCutoff(request.getTerminalCutoff());
+            consolidationDetails.setVerifiedGrossMassCutoff(request.getVerifiedGrossMassCutoff());
+            consolidationDetails.setShipInstructionCutoff(request.getShippingInstructionCutoff());
+            consolidationDetails.setHazardousBookingCutoff(request.getDgCutoff());
+            consolidationDetails.setReeferCutoff(request.getReeferCutoff());
+            consolidationDetails.setEarliestEmptyEquPickUp(request.getEarliestEmptyEquipmentPickUp());
+            consolidationDetails.setLatestFullEquDeliveredToCarrier(request.getLatestFullEquipmentDeliveredToCarrier());
+            consolidationDetails.setEarliestDropOffFullEquToCarrier(request.getEarliestDropOffFullEquipmentToCarrier());
+        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+            consolidationDetails.setLatDate(request.getLatestArrivalTime());
         }
     }
 

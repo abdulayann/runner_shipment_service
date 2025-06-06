@@ -891,6 +891,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentDetails.setEventsList(null);
 
         populateUnlocCodeFuture.join();
+
+        // Validation for fmcTlcField
+        shipmentValidationV3Util.validationForFmcTlcFields(shipmentDetails);
     }
 
     public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, boolean isFromET) throws RunnerException {

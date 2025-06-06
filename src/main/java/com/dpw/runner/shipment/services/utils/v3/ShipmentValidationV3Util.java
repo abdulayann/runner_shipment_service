@@ -116,8 +116,6 @@ public class ShipmentValidationV3Util {
         this.validationForPartnerFields(shipmentDetails, oldEntity);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
-        // Validation for fmcTlcField
-        this.validationForFmcTlcFields(shipmentDetails);
         // Validation for cutoffFields
         this.validationForCutOffFields(shipmentDetails);
         // Validation for ETA, ETD, ATA and ATD fields
