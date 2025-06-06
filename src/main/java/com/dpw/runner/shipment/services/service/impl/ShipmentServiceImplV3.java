@@ -1640,7 +1640,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
         long start = System.currentTimeMillis();
         List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails.")));
-        includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null))));
+        includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails."))));
         includeColumns.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS_V3);
         ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns.stream().collect(Collectors.toSet()), new ShipmentDetailsResponse());
         log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
@@ -1909,6 +1909,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (isConsoleCreationNeededV3(customerBookingRequest)) {
             ConsolidationDetailsV3Request consolidationDetailsV3Request = ConsolidationDetailsV3Request.builder().
                     carrierDetails(CarrierDetailRequest.builder()
+                            .origin(customerBookingRequest.getCarrierDetails().getOrigin())
+                            .destination(customerBookingRequest.getCarrierDetails().getDestination())
                             .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
                             .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
                             .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
@@ -1918,6 +1920,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                             .ata(customerBookingRequest.getCarrierDetails().getAta())
                             .atd(customerBookingRequest.getCarrierDetails().getAtd())
                             .build()).
+                    consolidationType("STD").
                     transportMode(customerBookingRequest.getTransportType()).
                     containerCategory(customerBookingRequest.getCargoType()).
                     shipmentType(customerBookingRequest.getDirection()).

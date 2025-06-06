@@ -11,6 +11,7 @@ public class ShipmentGridChangeV3Response extends ShipmentGridChangeResponse {
     private String summaryAssignedTEUs;
     private String summaryDgPacks;
     private Integer totalPacks;
+    private String packType;
 
 
 
