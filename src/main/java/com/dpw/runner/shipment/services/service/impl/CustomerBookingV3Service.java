@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapte
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -63,6 +62,15 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -641,7 +649,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
 
     @Override
-    public CustomerBookingV3ListResponse list(ListCommonRequest request) throws RunnerException {
+    public CustomerBookingV3ListResponse list(ListCommonRequest request, Boolean getMasterData) throws RunnerException {
         String responseMsg;
         try {
             if (request == null) {
@@ -652,8 +660,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Page<CustomerBooking> customerBookingPage = customerBookingDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Booking list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             long totalPages = customerBookingPage.getSize() == 0 ? 0 : (long) Math.ceil((double) customerBookingPage.getTotalElements() / customerBookingPage.getSize());
+            List<IRunnerResponse> customerBookingResponse = convertEntityListToDtoList(customerBookingPage.getContent(), getMasterData);
             return CustomerBookingV3ListResponse.builder()
-                    .customerBookingV3Responses(jsonHelper.convertValueToList(customerBookingPage.getContent(),CustomerBookingV3Response.class))
+                    .customerBookingV3Responses(jsonHelper.convertValueToList(customerBookingResponse, CustomerBookingV3Response.class))
                     .totalPages((int) totalPages)
                     .totalCount(customerBookingPage.getTotalElements())
                     .build();
@@ -2132,5 +2141,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst, Boolean getMasterData) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(customerBooking -> {
+            CustomerBookingV3Response response = modelMapper.map(customerBooking, CustomerBookingV3Response.class);
+            responseList.add(response);
+        });
+        try{
+            if(Boolean.TRUE.equals(getMasterData)) {
+                double startTime = System.currentTimeMillis();
+                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, carrierDataFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.BOOKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+            }
+        } catch (Exception ex){
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_BOOKING_LIST, ex.getLocalizedMessage());
+        }
+        return responseList;
     }
 }
