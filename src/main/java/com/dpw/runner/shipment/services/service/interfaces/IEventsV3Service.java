@@ -5,12 +5,10 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -37,12 +35,6 @@ public interface IEventsV3Service {
     ResponseEntity<IRunnerResponse> v1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException;
-
-    @Transactional
-    boolean processUpstreamTrackingMessage(Container container, String messageId);
-
-    @Transactional
-    void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto);
 
     ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel);
 
