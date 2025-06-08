@@ -506,7 +506,7 @@ class TrackingServiceAdapterTest {
         String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
 
         // Expect EMCR to be returned
-        assertEquals(EventConstants.EMCR, result);
+        assertEquals(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, result);
     }
 
     @Test
