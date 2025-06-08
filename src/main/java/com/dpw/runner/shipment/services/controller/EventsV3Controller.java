@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -40,12 +39,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class EventsV3Controller {
 
     private final IEventsV3Service eventService;
-    private final IEventsSync eventsSync;
 
     @Autowired
-    public EventsV3Controller(IEventsV3Service eventService, ApiKeyAuthenticationService authenticationService, IEventsSync eventsSync) {
+    public EventsV3Controller(IEventsV3Service eventService, ApiKeyAuthenticationService authenticationService) {
         this.eventService = eventService;
-        this.eventsSync = eventsSync;
     }
 
     @ApiResponses(value = {
