@@ -152,6 +152,7 @@ public class ShipmentControllerV3 {
         String warning = shipmentService.attachConsolidation(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.UPDATE_SAILING_SCHEDULE_SUCCESSFUL)
     })

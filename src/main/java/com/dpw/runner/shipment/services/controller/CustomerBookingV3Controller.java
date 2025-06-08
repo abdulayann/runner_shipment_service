@@ -295,4 +295,10 @@ public class CustomerBookingV3Controller {
         List<IRunnerResponse> responseList = partiesList.stream().map(p -> (IRunnerResponse) p).toList();
         return ResponseHelper.buildListSuccessResponse(responseList);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @GetMapping(ApiConstants.GET_ALL_MASTER_DATA)
+    public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long bookingId) {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getAllMasterData(bookingId));
+    }
 }

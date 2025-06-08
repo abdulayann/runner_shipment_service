@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.List;
+
 public class CustomerBookingConstants {
 
     private CustomerBookingConstants(){}
@@ -38,6 +40,9 @@ public class CustomerBookingConstants {
     public static final String TENANT_ID = "TenantId";
     public static final String RUNNER_FUSION = "Runner";
     public static final String GCR_FUSION = "GCR";
+    public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
+    public static final String BOOKING_DETAILS_NULL_FOR_ID_ERROR = "Booking Details is null for Id {}";
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "referenceNumbersList", "containersList", "packingList", "routingList");
 
     public static final String IMMEDIATE= "IMMEDIATE";
     public static final String DATE_TIME_FORMAT = "yyyy/MM/dd'T'hh:mm:ss";

@@ -12,7 +12,7 @@ public class CalculatePackSummaryRequest implements IRunnerRequest {
     private String transportMode;
     private String shipmentType;
     private String containerCategory;
-    private Long shipmentId;
+    private Long shipmentEntityId;
     // extra fields for inter branch pack updates
     private ShipmentRequest shipmentRequest;
     private Long consolidationId;
