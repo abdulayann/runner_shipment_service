@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -355,36 +354,6 @@ class EventV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testList_success() {
-        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
-        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
-        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
-
-        when(eventV2Service.list(commonRequestModel)).thenReturn(expected);
-
-        ResponseEntity<IRunnerResponse> actual = eventV3Service.list(commonRequestModel);
-
-        assertEquals(expected, actual);
-        verify(eventV2Service).list(commonRequestModel);
-    }
-
-    @Test
-    void testListAsync_success() throws Exception {
-        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
-        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
-        ResponseEntity<IRunnerResponse> response = ResponseEntity.ok(mockResponse);
-
-        CompletableFuture<ResponseEntity<IRunnerResponse>> future = CompletableFuture.completedFuture(response);
-
-        when(eventV2Service.listAsync(commonRequestModel)).thenReturn(future);
-
-        CompletableFuture<ResponseEntity<IRunnerResponse>> actual = eventV3Service.listAsync(commonRequestModel);
-
-        assertEquals(response, actual.get());
-        verify(eventV2Service).listAsync(commonRequestModel);
-    }
-
-    @Test
     void testDelete_success() {
         CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
         IRunnerResponse mockResponse = mock(IRunnerResponse.class);
@@ -410,47 +379,6 @@ class EventV3ServiceTest extends CommonMocks {
 
         assertEquals(expected, actual);
         verify(eventV2Service).retrieveById(commonRequestModel);
-    }
-
-    @Test
-    void testConvertRequestToEntity_success() {
-        EventsRequest eventsRequest = mock(EventsRequest.class);
-        Events expectedEntity = mock(Events.class);
-
-        when(jsonHelper.convertValue(eventsRequest, Events.class)).thenReturn(expectedEntity);
-
-        Events actual = eventV3Service.convertRequestToEntity(eventsRequest);
-
-        assertEquals(expectedEntity, actual);
-        verify(jsonHelper).convertValue(eventsRequest, Events.class);
-    }
-
-    @Test
-    void testV1EventsCreateAndUpdate_success() throws RunnerException {
-        CommonRequestModel request = mock(CommonRequestModel.class);
-        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
-        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
-
-        when(eventV2Service.v1EventsCreateAndUpdate(request, true)).thenReturn(expected);
-
-        ResponseEntity<IRunnerResponse> actual = eventV3Service.v1EventsCreateAndUpdate(request, true);
-
-        assertEquals(expected, actual);
-        verify(eventV2Service).v1EventsCreateAndUpdate(request, true);
-    }
-
-    @Test
-    void testTrackEvents_success() throws RunnerException {
-        TrackingEventsRequest trackingRequest = mock(TrackingEventsRequest.class);
-        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
-        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
-
-        when(eventV2Service.trackEvents(trackingRequest)).thenReturn(expected);
-
-        ResponseEntity<IRunnerResponse> actual = eventV3Service.trackEvents(trackingRequest);
-
-        assertEquals(expected, actual);
-        verify(eventV2Service).trackEvents(trackingRequest);
     }
 
 }

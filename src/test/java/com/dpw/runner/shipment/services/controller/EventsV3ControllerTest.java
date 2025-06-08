@@ -4,19 +4,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -76,31 +72,31 @@ class EventsV3ControllerTest {
     }
 
     @Test
-    void createBookingCarriageData() {
+    void create() {
         // Mock
         when(eventService.create(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = eventsController.createBookingCarriageData(EventsRequest.builder().build());
+        var responseEntity = eventsController.create(EventsRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void createBookingCarriageData2() {
+    void create2() {
         // Mock
         when(eventService.create(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = eventsController.createBookingCarriageData(EventsRequest.builder().build());
+        var responseEntity = eventsController.create(EventsRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
-    void createBookingCarriageData3() {
+    void create3() {
         // Mock
         when(eventService.create(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = eventsController.createBookingCarriageData(EventsRequest.builder().build());
+        var responseEntity = eventsController.create(EventsRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -135,100 +131,7 @@ class EventsV3ControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
-    @Test
-    void syncEventsToService() {
-        // Test
-        var responseEntity = eventsController.syncEventsToService(new EventsRequestV2(), false);
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
 
-    @Test
-    void trackEventDetails() throws RunnerException {
-        // Mock
-        when(eventService.trackEvents(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetails2() throws RunnerException {
-        // Mock
-        when(eventService.trackEvents(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetails3() throws RunnerException {
-        // Mock
-        when(eventService.trackEvents(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.trackEventDetails(Optional.of(123L), Optional.empty());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetailsV2() throws RunnerException {
-        TrackingEventsRequest request = new TrackingEventsRequest();
-        request.setShipmentId(123L);
-        // Mock
-        when(eventService.trackEvents(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = eventsController.trackEventDetailsV2(request);
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetailsV2ReturnBadRequest() throws RunnerException {
-        TrackingEventsRequest request = new TrackingEventsRequest();
-        request.setShipmentId(123L);
-        // Mock
-        when(eventService.trackEvents(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.trackEventDetailsV2(request);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void trackEventDetailsV2ReturnBadRequestWithErrorMessage() throws RunnerException {
-        TrackingEventsRequest request = new TrackingEventsRequest();
-        request.setShipmentId(123L);
-        // Mock
-        when(eventService.trackEvents(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.trackEventDetailsV2(request);
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-
-    @Test
-    void getEvents2() {
-        // Mock
-        when(eventsSync.sync(any())).thenThrow(new RuntimeException());
-        // Test
-        var responseEntity = eventsController.getEvents(List.of());
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getEvents3() {
-        // Mock
-        when(eventsSync.sync(any())).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = eventsController.getEvents(List.of(new Events()));
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
 
     @Test
     void delete() {
@@ -240,15 +143,6 @@ class EventsV3ControllerTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-    @Test
-    void list() throws RunnerException {
-        // Mock
-        when(eventService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
-        var responseEntity = eventsController.list(ListCommonRequest.builder().build());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
 
     @Test
     void retrieveById() {

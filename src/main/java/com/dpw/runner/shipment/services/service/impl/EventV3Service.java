@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -54,7 +53,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -404,11 +402,6 @@ public class EventV3Service implements IEventsV3Service {
         dateTimeChangeLogService.saveDateTimeChangeLog(dateType, localDateTime, shipmentId, DateTimeChangeLogConstants.EVENT_SOURCE);
     }
 
-    /**
-     * Trigger point for creating / updating event
-     *
-     * @param eventsRequest
-     */
     @Transactional
     @Override
     public void saveEvent(EventsRequest eventsRequest) {
@@ -425,16 +418,7 @@ public class EventV3Service implements IEventsV3Service {
         return eventV2Service.update(commonRequestModel);
     }
 
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
-        return eventV2Service.list(commonRequestModel);
-    }
-
-    @Async
     @Override
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
-        return eventV2Service.listAsync(commonRequestModel);
-    }
-
     public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         return eventV2Service.delete(commonRequestModel);
     }
@@ -442,20 +426,6 @@ public class EventV3Service implements IEventsV3Service {
     @Override
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         return eventV2Service.retrieveById(commonRequestModel);
-    }
-
-    public Events convertRequestToEntity(EventsRequest request) {
-        return jsonHelper.convertValue(request, Events.class);
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> v1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
-        return eventV2Service.v1EventsCreateAndUpdate(commonRequestModel, checkForSync);
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException {
-        return eventV2Service.trackEvents(request);
     }
 
 }
