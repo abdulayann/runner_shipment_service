@@ -1631,18 +1631,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return new ShipmentSailingScheduleResponse();
         ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
         updateCutoffDetailsToShipment(request, shipmentDetails);
-        String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(request.getScacCode());
+        String carrierNameFromMasterData = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(request.getScacCode());
         shipmentDetails.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
         shipmentDao.update(shipmentDetails, false);
         return new ShipmentSailingScheduleResponse();
-    }
-
-    private String getCarrierNameFromMasterDataUsingScacCodeFromIntraa(String scacCode) {
-        String carrierItemValueFromSCAC = masterDataUtils.getCarrierItemValueFromSCAC(scacCode);
-        if (carrierItemValueFromSCAC == null) {
-            throw new IllegalArgumentException("Data not present in Carrier Master data");
-        }
-        return carrierItemValueFromSCAC;
     }
 
     @Override
