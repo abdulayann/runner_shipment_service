@@ -17,7 +17,9 @@ import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
@@ -197,6 +199,18 @@ class ConsolidationV3ControllerTest {
 
     ResponseEntity<IRunnerResponse> response = controller.detachShipments(request);
     assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment() throws RunnerException {
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+
+    when(consolidationV3Service.updateSailingScheduleDataToShipment(request)).thenReturn(new ConsolidationSailingScheduleResponse());
+
+    ResponseEntity<IRunnerResponse> response = controller.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+
   }
 }
 

@@ -713,7 +713,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     private PackingContext extractPackingContext(CalculatePackSummaryRequest request) {
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         if (ObjectUtils.isNotEmpty(consolidationId)) {
             return createConsolidationContext(consolidationId);
@@ -728,8 +728,14 @@ public class PackingV3Service implements IPackingV3Service {
         ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
             .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
 
+        List<Packing> packingList = new ArrayList<>();
+
+        for(ShipmentDetails shipmentDetails : consolidation.getShipmentsList()){
+             packingList.addAll(shipmentDetails.getPackingList());
+        }
+
         return PackingContext.builder()
-            .packingList(consolidation.getPackingList())
+            .packingList(packingList)
             .transportMode(consolidation.getTransportMode())
             .module(Constants.CONSOLIDATION)
             .entityId(consolidationId)
@@ -756,7 +762,7 @@ public class PackingV3Service implements IPackingV3Service {
         String module = packingContext.getModule();
 
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();

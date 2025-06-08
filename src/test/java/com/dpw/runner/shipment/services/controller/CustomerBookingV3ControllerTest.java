@@ -27,12 +27,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {CustomerBookingV3Controller.class})
@@ -262,5 +261,14 @@ class CustomerBookingV3ControllerTest {
         when(customerBookingV3Service.checkCreditLimitFromFusion(any())).thenReturn(new CheckCreditLimitResponse());
         var responseEntity = customerBookingV3Controller.checkCreditLimitFromFusion(new CreditLimitRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getAllMasterDataTest() {
+        Map<String, Object> masterData = new HashMap<>();
+        when(customerBookingV3Service.getAllMasterData(anyLong())).thenReturn(masterData);
+        var response = customerBookingV3Controller.getAllMasterData(1L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(customerBookingV3Service).getAllMasterData(1L);
     }
 }
