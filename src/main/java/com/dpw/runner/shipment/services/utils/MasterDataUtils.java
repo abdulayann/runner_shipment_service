@@ -1241,6 +1241,49 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
+    public String getCarrierNameFromMasterDataUsingScacCodeFromIntraa(String scacCode) {
+        if (scacCode == null || scacCode.trim().isEmpty()) {
+            return null;
+        }
+        Map<String, String> carrierItemValues = getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        String itemValue = carrierItemValues.get(scacCode);
+        if (itemValue == null) {
+            throw new IllegalArgumentException("Data not present in Carrier Master data");
+        }
+
+        return itemValue;
+    }
+
+    public Map<String, String> getCarrierItemValuesFromSCACList(List<String> scacCodes) {
+        Map<String, String> result = new HashMap<>();
+
+        if (scacCodes == null || scacCodes.isEmpty()) {
+            return result;
+        }
+
+        // Filter out null or empty codes before querying
+        List<String> validCodes = scacCodes.stream()
+                .filter(code -> code != null && !code.trim().isEmpty())
+                .distinct().toList();
+
+        if (validCodes.isEmpty()) {
+            return result;
+        }
+
+        // Fetch bulk carrier data
+        Map<String, EntityTransferCarrier> carrierMap = fetchInBulkCarriersBySCACCode(validCodes);
+
+        for (String scac : validCodes) {
+            EntityTransferCarrier carrier = carrierMap.get(scac);
+            if (carrier != null && carrier.ItemValue != null) {
+                result.put(scac, carrier.ItemValue);
+            }
+        }
+
+        return result;
+    }
+
     public void pushToCache (Map<String, ?> v1Data, String type, Set<String> keys, Object object, Map<String, Object> cacheMap) {
         if (Objects.isNull(v1Data))
             return;

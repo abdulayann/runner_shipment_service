@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
@@ -1632,7 +1631,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return new ShipmentSailingScheduleResponse();
         ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
         updateCutoffDetailsToShipment(request, shipmentDetails);
-        shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+        String carrierNameFromMasterData = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(request.getScacCode());
+        shipmentDetails.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
         shipmentDao.update(shipmentDetails, false);
         return new ShipmentSailingScheduleResponse();
     }

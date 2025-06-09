@@ -22,4 +22,5 @@ public class ConsolidationSailingScheduleRequest implements IRunnerRequest {
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     private LocalDateTime latestArrivalTime;
     private String carrier;
+    private String scacCode;
 }

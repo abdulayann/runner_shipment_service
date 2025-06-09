@@ -3672,10 +3672,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetails consolidationDetails = consolidationDetailsEntity.get();
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        String carrierNameFromMasterData = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(request.getScacCode());
         if(consolidationDetails.getShipmentsList() != null) {
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                 updateCutoffDetailsToShipment(request, shipmentDetails);
-                shipmentDetails.getCarrierDetails().setShippingLine(request.getCarrier());
+                shipmentDetails.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
                 shipmentDetailsList.add(shipmentDetails);
             }
         }
