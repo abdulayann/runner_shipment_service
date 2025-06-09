@@ -41,7 +41,6 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
@@ -215,8 +214,18 @@ public class PackingV3Service implements IPackingV3Service {
             CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
             cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
             cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
-            cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
-            shipmentService.updateCargoDetailsInShipment(shipmentDetails.getId(), cargoDetailsResponse);
+            boolean updateCargoDetails = true;
+            if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+                boolean skipWeightInCalculation = packings.stream()
+                        .anyMatch(packing -> packing.getWeight() == null);
+                if (skipWeightInCalculation) {
+                    updateCargoDetails = false;
+                }
+            }
+            if (updateCargoDetails) {
+                cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
+                shipmentService.updateCargoDetailsInShipment(shipmentDetails.getId(), cargoDetailsResponse);
+            }
         }
         return packings;
     }
@@ -346,9 +355,9 @@ public class PackingV3Service implements IPackingV3Service {
         recordAuditLogs(null, savedNewPackings, DBOperationType.CREATE, parentResult);
 
         boolean isAutoSell = false;
-        Map<UUID, Packing> oldPackings = oldConvertedPackings.stream().collect(Collectors.toMap(Packing::getGuid, packing->packing,(packing1, packing2)->packing1));
+        Map<UUID, Packing> oldPackings = oldConvertedPackings.stream().collect(Collectors.toMap(Packing::getGuid, packing -> packing, (packing1, packing2) -> packing1));
 
-        for(Packing packing: updatedPackings) {
+        for (Packing packing : updatedPackings) {
             Packing packing1 = oldPackings.get(packing.getGuid());
             if (!Objects.equals(packing1.getPacksType(), packing.getPacksType()) || !Objects.equals(packing1.getPacks(), packing.getPacks())) {
                 isAutoSell = true;
@@ -361,7 +370,7 @@ public class PackingV3Service implements IPackingV3Service {
         afterSave(allSavedPackings, module, shipmentDetails, consolidationId);
 
         // Triggering Event for shipment and console for DependentServices update
-        pushToDependentServices(allSavedPackings,isAutoSell, module);
+        pushToDependentServices(allSavedPackings, isAutoSell, module);
 
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
@@ -740,32 +749,32 @@ public class PackingV3Service implements IPackingV3Service {
 
     private PackingContext createConsolidationContext(Long consolidationId) {
         ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
-            .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
+                .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
 
         List<Packing> packingList = new ArrayList<>();
 
-        for(ShipmentDetails shipmentDetails : consolidation.getShipmentsList()){
-             packingList.addAll(shipmentDetails.getPackingList());
+        for (ShipmentDetails shipmentDetails : consolidation.getShipmentsList()) {
+            packingList.addAll(shipmentDetails.getPackingList());
         }
 
         return PackingContext.builder()
-            .packingList(packingList)
-            .transportMode(consolidation.getTransportMode())
-            .module(Constants.CONSOLIDATION)
-            .entityId(consolidationId)
-            .build();
+                .packingList(packingList)
+                .transportMode(consolidation.getTransportMode())
+                .module(Constants.CONSOLIDATION)
+                .entityId(consolidationId)
+                .build();
     }
 
     private PackingContext createShipmentContext(Long shipmentId) {
         ShipmentDetails shipment = shipmentService.findById(shipmentId)
-            .orElseThrow(() -> new IllegalArgumentException("No Shipment found with Id: " + shipmentId));
+                .orElseThrow(() -> new IllegalArgumentException("No Shipment found with Id: " + shipmentId));
 
         return PackingContext.builder()
-            .packingList(shipment.getPackingList())
-            .transportMode(shipment.getTransportMode())
-            .module(Constants.SHIPMENT)
-            .entityId(shipmentId)
-            .build();
+                .packingList(shipment.getPackingList())
+                .transportMode(shipment.getTransportMode())
+                .module(Constants.SHIPMENT)
+                .entityId(shipmentId)
+                .build();
     }
 
     @Override
@@ -878,7 +887,7 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    private PackingAssignmentProjection getAssignedPackages(String module, Long consolidationId, Long shipmentId){
+    private PackingAssignmentProjection getAssignedPackages(String module, Long consolidationId, Long shipmentId) {
         PackingAssignmentProjection assignedPackages = null;
         if (module.equals(Constants.CONSOLIDATION)) {
             List<ConsoleShipmentMapping> consolidationDetailsEntity = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
@@ -893,7 +902,7 @@ public class PackingV3Service implements IPackingV3Service {
         return assignedPackages;
     }
 
-    private void setPackageCount(PackingAssignmentProjection assignedPackages, PackSummaryV3Response response){
+    private void setPackageCount(PackingAssignmentProjection assignedPackages, PackSummaryV3Response response) {
         response.setAssignedPackageCount(assignedPackages != null && assignedPackages.getAssignedCount() != null ? assignedPackages.getAssignedCount() : 0);
         response.setUnassignedPackageCount(assignedPackages != null && assignedPackages.getUnassignedCount() != null ? assignedPackages.getUnassignedCount() : 0);
     }
