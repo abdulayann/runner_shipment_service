@@ -577,6 +577,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private static void setDgPackCountAndType(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
         List<Packing> packingList = shipmentDetailsEntity.getPackingList();
         if (!CollectionUtils.isEmpty(packingList)) {
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+                boolean isEmptyWeightPackAvailable = packingList.stream()
+                        .anyMatch(packing -> packing.getWeight() == null);
+                response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
+            }
             response.setIsPacksAvailable(Boolean.TRUE);
             int dgPackCount = 0;
             String dgPackUnit = Constants.PACKAGES;
