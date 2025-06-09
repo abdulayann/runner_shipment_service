@@ -1,23 +1,47 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,16 +54,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verify;
-
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 @TestPropertySource("classpath:application-test.properties")
@@ -50,11 +64,30 @@ class EventV3ServiceTest extends CommonMocks {
     @Mock
     private JsonHelper jsonHelper;
 
+    @Mock
+    private EventService eventV2Service;
+
     @InjectMocks
-    private EventV3Service eventService;
+    private EventV3Service eventV3Service;
+
+    private static JsonTestUtility jsonTestUtility;
 
     @Mock
     private IV1Service v1Service;
+    private static Events testData;
+    private static ObjectMapper objectMapperTest;
+    private static ConsolidationDetails testConsol;
+    private static ConsolidationDetails testConsolidation;
+    private static ShipmentDetails testShipment;
+    private static EventsRequestV2 testEventsRequestV2;
+    private static ConsolidationDetailsResponse testConsolResponse;
+    private static ConsolidationDetailsRequest testConsolRequest;
+
+    @BeforeAll
+    static void init() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
+        objectMapperTest = JsonTestUtility.getMapper();
+    }
 
     @BeforeEach
     void setUp() {
@@ -63,8 +96,14 @@ class EventV3ServiceTest extends CommonMocks {
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        testData = jsonTestUtility.getTestEventData();
+        testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
+        testConsolResponse = objectMapperTest.convertValue(testConsol, ConsolidationDetailsResponse.class);
+        testConsolRequest = objectMapperTest.convertValue(testConsol, ConsolidationDetailsRequest.class);
+        testShipment = jsonTestUtility.getTestShipment();
+        testConsolidation = jsonTestUtility.getTestConsolidation();
+        testEventsRequestV2 = jsonTestUtility.getTestEventsRequestV2();
     }
-
 
     @Test
     void testListEventsV2ForInputShipmentId() {
@@ -79,7 +118,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         mockShipmentSettings();
 
-        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), null);
+        var httpResponse = eventV3Service.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), null);
 
         assertNotNull(httpResponse);
         assertEquals(eventsResponseList, httpResponse);
@@ -98,7 +137,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         mockShipmentSettings();
 
-        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
+        var httpResponse = eventV3Service.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
 
         assertNotNull(httpResponse);
         assertEquals(eventsResponseList, httpResponse);
@@ -116,7 +155,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
         mockShipmentSettings();
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
-        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), null);
+        var httpResponse = eventV3Service.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), null);
 
         assertNotNull(httpResponse);
         assertEquals(eventsResponseList, httpResponse);
@@ -135,7 +174,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Collections.singletonList(EventsResponse.builder().build()));
         mockShipmentSettings();
 
-        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
+        var httpResponse = eventV3Service.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
 
         assertNotNull(httpResponse);
         assertEquals(eventsResponseList, httpResponse);
@@ -144,7 +183,7 @@ class EventV3ServiceTest extends CommonMocks {
     @Test
     void populateBranchNames_shouldReturnEarly_whenEventResponsesIsNull() {
         // Act
-        eventService.populateBranchNames(null);
+        eventV3Service.populateBranchNames(null);
 
         // Assert
         // No interactions with v1Service or jsonHelper
@@ -154,7 +193,7 @@ class EventV3ServiceTest extends CommonMocks {
     @Test
     void populateBranchNames_shouldReturnEarly_whenEventResponsesIsEmpty() {
         // Act
-        eventService.populateBranchNames(Collections.emptyList());
+        eventV3Service.populateBranchNames(Collections.emptyList());
 
         // Assert
         verifyNoInteractions(v1Service, jsonHelper);
@@ -167,7 +206,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(null);
 
         // Act
-        eventService.populateBranchNames(responses);
+        eventV3Service.populateBranchNames(responses);
 
         // Assert
         verify(v1Service).listCousinBranches(Collections.emptyMap());
@@ -185,7 +224,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(response);
 
         // Act
-        eventService.populateBranchNames(responses);
+        eventV3Service.populateBranchNames(responses);
 
         // Assert
         verify(v1Service).listCousinBranches(Collections.emptyMap());
@@ -199,7 +238,7 @@ class EventV3ServiceTest extends CommonMocks {
         when(v1Service.listCousinBranches(Collections.emptyMap())).thenThrow(new V1ServiceException("failed"));
 
         // Act
-        eventService.populateBranchNames(responses);
+        eventV3Service.populateBranchNames(responses);
 
         // Assert
         verify(v1Service).listCousinBranches(Collections.emptyMap());
@@ -217,7 +256,7 @@ class EventV3ServiceTest extends CommonMocks {
                 .thenThrow(new RuntimeException("conversion failed"));
 
         // Act
-        eventService.populateBranchNames(responses);
+        eventV3Service.populateBranchNames(responses);
 
         // Assert
         verify(jsonHelper).convertValueToList(any(), eq(V1TenantResponse.class));
@@ -250,7 +289,7 @@ class EventV3ServiceTest extends CommonMocks {
                 .thenReturn(List.of(tenant1, tenant2));
 
         // Act
-        eventService.populateBranchNames(eventResponses);
+        eventV3Service.populateBranchNames(eventResponses);
 
         // Assert
         assertEquals("Dubai", response1.getBranchName());
@@ -275,9 +314,71 @@ class EventV3ServiceTest extends CommonMocks {
                 .thenReturn(List.of(tenant));
 
         // Act
-        eventService.populateBranchNames(List.of(response));
+        eventV3Service.populateBranchNames(List.of(response));
 
         // Assert
         assertNull(response.getBranchName());
     }
+
+    @Test
+    void testCreate_success() {
+        // Arrange
+        EventsRequest request1 = objectMapperTest.convertValue(testData, EventsRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request1);
+
+        IRunnerResponse mockRunnerResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseEntity.ok(mockRunnerResponse);
+
+        when(eventV2Service.create(commonRequestModel)).thenReturn(expectedResponse);
+
+        // Act
+        ResponseEntity<IRunnerResponse> actualResponse = eventV3Service.create(commonRequestModel);
+
+        // Assert
+        assertEquals(expectedResponse, actualResponse);
+        verify(eventV2Service, times(1)).create(commonRequestModel);
+    }
+
+    @Test
+    void testUpdate_success() throws RunnerException {
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
+
+        when(eventV2Service.update(commonRequestModel)).thenReturn(expected);
+
+        ResponseEntity<IRunnerResponse> actual = eventV3Service.update(commonRequestModel);
+
+        assertEquals(expected, actual);
+        verify(eventV2Service).update(commonRequestModel);
+    }
+
+    @Test
+    void testDelete_success() {
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
+
+        when(eventV2Service.delete(commonRequestModel)).thenReturn(expected);
+
+        ResponseEntity<IRunnerResponse> actual = eventV3Service.delete(commonRequestModel);
+
+        assertEquals(expected, actual);
+        verify(eventV2Service).delete(commonRequestModel);
+    }
+
+    @Test
+    void testRetrieveById_success() {
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        IRunnerResponse mockResponse = mock(IRunnerResponse.class);
+        ResponseEntity<IRunnerResponse> expected = ResponseEntity.ok(mockResponse);
+
+        when(eventV2Service.retrieveById(commonRequestModel)).thenReturn(expected);
+
+        ResponseEntity<IRunnerResponse> actual = eventV3Service.retrieveById(commonRequestModel);
+
+        assertEquals(expected, actual);
+        verify(eventV2Service).retrieveById(commonRequestModel);
+    }
+
 }
