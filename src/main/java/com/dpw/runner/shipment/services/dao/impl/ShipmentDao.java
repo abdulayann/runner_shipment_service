@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.projection.CustomerBookingProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
@@ -108,6 +109,8 @@ public class ShipmentDao implements IShipmentDao {
     private ConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     private final EntityManager entityManager;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     @Autowired
     public ShipmentDao(EntityManager entityManager) {
@@ -616,13 +619,36 @@ public class ShipmentDao implements IShipmentDao {
             isMAWBNumberExist = true;
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         if (isMAWBNumberExist) {
             if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
+            else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) {
+                var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
+                if(mawbStock.isEmpty()){
+                    throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
+                }
+                if(validatedBorrowedFrom(shipmentRequest, mawbStock.get())) {
+                    throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None.");
+                }
+                if(StringUtility.isNotEmpty(mawbStock.get().getBorrowedFrom())) {
+                    shipmentRequest.setIsBorrowed(true);
+                    Parties borrowedParty = v1ServiceUtil.getOrganizationDataFromV1(mawbStock.get().getBorrowedFrom());
+                    shipmentRequest.getAdditionalDetails().setBorrowedFrom(borrowedParty);
+                }
+            }
         } else {
             createNewMAWBEntry(shipmentRequest, correspondingCarrier != null ? correspondingCarrier.getItemValue() : shipmentRequest.getCarrierDetails().getShippingLine());
         }
+    }
+
+    private boolean validatedBorrowedFrom(ShipmentDetails shipmentRequest, MawbStocks mawbStocks) {
+        if (StringUtility.isEmpty(mawbStocks.getBorrowedFrom())) return false;
+        if(shipmentRequest.getAdditionalDetails() == null) return false;
+        if (Objects.isNull(shipmentRequest.getAdditionalDetails().getBorrowedFrom())) return false;
+        if (StringUtility.isEmpty(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode())) return false;
+        return !Objects.equals(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode(), mawbStocks.getBorrowedFrom());
     }
 
     private CarrierResponse getCorrespondingCarrier(ShipmentDetails shipmentRequest, String oldMasterBill) {
