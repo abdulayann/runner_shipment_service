@@ -79,8 +79,7 @@ public class CargoService implements ICargoService {
 
     private Map<String, BigDecimal> getCodeTeuMapping() throws RunnerException {
         DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
-        Map<String, Object> dataMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(mdmResponse.getData()));
-        List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(dataMap.get("data"), MdmContainerTypeResponse.class);
+        List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
         return containerTypes.stream().collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
     }
 
