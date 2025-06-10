@@ -20,8 +20,14 @@ class EnumConstantServiceTest {
     private EnumConstantService enumConstantService;
 
     @Test
-    void enumList() {
-        ResponseEntity<IRunnerResponse> httpResponse = enumConstantService.list();
+    void enumList_v2() {
+        ResponseEntity<IRunnerResponse> httpResponse = enumConstantService.list(false);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void enumList_v3() {
+        ResponseEntity<IRunnerResponse> httpResponse = enumConstantService.list(true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 }
