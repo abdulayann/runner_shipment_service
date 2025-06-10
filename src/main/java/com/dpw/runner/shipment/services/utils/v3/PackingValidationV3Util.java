@@ -122,9 +122,9 @@ public class PackingValidationV3Util {
         return shipmentDetails.get();
     }
 
-    public void validateSameParentId(List<PackingV3Request> requestList, String moduleType) {
+    public void validateSameParentId(List<PackingV3Request> requestList, String moduleType) throws RunnerException {
         if (requestList == null || requestList.isEmpty()) {
-            return;
+            throw new RunnerException("Request can't be null");
         }
 
         switch (moduleType.toUpperCase()) {

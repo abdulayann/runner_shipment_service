@@ -158,8 +158,8 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam Long id,
-                                                        @ApiParam(value = Constants.GUID) @RequestParam String guid,
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam(required = false) Long id,
+                                                        @ApiParam(value = Constants.GUID) @RequestParam(required = false) String guid,
                                                         @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid, xSource));
     }
