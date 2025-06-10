@@ -1716,6 +1716,7 @@ public class AwbService implements IAwbService {
             EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
 
             awbCargoInfo.setRaNumber(address.getKCRANumber());
+            awbCargoInfo.setRaExpiryDate(StringUtility.isNotEmpty(address.getKCRAExpiry()) ? LocalDateTime.parse(address.getKCRAExpiry()) : null);
             if (StringUtility.isNotEmpty(address.getCountry()))
                 awbCargoInfo.setCountryCode(address.getCountry().length() == 2 ? address.getCountry() : CountryListHelper.ISO3166.getAlpha2IfAlpha3(address.getCountry()));
         }
