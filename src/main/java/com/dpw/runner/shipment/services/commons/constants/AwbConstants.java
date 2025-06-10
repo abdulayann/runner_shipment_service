@@ -5,6 +5,7 @@ import java.util.List;
 public class AwbConstants {
     private AwbConstants(){}
     public static final String AWB_API_HANDLE = "/api/v2/awb";
+    public static final String AWB_V3_API_HANDLE = "/api/v3/awb";
     public static final String AWB_LIST_SUCCESSFUL = "Successful AWB Info List Retrieval";
     public static final String AWB_CREATE_SUCCESSFUL = "Successful AWB Creation";
     public static final String AWB_UPDATE_SUCCESSFUL = "Successful AWB update";

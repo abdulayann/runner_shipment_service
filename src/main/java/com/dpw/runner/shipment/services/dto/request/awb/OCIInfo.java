@@ -5,6 +5,7 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 @Builder
@@ -19,5 +20,6 @@ public class OCIInfo implements Serializable {
     private PartyContactInfo consignee;
     private PartyContactInfo notifyParty;
     private CustomerAccountInfo customerAccountInfo;
+    private List<CustomerAccountInfo> customerAccountInfoList;
     private OtherIdentityInfo otherIdentityInfo;
 }
