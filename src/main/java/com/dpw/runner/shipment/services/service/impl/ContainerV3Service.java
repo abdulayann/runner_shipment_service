@@ -1373,6 +1373,8 @@ public class ContainerV3Service implements IContainerV3Service {
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(pair.getLeft(), pair.getRight());
         List<Packing> packingList = packingDao.findByContainerIdIn(containerIds);
         List<Containers> containers = findByIdIn(containerIds);
+        if (CommonUtils.listIsNullOrEmpty(containers))
+            return;
         Map<Long, Containers> containersMap = containers.stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
         for(Containers containers1: containers) {
             containerV3Util.resetContainerDataForRecalculation(containers1);
@@ -1380,8 +1382,12 @@ public class ContainerV3Service implements IContainerV3Service {
         for(ShipmentDetails shipmentDetails: shipmentDetailsList.getContent()) {
             addShipmentCargoToContainer(containersMap.get(shipmentDetails.getContainerAssignedToShipmentCargo()), shipmentDetails);
         }
-        for(Packing packing: packingList) {
-            addPackageDataToContainer(containersMap.get(packing.getContainerId()), packing);
+        if (!CommonUtils.listIsNullOrEmpty(packingList)) {
+            for (Packing packing : packingList) {
+                if (packing.getContainerId() != null && containersMap.containsKey(packing.getContainerId())) {
+                    addPackageDataToContainer(containersMap.get(packing.getContainerId()), packing);
+                }
+            }
         }
         for(Containers containers1: containers) {
             containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight
