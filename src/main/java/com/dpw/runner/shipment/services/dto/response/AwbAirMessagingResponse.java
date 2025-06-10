@@ -81,6 +81,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String branchName;
         private String branchCode;
         private String legalEntityName;
+        private Boolean isShipmentV3Enabled;
     }
 
     @Data

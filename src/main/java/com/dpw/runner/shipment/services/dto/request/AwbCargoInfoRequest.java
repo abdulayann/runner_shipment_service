@@ -1,31 +1,27 @@
-package com.dpw.runner.shipment.services.dto.request.awb;
+package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Size;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@ApiModel("AWB Cargo Info Model")
+@ApiModel("Awb Request Model")
 @ToString
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbCargoInfo implements Serializable {
+public class AwbCargoInfoRequest implements IRunnerRequest {
     private Long entityId;
     private String entityType;
     private String accountingInfo;
-    @NotBlank(message = "handlingInfo is mandatory")
     private String handlingInfo;
-    @Size(max = 5, message = "maximum size is 5 for handling information code")
     private String handlingInfoCode;
     private String otherInfo;
     private String otherInfoCode;
@@ -35,7 +31,6 @@ public class AwbCargoInfo implements Serializable {
     private String shippingInformationOther;
     private String sci;
     private String currency;
-    @DedicatedMasterData
     private String chargeCode;
     private BigDecimal carriageValue;
     private BigDecimal customsValue;
@@ -50,10 +45,13 @@ public class AwbCargoInfo implements Serializable {
 
     private String countryCode;
     private String raNumber;
+    @ExcludeTimeZone
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime raExpiryDate;
     private List<String> screeningStatus;
     private String otherMethod;
     private String exemptionCode;
+
     private LocalDateTime screeningTime;
     private String securityStatus;
 }

@@ -456,6 +456,7 @@ public class AwbUtility {
                 .branchCode(tenantModel.code)
                 .branchName(tenantModel.tenantName)
                 .legalEntityName(commonUtils.getCurrentTenantSettings().getLegalEntityCode())
+                .isShipmentV3Enabled(shipmentSettingsDetails.getIsRunnerV3Enabled())
                 .build();
     }
 
