@@ -242,16 +242,16 @@ class PackingValidationV3UtilTest {
 
     @Test
     void testValidateSameParentId_withNullList_shouldPass() {
-        packingValidationV3Util.validateSameParentId(null, "SHIPMENT");
+        assertThrows(RunnerException.class, () -> packingValidationV3Util.validateSameParentId(null, "SHIPMENT"));
     }
 
     @Test
     void testValidateSameParentId_withEmptyList_shouldPass() {
-        packingValidationV3Util.validateSameParentId(List.of(), "SHIPMENT");
+        assertThrows(RunnerException.class, () -> packingValidationV3Util.validateSameParentId(List.of(), "SHIPMENT"));
     }
 
     @Test
-    void testValidateSameParentId_withSameShipmentId_shouldPass() {
+    void testValidateSameParentId_withSameShipmentId_shouldPass() throws RunnerException {
         PackingV3Request req1 = new PackingV3Request();
         req1.setShipmentId(100L);
 
@@ -287,7 +287,7 @@ class PackingValidationV3UtilTest {
     }
 
     @Test
-    void testValidateSameParentId_withSameBookingId_shouldPass() {
+    void testValidateSameParentId_withSameBookingId_shouldPass() throws RunnerException {
         PackingV3Request req1 = new PackingV3Request();
         req1.setBookingId(200L);
 
