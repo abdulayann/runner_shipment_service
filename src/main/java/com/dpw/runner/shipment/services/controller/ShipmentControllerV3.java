@@ -47,19 +47,20 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class ShipmentControllerV3 {
 
+    @Autowired
+    private IDpsEventService dpsEventService;
+
     private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {}
     private static class ShipmentUnAssignContainerTrayList extends RunnerResponse<ShipmentPacksUnAssignContainerTrayDto> {}
     private static class ShipmentAssignContainerTrayList extends RunnerResponse<ShipmentPacksAssignContainerTrayDto> {}
 
     private IShipmentServiceV3 shipmentService;
     private JsonHelper jsonHelper;
-    private final IDpsEventService dpsEventService;
 
     @Autowired
-    public ShipmentControllerV3(IShipmentServiceV3 shipmentService, JsonHelper jsonHelper, IDpsEventService dpsEventService) {
+    public ShipmentControllerV3(IShipmentServiceV3 shipmentService, JsonHelper jsonHelper) {
         this.shipmentService = shipmentService;
         this.jsonHelper = jsonHelper;
-        this.dpsEventService = dpsEventService;
     }
 
 
