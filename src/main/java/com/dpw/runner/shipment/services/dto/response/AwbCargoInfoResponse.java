@@ -14,29 +14,23 @@ import java.util.List;
 public class AwbCargoInfoResponse implements IRunnerResponse {
     private Long entityId;
     private String entityType;
-    private String accountingInfo;
-    private String handlingInfo;
-    private String handlingInfoCode;
-    private String otherInfo;
     private String otherInfoCode;
     private String ntrQtyGoods;
+    private String handlingInfoCode;
+    private String otherInfo;
+    private String accountingInfo;
+    private String handlingInfo;
     private String referenceNumber;
     private String shippingInformation;
     private String shippingInformationOther;
     private String sci;
     private String currency;
     private String chargeCode;
-    private BigDecimal carriageValue;
-    private BigDecimal customsValue;
-    private BigDecimal insuranceAmount;
     private String customOriginCode;
-    // To be removed in Future Iterations
     private String csdInfo;
     private String csdInfoDate;
-    // To be used for Screener's name
     private String userInitials;
     private Integer slac;
-
     private String countryCode;
     private String raNumber;
     @ExcludeTimeZone
@@ -45,7 +39,9 @@ public class AwbCargoInfoResponse implements IRunnerResponse {
     private List<String> screeningStatus;
     private String otherMethod;
     private String exemptionCode;
-
+    private BigDecimal carriageValue;
+    private BigDecimal customsValue;
+    private BigDecimal insuranceAmount;
     private LocalDateTime screeningTime;
     private String securityStatus;
 }
