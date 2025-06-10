@@ -27,6 +27,7 @@ import java.util.UUID;
 @SuppressWarnings("java:S6539")
 public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailV3Request additionalDetails;
+    @Size(max=50000, message = "max size is 50000 for additional terms")
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
@@ -47,6 +48,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean containerAutoWeightVolumeUpdate;
     private String direction;
     private Long documentationPartner;
+    @Size(max = 3, message = "max size is 3 for entry detail")
     private String entryDetail;
     private String financeClosedBy;
     private LocalDateTime financeClosedOn;
@@ -54,6 +56,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String freightLocalCurrency;
     private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
+    @Size(max = 50000, message = "max size is 50000 for goods description")
     private String goodsDescription;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String houseBill;
@@ -69,6 +72,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isShipmentReadOnly;
     private String jobType;
     private String lockedBy;
+    @Size(max = 50000, message = "Max size is 50000 for marks and num")
     private String marksNum;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     @Size(max = 50, message = "Max size is 50 for masterBill")
@@ -85,30 +89,39 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private String route;
     private Long salesAgent;
+    @Size(max=3, message = "max size is 3 for service Type")
     private String serviceType;
     private String shipmentCompletedBy;
     private LocalDateTime shipmentCompletedOn;
     private LocalDateTime shipmentCreatedOn;
+    @Size(max=50, message = "max size is 50 for shipment id")
     private String shipmentId;
+    @Size(max=3, message = "max size is 3 for shipment type")
     private String shipmentType;
     private String source;
     private Long sourceTenantId;
     private Integer status;
+    @Size(max=4, message = "max size is 4 for transport mode")
     private String transportMode;
     private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private BigDecimal volume;
+    @Size(max=10, message = "max size is 10 for volume unit")
     private String volumeUnit;
     private BigDecimal volumetricWeight;
     private String volumetricWeightUnit;
     private BigDecimal weight;
     private String weightUnit;
+    @Size(max=3, message = "max size is 3 for job status")
     private String jobStatus;
     public BigDecimal goodsValue;
+    @Size(max=3, message = "max size is 3 for goods value currency")
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;
+    @Size(max=3, message = "max size is 3 for insurance value currency")
     public String InsuranceValueCurrency;
+    @Size(max=250, message = "max size is 250 for entry ref no")
     public String entryRefNo;
     private List<PartiesRequest> shipmentAddresses;
     private String flightStatus;
@@ -120,8 +133,10 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String orderManagementId;
     private String orderManagementNumber;
     private CustomerCategoryRates customerCategory;
+    @Size(max=64, message = "max size is 64 for contract id")
     private String contractId;
     private String parentContractId;
+    @Size(max=64, message = "max size is 64 for contract type")
     private String contractType;
     private Boolean replaceConsoleRoute;
     private Boolean createMainLegRoute;
@@ -158,6 +173,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private DateBehaviorType dateType;
     private LocalDateTime shipmentGateInDate;
     private ShipmentPackStatus shipmentPackStatus;
+    @Size(max=32, message = "max size is 32 for department")
     private String department;
     private OceanDGStatus oceanDGStatus;
     private Boolean isRefeer;
@@ -177,11 +193,13 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean b2b;
 
     private Boolean isCoLoadEnabled;
+    @Size(max = 64, message = "max Size is 64 for coLoadCarrierName")
     private String coLoadCarrierName;
     @Size(max = 50, message = "Max size is 50 for coLoadBlNumber")
     private String coLoadBlNumber;
-
+    @Size(max = 64, message = "max Size is 64 for issuingCarrierName")
     private String issuingCarrierName;
+    @Size(max = 64, message = "max Size is 64 for oceanBlNumber")
     private String oceanBlNumber;
     private UUID customerBookingGuid;
     private Boolean isFrob;
@@ -220,5 +238,6 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
     private Long originBranch;
+    private Integer slac;
 
 }

@@ -335,15 +335,15 @@ public class ContainerV3Util {
     public void setContainerNetWeight(Containers container) throws RunnerException {
         if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO)
                 && !isStringNullOrEmpty(container.getTareWeightUnit())) {
-            if(container.getNetWeight() == null)
-                container.setNetWeight(BigDecimal.ZERO);
+            container.setNetWeight(BigDecimal.ZERO);
             if(isStringNullOrEmpty(container.getNetWeightUnit())) {
                 container.setNetWeightUnit(
                         isStringNullOrEmpty(container.getGrossWeightUnit()) ?
                                 commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getGrossWeightUnit());
             }
             if(container.getGrossWeight() == null || BigDecimal.ZERO.equals(container.getGrossWeight()) || isStringNullOrEmpty(container.getGrossWeightUnit())) {
-                container.setNetWeight(BigDecimal.ZERO);
+                container.setNetWeight(container.getTareWeight());
+                container.setNetWeightUnit(container.getTareWeightUnit());
                 return;
             }
             container.setNetWeight(getAddedWeight(container.getNetWeight(), container.getNetWeightUnit(), container.getTareWeight(), container.getTareWeightUnit()));
@@ -378,6 +378,12 @@ public class ContainerV3Util {
         else if(!Objects.equals(packsType, container.getPacksType()))
             container.setPacksType(PKG);
         container.setPacks(String.valueOf(Integer.parseInt(container.getPacks()) + packs));
+    }
+
+    public void containerBeforeSave(List<Containers> containers) throws RunnerException {
+        for(Containers container: containers) {
+            setContainerNetWeight(container);
+        }
     }
 
 }

@@ -1,5 +1,40 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -8,34 +43,94 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
+import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CarrierBookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -45,16 +140,49 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.service.interfaces.*;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
+import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -63,7 +191,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -73,21 +205,6 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -844,8 +961,6 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(new BigDecimal("1000"));
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
-    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
-    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
     when(jsonHelper.convertToJson(any())).thenReturn("ABC");
     when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
     when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
@@ -873,8 +988,6 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(new BigDecimal("1000"));
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
-    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
-    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
     when(jsonHelper.convertToJson(any())).thenReturn("ABC");
     when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
     doThrow(new GenericException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
@@ -1955,18 +2068,18 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
-  void testIsSaveSeaPacks_whenNoContainersAssigned_shouldReturnTrue() throws RunnerException {
+  void testValidateDetachedShipment_whenNoContainersAssigned_shouldReturnTrue() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH123");
     shipment.setContainersList(null); // no containers assigned
 
-    boolean result = consolidationV3Service.isSaveSeaPacks(shipment, true);
-    assertTrue(result);
+    consolidationV3Service.validateDetachedShipment(shipment);
+    assertEquals(1L, shipment.getId());
   }
 
   @Test
-  void testIsSaveSeaPacks_whenPackingAttachedToContainer_shouldThrowRunnerException() {
+  void testValidateDetachedShipment_whenPackingAttachedToContainer_shouldThrowRunnerException() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setTransportMode(TRANSPORT_MODE_SEA);
@@ -1985,14 +2098,14 @@ if (unitConversionUtilityMockedStatic != null) {
     // assuming isSeaPackingList returns true
 
     ValidationException ex = assertThrows(ValidationException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, true);
+      consolidationV3Service.validateDetachedShipment(shipment);
     });
 
     assertTrue(ex.getMessage().contains("packs is assigned to the container(s): CONT01"));
   }
 
   @Test
-  void testIsSaveSeaPacks_whenContainerStillAttachedToShipment_shouldThrowRunnerException() {
+  void testValidateDetachedShipment_whenContainerStillAttachedToShipment_shouldThrowRunnerException() {
     ShipmentDetails shipment = new ShipmentDetails();
     shipment.setId(1L);
     shipment.setShipmentId("SH567");
@@ -2005,7 +2118,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(packingDao.findByShipmentId(1L)).thenReturn(List.of());
 
     ValidationException ex = assertThrows(ValidationException.class, () -> {
-      consolidationV3Service.isSaveSeaPacks(shipment, true);
+      consolidationV3Service.validateDetachedShipment(shipment);
     });
 
     assertTrue(ex.getMessage().contains("Please unassign to detach the same"));
@@ -4351,4 +4464,157 @@ if (unitConversionUtilityMockedStatic != null) {
     CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
     assertThrows(DataRetrievalFailureException.class, () -> consolidationV3Service.getPendingNotificationData(getRequest));
   }
+
+  @Test
+  void calculateAchievedValues_NoShipmentIds_ShouldCalculateForAllShipments() throws Exception {
+
+    Long consolidationId = 101L;
+    CalculateAchievedValueRequest request = new CalculateAchievedValueRequest();
+    request.setConsolidationId(consolidationId);
+    request.setShipmentIds(null); // all shipments
+
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    shipment1.setId(1L);
+    shipment1.setWeight(BigDecimal.valueOf(10));
+    shipment1.setWeightUnit("KG");
+    shipment1.setVolume(BigDecimal.valueOf(2));
+    shipment1.setVolumeUnit("M3");
+    shipment1.setNoOfPacks(5);
+    shipment1.setPacksUnit("BOX");
+
+    ShipmentDetails shipment2 = new ShipmentDetails();
+    shipment1.setId(2L);
+    shipment2.setWeight(BigDecimal.valueOf(11));
+    shipment2.setWeightUnit("KG");
+    shipment2.setVolume(BigDecimal.valueOf(3));
+    shipment2.setVolumeUnit("M3");
+    shipment2.setNoOfPacks(5);
+    shipment2.setPacksUnit("Parcel");
+
+    consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setShipmentsList(Set.of(shipment1,shipment2));
+    consolidationDetails.setOverride(false);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+    consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+    consolidationDetails.setAllocations(new Allocations());
+
+    shipmentSettingsDetails = new ShipmentSettingsDetails();
+    shipmentSettingsDetails.setWeightChargeableUnit("KG");
+    shipmentSettingsDetails.setVolumeChargeableUnit("M3");
+
+    V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+
+    // Mock dependent methods
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+    when(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(anyList())).thenReturn(List.of());
+    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
+    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
+    when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+    // Mock static method convertUnit to simply return the input BigDecimal value (simulate successful conversion)
+    unitConversionUtilityMockedStatic.when(() ->
+                    UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
+            .thenAnswer(invocation -> {
+              BigDecimal val = invocation.getArgument(1);
+              return val == null ? BigDecimal.ZERO : val;
+            });
+
+    // Act
+    ShipmentGridChangeV3Response response = consolidationV3Service.calculateAchievedValues(request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals(2, response.getSummaryShipmentsCount(), "Should have 2 shipments in summary");
+    assertEquals(10, response.getTotalPacks(), "Total packs should be 10");
+    assertEquals("PKG", response.getPackType(), "Pack type should be BOX");
+    assertTrue(response.getSummaryWeight().contains("KG"), "Summary weight should contain KG");
+    assertTrue(response.getSummaryVolume().contains("M3"), "Summary volume should contain M3");
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_SEARequest_shouldUpdateAndReturnResponse() throws RunnerException {
+    // Prepare routing and request
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    List<RoutingsRequest> routingList = List.of(routing);
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(routingList);
+    request.setCarrier("MAERSK");
+
+    // Mock consolidation details
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    CarrierDetails carrierDetails = new CarrierDetails();
+    shipment1.setCarrierDetails(carrierDetails);
+    shipment1.setTransportMode(TRANSPORT_MODE_SEA);
+
+
+    ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setShipmentsList(Set.of(shipment1));
+    consolidation.setTransportMode(TRANSPORT_MODE_SEA);
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
+
+    // Execute
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    // Verify
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_AIRRequest_shouldUpdateAndReturnResponse() throws RunnerException {
+    // Prepare routing and request
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    List<RoutingsRequest> routingList = List.of(routing);
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(routingList);
+    request.setCarrier("MAERSK");
+
+    // Mock consolidation details
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    CarrierDetails carrierDetails = new CarrierDetails();
+    shipment1.setCarrierDetails(carrierDetails);
+    shipment1.setTransportMode(TRANSPORT_MODE_AIR);
+
+
+    ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setTransportMode(TRANSPORT_MODE_AIR);
+    consolidation.setShipmentsList(Set.of(shipment1));
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
+
+    // Execute
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    // Verify
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_emptyRouting_shouldReturnEmptyResponse() throws RunnerException {
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(Collections.emptyList());
+
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+  }
+
+  @Test
+  void testUpdateSailingScheduleDataToShipment_consolidationNotFound_shouldReturnEmptyResponse() throws RunnerException {
+    RoutingsRequest routing = new RoutingsRequest();
+    routing.setConsolidationId(1L);
+    ConsolidationSailingScheduleRequest request = new ConsolidationSailingScheduleRequest();
+    request.setRoutings(List.of(routing));
+
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+    ConsolidationSailingScheduleResponse response = consolidationV3Service.updateSailingScheduleDataToShipment(request);
+
+    assertNotNull(response);
+    verify(routingsV3Service).updateBulk(any(BulkUpdateRoutingsRequest.class), eq("CONSOLIDATION"));
+    verify(shipmentV3Service, never()).saveAll(any());
+  }
+
 }

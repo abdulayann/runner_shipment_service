@@ -683,8 +683,8 @@ class AwbServiceTest extends CommonMocks {
         mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
         OCIInfo ociInfo = new OCIInfo();
         OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
-        otherIdentityInfo.setIrIpAddress(null);
-        otherIdentityInfo.setIaIpAddress(null);
+        otherIdentityInfo.setIrIpAddress("");
+        otherIdentityInfo.setIaIpAddress("");
         ociInfo.setOtherIdentityInfo(otherIdentityInfo);
         mockAwb.setOciInfo(ociInfo);
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);

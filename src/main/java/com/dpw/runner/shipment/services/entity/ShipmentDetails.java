@@ -125,7 +125,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String assignedTo;
 
     @Column(name = "additional_terms")
-    @Size(max=2048, message = "max size is 2048 for additional_terms")
+    @Size(max=50000, message = "max size is 50000 for additional_terms")
     private String additionalTerms;
 
     @Column(name = "goods_description")
@@ -703,6 +703,9 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_borrowed")
     private Boolean isBorrowed;
+
+    @Column(name = "slac")
+    private Integer slac;
 
     @Override
     public boolean equals(Object o) {

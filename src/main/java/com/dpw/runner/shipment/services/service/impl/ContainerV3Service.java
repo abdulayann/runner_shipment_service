@@ -1,5 +1,17 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -10,7 +22,11 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -24,7 +40,11 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContaine
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -47,8 +67,34 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,22 +107,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -151,7 +181,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional
-    public ContainerResponse create(ContainerV3Request containerRequest, String module) {
+    public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
         if (containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
             throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
         }
@@ -170,6 +200,9 @@ public class ContainerV3Service implements IContainerV3Service {
         Containers container = jsonHelper.convertValue(containerRequest, Containers.class);
         log.debug("Converted container request to entity | Entity: {}", container);
 
+        // before save operations
+        containerV3Util.containerBeforeSave(new ArrayList<>(List.of(container)));
+
         // Save to DB
         Containers savedContainer = containerDao.save(container);
         log.info("Saved container entity to DB | Container ID: {} | Request ID: {}", savedContainer.getId(), requestId);
@@ -187,17 +220,32 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional
-    public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) {
+    public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
         // Convert the request DTOs to entity models for persistence
         List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
 
+        List<Containers> containersList = getSiblingContainers(containerRequestList.get(0));
+
+        boolean isAutoSell = false;
+
+        Map<UUID, Containers> oldContainers = containersList.stream().collect(Collectors.toMap(Containers::getGuid, container->container,(container1, container2)->container1));
+
+        for (Containers containers: originalContainers) {
+            Containers containers1 = oldContainers.get(containers.getGuid());
+            if (!Objects.equals(containers1.getContainerCount(), containers.getContainerCount()) || !Objects.equals(containers1.getContainerCode(), containers.getContainerCode())) {
+                isAutoSell = true;
+                break;
+            }
+        }
+        // before save operations
+        containerV3Util.containerBeforeSave(originalContainers);
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
-        runAsyncPostSaveOperations(updatedContainers, module);
+        runAsyncPostSaveOperations(updatedContainers,isAutoSell, module);
 
         // Add audit logs for all updated containers
         recordAuditLogs(originalContainers, updatedContainers, DBOperationType.UPDATE);
@@ -229,6 +277,9 @@ public class ContainerV3Service implements IContainerV3Service {
         if (containersToDelete.isEmpty()) {
             throw new IllegalArgumentException("No containers found for the given IDs.");
         }
+
+        // Validate the open for attachment flag of all the container's consols
+        containerValidationUtil.validateOpenForAttachment(containersToDelete);
 
         // Validate that the containers are not assigned to any active shipment or packing before deletion
          validateNoAssignments(containerIds);
@@ -423,17 +474,18 @@ public class ContainerV3Service implements IContainerV3Service {
      * Any failures during Kafka operations are logged.
      * </p>
      *
-     * @param container the container entity that was persisted
-     * @param isCreate  true if the container was newly created; false if updated
+     * @param container             the container entity that was persisted
+     * @param isAutoSell
+     * @param isCreate              true if the container was newly created; false if updated
      */
-    private void afterSave(Containers container, boolean isCreate) {
+    private void afterSave(Containers container, boolean isAutoSell, boolean isCreate) {
         try {
             // Set tenant from context if not already present on the container
             if (container.getTenantId() == null) {
                 container.setTenantId(TenantContext.getCurrentTenant());
             }
 
-            triggerPushToDownStream(container, isCreate, Constants.CONTAINER_AFTER_SAVE);
+            triggerPushToDownStream(container, isAutoSell, isCreate, Constants.CONTAINER_AFTER_SAVE);
 
         } catch (Exception ex) {
             // Log failure with detailed error message and exception stack trace
@@ -442,7 +494,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void triggerPushToDownStream(Containers container, Boolean isCreate, String sourceInfo) {
+    private void triggerPushToDownStream(Containers container, Boolean isAutoSell, boolean isCreate, String sourceInfo) {
         String transactionId = UUID.randomUUID().toString();
 
         log.info("[InternalKafkaPush] Initiating downstream internal Kafka push | containerId={} | isCreate={} | transactionId={}",
@@ -453,6 +505,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .parentEntityName(CONTAINER)
                 .meta(PushToDownstreamEventDto.Meta.builder()
                         .sourceInfo(sourceInfo)
+                        .isAutoSellRequired(isAutoSell)
                         .tenantId(container.getTenantId())
                         .isCreate(isCreate).build()).build();
 
@@ -916,7 +969,7 @@ public class ContainerV3Service implements IContainerV3Service {
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
         futures.add(CompletableFuture.runAsync(
-                masterDataUtils.withMdc(() -> afterSave(container, true)),
+                masterDataUtils.withMdc(() -> afterSave(container, true, true)),
                 executorService
         ));
 
@@ -934,17 +987,17 @@ public class ContainerV3Service implements IContainerV3Service {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
-    private void runAsyncPostSaveOperations(List<Containers> containers, String module) {
+    private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
-        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers);
+        CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
         CompletableFuture.allOf(afterSaveFuture).join();
     }
 
-    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers) {
+    private CompletableFuture<Void> runAfterSaveAsync(List<Containers> containers, boolean isAutoSell) {
         return CompletableFuture.allOf(
                 containers.stream()
                         .map(container -> CompletableFuture.runAsync(
-                                masterDataUtils.withMdc(() -> afterSave(container, false)),
+                                masterDataUtils.withMdc(() -> afterSave(container, isAutoSell, false)),
                                 executorService
                         ))
                         .toArray(CompletableFuture[]::new)
@@ -986,7 +1039,7 @@ public class ContainerV3Service implements IContainerV3Service {
     public void afterSaveList(List<Containers> containers, boolean isCreate) {
         if (containers != null && !containers.isEmpty()) {
             for (Containers container : containers) {
-                afterSave(container, isCreate);
+                afterSave(container, false, isCreate);
             }
         }
     }

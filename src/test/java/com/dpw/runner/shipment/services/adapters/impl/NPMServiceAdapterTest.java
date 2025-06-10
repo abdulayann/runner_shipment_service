@@ -41,6 +41,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +61,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.NPMConstants.ANY;
 import static org.junit.jupiter.api.Assertions.*;
@@ -579,6 +583,111 @@ class NPMServiceAdapterTest {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testFetchContracts4() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).cargoType("LCL").origin("a").destination("b").build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContracts5() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).cargoType("LCL").origin("1").destination("1").build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testFetchContractsWithNoNpmContractsResponse() throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(npmContractsResponse);
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID("1");
+        unlocations.add(unlocationsResponse);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocationsReferenceGUID("2");
+        unlocations.add(unlocationsResponse1);
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocationsResponse));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ListContractsWithFilterRequest.builder().listContractRequest(new ListContractRequest()).build()).build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideDgContractTestData")
+    void testFetchContractsWithVariousDgFlagsAndContracts(boolean isDgEnabled, List<String> dgClassList, List<String> dgUnNumberList) throws RunnerException {
+        NPMContractsResponse npmContractsResponse = new NPMContractsResponse();
+        List<NPMContractsResponse.NPMContractResponse> contracts = new ArrayList<>();
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").validTill(LocalDateTime.MAX).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").validTill(LocalDateTime.MIN).meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        contracts.add(NPMContractsResponse.NPMContractResponse.builder().origin("1").destination("2").dgClass(dgClassList).dgUnNum(dgUnNumberList).product_type("LCL").meta(ListContractResponse.Meta.builder().pod("1").pol("2").build()).build());
+        npmContractsResponse.setContracts(contracts);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(npmContractsResponse));
+        List<UnlocationsResponse> unlocations = new ArrayList<>();
+        unlocations.add(new UnlocationsResponse() {{ setLocationsReferenceGUID("1"); }});
+        unlocations.add(new UnlocationsResponse() {{ setLocationsReferenceGUID("2"); }});
+        when(iV1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().entities(unlocations).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(unlocations.get(0)));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(ListContractsWithFilterRequest.builder()
+                        .listContractRequest(new ListContractRequest())
+                        .cargoType("LCL").origin("1").destination("2")
+                        .isDgEnabled(isDgEnabled).build())
+                .build();
+        var responseEntity = nPMServiceAdapter.fetchContracts(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
     /**
      * Method under test:
      * {@link NPMServiceAdapter#updateContracts(CommonRequestModel)}
@@ -710,6 +819,29 @@ class NPMServiceAdapterTest {
         usersDto.setCompanyCurrency("AED");
         UserContext.setUser(usersDto);
         String json = "{\"origin\":\"INMAA_POR\",\"destination\":\"LzpprcihHCD42MNLUaM1\",\"preferred_date\":\"2024-05-22 12:40:33\",\"preferred_date_type\":\"PICKUP\",\"mode_of_transport\":\"SEA\",\"cargo_type\":\"FCL\",\"service_mode\":\"P2F\",\"fetch_default_rates\":\"false\",\"direction\":\"EXP\",\"offer_filter_type\":\"CHEAPEST\",\"weight\":null,\"volume\":null,\"volume_uom\":null,\"contracts_info\":{\"customer_org_id\":\"FRC00003392\",\"contract_id\":\"DPWQ-171434-101744\"},\"pol\":\"INMAA_POR\",\"pod\":\"USMIA_POR\",\"containers\":[{\"id\":null,\"isContractEnforced\":true,\"commodityGroup\":\"FAK\",\"containerCode\":\"20FR\",\"containerCount\":\"1\",\"contractEnforcedQuantityLimit\":100,\"customId\":\"1cbcb101-6b2f-4541-ab70-30c9a1ff8534\",\"initalCount\":100,\"masterData\":{\"commodityGroup\":\"FREIGHTALLKINDS-FAK\"},\"containerType\":\"20FR\",\"quantity\":\"1\",\"commodityCode\":\"FAK\"}]}";
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        NPMFetchOffersRequestFromUI fetchOffersRequest = objectMapper.readValue(json, NPMFetchOffersRequestFromUI.class);
+        String rates = "{\"offer_type\":\"CONTRACTUAL_OFFER\",\"offers\":[{\"offer_type\":\"CONTRACTUAL_OFFER\",\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"entity_rate_cards\":[{\"loads_rates_info\":[{\"associated_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"perctr\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}],\"aggregated_shipment_load_rates_info\":[{\"associated_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"pership\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}],\"quantity\":1}]}],\"product_name\":\"LCL\",\"tenant_uuid\":\"ab2f6b79-0384-43b2-ba09-e6c38c1df6f6\",\"meta\":{\"route\":[{\"type\":\"LEG\",\"origin\":{\"code\":\"EGDAM_POR\"},\"destination\":{\"code\":\"AEJEA_POR\"}}]},\"shipment_level_rates\":[{\"slabs\":[],\"calculated_sell\":151.23,\"calculated_cost\":0,\"procured_sell\":3.24,\"procured_cost\":0,\"unit_sell\":15122.67,\"unit_cost\":0,\"procured_unit_sell\":324.23,\"procured_unit_cost\":0,\"calculated_margin\":0,\"procured_margin\":0,\"rates_uom\":\"percbm\",\"conversion_rate\":46.6417910448,\"chargeable\":0.01,\"chargeable_uom\":\"M3\",\"total_unit_count\":0.01,\"measurement_unit\":\"M3\",\"applicable_on_booking\":false,\"mode_of_transport\":\"ANY\",\"rate_classification\":\"NON-VAS\",\"rate_taxes\":[],\"charge_group\":[\"ORIGIN_CHARGES\"],\"slab_floor\":15122.67,\"slab_ceil\":15122.67,\"carrier\":\"ANY\",\"rate_type\":\"ACD\",\"rate_name\":\"AdvanceCargoDeclaration\",\"base_price_currency\":\"USD\",\"required_currency\":\"EGP\"}]}],\"reason\":\"\",\"message\":\"\"}";
+        FetchOffersResponse fetchOffersResponse = objectMapper.readValue(rates, FetchOffersResponse.class);
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("Convert To Json");
+        when(restTemplate3.exchange(Mockito.<RequestEntity<Object>>any(), Mockito.<Class<Object>>any()))
+                .thenReturn(ResponseEntity.ok(fetchOffersResponse));
+        var mock = mock(ResponseEntity.class);
+        when(mock.getBody()).thenReturn(fetchOffersResponse);
+
+        // Arrange and Act
+        var response = nPMServiceAdapter.fetchOffers(CommonRequestModel.builder().data(fetchOffersRequest).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testDgFetchOffers() throws RunnerException, JsonProcessingException {
+        UsersDto usersDto = new UsersDto();
+        usersDto.setTenantId(1);
+        usersDto.setCompanyCurrency("AED");
+        UserContext.setUser(usersDto);
+        String json = "{\n    \"origin\": \"INMAA_POR\",\n    \"destination\": \"LzpprcihHCD42MNLUaM1\",\n    \"preferred_date\": \"2024-05-22 12:40:33\",\n    \"preferred_date_type\": \"PICKUP\",\n    \"mode_of_transport\": \"SEA\",\n    \"cargo_type\": \"FCL\",\n    \"service_mode\": \"P2F\",\n    \"fetch_default_rates\": \"false\",\n    \"direction\": \"EXP\",\n    \"offer_filter_type\": \"CHEAPEST\",\n    \"weight\": null,\n    \"volume\": null,\n    \"volume_uom\": null,\n    \"contracts_info\": {\n        \"customer_org_id\": \"FRC00003392\",\n        \"contract_id\": \"DPWQ-171434-101744\",\n        \"dg_class\": [\n            \"2.1\"\n        ],\n        \"dg_un_num\": [\n            \"1234\"\n        ]\n    },\n    \"pol\": \"INMAA_POR\",\n    \"pod\": \"USMIA_POR\",\n    \"containers\": [\n        {\n            \"id\": null,\n            \"isContractEnforced\": true,\n            \"commodityGroup\": \"FAK\",\n            \"containerCode\": \"20FR\",\n            \"containerCount\": \"1\",\n            \"contractEnforcedQuantityLimit\": 100,\n            \"customId\": \"1cbcb101-6b2f-4541-ab70-30c9a1ff8534\",\n            \"initalCount\": 100,\n            \"masterData\": {\n                \"commodityGroup\": \"FREIGHTALLKINDS-FAK\"\n            },\n            \"containerType\": \"20FR\",\n            \"quantity\": \"1\",\n            \"commodityCode\": \"FAK\"\n        }\n    ]\n}";
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         NPMFetchOffersRequestFromUI fetchOffersRequest = objectMapper.readValue(json, NPMFetchOffersRequestFromUI.class);
@@ -1268,5 +1400,16 @@ class NPMServiceAdapterTest {
         assertEquals("Origin1", contracts.get(0).getOrigin());
         assertEquals("Destination1", contracts.get(0).getDestination());
         assertEquals(List.of("3"), contracts.get(0).getDgClass());
+    }
+
+    private static Stream<Arguments> provideDgContractTestData() {
+        List<String> nullDgList = new ArrayList<>();
+        nullDgList.add(null);
+        return Stream.of(
+                Arguments.of(true, List.of("2.1"), List.of("1234")),
+                Arguments.of(true, null, null),
+                Arguments.of(true, new ArrayList<>(), new ArrayList<>()),
+                Arguments.of(true, nullDgList, nullDgList)
+        );
     }
 }

@@ -8,6 +8,7 @@ import static com.dpw.runner.shipment.services.validator.constants.CustomerBooki
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.NOTIFY_PARTY_REQUEST;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
@@ -15,13 +16,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdap
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -54,44 +49,20 @@ import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3DeleteResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3ListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentRetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.QuoteContracts;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
@@ -103,10 +74,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
@@ -119,11 +87,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -148,6 +112,7 @@ import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -165,6 +130,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
+
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+
+    @Autowired
+    private MasterDataKeyUtils masterDataKeyUtils;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -385,8 +357,299 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+
     @Override
-    public CustomerBookingV3ListResponse list(ListCommonRequest request) throws RunnerException {
+    public Map<String, Object> getAllMasterData(Long bookingId) {
+        Optional<CustomerBooking> customerBookingOptional = customerBookingDao.findById(bookingId);
+        if (!customerBookingOptional.isPresent()) {
+            log.debug(CustomerBookingConstants.BOOKING_DETAILS_NULL_FOR_ID_ERROR, bookingId);
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        CustomerBooking customerBooking = customerBookingOptional.get();
+        long start = System.currentTimeMillis();
+        List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(CustomerBooking.class, null)));
+        includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(CustomerBooking.class, null))));
+        includeColumns.addAll(CustomerBookingConstants.LIST_INCLUDE_COLUMNS_V3);
+        CustomerBookingV3Response customerBookingV3Response = (CustomerBookingV3Response) commonUtils.setIncludedFieldsToResponse(customerBooking, includeColumns.stream().collect(Collectors.toSet()), new CustomerBookingV3Response());
+        log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
+        return fetchAllMasterDataByKey(customerBookingV3Response);
+    }
+
+    public Map<String, Object> fetchAllMasterDataByKey(CustomerBookingV3Response customerBookingV3Response) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var chargeTypeDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllChargeTypesInSingleMDMCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllSalesAgentInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllVesselDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        var organizationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllOrganizationDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, tenantDataFuture, containerDataFuture, chargeTypeDataFuture, salesAgentFuture, vesselsFuture, organizationFuture).join();
+
+        return masterDataResponse;
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleMDMCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> chargeTypes = new HashSet<>();
+
+            if (!Objects.isNull(customerBookingV3Response.getBookingCharges()))
+                customerBookingV3Response.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId(), cacheMap)));
+            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE, chargeTypes, new EntityTransferChargeType(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CHARGE_TYPE, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllChargeTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBooking.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> containerTypes = new HashSet<>();
+            if (!Objects.isNull(customerBookingV3Response.getContainersList()))
+                customerBookingV3Response.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
+
+            Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CONTAINER_TYPE, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        }  catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBooking.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> tenantIdList = new HashSet<>(masterDataUtils.createInBulkTenantsRequest(customerBookingV3Response, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName(), cacheMap));
+
+            Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.TENANTS, tenantIdList, new TenantModel(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.TENANTS, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllTenantDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllSalesAgentInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> salesAgents = new HashSet<>();
+            if (!Objects.isNull(customerBookingV3Response))
+                salesAgents.addAll(masterDataUtils.createInBulkSalesAgentRequest(customerBookingV3Response, ShipmentDetails.class, fieldNameKeyMap, ShipmentDetails.class.getSimpleName(), cacheMap) );
+
+            Map<String, SalesAgentResponse> v1Data = masterDataUtils.fetchInSalesAgentList(salesAgents.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.SALES_AGENT, salesAgents, new SalesAgentResponse(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.SALES_AGENT, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllSalesAgentInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllOrganizationDataInSingleCall (CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> orgIds = new HashSet<>((masterDataUtils.createInBulkOrganizationRequest(customerBookingV3Response, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName(), cacheMap)));
+
+            Map<String, EntityTransferOrganizations> keyMasterDataMap = masterDataUtils.fetchInOrganizations(orgIds, EntityTransferConstants.ID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.ORGANIZATIONS, orgIds, new EntityTransferOrganizations(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.ORGANIZATIONS, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllOrganizationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> vesselList = new HashSet<>();
+            if (!Objects.isNull(customerBookingV3Response.getCarrierDetails()))
+                vesselList.addAll((masterDataUtils.createInBulkVesselsRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap)));
+            Map<String, EntityTransferVessels> v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vesselList, new EntityTransferVessels(), cacheMap);
+
+            if(masterDataResponse == null) {
+                customerBookingV3Response.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.VESSELS, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllVesselDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> currencyList = new HashSet<>(masterDataUtils.createInBulkCurrencyRequest(customerBookingV3Response, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName(), cacheMap));
+            Map<String, EntityTransferCurrency> v1Data = masterDataUtils.fetchInCurrencyList(currencyList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CURRENCIES, currencyList, new EntityTransferCurrency(), cacheMap);
+
+            masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CURRENCIES, masterDataResponse, cacheMap);
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCurrencyDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(customerBookingV3Response, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName(), cacheMap));
+            if (!Objects.isNull(customerBookingV3Response.getCarrierDetails()))
+                listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap));
+
+            if(masterDataResponse != null) {
+                addListRequestForMasterDataResponse(customerBookingV3Response, listRequests, fieldNameKeyMap, cacheMap);
+            }
+
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+
+            if(masterDataResponse == null) {
+                customerBookingV3Response.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap));
+                if (!Objects.isNull(customerBookingV3Response.getCarrierDetails()))
+                    customerBookingV3Response.getCarrierDetails().setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap) );
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> locationCodes = new HashSet<>();
+            if (!Objects.isNull(customerBookingV3Response.getCarrierDetails()))
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap)));
+            if(masterDataResponse != null) {
+                addListRequestsForUnlocationData(customerBookingV3Response, locationCodes, fieldNameKeyMap, cacheMap);
+            }
+
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
+
+            if(masterDataResponse == null) {
+                if (!Objects.isNull(customerBookingV3Response.getCarrierDetails()))
+                    customerBookingV3Response.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COUNTRIES, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> carrierList = new HashSet<>();
+            if (!Objects.isNull(customerBookingV3Response.getCarrierDetails()))
+                carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap));
+            Map<String, EntityTransferCarrier> v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER, carrierList, new EntityTransferCarrier(), cacheMap);
+
+            if(masterDataResponse == null) {
+                customerBookingV3Response.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.CARRIER, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private void addListRequestsForUnlocationData(CustomerBookingV3Response customerBookingV3Response, Set<String> locationCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(!Objects.isNull(customerBookingV3Response.getContainersList()))
+            customerBookingV3Response.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(customerBookingV3Response.getPackingList()))
+            customerBookingV3Response.getPackingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
+    }
+
+    private void addListRequestForMasterDataResponse(CustomerBookingV3Response customerBookingV3Response, Set<MasterListRequest> listRequests, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(!Objects.isNull(customerBookingV3Response.getPackingList()))
+            customerBookingV3Response.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(customerBookingV3Response.getReferenceNumbersList()))
+            customerBookingV3Response.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(customerBookingV3Response.getContainersList()))
+            customerBookingV3Response.getContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
+    }
+
+
+    @Override
+    public CustomerBookingV3ListResponse list(ListCommonRequest request, Boolean getMasterData) throws RunnerException {
         String responseMsg;
         try {
             if (request == null) {
@@ -397,8 +660,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             Page<CustomerBooking> customerBookingPage = customerBookingDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Booking list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             long totalPages = customerBookingPage.getSize() == 0 ? 0 : (long) Math.ceil((double) customerBookingPage.getTotalElements() / customerBookingPage.getSize());
+            List<IRunnerResponse> customerBookingResponse = convertEntityListToDtoList(customerBookingPage.getContent(), getMasterData);
             return CustomerBookingV3ListResponse.builder()
-                    .customerBookingV3Responses(jsonHelper.convertValueToList(customerBookingPage.getContent(),CustomerBookingV3Response.class))
+                    .customerBookingV3Responses(jsonHelper.convertValueToList(customerBookingResponse, CustomerBookingV3Response.class))
                     .totalPages((int) totalPages)
                     .totalCount(customerBookingPage.getTotalElements())
                     .build();
@@ -719,6 +983,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
         }
+    }
+
+    private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {
+        FieldClassDto fieldClassDto = new FieldClassDto();
+        fieldClassDto.setClazz(clazz);
+        fieldClassDto.setFieldRef(parentref);
+        return fieldClassDto;
     }
 
     private CheckCreditLimitResponse createCheckCreditLimitPayload(CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse){
@@ -1870,5 +2141,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst, Boolean getMasterData) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        lst.forEach(customerBooking -> {
+            CustomerBookingV3Response response = modelMapper.map(customerBooking, CustomerBookingV3Response.class);
+            responseList.add(response);
+        });
+        try{
+            if(Boolean.TRUE.equals(getMasterData)) {
+                double startTime = System.currentTimeMillis();
+                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, carrierDataFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.BOOKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+            }
+        } catch (Exception ex){
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_BOOKING_LIST, ex.getLocalizedMessage());
+        }
+        return responseList;
     }
 }

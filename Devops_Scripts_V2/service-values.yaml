@@ -41,7 +41,7 @@ configMap:
     NEW_RELIC_LOG_ENABLED: true
     NEW_RELIC_DISTRIBUTED_TRACING_ENABLED: true
     NEW_RELIC_LOG_LEVEL: info
-    SPRING_CONFIG_LOCATION: file:///app/
+    SPRING_CONFIG_LOCATION: file:///app/resources/
 
 # Horizontal Pod Autoscaler (HPA) configuration
 hpa:
@@ -129,7 +129,7 @@ qa:
   secretName: shipment-service-qa-SECRET
   deployment:
     replicaCount: 2
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1536m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-qa-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1536m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
     minCpu: 1000m
     maxCpu: 1500m
     minMem: 1.8Gi
@@ -152,7 +152,7 @@ demo:
   secretName: shipment-service-demo-SECRET
   deployment:
     replicaCount: 2
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-demo-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1536m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-demo-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms512m -Xmx1536m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
     minCpu: 1000m
     maxCpu: 1500m
     minMem: 1.8Gi
@@ -175,7 +175,7 @@ staging:
   secretName: shipment-service-staging-SECRET
   deployment:
     replicaCount: 2
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-staging-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
     minCpu: 1000m
     maxCpu: 3000m
     minMem: 2Gi
@@ -198,7 +198,7 @@ prod:
   secretName: shipment-service-prod-SECRET
   deployment:
     replicaCount: 2
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-prod-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
     minCpu: 1000m
     maxCpu: 3000m
     minMem: 2Gi
@@ -221,7 +221,7 @@ dr:
   secretName: shipment-service-dr-SECRET
   deployment:
     replicaCount: 0
-    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
+    args: tar -xvzf /tmp/app-config/config.tar -C . && cat /mnt/secrets-store/shipment-service-dr-SECRET >> ~/.bashrc && . ~/.bashrc  && java -Xms1024m -Xmx4096m -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 -Xlog:gc* -javaagent:/usr/local/newrelic/newrelic.jar -jar runner-shipment-services-0.0.1.jar
     minCpu: 1000m
     maxCpu: 3000m
     minMem: 2Gi

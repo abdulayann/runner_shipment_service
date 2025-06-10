@@ -48,12 +48,16 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String additionalTerms;
     private String goodsDescription;
     private BigDecimal weight;
+    private String weightFormatted;
     private String weightUnit;
     private BigDecimal volume;
+    private String volumeFormatted;
     private String volumeUnit;
     private BigDecimal volumetricWeight;
+    private String volumetricWeightFormatted;
     private String volumetricWeightUnit;
     private BigDecimal chargable;
+    private String chargableFormatted;
     private String chargeableUnit;
     private BigDecimal netWeight;
     private String netWeightUnit;

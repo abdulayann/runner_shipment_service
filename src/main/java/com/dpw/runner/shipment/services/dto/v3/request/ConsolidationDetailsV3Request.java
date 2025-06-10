@@ -140,6 +140,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     @Size(max=3, message = "max size is 3 for efreight_status")
     private String efreightStatus;
     private Boolean hazardous;
+    private Boolean reefer;
     @Size(max=31, message = "max size is 31 for emergency_contact_number")
     private String emergencyContactNumber;
     @Size(max=31, message = "max size is 31 for emergency_contact_number_code")

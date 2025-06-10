@@ -19,10 +19,10 @@ public class ApiConstants {
     public static final String BOOKING_API_DELETE_PARTIES = "/delete/booking/parties";
     public static final String CONSOLIDATION_API_LIST = "consolidation-routing";
     public static final String CONSOLIDATION_API_UPDATE_BULK = "consolidation/update/bulk";
-    public static final String UPDATE_SAILING_SCHEDULE = "update-sailing-schedule";
+    public static final String UPDATE_SAILING_SCHEDULE = "/update-sailing-schedule";
 
     public static final String GET_CARGO_DETAILS = "/get/cargoDetails";
-
+    public static final String GET_CARGO_CHARGEABLE = "/get/chargeable";
 
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";

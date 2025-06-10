@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
@@ -28,12 +27,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {CustomerBookingV3Controller.class})
@@ -90,8 +88,8 @@ class CustomerBookingV3ControllerTest {
         CustomerBookingV3ListResponse customerBookingV3ListResponse = new CustomerBookingV3ListResponse();
         customerBookingV3ListResponse.setTotalPages(10);
         customerBookingV3ListResponse.setTotalCount(247L);
-        when(customerBookingV3Service.list(any())).thenReturn(customerBookingV3ListResponse);
-        var response = customerBookingV3Controller.list(new ListCommonRequest());
+        when(customerBookingV3Service.list(any(), any())).thenReturn(customerBookingV3ListResponse);
+        var response = customerBookingV3Controller.list(new ListCommonRequest(), Boolean.TRUE);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -140,14 +138,14 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void createBookingContainers() {
+    void createBookingContainers() throws RunnerException {
         when(containerV3Service.create(any(), any())).thenReturn(new ContainerResponse());
         var responseEntity = customerBookingV3Controller.createBookingContainers(new ContainerV3Request());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void updateBookingContainers() {
+    void updateBookingContainers() throws RunnerException {
         when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
         var responseEntity = customerBookingV3Controller.updateBookingContainers(List.of(new ContainerV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -263,5 +261,14 @@ class CustomerBookingV3ControllerTest {
         when(customerBookingV3Service.checkCreditLimitFromFusion(any())).thenReturn(new CheckCreditLimitResponse());
         var responseEntity = customerBookingV3Controller.checkCreditLimitFromFusion(new CreditLimitRequest());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getAllMasterDataTest() {
+        Map<String, Object> masterData = new HashMap<>();
+        when(customerBookingV3Service.getAllMasterData(anyLong())).thenReturn(masterData);
+        var response = customerBookingV3Controller.getAllMasterData(1L);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(customerBookingV3Service).getAllMasterData(1L);
     }
 }
