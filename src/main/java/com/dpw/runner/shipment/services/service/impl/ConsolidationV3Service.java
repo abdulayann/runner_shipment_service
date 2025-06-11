@@ -2201,6 +2201,38 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             ShipmentDetails shipmentDetails,
             List<EventsRequest> events) throws RunnerException {
 
+        String transportMode = console.getTransportMode();
+
+        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
+            //Non-Editable Fields
+            shipmentDetails.setJobType(console.getConsolidationType());
+            shipmentDetails.setPartner(console.getPartner());
+            shipmentDetails.setCoLoadCarrierName(console.getCoLoadCarrierName());
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+
+            //Editable Fields
+            shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
+            shipmentDetails.setCoLoadBkgNumber(console.getCoLoadBookingReference());
+            setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+
+        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+            //Non-Editable Fields
+            shipmentDetails.setShipmentType(console.getContainerCategory());
+            shipmentDetails.setPartner(console.getPartner());
+            shipmentDetails.setCoLoadCarrierName(console.getCoLoadCarrierName());
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+
+            //Editable Fields
+            shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
+            shipmentDetails.setCoLoadBkgNumber(console.getCoLoadBookingReference());
+            setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+            if(shipmentDetails.getAdditionalDetails() != null){
+                shipmentDetails.getAdditionalDetails().setEfreightStatus(console.getEfreightStatus());
+            }
+        }
+
         // Update basic references in the shipment from the console
         shipmentDetails.setConsolRef(console.getReferenceNumber());
         shipmentDetails.setMasterBill(console.getBol());
@@ -2239,9 +2271,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 shipmentDetails.setReceivingBranch(console.getReceivingBranch());
             }
         }
-
-        // Update carrier details if required
-        updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
         // Perform CFS cut-off date validation if enabled and required
         if (consolidationV3Util.checkConsolidationEligibleForCFSValidation(console)
