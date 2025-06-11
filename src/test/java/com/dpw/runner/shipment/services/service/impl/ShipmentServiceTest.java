@@ -157,6 +157,8 @@ import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentExcelExportResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
@@ -203,6 +205,7 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
@@ -2486,6 +2489,11 @@ ShipmentServiceTest extends CommonMocks {
         mapping.setConsolidationId(1L);
         consoleShipmentMappings.add(mapping);
         shipmentDetails.setEventsList(null);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        shipmentDetails.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
         // Set up consoleShipmentMappings as needed for your test
         when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappings);
 
@@ -4762,6 +4770,11 @@ ShipmentServiceTest extends CommonMocks {
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         ShipmentDetails e = new ShipmentDetails();
         e.setGuid(UUID.randomUUID());
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        e.setReferenceNumbersList(List.of(referenceNumbers));
+        e.setPickupDetails(new PickupDeliveryDetails());
         shipmentDetailsList.add(e);
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
@@ -4784,6 +4797,11 @@ ShipmentServiceTest extends CommonMocks {
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         ShipmentDetails e = new ShipmentDetails();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        e.setReferenceNumbersList(List.of(referenceNumbers));
+        e.setPickupDetails(new PickupDeliveryDetails());
         e.setGuid(UUID.randomUUID());
         shipmentDetailsList.add(e);
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
@@ -4816,6 +4834,11 @@ ShipmentServiceTest extends CommonMocks {
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         shipmentDetailsList.add(shipmentDetails);
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        shipmentDetails.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
@@ -5997,6 +6020,11 @@ ShipmentServiceTest extends CommonMocks {
         when(notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(anyList(), anyString())).thenReturn(Map.of(2L, 5));
 
         shipmentDetails.setId(1L);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        shipmentDetails.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
         List<ShipmentDetails> shipments = List.of(shipmentDetails);
         List<IRunnerResponse> shipmentResponse = convertEntityListToDtoList(shipments);
         PageImpl<ShipmentDetails> page = new PageImpl<>(List.of(shipmentDetails));
@@ -6767,6 +6795,12 @@ ShipmentServiceTest extends CommonMocks {
         List<ShipmentListResponse> shipmentListResponses  = ShipmentMapper.INSTANCE.toShipmentListResponses(lst);
         for(var i: shipmentListResponses) {
             setEventData(i);
+            ReferenceNumbersResponse referenceNumbersResponse = new ReferenceNumbersResponse();
+            referenceNumbersResponse.setType("SRN");
+            referenceNumbersResponse.setReferenceNumber("ABCD1234");
+            i.setReferenceNumbersList(List.of(referenceNumbersResponse));
+            i.setPickupDetails(new PickupDeliveryDetailsListResponse());
+            i.getPickupDetails().setShipperRef("ABCD1234");
             if (i.getStatus() != null && i.getStatus() < ShipmentStatus.values().length)
                 i.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
             if (ObjectUtils.isNotEmpty(i.getShipmentOrders()))
@@ -9255,6 +9289,12 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setConsigner(client);
         shipmentDetails.setConsignee(client);
 
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        shipmentDetails.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
+
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
@@ -9289,6 +9329,11 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setClient(client);
         shipmentDetails.setConsigner(client);
         shipmentDetails.setConsignee(client);
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        shipmentDetails.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
 
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
@@ -9321,7 +9366,11 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
         when(shipmentDao.findByGuid(UUID.fromString("9f6acf30-3e62-4d3e-991e-a990fe00f069"))).thenReturn(Optional.of(shipmentDetails));
-
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        shipmentDetails.setReferenceNumbersList(List.of(referenceNumbers));
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         shipmentDetailsList.add(shipmentDetails);
 
@@ -10824,7 +10873,13 @@ ShipmentServiceTest extends CommonMocks {
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         ShipmentDetails e = new ShipmentDetails();
         e.setGuid(UUID.randomUUID());
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType("SRN");
+        referenceNumbers.setReferenceNumber("ABCD1234");
+        e.setReferenceNumbersList(List.of(referenceNumbers));
+        e.setPickupDetails(new PickupDeliveryDetails());
         shipmentDetailsList.add(e);
+
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
 
