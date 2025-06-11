@@ -200,6 +200,9 @@ import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionRespon
 import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentExcelExportResponse;
@@ -263,7 +266,24 @@ import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.JobState;
+import com.dpw.runner.shipment.services.entity.enums.JobType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -4806,30 +4826,39 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    private void setShipperReferenceNumber(ShipmentDetailsResponse response){
-        if(response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()){
-           Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
-                .filter(i -> i.getType().equalsIgnoreCase(SRN))
-                .findFirst()
-                .map(a -> a.getReferenceNumber());
+    private void setShipperReferenceNumber(ShipmentDetailsResponse response) {
+        String shipperRef = resolveSingleSRN(response.getReferenceNumbersList());
 
-           if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
-               response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
-           }
+        if (shipperRef != null) {
+            if (response.getPickupDetails() == null) {
+                response.setPickupDetails(new PickupDeliveryDetailsResponse());
+            }
+            response.getPickupDetails().setShipperRef(shipperRef);
         }
     }
 
-    private void setShipperReferenceNumber(ShipmentListResponse response){
-        if(response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()){
-            Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
-                .filter(i -> i.getType().equalsIgnoreCase(SRN))
-                .findFirst()
-                .map(a -> a.getReferenceNumber());
+    private void setShipperReferenceNumber(ShipmentListResponse response) {
+        String shipperRef = resolveSingleSRN(response.getReferenceNumbersList());
 
-            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
-                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
+        if (shipperRef != null) {
+            if (response.getPickupDetails() == null) {
+                response.setPickupDetails(new PickupDeliveryDetailsListResponse());
             }
+            response.getPickupDetails().setShipperRef(shipperRef);
         }
+    }
+
+    private String resolveSingleSRN(List<ReferenceNumbersResponse> referenceNumbers) {
+        if (referenceNumbers == null || referenceNumbers.isEmpty()) {
+            return null;
+        }
+
+        List<String> srnList = referenceNumbers.stream()
+                .filter(ref -> SRN.equalsIgnoreCase(ref.getType()))
+                .map(ReferenceNumbersResponse::getReferenceNumber)
+                .toList();
+
+        return (srnList.size() == 1) ? srnList.get(0) : null;
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
