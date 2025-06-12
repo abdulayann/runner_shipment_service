@@ -58,6 +58,7 @@ public class TransportOrderReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipmentModel.getShipmentId());
         processTruckDriverDetailsTags(shipmentModel, dictionary);
+        populateV3TruckDriverDetailsTags(shipmentModel, dictionary);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipmentModel);
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         UnlocationsResponse origin = unlocationsMap.get(shipmentModel.getCarrierDetails().getOrigin());

@@ -165,6 +165,7 @@ public class CargoManifestReport extends IReport{
         processShipmentRoutingList(cargoManifestModel, dictionary);
 
         processReferenceNumbersList(cargoManifestModel, dictionary);
+        populateV3TruckDriverDetailsTags(cargoManifestModel.shipmentDetails, dictionary);
         return dictionary;
     }
 

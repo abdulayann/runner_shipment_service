@@ -7,6 +7,8 @@ import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.validation.constraints.Size;
+
 @Data
 @Builder
 @ApiModel("Truck Driver Details Request Model")
@@ -18,9 +20,13 @@ public class TruckDriverDetailsRequest extends CommonRequest implements IRunnerR
     private Long shipmentId;
     private Ownership transporterType;
     private String transporterName;
+    @Size(max=80, message = "max size is 80 for driver name")
     private String driverName;
+    @Size(max=25, message = "max size is 25 for driver mobile number")
     private String driverMobileNumber;
+    @Size(max=50, message = "max size is 50 for truck number")
     private String truckNumberPlate;
+    @Size(max=50, message = "max size is 50 for trailer number")
     private String trailerNumberPlate;
     private String truckOrTrailerType;
     private String containerTypeCode;
@@ -30,4 +36,6 @@ public class TruckDriverDetailsRequest extends CommonRequest implements IRunnerR
     private String remarks;
     private String truckStatus;
     private Parties thirdPartyTransporter;
+    @Size(max=50, message = "max size is 50 for driver id")
+    private String driverId;
 }
