@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
@@ -707,6 +708,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "slac")
     private Integer slac;
 
+    @Column(name = "transport_info_status")
+    @Enumerated(EnumType.STRING)
+    private TransportInfoStatus transportInfoStatus;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -719,5 +724,4 @@ public class ShipmentDetails extends MultiTenancy {
     public int hashCode() {
         return Objects.hash(getId());
     }
-
 }
