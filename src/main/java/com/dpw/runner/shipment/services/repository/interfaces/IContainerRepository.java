@@ -7,6 +7,9 @@ import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -14,10 +17,6 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
 
 @Generated
 public interface IContainerRepository extends MultiTenancyRepository<Containers> {
@@ -65,16 +64,22 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
 
     // Retrieves a list of unique container IDs that are assigned to shipments and are not marked as deleted.
     @Query(value = """
-                SELECT c.id as containerId,
+                SELECT
+                    sd.shipment_id AS shipmentId,
                 c.container_number AS containerNumber,
-                sd.shipment_id AS shipmentId
-                FROM containers c
-                INNER JOIN shipment_details sd ON sd.container_assigned_to_shipment_cargo = c.id
+                    scm.container_id AS containerId,
+                    p.packs AS packs,
+                    p.packs_type AS packsType
+                FROM shipments_containers_mapping scm
+                INNER JOIN containers c ON c.id = scm.container_id
+                INNER JOIN shipment_details sd ON scm.shipment_id = sd.id
+                LEFT JOIN packing p ON p.container_id = c.id AND p.is_deleted = false
                 WHERE c.id IN (?1)
                   AND c.is_deleted = false
                   AND sd.is_deleted = false
             """, nativeQuery = true)
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds);
+
 
     // Retrieves a list of unique container IDs that are associated with packings,
     // ensuring the containers and packings are not marked as deleted.
@@ -82,7 +87,8 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
                 SELECT c.id as containerId,
                 c.container_number AS containerNumber,
                 sd.shipment_id AS shipmentId,
-                p.packs AS packs
+                p.packs AS packs,
+                p.packs_type AS packsType
                 FROM containers c
                 inner join packing p on c.id = p.container_id
                 inner join shipment_details sd on sd.id = p.shipment_id
@@ -97,6 +103,7 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
             SELECT DISTINCT c.id AS containerId,
                    c.container_number AS containerNumber,
                    sd.shipment_id AS shipmentId,
+                   p.packs_type AS packsType
                    p.packs AS packs
             FROM containers c
             INNER JOIN shipment_details sd ON sd.container_assigned_to_shipment_cargo = c.id
