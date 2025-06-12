@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -287,6 +288,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private CustomKeyGenerator keyGenerator;
     @Mock
     private IDpsEventService dpsEventService;
+    @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;

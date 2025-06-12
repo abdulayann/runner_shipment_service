@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -343,7 +344,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Mock
   private ModelMapper modelMapper;
-
+  @Mock
+  private ICarrierDetailsDao carrierDetailsDao;
   @Mock
   @Qualifier("executorServiceMasterData")
   private ExecutorService executorServiceMasterData;
@@ -4549,6 +4551,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
 
     ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setCarrierDetails(carrierDetails);
     consolidation.setShipmentsList(Set.of(shipment1));
     consolidation.setTransportMode(TRANSPORT_MODE_SEA);
 
@@ -4579,6 +4582,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
 
     ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setCarrierDetails(carrierDetails);
     consolidation.setTransportMode(TRANSPORT_MODE_AIR);
     consolidation.setShipmentsList(Set.of(shipment1));
 

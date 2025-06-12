@@ -33,4 +33,6 @@ public interface IRoutingsV3Service{
     List<Routings> getRoutingsByShipmentId(Long id);
 
     void deleteInheritedRoutingsFromShipment(List<ShipmentDetails> shipmentDetailsToSave) throws RunnerException;
+
+    List<Routings> getRoutingsByConsolidationId(Long consolidationId);
 }
