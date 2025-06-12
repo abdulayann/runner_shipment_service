@@ -335,6 +335,7 @@ class AwbDaoTest {
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
         when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
         when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
+        when(awbRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
             awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment, false);
