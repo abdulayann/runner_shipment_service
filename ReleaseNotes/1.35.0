@@ -1,4 +1,0 @@
-Release Version - Release-v1.35.0
-
--- Post Deployment
-1. Run Update_Screener_Name_AutoSync.sql on all env

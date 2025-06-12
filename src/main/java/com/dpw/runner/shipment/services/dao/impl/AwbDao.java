@@ -24,7 +24,9 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -102,94 +104,64 @@ public class AwbDao implements IAwbDao {
         boolean isCreate = awbShipmentInfo.getId() == null;
         applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
-        addScreenersName(awb);
         CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, isCreate)), executorService);
         return awb;
     }
 
     @Override
     public Page<Awb> findAll(Specification<Awb> spec, Pageable pageable) {
-        var page = awbRepository.findAll(spec, pageable);
-        addScreenersName(page);
-        return page;
+        return awbRepository.findAll(spec, pageable);
     }
 
     @Override
     public Optional<Awb> findById(Long id) {
-        var awb = awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
     }
 
     @Override
     public Optional<Awb> findByGuid(UUID guid) {
-        var awb = awbRepository.findByGuid(guid);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByGuid(guid);
     }
 
     @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
-        var awb = awbRepository.findByShipmentId(shipmentId);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByShipmentId(shipmentId);
     }
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {
-        var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     @Override
     public List<Awb> findByShipmentIdList(List<Long> shipmentIds) {
-        var awb = awbRepository.findByShipmentIdList(shipmentIds);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByShipmentIdList(shipmentIds);
     }
 
     @Override
     public List<Awb> findByShipmentIdByQuery(Long shipmentId) {
-        var awb = awbRepository.findByShipmentIdByQuery(shipmentId);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByShipmentIdByQuery(shipmentId);
     }
 
     @Override
     public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
-        var awb = awbRepository.findByShipmentIdsByQuery(shipmentIds);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByShipmentIdsByQuery(shipmentIds);
     }
     
     @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
-        var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     @Override
-    public List<Awb> findByIssuingAgent(String issuingAgent) {
-        var awb = awbRepository.findByIssuingAgent(issuingAgent);
-        addScreenersName(awb);
-        return awb;
-
-    }
+    public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
 
     @Override
-    public List<Awb> findByAwbNumber(List<String> awbNumber) {
-        var awb = awbRepository.findByAwbNumber(awbNumber);
-        addScreenersName(awb);
-        return awb;
-    }
+    public List<Awb> findByAwbNumber(List<String> awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
 
     @Override
     public List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent) {
-        var awb = awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
-        addScreenersName(awb);
-        return awb;
+        return awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
     }
 
     @Override
@@ -197,31 +169,9 @@ public class AwbDao implements IAwbDao {
         List<Awb> entities = awbRepository.saveAll(req);
         for (Awb awb: entities)
         {
-            addScreenersName(awb);
             CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, false)), executorService);
         }
         return entities;
-    }
-
-    @Override
-    public List<Awb> findByIds(List<Long> id) {
-        var awbList = awbRepository.findAwbByIds(id);
-        addScreenersName(awbList);
-        return awbList;
-    }
-
-    @Override
-    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
-        var awbList = awbRepository.findAwbByAwbNumbers(awbNumbers);
-        addScreenersName(awbList);
-        return awbList;
-    }
-
-    @Override
-    public Awb findAwbByGuidByQuery(UUID guid) {
-        var awb = awbRepository.findAwbByGuidByQuery(guid);
-        this.addScreenersName(awb);
-        return awb;
     }
 
     private void applyValidations(Awb awb) throws RunnerException {
@@ -327,7 +277,6 @@ public class AwbDao implements IAwbDao {
 
     public Awb getHawb(Long id) {
         List<Awb> awb = awbRepository.findByShipmentIdByQuery(id);
-        addScreenersName(awb);
         if (awb != null && !awb.isEmpty())
             return awb.get(0);
         return null;
@@ -335,7 +284,6 @@ public class AwbDao implements IAwbDao {
 
     public Awb getMawb(Long id) {
         List<Awb> awb = awbRepository.findByConsolidationId(id);
-        addScreenersName(awb);
         if(awb != null && !awb.isEmpty()) {
             return awb.get(0);
         }
@@ -455,7 +403,10 @@ public class AwbDao implements IAwbDao {
         }
     }
 
-
+    @Override
+    public Awb findAwbByGuidByQuery(UUID guid) {
+        return awbRepository.findAwbByGuidByQuery(guid);
+    }
 
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
@@ -595,7 +546,15 @@ public class AwbDao implements IAwbDao {
         return linkedHawb;
     }
 
+    @Override
+    public List<Awb> findByIds(List<Long> id) {
+        return awbRepository.findAwbByIds(id);
+    }
 
+    @Override
+    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
+        return awbRepository.findAwbByAwbNumbers(awbNumbers);
+    }
 
     @Override
     public void validateAirMessaging(Long id) throws RunnerException {
@@ -613,34 +572,5 @@ public class AwbDao implements IAwbDao {
         linkedHouses.stream()
                 .filter(house -> Objects.nonNull(house.getAwbPackingInfo()))
                 .forEach(house -> awb.getAwbPackingInfo().addAll(house.getAwbPackingInfo()));
-    }
-
-
-    // Set AWB User Initials
-
-    private void addScreenersName(Page<Awb> page) {
-        if (Objects.nonNull(page))
-            page.getContent().forEach(this::addScreenersName);
-
-    }
-
-    private void addScreenersName(List<Awb> awbs) {
-        if (Objects.nonNull(awbs))
-            awbs.forEach(this::addScreenersName);
-
-    }
-
-    private void addScreenersName(Optional<Awb> awb) {
-        awb.ifPresent(this::addScreenersName);
-    }
-
-    private void addScreenersName(Awb awb) {
-        if (Objects.isNull(awb)
-                || Objects.isNull(awb.getAwbCargoInfo())
-                || StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber())
-                || Boolean.TRUE.equals(awb.getAwbCargoInfo().getIsUserInitialsManuallyAdded())) {
-            return;
-        }
-        awb.getAwbCargoInfo().setUserInitials(AwbUtility.getScreenerName(UserContext.getUser().getDisplayName()));
     }
 }

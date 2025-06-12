@@ -2848,8 +2848,7 @@ public class ShipmentService implements IShipmentService {
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
-
-            if (Objects.nonNull(addressConsignorAgent) && addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
+            if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
                 var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
                 if (rakcType != null && Boolean.TRUE.equals(rakcType)){
                     if(shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
