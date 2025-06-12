@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -100,6 +101,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -377,6 +379,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     @Autowired
     @Qualifier("executorServiceMasterData")
     ExecutorService executorServiceMasterData;
+
+    @Autowired
+    private ICarrierDetailsDao carrierDetailsDao;
 
     @Override
     @Transactional
@@ -3656,12 +3661,20 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException {
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
-        bulkUpdateRoutingsRequest.setRoutings(request.getRoutings());
         Optional<RoutingsRequest> firstRouting = request.getRoutings().stream().findFirst();
         if (firstRouting.isEmpty()) {
             return new ConsolidationSailingScheduleResponse();
         }
         Long consolidationId = firstRouting.get().getConsolidationId();
+        List<Routings> routingsList = routingsV3Service.getRoutingsByConsolidationId(consolidationId);
+        if (!CollectionUtils.isEmpty(routingsList)) {
+            routingsList.removeIf(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
+        }
+        List<RoutingsRequest> finalShipmentRouteList = new ArrayList<>();
+        finalShipmentRouteList.addAll(request.getRoutings());
+        finalShipmentRouteList.addAll(jsonHelper.convertValueToList(routingsList, RoutingsRequest.class));
+
+        bulkUpdateRoutingsRequest.setRoutings(finalShipmentRouteList);
         bulkUpdateRoutingsRequest.setEntityId(consolidationId);
         routingsV3Service.updateBulk(bulkUpdateRoutingsRequest, CONSOLIDATION);
 
@@ -3675,14 +3688,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         String carrierNameFromMasterData = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(request.getScacCode());
         if(consolidationDetails.getShipmentsList() != null) {
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                updateCutoffDetailsToShipment(request, shipmentDetails);
-                shipmentDetails.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
-                shipmentDetailsList.add(shipmentDetails);
+                shipmentV3Service.updateCutoffDetailsToShipment(jsonHelper.convertValue(request, ShipmentSailingScheduleRequest.class), shipmentDetails);
+                CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+                carrierDetails.setShippingLine(carrierNameFromMasterData);
+                carrierDetailsDao.update(carrierDetails);
             }
         }
-        updateCutoffDetailsToShipment(request, consolidationDetails);
-        save(consolidationDetails, false);
-        shipmentV3Service.saveAll(shipmentDetailsList);
+        updateCutoffDetailsToConsolidations(request, consolidationDetails);
+        CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
+        carrierDetails.setShippingLine(carrierNameFromMasterData);
+        carrierDetailsDao.update(carrierDetails);
         return new ConsolidationSailingScheduleResponse();
     }
 
@@ -3703,20 +3718,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void updateCutoffDetailsToShipment(ConsolidationSailingScheduleRequest request, ConsolidationDetails consolidationDetails){
+    private void updateCutoffDetailsToConsolidations(ConsolidationSailingScheduleRequest request, ConsolidationDetails consolidationDetails){
         String transportMode = consolidationDetails.getTransportMode();
-
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
-            consolidationDetails.setTerminalCutoff(request.getTerminalCutoff());
-            consolidationDetails.setVerifiedGrossMassCutoff(request.getVerifiedGrossMassCutoff());
-            consolidationDetails.setShipInstructionCutoff(request.getShippingInstructionCutoff());
-            consolidationDetails.setHazardousBookingCutoff(request.getDgCutoff());
-            consolidationDetails.setReeferCutoff(request.getReeferCutoff());
-            consolidationDetails.setEarliestEmptyEquPickUp(request.getEarliestEmptyEquipmentPickUp());
-            consolidationDetails.setLatestFullEquDeliveredToCarrier(request.getLatestFullEquipmentDeliveredToCarrier());
-            consolidationDetails.setEarliestDropOffFullEquToCarrier(request.getEarliestDropOffFullEquipmentToCarrier());
+            consolidationDetailsDao.updateSailingScheduleRelatedInfo(request, consolidationDetails.getId());
         }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
-            consolidationDetails.setLatDate(request.getLatestArrivalTime());
+            consolidationDetailsDao.updateSailingScheduleRelatedInfoForAir(request, consolidationDetails.getId());
         }
     }
 
