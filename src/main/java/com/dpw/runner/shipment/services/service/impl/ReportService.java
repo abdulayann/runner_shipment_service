@@ -1089,27 +1089,43 @@ public class ReportService implements IReportService {
         for(int i = 1; i <= copies; i++) {
             int ind = 0;
             int prevPacks = 0;
+            List<Future<byte[]>> futures = new ArrayList<>();
             for (int packs = 1; packs <= noOfPacks; packs++) {
+                Map<String, Object> threadSafeData = new HashMap<>(dataRetrived);
                 String packsCount = getSerialCount(packs, copies);
                 String packsOfTotal = packs + "/" + noOfPacks;
-                String hawbPacksCountForCombi = "";
+                String hawbPacksCountForCombi;
                 if(isCombi) {
-                    dataRetrived.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
+                    threadSafeData.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
                     packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
                     hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
-                    dataRetrived.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
+                    threadSafeData.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
                     if((packs-prevPacks)% hawbPacksMap.get(ind).getValue() == 0) {
                         prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
                         ind++;
                     }
+                } else {
+                  hawbPacksCountForCombi = "";
                 }
-                if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null) {
-                    dataRetrived.put(ReportConstants.COUNT, packsCount);
-                    dataRetrived.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
-                    dataRetrived.put(ReportConstants.PACK_NUMBER, packs);
+              if (threadSafeData.get(ReportConstants.MAWB_NUMBER) != null || threadSafeData.get(ReportConstants.HAWB_NUMBER) != null) {
+                  threadSafeData.put(ReportConstants.COUNT, packsCount);
+                  threadSafeData.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
+                  threadSafeData.put(ReportConstants.PACK_NUMBER, packs);
                 }
-                else dataRetrived.put(ReportConstants.COUNT, null);
-                addDocBytesInPdfBytes(reportRequest, pages, dataRetrived, pdfBytes, isCombi, packsCount, hawbPacksCountForCombi);
+                else {
+                  threadSafeData.put(ReportConstants.COUNT, null);
+                }
+
+                futures.add(executorService.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, pdfBytes, isCombi, packsCount, hawbPacksCountForCombi)));
+            }
+
+            for (Future<byte[]> future : futures) {
+                try {
+                    pdfBytes.add(future.get());
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                    throw new GenericException(e.getMessage());
+                }
             }
         }
     }
@@ -1153,7 +1169,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void addDocBytesInPdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes, boolean isCombi, String packsCount, String hawbPacksCountForCombi) {
+    private byte[] addDocBytesInPdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes, boolean isCombi, String packsCount, String hawbPacksCountForCombi) {
         byte[] mainDocPage = getFromDocumentService(dataRetrived, pages.getMainPageId());
         if (mainDocPage == null)
             throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
@@ -1168,7 +1184,7 @@ public class ReportService implements IReportService {
         if(isCombi) {
             docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + hawbPacksCountForCombi : hawbPacksCountForCombi);
         }
-        pdfBytes.add(docBytes);
+       return docBytes;
     }
 
     private Integer getNoOfPacks(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
