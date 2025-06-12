@@ -23,12 +23,9 @@ public interface IServiceDetailsRepository extends MultiTenancyRepository<Servic
     }
     List<ServiceDetails> findAll();
 
-    default Optional<ServiceDetails> findByGuid(UUID id) {
-        Specification<ServiceDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
-        return findOne(spec);
-    }
+    Optional<ServiceDetails> findByGuid(UUID guid);
 
-    List<ServiceDetails> findByIdIn(List<Long> packingIds);
+    List<ServiceDetails> findByIdIn(List<Long> serviceDetailsIds);
 
     @Query(value = "SELECT * FROM services WHERE id = ?1", nativeQuery = true)
     Optional<ServiceDetails> findByIdWithQuery(Long id);
