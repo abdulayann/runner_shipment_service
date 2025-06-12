@@ -1809,11 +1809,19 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() != null ? StringUtility.toUpperCase(shipmentDetails.getGoodsDescription()) : "");
         int noOfPacks = 0;
         if (awbPackingList != null) {
+            Set<String> uniqueHsCodes = new LinkedHashSet<>();
             for (var awbPacking : awbPackingList) {
                 awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
                 noOfPacks += Integer.parseInt(Objects.isNull(awbPacking.getPacks()) ? "0" : awbPacking.getPacks());
+
+                // Handle unique hscode
+                String hscode = awbPacking.getHsCode();
+                if (hscode != null && !hscode.isEmpty()) {
+                    uniqueHsCodes.add(hscode);
+                }
             }
             awbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
+            awbGoodsDescriptionInfo.setHsCode(String.join(",", uniqueHsCodes));
         }
         awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
         return Arrays.asList(awbGoodsDescriptionInfo);
