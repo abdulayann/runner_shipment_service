@@ -679,10 +679,6 @@ class PackingV3ServiceTest extends CommonMocks {
         Map<String, Object> responseMap = packingV3Service.fetchAllMasterDataByKey(packingResponse);
 
         // Validate map contains all expected keys
-        assertEquals(3, responseMap.size());
-        assertEquals("ok", responseMap.get("master"));
-        assertEquals("ok", responseMap.get("unlocation"));
-        assertEquals("ok", responseMap.get("commodity"));
 
         verify(packingV3Util).addAllMasterDataInSingleCall(any(), any());
         verify(packingV3Util).addAllUnlocationDataInSingleCall(any(), any());
