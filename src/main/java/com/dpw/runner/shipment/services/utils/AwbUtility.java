@@ -1159,4 +1159,25 @@ public class AwbUtility {
             awbResponse.getMeta().getTenantInfo().setPimaAddress(tenantModel.getPIMAAddress());
         }
     }
+
+    // This method to be used to generate Screener Name based on display name
+    public static String getScreenerName(String displayName) {
+        if (displayName == null || displayName.trim().isEmpty())
+            return null;
+
+        displayName = displayName.replace(".", " ").trim();
+
+        // Split by space
+        String[] parts = displayName.split("\\s+");
+        StringBuilder screenerName = new StringBuilder();
+
+        for (String part : parts) {
+            if (!part.isEmpty() && !Character.isDigit(part.charAt(0)))
+                screenerName.append(Character.toUpperCase(part.charAt(0)));
+
+            if (screenerName.length() == 2) break;
+        }
+
+        return screenerName.toString();
+    }
 }
