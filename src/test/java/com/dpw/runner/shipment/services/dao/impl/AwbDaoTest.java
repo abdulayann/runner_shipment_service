@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOCIInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOtherChargesInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
@@ -863,4 +864,50 @@ class AwbDaoTest {
         }
     }
 
+    @Test
+    void testFindByShipmentIdList() {
+        var list = Arrays.asList(1L, 2L);
+        var mockResponse = Arrays.asList(Awb.builder().build());
+        when(awbRepository.findByShipmentIdList(anyList())).thenReturn(mockResponse);
+        var response = awbDao.findByShipmentIdList(list);
+        assertNotNull(response);
+        assertEquals(response, mockResponse);
+    }
+
+    @Test
+    void testFindByShipmentIdByQuery() {
+        var mockResponse = Arrays.asList(Awb.builder().build());
+        when(awbRepository.findByShipmentIdByQuery(anyLong())).thenReturn(mockResponse);
+        var response = awbDao.findByShipmentIdByQuery(1L);
+        assertNotNull(response);
+        assertEquals(response, mockResponse);
+    }
+
+    @Test
+    void testFindByIds() {
+        var list = Arrays.asList(1L, 2L);
+        var mockResponse = Arrays.asList(
+                Awb.builder().shipmentId(123L).build(),
+                Awb.builder().shipmentId(123L).awbCargoInfo(AwbCargoInfo.builder().raNumber("123").build()).build(),
+                Awb.builder().shipmentId(123L).awbCargoInfo(AwbCargoInfo.builder().raNumber("123").isUserInitialsManuallyAdded(true).build()).build()
+        );
+        when(awbRepository.findAwbByIds(anyList())).thenReturn(mockResponse);
+        var response = awbDao.findByIds(list);
+        assertNotNull(response);
+        assertEquals(response, mockResponse);
+    }
+
+    @Test
+    void testFindAwbByAwbNumbers() {
+        var list = Arrays.asList("123-111111", "223-1111");
+        var mockResponse = Arrays.asList(
+                Awb.builder().shipmentId(123L).build(),
+                Awb.builder().shipmentId(123L).awbCargoInfo(AwbCargoInfo.builder().raNumber("123").build()).build(),
+                Awb.builder().shipmentId(123L).awbCargoInfo(AwbCargoInfo.builder().raNumber("123").isUserInitialsManuallyAdded(true).build()).build()
+        );
+        when(awbRepository.findAwbByAwbNumbers(anyList())).thenReturn(mockResponse);
+        var response = awbDao.findAwbByAwbNumbers(list);
+        assertNotNull(response);
+        assertEquals(response, mockResponse);
+    }
 }
