@@ -39,4 +39,7 @@ public class ShipmentWtVolResponse implements IRunnerResponse {
     private String dgPacksType;
     private Integer slacCount;
     private Long shipmentsCount;
+    private Integer consoleContainerCount;
+    private BigDecimal consoleTeuCount;
+    private Integer consoleDgContainerCount;
 }

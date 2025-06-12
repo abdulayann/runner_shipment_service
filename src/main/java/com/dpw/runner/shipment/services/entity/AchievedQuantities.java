@@ -63,10 +63,10 @@ public class AchievedQuantities extends MultiTenancy {
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packsType;
 
-    @Column(name = "packs")
+    @Column(name = "dg_packs")
     private Integer dgPacks;
 
-    @Column(name = "packs_type")
+    @Column(name = "dg_packs_type")
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String dgPacksType;
 
