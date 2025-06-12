@@ -26,7 +26,7 @@ public class ResponseHelper {
 
     public static final String RETURN_RESPONSE_WITH_ERROR_MSG = "Return Response with error {}";
     public static final String RETURN_RESPONSE_WITH_DATA_MSG = "Return Response with data {}";
-
+    public static final String REQUEST_ID = "request-Id";
     public static ResponseEntity<IRunnerResponse> buildSuccessResponse(IRunnerResponse data, int pageNo, long count) {
         log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         RunnerResponse runnerResponse = RunnerResponse.builder().success(true)
@@ -128,6 +128,7 @@ public class ResponseHelper {
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
                 .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
+                .header(REQUEST_ID, LoggerHelper.getRequestIdFromMDC())
                 .header("X-CSD-Document-Status",
                     String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
@@ -151,7 +152,8 @@ public class ResponseHelper {
         return ResponseEntity.ok()
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
-                .header(header,headerValue)
+                .header(header, headerValue)
+                .header(REQUEST_ID, LoggerHelper.getRequestIdFromMDC())
                 .body(resource);
     }
 }
