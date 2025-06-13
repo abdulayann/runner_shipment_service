@@ -1286,11 +1286,11 @@ public abstract class IReport {
             return;
         if(awb.getAwbShipmentInfo() != null) {
             AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
-            dictionary.put(CM_SHIPPER_AWB_ADDRESS, formattedOrgAddress(awbShipmentInfo.getShipperName(), awbShipmentInfo.getShipperAddress(), awbShipmentInfo.getShipperAddress2(), awbShipmentInfo.getShipperCity(), awbShipmentInfo.getShipperState(), awbShipmentInfo.getShipperZipCode(), awbShipmentInfo.getShipperCountry()));
-            dictionary.put(CM_CONSIGNEE_AWB_ADDRESS, formattedOrgAddress(awbShipmentInfo.getConsigneeName(), awbShipmentInfo.getConsigneeAddress(), awbShipmentInfo.getConsigneeAddress2(), awbShipmentInfo.getConsigneeCity(), awbShipmentInfo.getConsigneeState(), awbShipmentInfo.getConsigneeZipCode(), awbShipmentInfo.getConsigneeCountry()));
+            dictionary.put(CM_SHIPPER_AWB_ADDRESS, formattedOrgAddress(awbShipmentInfo.getShipperName(), awbShipmentInfo.getShipperAddress(), awbShipmentInfo.getShipperAddress2(), awbShipmentInfo.getShipperCity(), awbShipmentInfo.getShipperState(), awbShipmentInfo.getShipperZipCode(), awbShipmentInfo.getShipperCountryName()));
+            dictionary.put(CM_CONSIGNEE_AWB_ADDRESS, formattedOrgAddress(awbShipmentInfo.getConsigneeName(), awbShipmentInfo.getConsigneeAddress(), awbShipmentInfo.getConsigneeAddress2(), awbShipmentInfo.getConsigneeCity(), awbShipmentInfo.getConsigneeState(), awbShipmentInfo.getConsigneeZipCode(), awbShipmentInfo.getConsigneeCountryName()));
             if(!listIsNullOrEmpty(awb.getAwbNotifyPartyInfo())) {
                 AwbNotifyPartyInfo awbNotifyPartyInfo = awb.getAwbNotifyPartyInfo().get(0);
-                dictionary.put(CM_NOTIFY_AWB_ADDRESS, formattedOrgAddress(awbNotifyPartyInfo.getName(), awbNotifyPartyInfo.getAddress(), awbNotifyPartyInfo.getAddress2(), awbNotifyPartyInfo.getCity(), awbNotifyPartyInfo.getState(), awbNotifyPartyInfo.getZipCode(), awbNotifyPartyInfo.getCountry()));
+                dictionary.put(CM_NOTIFY_AWB_ADDRESS, formattedOrgAddress(awbNotifyPartyInfo.getName(), awbNotifyPartyInfo.getAddress(), awbNotifyPartyInfo.getAddress2(), awbNotifyPartyInfo.getCity(), awbNotifyPartyInfo.getState(), awbNotifyPartyInfo.getZipCode(), awbNotifyPartyInfo.getCountryName()));
             }
         }
     }
