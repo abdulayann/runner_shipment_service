@@ -800,7 +800,7 @@ public class HawbReport extends IReport{
                     value.put(ReportConstants.GROSS_WT, convertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                 }
                 value.computeIfPresent(ReportConstants.CHARGEABLE_WT, (key, oldValue) ->
-                        convertToWeightNumberFormat(oldValue.toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse)
+                        roundUpToNextHalf(oldValue.toString())
                 );
                 addRateChargeTag(v1TenantSettingsResponse, cargoInfoRows, value);
                 addTotalAmountTag(v1TenantSettingsResponse, cargoInfoRows, value);

@@ -547,6 +547,9 @@ public class ReportConstants {
     public static final String AGENT_REFERENCE = "AgentReference";
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
     public static final String AWB_SHIPPER_ADDRESS = "AWB_ShipperAddress";
+    public static final String CM_SHIPPER_AWB_ADDRESS = "CM_ShipperAWBAddress";
+    public static final String CM_CONSIGNEE_AWB_ADDRESS = "CM_ConsigneeAWBAddress";
+    public static final String CM_NOTIFY_AWB_ADDRESS = "CM_NotifyAWBAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
     public static final String AWB_CONSIGNEE_ADDRESS = "AWB_ConsigneeAddress";
     public static final String CLIENT_ADD_WITHOUT_CONTACT = "ClientAddwoCont";
