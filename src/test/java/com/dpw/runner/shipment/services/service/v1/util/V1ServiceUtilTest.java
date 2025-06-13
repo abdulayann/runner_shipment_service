@@ -867,5 +867,25 @@ class V1ServiceUtilTest {
         verify(iV1Service, times(1)).getUsersWithGivenPermissions(any());
     }
 
+    @Test
+    void testGetOrganizationDataFromV1() {
+        Map<String, Object> partiesMap = new HashMap<>();
+        partiesMap.put(PartiesConstants.ID, 1L);
+        EntityTransferOrganizations organizations = EntityTransferOrganizations.builder().build();
+        when(iV1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(List.of(organizations));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(partiesMap);
+        Parties parties = v1ServiceUtil.getOrganizationDataFromV1("Org");
+        assertEquals("Org", parties.getOrgCode());
+    }
+
+    @Test
+    void testGetOrganizationDataFromV1_exception() {
+        when(iV1Service.fetchOrganization(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(List.of());
+        assertThrows(DataRetrievalFailureException.class, () -> v1ServiceUtil.getOrganizationDataFromV1("Org"));
+    }
+
 }
 

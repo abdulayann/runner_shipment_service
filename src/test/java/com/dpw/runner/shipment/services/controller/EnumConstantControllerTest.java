@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {EnumConstantController.class})
@@ -28,9 +29,9 @@ class EnumConstantControllerTest {
     @Test
     void list() {
         // Mock
-        when(enumConstantService.list()).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(enumConstantService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = enumConstantController.list();
+        var responseEntity = enumConstantController.list(false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

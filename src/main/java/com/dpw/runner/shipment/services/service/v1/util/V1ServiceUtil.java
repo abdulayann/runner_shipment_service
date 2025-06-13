@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganiz
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -37,6 +38,8 @@ import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ACTIVE_CLIENT;
 
 
 @Component
@@ -427,6 +430,23 @@ public class V1ServiceUtil {
         catch (Exception ex) {
             throw new DataRetrievalFailureException(ex.getMessage());
         }
+    }
+
+    public Parties getOrganizationDataFromV1(String orgCode) {
+        Parties parties = Parties.builder().build();
+        parties.setOrgCode(orgCode);
+        CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, orgCode, ACTIVE_CLIENT, Boolean.TRUE);
+        V1DataResponse v1OrgResponse = v1Service.fetchOrganization(orgRequest);
+        List<EntityTransferOrganizations> organizationsList = jsonHelper.convertValueToList(v1OrgResponse.getEntities(), EntityTransferOrganizations.class);
+        if (CommonUtils.listIsNullOrEmpty(organizationsList)) {
+            log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
+            throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
+        }
+        Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(organizationsList.get(0)));
+        if(organizationRow.containsKey(PartiesConstants.ID))
+            parties.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
+        parties.setOrgData(organizationRow);
+        return parties;
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
