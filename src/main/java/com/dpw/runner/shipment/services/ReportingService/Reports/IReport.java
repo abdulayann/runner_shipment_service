@@ -2280,7 +2280,7 @@ public abstract class IReport {
         List<Awb> awb = awbDao.findByConsolidationId(id);
         if(awb != null && !awb.isEmpty()) {
             if(withPacks) {
-                awbService.getMawnLinkPacks(awb.get(0));
+                awbService.getMawnLinkPacks(awb.get(0), false, null);
             }
             return awb.get(0);
         }

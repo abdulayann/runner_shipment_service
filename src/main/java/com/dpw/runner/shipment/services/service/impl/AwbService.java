@@ -462,15 +462,16 @@ public class AwbService implements IAwbService {
             }
         }
 
-        getMawnLinkPacks(awb);
+        getMawnLinkPacks(awb, false, null);
     }
 
     //Calculate mawb packs
     @Override
-    public Awb getMawnLinkPacks(Awb awb) {
+    public Awb getMawnLinkPacks(Awb awb, boolean syncGoodsDescription, List<Awb> linkedHawb) {
         try {
             ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
-            List<Awb> linkedHawb = getLinkedAwbFromMawb(awb.getId());
+            if(linkedHawb == null)
+                linkedHawb = getLinkedAwbFromMawb(awb.getId());
             List<AwbPackingInfo> linkedPacks = new ArrayList<>();
             for (var hawb : linkedHawb) {
                 if (hawb.getAwbPackingInfo() != null) {
@@ -482,7 +483,7 @@ public class AwbService implements IAwbService {
                 }
             }
             awb.setAwbPackingInfo(linkedPacks);
-            if (awb.getAwbGoodsDescriptionInfo() != null && !awb.getAwbGoodsDescriptionInfo().isEmpty()) {
+            if (syncGoodsDescription && awb.getAwbGoodsDescriptionInfo() != null && !awb.getAwbGoodsDescriptionInfo().isEmpty()) {
                 calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), linkedPacks, tenantSettings, new HashMap<>(), !linkedPacks.isEmpty());
             }
         } catch (Exception e) {
@@ -588,8 +589,10 @@ public class AwbService implements IAwbService {
 
             // save awb details
             awb = generateMawb(request, consolidationDetails, mawbPackingInfo);
-            if (awbList != null && !awbList.isEmpty())
+            if (awbList != null && !awbList.isEmpty()) {
                 updateSciFieldFromMawb(awb, awbList);
+                getMawnLinkPacks(awb, true, awbList);
+            }
             awb = awbDao.save(awb);
             syncAwb(awb, SaveStatus.CREATE);
 
@@ -2007,6 +2010,7 @@ public class AwbService implements IAwbService {
             PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
             awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null, packSummary));
             updateLinkHawbMawb(consolidationDetails.get(), awbId);
+            getMawnLinkPacks(awb, true, null);
         } else {
             awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
             awb.setAwbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails.get(), createAwbRequest, awb.getAwbPackingInfo()));
@@ -2045,6 +2049,7 @@ public class AwbService implements IAwbService {
         awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
         // Link
         linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
+        getMawnLinkPacks(awb, true, awbList);
         awb.setPrintType(printType);
         if (!awbList.isEmpty())
             updateSciFieldFromMawb(awb, awbList);
