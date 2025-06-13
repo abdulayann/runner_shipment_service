@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
@@ -30,6 +31,7 @@ import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -184,6 +186,20 @@ public class ShipmentControllerV3 {
     @PostMapping(ApiConstants.MATCHING_RULES_BY_GUID_AND_EXECUTION_STATE)
     public ResponseEntity<IRunnerResponse> getMatchingRulesByGuidAndExecutionState(@RequestBody @Valid GetMatchingRulesRequest getMatchingRulesRequest) {
         return dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Long consoleId,
+            @RequestParam(required = false) String consoleGuid, @RequestParam(required = true) boolean isAttached,
+            @RequestParam(required = false, defaultValue = "false") boolean getMasterData, @RequestParam(required = false, defaultValue = "false") boolean fromNte) {
+        log.info("Received Console Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, consoleGuid, isAttached, getMasterData, fromNte);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
 }
