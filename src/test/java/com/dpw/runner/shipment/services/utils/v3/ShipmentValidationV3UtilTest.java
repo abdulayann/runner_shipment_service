@@ -407,7 +407,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setCoLoadBlNumber("coload");
-        ShipmentDetails oldEntity = new ShipmentDetails();
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -417,7 +417,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
     }
 
     @Test
@@ -426,7 +426,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setMasterBill("masterBill");
-        ShipmentDetails oldEntity = new ShipmentDetails();
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -436,7 +436,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
     }
 
     @Test
@@ -498,12 +498,23 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForFmcTlcFields(shipment));
     }
+
     @Test
-    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyFmcTlcId_AIR() {
+    void testValidateShipmentCreateOrUpdate_coLoadBLNumber_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setCoLoadBlNumber("BlNumber");
 
-        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_CargoDeliveryDate_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCargoDeliveryDate(LocalDateTime.now());
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
     @Test
