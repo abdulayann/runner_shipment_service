@@ -1,6 +1,19 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
@@ -11,10 +24,18 @@ import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRe
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
+import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,26 +51,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ContextConfiguration(classes = {ShipmentControllerV3.class})
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ShipmentControllerV3Test {
     @Mock
     IShipmentServiceV3 shipmentService;
+    @Mock
+    IDpsEventService dpsEventService;
     @Mock
     JsonHelper jsonHelper;
     @InjectMocks
@@ -165,6 +174,63 @@ class ShipmentControllerV3Test {
         var response = shipmentControllerV3.updateSailingScheduleDataToShipment(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(shipmentService).updateSailingScheduleDataToShipment(request);
+    }
+
+    @Test
+    void getMatchingRulesByGuidAndDpsExecutionState() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentControllerV3.getMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuidAndDpsExecutionState_Failure() {
+        String guid = UUID.randomUUID().toString();
+        GetMatchingRulesRequest getMatchingRulesRequest = new GetMatchingRulesRequest();
+        getMatchingRulesRequest.setShipmentGuid(guid);
+        getMatchingRulesRequest.setDpsExecutionStatusList(List.of(DpsExecutionStatus.ACTIVE, DpsExecutionStatus.COMPLETED));
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest)).thenThrow(new DpsException());
+        // Test
+        assertThrows(DpsException.class, () -> shipmentControllerV3.getMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest));
+    }
+
+    @Test
+    void getMatchingRulesByGuid() {
+        String guid = UUID.randomUUID().toString();
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuid(guid)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentControllerV3.getMatchingRulesByGuid(guid);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid_Failure() {
+        String guid = UUID.randomUUID().toString();
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuid((guid))).thenThrow(new DpsException());
+        // Test
+        assertThrows(DpsException.class, () -> shipmentControllerV3.getMatchingRulesByGuid(guid));
+    }
+
+    @Test
+    void testConsoleShipmentList_Exception() throws AuthenticationException {
+        // Mock
+        when(shipmentService.consoleShipmentList(any(), anyLong(), eq(null), anyBoolean(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        // Test
+        var responseEntity = shipmentControllerV3.consoleShipmentList(request, 1L, null, true, true, false);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }
