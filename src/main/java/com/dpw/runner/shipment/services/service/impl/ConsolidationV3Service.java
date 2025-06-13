@@ -103,6 +103,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingSched
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -139,7 +140,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
-import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -2066,7 +2066,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                                 canProcesscutOffFields(console, oldEntity)
                         )) ||
                 !CommonUtils.checkSameParties(console.getSendingAgent(), oldEntity.getSendingAgent()) ||
-                !CommonUtils.checkSameParties(console.getReceivingAgent(), oldEntity.getReceivingAgent()));
+                !CommonUtils.checkSameParties(console.getReceivingAgent(), oldEntity.getReceivingAgent())
+                || !Objects.equals(console.getReferenceNumber(), oldEntity.getReferenceNumber())
+                || !Objects.equals(console.getCoLoadCarrierName(), oldEntity.getCoLoadCarrierName())
+                || !Objects.equals(console.getPartner(), oldEntity.getPartner())
+                || !Objects.equals(console.getBookingAgent(), oldEntity.getBookingAgent())
+                || !Objects.equals(console.getCoLoadBookingReference(), oldEntity.getCoLoadBookingReference())
+                || !Objects.equals(console.getCoLoadMBL(), oldEntity.getCoLoadMBL())
+                || !Objects.equals(console.getDeliveryMode(), oldEntity.getDeliveryMode())
+        );
     }
 
     /**

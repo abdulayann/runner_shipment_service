@@ -10,6 +10,8 @@ public interface ContainerDeleteInfoProjection {
 
     String getPacks();
 
+    String getPacksType();
+
     class NullContainerDeleteInfoProjection implements ContainerDeleteInfoProjection {
 
         @Override
@@ -29,6 +31,11 @@ public interface ContainerDeleteInfoProjection {
 
         @Override
         public String getPacks() {
+            return null;
+        }
+
+        @Override
+        public String getPacksType() {
             return null;
         }
     }
