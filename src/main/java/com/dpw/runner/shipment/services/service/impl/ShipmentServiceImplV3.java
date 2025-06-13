@@ -42,10 +42,8 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -2680,112 +2678,4 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return;
         containerV3Service.updateAttachedContainersData(List.of(shipmentDetails.getContainerAssignedToShipmentCargo()));
     }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData,
-            boolean fromNte) throws AuthenticationException {
-        if (consoleId == null && consoleGuid == null) {
-            throw new ValidationException("Required parameters missing: consoleId and consoleGuid");
-        }
-
-        Optional<ConsolidationDetails> consolidationDetails = getOptionalConsolidationDetails(consoleId, consoleGuid, fromNte);
-
-        if (consolidationDetails.isEmpty()) {
-            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
-        if (consoleId == null) {
-            consoleId = consolidationDetails.get().getId();
-        }
-
-        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
-        }
-        if (request.getFilterCriteria().isEmpty()) {
-            request.setFilterCriteria(Arrays.asList(FilterCriteria.builder().innerFilter(new ArrayList<>()).build()));
-        }
-
-        Map<Long, ConsoleShipmentMapping> requestedTypeMap = new HashMap<>();
-        // InterBranch Logic
-        if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
-            commonUtils.setInterBranchContextForHub();
-            if (!isAttached) {
-                var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdAll(consoleId);
-                if (consoleShipMappingList == null || consoleShipMappingList.isEmpty()) {
-                    return ResponseHelper.buildListSuccessResponse(new ArrayList<>(), 1, 0);
-                }
-                requestedTypeMap = consoleShipMappingList.stream()
-                        .collect(Collectors.toMap(ConsoleShipmentMapping::getShipmentId, Function.identity(), (existingValue, newValue) -> existingValue));
-                List<Long> shipIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
-                CommonUtils.andCriteria("id", shipIds, "IN", request);
-            } else {
-                CommonUtils.andCriteria(CONSOLIDATION_ID, consoleId, "=", request);
-            }
-        } else {
-            CommonUtils.andCriteria(CONSOLIDATION_ID, consoleId, "=", request);
-        }
-        var response = listShipment(CommonRequestModel.buildRequest(request), getMasterData);
-        processResponseList(response, requestedTypeMap);
-        if (fromNte) {
-            TenantContext.removeTenant();
-        }
-        return response;
-    }
-
-    private Optional<ConsolidationDetails> getOptionalConsolidationDetails(Long consoleId, String consoleGuid, boolean fromNte) throws AuthenticationException {
-        Optional<ConsolidationDetails> consolidationDetails;
-        if (consoleId != null) {
-            if (fromNte) {
-                consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(consoleId);
-                if (consolidationDetails.isPresent()) {
-                    this.isValidNte(consolidationDetails.get());
-                    TenantContext.setCurrentTenant(consolidationDetails.get().getTenantId());
-                }
-            } else {
-                consolidationDetails = consolidationDetailsDao.findById(consoleId);
-            }
-        } else {
-            UUID guid = UUID.fromString(consoleGuid);
-            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
-        }
-        return consolidationDetails;
-    }
-
-    private void processResponseList(ResponseEntity<IRunnerResponse> response, Map<Long, ConsoleShipmentMapping> requestedTypeMap) {
-        if (response.getBody() instanceof RunnerListResponse<?> responseList) {
-            for (var resp : responseList.getData()) {
-                if (resp instanceof ShipmentListResponse shipmentListResponse
-                        && requestedTypeMap.containsKey(shipmentListResponse.getId())
-                        && !Objects.isNull(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType())) {
-                    shipmentListResponse.setRequestedType(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType().getDescription());
-                    shipmentListResponse.setRequestedBy(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedBy());
-                    shipmentListResponse.setRequestedOn(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedAt());
-                }
-            }
-        }
-    }
-
-    private boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
-        List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
-        Long currentTenant = TenantContext.getCurrentTenant().longValue();
-        if (Objects.equals(currentTenant, consolidationDetails.getTenantId())) {
-            return false;
-        }
-        if (
-                (triangulationPartners == null
-                        && !Objects.equals(consolidationDetails.getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
-                        && !Objects.equals(consolidationDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue()))
-                        ||
-                        ((triangulationPartners == null || triangulationPartners.stream().filter(Objects::nonNull)
-                                .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
-                                && !Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant))
-        ) {
-            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
-        }
-        return true;
-    }
-
 }
