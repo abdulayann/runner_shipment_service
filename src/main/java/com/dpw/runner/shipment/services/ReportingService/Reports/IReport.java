@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasureme
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
@@ -1267,7 +1268,16 @@ public abstract class IReport {
                 dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
                 dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
             }
-            populateAwbPartiesInfo(dictionary, awb);
+            populateAwbPartiesInfo(dict, awb);
+            if(!listIsNullOrEmpty(awb.getAwbGoodsDescriptionInfo())) {
+                List<String> chargeableWt = new ArrayList<>();
+                for(AwbGoodsDescriptionInfo awbGoodsDescriptionInfo : awb.getAwbGoodsDescriptionInfo()) {
+                    if(awbGoodsDescriptionInfo.getChargeableWt() != null) {
+                        chargeableWt.add(roundUpToNextHalf(awbGoodsDescriptionInfo.getChargeableWt().toString()));
+                    }
+                }
+                dict.put(CHARGEABLE_WT, chargeableWt);
+            }
         }
     }
 
