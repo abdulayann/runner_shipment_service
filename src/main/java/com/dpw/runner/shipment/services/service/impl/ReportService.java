@@ -2380,11 +2380,11 @@ public class ReportService implements IReportService {
             // Generate FileName, childType & DocType based on request Type
             switch (reportRequest.getReportInfo()) {
                 case FCR_DOCUMENT:
-                    filename = StringUtility.convertToString(dataRetrieved.get(FCR_NO));
+                    filename = StringUtility.convertToString(dataRetrieved.get(FCR_NO)) + DocumentConstants.DOT_PDF;
                     childType = StringUtility.convertToString(dataRetrieved.get(FCR_NO));
                     break;
                 case TRANSPORT_ORDER:
-                    filename = StringUtility.convertToString(dataRetrieved.get(REFERENCE_NO));
+                    filename = StringUtility.convertToString(dataRetrieved.get(REFERENCE_NO))+ DocumentConstants.DOT_PDF;
                     childType = StringUtility.convertToString(dataRetrieved.get(REFERENCE_NO));
                     break;
                 case HOUSE_BILL:
