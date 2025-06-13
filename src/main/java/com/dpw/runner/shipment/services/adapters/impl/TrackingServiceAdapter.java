@@ -624,6 +624,11 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return fugo;
         }
 
+        String emcr = getEMCREventCode(safeEventType, safeLocationRole);
+        if (emcr != null) {
+            return emcr;
+        }
+
         log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventType, safeLocationRole);
         return safeEventType;
     }
@@ -705,6 +710,15 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
             log.info("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
             return EventConstants.FUGO;
+        }
+        return null;
+    }
+
+    private String getEMCREventCode(String safeEventCode, String safeLocationRole) {
+        if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
+                && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
+            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
+            return EventConstants.EMCR;
         }
         return null;
     }
