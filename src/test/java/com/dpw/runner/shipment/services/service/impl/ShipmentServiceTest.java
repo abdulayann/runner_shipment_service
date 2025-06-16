@@ -1120,6 +1120,44 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void create_shouldSetCarrierNameFromMasterData_whenScacCodePresent() throws RunnerException {
+        // Arrange
+        UserContext.getUser().setPermissions(new HashMap<>());
+
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setShippingLine("MAERSK LINE");
+        mockShipment.setCarrierDetails(carrierDetails);
+
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        mockShipment.setAdditionalDetails(getmockAdditionalDetails(LocalDateTime.now(), true, true, true));
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest shipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(shipmentRequest);
+
+        ShipmentDetailsResponse mockResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock required dependencies
+        when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.create(requestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), response);
+        assertEquals("MAERSK LINE", shipmentRequest.getCarrierDetails().getShippingLine());
+    }
+
+    @Test
     void create_success_trackApiError() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
@@ -4003,6 +4041,42 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void completeUpdateThrowsExceptionConsolidationListNotEmpty_success() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+        consolidationDetails2.setLatDate(LocalDateTime.now());
+
+        shipmentDetails.setId(1L);
+        shipmentDetails.setCargoDeliveryDate(LocalDateTime.now().minusDays(1));
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails1)));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+
+        when(shipmentDao.findById(any()))
+                .thenReturn(
+                        Optional.of(
+                                shipmentDetails
+                                        .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                                        .setSourceTenantId(1L)
+                                        .setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails2)))
+                                        .setContainersList(new HashSet<>())));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertThrows(ValidationException.class, () -> shipmentService.completeUpdate(commonRequestModel));
+    }
+
+    @Test
     void completeUpdateConsolidationListNotEmpty_success_Air() throws RunnerException {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         consolidationDetails1.setId(1L);
@@ -4211,6 +4285,109 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeUpdateConsolidationListEmpty_success_Air_NoNewConsoleAdded() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+        consolidationDetails2.setCarrierDetails(new CarrierDetails());
+        consolidationDetails2.setTransportMode(Constants.TRANSPORT_MODE_AIR).setShipmentType(Constants.DIRECTION_EXP);
+
+        shipmentDetails.setId(1L);
+        ShipmentDetails mockShipment = shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setDirection(Constants.DIRECTION_EXP)
+                .setJobType(Constants.SHIPMENT_TYPE_DRT)
+                .setSourceTenantId(1L)
+                .setConsolidationList(new HashSet<>(new ArrayList<>()))
+                .setContainersList(new HashSet<>())
+                .setContainsHazardous(true);
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setDirection(Constants.DIRECTION_EXP)
+                .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setConsolidationList(new HashSet<>(new ArrayList<>()))
+                .setSourceTenantId(1L)
+                .setContainersList(new HashSet<>())
+                .setContainsHazardous(true);
+        oldEntity.getCarrierDetails().setShippingLine("ABC AirLine");
+        oldEntity.setId(1L);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).airDGFlag(true).build());
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
+        when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(awb));
+
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(Boolean.TRUE).setEnableRouteMaster(Boolean.TRUE);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void completeUpdateConsolidationListEmpty_success_Air_ConsoleDetached() throws RunnerException {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(1L);
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+
+        ConsolidationDetails consolidationDetails2 = new ConsolidationDetails();
+        consolidationDetails2.setId(2L);
+        consolidationDetails2.setCarrierDetails(new CarrierDetails());
+        consolidationDetails2.setTransportMode(Constants.TRANSPORT_MODE_AIR).setShipmentType(Constants.DIRECTION_EXP);
+
+        shipmentDetails.setId(1L);
+        ShipmentDetails mockShipment = shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setDirection(Constants.DIRECTION_EXP)
+                .setJobType(Constants.SHIPMENT_TYPE_DRT)
+                .setSourceTenantId(1L)
+                .setConsolidationList(new HashSet<>(new ArrayList<>()))
+                .setContainersList(new HashSet<>())
+                .setContainsHazardous(true);
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment()
+                .setDirection(Constants.DIRECTION_EXP)
+                .setTransportMode(Constants.TRANSPORT_MODE_AIR)
+                .setConsolidationList(Set.of(consolidationDetails1))
+                .setSourceTenantId(1L)
+                .setContainersList(new HashSet<>())
+                .setContainsHazardous(true);
+        oldEntity.getCarrierDetails().setShippingLine("ABC AirLine");
+        oldEntity.setId(1L);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).airDGFlag(true).build());
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
+
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldEntity);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(oldEntity));
+
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        doThrow(new RuntimeException()).when(awbDao).validateAirMessaging(any());
+
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        mockShipmentSettings();
+        mockTenantSettings();
+        assertThrows(ValidationException.class, () -> shipmentService.completeUpdate(commonRequestModel));
     }
 
     @ParameterizedTest

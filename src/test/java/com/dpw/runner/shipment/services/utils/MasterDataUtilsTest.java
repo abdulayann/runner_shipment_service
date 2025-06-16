@@ -10,10 +10,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doReturn;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -96,6 +96,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -2770,5 +2771,60 @@ class MasterDataUtilsTest {
         assertEquals("Maersk", result.get(scacCode));
     }
 
+    @Test
+    void getCarrierItemValueFromSCAC_ShouldReturnItemValue_WhenValidSCACCode() {
+        // Arrange
+        String scacCode = "ABCD";
+        String expectedItemValue = "CarrierItem123";
+
+        EntityTransferCarrier carrier = new EntityTransferCarrier();
+        carrier.ItemValue = expectedItemValue;
+
+        Map<String, EntityTransferCarrier> mockMap = new HashMap<>();
+        mockMap.put(scacCode, carrier);
+
+        MasterDataUtils spyUtils = Mockito.spy(masterDataUtils);
+        Mockito.doReturn(mockMap).when(spyUtils).fetchInBulkCarriersBySCACCode(List.of(scacCode));
+
+        // Act
+        String result = spyUtils.getCarrierItemValueFromSCAC(scacCode);
+
+        // Assert
+        assertEquals(expectedItemValue, result);
+    }
+
+    @Test
+    void getCarrierItemValueFromSCAC_ShouldReturnNull_WhenSCACCodeIsNull() {
+        // Act
+        String result = masterDataUtils.getCarrierItemValueFromSCAC(null);
+
+        // Assert
+        assertNull(result);
+    }
+
+    @Test
+    void getCarrierItemValueFromSCAC_ShouldReturnNull_WhenSCACCodeIsEmpty() {
+        // Act
+        String result = masterDataUtils.getCarrierItemValueFromSCAC("");
+
+        // Assert
+        assertNull(result);
+    }
+
+    @Test
+    void getCarrierItemValueFromSCAC_ShouldReturnNull_WhenMapDoesNotContainSCAC() {
+        // Arrange
+        String scacCode = "XYZ";
+        Map<String, EntityTransferCarrier> emptyMap = new HashMap<>();
+
+        MasterDataUtils spyUtils = Mockito.spy(masterDataUtils);
+        Mockito.doReturn(emptyMap).when(spyUtils).fetchInBulkCarriersBySCACCode(List.of(scacCode));
+
+        // Act
+        String result = spyUtils.getCarrierItemValueFromSCAC(scacCode);
+
+        // Assert
+        assertNull(result);
+    }
 
 }
