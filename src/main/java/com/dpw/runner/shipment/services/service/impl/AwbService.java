@@ -289,10 +289,10 @@ public class AwbService implements IAwbService {
     private void setOciInfoInAwb(Awb awb) {
         if (awb.getOciInfo() != null) {
             if (awb.getOciInfo().getOtherIdentityInfo() != null) {
-                if (Strings.isNullOrEmpty(awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress())) {
+                if (awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress() != null &&  awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress().isEmpty()) {
                     awb.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
                 }
-                if (Strings.isNullOrEmpty(awb.getOciInfo().getOtherIdentityInfo().getIaIpAddress())) {
+                if (awb.getOciInfo().getOtherIdentityInfo().getIaIpAddress() != null &&  awb.getOciInfo().getOtherIdentityInfo().getIaIpAddress().isEmpty()) {
                     awb.getOciInfo().getOtherIdentityInfo().setIaIpAddress(convertIpFormat(getClientIp()));
                 }
             } else {
@@ -938,6 +938,7 @@ public class AwbService implements IAwbService {
                 .consolidationId(consolidationDetails.getId())
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
+        awb.setOciInfo(OCIInfo.builder().otherIdentityInfo(OtherIdentityInfo.builder().irIpAddress(convertIpFormat(getClientIp())).iaIpAddress(convertIpFormat(getClientIp())).build()).build());
         awb.setAwbCargoInfo(generateMawbCargoInfo(consolidationDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel));
         awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
         return awb;
@@ -1989,7 +1990,7 @@ public class AwbService implements IAwbService {
             }
             case AWB_OCI_INFO: {
                 awb.setAwbOciInfo(null);
-                awb.setOciInfo(null);
+                awb.setOciInfo(OCIInfo.builder().otherIdentityInfo(OtherIdentityInfo.builder().iaIpAddress(convertIpFormat(getClientIp())).irIpAddress(convertIpFormat(getClientIp())).build()).build());
                 break;
             }
         }

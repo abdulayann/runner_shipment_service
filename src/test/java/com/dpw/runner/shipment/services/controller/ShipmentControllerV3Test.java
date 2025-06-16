@@ -11,6 +11,18 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
@@ -219,6 +231,17 @@ class ShipmentControllerV3Test {
         when(dpsEventService.getShipmentMatchingRulesByGuid((guid))).thenThrow(new DpsException());
         // Test
         assertThrows(DpsException.class, () -> shipmentControllerV3.getMatchingRulesByGuid(guid));
+    }
+
+    @Test
+    void testConsoleShipmentList_Exception() throws AuthenticationException {
+        // Mock
+        when(shipmentService.consoleShipmentList(any(), anyLong(), eq(null), anyBoolean(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        // Test
+        var responseEntity = shipmentControllerV3.consoleShipmentList(request, 1L, null, true, true, false);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 }

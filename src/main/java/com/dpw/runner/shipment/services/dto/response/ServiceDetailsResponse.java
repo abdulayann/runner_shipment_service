@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -28,4 +29,6 @@ public class ServiceDetailsResponse implements IRunnerResponse {
     private LocalDateTime completionDate;
     private String refNumber;
     private String serviceNotes;
+    private Map<String, String> masterData;
+    private Map<String, String> unlocationData;
 }

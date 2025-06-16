@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection.NullShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -117,6 +118,8 @@ class ShipmentDaoTest extends CommonMocks {
     private IMawbStocksDao mawbStocksDao;
     @Mock
     private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
 
     @Test
     void testFindByHblNumberAndExcludeShipmentId() {
@@ -646,6 +649,198 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
         when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateMawbCheckTest_Exception1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).isRunnerV3Enabled(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("destination")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("DRT")
+                .direction("EXP")
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).build();
+        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
+        mawbStocksLinkList.add(mawbStocksLink);
+
+        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
+        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        mockShipmentSettings();
+        assertThrows(DataRetrievalFailureException.class,() -> shipmentDao.update(shipmentDetails, false));
+    }
+
+    @Test
+    void updateMawbCheckTest_Exception2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).isRunnerV3Enabled(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgCode("org1").build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("destination")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("DRT")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).parentId(2L).build();
+        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
+        mawbStocksLinkList.add(mawbStocksLink);
+
+        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
+        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        when(mawbStocksDao.findById(anyLong())).thenReturn(Optional.of(MawbStocks.builder().borrowedFrom("org2").build()));
+        mockShipmentSettings();
+        assertThrows(ValidationException.class,() -> shipmentDao.update(shipmentDetails, false));
+    }
+
+    @Test
+    void updateMawbCheckTest1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).isRunnerV3Enabled(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("destination")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("DRT")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).parentId(1L).build();
+        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
+        mawbStocksLinkList.add(mawbStocksLink);
+
+        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
+        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        when(mawbStocksDao.findById(anyLong())).thenReturn(Optional.of(MawbStocks.builder().borrowedFrom("org2").build()));
+        when(v1ServiceUtil.getOrganizationDataFromV1("org2")).thenReturn(Parties.builder().build());
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @Test
+    void updateMawbCheckTest2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).isRunnerV3Enabled(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("destination")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType("DRT")
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).parentId(1L).build();
+        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
+        mawbStocksLinkList.add(mawbStocksLink);
+
+        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
+        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+        when(mawbStocksDao.findById(anyLong())).thenReturn(Optional.of(MawbStocks.builder().build()));
         mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);

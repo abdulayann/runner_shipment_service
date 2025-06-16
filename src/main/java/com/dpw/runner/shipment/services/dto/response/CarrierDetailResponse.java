@@ -63,4 +63,6 @@ public class CarrierDetailResponse implements IRunnerResponse {
     private String destinationLocCode;
     private String originPortLocCode;
     private String destinationPortLocCode;
+    private Boolean isSameAsOriginPort;
+    private Boolean isSameAsDestinationPort;
 }

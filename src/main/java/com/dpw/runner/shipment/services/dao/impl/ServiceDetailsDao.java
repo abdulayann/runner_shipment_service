@@ -67,6 +67,11 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
     }
 
     @Override
+    public Optional<ServiceDetails> findByGuid(UUID id) {
+        return serviceDetailsRepository.findByGuid(id);
+    }
+
+    @Override
     public void delete(ServiceDetails serviceDetails) {
         serviceDetailsRepository.delete(serviceDetails);
     }
@@ -250,5 +255,27 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public Optional<ServiceDetails> findByIdWithQuery(Long id) {
+        return serviceDetailsRepository.findByIdWithQuery(id);
+    }
+
+    public Page<ServiceDetails> findAllWithoutTenantFilter(Specification<ServiceDetails> spec, Pageable pageable) {
+        return serviceDetailsRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    public Optional<ServiceDetails> findByGuidWithQuery(UUID guid){
+        return serviceDetailsRepository.findByGuidWithQuery(guid);
+    }
+
+    @Override
+    public List<ServiceDetails> findByIdIn(List<Long> serviceDetailsIds) {
+        return serviceDetailsRepository.findByIdIn(serviceDetailsIds);
+    }
+
+    @Override
+    public void deleteByIdIn(List<Long> serviceDetailsIds) {
+        serviceDetailsRepository.deleteAllById(serviceDetailsIds);
     }
 }

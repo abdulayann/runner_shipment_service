@@ -22,7 +22,7 @@ public class ApiConstants {
     public static final String UPDATE_SAILING_SCHEDULE = "/update-sailing-schedule";
 
     public static final String GET_CARGO_DETAILS = "/get/cargoDetails";
-
+    public static final String GET_CARGO_CHARGEABLE = "/get/chargeable";
 
     public static final String API_CREATE = "/create";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
@@ -194,6 +194,7 @@ public class ApiConstants {
     public static final String CUSTOMER_BOOKING = "/customer-booking";
     public static final String SHIPMENT_PACKINGS = "/shipment-packings";
     public static final String CONSOLIDATION_PACKINGS = "/consolidation-packings";
+    public static final String SHIPMENT_SERVICES = "/shipment-services";
 
 
 }

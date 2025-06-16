@@ -517,6 +517,15 @@ public class ReportConstants {
     public static final String DRIVER_MOBILE_NUMBER = "DriverMobileNumber";
     public static final String TRANSPORTER_NAME = "TransporterName";
 
+    public static final String S_TRUCK_NO = "S_TruckNo";
+    public static final String S_TRAILER_NO = "S_TrailerNo";
+    public static final String S_TRUCK_TRAILER_TYPE = "S_TruckTrailerType";
+    public static final String S_DRIVER_ID = "S_DriverID";
+    public static final String S_DRIVER_NAME = "S_DriverName";
+    public static final String S_DRIVER_MOBILE_NUMBER = "S_DriverMobileNumber";
+    public static final String S_TRANSPORTER_NAME = "S_TransporterName";
+    public static final String S_TRANSPORT_BY = "S_TransportBy";
+
     /*
         Report Constants
      */

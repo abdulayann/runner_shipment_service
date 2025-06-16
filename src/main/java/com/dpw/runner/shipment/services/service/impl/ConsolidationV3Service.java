@@ -96,6 +96,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
@@ -158,6 +159,8 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
@@ -2201,23 +2204,43 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             ShipmentDetails shipmentDetails,
             List<EventsRequest> events) throws RunnerException {
 
-        // Update basic references in the shipment from the console
-        shipmentDetails.setConsolRef(console.getReferenceNumber());
-        shipmentDetails.setMasterBill(console.getBol());
-        shipmentDetails.setDirection(console.getShipmentType());
-        shipmentDetails.setTransportMode(console.getTransportMode());
-        shipmentDetails.setCoLoadCarrierName(console.getCoLoadCarrierName());
-        shipmentDetails.setPartner(console.getPartner());
-        shipmentDetails.setBookingAgent(console.getBookingAgent());
-        shipmentDetails.setCoLoadBkgNumber(console.getCoLoadBookingReference());
-        shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
-        if(shipmentDetails.getAdditionalDetails() != null) {
-            shipmentDetails.getAdditionalDetails().setDeliveryMode(console.getDeliveryMode());
+        String transportMode = console.getTransportMode();
+
+        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
+            //Non-Editable Fields
+            shipmentDetails.setJobType(console.getConsolidationType());
+            shipmentDetails.setPartner(console.getPartner());
+
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+
+            //Editable Fields
+            setCoload_BookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
+            setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+            serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
+        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
+            //Non-Editable Fields
+            shipmentDetails.setShipmentType(console.getContainerCategory());
+            shipmentDetails.setPartner(console.getPartner());
+            shipmentDetails.setMasterBill(console.getBol());
+            updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+
+            //Editable Fields
+            setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+            serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
+            setCoload_BookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
+            if(shipmentDetails.getAdditionalDetails() != null){
+                shipmentDetails.getAdditionalDetails().setEfreightStatus(console.getEfreightStatus());
+            }
         }
+
+        // Update basic references in the shipment from the console
+       // shipmentDetails.setConsolRef(console.getReferenceNumber());
 
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();
-        setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
 
         if (!Objects.equals(oldBookingNumber, shipmentDetails.getBookingNumber())
                 && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
@@ -2240,9 +2263,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
         }
 
-        // Update carrier details if required
-        updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
-
         // Perform CFS cut-off date validation if enabled and required
         if (consolidationV3Util.checkConsolidationEligibleForCFSValidation(console)
                 && consolidationValidationV3Util.checkIfShipmentDateGreaterThanConsole(shipmentDetails.getShipmentGateInDate(), console.getCfsCutOffDate())) {
@@ -2256,6 +2276,47 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         updateNonInterBranchConsoleData(console, shipmentDetails);
     }
 
+    private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
+        Boolean fromAttachShipment){
+        if(fromAttachShipment != null && fromAttachShipment){
+            String oldPartner = oldEntity.getPartner();
+            String newPartner = consolidationDetails.getPartner();
+
+            if(newPartner != null && !newPartner.equals(oldPartner)){
+                // first set null
+                shipmentDetails.setCoLoadCarrierName(null);
+                shipmentDetails.setCoLoadBlNumber(null);
+                shipmentDetails.setCoLoadBkgNumber(null);
+
+                shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
+                shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
+                shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
+            }
+        }
+    }
+
+    private void setCoload_BookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
+        Boolean fromAttachShipment){
+        if(fromAttachShipment != null && fromAttachShipment) {
+                if(!isFieldChanged(oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
+                    shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
+                }
+                if(!isFieldChanged(oldEntity.getCoLoadMBL(), shipmentDetails.getCoLoadBlNumber())){
+                    shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
+                }
+                if(!isFieldChanged(oldEntity.getCoLoadBookingReference(), shipmentDetails.getCoLoadBkgNumber())){
+                    shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
+                }
+        }else{
+            shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
+            shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
+            shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
+        }
+    }
+
+    private boolean isFieldChanged(String oldValue, String newValue) {
+        return oldValue != null ? !oldValue.equals(newValue) : newValue != null;
+    }
     /**
      * Updates the export and import broker information in the shipment details based on the consolidation's sending and receiving agents, but only if the consolidation is **not**
      * marked as an inter-branch console.
@@ -3154,10 +3215,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
                 var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorServiceMasterData);
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);
+                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
                 CompletableFuture<Void> tenantDataFuture = CompletableFuture.completedFuture(null);
                 if (Boolean.TRUE.equals(includeTenantData))
                     tenantDataFuture =CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
-                CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
+                CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture, carrierDataFuture).join();
                 log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
@@ -3745,6 +3807,90 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             !Objects.equals(consol.getLatestFullEquDeliveredToCarrier(), oldEntity.getLatestFullEquDeliveredToCarrier()) ||
             !Objects.equals(consol.getEarliestDropOffFullEquToCarrier(), oldEntity.getEarliestDropOffFullEquToCarrier()) ||
             !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
+    }
+
+    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails){
+        if(oldEntity == null){
+            String deliveryMode = consolidationDetails.getDeliveryMode();
+            String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
+            if(isServiceTypeValid(serviceType)){
+                //autoFlow
+                shipmentDetails.setServiceType(serviceType);
+            }
+        }else{
+           String oldDeliveryMode = oldEntity.getDeliveryMode();
+           String oldServiceType = getIdentifierFromHBLDeliveryModeMasterData(oldDeliveryMode);
+
+           //Different serviceType no need to flow
+           if(shipmentDetails.getServiceType() != null && oldServiceType != null && !shipmentDetails.getServiceType().equals(oldServiceType)){
+
+           }else{
+               //Validate new deliveryCode
+               String deliveryMode = consolidationDetails.getDeliveryMode();
+               String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
+               if(isServiceTypeValid(serviceType)){
+                   //autoFlow
+                   shipmentDetails.setServiceType(serviceType);
+               }
+           }
+        }
+    }
+    protected String getIdentifierFromHBLDeliveryModeMasterData(String deliveryMode) {
+        if (StringUtility.isEmpty(deliveryMode)) {
+            return null;
+        }
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        List<Object> subCriteria1 = Arrays.asList(
+            Arrays.asList(MasterDataConstants.ITEM_TYPE),
+            "=",
+            MasterDataType.HBL_DELIVERY_MODE.getId()
+        );
+        List<Object> subCriteria2 = Arrays.asList(
+            Arrays.asList(MasterDataConstants.ITEM_VALUE),
+            "=",
+            deliveryMode
+        );
+        criteria.addAll(List.of(subCriteria1, "and", subCriteria2));
+        request.setCriteriaRequests(criteria);
+        try {
+            V1DataResponse response = v1Service.fetchMasterData(request);
+            List<EntityTransferMasterLists> responseList = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
+            if (responseList != null && !responseList.isEmpty())
+                return responseList.get(0).getIdentifier1();
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
+        return null;
+    }
+
+    protected boolean isServiceTypeValid(String serviceType){
+        if (StringUtility.isEmpty(serviceType)) {
+            return false;
+        }
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> criteria = new ArrayList<>();
+        List<Object> subCriteria1 = Arrays.asList(
+            Arrays.asList(MasterDataConstants.ITEM_TYPE),
+            "=",
+            MasterDataType.SERVICE_MODE.getId()
+        );
+        List<Object> subCriteria2 = Arrays.asList(
+            Arrays.asList(MasterDataConstants.ITEM_VALUE),
+            "=",
+            serviceType
+        );
+        criteria.addAll(List.of(subCriteria1, "and", subCriteria2));
+        request.setCriteriaRequests(criteria);
+        try {
+            V1DataResponse response = v1Service.fetchMasterData(request);
+            List<EntityTransferMasterLists> responseList = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
+            if (responseList != null && !responseList.isEmpty())
+                return true;
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
+        return false;
     }
 
 }

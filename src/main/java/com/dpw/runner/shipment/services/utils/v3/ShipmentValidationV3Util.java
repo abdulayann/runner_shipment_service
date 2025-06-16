@@ -32,6 +32,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 @Slf4j
 @Component
@@ -117,6 +130,10 @@ public class ShipmentValidationV3Util {
     }
 
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
+            throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
+        }
+        // Validation for Partner fields
         // Validation for DPS Implication
         this.validateDPSImplication(shipmentDetails);
         // Validation for Partner fields for 'STD' Shipment
@@ -127,6 +144,22 @@ public class ShipmentValidationV3Util {
         this.validationForCutOffFields(shipmentDetails);
         // Validation for ETA, ETD, ATA and ATD fields
         this.validationETAETDATAATDFields(shipmentDetails, oldEntity);
+        // Validation for Same as Pol Pod flag
+        this.validationForPolPodFields(shipmentDetails);
+    }
+
+    public void validationForPolPodFields(ShipmentDetails shipmentDetails){
+        if(Objects.isNull(shipmentDetails.getCarrierDetails())){
+            return;
+        }
+        if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsOriginPort())
+                && !Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getOrigin())) {
+            throw new ValidationException("If origin is selected as same as OriginPort then value in origin and originPort should pe same");
+        }
+        if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsDestinationPort())
+                && !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), shipmentDetails.getCarrierDetails().getDestination())) {
+            throw new ValidationException("If destination is selected as same as DestinationPort then value in destination and destinationPort should pe same");
+        }
     }
 
     private void validateDPSImplication(ShipmentDetails shipmentDetails) {
@@ -147,6 +180,9 @@ public class ShipmentValidationV3Util {
     }
 
     public void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !isStringNullOrEmpty(shipmentDetails.getCoLoadBlNumber())) {
+            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent AWB No. for AIR shipments");
+        }
         if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
         String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
         String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);

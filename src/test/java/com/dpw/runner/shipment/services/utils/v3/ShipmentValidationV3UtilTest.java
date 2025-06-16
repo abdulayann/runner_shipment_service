@@ -411,7 +411,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         shipment.setId(1L);
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setCoLoadBlNumber("coload");
-        ShipmentDetails oldEntity = new ShipmentDetails();
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -434,7 +434,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.TRUE);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
     }
 
     @Test
@@ -443,7 +443,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setMasterBill("masterBill");
-        ShipmentDetails oldEntity = new ShipmentDetails();
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
 
         Parties consignor = new Parties();
         consignor.setOrgCode(null);
@@ -453,7 +453,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
     }
 
     @Test
@@ -515,12 +515,23 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForFmcTlcFields(shipment));
     }
+
     @Test
-    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyFmcTlcId_AIR() {
+    void testValidateShipmentCreateOrUpdate_coLoadBLNumber_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setCoLoadBlNumber("BlNumber");
 
-        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_CargoDeliveryDate_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCargoDeliveryDate(LocalDateTime.now());
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
     @Test
@@ -716,4 +727,45 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
     }
 
+    @Test
+    void testValidationForPolPodFields_Exception1() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("xyz");
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Exception2() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(true);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("xyz");
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Success() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("abc");
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(true);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("abc");
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Success1() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(false);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("abc");
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(false);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("abc");
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
 }

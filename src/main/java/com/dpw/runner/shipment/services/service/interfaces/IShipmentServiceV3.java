@@ -79,4 +79,7 @@ public interface IShipmentServiceV3 {
     Long assignFirstBookingContainerToShipmentCargo(List<Containers> expandedContainers, CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
 
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
+
+    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData,
+            boolean fromNte) throws AuthenticationException;
 }

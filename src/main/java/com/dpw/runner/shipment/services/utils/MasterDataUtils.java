@@ -18,17 +18,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
-import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -245,6 +235,67 @@ public class MasterDataUtils{
             log.info("Time taken to fetch vessel Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchVesselForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+    }
+
+    public void fetchCarriersForList(List<IRunnerResponse> responseList) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            double startTime = System.currentTimeMillis();
+            Set<String> carriers = new HashSet<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            for (IRunnerResponse response : responseList) {
+                getCarriersFromResponse(response, carriers, fieldNameKeyMap, cacheMap);
+            }
+
+            Map<String, EntityTransferCarrier> v1Data = fetchInBulkCarriers(carriers);
+            pushToCache(v1Data, CacheConstants.CARRIER, carriers, new EntityTransferCarrier(), cacheMap);
+
+            for (IRunnerResponse response : responseList) {
+                setCarriersMasterData(response, fieldNameKeyMap, cacheMap);
+            }
+            log.info("Time taken to fetch carrier Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.MASTERDATA_CARRIER, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: fetchCarrierForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
+        }
+    }
+
+    private void getCarriersFromResponse(IRunnerResponse response, Set<String> carriers, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (response instanceof ShipmentListResponse shipmentListResponse) {
+            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getShippingLine())) {
+                carriers.addAll(createInBulkCarriersRequest(shipmentListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId(), cacheMap));
+            }
+        }
+        else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getShippingLine())) {
+                carriers.addAll(createInBulkCarriersRequest(consolidationListResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId(), cacheMap));
+            }
+        }
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
+            carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
+        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response){
+            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+                carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
+            }
+        }
+    }
+
+    private void setCarriersMasterData(IRunnerResponse response, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if (response instanceof ShipmentListResponse shipmentListResponse) {
+            if (shipmentListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(shipmentListResponse.getCarrierDetails().getShippingLine()))
+                shipmentListResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + shipmentListResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof ConsolidationListResponse consolidationListResponse) {
+            if (consolidationListResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationListResponse.getCarrierDetails().getShippingLine()))
+                consolidationListResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationListResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
+            consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+        }
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response) {
+            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+                customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
+            }
         }
     }
 
@@ -1354,6 +1405,8 @@ public class MasterDataUtils{
                     case CacheConstants.CARRIER:
                         EntityTransferCarrier object5 = (EntityTransferCarrier) cache;
                         fieldNameMasterDataMap.put(key, object5.getItemDescription());
+                        fieldNameMasterDataMap.put(key + Constants.SCAC_CODE, object5.getIdentifier1());
+                        fieldNameMasterDataMap.put(key + Constants.IATA_CODE, object5.getIATACode());
                         break;
                     case CacheConstants.CURRENCIES:
                         EntityTransferCurrency object6 = (EntityTransferCurrency) cache;
