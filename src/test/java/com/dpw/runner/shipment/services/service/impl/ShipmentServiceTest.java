@@ -1120,6 +1120,44 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void create_shouldSetCarrierNameFromMasterData_whenScacCodePresent() throws RunnerException {
+        // Arrange
+        UserContext.getUser().setPermissions(new HashMap<>());
+
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setShippingLine("MAERSK LINE");
+        mockShipment.setCarrierDetails(carrierDetails);
+
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        mockShipment.setAdditionalDetails(getmockAdditionalDetails(LocalDateTime.now(), true, true, true));
+
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        ShipmentRequest shipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(shipmentRequest);
+
+        ShipmentDetailsResponse mockResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+
+        // Mock required dependencies
+        when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+        // Act
+        ResponseEntity<IRunnerResponse> response = shipmentService.create(requestModel);
+
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), response);
+        assertEquals("MAERSK LINE", shipmentRequest.getCarrierDetails().getShippingLine());
+    }
+
+    @Test
     void create_success_trackApiError() throws RunnerException {
         UserContext.getUser().setPermissions(new HashMap<>());
         ShipmentDetails mockShipment = shipmentDetails;
