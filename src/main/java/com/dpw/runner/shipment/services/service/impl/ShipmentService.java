@@ -4638,7 +4638,11 @@ public class ShipmentService implements IShipmentService {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
-            Set<Containers> oldContainers = shipmentDetails.getContainersList();
+            ShipmentDetails oldShipmentDetails = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
+            Set<Containers> oldContainers = new HashSet<>();
+            if(shipmentDetails.getContainersList()!=null) {
+                oldContainers.addAll(shipmentDetails.getContainersList());
+            }
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
@@ -4651,11 +4655,19 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds(), shipmentDetails.getGuid().toString());
             makeShipmentsDG(containersMap, shipmentDetails);
-            if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-                CompletableFuture.runAsync(
-                        masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
-                        executorService
-                ).join();
+
+            if(shipmentDetails.getContainersList()!=null) {
+                shipmentDetails.getContainersList().addAll(containersMap.values());
+            }
+
+            Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
+            log.info("shipment assignShipmentContainers hblService.checkAllContainerAssigned..... ");
+            ConsolidationDetails consolidationDetails = null;
+            if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
+                consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+            }
+
+            processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -4719,21 +4731,28 @@ public class ShipmentService implements IShipmentService {
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             Map<Long, Containers> containersMap = containers.getContent().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
             ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
-            Set<Containers> oldContainers = shipmentDetails.getContainersList();
+            ShipmentDetails oldShipmentDetails = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
+            Set<Containers> oldContainers = new HashSet<>();
+            if(shipmentDetails.getContainersList()!=null) {
+                oldContainers.addAll(shipmentDetails.getContainersList());
+            }
             List<Long> containerIds = getContainerIds(lclAndSeaOrRoadFlag, containers, shipmentId, containersList, isConsolidatorFlag, shipmentDetails);
             if(!Objects.isNull(containerIds) && !containerIds.isEmpty()) {
                 shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
-            CompletableFuture<Void> bookingUpdateFuture = null;
-            if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-                bookingUpdateFuture = CompletableFuture.runAsync(
-                        masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
-                        executorService
-                );
-            if (bookingUpdateFuture != null){
-                bookingUpdateFuture.join();
+            if(shipmentDetails.getContainersList()!=null) {
+                shipmentDetails.getContainersList().addAll(containersMap.values());
             }
+
+            Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
+            log.info("shipment assignAllContainers hblService.checkAllContainerAssigned..... ");
+            ConsolidationDetails consolidationDetails = null;
+            if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
+                consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+            }
+
+            processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {

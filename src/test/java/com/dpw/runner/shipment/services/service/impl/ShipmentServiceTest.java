@@ -6401,9 +6401,14 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentsList(new HashSet<>(Arrays.asList(ShipmentDetails.builder().shipmentType(Constants.SHIPMENT_TYPE_LCL).build())))
                 .build()));
 
+        Set<Containers> containers = new HashSet<>();
+        containers.add(new Containers());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setContainersList(containers);
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
-        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
@@ -6426,10 +6431,14 @@ ShipmentServiceTest extends CommonMocks {
                 .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
                 .shipmentsList(new HashSet<>(Arrays.asList(ShipmentDetails.builder().shipmentType(Constants.CARGO_TYPE_FCL).build())))
                 .build()));
-
+        Set<Containers> containers = new HashSet<>();
+        containers.add(new Containers());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setContainersList(containers);
         when(containerDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(containersPage);
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
-        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(shipmentDetails1));
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
