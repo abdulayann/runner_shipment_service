@@ -56,6 +56,4 @@ public interface IConsolidationV3Service {
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId);
     ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException;
-
-    VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
 }
