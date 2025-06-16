@@ -430,7 +430,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     void testValidateShipmentCreateOrUpdate_withDpsImplication() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setId(1L);
-        ShipmentDetails oldEntity = new ShipmentDetails();
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
 
         when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.TRUE);
 

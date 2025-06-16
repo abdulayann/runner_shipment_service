@@ -485,8 +485,6 @@ class CargoServiceTest {
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();

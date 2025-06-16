@@ -57,6 +57,4 @@ public interface IConsolidationV3Service {
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
     ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException;
-
-    VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
 }
