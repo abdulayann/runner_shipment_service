@@ -4659,16 +4659,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainersList()!=null) {
                 shipmentDetails.getContainersList().addAll(containersMap.values());
             }
-
-            Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
-            log.info("shipment assignShipmentContainers hblService.checkAllContainerAssigned..... ");
-            ConsolidationDetails consolidationDetails = null;
-            if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
-                consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
-            }
-
-            processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
+            postContainerAssignmentUpdates(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4744,16 +4735,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainersList()!=null) {
                 shipmentDetails.getContainersList().addAll(containersMap.values());
             }
-
-            Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
-            log.info("shipment assignAllContainers hblService.checkAllContainerAssigned..... ");
-            ConsolidationDetails consolidationDetails = null;
-            if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
-                consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
-            }
-
-            processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
+            postContainerAssignmentUpdates(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4761,6 +4743,18 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private void postContainerAssignmentUpdates(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails, Set<Containers> oldContainers) {
+        Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
+        log.info("shipment assignShipmentContainers hblService.checkAllContainerAssigned..... ");
+        ConsolidationDetails consolidationDetails = null;
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
+            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        }
+
+        processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
+        dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
     }
 
     private List<Long> getContainerIds(boolean lclAndSeaOrRoadFlag, Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean isConsolidatorFlag, ShipmentDetails shipmentDetails) throws RunnerException {
