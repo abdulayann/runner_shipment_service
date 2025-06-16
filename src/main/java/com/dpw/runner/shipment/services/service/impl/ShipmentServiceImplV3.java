@@ -614,23 +614,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
             }
             response.setIsPacksAvailable(Boolean.TRUE);
-            int dgPackCount = 0;
-            String dgPackUnit = Constants.PACKAGES;
-            Set<String> dgPacksUnitSet = new HashSet<>();
-            int totalHazardousPackCount = packingList.stream()
-                    .filter(Packing::getHazardous)
-                    .mapToInt(p -> {
-                        try {
-                            dgPacksUnitSet.add(p.getPacksType());
-                            return Integer.parseInt(p.getPacks());
-                        } catch (NumberFormatException e) {
-                            return 0; // or handle differently if needed
-                        }
-                    })
-                    .sum();
-            if (dgPacksUnitSet.size() == 1) {
-                response.setDgPacksUnit(packingList.get(0).getPacksType());
-            }
         }
     }
 
@@ -1657,6 +1640,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 cargoDetailsResponse.getVolumetricWeightUnit(),
                 cargoDetailsResponse.getChargable(),
                 cargoDetailsResponse.getChargeableUnit());
+        shipmentDao.updateDgPacksDetailsInShipment(cargoDetailsResponse.getDgPacks(), cargoDetailsResponse.getDgPacksUnit(), shipmentId);
+
     }
 
     @Override
