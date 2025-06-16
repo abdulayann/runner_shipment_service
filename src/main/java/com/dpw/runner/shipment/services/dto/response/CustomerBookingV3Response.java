@@ -106,6 +106,8 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String incotermsLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoReadinessDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoDeliveryDate;
     private Boolean controlled;
     private String controlledReferenceNumber;
     private String partner;
