@@ -4725,11 +4725,15 @@ public class ShipmentService implements IShipmentService {
                 shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
+            CompletableFuture<Void> bookingUpdateFuture = null;
             if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-                CompletableFuture.runAsync(
+                bookingUpdateFuture = CompletableFuture.runAsync(
                         masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
                         executorService
-                ).join();
+                );
+            if (bookingUpdateFuture != null){
+                bookingUpdateFuture.join();
+            }
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {

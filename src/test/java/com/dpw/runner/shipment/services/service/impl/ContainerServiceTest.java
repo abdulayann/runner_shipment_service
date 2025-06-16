@@ -1521,6 +1521,45 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
+    void testPushContainersToDependentServicesForNewContainers() {
+        // Arrange
+        Containers c1 = new Containers();
+        c1.setId(1L);
+        c1.setConsolidationId(1L);
+        c1.setContainerNumber("C123");
+        c1.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().bookingReference("DBFC-4317515-934863").build())));
+        Containers c2 = new Containers();
+        c2.setId(2L);
+        c2.setContainerNumber("C456");
+
+        List<Containers> containersList = Arrays.asList(c1,c2);
+        List<Containers> oldContainers = List.of(c1);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        Set<Containers> containers = new HashSet<Containers>();
+        containers.add(c1);
+        shipmentDetails.setContainersList(containers);
+        shipmentDetails.setBookingReference("DBFC-4353158-409107");
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
+        v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+
+        when(jsonHelper.convertToJson(any(EventMessage.class))).thenReturn("jsonBody");
+        when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+
+        // Act
+        containerService.pushContainersToDependentServices(containersList, oldContainers, shipmentDetails);
+
+        // Assert
+        verify(producer, times(1)).produceToKafka(eq("jsonBody"), any(), anyString());
+        verify(sbUtils, times(1)).sendMessagesToTopic(eq(isbProperties), any(), anyList());
+    }
+
+    @Test
     void testPushContainersToDependentServicesWithEmptyBookingRef() {
         // Arrange
         Containers c1 = new Containers();
