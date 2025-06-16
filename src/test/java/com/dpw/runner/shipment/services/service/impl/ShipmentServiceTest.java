@@ -4769,10 +4769,13 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentContainerAssignRequest shipmentContainerAssignRequest = new ShipmentContainerAssignRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentContainerAssignRequest).build();
 
+        Set<Containers> containers = new HashSet<>();
+        containers.add(new Containers());
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_LSE);
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setContainersList(containers);
         shipmentDetails.setShipmentId("SHP001");
 
         Containers container = Containers.builder().bookingId(1L).isPart(true).shipmentsList(new HashSet<>(Arrays.asList(shipmentDetails))).containerNumber("1").build();
@@ -4792,10 +4795,13 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentContainerAssignRequest shipmentContainerAssignRequest = new ShipmentContainerAssignRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentContainerAssignRequest).build();
 
+        Set<Containers> containers = new HashSet<>();
+        containers.add(new Containers());
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setShipmentId("SHP001");
+        shipmentDetails.setContainersList(containers);
         shipmentDetails.setGuid(UUID.randomUUID());
 
         Containers container = Containers.builder().bookingId(1L).isPart(true).containerNumber("1").build();
