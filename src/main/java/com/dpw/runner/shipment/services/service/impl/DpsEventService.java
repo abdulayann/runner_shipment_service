@@ -498,6 +498,7 @@ public class DpsEventService implements IDpsEventService {
             List<DpsFieldData> fieldDataList = dtoData.getFieldsDetectedValues().stream()
                     .map(fieldDataDto -> DpsFieldData.builder()
                             .key(fieldDataDto.getKey())
+                            .id(fieldDataDto.getId())
                             .value(fieldDataDto.getValue())
                             .build())
                     .collect(Collectors.toList());
