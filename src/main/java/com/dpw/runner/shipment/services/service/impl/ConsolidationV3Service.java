@@ -2173,8 +2173,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
             shipmentDetails.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
             shipmentDetails.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
-            shipmentDetails.getCarrierDetails().setOrigin(console.getCarrierDetails().getOrigin());
-            shipmentDetails.getCarrierDetails().setDestination(console.getCarrierDetails().getDestination());
 
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
