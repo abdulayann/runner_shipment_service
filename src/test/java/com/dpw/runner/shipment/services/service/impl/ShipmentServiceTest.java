@@ -3876,7 +3876,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails1));
         //doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any());
         mockShipmentSettings();
-
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -4770,6 +4770,7 @@ ShipmentServiceTest extends CommonMocks {
         when(containerDao.saveAll(anyList())).thenReturn(Arrays.asList(Containers.builder().build()));
         doNothing().when(shipmentsContainersMappingDao).assignContainers(any(), any(), any());
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignShipmentContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -6368,6 +6369,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
         when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -6393,6 +6395,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(Arrays.asList(ShipmentsContainersMapping.builder().shipmentId(1L).build()));
         when(shipmentDao.findById(any())).thenReturn(Optional.ofNullable(ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build()));
         mockShipmentSettings();
+        mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.assignAllContainers(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }

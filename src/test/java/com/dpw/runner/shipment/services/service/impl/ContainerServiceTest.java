@@ -1513,7 +1513,7 @@ class ContainerServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
 
         // Act
-        containerService.pushContainersToDependentServices(containersList, oldContainers);
+        containerService.pushContainersToDependentServices(containersList, oldContainers, null);
 
         // Assert
         verify(producer, times(1)).produceToKafka(eq("jsonBody"), any(), anyString());
@@ -1540,7 +1540,7 @@ class ContainerServiceTest extends CommonMocks {
         v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
         // Act
-        containerService.pushContainersToDependentServices(containersList, oldContainers);
+        containerService.pushContainersToDependentServices(containersList, oldContainers, null);
         verify(producer, times(0)).produceToKafka(eq("jsonBody"), any(), anyString());
         verify(sbUtils, times(0)).sendMessagesToTopic(eq(isbProperties), any(), anyList());
     }

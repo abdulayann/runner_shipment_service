@@ -2947,7 +2947,6 @@ public class ShipmentService implements IShipmentService {
         log.info("shipment afterSave createShipmentRouteInConsole..... ");
         Hbl hbl = getHblInAfterSave(shipmentDetails, updatedContainers, updatedPackings);
         log.info("shipment afterSave hblService.checkAllContainerAssigned..... ");
-        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
@@ -2957,6 +2956,7 @@ public class ShipmentService implements IShipmentService {
         deletePendingStateAfterCancellation(shipmentDetails, oldEntity);
         log.info("shipment afterSave consoleShipmentMappingDao.deletePendingStateByShipmentId..... ");
         processSyncV1AndAsyncFunctions(shipmentDetails, oldEntity, shipmentSettingsDetails, syncConsole, hbl, deletedContGuids, packsForSync, consolidationDetails);
+        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
         log.info("shipment afterSave end..... ");
     }
 
@@ -3062,14 +3062,21 @@ public class ShipmentService implements IShipmentService {
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
         // Syncing shipment to V1
+        CompletableFuture<Void> bookingUpdateFuture = null;
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         log.info("shipment afterSave syncShipment..... ");
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+            bookingUpdateFuture = CompletableFuture.runAsync(
+                    masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
+                    executorService
+            );
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        if (bookingUpdateFuture != null) {
+            bookingUpdateFuture.join();
+        }
     }
 
     private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
@@ -4644,6 +4651,11 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds(), shipmentDetails.getGuid().toString());
             makeShipmentsDG(containersMap, shipmentDetails);
+            if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
+                CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
+                        executorService
+                ).join();
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
@@ -4713,6 +4725,11 @@ public class ShipmentService implements IShipmentService {
                 shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
+            if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
+                CompletableFuture.runAsync(
+                        masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
+                        executorService
+                ).join();
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
