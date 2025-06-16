@@ -1110,26 +1110,34 @@ public class ReportService implements IReportService {
                 } else {
                   hawbPacksCountForCombi = "";
                 }
-              if (threadSafeData.get(ReportConstants.MAWB_NUMBER) != null || threadSafeData.get(ReportConstants.HAWB_NUMBER) != null) {
-                  threadSafeData.put(ReportConstants.COUNT, packsCount);
-                  threadSafeData.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
-                  threadSafeData.put(ReportConstants.PACK_NUMBER, packs);
-                }
-                else {
-                  threadSafeData.put(ReportConstants.COUNT, null);
-                }
 
-                futures.add(executorService.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, pdfBytes, isCombi, packsCount, hawbPacksCountForCombi)));
+                populateMap(threadSafeData, packsCount, packsOfTotal, packs);
+                futures.add(executorService.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, isCombi, packsCount, hawbPacksCountForCombi)));
             }
 
-            for (Future<byte[]> future : futures) {
-                try {
-                    pdfBytes.add(future.get());
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
-                    throw new GenericException(e.getMessage());
-                }
+            populatePdfBytes(futures, pdfBytes);
+        }
+    }
+
+    private void populatePdfBytes(List<Future<byte[]>> futures, List<byte[]> pdfBytes){
+        for (Future<byte[]> future : futures) {
+            try {
+                pdfBytes.add(future.get());
+            } catch (Exception e) {
+                log.error(e.getMessage(), e);
+                throw new GenericException(e.getMessage());
             }
+        }
+    }
+
+    private void populateMap(Map<String, Object> threadSafeData, String packsCount, String packsOfTotal, int packs){
+        if (threadSafeData.get(ReportConstants.MAWB_NUMBER) != null || threadSafeData.get(ReportConstants.HAWB_NUMBER) != null) {
+            threadSafeData.put(ReportConstants.COUNT, packsCount);
+            threadSafeData.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
+            threadSafeData.put(ReportConstants.PACK_NUMBER, packs);
+        }
+        else {
+            threadSafeData.put(ReportConstants.COUNT, null);
         }
     }
 
@@ -1172,7 +1180,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private byte[] addDocBytesInPdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes, boolean isCombi, String packsCount, String hawbPacksCountForCombi) {
+    private byte[] addDocBytesInPdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, boolean isCombi, String packsCount, String hawbPacksCountForCombi) {
         byte[] mainDocPage = getFromDocumentService(dataRetrived, pages.getMainPageId());
         if (mainDocPage == null)
             throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
