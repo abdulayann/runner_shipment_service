@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_N
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
@@ -137,6 +138,10 @@ public class ShipmentValidationV3Util {
         // Validation for DPS Implication
         this.validateDPSImplication(shipmentDetails);
         // Validation for Partner fields for 'STD' Shipment
+        if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
+            throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
+        }
+        // Validation for Partner fields
         this.validationForPartnerFields(shipmentDetails, oldEntity);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
