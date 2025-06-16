@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClien
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,6 +36,9 @@ import static org.mockito.Mockito.when;
 class DocumentManagerServiceImplTest {
     @Mock
     private DocumentManagerRestClient documentManagerRestClient;
+
+    @Mock
+    private JsonHelper jsonHelper;
 
     @InjectMocks
     private DocumentManagerServiceImpl documentManagerServiceImpl;

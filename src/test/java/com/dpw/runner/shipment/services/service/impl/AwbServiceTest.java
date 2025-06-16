@@ -2102,7 +2102,7 @@ class AwbServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
-
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
@@ -2275,7 +2275,7 @@ class AwbServiceTest extends CommonMocks {
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(Set.of(testShipment));
-
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
         when(awbDao.save(any())).thenReturn(testMawb);
