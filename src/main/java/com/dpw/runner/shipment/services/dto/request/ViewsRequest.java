@@ -13,6 +13,7 @@ import java.util.Map;
 @ApiModel("Views Request Model")
 @ToString
 @Data
+@SuppressWarnings("java:S1948")
 public class ViewsRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Map<String, Object> columns;

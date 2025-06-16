@@ -129,6 +129,8 @@ public class CreateBookingModuleInV1 {
             private String PerMeasurementBasis;
             private BigDecimal TotalUnitsCount;
             private String MeasurementsUnit;
+            private String internalRemarks;
+            private String externalRemarks;
         }
 
         @Data

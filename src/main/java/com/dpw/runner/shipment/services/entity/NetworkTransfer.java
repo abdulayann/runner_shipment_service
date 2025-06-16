@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -13,6 +14,7 @@ import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -68,9 +70,17 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "entity_payload", columnDefinition = "jsonb")
+    @SuppressWarnings("java:S1948")
     private Map<String, Object> entityPayload;
 
     @Column(name = "is_inter_branch_entity")
     private Boolean isInterBranchEntity = false;
+
+    @Column(name = "transferred_date")
+    private LocalDateTime transferredDate;
+
+    @Column(name = "source")
+    @Enumerated(EnumType.STRING)
+    private NetworkTransferSource source;
 
 }

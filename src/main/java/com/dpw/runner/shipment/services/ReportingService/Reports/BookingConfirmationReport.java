@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -27,13 +28,11 @@ public class BookingConfirmationReport extends IReport{
     @Autowired
     private HblReport hblReport;
 
-    private Long id;
     public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) getDocumentModel(id);
-        this.id = id;
         return populateDictionary(bookingConfirmationModel);
     }
 
@@ -60,7 +59,7 @@ public class BookingConfirmationReport extends IReport{
             List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -69,13 +68,13 @@ public class BookingConfirmationReport extends IReport{
         dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.hblModel.shipment.getMasterBill());
         dictionary.put(ReportConstants.PORT_OF_DEPARTURE, bookingConfirmationModel.hblModel.polName);
         if (bookingConfirmationModel.hblModel.polName != null)
-            dictionary.put(ReportConstants.PortofDepartureInCaps, bookingConfirmationModel.hblModel.polName.toUpperCase());
+            dictionary.put(ReportConstants.PORTOF_DEPARTURE_IN_CAPS, bookingConfirmationModel.hblModel.polName.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, bookingConfirmationModel.hblModel.polCountry);
         if (bookingConfirmationModel.hblModel.polCountry != null)
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS, bookingConfirmationModel.hblModel.polCountry.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_ARRIVAL, bookingConfirmationModel.hblModel.podName);
         if (bookingConfirmationModel.hblModel.podName != null)
-            dictionary.put(ReportConstants.PortofArrivalInCaps, bookingConfirmationModel.hblModel.podName.toUpperCase());
+            dictionary.put(ReportConstants.PORTOF_ARRIVAL_IN_CAPS, bookingConfirmationModel.hblModel.podName.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, bookingConfirmationModel.hblModel.podCountry);
         if (bookingConfirmationModel.hblModel.podCountry != null)
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS, bookingConfirmationModel.hblModel.podCountry.toUpperCase());
@@ -84,37 +83,47 @@ public class BookingConfirmationReport extends IReport{
 
         List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.getReferenceNumbersList();
 
-        if (referenceNumbers != null && referenceNumbers.size() > 0) {
-            List<ReferenceNumbersModel> conditionBasedReferenceNo = new ArrayList<>();
-            List<ReferenceNumbersModel> motherReferenceNo = new ArrayList<>();
-            List<ReferenceNumbersModel> feederReferenceNo = new ArrayList<>();
-            for (ReferenceNumbersModel refNo : referenceNumbers) {
-                if (refNo != null && refNo.getType() != null && refNo.getType().equalsIgnoreCase("BKG")) {
-                    dictionary.put(ReportConstants.BOOKING_NUMBER, refNo.getReferenceNumber());
-                    break;
-                }
-            }
-            for (ReferenceNumbersModel refNo : referenceNumbers) {
-                if (refNo != null && refNo.getType() != null &&
-                        (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) ||
-                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL))) {
-                    if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
-                        motherReferenceNo.add(refNo);
-                    } else if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL)) {
-                        feederReferenceNo.add(refNo);
-                    }
-                    conditionBasedReferenceNo.add(refNo);
-                }
-            }
-            dictionary.put(ReportConstants.BOOKING_NO_BASED_ON_TYPE, conditionBasedReferenceNo);
-
-            dictionary.put(ReportConstants.MOTHER_REFERENCE_NO, motherReferenceNo);
-            dictionary.put(ReportConstants.FEEDER_REFERENCE_NO, feederReferenceNo);
+        if (referenceNumbers != null && !referenceNumbers.isEmpty()) {
+            processReferenceNumberList(referenceNumbers, dictionary);
         }
 
         dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, bookingConfirmationModel.hblModel.tenant);
         return dictionary;
+    }
+
+    private void processReferenceNumberList(List<ReferenceNumbersModel> referenceNumbers, Map<String, Object> dictionary) {
+        List<ReferenceNumbersModel> conditionBasedReferenceNo = new ArrayList<>();
+        List<ReferenceNumbersModel> motherReferenceNo = new ArrayList<>();
+        List<ReferenceNumbersModel> feederReferenceNo = new ArrayList<>();
+        for (ReferenceNumbersModel refNo : referenceNumbers) {
+            if (refNo != null && refNo.getType() != null && refNo.getType().equalsIgnoreCase("BKG")) {
+                dictionary.put(ReportConstants.BOOKING_NUMBER, refNo.getReferenceNumber());
+                break;
+            }
+        }
+        for (ReferenceNumbersModel refNo : referenceNumbers) {
+            if (refNo != null && refNo.getType() != null &&
+                    (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) ||
+                    refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL))) {
+                if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
+                    motherReferenceNo.add(refNo);
+                } else if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL)) {
+                    feederReferenceNo.add(refNo);
+                }
+                conditionBasedReferenceNo.add(refNo);
+            }
+        }
+        dictionary.put(ReportConstants.BOOKING_NO_BASED_ON_TYPE, conditionBasedReferenceNo);
+
+        dictionary.put(ReportConstants.MOTHER_REFERENCE_NO, motherReferenceNo);
+        dictionary.put(ReportConstants.FEEDER_REFERENCE_NO, feederReferenceNo);
     }
 }

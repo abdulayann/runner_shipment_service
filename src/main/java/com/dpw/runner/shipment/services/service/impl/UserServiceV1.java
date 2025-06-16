@@ -28,7 +28,6 @@ public class UserServiceV1 implements IUserService {
     private String url;
 
     @Override
-    @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
     public UsersDto getUserByToken(String token) {
         log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}", LoggerHelper.getRequestIdFromMDC(), url, token);
         HttpHeaders headers = new HttpHeaders();
@@ -37,7 +36,7 @@ public class UserServiceV1 implements IUserService {
             return null;
         token = token.split(" ")[1];
         headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<String>(headers);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
         ResponseEntity<UsersDto> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, UsersDto.class);
         log.info("Request: {} || User retrieved from V1: {}", LoggerHelper.getRequestIdFromMDC(), responseEntity.getBody());
         return responseEntity.getBody();

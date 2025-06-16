@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Component
 @Slf4j
@@ -58,20 +58,7 @@ public class MasterDataHelper {
                 listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(shipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap));
 
             if(masterDataResponse != null) {
-                if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-                    shipmentDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-                    shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-                    shipmentDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getReferenceNumbersList()))
-                    shipmentDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
-                    shipmentDetailsResponse.getServicesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-                    shipmentDetailsResponse.getContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getEventsList()))
-                    shipmentDetailsResponse.getEventsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Events.class, fieldNameKeyMap, Events.class.getSimpleName() + r.getId(), cacheMap)));
+                addListRequestForMasterDataResponse(shipmentDetailsResponse, listRequests, fieldNameKeyMap, cacheMap);
             }
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
@@ -101,6 +88,23 @@ public class MasterDataHelper {
         }
     }
 
+    private void addListRequestForMasterDataResponse(ShipmentDetailsResponse shipmentDetailsResponse, Set<MasterListRequest> listRequests, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+            shipmentDetailsResponse.getRoutingsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
+            shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
+            shipmentDetailsResponse.getPackingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getReferenceNumbersList()))
+            shipmentDetailsResponse.getReferenceNumbersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ReferenceNumbers.class, fieldNameKeyMap, ReferenceNumbers.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
+            shipmentDetailsResponse.getServicesList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+            shipmentDetailsResponse.getContainersList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getEventsList()))
+            shipmentDetailsResponse.getEventsList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Events.class, fieldNameKeyMap, Events.class.getSimpleName() + r.getId(), cacheMap)));
+    }
+
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
@@ -112,16 +116,7 @@ public class MasterDataHelper {
                 locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName(), cacheMap)));
 
             if(masterDataResponse != null) {
-                if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
-                    shipmentDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
-                    shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
-                    shipmentDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
-                    shipmentDetailsResponse.getServicesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId(), cacheMap)));
-                if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
-                    shipmentDetailsResponse.getPackingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
+                addListRequestsForUnlocationData(shipmentDetailsResponse, locationCodes, fieldNameKeyMap, cacheMap);
             }
 
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
@@ -143,6 +138,19 @@ public class MasterDataHelper {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    private void addListRequestsForUnlocationData(ShipmentDetailsResponse shipmentDetailsResponse, Set<String> locationCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
+        if(!Objects.isNull(shipmentDetailsResponse.getRoutingsList()))
+            shipmentDetailsResponse.getRoutingsList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getBookingCarriagesList()))
+            shipmentDetailsResponse.getBookingCarriagesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, BookingCarriage.class, fieldNameKeyMap, BookingCarriage.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getContainersList()))
+            shipmentDetailsResponse.getContainersList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getServicesList()))
+            shipmentDetailsResponse.getServicesList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, ServiceDetails.class, fieldNameKeyMap, ServiceDetails.class.getSimpleName() + r.getId(), cacheMap)));
+        if(!Objects.isNull(shipmentDetailsResponse.getPackingList()))
+            shipmentDetailsResponse.getPackingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
     }
 
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ShipmentDetailsResponse shipmentDetailsResponse, Map<String, Object> masterDataResponse) {
@@ -422,37 +430,50 @@ public class MasterDataHelper {
         if(packings != null && !packings.isEmpty()) {
             for (PackingResponse pack : packings) {
                 if(pack.getContainerId() != null) {
-                    if(map.containsKey(pack.getContainerId())) {
-                        pack.setContainerNumber(map.get(pack.getContainerId()).getContainerNumber());
-                        pack.setContainerDesc(String.format("%s-%s-%s", map.get(pack.getContainerId()).getContainerCount(), map.get(pack.getContainerId()).getContainerNumber(), map.get(pack.getContainerId()).getContainerCode()));
-                    }
-                    if(flag) {
-                        if(!contMap.containsKey(pack.getContainerId())) {
-                            Map<String, String> tempMap = new HashMap<>();
-                            tempMap.put(Constants.HANDLING_INFO, "");
-                            tempMap.put(Constants.DESCRIPTION_OF_GOODS, "");
-                            contMap.put(pack.getContainerId(), tempMap);
-                        }
-                        String handlingInfo = contMap.get(pack.getContainerId()).get(Constants.HANDLING_INFO);
-                        String descriptionOfGoods = contMap.get(pack.getContainerId()).get(Constants.DESCRIPTION_OF_GOODS);
-                        if(!IsStringNullOrEmpty(pack.getHandlingInfo())) {
-                            if (handlingInfo.length() == 0)
-                                handlingInfo = pack.getHandlingInfo();
-                            else
-                                handlingInfo = handlingInfo + ", " + pack.getHandlingInfo();
-                        }
-                        if(!IsStringNullOrEmpty(pack.getGoodsDescription())) {
-                            if(descriptionOfGoods.length() == 0)
-                                descriptionOfGoods = pack.getGoodsDescription();
-                            else
-                                descriptionOfGoods = descriptionOfGoods + ", " + pack.getGoodsDescription();
-                        }
-                        contMap.get(pack.getContainerId()).put(Constants.HANDLING_INFO, handlingInfo);
-                        contMap.get(pack.getContainerId()).put(Constants.DESCRIPTION_OF_GOODS, descriptionOfGoods);
-                    }
+                    processPackContainers(map, pack, flag, contMap);
                 }
             }
         }
+        processContainers(containers, flag, contMap);
+    }
+
+    private void processPackContainers(Map<Long, ContainerResponse> map, PackingResponse pack, boolean flag, Map<Long, Map<String, String>> contMap) {
+        if(map.containsKey(pack.getContainerId())) {
+            pack.setContainerNumber(map.get(pack.getContainerId()).getContainerNumber());
+            pack.setContainerDesc(String.format("%s-%s-%s", map.get(pack.getContainerId()).getContainerCount(), map.get(pack.getContainerId()).getContainerNumber(), map.get(pack.getContainerId()).getContainerCode()));
+        }
+        if(flag) {
+            if(!contMap.containsKey(pack.getContainerId())) {
+                Map<String, String> tempMap = new HashMap<>();
+                tempMap.put(Constants.HANDLING_INFO, "");
+                tempMap.put(Constants.DESCRIPTION_OF_GOODS, "");
+                contMap.put(pack.getContainerId(), tempMap);
+            }
+            String handlingInfo = getHandlingInfo(pack, contMap);
+            String descriptionOfGoods = contMap.get(pack.getContainerId()).get(Constants.DESCRIPTION_OF_GOODS);
+            if(!isStringNullOrEmpty(pack.getGoodsDescription())) {
+                if(descriptionOfGoods.isEmpty())
+                    descriptionOfGoods = pack.getGoodsDescription();
+                else
+                    descriptionOfGoods = descriptionOfGoods + ", " + pack.getGoodsDescription();
+            }
+            contMap.get(pack.getContainerId()).put(Constants.HANDLING_INFO, handlingInfo);
+            contMap.get(pack.getContainerId()).put(Constants.DESCRIPTION_OF_GOODS, descriptionOfGoods);
+        }
+    }
+
+    private String getHandlingInfo(PackingResponse pack, Map<Long, Map<String, String>> contMap) {
+        String handlingInfo = contMap.get(pack.getContainerId()).get(Constants.HANDLING_INFO);
+        if(!isStringNullOrEmpty(pack.getHandlingInfo())) {
+            if (handlingInfo.isEmpty())
+                handlingInfo = pack.getHandlingInfo();
+            else
+                handlingInfo = handlingInfo + ", " + pack.getHandlingInfo();
+        }
+        return handlingInfo;
+    }
+
+    private void processContainers(Set<ContainerResponse> containers, boolean flag, Map<Long, Map<String, String>> contMap) {
         if(containers != null && !containers.isEmpty()) {
             for(ContainerResponse container : containers) {
                 if(flag) {

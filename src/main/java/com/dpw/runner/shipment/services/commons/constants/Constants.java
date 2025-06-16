@@ -8,9 +8,9 @@ public class Constants {
     public static final String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String WRK = "WRK";
     public static final String ORGANIZATION_CODE = "OrganizationCode";
-    public static final String OrgId = "OrgId";
+    public static final String ORG_ID = "OrgId";
     public static final String ACTIVE_CLIENT = "ActiveClient";
-    public static final String LocalReferenceNumber = "LocalReferenceNumber";
+    public static final String LOCAL_REFERENCE_NUMBER = "LocalReferenceNumber";
 
     public static final String GLOBALFF = "GLOBALFF";
     public static final String GLOBAL = "GLOBAL";
@@ -51,8 +51,8 @@ public class Constants {
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
-    public static final String Shipment = "Shipment";
-    public static final String Consolidation = "Consolidation";
+    public static final String SHIPMENT_CAMELCASE = "Shipment";
+    public static final String CONSOLIDATION_CAMELCASE = "Consolidation";
     public static final String CUSTOMER_BOOKING = "CustomerBooking";
     public static final String BOOKING = "BOOKING";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
@@ -68,20 +68,20 @@ public class Constants {
     public static final String CONTAINER = "CONTAINER";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
-    public static final String PreCarriage = "PreCarriage";
+    public static final String PRE_CARRIAGE = "PreCarriage";
     public static final String SERVICE_DETAILS = "SERVICE_DETAILS";
     public static final String NOTES = "NOTES";
-    public static final String Main = "Main";
+    public static final String MAIN = "Main";
     public static final String EVENTS = "EVENTS";
     public static final String JOBS = "JOBS";
-    public static final String Cont20 = "20";
-    public static final String Cont40 = "40";
-    public static final String Cont20GP = "20GP";
-    public static final String Cont20RE = "20RE";
-    public static final String Cont40GP = "40GP";
-    public static final String Cont40RE = "40RE";
-    public static final String PageNumberError = "Page Number should be Greater than or equal to 1";
-    public static final String Validation_Exception = "Validation errors occurred.";
+    public static final String CONT_20 = "20";
+    public static final String CONT_40 = "40";
+    public static final String CONT_20_GP = "20GP";
+    public static final String CONT_20_RE = "20RE";
+    public static final String CONT_40_GP = "40GP";
+    public static final String CONT_40_RE = "40RE";
+    public static final String PAGE_NUMBER_ERROR = "Page Number should be Greater than or equal to 1";
+    public static final String VALIDATION_ERRORS_OCCURRED = "Validation errors occurred.";
     public static final String MASS = "Mass";
     public static final String VOLUME = "Volume";
     public static final String LENGTH = "Length";
@@ -90,29 +90,29 @@ public class Constants {
     public static final String VOLUME_UNIT_CC = "CC";
     public static final String VOLUME_UNIT_CM = "CM";
     public static final String VOLUME_UNIT_AF = "AF";
-    public static final String VOLUME_UNIT_Barrel_OIL = "Barrel (oil)";
-    public static final String VOLUME_UNIT_Board_foot = "Board foot";
-    public static final String VOLUME_UNIT_Bushel_US = "Bushel (US)";
-    public static final String VOLUME_UNIT_Cup = "Cup";
-    public static final String VOLUME_UNIT_Fluid_OUNCE_US = "Fluid ounce (US)";
+    public static final String VOLUME_UNIT_BARREL_OIL = "Barrel (oil)";
+    public static final String VOLUME_UNIT_BOARD_FOOT = "Board foot";
+    public static final String VOLUME_UNIT_BUSHEL_US = "Bushel (US)";
+    public static final String VOLUME_UNIT_CUP = "Cup";
+    public static final String VOLUME_UNIT_FLUID_OUNCE_US = "Fluid ounce (US)";
     public static final String VOLUME_UNIT_CF = "CF";
     public static final String VOLUME_UNIT_GI = "GI";
     public static final String VOLUME_UNIT_GA = "GA";
-    public static final String VOLUME_UNIT_Gallon_US_LIQ = "Gallon (US,liq)";
-    public static final String VOLUME_UNIT_Gill_UK = "Gill (UK)";
-    public static final String VOLUME_UNIT_Gill_US = "Gill (US)";
+    public static final String VOLUME_UNIT_GALLON_US_LIQ = "Gallon (US,liq)";
+    public static final String VOLUME_UNIT_GILL_UK = "Gill (UK)";
+    public static final String VOLUME_UNIT_GILL_US = "Gill (US)";
     public static final String VOLUME_UNIT_CI = "CI";
-    public static final String VOLUME_UNIT_Liter_OLD = "Liter (old)";
-    public static final String VOLUME_UNIT_Ounce_UK_FLD = "Ounce (UK,fluid)";
-    public static final String VOLUME_UNIT_Ounce_US_FLD = "Ounce (US,fluid)";
-    public static final String VOLUME_UNIT_Peck_US = "Peck (US)";
-    public static final String VOLUME_UNIT_Pint_US_DRY = "Pint (US,dry)";
-    public static final String VOLUME_UNIT_Pint_US_LIQ = "Pint (US,liq)";
-    public static final String VOLUME_UNIT_Quart_US_DRY = "Quart (US,dry)";
-    public static final String VOLUME_UNIT_Quart_US_LIQ = "Quart (US,liq)";
-    public static final String VOLUME_UNIT_Stere = "Stere";
-    public static final String VOLUME_UNIT_Tablespoon = "Tablespoon";
-    public static final String VOLUME_UNIT_Teaspoon = "Teaspoon";
+    public static final String VOLUME_UNIT_LITER_OLD = "Liter (old)";
+    public static final String VOLUME_UNIT_OUNCE_UK_FLD = "Ounce (UK,fluid)";
+    public static final String VOLUME_UNIT_OUNCE_US_FLD = "Ounce (US,fluid)";
+    public static final String VOLUME_UNIT_PECK_US = "Peck (US)";
+    public static final String VOLUME_UNIT_PINT_US_DRY = "Pint (US,dry)";
+    public static final String VOLUME_UNIT_PINT_US_LIQ = "Pint (US,liq)";
+    public static final String VOLUME_UNIT_QUART_US_DRY = "Quart (US,dry)";
+    public static final String VOLUME_UNIT_QUART_US_LIQ = "Quart (US,liq)";
+    public static final String VOLUME_UNIT_STERE = "Stere";
+    public static final String VOLUME_UNIT_TABLESPOON = "Tablespoon";
+    public static final String VOLUME_UNIT_TEASPOON = "Teaspoon";
     public static final String VOLUME_UNIT_TON_REGISTER = "Ton (register)";
     public static final String VOLUME_UNIT_CY = "CY";
     public static final String VOLUME_UNIT_ML = "ML";
@@ -129,7 +129,7 @@ public class Constants {
     public static final String WEIGHT_UNIT_LT = "LT";
     public static final String WEIGHT_UNIT_OZ = "OZ";
     public static final String WEIGHT_UNIT_OT = "OT";
-    public static final String WEIGHT_UNIT_Slug = "Slug";
+    public static final String WEIGHT_UNIT_SLUG = "Slug";
     public static final String WEIGHT_UNIT_TA = "TA";
     public static final String WEIGHT_UNIT_TL = "TL";
     public static final String WEIGHT_UNIT_TN = "TN";
@@ -239,9 +239,9 @@ public class Constants {
     public static final String MASTER_DATA_SOURCE_CARGOES_USER = "Cargoes User";
     public static final String MASTER_DATA_SOURCE_DESCARTES = "Descartes";
 
-    public static final String Shipments = "[Shipments]";
-    public static final String Consolidations = "[Consolidations]";
-    public static final String Bookings = "[Bookings]";
+    public static final String SHIPMENTS_WITH_SQ_BRACKETS = "[Shipments]";
+    public static final String CONSOLIDATIONS_WITH_SQ_BRACKETS = "[Consolidations]";
+    public static final String BOOKINGS_WITH_SQ_BRACKETS = "[Bookings]";
 
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
@@ -426,6 +426,12 @@ public class Constants {
     public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
     public static final String AWB_COUNTRY = "country";
 
+    // Include Column fields
+    public static final String BILLING_DATA = "billingData";
+    public static final String SHIPPER_REFERENCE = "pickupDetails.shipperRef";
+    public static final String ORDERS_COUNT = "ordersCount";
+    public static final String SHIPMENT_STATUS_FIELDS = "shipmentStatus";
+
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
             GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
@@ -476,7 +482,7 @@ public class Constants {
     public static final String VIEWS = "Views";
     public static final String ENTITY = "entity";
     public static final String NAME_FILTER = "name";
-    public static final String Active = "Active";
+    public static final String ACTIVE = "Active";
     public static final String FILE_STATUS = "FileStatus";
     public static final String FLOW = "Flow";
     public static final String TASK_TYPE = "TaskType";
@@ -619,8 +625,18 @@ public class Constants {
     public static final String ORG_ADDRESS = "orgAddress";
     public static final String IS_CSD_DOCUMENT_ADDED = "isCSDDocumentAdded";
     public static final String AIR_SECURITY_PERMISSION_MSG = "You do not have Air Security permissions for this.";
+    public static final String SWITCH_DEFAULT_CASE_MSG = "Unhandled case in switch: {}";
+    public static final String SEND_EMAIL_AIR_MESSAGING_FAILURE = "Send Email for Air Messaging Failure : {}";
+    public static final String AUTO_OFFSET_RESET_CONFIG_LATEST = "latest";
 
     public static final String OUTBOUND = "Outbound";
+    public static final String IGNORED_ERROR_MSG = "Ignored error.";
+    public static final String EMPTY_STRING = "";
+    public static final String APP_CONFIG_ID_NOT_VALID = "Application config id is not valid";
+    public static final String APPLICATION_CONFIG_ID_EMPTY_ERROR_MESSAGE = "Application config id can not be empty";
+
+    public static final String TESLA = "Tesla";
+    public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
 
     private Constants() {
     }

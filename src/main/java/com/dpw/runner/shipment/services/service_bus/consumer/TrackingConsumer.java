@@ -20,6 +20,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -33,6 +34,9 @@ public class TrackingConsumer {
     private ServiceBusProcessorClient processorClient;
     private final IV1Service v1Service;
 
+    @Value("${tracking.event.abs.consumer-auto-startup}")
+    private Boolean startConsumer;
+
     @Autowired
     TrackingConsumer(SBConfiguration sbConfiguration, JsonHelper jsonHelper,
             IEventService eventService, ServiceBusConfigProperties serviceBusConfigProperties, IV1Service v1Service) {
@@ -45,17 +49,19 @@ public class TrackingConsumer {
 
     @PostConstruct
     public void startReceiver() {
-        processorClient = sbConfiguration.getSessionProcessorClient(
-                serviceBusConfigProperties.getTrackingService().getConnectionString(),
-                serviceBusConfigProperties.getTrackingService().getTopicName(),
-                serviceBusConfigProperties.getTrackingService().getSubscriptionName(),
-                this::processMessage,
-                this::processError
-        );
+        if (Boolean.TRUE.equals(startConsumer)) {
+            processorClient = sbConfiguration.getSessionProcessorClient(
+                    serviceBusConfigProperties.getTrackingService().getConnectionString(),
+                    serviceBusConfigProperties.getTrackingService().getTopicName(),
+                    serviceBusConfigProperties.getTrackingService().getSubscriptionName(),
+                    this::processMessage,
+                    this::processError
+            );
 
-        processorClient.start();
+            processorClient.start();
 
-        log.info("Tracking Consumer - started and listening...");
+            log.info("Tracking Consumer - started and listening...");
+        }
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -10,18 +11,18 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
+import com.dpw.runner.shipment.services.dto.DeclineNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -82,6 +84,10 @@ class NotificationServiceTest {
     private INetworkTransferDao networkTransferDao;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Mock
+    private CommonUtils commonUtils;
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -682,6 +688,273 @@ class NotificationServiceTest {
 
     public ResponseEntity<IRunnerResponse> getResponse(IRunnerResponse data, HttpStatus status) {
         return new ResponseEntity<>(RunnerResponse.builder().success(true).data(data).build(), status);
+    }
+
+    @Test
+    void testRejectNotification_Shipment_reassign() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        Notification notification1 = Notification.builder()
+                .entityId(1L)
+                .entityType(Constants.SHIPMENT)
+                .notificationRequestType(NotificationRequestType.REASSIGN)
+                .requestedBranchId(2)
+                .requestedUser("abc")
+                .reassignedToBranchId(3)
+                .networkTransferId(12L)
+                .build();
+        NetworkTransfer networkTransfer = NetworkTransfer.builder()
+                .entityNumber("SHP163834")
+                .build();
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = notificationService.rejectNotification(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    }
+
+    @Test
+    void testRejectNotification_Consolidation_reassign() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        Notification notification1 = Notification.builder()
+                .entityId(1L)
+                .entityType(Constants.CONSOLIDATION)
+                .notificationRequestType(NotificationRequestType.REASSIGN)
+                .requestedBranchId(2)
+                .requestedUser("abc")
+                .reassignedToBranchId(3)
+                .networkTransferId(11L)
+                .build();
+        NetworkTransfer networkTransfer = NetworkTransfer.builder()
+                .entityNumber("SHP163834")
+                .build();
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = notificationService.rejectNotification(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    }
+
+    @Test
+    void testRejectNotification_Shipment_requestTransfer() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        Notification notification1 = Notification.builder()
+                .entityId(1L)
+                .entityType(Constants.SHIPMENT)
+                .notificationRequestType(NotificationRequestType.REQUEST_TRANSFER)
+                .requestedBranchId(2)
+                .requestedUser("abc")
+                .reassignedToBranchId(3)
+                .networkTransferId(13L)
+                .build();
+        NetworkTransfer networkTransfer = NetworkTransfer.builder()
+                .entityNumber("SHP163834")
+                .entityType(Constants.SHIPMENT)
+                .entityId(1L)
+                .isInterBranchEntity(true)
+                .build();
+        NetworkTransfer consoleNetworkTransfer = NetworkTransfer.builder()
+                .entityNumber("CON163834")
+                .entityId(2L)
+                .entityType(Constants.CONSOLIDATION)
+                .isInterBranchEntity(true)
+                .build();
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.CONSOLIDATION), any(), anyList(), anyString())).thenReturn(List.of(consoleNetworkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = notificationService.rejectNotification(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    }
+
+    @Test
+    void testRejectNotification_Shipment_requestTransfer2() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        Notification notification1 = Notification.builder()
+                .entityId(1L)
+                .entityType(Constants.SHIPMENT)
+                .notificationRequestType(NotificationRequestType.REQUEST_TRANSFER)
+                .requestedBranchId(2)
+                .requestedUser("abc")
+                .reassignedToBranchId(3)
+                .networkTransferId(13L)
+                .build();
+        NetworkTransfer networkTransfer = NetworkTransfer.builder()
+                .entityNumber("SHP163834")
+                .entityType(Constants.SHIPMENT)
+                .entityId(1L)
+                .isInterBranchEntity(true)
+                .build();
+        NetworkTransfer consoleNetworkTransfer = NetworkTransfer.builder()
+                .entityNumber("CON163834")
+                .entityId(2L)
+                .entityType(Constants.CONSOLIDATION)
+                .isInterBranchEntity(true)
+                .build();
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.CONSOLIDATION), any(), anyList(), anyString())).thenReturn(List.of(consoleNetworkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        var response = notificationService.rejectNotification(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    }
+
+    @Test
+    void testRejectNotification_Consolidation_requestTransfer() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        Notification notification1 = Notification.builder()
+                .entityId(1L)
+                .entityType(Constants.CONSOLIDATION)
+                .notificationRequestType(NotificationRequestType.REQUEST_TRANSFER)
+                .requestedBranchId(2)
+                .requestedUser("abc")
+                .reassignedToBranchId(3)
+                .networkTransferId(13L)
+                .build();
+        NetworkTransfer networkTransfer = NetworkTransfer.builder()
+                .entityNumber("CON163834")
+                .entityType(Constants.CONSOLIDATION)
+                .entityId(1L)
+                .isInterBranchEntity(true)
+                .build();
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = notificationService.rejectNotification(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    }
+
+    @Test
+    void testRejectNotification_Consolidation_requestTransfer2() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        Notification notification1 = Notification.builder()
+                .entityId(1L)
+                .entityType(Constants.CONSOLIDATION)
+                .notificationRequestType(NotificationRequestType.REQUEST_TRANSFER)
+                .requestedBranchId(2)
+                .requestedUser("abc")
+                .reassignedToBranchId(3)
+                .networkTransferId(13L)
+                .build();
+        NetworkTransfer networkTransfer = NetworkTransfer.builder()
+                .entityNumber("CON163834")
+                .entityType(Constants.CONSOLIDATION)
+                .entityId(1L)
+                .isInterBranchEntity(true)
+                .build();
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+        tenantModelMap.put(3, new Object());
+        UserContext.getUser().setDisplayName("xyz");
+        UserContext.getUser().setEmail("xyz@xyz.com");
+
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification1));
+        when(networkTransferDao.findByIdWithQuery(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(ConsoleShipmentMapping.builder().consolidationId(2L).shipmentId(3L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), eq(Constants.SHIPMENT), any(), anyList(), anyString())).thenReturn(List.of(networkTransfer));
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("abc", "abc@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        var response = notificationService.rejectNotification(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+    }
+
+    @Test
+    void testRejectNotification_Shipment_reassign_error1() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(null).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        var response = notificationService.rejectNotification(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRejectNotification_Shipment_reassign_error2() {
+        DeclineNotificationRequest declineNotificationRequest = DeclineNotificationRequest.builder().id(1L).reason("test").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(declineNotificationRequest);
+        when(notificationDao.findById(anyLong())).thenReturn(Optional.empty());
+        var response = notificationService.rejectNotification(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
 }

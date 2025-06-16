@@ -1,0 +1,1 @@
+Update mawb_stocks_link set status = 'Unused', updated_at = NOW() where id = '2229'

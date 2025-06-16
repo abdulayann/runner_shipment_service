@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -78,7 +79,7 @@ public class ExcelUtils {
         });
     }
 
-    public void writeSimpleHeader(XSSFWorkbook workbook, Set<String> columnHeaders, XSSFSheet sheet) {
+    public void writeSimpleHeader(Set<String> columnHeaders, XSSFSheet sheet) {
         Row row = sheet.createRow(0);
         int i = 0;
         for (var c : columnHeaders) {
@@ -124,7 +125,8 @@ public class ExcelUtils {
             File file = new File(tempFile);
             byte[] fileDataBytes = Files.readAllBytes(Paths.get(file.getPath()));
             fileResource = new ByteArrayResource(fileDataBytes);
-            file.delete();
+            Path path = file.toPath();
+            Files.delete(path);
         } catch (Exception ex) {
             log.error("Unable to process the file");
             throw new RunnerException("Unable to process the file.");
@@ -138,8 +140,7 @@ public class ExcelUtils {
         XSSFSheet sheet = createSheet(workbook, sheetName);
         writeHeader(workbook, columnHeadersToFieldName.keySet(), sheet);
         writeDataToSheet(workbook, sheet, listAsMap, columnHeadersToFieldName);
-        Resource fileResource = getResource(workbook);
-        return fileResource;
+        return getResource(workbook);
     }
 
 }

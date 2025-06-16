@@ -43,7 +43,7 @@ spec:
         image: ContainerRegistryURL/ACR_NAME:LATEST_IMAGE
         imagePullPolicy: Always
         command: [/bin/sh, -c]
-        args: [cat /mnt/secrets-store/shipment-service-ENV_NAME-SECRET >> ~/.bashrc && . ~/.bashrc && java HEAP_MIN HEAP_MAX -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
+        args: [. /mnt/secrets-store/shipment-service-ENV_NAME-SECRET && java HEAP_MIN HEAP_MAX -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1HeapRegionSize=2m -XX:G1NewSizePercent=5 -XX:G1MaxNewSizePercent=60 -XX:MaxGCPauseMillis=200 -XX:InitiatingHeapOccupancyPercent=45 -XX:ConcGCThreads=2 -XX:ParallelGCThreads=3 -XX:G1ReservePercent=10 -XX:MaxTenuringThreshold=15 -XX:G1MixedGCCountTarget=4 "-Xlog:gc*" -javaagent:/usr/local/newrelic/newrelic.jar -jar /usr/local/lib/runner-shipment-services-0.0.1.jar]
         resources:
           requests:
             cpu: MIN_CPU

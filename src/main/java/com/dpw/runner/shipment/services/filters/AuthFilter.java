@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.filters;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -105,8 +105,7 @@ public class AuthFilter extends OncePerRequestFilter {
             user = userService.getUserByToken(authToken);
         } catch (HttpStatusCodeException e)
         {
-            log.error("Request: {} || Error while validating token with exception: {} for token: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), authToken);
-            e.printStackTrace();
+            log.error("Request: {} || Error while validating token with exception: {} for token: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), authToken, e);
             res.setContentType(APPLICATION_JSON);
             res.setStatus(e.getRawStatusCode());
             return;
@@ -127,7 +126,7 @@ public class AuthFilter extends OncePerRequestFilter {
         Map<String, Boolean> permissions = new HashMap<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
-            if(entry.getValue())
+            if(Boolean.TRUE.equals(entry.getValue()))
             {
                 grantedPermissions.add(entry.getKey());
                 permissions.put(entry.getKey(), true);
@@ -143,10 +142,10 @@ public class AuthFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         SyncingContext.setContext(true);
         filterChain.doFilter(servletRequest, servletResponse);
-        double _timeTaken = System.currentTimeMillis() - time;
-        log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (_timeTaken), LoggerHelper.getRequestIdFromMDC()));
-        if (_timeTaken > 500)
-            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken, servletRequest.getRequestURI());
+        double timeTaken = (double) System.currentTimeMillis() - time;
+        log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (timeTaken), LoggerHelper.getRequestIdFromMDC()));
+        if (timeTaken > 500)
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, timeTaken, servletRequest.getRequestURI());
         }finally {
             MDC.clear();
             TenantContext.removeTenant();
@@ -173,7 +172,7 @@ public class AuthFilter extends OncePerRequestFilter {
 
     private String getSourceServiceType(HttpServletRequest req) {
         String sourceService = req.getHeader(SOURCE_SERVICE_TYPE);
-        if(IsStringNullOrEmpty(sourceService))
+        if(isStringNullOrEmpty(sourceService))
             return "";
         return sourceService;
     }

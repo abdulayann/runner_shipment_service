@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity.enums;
 
 import com.dpw.runner.shipment.services.utils.Generated;
 
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 @Generated
 public enum TypeOfHblPrint {
 

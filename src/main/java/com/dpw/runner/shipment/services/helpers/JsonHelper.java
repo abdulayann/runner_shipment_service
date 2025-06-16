@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.mixin.ConsoleShipmentMixIn;
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.*;
@@ -41,6 +42,8 @@ public class JsonHelper {
     private final ObjectMapper mapper2 = new ObjectMapper();
 
     private ObjectMapper platformMapper = new ObjectMapper();
+
+    private ObjectMapper consoleMapper = new ObjectMapper();
 
     @PostConstruct
     public void intializeMapper() {
@@ -93,6 +96,16 @@ public class JsonHelper {
         mapper2.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
         mapper2.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
         mapper2.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        consoleMapper.registerModule(new JsonNullableModule());
+        consoleMapper.registerModule(new JavaTimeModule());
+        consoleMapper.registerModule(module);
+        consoleMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        consoleMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        consoleMapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        consoleMapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        consoleMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        consoleMapper.addMixIn(ConsolidationDetails.class, ConsoleShipmentMixIn.class);
 
     }
 
@@ -156,6 +169,9 @@ public class JsonHelper {
     public <T,F> F convertValue(T object, Class<F> clazz) {
         return mapper.convertValue(object, clazz);
     }
+    public <T,F> F convertValueForConsole(T object, Class<F> clazz) {
+        return consoleMapper.convertValue(object, clazz);
+    }
 
     public <T,F> F convertValueWithJsonNullable(T object, Class<F> clazz) {
         return mapper2.convertValue(object, clazz);
@@ -170,7 +186,7 @@ public class JsonHelper {
         try {
             map = mapper.readValue(json, Map.class);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            log.error("An error occurred: {}", e.getMessage(), e);
         }
         return map;
     }

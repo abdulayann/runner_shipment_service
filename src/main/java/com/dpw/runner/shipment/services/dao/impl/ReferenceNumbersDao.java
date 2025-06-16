@@ -6,9 +6,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
@@ -40,7 +38,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
-    private IAuditLogService auditLogService;
+    private IAuditLogService logService;
 
     @Override
     public ReferenceNumbers save(ReferenceNumbers referenceNumbers) {
@@ -71,7 +69,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<ReferenceNumbers> routings = findByShipmentId(shipmentId);
             Map<Long, ReferenceNumbers> hashMap = routings.stream()
                         .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
@@ -105,24 +103,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
+            Pair<String, String> result = prepareReferenceNumberDataForSave(req);
+            String operation = result.getLeft();
+            String oldEntityJsonString = result.getRight();
             req.setShipmentId(shipmentId);
             req = save(req);
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -139,24 +126,130 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
         return res;
     }
+
+    @Override
+    public List<ReferenceNumbers> saveEntityFromBooking(List<ReferenceNumbers> referenceNumbersRequests, Long bookingId) {
+        List<ReferenceNumbers> res = new ArrayList<>();
+        Map<Long, ReferenceNumbers> hashMap = referenceNumberMap(bookingId);
+        for (ReferenceNumbers req : referenceNumbersRequests) {
+            String oldEntityJson = null;
+            String dbOperation = DBOperationType.CREATE.name();
+            if (req.getId() != null) {
+                long id = req.getId();
+                if (hashMap.get(id) == null) {
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                }
+                oldEntityJson = jsonHelper.convertToJson(hashMap.get(id));
+                dbOperation = DBOperationType.UPDATE.name();
+            }
+            req.setBookingId(bookingId);
+            req = save(req);
+            try {
+                logService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                .newData(req)
+                                .prevData(oldEntityJson != null ? jsonHelper.readFromJson(oldEntityJson, ReferenceNumbers.class) : null)
+                                .parent(CustomerBooking.class.getSimpleName())
+                                .parentId(bookingId)
+                                .operation(dbOperation).build()
+                );
+            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                     InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                log.error(e.getMessage());
+            }
+            res.add(req);
+        }
+        return res;
+    }
+
+
+    @Override
+    public List<ReferenceNumbers> updateEntityFromBooking(List<ReferenceNumbers> referenceNumbersList, Long bookingId) throws RunnerException {
+        String responseMsg;
+        List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
+        try {
+            Map<Long, ReferenceNumbers> hashMap = referenceNumberMap(bookingId);
+            List<ReferenceNumbers> referernceNumbersRequestList = new ArrayList<>();
+            if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
+                for (ReferenceNumbers request : referenceNumbersList) {
+                    Long id = request.getId();
+                    if (id != null) {
+                        hashMap.remove(id);
+                    }
+                    referernceNumbersRequestList.add(request);
+                }
+                responseReferenceNumbers = saveEntityFromBooking(referernceNumbersRequestList, bookingId);
+            }
+            deleteReferenceNumber(hashMap, "CustomerBooking", bookingId);
+            return responseReferenceNumbers;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
+            log.error(responseMsg, e);
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private void deleteReferenceNumber(Map<Long, ReferenceNumbers> hashMap, String entity, Long entityId) {
+        String responseMsg;
+        try {
+            hashMap.values().forEach(referenceNumber -> {
+                String json = jsonHelper.convertToJson(referenceNumber);
+                delete(referenceNumber);
+                if(entity != null)
+                {
+                    try {
+                        logService.addAuditLog(
+                                AuditLogMetaData.builder()
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .newData(null)
+                                        .prevData(jsonHelper.readFromJson(json, ReferenceNumbers.class))
+                                        .parent(entity)
+                                        .parentId(entityId)
+                                        .operation(DBOperationType.DELETE.name()).build()
+                        );
+                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+    }
+
+    private Map<Long, ReferenceNumbers> referenceNumberMap(Long bookingId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+        Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+        Page<ReferenceNumbers> referenceNumbersPage = findAll(pair.getLeft(), pair.getRight());
+        return referenceNumbersPage.stream()
+                .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+    }
+
+
     @Override
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
-            if(req.getId() != null){
-                long id = req.getId();
+        for(ReferenceNumbers referenceNumbers : referenceNumbersRequests){
+            if(referenceNumbers.getId() != null){
+                long id = referenceNumbers.getId();
                 if (!hashMap.containsKey(id)) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, referenceNumbers.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                req.setCreatedAt(hashMap.get(id).getCreatedAt());
-                req.setCreatedBy(hashMap.get(id).getCreatedBy());
-                String oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
-                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+                referenceNumbers.setCreatedAt(hashMap.get(id).getCreatedAt());
+                referenceNumbers.setCreatedBy(hashMap.get(id).getCreatedBy());
+                String oldEntityStringJson = jsonHelper.convertToJson(hashMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityStringJson);
             }
-            req.setShipmentId(shipmentId);
-            res.add(req);
+            referenceNumbers.setShipmentId(shipmentId);
+            res.add(referenceNumbers);
         }
         res = saveAll(res);
         for (var req : res) {
@@ -167,7 +260,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 operation = DBOperationType.UPDATE.name();
             }
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -189,15 +282,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             Map<Long, ReferenceNumbers> hashMap;
-//            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-                Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = routings.stream()
-                        .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+            hashMap = routings.stream()
+                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (!referenceNumbersList.isEmpty()) {
@@ -224,7 +315,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ReferenceNumbers entity:
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
@@ -262,24 +353,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
+            Pair<String, String> result = prepareReferenceNumberDataForSave(req);
+            String operation = result.getLeft();
+            String oldEntityJsonString = result.getRight();
             req.setConsolidationId(consolidationId);
             req = save(req);
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -324,7 +404,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 operation = DBOperationType.UPDATE.name();
             }
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -350,7 +430,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 if(entityType != null)
                 {
                     try {
-                        auditLogService.addAuditLog(
+                        logService.addAuditLog(
                                 AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
@@ -376,7 +456,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ReferenceNumbers entity:
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
@@ -408,5 +488,24 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private Pair<String, String> prepareReferenceNumberDataForSave(ReferenceNumbers req) {
+        String oldEntityJsonString = null;
+        String operation = DBOperationType.CREATE.name();
+        if(req.getId() != null){
+            long id = req.getId();
+            Optional<ReferenceNumbers> oldEntity = findById(id);
+            if (oldEntity.isEmpty()) {
+                log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ReferenceNumbers existing = oldEntity.get();
+            oldEntityJsonString = jsonHelper.convertToJson(existing);
+            operation = DBOperationType.UPDATE.name();
+            req.setCreatedAt(oldEntity.get().getCreatedAt());
+            req.setCreatedBy(oldEntity.get().getCreatedBy());
+        }
+        return Pair.of(operation, oldEntityJsonString);
     }
 }

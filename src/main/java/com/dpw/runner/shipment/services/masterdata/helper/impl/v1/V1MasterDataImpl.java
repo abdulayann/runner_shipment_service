@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
@@ -272,8 +273,15 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public DependentServiceResponse fetchUnlocationData(Object request) {
+    public DependentServiceResponse fetchAllUnlocationData(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchUnlocationData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchActiveUnlocation(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
@@ -385,6 +393,7 @@ public class V1MasterDataImpl implements IMasterDataService {
                     LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get(ARRIVAL_ESTIMATED_RUNWAY), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                     flightScheduleRequest.getEqualityFilter().put(ARRIVAL_ESTIMATED_RUNWAY, dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 } catch (Exception e) {
+                    log.info(Constants.IGNORED_ERROR_MSG);
                 }
             }
             if(flightScheduleRequest.getEqualityFilter().containsKey(DEPARTURE_ESTIMATED_RUNWAY) && StringUtility.isNotEmpty(flightScheduleRequest.getEqualityFilter().get(DEPARTURE_ESTIMATED_RUNWAY))) {
@@ -392,14 +401,14 @@ public class V1MasterDataImpl implements IMasterDataService {
                     LocalDateTime dateTime = LocalDateTime.parse(flightScheduleRequest.getEqualityFilter().get(DEPARTURE_ESTIMATED_RUNWAY), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                     flightScheduleRequest.getEqualityFilter().put(DEPARTURE_ESTIMATED_RUNWAY, dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                 } catch (Exception e) {
+                    log.info(Constants.IGNORED_ERROR_MSG);
                 }
             }
         }
         V1DataResponse v1DataResponse = v1Service.importFlightSchedules(flightScheduleRequest);
 
         if(v1DataResponse.getEntities() != null) {
-            List<FlightScheduleResponse> flightScheduleResponses = jsonHelper.convertValueToList(v1DataResponse.getEntities(), FlightScheduleResponse.class);
-            v1DataResponse.entities = flightScheduleResponses;
+            v1DataResponse.entities = jsonHelper.convertValueToList(v1DataResponse.getEntities(), FlightScheduleResponse.class);
         }
 
         return DependentServiceResponse.builder().success(true)

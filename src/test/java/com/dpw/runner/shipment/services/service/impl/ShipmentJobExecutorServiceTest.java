@@ -457,10 +457,10 @@ class ShipmentJobExecutorServiceTest {
         DocumentManagerEntityFileResponse documentManagerEntityFileResponse1 = new DocumentManagerEntityFileResponse();
         documentManagerEntityFileResponse1.setIsTransferEnabled(true);
         documentManagerEntityFileResponse1.setGuid(String.valueOf(UUID.randomUUID()));
-        documentManagerEntityFileResponse1.setEntityType(Constants.Shipments);
+        documentManagerEntityFileResponse1.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
 
         DocumentManagerEntityFileResponse documentManagerEntityFileResponse2 = documentManagerEntityFileResponse1;
-        documentManagerEntityFileResponse2.setEntityType(Constants.Consolidations);
+        documentManagerEntityFileResponse2.setEntityType(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS);
 
         documentManagerListResponse.setData(List.of(documentManagerEntityFileResponse1, documentManagerEntityFileResponse2));
         return documentManagerListResponse;

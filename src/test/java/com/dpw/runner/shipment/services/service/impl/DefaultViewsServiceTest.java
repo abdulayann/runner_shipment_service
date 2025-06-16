@@ -21,9 +21,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -76,7 +76,6 @@ class DefaultViewsServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         DefaultViews views = new DefaultViews(); // Provide necessary data for views
-        DefaultViewsResponse viewsResponse = new DefaultViewsResponse();
         when(defaultViewsDao.save(views)).thenThrow(new RuntimeException());
         when(jsonHelper.convertValue(any(DefaultViewsRequest.class), eq(DefaultViews.class))).thenReturn(views);
 
@@ -113,11 +112,9 @@ class DefaultViewsServiceTest {
         request.setId(null);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        DefaultViews views = new DefaultViews(); // Provide necessary data for views
-        DefaultViewsResponse viewsResponse = new DefaultViewsResponse();
         when(defaultViewsDao.findById(any())).thenReturn(Optional.empty());
 
-        var e = assertThrows(DataRetrievalFailureException.class, () -> defaultViewsService.update(commonRequestModel));
+        assertThrows(DataRetrievalFailureException.class, () -> defaultViewsService.update(commonRequestModel));
 
     }
 
@@ -128,12 +125,12 @@ class DefaultViewsServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         DefaultViews views = new DefaultViews(); // Provide necessary data for views
-        DefaultViewsResponse viewsResponse = new DefaultViewsResponse();
         when(defaultViewsDao.findById(any())).thenReturn(Optional.of(views));
         doThrow(new RuntimeException()).when(defaultViewsDao).save(any());
         when(jsonHelper.convertValue(any(DefaultViewsRequest.class), eq(DefaultViews.class))).thenReturn(views);
 
         ResponseEntity<IRunnerResponse> responseEntity = defaultViewsService.update(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
 
     }
 
@@ -219,7 +216,6 @@ class DefaultViewsServiceTest {
         CommonGetRequest request = CommonGetRequest.builder().id(10L).build(); // Provide necessary data for request
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        DefaultViews views = new DefaultViews(); // Provide necessary data for views
         doThrow(new RuntimeException()).when(defaultViewsDao).findById(any());
 
         ResponseEntity<IRunnerResponse> responseEntity = defaultViewsService.delete(commonRequestModel);
@@ -261,7 +257,7 @@ class DefaultViewsServiceTest {
     void testRetrieveByIdWithIncludeColumns() {
 
         CommonGetRequest request = CommonGetRequest.builder().id(10L).build(); // Provide necessary data for request
-        request.setIncludeColumns(Arrays.asList("a"));
+        request.setIncludeColumns(List.of("a"));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         DefaultViews views = new DefaultViews(); // Provide necessary data for views

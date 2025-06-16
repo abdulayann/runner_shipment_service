@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.config.BridgeServiceConfig;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.AuthLoginRequest;
+import com.dpw.runner.shipment.services.dto.request.bridgeService.BridgeRequest;
 import com.dpw.runner.shipment.services.dto.request.bridgeService.TactBridgePayload;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.AuthLoginResponse;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
@@ -112,6 +113,42 @@ class BridgeServiceAdapterTest {
 
         assertThrows(RunnerException.class, () ->
             bridgeServiceAdapter.requestTactResponse(commonRequestModel));
+    }
+
+    @Test
+    void testRequestOutBoundFileTransfer() throws RunnerException {
+        BridgeRequest request = BridgeRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
+        authLoginResponse.setAccessToken("accessToken");
+        BridgeServiceResponse bridgeServiceResponse = new BridgeServiceResponse();
+
+        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
+                .thenReturn(ResponseEntity.ok(authLoginResponse));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(BridgeServiceResponse.class)))
+                .thenReturn(ResponseEntity.ok(bridgeServiceResponse));
+
+        var res = bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
+
+        assertEquals(bridgeServiceResponse, res);
+    }
+
+    @Test
+    void testRequestOutBoundFileTransfer_Exception() {
+        BridgeRequest request = BridgeRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
+        authLoginResponse.setAccessToken("accessToken");
+
+        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
+                .thenReturn(ResponseEntity.ok(authLoginResponse));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), eq(BridgeServiceResponse.class)))
+                .thenThrow(new RuntimeException("error"));
+
+        assertThrows(RunnerException.class, () ->
+                bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel));
     }
 
 }

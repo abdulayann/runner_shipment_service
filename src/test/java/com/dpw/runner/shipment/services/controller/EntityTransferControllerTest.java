@@ -299,4 +299,64 @@ class EntityTransferControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void checkAcceptedFiles() throws RunnerException {
+        // Mock
+        when(entityTransferService.checkAcceptedFiles(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = entityTransferController.checkAcceptedFiles(AcceptedFileRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkAcceptedFiles2() throws RunnerException {
+        // Mock
+        when(entityTransferService.checkAcceptedFiles(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = entityTransferController.checkAcceptedFiles(AcceptedFileRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void checkAcceptedFiles3() throws RunnerException {
+        // Mock
+        when(entityTransferService.checkAcceptedFiles(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = entityTransferController.checkAcceptedFiles(AcceptedFileRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void sendFileToExternalSystem() throws RunnerException {
+        // Mock
+        when(entityTransferService.sendFileToExternalSystem(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = entityTransferController.sendFileToExternalSystem(SendFileToExternalRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void sendFileToExternalSystem2() throws RunnerException {
+        // Mock
+        when(entityTransferService.sendFileToExternalSystem(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = entityTransferController.sendFileToExternalSystem(SendFileToExternalRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void sendFileToExternalSystem3() throws RunnerException {
+        // Mock
+        when(entityTransferService.sendFileToExternalSystem(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = entityTransferController.sendFileToExternalSystem(SendFileToExternalRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

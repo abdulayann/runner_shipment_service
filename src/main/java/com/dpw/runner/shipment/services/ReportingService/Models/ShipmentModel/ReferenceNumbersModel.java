@@ -22,4 +22,6 @@ public class ReferenceNumbersModel implements IDocumentModel {
     private String referenceNumber;
     @JsonProperty("ShipmentId")
     private Long shipmentId;
+    @JsonProperty("BookingId")
+    private Long bookingId;
 }

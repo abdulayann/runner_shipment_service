@@ -18,6 +18,8 @@ public interface IReferenceNumbersDao {
     void delete(ReferenceNumbers referenceNumbers);
     List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId) throws RunnerException;
     List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId);
+    List<ReferenceNumbers>  saveEntityFromBooking(List<ReferenceNumbers> referenceNumbersRequests, Long bookingId);
+    List<ReferenceNumbers>  updateEntityFromBooking(List<ReferenceNumbers> referenceNumbersRequests, Long bookingId) throws RunnerException;
     List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId, Map<Long, ReferenceNumbers> hashMap);
     List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId) throws RunnerException;
     List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws RunnerException;

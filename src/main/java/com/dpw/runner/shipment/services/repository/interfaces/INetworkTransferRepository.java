@@ -32,6 +32,10 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     }
 
     @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE id = ?1", nativeQuery = true)
+    Optional<NetworkTransfer> findByIdWithQuery(Long id);
+
+    @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE tenant_id = ?1 AND entity_id = ?2 AND entity_type = ?3", nativeQuery = true)
     Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
 
@@ -44,6 +48,10 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     List<NetworkTransfer> findByEntityAndTenantList(Long entityId, String entityType, List<Integer> tenantIds);
 
     @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE entity_id = ?1 AND entity_type = ?2", nativeQuery = true)
+    List<NetworkTransfer> findByEntityNTList(Long entityId, String entityType);
+
+    @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_id in ?1 AND entity_type = ?2 AND is_inter_branch_entity= true", nativeQuery = true)
     List<NetworkTransfer> getInterConsoleNTList(List<Long> entityIdList, String entityType);
 
@@ -51,6 +59,11 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     @Transactional
     @Query(value = "Update network_transfer set status = ?2, created_entity_id = ?3 Where id = ?1", nativeQuery = true)
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update network_transfer set status = ?2 Where id = ?1", nativeQuery = true)
+    void updateStatus(Long id, String status);
 
     @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_id IN (?1) AND entity_type = ?2 AND is_inter_branch_entity = ?3 AND status IN (?4) And job_type != ?5", nativeQuery = true)

@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -8,6 +12,10 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.itextpdf.text.DocumentException;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,15 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
-
-import java.io.IOException;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 @ContextConfiguration(classes = {ReportController.class})
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +65,17 @@ class ReportControllerTest {
         throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new RunnerException("RunnerException"));
+        // Test
+        var responseEntity = reportController.createReport(new ReportRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createReport2_1()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        // Mock
+        when(reportService.getDocumentData(any())).thenThrow(new UnexpectedRollbackException("UnexpectedRollbackException"));
         // Test
         var responseEntity = reportController.createReport(new ReportRequest());
         // Assert

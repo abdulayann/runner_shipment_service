@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -21,10 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
+@SuppressWarnings("java:S2259")
 @Slf4j
 @Component
 public class MasterDataKeyUtils {
@@ -52,12 +54,7 @@ public class MasterDataKeyUtils {
             if(value1 != null && !value1.isEmpty()) {
                 value1.forEach((key, value) -> {
                     Object cache = null;
-                    if(Objects.isNull(cacheMap)) {
-                        var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
-                        if(!Objects.isNull(resp)) cache = resp.get();
-                    } else {
-                        cache = cacheMap.get(value);
-                    }
+                    cache = getCacheValue(masterDataType, cacheMap, value, cache);
                     if(!Objects.isNull(cache)) {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
@@ -127,17 +124,27 @@ public class MasterDataKeyUtils {
         });
     }
 
+    @Nullable
+    private Object getCacheValue(String masterDataType, Map<String, Object> cacheMap, String value, Object cache) {
+        if(Objects.isNull(cacheMap)) {
+            var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
+            if(!Objects.isNull(resp)) cache = resp.get();
+        } else {
+            cache = cacheMap.get(value);
+        }
+        return cache;
+    }
+
     private void setKeyValueForMasterLists(Map<String, Object> map, String key, Object cacheValue) { //key is SEA#TRANSPORT_MODE
-        if(!IsStringNullOrEmpty(key)) {
+        if(!isStringNullOrEmpty(key)) {
             EntityTransferMasterLists object3 = null;
             if (Objects.isNull(cacheValue)) {
                 var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
                 object3 = (EntityTransferMasterLists) cache.get();
             } else object3 = (EntityTransferMasterLists) cacheValue;
-            boolean isBooking = false;
             String value = null;
 
-            if(!IsStringNullOrEmpty(object3.getValuenDesc()))
+            if(!isStringNullOrEmpty(object3.getValuenDesc()))
                 value = object3.getValuenDesc();
             else
                 value = object3.getItemDescription();

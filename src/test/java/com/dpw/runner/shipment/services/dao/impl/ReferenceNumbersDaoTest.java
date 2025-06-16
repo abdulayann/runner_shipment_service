@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
@@ -16,10 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -225,7 +223,7 @@ class ReferenceNumbersDaoTest {
     void saveEntityFromShipment_ExceptionThrown_ReturnsEmptyList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long shipmentId = 1L;
         testData.setId(1L);
-        List<ReferenceNumbers> referenceNumberss = Arrays.asList(testData);
+        List<ReferenceNumbers> referenceNumberss = List.of(testData);
         when(referenceNumbersDao.findById(anyLong())).thenReturn(Optional.of(testData));
         doThrow(IllegalArgumentException.class).when(auditLogService).addAuditLog(any());
         assertThrows(Exception.class, () -> referenceNumbersDao.saveEntityFromShipment(referenceNumberss, shipmentId));
@@ -234,7 +232,7 @@ class ReferenceNumbersDaoTest {
     @Test
     void saveEntityFromShipment_ReferenceNumberssListHasElements_ReturnsPopulatedList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long shipmentId = 1L;
-        List<ReferenceNumbers> referenceNumberss = Arrays.asList(testData);
+        List<ReferenceNumbers> referenceNumberss = Collections.singletonList(testData);
         when(referenceNumbersDao.findById(anyLong())).thenReturn(Optional.of(new ReferenceNumbers()));
         when(referenceNumbersDao.save(any())).thenReturn(new ReferenceNumbers());
         List<ReferenceNumbers> result = referenceNumbersDao.saveEntityFromShipment(referenceNumberss, shipmentId);
@@ -247,7 +245,7 @@ class ReferenceNumbersDaoTest {
     @Test
     void delete_ValidReferenceNumbers_ThrowsException() {
         doThrow(new RuntimeException("test")).when(jsonHelper).convertToJson(any(ReferenceNumbers.class));
-        referenceNumbersDao.deleteReferenceNumbers(Map.of(1L , testData),"referenceNumbers", 1L);
+        assertDoesNotThrow(() -> referenceNumbersDao.deleteReferenceNumbers(Map.of(1L , testData),"referenceNumbers", 1L));
     }
 
     @Test
@@ -300,24 +298,21 @@ class ReferenceNumbersDaoTest {
         long consolidationId = 123L;
 
         List<ReferenceNumbers> referenceNumbers = List.of(testData);
-        List<Long> shipmentIds = List.of(1L, 2L);
-        when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<>(referenceNumbers));
+        when(referenceNumbersRepository.findAll(ArgumentMatchers.<Specification<ReferenceNumbers>>any(), any(Pageable.class))).thenReturn(new PageImpl<>(referenceNumbers));
 
         // Act
         List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromConsole(referenceNumbers, consolidationId);
 
         // Assert
         assertNotNull(result);
-//        verify(consoleShipmentMappingDao, times(1)).findByConsolidationId(consolidationId);
-        verify(referenceNumbersRepository, times(1)).findAll((Specification<ReferenceNumbers>) any(), (Pageable) any());
+        verify(referenceNumbersRepository, times(1)).findAll(ArgumentMatchers.<Specification<ReferenceNumbers>>any(), (Pageable) any());
     }
 
     @Test
     void updateEntityFromConsole_EmptyShipmentIds_ReturnsEmptyList() throws RunnerException {
         // Arrange
         long consolidationId = 123L;
-//        when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(new ArrayList<>());
-        when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<>(List.of(testData)));
+        when(referenceNumbersRepository.findAll(ArgumentMatchers.<Specification<ReferenceNumbers>>any(), (Pageable) any())).thenReturn(new PageImpl<>(List.of(testData)));
 
         // Act
         List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromConsole(new ArrayList<>(), consolidationId);
@@ -329,7 +324,7 @@ class ReferenceNumbersDaoTest {
 
 
     @Test
-    void saveEntityFromConsole_Success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromConsole_Success(){
         // Arrange
         long consolidationId = 123L;
         List<ReferenceNumbers> referenceNumbersRequests = List.of(
@@ -337,11 +332,11 @@ class ReferenceNumbersDaoTest {
         );
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.of(testData));
 
-        referenceNumbersDao.saveEntityFromConsole(referenceNumbersRequests, consolidationId);//        assertThrows(DataRetrievalFailureException.class, () -> referenceNumbersDao.saveEntityFromConsole(referenceNumbersRequests, consolidationId));
+        assertDoesNotThrow(() -> referenceNumbersDao.saveEntityFromConsole(referenceNumbersRequests, consolidationId));
     }
 
     @Test
-    void updateEntityFromConsole_Success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void updateEntityFromConsole_Success(){
         // Arrange
         long consolidationId = 123L;
         List<ReferenceNumbers> referenceNumbersRequests = List.of(
@@ -349,11 +344,11 @@ class ReferenceNumbersDaoTest {
         );
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.of(testData));
 
-        referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList());//        assertThrows(DataRetrievalFailureException.class, () -> referenceNumbersDao.saveEntityFromConsole(referenceNumbersRequests, consolidationId));
+        assertDoesNotThrow(() -> referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList()));
     }
 
     @Test
-    void updateEntityFromConsole_ReturnsEmptyList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void updateEntityFromConsole_ReturnsEmptyList() {
         // Arrange
         long consolidationId = 123L;
         List<ReferenceNumbers> referenceNumbersRequests = List.of(
@@ -361,31 +356,29 @@ class ReferenceNumbersDaoTest {
         );
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThrows(RunnerException.class, () -> {
-            referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList());
-        });
+        assertThrows(RunnerException.class, () ->
+            referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList()));
     }
 
     @Test
     void saveEntityFromShipmentEntityNotPresent() {
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         referenceNumbers.setId(1L);
-        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
+        List<ReferenceNumbers> referenceNumbersList = List.of(referenceNumbers);
 
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L);
-        });
+        assertThrows(DataRetrievalFailureException.class, () ->
+            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L));
     }
 
     @Test
     void saveEntityFromShipmentMapNotContainsId() {
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         referenceNumbers.setId(1L);
-        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, new HashMap<>());
-        });
+        List<ReferenceNumbers> referenceNumbersList = List.of(referenceNumbers);
+        Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
+        assertThrows(DataRetrievalFailureException.class, () ->
+            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, hashMap));
     }
 
     @Test
@@ -397,9 +390,9 @@ class ReferenceNumbersDaoTest {
         map.put(1L, referenceNumbers);
 
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        when(referenceNumbersRepository.saveAll(any())).thenReturn(Arrays.asList(referenceNumbers));
+        when(referenceNumbersRepository.saveAll(any())).thenReturn(List.of(referenceNumbers));
 
-        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
+        List<ReferenceNumbers> referenceNumbersList = List.of(referenceNumbers);
         assertEquals(referenceNumbersList, referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, map));
     }
 
@@ -415,10 +408,139 @@ class ReferenceNumbersDaoTest {
         referenceNumbers2.setGuid(uuid2);
 
         List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers1, referenceNumbers2);
-        List<ReferenceNumbers> oldList = Arrays.asList(referenceNumbers1);
+        List<ReferenceNumbers> oldList = List.of(referenceNumbers1);
 
         when(referenceNumbersRepository.save(any())).thenReturn(referenceNumbers1);
 
         assertEquals(referenceNumbersList, referenceNumbersDao.updateEntityFromConsole(referenceNumbersList, 1L, oldList));
+    }
+
+    @Test
+    void testUpdateEntityFromBooking() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        referenceNumbersList.get(0).setId(1L);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_NullPackings() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(null, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(new ArrayList<>(), referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_EmptyPackings() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(new ArrayList<>(), 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(new ArrayList<>(), referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_NullId() throws RunnerException {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_Failure() {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromBooking(referenceNumbersList, 1L));
+    }
+
+    @Test
+    void testSaveEntityFromBooking() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        referenceNumbersList.get(0).setId(1L);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testData).when(spyService).save(any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testSaveEntityFromBooking_hashMap() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        referenceNumbersList.get(0).setId(1L);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromBooking(referenceNumbersList, 1L));
+    }
+
+    @Test
+    void testSaveEntityFromBooking_NullId() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testData).when(spyService).save(any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testSaveEntityFromBooking_AuditLogFailure() throws Exception {
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(referenceNumbersList)).when(spyService).findAll(any(), any());
+        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        doReturn(testData).when(spyService).save(any());
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_JsonParseFailure() throws Exception {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setReferenceNumber("qwerty");
+        referenceNumbers.setId(1234L);
+        referenceNumbers.setBookingId(2321L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(List.of(testData))).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        when(jsonHelper.convertToJson(any())).thenThrow(RuntimeException.class);
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_AuditLogFailure() throws Exception {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setReferenceNumber("qwerty");
+        referenceNumbers.setId(1234L);
+        referenceNumbers.setBookingId(2321L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(List.of(testData))).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
     }
 }

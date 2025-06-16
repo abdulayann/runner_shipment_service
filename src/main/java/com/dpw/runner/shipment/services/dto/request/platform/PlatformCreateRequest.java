@@ -16,6 +16,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @Data
+@SuppressWarnings("java:S1948")
 public class PlatformCreateRequest extends CommonRequest implements IRunnerRequest {
     @JsonProperty(value = "booking_reference_code")
     private String booking_ref_code;
@@ -62,4 +63,5 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     @JsonProperty(value = "reference_numbers")
     private List<ReferenceNumbersRequest> referenceNumbers;
     private List<Map<String, Object>> addresses;
+    private List<PurchaseOrdersResponse> purchaseOrders;
 }

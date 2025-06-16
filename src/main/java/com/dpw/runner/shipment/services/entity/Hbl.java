@@ -27,6 +27,7 @@ import java.util.List;
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE hbl SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@SuppressWarnings("java:S1948")
 public class Hbl extends MultiTenancy {
 
     @Column(name = "shipment_id")

@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
  *  * Generic List response.
  *
  */
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "java:S1948"})
 @Data
 @Builder
 @NoArgsConstructor

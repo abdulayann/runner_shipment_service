@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -98,13 +98,8 @@ public class QuoteContractsService implements IQuoteContractsService {
                 log.error("Request is empty for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
-            String contractId = null;
-            try {
-                contractId = request.getContracts().get(0).getContract_id();
-            } catch (Exception e) {
-                log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(IsStringNullOrEmpty(contractId)) {
+            String contractId = getContractId(request);
+            if(isStringNullOrEmpty(contractId)) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
@@ -121,6 +116,16 @@ public class QuoteContractsService implements IQuoteContractsService {
         } catch (Exception e) {
             log.error("Error while updating quote Contracts with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+    }
+
+    private static String getContractId(ListContractResponse request) {
+        String contractId = null;
+        try {
+            contractId = request.getContracts().get(0).getContract_id();
+        } catch (Exception e) {
+            log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        return contractId;
     }
 
     private void getQuoteContractsData(QuoteContracts quoteContracts, ListContractResponse request, String contractId) {

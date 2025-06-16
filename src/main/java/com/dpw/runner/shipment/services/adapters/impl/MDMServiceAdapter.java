@@ -21,9 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
@@ -77,7 +75,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         ApprovalPartiesRequest request = (ApprovalPartiesRequest) commonRequestModel.getData();
         log.info("Request id {} MDM Request {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
-            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).headers(headers).body(jsonHelper.convertToJson(request)), Object.class);
             log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
         }catch (Exception ex){

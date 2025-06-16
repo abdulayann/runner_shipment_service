@@ -299,7 +299,7 @@ class V1MasterDataImplTest {
     @Test
     void fetchUnlocationData() {
         V1DataResponse v1DataResponse = new V1DataResponse();
-        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        when(v1Service.fetchActiveUnlocation(any())).thenReturn(v1DataResponse);
         assertNotNull(v1MasterData.fetchUnlocationData(new Object()));
     }
     @Test
@@ -559,6 +559,13 @@ class V1MasterDataImplTest {
         V1DataResponse v1DataResponse = new V1DataResponse();
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
         assertNotNull(v1MasterData.fetchMasterData(new Object()));
+    }
+
+    @Test
+    void fetchAllUnlocationData() {
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
+        assertNotNull(v1MasterData.fetchAllUnlocationData(new Object()));
     }
 
 }

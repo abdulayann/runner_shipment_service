@@ -8,32 +8,22 @@ import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.web.client.RestTemplate;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
@@ -95,7 +85,7 @@ class AwbSyncTest {
         mock(CommonUtils.class);
         when(iAwbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Awb())));
         doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
-        when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
+
         // Act
         awbSync.sync(awb, SaveStatus.CREATE);
 
@@ -119,7 +109,6 @@ class AwbSyncTest {
         when(iAwbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
         doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
 
-        when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
         // Act
         awbSync.sync(awb, SaveStatus.CREATE);
 
@@ -139,7 +128,29 @@ class AwbSyncTest {
 
         doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
 
-        when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
+        // Act
+        awbSync.sync(awb, SaveStatus.CREATE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void testSync4() {
+        boolean isSuccess = true;
+        // Arrange
+        Awb awb = new Awb();
+        awb.setAwbShipmentInfo(AwbShipmentInfo.builder().entityType("mawb").build());
+        awb.setShipmentId(123L);
+        awb.setConsolidationId(1234L);
+
+        when(jsonHelper.convertValue(any(), eq(AwbRequestV2.class))).thenReturn(new AwbRequestV2());
+        when(iShipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(iConsolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(iMawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of());
+        mock(CommonUtils.class);
+        when(iAwbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
+        doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
+
         // Act
         awbSync.sync(awb, SaveStatus.CREATE);
 

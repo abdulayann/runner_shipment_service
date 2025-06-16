@@ -10,14 +10,18 @@ import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
@@ -46,7 +50,8 @@ public class NotificationRestClient {
     @Autowired
     private JsonHelper jsonHelper;
 
-    public NotificationServiceResponse sendEmail(NotificationServiceSendEmailRequest params) {
+    public NotificationServiceResponse sendEmail(NotificationServiceSendEmailRequest params)
+        throws IOException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         headers.set(notificationConfig.getNotificationApiKeyHeader(), notificationConfig.getNotificationApiKeyValue());
@@ -62,7 +67,21 @@ public class NotificationRestClient {
         body.add("priority", params.getPriority());
         body.add("trackEmailEvents", params.getTrackEmailEvents().toString());
         body.add("metadata", params.getMetadata());
-        body.add("file", params.getFiles());
+        MultipartFile file = params.getFiles();
+        if (file != null) {
+            HttpHeaders fileHeaders = new HttpHeaders();
+            fileHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            fileHeaders.setContentDispositionFormData("file", file.getOriginalFilename());
+
+            HttpEntity<Resource> fileEntity = new HttpEntity<>(new ByteArrayResource(file.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return file.getOriginalFilename();
+                }
+            }, fileHeaders);
+
+            body.add("file", fileEntity);
+        }
         if(params.getTags() != null)
             body.add("tags", params.getTags());
         if(!Objects.isNull(params.getAttachments()))
@@ -90,7 +109,6 @@ public class NotificationRestClient {
         try {
             List<String> toEmailsList = getEmailsListFromString(params.getRecipientEmails());
             List<String> ccEmailsList = getEmailsListFromString(params.getCcEmails());
-            List<String> bccEmailsList = getEmailsListFromString(params.getBccEmails());
             var user = UserContext.getUser();
             MailAuditLogRequest request = MailAuditLogRequest.builder()
                     .tenantIds(List.of(user.TenantId))

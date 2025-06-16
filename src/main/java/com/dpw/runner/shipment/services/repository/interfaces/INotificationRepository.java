@@ -48,4 +48,7 @@ public interface INotificationRepository extends MultiTenancyRepository<Notifica
 
     @Query("SELECT DISTINCT n.entityId FROM Notification n WHERE n.entityType = :entityType")
     List<Long> findEntityIdsByEntityType(@Param("entityType") String entityType);
+
+    @Query(value = "SELECT COUNT(*) FROM notification WHERE entity_type = ?1 AND is_deleted = false AND tenant_id = ?2", nativeQuery = true)
+    Integer findAllPendingNotificationCount(String entityType, Integer tenantId);
 }

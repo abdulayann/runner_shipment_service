@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.document.response;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
@@ -7,7 +8,8 @@ import java.util.List;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DocumentManagerDataResponse {
+@SuppressWarnings("java:S1948")
+public class DocumentManagerDataResponse implements IRunnerResponse {
     private String path;
 
     private String fileName;

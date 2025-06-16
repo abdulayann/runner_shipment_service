@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
@@ -58,7 +59,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
 
     @Override
     public Page<ShipmentsContainersMapping> findAllByContainerIds(List<Long> containerIds) {
-        if(containerIds != null && containerIds.size() > 0) {
+        if(containerIds != null && !containerIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerIds, "IN");
             Pair<Specification<ShipmentsContainersMapping>, Pageable> pair = fetchData(listCommonRequest, ShipmentsContainersMapping.class);
             return findAll(pair.getLeft(), pair.getRight());
@@ -80,7 +81,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     public void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId) {
         List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
         HashSet<Long> contIds = new HashSet<>(containerIds);
-        if (mappings != null && mappings.size() > 0) {
+        if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
                 contIds.remove(shipmentsContainersMappings.getContainerId());
             }
@@ -106,7 +107,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     public void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
-        if (mappings != null && mappings.size() > 0) {
+        if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
                 shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
             }
@@ -125,7 +126,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }
@@ -135,7 +136,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
-        if (mappings != null && mappings.size() > 0) {
+        if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
                 if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
                     deleteMappings.add(shipmentsContainersMappings);
@@ -153,7 +154,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }
@@ -177,7 +178,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 CompletableFuture.runAsync(masterDataUtils.withMdc(()-> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }

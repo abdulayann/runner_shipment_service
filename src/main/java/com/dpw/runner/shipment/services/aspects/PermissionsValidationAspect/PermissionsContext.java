@@ -9,6 +9,7 @@ import java.util.Map;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 @Component
+@SuppressWarnings("java:S3008")
 public class PermissionsContext {
     private PermissionsContext(){}
     private static ThreadLocal<Map<String,List<String>>> Permissions = new InheritableThreadLocal<>();
@@ -17,7 +18,7 @@ public class PermissionsContext {
         return Permissions.get().get(key);
     }
 
-    public static void setPermissions(List<String> UserPermissions) {
+    public static void setPermissions(List<String> userPermissions) {
         List<String> shipmentListPermission = new ArrayList<>();
         List<String> shipmentRetrievePermission = new ArrayList<>();
         List<String> shipmentCreatePermission = new ArrayList<>();
@@ -31,28 +32,11 @@ public class PermissionsContext {
         List<String> carrierBookingCreate = new ArrayList<>();
         List<String> carrierBookingView = new ArrayList<>();
 
-        for (String permission : UserPermissions) {
+        for (String permission : userPermissions) {
             // Older permission context setting
-            if(permission.endsWith(SHIPMENT_LIST_PERMISSION))
-                shipmentListPermission.add(permission);
-            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION))
-                shipmentRetrievePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION))
-                shipmentCreatePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION))
-                shipmentUpdatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION))
-                consolidationListPermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION))
-                consolidationRetrievePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION))
-                consolidationCreatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
-                consolidationUpdatePermission.add(permission);
-            if(permission.equals(CARRIER_BOOKING_CREATE))
-                carrierBookingCreate.add(CARRIER_BOOKING_CREATE);
-            if(permission.equals(CARRIER_BOOKING_VIEW))
-                carrierBookingView.add(CARRIER_BOOKING_VIEW);
+            setShipmentPermissions(permission, shipmentListPermission, shipmentRetrievePermission, shipmentCreatePermission, shipmentUpdatePermission);
+            setConsolidationPermissions(permission, consolidationListPermission, consolidationRetrievePermission, consolidationCreatePermission, consolidationUpdatePermission);
+            setCarrierBookingPermissions(permission, carrierBookingCreate, carrierBookingView);
 
 
             // context setup for new permissions
@@ -80,6 +64,35 @@ public class PermissionsContext {
                 Map.entry(CARRIER_BOOKING_CREATE, carrierBookingCreate),
                 Map.entry(CARRIER_BOOKING_VIEW, carrierBookingView)
         ));
+    }
+
+    private static void setCarrierBookingPermissions(String permission, List<String> carrierBookingCreate, List<String> carrierBookingView) {
+        if(permission.equals(CARRIER_BOOKING_CREATE))
+            carrierBookingCreate.add(CARRIER_BOOKING_CREATE);
+        if(permission.equals(CARRIER_BOOKING_VIEW))
+            carrierBookingView.add(CARRIER_BOOKING_VIEW);
+    }
+
+    private static void setConsolidationPermissions(String permission, List<String> consolidationListPermission, List<String> consolidationRetrievePermission, List<String> consolidationCreatePermission, List<String> consolidationUpdatePermission) {
+        if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION))
+            consolidationListPermission.add(permission);
+        if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION))
+            consolidationRetrievePermission.add(permission);
+        if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION))
+            consolidationCreatePermission.add(permission);
+        if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
+            consolidationUpdatePermission.add(permission);
+    }
+
+    private static void setShipmentPermissions(String permission, List<String> shipmentListPermission, List<String> shipmentRetrievePermission, List<String> shipmentCreatePermission, List<String> shipmentUpdatePermission) {
+        if(permission.endsWith(SHIPMENT_LIST_PERMISSION))
+            shipmentListPermission.add(permission);
+        if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION))
+            shipmentRetrievePermission.add(permission);
+        if(permission.endsWith(SHIPMENT_CREATE_PERMISSION))
+            shipmentCreatePermission.add(permission);
+        if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION))
+            shipmentUpdatePermission.add(permission);
     }
 
     /**

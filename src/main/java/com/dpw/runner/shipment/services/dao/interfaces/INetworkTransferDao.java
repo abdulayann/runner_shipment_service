@@ -18,12 +18,15 @@ public interface INetworkTransferDao {
     Optional<NetworkTransfer> findById(Long id);
 
     Optional<NetworkTransfer> findByGuid(UUID id);
+    Optional<NetworkTransfer> findByIdWithQuery(Long id);
 
     Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
 
     Optional<NetworkTransfer> findByTenantAndEntityAndJobType(Integer tenantId, Long entityId, String entityType, String jobType);
 
     List<NetworkTransfer> findByEntityAndTenantList(Long entityId, String entityType, List<Integer> tenantIds);
+
+    List<NetworkTransfer> findByEntityNTList(Long entityId, String entityType);
 
     List<NetworkTransfer> getInterConsoleNTList(List<Long> entityId, String entityType);
 
@@ -34,6 +37,8 @@ public interface INetworkTransferDao {
     void deleteByIdsAndLog(List<Long> networkTransferEntityIds);
 
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+
+    void updateStatus(Long id, String status);
 
     List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType);
 

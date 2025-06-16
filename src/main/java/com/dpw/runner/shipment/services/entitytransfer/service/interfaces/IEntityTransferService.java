@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 public interface IEntityTransferService {
     ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importShipment(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel);
@@ -19,4 +20,5 @@ public interface IEntityTransferService {
     ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> checkEntityExists(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkAcceptedFiles(CommonRequestModel commonRequestModel);
 }

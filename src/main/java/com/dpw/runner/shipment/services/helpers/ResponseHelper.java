@@ -64,7 +64,6 @@ public class ResponseHelper {
     }
 
     public static ResponseEntity<IRunnerResponse> buildListSuccessResponse(List<IRunnerResponse> data, int pageNo, long count) {
-//        log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
                 .data(data).numberOfRecords(count).totalPages(pageNo).build();

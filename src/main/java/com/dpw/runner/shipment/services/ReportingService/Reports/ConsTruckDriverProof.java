@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.UnitConversionUtility;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class ConsTruckDriverProof extends IReport {
 
     @Autowired
@@ -42,19 +44,7 @@ public class ConsTruckDriverProof extends IReport {
             if (shipments != null && !shipments.isEmpty()) {
                 int sum = shipments.stream().filter(c -> c.getNoOfPacks() != null).mapToInt(ShipmentModel::getNoOfPacks).sum();
                 truckDriverModel.totalPacks += sum;
-                BigDecimal totalWeight = BigDecimal.ZERO;
-                for (var shipment : shipments) {
-                    if (shipment.getWeight() != null && shipment.getWeightUnit() != null) {
-                        try {
-                            var weightInKg = UnitConversionUtility.convertUnit(Constants.MASS, shipment.getWeight(), shipment.getWeightUnit(), "KG");
-                            if (weightInKg != null)
-                                totalWeight = totalWeight.add((BigDecimal) weightInKg);
-                        } catch (Exception e) {
-
-                        }
-                    }
-                }
-                truckDriverModel.totalWeight = totalWeight;
+                truckDriverModel.totalWeight = getTruckDriverModelTotalWeight(shipments);
             }
         }
         truckDriverModel.tenant = getTenant();
@@ -62,11 +52,27 @@ public class ConsTruckDriverProof extends IReport {
         return truckDriverModel;
     }
 
+    private BigDecimal getTruckDriverModelTotalWeight(List<ShipmentModel> shipments) {
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        for (var shipment : shipments) {
+            if (shipment.getWeight() != null && shipment.getWeightUnit() != null) {
+                try {
+                    var weightInKg = UnitConversionUtility.convertUnit(Constants.MASS, shipment.getWeight(), shipment.getWeightUnit(), "KG");
+                    if (weightInKg != null)
+                        totalWeight = totalWeight.add((BigDecimal) weightInKg);
+                } catch (Exception e) {
+                    log.info(Constants.IGNORED_ERROR_MSG);
+                }
+            }
+        }
+        return totalWeight;
+    }
+
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         TruckDriverModel truckDriverModel = (TruckDriverModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.consolidationDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.consolidationDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateConsolidationFields(truckDriverModel.consolidationDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);
@@ -75,7 +81,7 @@ public class ConsTruckDriverProof extends IReport {
         {
             if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
             {
-                truckDriver.setTransporterName(""); //TODO - fetch transporter real name
+                truckDriver.setTransporterName(""); //Later: - fetch transporter real name
             }
             else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());

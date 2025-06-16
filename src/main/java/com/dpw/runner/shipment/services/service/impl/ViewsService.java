@@ -48,7 +48,7 @@ public class ViewsService implements IViewsService {
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("entity", RunnerEntityMapping.builder().tableName(Constants.VIEWS).dataType(String.class).fieldName(Constants.ENTITY).isContainsText(true).build()),
-            Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.VIEWS).dataType(String.class).fieldName(Constants.CREATED_BY).isContainsText(true).build()),
+            Map.entry(ViewsConstants.CREATED_BY, RunnerEntityMapping.builder().tableName(Constants.VIEWS).dataType(String.class).fieldName(Constants.CREATED_BY).isContainsText(true).build()),
             Map.entry("name", RunnerEntityMapping.builder().tableName(Constants.VIEWS).dataType(String.class).fieldName(Constants.NAME_FILTER).isContainsText(true).build()),
             Map.entry("isDefault", RunnerEntityMapping.builder().tableName(Constants.VIEWS).dataType(Boolean.class).fieldName(Constants.NAME_FILTER).build())
     );
@@ -148,7 +148,7 @@ public class ViewsService implements IViewsService {
                     filterCriteria.getInnerFilter().add(FilterCriteria.builder().
                             logicOperator("AND").
                             criteria(Criteria.builder()
-                                    .fieldName("createdBy")
+                                    .fieldName(ViewsConstants.CREATED_BY)
                                     .operator("=")
                                     .value(UserContext.getUser().Username)
                                     .build()).
@@ -159,7 +159,7 @@ public class ViewsService implements IViewsService {
                     filterCriteria = new FilterCriteria();
                     filterCriteria.setInnerFilter(List.of(FilterCriteria.builder().
                             criteria(Criteria.builder()
-                                    .fieldName("createdBy")
+                                    .fieldName(ViewsConstants.CREATED_BY)
                                     .operator("=")
                                     .value(UserContext.getUser().Username)
                                     .build()).
@@ -172,7 +172,7 @@ public class ViewsService implements IViewsService {
                 criteria = new ArrayList<>();
                 criteria.add(FilterCriteria.builder().
                         criteria(Criteria.builder()
-                                .fieldName("createdBy")
+                                .fieldName(ViewsConstants.CREATED_BY)
                                 .operator("=")
                                 .value(UserContext.getUser().Username)
                                 .build()).
@@ -266,9 +266,7 @@ public class ViewsService implements IViewsService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(view -> {
-            responseList.add(convertEntityToDto(view));
-        });
+        lst.forEach(view -> responseList.add(convertEntityToDto(view)));
         return responseList;
     }
 

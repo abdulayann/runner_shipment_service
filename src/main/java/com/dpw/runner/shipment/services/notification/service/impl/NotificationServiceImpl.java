@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.notification.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
@@ -14,13 +16,15 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.JsonParseException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import org.springframework.web.client.HttpClientErrorException;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -54,23 +58,34 @@ public class NotificationServiceImpl implements INotificationService {
         NotificationServiceSendEmailRequest notificationServiceSendEmailRequest = null;
         try {
             notificationServiceSendEmailRequest = createNotificationServiceRequest(request);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+        } catch (JsonParseException e) {
+            throw new NotificationException(e);
         }
 
-        NotificationServiceResponse response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        NotificationServiceResponse response ;
+        try{
+            response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        }catch (Exception ex){
+            String errorMessage = ex.getMessage();
+            if(ex instanceof HttpClientErrorException) {
+                String json = ((HttpClientErrorException) ex).getResponseBodyAsString();
+                String msg = jsonHelper.readFromJson(json, MDMServiceResponse.class).getMessage();
+                errorMessage = msg != null ? msg : errorMessage;
+            }
+            throw new NotificationException(errorMessage);
+        }
 
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (JsonParseException e) {
+            throw new NotificationException(e);
         }
         log.info("Total time taken from notification service to send email is {} ms", (System.currentTimeMillis() - startTime));
 
         return response;
     }
 
-    private NotificationServiceSendEmailRequest createNotificationServiceRequest(SendEmailBaseRequest request) throws JsonProcessingException {
+    private NotificationServiceSendEmailRequest createNotificationServiceRequest(SendEmailBaseRequest request) throws JsonParseException {
         NotificationServiceSendEmailRequest notificationServiceSendEmailRequest = new NotificationServiceSendEmailRequest();
         notificationServiceSendEmailRequest.setBccEmails(request.getBcc());
         notificationServiceSendEmailRequest.setModuleName(request.getModuleName());
@@ -108,11 +123,11 @@ public class NotificationServiceImpl implements INotificationService {
     private void handleSendMeCopyCheck(SendEmailBaseRequest request) {
         if (Boolean.TRUE.equals(request.getSendMeCopy())) {
             String userEmail = UserContext.getUser().getEmail();
-            if (!IsStringNullOrEmpty(userEmail)) {
+            if (!isStringNullOrEmpty(userEmail)) {
                 String cc = request.getCc();
                 Set<String> emailList = new HashSet<>();
-                if (!IsStringNullOrEmpty(cc)) {
-                    emailList.addAll(Arrays.asList(cc.split("\\s*,\\s*")));
+                if (!isStringNullOrEmpty(cc)) {
+                    emailList.addAll(CommonUtils.splitAndTrimStrings(cc));
                 }
                 emailList.add(userEmail);
                 request.setCc(String.join(",", emailList));

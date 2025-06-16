@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ConsolidationConstants {
     private ConsolidationConstants(){}
-    public static List<String> CONSOLIDATION_HEADER = Arrays.asList(
+    public static final List<String> CONSOLIDATION_HEADER = Arrays.asList(
             "Consolidation Type", "Consolidation Number", "Transport Mode", "Cargo Type",
             "ETA", "ATA", "ETD", "ATD", "Domestic", "Created By", "Voyage/Flight No",
             "Payment Terms", "Carrier", "Cutoff Date", "HBL / HAWB", "Estimated Terminal Cutoff",
@@ -14,7 +14,7 @@ public class ConsolidationConstants {
             "Carrier Booking Number", "Container Count", "POL", "POD", "MBL / MAWB", "POL Code", "POD Code" , "Origin Code", "Destination Code",
             "Origin", "Destination"
     );
-
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "containersList", "routingsList", "PackingList", "triangulationPartnerList");
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
     public static final String MBL_NUMBER = "MBL Number";
 

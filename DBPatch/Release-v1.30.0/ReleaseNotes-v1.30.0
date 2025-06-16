@@ -1,0 +1,3 @@
+POST Deployment
+----------------
+1. RUN update_shipment_settings_ra_kc_default_true.sql in ALL env

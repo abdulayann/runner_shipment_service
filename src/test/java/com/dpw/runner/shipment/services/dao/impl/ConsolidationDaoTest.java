@@ -15,7 +15,6 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -172,7 +171,7 @@ class ConsolidationDaoTest extends CommonMocks {
         var spyService = Mockito.spy(consolidationsDao);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         UserContext.getUser().setPermissions(permissions);
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
@@ -189,7 +188,7 @@ class ConsolidationDaoTest extends CommonMocks {
         var spyService = Mockito.spy(consolidationsDao);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         UserContext.getUser().setPermissions(permissions);
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));

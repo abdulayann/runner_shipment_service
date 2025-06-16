@@ -4,8 +4,6 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.List;
 import java.util.Set;
-
-import com.nimbusds.jose.util.Pair;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -13,6 +11,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
+
 @Generated
 public interface IConsoleShipmentsMappingRepository extends JpaRepository<ConsoleShipmentMapping, Long> {
     @Modifying
@@ -58,4 +58,7 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
 
     @Query(value = "SELECT consolidation_id, COUNT(*) FROM console_shipment_mapping WHERE consolidation_id IN ?1 AND is_attachment_done = false AND request_type = ?2 group by consolidation_id", nativeQuery = true)
     List<Object[]> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestType);
+
+    @Query(value = "SELECT COUNT(*) FROM console_shipment_mapping csm join shipment_details sd on csm.shipment_id = sd.id WHERE csm.is_attachment_done = false AND csm.request_type = ?1 AND sd.tenant_id = ?2", nativeQuery = true)
+    Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId);
 }

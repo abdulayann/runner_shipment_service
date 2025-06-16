@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.request.platform.OrderListResponse;
+import com.dpw.runner.shipment.services.dto.request.platform.PurchaseOrdersResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.OrderManagement.OrderManagementDTO;
@@ -34,6 +36,7 @@ import com.dpw.runner.shipment.services.utils.V2AuthHelper;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -49,6 +52,8 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     private String getOrderUrl;
     @Value("${order.management.getOrderbyGuid}")
     private String getOrderbyGuidUrl;
+    @Value("${order.management.getOrderbyCriteria}")
+    private String getOrderbyCriteria;
 
     @Autowired
     private V2AuthHelper v2AuthHelper;
@@ -68,8 +73,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         try {
             String url = baseUrl + getOrderUrl + orderId;
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
-            var shipment = generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
-            return shipment;
+            return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -92,12 +96,38 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     }
 
     @Override
+    public List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException {
+            String url = baseUrl + getOrderbyCriteria;
+            // Create the request body
+            Map<String, Object> requestBody = new HashMap<>();
+            Map<String, Object> criteria = new HashMap<>();
+            criteria.put("shipmentId", shipmentId);
+            requestBody.put("criteria", criteria);
+            requestBody.put("pageNumber", 1);
+            requestBody.put("pageSize", 10000);
+            requestBody.put("orderQtyNeeded", true);
+
+            try {
+            HttpEntity<Object> httpEntity = new HttpEntity<>(requestBody, v2AuthHelper.getOrderManagementServiceSourceHeader());
+
+            log.info("Request to Order Service: {}", url);
+            var response = restTemplate.exchange(url, HttpMethod.POST, httpEntity, OrderListResponse.class);
+            log.info("Response from Order Service: {}", response.getBody());
+
+            List<OrderManagementDTO> orders = Objects.requireNonNull(response.getBody()).getData();
+            return getPurchaseOrderDataFromOrders(orders);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new RunnerException(e.getMessage());
+        }
+    }
+
+    @Override
     public CustomerBookingResponse getOrderForBooking(String orderId) throws RunnerException {
         try {
             String url = baseUrl + getOrderUrl + orderId;
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
-            var bookingResponse = mapOrderToBooking(Objects.requireNonNull(response.getBody()).getOrder());
-            return bookingResponse;
+            return mapOrderToBooking(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -132,40 +162,44 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             if(partyMap.get(partyCode) == null)
                 continue;
 
-            if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNOR.getDescription())) {
-                customerBookingResponse.setConsignor(new PartiesResponse());
-                customerBookingResponse.getConsignor().setOrgCode(partyData.getPartyCode());
-                customerBookingResponse.getConsignor().setOrgData(partyMap.get(partyCode));
-                customerBookingResponse.getConsignor().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
-                customerBookingResponse.getConsignor().setAddressCode(partyData.getAddressCode());
-                if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
-                    customerBookingResponse.getConsignor().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
-                customerBookingResponse.getConsignor().setAddressData(partyData.getAddress());
-            }
-            if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNEE.getDescription())) {
-                customerBookingResponse.setConsignee(new PartiesResponse());
-                customerBookingResponse.getConsignee().setOrgCode(partyCode);
-                customerBookingResponse.getConsignee().setOrgData(partyMap.get(partyCode));
-                customerBookingResponse.getConsignee().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
-                customerBookingResponse.getConsignee().setAddressCode(partyData.getAddressCode());
-                if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
-                    customerBookingResponse.getConsignee().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
-                customerBookingResponse.getConsignee().setAddressData(partyData.getAddress());
-            }
-
-            if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.NOTIFY_PARTY.getDescription())) {
-                customerBookingResponse.setNotifyParty(new PartiesResponse());
-                customerBookingResponse.getNotifyParty().setOrgCode(partyCode);
-                customerBookingResponse.getNotifyParty().setOrgData(partyMap.get(partyCode));
-                customerBookingResponse.getNotifyParty().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
-                customerBookingResponse.getNotifyParty().setAddressCode(partyData.getAddressCode());
-                if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
-                    customerBookingResponse.getNotifyParty().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
-                customerBookingResponse.getNotifyParty().setAddressData(partyData.getAddress());
-            }
+            mapPartyDataInBooking(partyData, customerBookingResponse, partyMap, partyCode);
         }
 
         return customerBookingResponse;
+    }
+
+    private void mapPartyDataInBooking(OrderPartiesResponse partyData, CustomerBookingResponse customerBookingResponse, Map<String, Map<String, Object>> partyMap, String partyCode) {
+        if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNOR.getDescription())) {
+            customerBookingResponse.setConsignor(new PartiesResponse());
+            customerBookingResponse.getConsignor().setOrgCode(partyData.getPartyCode());
+            customerBookingResponse.getConsignor().setOrgData(partyMap.get(partyCode));
+            customerBookingResponse.getConsignor().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
+            customerBookingResponse.getConsignor().setAddressCode(partyData.getAddressCode());
+            if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
+                customerBookingResponse.getConsignor().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
+            customerBookingResponse.getConsignor().setAddressData(partyData.getAddress());
+        }
+        if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNEE.getDescription())) {
+            customerBookingResponse.setConsignee(new PartiesResponse());
+            customerBookingResponse.getConsignee().setOrgCode(partyCode);
+            customerBookingResponse.getConsignee().setOrgData(partyMap.get(partyCode));
+            customerBookingResponse.getConsignee().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
+            customerBookingResponse.getConsignee().setAddressCode(partyData.getAddressCode());
+            if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
+                customerBookingResponse.getConsignee().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
+            customerBookingResponse.getConsignee().setAddressData(partyData.getAddress());
+        }
+
+        if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.NOTIFY_PARTY.getDescription())) {
+            customerBookingResponse.setNotifyParty(new PartiesResponse());
+            customerBookingResponse.getNotifyParty().setOrgCode(partyCode);
+            customerBookingResponse.getNotifyParty().setOrgData(partyMap.get(partyCode));
+            customerBookingResponse.getNotifyParty().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
+            customerBookingResponse.getNotifyParty().setAddressCode(partyData.getAddressCode());
+            if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
+                customerBookingResponse.getNotifyParty().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
+            customerBookingResponse.getNotifyParty().setAddressData(partyData.getAddress());
+        }
     }
 
     private ShipmentDetails generateShipmentFromOrder(OrderManagementDTO order) {
@@ -180,7 +214,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.setTransportMode(order.getTransportMode());
         shipmentDetails.setIncoterms(order.getIncoTerm());
 
-        // TODO : to revert this change once order team gets back on this
+        // LATER : to revert this change once order team gets back on this
         // Skipping this fields for now as integration for LocationReferenceGuid is pending from order team
         shipmentDetails.getCarrierDetails().setOrigin(order.getOrigin());
         shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPort());
@@ -196,37 +230,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             if(partyMap.get(partyCode) == null)
                 continue;
 
-            if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNOR.getDescription())) {
-                shipmentDetails.setConsigner(new Parties());
-                shipmentDetails.getConsigner().setOrgCode(partyData.getPartyCode());
-                shipmentDetails.getConsigner().setOrgData(partyMap.get(partyCode));
-                shipmentDetails.getConsigner().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
-                shipmentDetails.getConsigner().setAddressCode(partyData.getAddressCode());
-                if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
-                    shipmentDetails.getConsigner().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
-                shipmentDetails.getConsigner().setAddressData(partyData.getAddress());
-            }
-            if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNEE.getDescription())) {
-                shipmentDetails.setConsignee(new Parties());
-                shipmentDetails.getConsignee().setOrgCode(partyCode);
-                shipmentDetails.getConsignee().setOrgData(partyMap.get(partyCode));
-                shipmentDetails.getConsignee().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
-                shipmentDetails.getConsignee().setAddressCode(partyData.getAddressCode());
-                if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
-                    shipmentDetails.getConsignee().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
-                shipmentDetails.getConsignee().setAddressData(partyData.getAddress());
-            }
-
-            if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.NOTIFY_PARTY.getDescription())) {
-                shipmentDetails.getAdditionalDetails().setNotifyParty(new Parties());
-                shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgCode(partyCode);
-                shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgData(partyMap.get(partyCode));
-                shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
-                shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressCode(partyData.getAddressCode());
-                if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
-                    shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
-                shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressData(partyData.getAddress());
-            }
+            getShipmentPartyDataFromOrder(partyData, shipmentDetails, partyMap, partyCode);
         }
 
         shipmentDetails.setShipmentType(order.getContainerMode());
@@ -253,7 +257,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
         shipmentDetails.setOrderManagementId(order.getGuid().toString());
         shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
-        shipmentDetails.setShipmentOrders(Arrays.asList(ShipmentOrder.builder().orderGuid(order.getGuid()).orderNumber(order.getOrderNumber()).build()));
+        shipmentDetails.setShipmentOrders(Collections.singletonList(ShipmentOrder.builder().orderGuid(order.getGuid()).orderNumber(order.getOrderNumber()).build()));
 
         shipmentDetails.setServiceType(order.getServiceMode());
 
@@ -264,6 +268,40 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
         return shipmentDetails;
+    }
+
+    private void getShipmentPartyDataFromOrder(OrderPartiesResponse partyData, ShipmentDetails shipmentDetails, Map<String, Map<String, Object>> partyMap, String partyCode) {
+        if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNOR.getDescription())) {
+            shipmentDetails.setConsigner(new Parties());
+            shipmentDetails.getConsigner().setOrgCode(partyData.getPartyCode());
+            shipmentDetails.getConsigner().setOrgData(partyMap.get(partyCode));
+            shipmentDetails.getConsigner().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
+            shipmentDetails.getConsigner().setAddressCode(partyData.getAddressCode());
+            if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
+                shipmentDetails.getConsigner().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
+            shipmentDetails.getConsigner().setAddressData(partyData.getAddress());
+        }
+        if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNEE.getDescription())) {
+            shipmentDetails.setConsignee(new Parties());
+            shipmentDetails.getConsignee().setOrgCode(partyCode);
+            shipmentDetails.getConsignee().setOrgData(partyMap.get(partyCode));
+            shipmentDetails.getConsignee().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
+            shipmentDetails.getConsignee().setAddressCode(partyData.getAddressCode());
+            if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
+                shipmentDetails.getConsignee().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
+            shipmentDetails.getConsignee().setAddressData(partyData.getAddress());
+        }
+
+        if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.NOTIFY_PARTY.getDescription())) {
+            shipmentDetails.getAdditionalDetails().setNotifyParty(new Parties());
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgCode(partyCode);
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgData(partyMap.get(partyCode));
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setOrgId(String.valueOf(partyMap.get(partyCode).get("Id")));
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressCode(partyData.getAddressCode());
+            if (partyData.getAddress() != null && partyData.getAddress().containsKey("Id"))
+                shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressId(String.valueOf(partyData.getAddress().get("Id")));
+            shipmentDetails.getAdditionalDetails().getNotifyParty().setAddressData(partyData.getAddress());
+        }
     }
 
     private Map<String, OrderPartiesResponse> getPartyOrgCodeDataMap(OrderManagementDTO order) {
@@ -314,6 +352,21 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         return newReferenceNumbersList;
 
 
+    }
+
+    private List<PurchaseOrdersResponse> getPurchaseOrderDataFromOrders(List<OrderManagementDTO> orderDataList) {
+        List<PurchaseOrdersResponse> purchaseOrders = new ArrayList<>();
+        if (orderDataList == null) {
+            return purchaseOrders;
+        }
+        return orderDataList.stream()
+                .map(order -> {
+                    PurchaseOrdersResponse po = new PurchaseOrdersResponse();
+                    po.setOrderId(order.getOrderId());
+                    po.setOrderNumber(order.getOrderNumber());
+                    return po;
+                })
+                .toList();
     }
 
 }

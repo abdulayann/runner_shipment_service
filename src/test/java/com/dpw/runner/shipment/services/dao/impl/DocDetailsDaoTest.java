@@ -14,11 +14,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class DocDetailsDaoTest {
+class DocDetailsDaoTest {
 
     @InjectMocks
     private DocDetailsDao docDetailsDao;
@@ -30,16 +31,16 @@ public class DocDetailsDaoTest {
     void save() {
         DocDetails docDetails = new DocDetails();
         Mockito.when(docDetailsRepository.save(any())).thenReturn(docDetails);
-        DocDetails docDetails_ = docDetailsDao.save(any());
-        assert(docDetails_ == docDetails);
+        DocDetails docDetails1 = docDetailsDao.save(any());
+        assertEquals(docDetails1, docDetails);
     }
 
     @Test
     void findByEntityIdAndType() {
         DocDetails docDetails = new DocDetails();
         Mockito.when(docDetailsRepository.findByEntityIdAndType(any(), any())).thenReturn(List.of(docDetails));
-        List<DocDetails> docDetails_ = docDetailsDao.findByEntityIdAndType(1L, DocDetailsTypes.PRE_ALERT);
-        assert(docDetails_.size() == 1);
+        List<DocDetails> docDetails1 = docDetailsDao.findByEntityIdAndType(1L, DocDetailsTypes.PRE_ALERT);
+        assertEquals(1, docDetails1.size());
     }
 
 }

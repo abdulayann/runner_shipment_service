@@ -113,7 +113,7 @@ public class ShipmentController {
         return response;
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
+    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -139,7 +139,7 @@ public class ShipmentController {
         return shipmentService.delete(CommonRequestModel.buildRequest(request));
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
+    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
@@ -168,7 +168,7 @@ public class ShipmentController {
     }
 
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
+    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
@@ -198,7 +198,7 @@ public class ShipmentController {
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return shipmentService.completeRetrieveById(CommonRequestModel.buildRequest(request));
     }
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
+    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE_SHIPMENT)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid ShipmentRequest request) {
@@ -215,7 +215,7 @@ public class ShipmentController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
+    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ShipmentRequest request) {
@@ -234,7 +234,7 @@ public class ShipmentController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
+    // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //LATER-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PatchMapping(ApiConstants.API_PARTIAL_UPDATE)
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
@@ -730,7 +730,7 @@ public class ShipmentController {
     @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
     public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody
     OceanDGApprovalRequest request) {
-        log.info("Request received for oceanDGSendForApproval");
+        log.info("Received for oceanDGSendForApproval with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
             return shipmentService.sendOceanDGApprovalEmail(request);
         } catch (Exception ex) {
@@ -742,7 +742,7 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
     public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequest request) {
-        log.info("Request received for oceanDGApprovalResponse ");
+        log.info("Received for oceanDGApprovalResponse with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
             return shipmentService.dgApprovalResponse(request);
         } catch (Exception ex) {
@@ -813,6 +813,12 @@ public class ShipmentController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_WITH_EXECUTION_STATE_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.MATCHING_RULES_BY_GUID_AND_EXECUTION_STATE)
+    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuidAndExecutionState(@RequestBody @Valid GetMatchingRulesRequest getMatchingRulesRequest) {
+        return dpsEventService.getShipmentMatchingRulesByGuidAndExecutionState(getMatchingRulesRequest);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})

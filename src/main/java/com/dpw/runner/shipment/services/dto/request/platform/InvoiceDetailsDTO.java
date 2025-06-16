@@ -9,6 +9,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@SuppressWarnings("java:S1948")
 public class InvoiceDetailsDTO implements Serializable {
     private String invoiceId;
     private String invoiceNumber;
