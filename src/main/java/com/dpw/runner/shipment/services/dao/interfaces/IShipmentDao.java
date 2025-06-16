@@ -72,4 +72,6 @@ public interface IShipmentDao {
     void updateSailingScheduleRelatedInfoForAir(ShipmentSailingScheduleRequest request, Long shipmentId);
 
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
+
+    void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
 }

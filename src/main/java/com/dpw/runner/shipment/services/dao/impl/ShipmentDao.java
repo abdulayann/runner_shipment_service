@@ -948,4 +948,9 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByIdIn(List<Long> shipmentIds) {
         return shipmentRepository.findAllById(shipmentIds);
     }
+
+    @Override
+    public void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId) {
+        shipmentRepository.updateDgPacksDetailsInShipment(dgPacks, dgPacksUnit, shipmentId);
+    }
 }
