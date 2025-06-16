@@ -547,6 +547,9 @@ public class ReportConstants {
     public static final String AGENT_REFERENCE = "AgentReference";
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
     public static final String AWB_SHIPPER_ADDRESS = "AWB_ShipperAddress";
+    public static final String CM_SHIPPER_AWB_ADDRESS = "CM_ShipperAWBAddress";
+    public static final String CM_CONSIGNEE_AWB_ADDRESS = "CM_ConsigneeAWBAddress";
+    public static final String CM_NOTIFY_AWB_ADDRESS = "CM_NotifyAWBAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
     public static final String AWB_CONSIGNEE_ADDRESS = "AWB_ConsigneeAddress";
     public static final String CLIENT_ADD_WITHOUT_CONTACT = "ClientAddwoCont";
@@ -1285,6 +1288,7 @@ public class ReportConstants {
     public static final String COMMA_HS_CODE1 = "CommaHsCode1";
     public static final String SLAC_NEW = "SLACNew";
     public static final String GOOD_DESC_HS_CODE_COMMA_SEPARATED = "GD_HsCode";
+    public static final String GOOD_DESC_HS_CODE_COMMA_SEPARATED1 = "GD_HsCode1";
     public static final String HSCODE = "HS Code";
     public static final String COMMA_SLAC1 = "CommaSLAC1";
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;

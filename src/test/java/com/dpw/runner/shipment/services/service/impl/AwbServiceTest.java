@@ -1578,7 +1578,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
         when(awbDao.findByIds(anyList())).thenReturn(List.of(Awb.builder().awbPackingInfo(Arrays.asList()).build()));
-        var awbResponse = awbService.getMawnLinkPacks(testMawb);
+        var awbResponse = awbService.getMawnLinkPacks(testMawb, true, null);
 
         assertEquals(testMawb, awbResponse);
 
