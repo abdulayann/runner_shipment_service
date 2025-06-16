@@ -1,7 +1,16 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -11,9 +20,14 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,6 +52,9 @@ public class ShipmentValidationV3Util {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private IDpsEventService dpsEventService;
 
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
@@ -117,6 +134,9 @@ public class ShipmentValidationV3Util {
             throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
         }
         // Validation for Partner fields
+        // Validation for DPS Implication
+        this.validateDPSImplication(shipmentDetails);
+        // Validation for Partner fields for 'STD' Shipment
         this.validationForPartnerFields(shipmentDetails, oldEntity);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
@@ -139,6 +159,14 @@ public class ShipmentValidationV3Util {
         if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsDestinationPort())
                 && !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), shipmentDetails.getCarrierDetails().getDestination())) {
             throw new ValidationException("If destination is selected as same as DestinationPort then value in destination and destinationPort should pe same");
+        }
+    }
+
+    private void validateDPSImplication(ShipmentDetails shipmentDetails) {
+        // Check if the specific implication (CONCR) is already present for the given shipment ID.
+        // If true, throw a ValidationException to prevent further processing.
+        if (Objects.nonNull(shipmentDetails.getId()) && Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
+            throw new ValidationException(DpsConstants.DPS_ERROR_1);
         }
     }
 

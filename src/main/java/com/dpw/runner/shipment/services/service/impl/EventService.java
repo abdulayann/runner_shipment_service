@@ -912,12 +912,6 @@ public class EventService implements IEventService {
         } catch (Exception e) {
             log.error("Failed to update carrier details for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
         }
-        // Try to update empty container returned status
-        try {
-            updateEmptyContainerReturnedStatus(shipment, events);
-        } catch (Exception e) {
-            log.error("Failed to update empty container returned status for shipment ID {}: {} messageId {}", shipment.getShipmentId(), e.getMessage(), messageId);
-        }
         // Try to update actual event times
         try {
             updateActual(shipment, container);

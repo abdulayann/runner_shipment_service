@@ -22,7 +22,7 @@ public class AwbResponse implements IRunnerResponse {
     private AwbShipmentInfoResponse awbShipmentInfo;
     private List<AwbNotifyPartyInfo> awbNotifyPartyInfo;
     private List<AwbRoutingInfoResponse> awbRoutingInfo;
-    private AwbCargoInfo awbCargoInfo;
+    private AwbCargoInfoResponse awbCargoInfo;
     private AwbPaymentInfo awbPaymentInfo;
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
     private AwbOtherInfoResponse awbOtherInfo;

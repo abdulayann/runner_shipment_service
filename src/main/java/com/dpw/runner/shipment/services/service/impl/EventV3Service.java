@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -50,6 +52,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,17 +62,20 @@ public class EventV3Service implements IEventsV3Service {
 
     private IEventDao eventDao;
     private JsonHelper jsonHelper;
+    private final IDateTimeChangeLogService dateTimeChangeLogService;
     private IV1Service v1Service;
     private CommonUtils commonUtils;
-    private IDateTimeChangeLogService dateTimeChangeLogService;
+    private final EventService eventV2Service;
 
     @Autowired
-    public EventV3Service(IEventDao eventDao, JsonHelper jsonHelper, IV1Service v1Service, IDateTimeChangeLogService dateTimeChangeLogService, CommonUtils commonUtils) {
+    public EventV3Service(IEventDao eventDao, JsonHelper jsonHelper, IDateTimeChangeLogService dateTimeChangeLogService,
+            IV1Service v1Service, CommonUtils commonUtils, EventService eventV2Service) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
+        this.dateTimeChangeLogService = dateTimeChangeLogService;
         this.v1Service = v1Service;
         this.commonUtils = commonUtils;
-        this.dateTimeChangeLogService = dateTimeChangeLogService;
+        this.eventV2Service = eventV2Service;
     }
 
     @Override
@@ -85,8 +91,7 @@ public class EventV3Service implements IEventsV3Service {
         if (shipmentId != null) {
             List<Events> shipmentEvents = getEventsListForCriteria(shipmentId, true, listRequest, source);
             allEventResponses = jsonHelper.convertValueToList(shipmentEvents, EventsResponse.class);
-        }
-        else if (consolidationId != null) {
+        } else if (consolidationId != null) {
             List<Events> consolEvents = getEventsListForCriteria(consolidationId, false, listRequest, source);
             allEventResponses = jsonHelper.convertValueToList(consolEvents, EventsResponse.class);
         }
@@ -133,19 +138,19 @@ public class EventV3Service implements IEventsV3Service {
     }
 
     private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest, String source) {
-        if(isShipment) {
+        if (isShipment) {
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_ID, id, "=", listRequest);
             listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
-        }
-        else {
+        } else {
             listRequest = CommonUtils.andCriteria("consolidationId", id, "=", listRequest);
         }
         Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
         List<Events> allEvents;
-        if(Objects.equals(source, Constants.NETWORK_TRANSFER))
+        if (Objects.equals(source, Constants.NETWORK_TRANSFER)) {
             allEvents = eventDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()).getContent();
-        else
+        } else {
             allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
+        }
         log.info("EventsList - fetched {} events", allEvents.size());
         return allEvents;
     }
@@ -204,8 +209,9 @@ public class EventV3Service implements IEventsV3Service {
 
     private <T> void setEventCodesMasterData(List<T> eventsList, Function<T, String> getEventCode, BiConsumer<T, String> setDescription) {
         try {
-            if(Objects.isNull(eventsList) || eventsList.isEmpty())
+            if (Objects.isNull(eventsList) || eventsList.isEmpty()) {
                 return;
+            }
             // Define criteria for fetching event codes master data
             List<String> eventCodes = eventsList.stream().map(getEventCode).toList();
             List<Object> subCriteria1 = Arrays.asList(
@@ -269,14 +275,15 @@ public class EventV3Service implements IEventsV3Service {
     @Transactional
     @Override
     public void saveAllEvent(List<EventsRequest> eventsRequests) {
-        if (CommonUtils.listIsNullOrEmpty(eventsRequests))
+        if (CommonUtils.listIsNullOrEmpty(eventsRequests)) {
             return;
+        }
         List<Events> entities = jsonHelper.convertValueToList(eventsRequests, Events.class);
 
         commonUtils.updateEventWithMasterData(entities);
         eventDao.updateAllEventDetails(entities);
 
-        for (Events event: entities) {
+        for (Events event : entities) {
             handleDuplicationForExistingEvents(event);
         }
 
@@ -394,4 +401,31 @@ public class EventV3Service implements IEventsV3Service {
     private void createDateTimeChangeLog(DateType dateType, LocalDateTime localDateTime, Long shipmentId) {
         dateTimeChangeLogService.saveDateTimeChangeLog(dateType, localDateTime, shipmentId, DateTimeChangeLogConstants.EVENT_SOURCE);
     }
+
+    @Transactional
+    @Override
+    public void saveEvent(EventsRequest eventsRequest) {
+        eventV2Service.saveEvent(eventsRequest);
+    }
+
+    @Transactional
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
+        return eventV2Service.create(commonRequestModel);
+    }
+
+    @Transactional
+    public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
+        return eventV2Service.update(commonRequestModel);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
+        return eventV2Service.delete(commonRequestModel);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
+        return eventV2Service.retrieveById(commonRequestModel);
+    }
+
 }

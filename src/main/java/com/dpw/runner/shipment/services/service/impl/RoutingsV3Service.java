@@ -170,33 +170,31 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             if (!CollectionUtils.isEmpty(shipmentsList)) {
                 for (ShipmentDetails shipmentDetails : shipmentsList) {
                     List<Routings> originalRoutings = shipmentDetails.getRoutingsList();
-                    if (!CollectionUtils.isEmpty(originalRoutings)) {
-                        List<Routings> updatedRoutings = new ArrayList<>(originalRoutings);
+                    List<Routings> updatedRoutings = new ArrayList<>(originalRoutings);
 
-                        // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
-                        List<Integer> inheritedIndexes = new ArrayList<>();
-                        getMainCarriageInheritedIndex(updatedRoutings, inheritedIndexes);
+                    // Step 1: Collect indices of inherited MAIN_CARRIAGE to be removed
+                    List<Integer> inheritedIndexes = new ArrayList<>();
+                    getMainCarriageInheritedIndex(updatedRoutings, inheritedIndexes);
 
-                        // Step 2: Remove those inherited MAIN_CARRIAGE entries
-                        removeMainCarriageFromShipmentRouting(mainCarriageList, updatedRoutings);
+                    // Step 2: Remove those inherited MAIN_CARRIAGE entries
+                    removeMainCarriageFromShipmentRouting(mainCarriageList, updatedRoutings);
 
 
-                        // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
-                        List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
-                                .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
-                                .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
-                                .toList();
+                    // Step 3: Prepare new routings from consolidated MAIN_CARRIAGE
+                    List<Routings> consolidatedMainCarriages = mainCarriageList.stream()
+                            .filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                            .map(consolRouting -> cloneRoutingForShipment(consolRouting, shipmentDetails.getId()))
+                            .toList();
 
-                        // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
-                        int offset = 0;
-                        insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
+                    // Step 4: Insert new consolidated MAIN_CARRIAGE routings at the inheritedIndexes or end
+                    int offset = 0;
+                    insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
 
-                        // Step 5: Push to update
-                        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
-                        bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
-                        bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
-                        updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
-                    }
+                    // Step 5: Push to update
+                    BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+                    bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
+                    bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
+                    updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
                 }
             }
         }
@@ -282,7 +280,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return (oldValue != null && newValue == null) || (newValue != null && !newValue.equals(oldValue));
     }
 
-     boolean isValidDateChange(CarrierDetails newCarrierDetails, CarrierDetails oldCarrierDetails) {
+    boolean isValidDateChange(CarrierDetails newCarrierDetails, CarrierDetails oldCarrierDetails) {
         if (oldCarrierDetails == null && newCarrierDetails != null) {
             return newCarrierDetails.getEta() != null
                     || newCarrierDetails.getEtd() != null
@@ -751,6 +749,11 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
     }
 
+    @Override
+    public List<Routings> getRoutingsByConsolidationId(Long consolidationId) {
+        return routingsDao.findByConsolidationId(consolidationId);
+    }
+
     public Map<String, Object> getAllMasterDataForRoute(RoutingsResponse response) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         try {
@@ -916,7 +919,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         return result;
     }
 
-     void setMainCarriageInheritedIndexPosition(List<Routings> result, List<Routings> newToAppendAtEnd, List<Routings> buffer, Routings current, int lastIndex, boolean canInsert) {
+    void setMainCarriageInheritedIndexPosition(List<Routings> result, List<Routings> newToAppendAtEnd, List<Routings> buffer, Routings current, int lastIndex, boolean canInsert) {
         if (lastIndex >= 0) {
             Routings prev = result.get(lastIndex);
             if (Boolean.TRUE.equals(prev.getInheritedFromConsolidation()) &&

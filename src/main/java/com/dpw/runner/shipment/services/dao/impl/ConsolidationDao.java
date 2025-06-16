@@ -855,6 +855,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
         addCarrierDetailsValidationErrors(request, shipmentSettingsDetails, errors);
 
+        addOriginDestinationValidationsError(request, errors);
+        addPolPodValidationsErrors(request, errors);
+
+
         return errors;
     }
 
@@ -880,6 +884,23 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             boolean containsDgShipment = checkContainsDGShipment(request);
             if (!containsDgShipment)
                 errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+        }
+    }
+
+    private void addOriginDestinationValidationsError(ConsolidationDetails request, Set<String> errors) {
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOrigin(), request.getCarrierDetails().getDestination())) {
+            errors.add("Origin and Destination fields cannot be same.");
+        }
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOrigin(), request.getCarrierDetails().getDestinationPort())) {
+            errors.add("Origin and POD fields cannot be same.");
+        }
+    }
+    private void addPolPodValidationsErrors(ConsolidationDetails request, Set<String> errors) {
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestinationPort())) {
+            errors.add("POL and POD fields cannot be same.");
+        }
+        if (request.getCarrierDetails() != null && Objects.equals(request.getCarrierDetails().getOriginPort(), request.getCarrierDetails().getDestination())) {
+            errors.add("POL and Destination fields cannot be same.");
         }
     }
 

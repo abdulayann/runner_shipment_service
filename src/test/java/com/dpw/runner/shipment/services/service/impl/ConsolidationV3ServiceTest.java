@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -343,7 +344,8 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Mock
   private ModelMapper modelMapper;
-
+  @Mock
+  private ICarrierDetailsDao carrierDetailsDao;
   @Mock
   @Qualifier("executorServiceMasterData")
   private ExecutorService executorServiceMasterData;
@@ -4549,9 +4551,21 @@ if (unitConversionUtilityMockedStatic != null) {
 
 
     ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setId(1L);
+    consolidation.setCarrierDetails(carrierDetails);
     consolidation.setShipmentsList(Set.of(shipment1));
     consolidation.setTransportMode(TRANSPORT_MODE_SEA);
 
+
+    Routings routing1 = new Routings();
+    routing1.setConsolidationId(1L);
+    routing1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+    List<Routings> routingsList = new ArrayList<>();
+    routingsList.add(routing1);
+
+    when(routingsV3Service.getRoutingsByConsolidationId(anyLong())).thenReturn(routingsList);
+    doNothing().when(consolidationDetailsDao).updateSailingScheduleRelatedInfo(any(), anyLong());
     when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
 
     // Execute
@@ -4579,8 +4593,20 @@ if (unitConversionUtilityMockedStatic != null) {
 
 
     ConsolidationDetails consolidation = new ConsolidationDetails();
+    consolidation.setId(1L);
+    consolidation.setCarrierDetails(carrierDetails);
     consolidation.setTransportMode(TRANSPORT_MODE_AIR);
     consolidation.setShipmentsList(Set.of(shipment1));
+
+    Routings routing1 = new Routings();
+    routing1.setConsolidationId(1L);
+    routing1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+    List<Routings> routingsList = new ArrayList<>();
+    routingsList.add(routing1);
+
+    when(routingsV3Service.getRoutingsByConsolidationId(anyLong())).thenReturn(routingsList);
+    doNothing().when(consolidationDetailsDao).updateSailingScheduleRelatedInfoForAir(any(), anyLong());
 
     when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidation));
 

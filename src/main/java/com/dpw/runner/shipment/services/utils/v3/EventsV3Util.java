@@ -1,5 +1,11 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
+import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
@@ -8,17 +14,17 @@ import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
-import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 
 @Component
 @Slf4j
@@ -179,10 +185,11 @@ public class EventsV3Util {
         }
     }
 
-    private void processCUREEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+    private void processCUREEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment,
+            Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment)) {
+                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment) && Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                 for (Events event : dbEvents) {

@@ -736,7 +736,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     private PackingContext extractPackingContext(CalculatePackSummaryRequest request) {
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         if (ObjectUtils.isNotEmpty(consolidationId)) {
             return createConsolidationContext(consolidationId);
@@ -785,7 +785,7 @@ public class PackingV3Service implements IPackingV3Service {
         String module = packingContext.getModule();
 
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();
@@ -1231,16 +1231,21 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     public void updateShipmentGateInDateAndStatusFromPacks(ShipmentDetails shipmentDetails, List<Packing> packings) throws RunnerException {
-        shipmentDetails.setShipmentPackStatus(null);
+        ShipmentDetails tempShipment = new ShipmentDetails();
+        tempShipment.setId(shipmentDetails.getId());
+        tempShipment.setShipmentPackStatus(null);
+        tempShipment.setCarrierDetails(shipmentDetails.getCarrierDetails());
+        tempShipment.setShipmentGateInDate(shipmentDetails.getShipmentGateInDate());
+        tempShipment.setDateType(shipmentDetails.getDateType());
         if (!CommonUtils.listIsNullOrEmpty(packings)) {
-            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
-            packingV3Util.processPackingRequests(packings, shipmentDetails);
+            tempShipment.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
+            packingV3Util.processPackingRequests(packings, tempShipment);
         }
-        packingV3Util.setShipmentPackStatusSailed(shipmentDetails);
-        packingValidationV3Util.validateShipmentGateInDate(shipmentDetails);
+        packingV3Util.setShipmentPackStatusSailed(tempShipment);
+        packingValidationV3Util.validateShipmentGateInDate(tempShipment);
         shipmentService.updateShipmentDetailsFromPacks(
-                shipmentDetails.getId(), shipmentDetails.getDateType(),
-                shipmentDetails.getShipmentGateInDate(), shipmentDetails.getShipmentPackStatus()
+                shipmentDetails.getId(), tempShipment.getDateType(),
+                tempShipment.getShipmentGateInDate(), tempShipment.getShipmentPackStatus()
         );
     }
 

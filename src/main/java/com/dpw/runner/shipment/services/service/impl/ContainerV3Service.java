@@ -92,6 +92,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.PostConstruct;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
@@ -301,59 +302,73 @@ public class ContainerV3Service implements IContainerV3Service {
                 .build();
     }
 
-    // Validate that containers are not assigned to both packing and cargo before deletion
+    /**
+     * Validates that the given containers are not assigned to any packages or shipment cargo before allowing deletion.
+     *
+     * <p>The method performs the following checks in order:</p>
+     * <ol>
+     *     <li>If any containers are assigned to both Packages and Shipment Cargo — it merges them without duplicates
+     *         and throws an exception showing the details.</li>
+     *     <li>If containers are only assigned to Packages — it throws an exception with package assignment details.</li>
+     *     <li>If containers are only assigned to Shipment Cargo — it throws an exception with cargo assignment details.</li>
+     * </ol>
+     *
+     * @param containerIds list of container IDs to be validated for deletion
+     * @throws IllegalArgumentException if any container is found to be assigned and cannot be deleted
+     */
     private void validateNoAssignments(List<Long> containerIds) {
-        // Check if any containers are attached to both shipment cargo and packages
-        List<ContainerDeleteInfoProjection> bothPackingAndCargo =
-                containerDao.findContainersAttachedToBothPackingAndCargo(containerIds);
+        // Fetch containers that are assigned to packages
+        List<ContainerDeleteInfoProjection> packingOnly = containerDao.filterContainerIdsAttachedToPacking(containerIds);
 
-        // If containers are found with both packing and cargo assignments, throw an exception with details
-        if (ObjectUtils.isNotEmpty(bothPackingAndCargo)) {
+        // Fetch containers that are assigned to shipment cargo
+        List<ContainerDeleteInfoProjection> shipmentOnly = containerDao.filterContainerIdsAttachedToShipmentCargo(containerIds);
+
+        boolean hasPacking = ObjectUtils.isNotEmpty(packingOnly);
+        boolean hasShipment = ObjectUtils.isNotEmpty(shipmentOnly);
+
+        // If containers are assigned to both packing and shipment cargo
+        if (hasPacking && hasShipment) {
+            // Merge both lists while removing duplicates based on containerId
+            List<ContainerDeleteInfoProjection> merged = Stream.concat(packingOnly.stream(), shipmentOnly.stream())
+                    .collect(Collectors.toMap(
+                            ContainerDeleteInfoProjection::getContainerId, // Use containerId as the unique key
+                            p -> p, // Keep the projection object as-is
+                            (p1, p2) -> p1 // If duplicate keys, prefer the one from packingOnly
+                    )).values().stream().toList();
+
+            // Throw an exception with the combined message
             throw new IllegalArgumentException(
-                    "Selected Containers are assigned to Shipment Cargo and Packages as below, Please unassign the same to delete:\n" +
-                            formatPackingAndCargoInfo(bothPackingAndCargo) // Format and display the details of affected containers
+                    "Selected containers are assigned to both Shipment Cargo and Packages. Please unassign them before deletion:\n" +
+                            formatAssignedContainersInfo(merged)
             );
         }
 
-        // Check if any containers are attached to packing only
-        List<ContainerDeleteInfoProjection> packingOnly =
-                containerDao.filterContainerIdsAttachedToPacking(containerIds);
-
-        // If containers are found with packing-only assignments, throw an exception with details
-        if (ObjectUtils.isNotEmpty(packingOnly)) {
+        // If containers are assigned only to packages
+        if (hasPacking) {
             throw new IllegalArgumentException(
-                    "Selected Containers are assigned to Packages as below, Please unassign the same to delete:\n" +
-                            formatPackingAndCargoInfo(packingOnly) // Format and display the details of affected containers
+                    "Selected containers are assigned to Packages. Please unassign them before deletion:\n" +
+                            formatAssignedContainersInfo(packingOnly)
             );
         }
 
-        // Check if any containers are attached to shipment cargo only
-        List<ContainerDeleteInfoProjection> shipmentOnly =
-                containerDao.filterContainerIdsAttachedToShipmentCargo(containerIds);
-
-        // If containers are found with shipment cargo-only assignments, throw an exception with details
-        if (ObjectUtils.isNotEmpty(shipmentOnly)) {
+        // If containers are assigned only to shipment cargo
+        if (hasShipment) {
             throw new IllegalArgumentException(
-                    "Selected Containers are assigned to Shipment Cargo as below, Please unassign the same to delete:\n" +
-                            formatCargoOnlyInfo(shipmentOnly) // Format and display the details of affected containers
+                    "Selected containers are assigned to Shipment Cargo. Please unassign them before deletion:\n" +
+                            formatAssignedContainersInfo(shipmentOnly)
             );
         }
     }
 
-    // Helper method to format the information about containers attached to both packing and cargo
-    private String formatPackingAndCargoInfo(List<ContainerDeleteInfoProjection> projections) {
+    // Formats the display information for containers with optional package details
+    private String formatAssignedContainersInfo(List<ContainerDeleteInfoProjection> projections) {
         return projections.stream()
-                .map(p -> String.format("Container Number: %s - Shipment Number: %s - Packages: %s",
-                        p.getContainerNumber(), p.getShipmentId(), p.getPacks())) // Format each container's details
-                .collect(Collectors.joining("\n")); // Join all container details with a newline for display
-    }
-
-    // Helper method to format the information about containers attached only to shipment cargo
-    private String formatCargoOnlyInfo(List<ContainerDeleteInfoProjection> projections) {
-        return projections.stream()
-                .map(p -> String.format("Container Number: %s - Shipment Number: %s",
-                        p.getContainerNumber(), p.getShipmentId())) // Format each container's details without packages
-                .collect(Collectors.joining("\n")); // Join all container details with a newline for display
+                .map(p -> String.format("Container Number: %s - Shipment Number: %s - Packages: %s %s",
+                        p.getContainerNumber(),
+                        p.getShipmentId(),
+                        Optional.ofNullable(p.getPacks()).orElse(""),
+                        Optional.ofNullable(p.getPacksType()).orElse("")))
+                .collect(Collectors.joining("\n"));
     }
 
     // Method to handle the deletion of containers and their associated entities
@@ -1387,6 +1402,8 @@ public class ContainerV3Service implements IContainerV3Service {
         Page<ShipmentDetails> shipmentDetailsList = shipmentDao.findAll(pair.getLeft(), pair.getRight());
         List<Packing> packingList = packingDao.findByContainerIdIn(containerIds);
         List<Containers> containers = findByIdIn(containerIds);
+        if (CommonUtils.listIsNullOrEmpty(containers))
+            return;
         Map<Long, Containers> containersMap = containers.stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
         for(Containers containers1: containers) {
             containerV3Util.resetContainerDataForRecalculation(containers1);
@@ -1394,8 +1411,12 @@ public class ContainerV3Service implements IContainerV3Service {
         for(ShipmentDetails shipmentDetails: shipmentDetailsList.getContent()) {
             addShipmentCargoToContainer(containersMap.get(shipmentDetails.getContainerAssignedToShipmentCargo()), shipmentDetails);
         }
-        for(Packing packing: packingList) {
-            addPackageDataToContainer(containersMap.get(packing.getContainerId()), packing);
+        if (!CommonUtils.listIsNullOrEmpty(packingList)) {
+            for (Packing packing : packingList) {
+                if (packing.getContainerId() != null && containersMap.containsKey(packing.getContainerId())) {
+                    addPackageDataToContainer(containersMap.get(packing.getContainerId()), packing);
+                }
+            }
         }
         for(Containers containers1: containers) {
             containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight

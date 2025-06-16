@@ -1,5 +1,11 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -17,7 +23,15 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,20 +45,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
-
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -52,6 +52,9 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Mock
+    private IDpsEventService dpsEventService;
 
     @InjectMocks
     private ShipmentValidationV3Util shipmentValidationV3Util;
@@ -405,6 +408,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_withNullOrgCodes_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setCoLoadBlNumber("coload");
         ShipmentDetails oldEntity1 = new ShipmentDetails();
@@ -416,6 +420,19 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         Parties consignee = new Parties();
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
+
+        when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.FALSE);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_withDpsImplication() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
+
+        when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.TRUE);
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
     }
