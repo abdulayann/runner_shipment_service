@@ -1847,7 +1847,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             achievedQuantities.setContainerCount(newShipmentWtVolResponse.getConsoleContainerCount());
         }
         if(checkCountIsSame(oldShipmentWtVolResponse.getConsoleDgContainerCount(), achievedQuantities.getDgContainerCount())) {
-            achievedQuantities.setDgContainerCount(newShipmentWtVolResponse.getDgContainerCount());
+            achievedQuantities.setDgContainerCount(newShipmentWtVolResponse.getConsoleDgContainerCount());
         }
         if(checkCountIsSame(oldShipmentWtVolResponse.getSlacCount(), achievedQuantities.getSlacCount())) {
             achievedQuantities.setSlacCount(newShipmentWtVolResponse.getSlacCount());
@@ -2793,6 +2793,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         BigDecimal sumWeight = new BigDecimal(0);
         BigDecimal sumVolume = new BigDecimal(0);
+        Integer slacCount = 0;
         Integer packs = 0;
         Integer dgPacks = 0;
         String packsType = null;
@@ -2856,11 +2857,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .consoleTeuCount(consoleTeus)
                 .consoleDgContainerCount(consoleDgContCount)
                 .consoleContainerCount(consoleNoOfCont)
+                .dgPacks(dgPacks)
+                .dgPacksType(dgPacksType)
+                .slacCount(slacCount)
                 .build();
         // TODO: update dg packages and slac count when fields got added in shipment as well
-//        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
-//        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
-//        consolidationDetailsV3Response.getShipmentWtVolResponse().setTeuCount(teus);
     }
 
     @Override
