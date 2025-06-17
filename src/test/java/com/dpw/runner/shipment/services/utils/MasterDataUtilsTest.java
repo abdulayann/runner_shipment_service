@@ -2866,5 +2866,65 @@ class MasterDataUtilsTest {
         CustomerBookingV3Response customerBookingV3Response = CustomerBookingV3Response.builder().build();
         assertDoesNotThrow(() -> masterDataUtils.fetchCarriersForList(List.of(customerBookingV3Response)));
     }
+    @Test
+    void getCarrierNameFromMasterDataUsingScacCodeFromIntraa_success() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+
+        String scacCode = "MSKU";
+        String expectedItemValue = "Maersk";
+
+        // Mock the internal method call
+        doReturn(Map.of(scacCode, expectedItemValue))
+                .when(spyService)
+                .getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        String result = spyService.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCode);
+
+        assertEquals(expectedItemValue, result);
+    }
+
+    @Test
+    void getCarrierNameFromMasterDataUsingScacCodeFromIntraa_notFound_shouldThrowException() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String scacCode = "UNKNOWN";
+
+        doReturn(Collections.emptyMap())
+                .when(spyService)
+                .getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        Exception exception = assertThrows(IllegalArgumentException.class, () ->
+                spyService.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCode)
+        );
+
+        assertEquals("Data not present in Carrier Master data", exception.getMessage());
+    }
+
+    @Test
+    void getCarrierNameFromMasterDataUsingScacCodeFromIntraa_nullOrBlank_shouldReturnNull() {
+        String result1 = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(null);
+        assertNull(result1);
+
+        String result2 = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa("   ");
+        assertNull(result2);
+    }
+
+    @Test
+    void getCarrierItemValuesFromSCACList_success() {
+        MasterDataUtils spyService = spy(masterDataUtils);
+        String scacCode = "MSKU";
+        EntityTransferCarrier carrier = new EntityTransferCarrier();
+        carrier.ItemValue = "Maersk";
+
+        Map<String, EntityTransferCarrier> carrierMap = Map.of(scacCode, carrier);
+
+        doReturn(carrierMap).when(spyService).fetchInBulkCarriersBySCACCode(List.of(scacCode));
+
+        Map<String, String> result = spyService.getCarrierItemValuesFromSCACList(List.of(scacCode));
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("Maersk", result.get(scacCode));
+    }
+
 
 }

@@ -321,6 +321,8 @@
     "updatedAt": "2024-02-12T04:36:09",
     "customerCategory": "CATEGORY_5",
     "shipmentCount": 0,
+    "dgPacksCount": 40,
+    "dgPacksUnit": "Packages",
     "isShipmentReadOnly": false
   },
   "HAWB": {

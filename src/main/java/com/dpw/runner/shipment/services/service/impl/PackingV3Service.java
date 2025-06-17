@@ -212,20 +212,13 @@ public class PackingV3Service implements IPackingV3Service {
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
         if (!CollectionUtils.isEmpty(packings)) {
             CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+            cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
+            cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
             cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
             cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
-            boolean updateCargoDetails = true;
-            if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
-                boolean skipWeightInCalculation = packings.stream()
-                        .anyMatch(packing -> packing.getWeight() == null);
-                if (skipWeightInCalculation) {
-                    updateCargoDetails = false;
-                }
-            }
-            if (updateCargoDetails) {
-                cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
-                shipmentService.updateCargoDetailsInShipment(shipmentDetails.getId(), cargoDetailsResponse);
-            }
+            cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
+            shipmentService.updateCargoDetailsInShipment(shipmentDetails.getId(), cargoDetailsResponse);
+
         }
         return packings;
     }
@@ -736,7 +729,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     private PackingContext extractPackingContext(CalculatePackSummaryRequest request) {
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         if (ObjectUtils.isNotEmpty(consolidationId)) {
             return createConsolidationContext(consolidationId);
@@ -785,7 +778,7 @@ public class PackingV3Service implements IPackingV3Service {
         String module = packingContext.getModule();
 
         Long consolidationId = request.getConsolidationId();
-        Long shipmentId = request.getShipmentId();
+        Long shipmentId = request.getShipmentEntityId();
 
         try {
             PackSummaryV3Response response = new PackSummaryV3Response();
@@ -1135,12 +1128,12 @@ public class PackingV3Service implements IPackingV3Service {
         Integer totalPacks = 0;
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
-        response.setWeight(totalWeight);
         response.setVolume(totalVolume);
         response.setNoOfPacks(totalPacks);
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         response.setPacksUnit(Constants.PACKAGES);
+        response.setDgPacksUnit(Constants.PACKAGES);
         Set<String> uniquePacksUnits = new HashSet<>();
         if (!CollectionUtils.isEmpty(packings)) {
             populateSummaryDetails(packings, response, uniquePacksUnits, totalWeight, totalVolume, totalPacks);
@@ -1150,25 +1143,53 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private void populateSummaryDetails(List<Packing> packings, CargoDetailsResponse response, Set<String> uniquePacksUnits, BigDecimal totalWeight, BigDecimal totalVolume, Integer totalPacks) throws RunnerException {
+        Set<String> dgPacksUnitSet = new HashSet<>();
+        Integer dgPacksCount = 0;
+        boolean skipWeightInCalculation = false;
+        if (TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+            skipWeightInCalculation = packings.stream()
+                    .anyMatch(packing -> packing.getWeight() == null);
+        }
         for (Packing packing : packings) {
-            if (!StringUtility.isEmpty(packing.getPacksType())) {
-                uniquePacksUnits.add(packing.getPacksType());
-            }
-            if (packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
+            setUniquePacksUnit(uniquePacksUnits, dgPacksUnitSet, packing);
+            if (!skipWeightInCalculation && packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
                 totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
             }
             if (packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
                 totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
             }
             if (!isStringNullOrEmpty(packing.getPacks())) {
+                if (packing.getHazardous() != null && packing.getHazardous()) {
+                    dgPacksCount = dgPacksCount + Integer.parseInt(packing.getPacks());
+                }
                 totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
             }
         }
         response.setNoOfPacks(totalPacks);
-        response.setWeight(totalWeight);
+        if (!BigDecimal.ZERO.equals(totalWeight)) {
+            response.setWeight(totalWeight);
+        }
         response.setVolume(totalVolume);
+        response.setDgPacks(dgPacksCount);
+        setPacksUnits(response, uniquePacksUnits, dgPacksUnitSet);
+    }
+
+    private static void setUniquePacksUnit(Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet, Packing packing) {
+        if (!StringUtility.isEmpty(packing.getPacksType())) {
+            if (packing.getHazardous() != null && packing.getHazardous()) {
+                dgPacksUnitSet.add(packing.getPacksType());
+            } else {
+                uniquePacksUnits.add(packing.getPacksType());
+            }
+        }
+    }
+
+    private static void setPacksUnits(CargoDetailsResponse response, Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet) {
         if (uniquePacksUnits.size() == 1) {
-            response.setPacksUnit(packings.get(0).getPacksType());
+            response.setPacksUnit(uniquePacksUnits.stream().findFirst().get());
+        }
+        if (dgPacksUnitSet.size() == 1) {
+            response.setDgPacksUnit(dgPacksUnitSet.stream().findFirst().get());
         }
     }
 
@@ -1231,16 +1252,21 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     public void updateShipmentGateInDateAndStatusFromPacks(ShipmentDetails shipmentDetails, List<Packing> packings) throws RunnerException {
-        shipmentDetails.setShipmentPackStatus(null);
+        ShipmentDetails tempShipment = new ShipmentDetails();
+        tempShipment.setId(shipmentDetails.getId());
+        tempShipment.setShipmentPackStatus(null);
+        tempShipment.setCarrierDetails(shipmentDetails.getCarrierDetails());
+        tempShipment.setShipmentGateInDate(shipmentDetails.getShipmentGateInDate());
+        tempShipment.setDateType(shipmentDetails.getDateType());
         if (!CommonUtils.listIsNullOrEmpty(packings)) {
-            shipmentDetails.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
-            packingV3Util.processPackingRequests(packings, shipmentDetails);
+            tempShipment.setShipmentPackStatus(ShipmentPackStatus.BOOKED);
+            packingV3Util.processPackingRequests(packings, tempShipment);
         }
-        packingV3Util.setShipmentPackStatusSailed(shipmentDetails);
-        packingValidationV3Util.validateShipmentGateInDate(shipmentDetails);
+        packingV3Util.setShipmentPackStatusSailed(tempShipment);
+        packingValidationV3Util.validateShipmentGateInDate(tempShipment);
         shipmentService.updateShipmentDetailsFromPacks(
-                shipmentDetails.getId(), shipmentDetails.getDateType(),
-                shipmentDetails.getShipmentGateInDate(), shipmentDetails.getShipmentPackStatus()
+                shipmentDetails.getId(), tempShipment.getDateType(),
+                tempShipment.getShipmentGateInDate(), tempShipment.getShipmentPackStatus()
         );
     }
 

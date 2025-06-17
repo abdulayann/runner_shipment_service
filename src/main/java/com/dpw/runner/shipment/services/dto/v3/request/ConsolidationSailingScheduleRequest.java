@@ -6,12 +6,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
 public class ConsolidationSailingScheduleRequest implements IRunnerRequest {
-    private List<RoutingsRequest> routings;
+    private List<RoutingsRequest> routings = new ArrayList<>();
     private LocalDateTime terminalCutoff;
     private LocalDateTime verifiedGrossMassCutoff;
     private LocalDateTime shippingInstructionCutoff;
@@ -22,4 +23,5 @@ public class ConsolidationSailingScheduleRequest implements IRunnerRequest {
     private LocalDateTime earliestDropOffFullEquipmentToCarrier;
     private LocalDateTime latestArrivalTime;
     private String carrier;
+    private String scacCode;
 }

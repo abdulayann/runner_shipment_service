@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface IServiceDetailsDao {
     ServiceDetails save(ServiceDetails serviceDetails);
@@ -20,4 +21,10 @@ public interface IServiceDetailsDao {
     List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId);
     List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId, Map<Long, ServiceDetails> oldEntityMap);
     List<ServiceDetails> updateEntityFromShipment(List<ServiceDetails> serviceDetailsList, Long shipmentId, List<ServiceDetails> oldEntityList) throws RunnerException;
+    Optional<ServiceDetails> findByGuid(UUID id);
+    List<ServiceDetails> findByIdIn(List<Long> ids);
+    void deleteByIdIn(List<Long> deleteIds);
+    Optional<ServiceDetails> findByIdWithQuery(Long id);
+    Optional<ServiceDetails> findByGuidWithQuery(UUID guid);
+    Page<ServiceDetails> findAllWithoutTenantFilter(Specification<ServiceDetails> spec, Pageable pageable);
 }

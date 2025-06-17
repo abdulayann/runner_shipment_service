@@ -358,7 +358,7 @@ public class ContainerV3Util {
         container.setNetWeight(BigDecimal.ZERO);
         container.setGrossVolume(BigDecimal.ZERO);
         container.setGrossWeight(BigDecimal.ZERO);
-        container.setPacks("0");
+        container.setPacks(null);
         container.setPacksType(null);
     }
 
@@ -372,12 +372,12 @@ public class ContainerV3Util {
         if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
             return;
         if(isStringNullOrEmpty(container.getPacks()))
-            container.setPacks("0");
+            container.setPacks(null);
         if(isStringNullOrEmpty(container.getPacksType()))
             container.setPacksType(packsType);
         else if(!Objects.equals(packsType, container.getPacksType()))
             container.setPacksType(PKG);
-        container.setPacks(String.valueOf(Integer.parseInt(container.getPacks()) + packs));
+        container.setPacks(String.valueOf(Integer.parseInt(isStringNullOrEmpty(container.getPacks()) ? "0" : container.getPacks()) + packs));
     }
 
     public void containerBeforeSave(List<Containers> containers) throws RunnerException {

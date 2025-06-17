@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
@@ -96,6 +97,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRe
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -287,6 +289,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private CustomKeyGenerator keyGenerator;
     @Mock
     private IDpsEventService dpsEventService;
+    @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;
@@ -1122,9 +1126,16 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         routing.setShipmentId(1L);
         request.setRoutings(List.of(routing));
 
+        Routings routing1 = new Routings();
+        routing1.setShipmentId(1L);
+        routing1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routing1);
         shipmentDetails.setTransportMode("SEA");
         shipmentDetails.setId(1L);
 
+        when(routingsV3Service.getRoutingsByShipmentId(anyLong())).thenReturn(routingsList);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(routingsV3Service.updateBulk(any(), eq(SHIPMENT))).thenReturn(new BulkRoutingResponse());
         doNothing().when(shipmentDao).updateSailingScheduleRelatedInfo(any(), anyLong());
@@ -1132,6 +1143,38 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentServiceImplV3.updateSailingScheduleDataToShipment(request);
 
         verify(shipmentDao).updateSailingScheduleRelatedInfo(request, 1L);
+    }
+
+    @Test
+    void testUpdateSailingScheduleDataToShipment_empty() throws RunnerException {
+        ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+        ShipmentSailingScheduleResponse response = shipmentServiceImplV3.updateSailingScheduleDataToShipment(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testUpdateSailingScheduleDataToShipment_Exception() {
+        ShipmentSailingScheduleRequest request = new ShipmentSailingScheduleRequest();
+        RoutingsRequest routing = new RoutingsRequest();
+        routing.setShipmentId(1L);
+        request.setRoutings(List.of(routing));
+
+        Routings routing1 = new Routings();
+        routing1.setShipmentId(1L);
+        routing1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routing1);
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setId(1L);
+        List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(1L);
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMappings.add(consoleShipmentMapping);
+
+        when(consoleShipmentMappingDao.findByShipmentId(anyLong())).thenReturn(consoleShipmentMappings);
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.updateSailingScheduleDataToShipment(request));
     }
 
     @Test

@@ -80,10 +80,6 @@ class CargoServiceTest {
 
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "20GP")));
-        when(jsonHelper.convertToJson(mdmResponse.getData())).thenReturn("dummyJson");
-        when(jsonHelper.convertJsonToMap("dummyJson")).thenReturn(
-                Map.of("data", Arrays.asList(Collections.singletonMap("code", "20GP")))
-        );
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -115,10 +111,6 @@ class CargoServiceTest {
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertToJson(mdmResponse.getData())).thenReturn("dummyJson");
-        when(jsonHelper.convertJsonToMap("dummyJson")).thenReturn(
-                Map.of("data", Arrays.asList(Collections.singletonMap("code", "40GP")))
-        );
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         // Test
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -149,10 +141,6 @@ class CargoServiceTest {
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(3));
         Map<String, Object> mdmMap = new HashMap<>();
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertToJson(mdmResponse.getData())).thenReturn("dummyJson");
-        when(jsonHelper.convertJsonToMap("dummyJson")).thenReturn(
-                Map.of("data", Arrays.asList(Collections.singletonMap("code", "40GP")))
-        );
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
 
         // Test
@@ -263,8 +251,6 @@ class CargoServiceTest {
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -314,8 +300,6 @@ class CargoServiceTest {
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -365,8 +349,6 @@ class CargoServiceTest {
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         CargoDetailsResponse response = cargoService.getCargoDetails(request);
@@ -405,8 +387,6 @@ class CargoServiceTest {
 
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -455,8 +435,6 @@ class CargoServiceTest {
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
@@ -507,8 +485,6 @@ class CargoServiceTest {
 
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(booking));
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(dependentServiceResponse);
-        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of("data", List.of(mdmContainerTypeResponse)));
-        when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();

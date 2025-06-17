@@ -1717,6 +1717,7 @@ public class AwbService implements IAwbService {
             EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
 
             awbCargoInfo.setRaNumber(address.getKCRANumber());
+            awbCargoInfo.setRaExpiryDate(StringUtility.isNotEmpty(address.getKCRAExpiry()) ? LocalDateTime.parse(address.getKCRAExpiry()) : null);
             if (StringUtility.isNotEmpty(address.getCountry()))
                 awbCargoInfo.setCountryCode(address.getCountry().length() == 2 ? address.getCountry() : CountryListHelper.ISO3166.getAlpha2IfAlpha3(address.getCountry()));
         }
@@ -1966,9 +1967,20 @@ public class AwbService implements IAwbService {
                 break;
             }
             case AWB_ROUTING: {
-                if (resetAwbRequest.getAwbType().equals(Constants.MAWB))
+                CarrierDetails carrierDetails;
+                AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
+                if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
                     awb.setAwbRoutingInfo(generateMawbRoutingInfo(consolidationDetails.get(), createAwbRequest));
-                else awb.setAwbRoutingInfo(generateAwbRoutingInfo(shipmentDetails.get(), createAwbRequest));
+                    carrierDetails = consolidationDetails.get().getCarrierDetails();
+                }
+                else
+                {
+                    awb.setAwbRoutingInfo(generateAwbRoutingInfo(shipmentDetails.get(), createAwbRequest));
+                    carrierDetails = shipmentDetails.get().getCarrierDetails();
+                }
+                awbShipmentInfo.setFirstCarrier(carrierDetails.getShippingLine());
+                setAwbShipmentInfoUnLocationData(awbShipmentInfo, carrierDetails, false, false);
+
                 break;
             }
             case AWB_NOTIFY_PARTY_INFO: {

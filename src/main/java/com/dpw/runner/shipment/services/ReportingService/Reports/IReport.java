@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -440,6 +441,7 @@ public abstract class IReport {
         populateIGMInfo(shipment, dictionary);
         addDgTags(shipment, dictionary);
         dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+        populateV3TruckDriverDetailsTags(shipment, dictionary);
     }
 
     private void addNoOfPacks(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
@@ -3118,6 +3120,24 @@ public abstract class IReport {
         }
         else {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, false);
+        }
+    }
+
+    public void populateV3TruckDriverDetailsTags(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        if(shipmentModel.getTruckDriverDetails() != null && !shipmentModel.getTruckDriverDetails().isEmpty()) {
+            TruckDriverDetailsModel truckDriverDetailsModel = shipmentModel.getTruckDriverDetails().get(0);
+            dictionary.put(S_TRUCK_NO, toUpperCase(truckDriverDetailsModel.getTruckNumberPlate()));
+            dictionary.put(S_DRIVER_NAME, toUpperCase(truckDriverDetailsModel.getDriverName()));
+            dictionary.put(S_TRAILER_NO, toUpperCase(truckDriverDetailsModel.getTrailerNumberPlate()));
+            dictionary.put(S_DRIVER_MOBILE_NUMBER, toUpperCase(truckDriverDetailsModel.getDriverMobileNumber()));
+            dictionary.put(S_DRIVER_ID, toUpperCase(truckDriverDetailsModel.getDriverId()));
+            dictionary.put(S_TRUCK_TRAILER_TYPE, truckDriverDetailsModel.getTruckOrTrailerType());
+            dictionary.put(S_TRANSPORT_BY, toUpperCase(truckDriverDetailsModel.getTransporterType().getDescription()));
+            if(truckDriverDetailsModel.getTransporterType().equals(Ownership.Self)) {
+                dictionary.put(S_TRANSPORTER_NAME, toUpperCase(truckDriverDetailsModel.getSelfTransporterName()));
+            } else {
+                try { dictionary.put(S_TRANSPORTER_NAME, toUpperCase((String) truckDriverDetailsModel.getThirdPartyTransporter().getOrgData().get(FULL_NAME))); } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+            }
         }
     }
 

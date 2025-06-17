@@ -50,11 +50,11 @@ public class TruckDriverDetails extends MultiTenancy {
     private String driverMobileNumber;
 
     @Column(name = "truck_number_plate")
-    @Size(max=20, message = "max size is 20 for truck_number_plate")
+    @Size(max=50, message = "max size is 50 for truck_number_plate")
     private String truckNumberPlate;
 
     @Column(name = "trailer_number_plate")
-    @Size(max=20, message = "max size is 20 for trailer_number_plate")
+    @Size(max=50, message = "max size is 50 for trailer_number_plate")
     private String trailerNumberPlate;
 
     @Column(name = "truck_or_trailer_type_id")
@@ -80,4 +80,8 @@ public class TruckDriverDetails extends MultiTenancy {
 
     @Column(name = "truck_status")
     private String truckStatus;
+
+    @Column(name = "driver_id")
+    @Size(max=50, message = "max size is 50 for driver_id")
+    private String driverId;
 }

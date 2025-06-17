@@ -50,6 +50,7 @@ public class AwbCargoInfo implements Serializable {
 
     private String countryCode;
     private String raNumber;
+    private LocalDateTime raExpiryDate;
     private List<String> screeningStatus;
     private String otherMethod;
     private String exemptionCode;

@@ -32,4 +32,5 @@ public class DocumentManagerSaveFileRequest {
     private Boolean isTransferEnabled;
     private String transportMode;
     private String shipmentType;
+    private String consolidationType;
 }

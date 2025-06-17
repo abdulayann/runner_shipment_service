@@ -20,6 +20,7 @@ public class DocUploadRequest implements IDocumentModel{
     private Boolean isTransferEnabled;
     private String shipmentType;
     private String fileName;
+    private String consolidationType;
 
     // Copy Constructor
     public DocUploadRequest(DocUploadRequest other) {

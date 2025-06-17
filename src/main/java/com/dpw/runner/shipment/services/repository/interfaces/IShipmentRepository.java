@@ -259,4 +259,11 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             """)
     List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(@Param("shipmentIdList") List<Long> shipmentIdList);
 
+    @Modifying
+    @Transactional
+    @Query("UPDATE ShipmentDetails s SET " +
+            "s.dgPacksCount = :dgPacks, " +
+            "s.dgPacksUnit = :dgPacksUnit " +
+            "WHERE s.id = :shipmentId")
+    void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
 }
