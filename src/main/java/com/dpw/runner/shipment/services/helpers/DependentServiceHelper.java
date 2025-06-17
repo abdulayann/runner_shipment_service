@@ -46,7 +46,7 @@ public class DependentServiceHelper {
         pushShipmentDataToKafka(shipmentDetails, isCreate, isAutoSellRequired);
         pushShipmentDataToTrackingServiceAdapter(shipmentDetails);
         try {
-            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers));
+            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers), shipmentDetails);
         }
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());

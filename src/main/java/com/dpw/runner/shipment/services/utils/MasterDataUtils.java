@@ -1247,6 +1247,19 @@ public class MasterDataUtils{
         return cache;
     }
 
+    public String getCarrierItemValueFromSCAC(String carrierSCACCode) {
+        if (isStringNullOrEmpty(carrierSCACCode)) {
+            return null;
+        }
+        List<String> carrierCodes = new ArrayList<>();
+        carrierCodes.add(carrierSCACCode);
+        Map<String, EntityTransferCarrier> map = fetchInBulkCarriersBySCACCode(carrierCodes);
+        if (map.containsKey(carrierSCACCode)) {
+            return map.get(carrierSCACCode).ItemValue;
+        }
+        return null;
+    }
+
     public <T> List<String> createInBulkCurrencyRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))

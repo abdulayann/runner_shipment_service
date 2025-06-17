@@ -46,7 +46,6 @@ public class AwbCargoInfo implements Serializable {
     private String csdInfoDate;
     // To be used for Screener's name
     private String userInitials;
-    private Boolean isUserInitialsManuallyAdded = false;
     private Integer slac;
 
     private String countryCode;
