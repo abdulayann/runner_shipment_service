@@ -315,7 +315,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 ShipmentListResponse shipmentListResponse = (ShipmentListResponse) commonUtils.setIncludedFieldsToResponse(curr, includeColumns, new ShipmentListResponse());
                 shipmentListResponses.add(shipmentListResponse);
             }
-            List<IRunnerResponse> filteredList = convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData, shipmentListResponses, listCommonRequest.getIncludeColumns().stream().collect(Collectors.toSet()), listCommonRequest.getNotificationFlag());
+            List<IRunnerResponse> filteredList = convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData, shipmentListResponses, listCommonRequest.getIncludeColumns().stream().collect(Collectors.toSet()));
 
             return ResponseHelper.buildListSuccessResponse(
                     filteredList,
@@ -1378,13 +1378,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData,
                                                              List<ShipmentListResponse> shipmentListResponses,
-                                                             Set<String> includeColumns, Boolean notificationFlag) {
+                                                             Set<String> includeColumns) {
         V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
 
         // Handle pending notifications
-        handlePendingNotifications(lst, shipmentListResponses, notificationFlag);
+        handlePendingNotifications(lst, shipmentListResponses);
 
         // Get booking mappings
         Map<Long, Long> shipmentIdToBookingIdMap = getShipmentToBookingIdMap(shipmentListResponses);
@@ -1400,10 +1400,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return responseList;
     }
 
-    private void handlePendingNotifications(List<ShipmentDetails> lst, List<ShipmentListResponse> shipmentListResponses, Boolean notificationFlag) {
-        if (!Boolean.TRUE.equals(notificationFlag)) {
-            return;
-        }
+    private void handlePendingNotifications(List<ShipmentDetails> lst, List<ShipmentListResponse> shipmentListResponses) {
 
         List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());

@@ -77,6 +77,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -3186,6 +3187,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
         }
+        appendCriteriaIfNotificationFlagEnabled(request);
         checkBookingIdCriteria(request);
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
         Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -3198,6 +3200,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         consoleResponse.forEach(consol -> consolidationListResponses.add((ConsolidationListResponse) consol));
         response.setConsolidationListResponses(consolidationListResponses);
         return response;
+    }
+
+    private void appendCriteriaIfNotificationFlagEnabled(ListCommonRequest request) {
+        if(Boolean.TRUE.equals(request.getNotificationFlag())) {
+            Page<Long> eligibleConsolId = consolidationDetailsDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED,
+                    PageRequest.of(Math.max(0, request.getPageNo() - 1), request.getPageSize()));
+            List<Long> consolidationIds = notificationDao.findEntityIdsByEntityType(CONSOLIDATION);
+            Set<Long> uniqueConsolidationIds = new HashSet<>(eligibleConsolId.getContent());
+            uniqueConsolidationIds.addAll(consolidationIds);
+            List<Long> combinedConsolIds = new ArrayList<>(uniqueConsolidationIds);
+            andCriteria("id", combinedConsolIds, "IN", request);
+        }
     }
 
     private void checkBookingIdCriteria(ListCommonRequest request) {
@@ -3375,6 +3389,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public ConsolidationListV3Response getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
         AutoAttachConsolidationV3Request request = (AutoAttachConsolidationV3Request) commonRequestModel.getData();
         ListCommonRequest consolListRequest = request;
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
 
         consolListRequest = CommonUtils.andCriteria(TRANSPORT_MODE, request.getTransportMode(), "=", consolListRequest);
         if (!Objects.isNull(request.getDirection()))
