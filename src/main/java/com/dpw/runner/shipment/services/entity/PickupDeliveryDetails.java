@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Setter
@@ -168,4 +169,18 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "is_direct_delivery")
     private Boolean isDirectDelivery;
+
+    @Column(name = "ti_reference_number", nullable = false)
+    private String tiReferenceNumber;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PickupDeliveryDetails that = (PickupDeliveryDetails) o;
+        return Objects.equals(getId(), that.getId());
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
 }

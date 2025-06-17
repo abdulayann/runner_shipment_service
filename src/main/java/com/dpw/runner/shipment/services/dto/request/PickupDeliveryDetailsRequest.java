@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -66,6 +67,8 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime deliveryGateOut;
     private List<Parties> partiesList;
     private String remarks;
+    @Valid
     private List<TiLegsRequest> tiLegsList;
     private Boolean isDirectDelivery;
+    private String tiReferenceNumber;
 }

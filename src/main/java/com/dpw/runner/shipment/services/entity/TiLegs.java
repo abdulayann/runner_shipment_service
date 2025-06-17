@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 
+import com.dpw.runner.shipment.services.commons.enums.TILegType;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
+import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -17,6 +20,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Setter
@@ -38,7 +42,8 @@ public class TiLegs extends MultiTenancy {
 
     @NotNull
     @Column(name = "leg_type")
-    private String legType;
+    @Enumerated(EnumType.STRING)
+    private TILegType legType;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "origin_id", referencedColumnName = "id")
@@ -86,8 +91,21 @@ public class TiLegs extends MultiTenancy {
     private LocalDateTime requiredBy;
 
     @Column(name = "drop_mode")
+    @MasterData(type = MasterDataType.DROP_MODE)
     private String dropMode;
 
     @Column(name = "remarks")
     private String remarks;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TiLegs that = (TiLegs) o;
+        return Objects.equals(getId(), that.getId());
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
 }
