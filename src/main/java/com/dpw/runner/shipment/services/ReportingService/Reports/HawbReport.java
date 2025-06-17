@@ -385,6 +385,12 @@ public class HawbReport extends IReport{
             String commaHsCode = HSCODE + ": ";
             commaHsCode += String.join(", ", dgHsCodesSet);
             dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED, commaHsCode);
+
+            List<String> commaHsCodeList = new ArrayList<>();
+            for(String hscode: dgHsCodesSet) {
+                commaHsCodeList.add(HSCODE + ": " + hscode);
+            }
+            dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED1, commaHsCodeList);
         }
 
         if (!hsCodesSet.isEmpty()) {
@@ -800,7 +806,7 @@ public class HawbReport extends IReport{
                     value.put(ReportConstants.GROSS_WT, convertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                 }
                 value.computeIfPresent(ReportConstants.CHARGEABLE_WT, (key, oldValue) ->
-                        convertToWeightNumberFormat(oldValue.toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse)
+                        roundUpToNextHalf(oldValue.toString())
                 );
                 addRateChargeTag(v1TenantSettingsResponse, cargoInfoRows, value);
                 addTotalAmountTag(v1TenantSettingsResponse, cargoInfoRows, value);
@@ -839,10 +845,13 @@ public class HawbReport extends IReport{
 
     private void addCodeSets(Set<String> dgHsCodesSet, Set<String> hsCodesSet, Set<String> slacCodeSet, Map<String, Object> value) {
         if (value.get(HS_CODE1) != null) {
-            String hsCode = value.get(HS_CODE1).toString();
-            if (!hsCode.isEmpty()) {
-                dgHsCodesSet.add(hsCode);
-                hsCodesSet.add(hsCode);
+            String hsCodeStr = value.get(HS_CODE1).toString();
+            if (hsCodeStr!=null && !hsCodeStr.isEmpty()) {
+                String[] hsCodes = hsCodeStr.split(",");
+                for (String hsCode : hsCodes) {
+                    dgHsCodesSet.add(hsCode);
+                    hsCodesSet.add(hsCode);
+                }
             }
         }
         if (value.get(SLAC_CODE) != null) {

@@ -71,6 +71,8 @@ public class CargoManifestAirConsolidationReport extends IReport{
         cargoManifestAirConsolidationModel.setTenantModel(getTenant());
         cargoManifestAirConsolidationModel.setShipmentModelList(new ArrayList<>());
         cargoManifestAirConsolidationModel.setAwbList(new ArrayList<>());
+        List<Awb> consoleAwb = awbDao.findByConsolidationId(id);
+        cargoManifestAirConsolidationModel.setConsolidationAwb(listIsNullOrEmpty(consoleAwb) ? null : consoleAwb.get(0));
         cargoManifestAirConsolidationModel.setPackSummaryResponse(packingService.calculatePackSummary(commonUtils.convertToList(cargoManifestAirConsolidationModel.getConsolidationModel().getPackingList(), Packing.class),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getTransportMode(),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getContainerCategory(), new ShipmentMeasurementDetailsDto()));
@@ -98,6 +100,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         populateConsolidationFields(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
         dictionary.put(IS_CONSOL_SECURITY, isSecurityData);
+        populateAwbPartiesInfo(dictionary, cargoManifestAirConsolidationModel.getConsolidationAwb());
         dictionary = populateHAWBAndSecurityData(cargoManifestAirConsolidationModel.getShipmentModelList(), cargoManifestAirConsolidationModel.getAwbList(), dictionary, isSecurityData, isShipperAndConsignee, true);
         populateRaKcDataConsolidation(dictionary, cargoManifestAirConsolidationModel.getConsolidationModel());
         boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirConsolidationModel.getConsolidationModel().getRoutingsList(), dictionary, false);
