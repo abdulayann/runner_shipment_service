@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
@@ -214,7 +215,7 @@ public class ShipmentControllerV3 {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
-    public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequest request)
+    public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request)
         throws RunnerException {
         log.info("Received for oceanDGApprovalResponse with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
 

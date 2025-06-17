@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.mdm;
 
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
-public class MdmTaskCreateRequest {
+public class MdmTaskCreateRequest implements IRunnerRequest {
 
   @JsonProperty("status")
   private String status;
@@ -24,9 +25,6 @@ public class MdmTaskCreateRequest {
 
   @JsonProperty("entityType")
   private String entityType;
-
-//  @JsonProperty("TenantId")
-//  private String tenantId;
 
   @JsonProperty("isCreatedFromV2")
   private Boolean isCreatedFromV2;

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
@@ -64,6 +65,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.createTaskUrl}")
     String createTaskUrl;
+
+    @Value("${mdm.approveOrRejectTaskUrl}")
+    String approveOrRejectTaskUrl;
 
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -187,6 +191,29 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     }
 
     @Override
+    public List<Map<String, Object>> getTaskList(String entityUuid, String entityType, String status, String taskType) {
+        String url = baseUrl + departmentListUrl;
+        try {
+            MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).searchCriteriaList(
+                List.of(
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.ENTITY_UUID).operator(MdmConstants.IN).value(entityUuid).build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.STATUS).operator(MdmConstants.IN).value(status).build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.ENTITY_TYPE).operator(MdmConstants.LIKE_OPERATOR).value(entityType).build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.TASK_TYPE).operator(MdmConstants.EQ).value(taskType).build()
+                )).build();
+
+            ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
+            DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
+            log.info("MDM getTask response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity)));
+            return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
+        }
+        catch (Exception e) {
+            log.error("MDM Service - error while fetching task list", e);
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
     public DependentServiceResponse getContainerTypes() throws RunnerException {
         String url = baseUrl + containerTypeListUrl;
         try{
@@ -214,6 +241,23 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
             log.error("MDM createTask Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            throw new RunnerException(errorMessage);
+        }
+    }
+
+    @Override
+    public void approveOrRejectTask(MdmTaskApproveOrRejectRequest request) throws RunnerException {
+        String url = baseUrl + approveOrRejectTaskUrl;
+        try {
+            log.info("Calling MDM approveOrReject api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
+                RequestEntity.post(URI.create(url)).body(request),
+                DependentServiceResponse.class
+            );
+            log.info("MDM approveOrReject api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+        } catch (Exception ex) {
+            String errorMessage = ex.getMessage();
+            log.error("MDM approveOrReject Failed due to: {}", jsonHelper.convertToJson(errorMessage));
             throw new RunnerException(errorMessage);
         }
     }

@@ -5,10 +5,13 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
@@ -43,6 +46,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpt
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -98,9 +102,11 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
@@ -211,6 +217,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
@@ -311,6 +318,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private final MasterDataHelper masterDataHelper;
     private final IRoutingsV3Service routingsV3Service;
     private final INotificationService notificationService;
+    private final IMDMServiceAdapter mdmServiceAdapter;
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
     @Autowired
@@ -356,7 +364,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
             MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService,
-            IPackingV3Service packingV3Service, INotificationService notificationService) {
+            IPackingV3Service packingV3Service, INotificationService notificationService,
+        IMDMServiceAdapter mdmServiceAdapter) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -399,6 +408,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.masterDataHelper = masterDataHelper;
         this.packingV3Service = packingV3Service;
         this.notificationService = notificationService;
+        this.mdmServiceAdapter = mdmServiceAdapter;
     }
 
     @Override
@@ -2921,7 +2931,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public String dgApprovalResponse(OceanDGRequest request) throws RunnerException {
+    public String dgApprovalResponse(OceanDGRequestV3 request) throws RunnerException {
         if (Objects.isNull(request)) {
             log.error("Invalid request for sendEmailForDGApprove");
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
@@ -2941,7 +2951,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new RunnerException(String.format("Ocean DG status value %s is invalid", oldDgStatus));
         }
 
-        if(StringUtils.isEmpty(request.getTaskId())){
+        if(CollectionUtils.isEmpty(request.getTaskGuids())){
             fetchDgUserTask(request);
         }
 
@@ -2977,54 +2987,58 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return warning;
     }
 
-    private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
+    private void fetchDgUserTask(OceanDGRequestV3 request) throws RunnerException {
         CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), SHIPMENTS_WITH_SQ_BRACKETS);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
 
-        V1DataResponse v1Response = null;
+        List<Map<String, Object>> mapList;
         try {
-           // TODO : fetch Task list from MDM and close all tasks
-            //v1Response = v1Service.listTask(commonV1ListRequest);
+            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENT, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
         }
         catch (Exception ex) {
-            log.error("Check Task exist failed to check from V1: " + ex);
-            throw new RunnerException("Check Task exist failed to check from V1: " + ex);
+            log.error("Failed to fetch pending tasks from MDM with RequestId - {} : {}: ", LoggerHelper.getRequestIdFromMDC(), ex);
+            throw new RunnerException(ex.getMessage());
         }
-        List<TaskCreateRequest> taskCreateRequestList = jsonHelper.convertValueToList(v1Response.getEntities(), TaskCreateRequest.class);
 
-        if(taskCreateRequestList.isEmpty()) return;
 
-        if(taskCreateRequestList.size() > 1){
+        if(mapList.isEmpty()) return;
+
+        if(mapList.size() > 1){
             log.error("More than one task in Pending State of oceanDG exist for shipment : " + request.getShipmentId());
         }
 
-        TaskCreateRequest taskCreateRequest = taskCreateRequestList.get(0);
-        request.setTaskId(taskCreateRequest.getId());
-        request.setUserEmail(taskCreateRequest.getUserEmail());
-
+        List<String> taskGuids = new ArrayList<>();
+        for(Map<String, Object> map : mapList){
+            taskGuids.add(map.get("uuid").toString());
+        }
+        request.setTaskGuids(taskGuids);
+        request.setUserEmail(mapList.get(0).get("userEmail").toString());
     }
 
-    private void closeOceanDgTask(OceanDGRequest request){
-        String remarks = request.getRemarks() == null ? "Task Rejected by DG user" :  request.getRemarks();
-        TaskStatusUpdateRequest taskUpdateRequest = TaskStatusUpdateRequest.builder()
-            .entityId(request.getTaskId())
-            .entity(EntityDetails.builder()
-                .status(request.getStatus().getValue())
-                .rejectionRemarks(request.getStatus().getValue() == 2 ? remarks : null )
-                .build())
+    private void closeOceanDgTask(OceanDGRequestV3 request){
+        MdmTaskApproveOrRejectRequest taskUpdateRequest = MdmTaskApproveOrRejectRequest.builder()
+            .status(request.getStatus().getName())
+            .approvedOrRejectedBy(UserContext.getUser().getUsername())
             .build();
 
+        if(TaskStatus.APPROVED.equals(request.getStatus())){
+            taskUpdateRequest.setApprovalComments(request.getRemarks());
+        }else{
+            taskUpdateRequest.setRejectedComments(request.getRemarks());
+        }
 
         try {
-            //TODO : Integrate with mdm api to close task
-           // v1Service.updateTask(taskUpdateRequest);
+            for(String taskGuid : request.getTaskGuids()){
+                taskUpdateRequest.setTaskUuid(taskGuid);
+                mdmServiceAdapter.approveOrRejectTask(taskUpdateRequest);
+            }
         }
         catch (Exception ex) {
-            log.error("task updatation is failed for taskId from V1: " + taskUpdateRequest.getEntityId());
+            log.error("task approval or rejection is failed for requestId from MDM: {} : {} " ,LoggerHelper.getRequestIdFromMDC() , request.getShipmentId());
         }
     }
 
-    private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequest request){
+    private DBOperationType determineOperationTypeAfterApproval(OceanDGStatus dgStatus, OceanDGRequestV3 request){
         DBOperationType operationType = DG_REQUEST;
         if(dgStatus == OCEAN_DG_REQUESTED){
             if(request.getStatus() == TaskStatus.APPROVED){
@@ -3042,7 +3056,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return operationType;
     }
 
-    private String sendEmailResponseToDGRequester(OceanDGRequest request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
+    private String sendEmailResponseToDGRequester(OceanDGRequestV3 request, ShipmentDetails shipmentDetails, OceanDGStatus newStatus) throws RunnerException {
 
         String warningMessage = null;
         Map<OceanDGStatus, EmailTemplatesRequest> emailTemplates = new EnumMap<>(OceanDGStatus.class);
@@ -3059,7 +3073,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 return warningMessage;
             }
 
-            commonUtils.sendEmailResponseToDGRequester(template, request, shipmentDetails);
+            commonUtils.sendEmailResponseToDGRequesterV3(template, request, shipmentDetails);
         } catch (Exception e) {
             log.error(ERROR_WHILE_SENDING_EMAIL, e.getMessage());
             warningMessage = ERROR_WHILE_SENDING_EMAIL + e.getMessage();
@@ -3068,7 +3082,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private CommonV1ListRequest createCriteriaTaskListRequest(Object value1, Object value2) {
-        List<Object> criteria1 = new ArrayList<>(List.of(List.of("EntityId"), "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(List.of("entityUuid"), "=", value1));
         List<Object> criteria2 = new ArrayList<>(List.of(List.of("EntityType"), "=", value2));
         List<Object> criteria3 = new ArrayList<>(List.of(List.of("TaskType"), "=", 22));
         List<Object> criteria4 = new ArrayList<>(List.of(List.of("Status"), "=", 0));

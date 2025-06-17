@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -784,6 +785,20 @@ public class CommonUtils {
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
                 template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+    }
+
+    public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
+        OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+
+
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
+
+        populateDGReceiverDictionaryV3(dictionary, shipmentDetails, request);
+
+
+        notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
+            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -1907,6 +1922,16 @@ public class CommonUtils {
     }
 
     private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, OceanDGRequest request) {
+        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
+        dictionary.put(REMARKS, request.getRemarks());
+        dictionary.put(STATUS, request.getStatus());
+    }
+
+    private void populateDGReceiverDictionaryV3(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, OceanDGRequestV3 request) {
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
