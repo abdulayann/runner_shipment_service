@@ -33,7 +33,6 @@ import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.service.impl.ShipmentService.getValueOrDefault;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.getIntFromString;
@@ -99,6 +98,7 @@ import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
@@ -2995,8 +2995,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if(taskCreateRequestList.isEmpty()) return;
 
         if(taskCreateRequestList.size() > 1){
-           // log.error("More than one task in Pending State of oceanDG exist for shipment : " + request.getShipmentId());
-            //TODO : close all tasks
+            log.error("More than one task in Pending State of oceanDG exist for shipment : " + request.getShipmentId());
         }
 
         TaskCreateRequest taskCreateRequest = taskCreateRequestList.get(0);
@@ -3126,7 +3125,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(emailTemplateFuture, vesselResponseFuture).join();
         Integer roleId = commonUtils.getRoleId(templateStatus);
         List<String> toUserEmails = commonUtils.getUserEmailsByRoleId(roleId);
-        TaskCreateResponse taskCreateResponse =  commonUtils.createTask(shipmentDetails, roleId);
+        TaskCreateResponse taskCreateResponse =  commonUtils.createTaskMDM(shipmentDetails, roleId);
 
         try {
             sendEmailForDGApproval(emailTemplatesRequestMap, toUserEmails, vesselsResponse, templateStatus, shipmentDetails, remarks,

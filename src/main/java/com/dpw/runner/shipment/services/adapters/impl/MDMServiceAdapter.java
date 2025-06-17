@@ -8,6 +8,8 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
@@ -59,6 +61,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.containerTypeListUrl}")
     String containerTypeListUrl;
+
+    @Value("${mdm.createTaskUrl}")
+    String createTaskUrl;
 
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -195,4 +200,21 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         }
     }
 
+    @Override
+    public MdmTaskCreateResponse createTask(MdmTaskCreateRequest request) throws RunnerException {
+        String url = baseUrl + createTaskUrl;
+        try {
+            log.info("Calling MDM createTask api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
+                RequestEntity.post(URI.create(url)).body(request),
+                DependentServiceResponse.class
+            );
+            log.info("MDM createTask api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            return jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), MdmTaskCreateResponse.class);
+        } catch (Exception ex) {
+            String errorMessage = ex.getMessage();
+            log.error("MDM createTask Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            throw new RunnerException(errorMessage);
+        }
+    }
 }

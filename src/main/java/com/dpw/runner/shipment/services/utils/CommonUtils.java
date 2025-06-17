@@ -22,6 +22,8 @@ import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
@@ -1791,6 +1793,31 @@ public class CommonUtils {
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
                     shipmentDetails.getId(), e.getMessage()));
+        }
+    }
+
+    public TaskCreateResponse createTaskMDM(ShipmentDetails shipmentDetails, Integer roleId) throws RunnerException {
+        MdmTaskCreateRequest taskRequest = MdmTaskCreateRequest
+            .builder()
+            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+            .entityUuid(shipmentDetails.getGuid().toString())
+            .roleId(roleId)
+            .taskType(DG_OCEAN_APPROVAL)
+            .status(PENDING_ACTION_TASK)
+            .userId(UserContext.getUser().getUserId())
+            .isCreatedFromV2(true)
+            .sendEmail(false)
+            .build();
+
+        try {
+            MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
+            return TaskCreateResponse
+                .builder()
+                .tasksId(mdmTaskCreateResponse.getId().toString())
+                .build();
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
+                shipmentDetails.getId(), e.getMessage()));
         }
     }
 

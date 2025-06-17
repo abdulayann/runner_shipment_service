@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.adapters.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
@@ -21,4 +23,6 @@ public interface IMDMServiceAdapter {
     List<Map<String, Object>> getDepartmentList(String transportMode, String shipmentType, String module);
 
     DependentServiceResponse getContainerTypes() throws RunnerException;
+
+    MdmTaskCreateResponse createTask(MdmTaskCreateRequest request) throws RunnerException;
 }

@@ -201,6 +201,8 @@ public class Constants {
     public static final String SERVICE = "Service";
     public static final String PENDING_ACTION = "Pending Action";
     public static final String OCEAN_DG_TASKTYPE = "DG Ocean Approval";
+    public static final String DG_OCEAN_APPROVAL = "DG_OCEAN_APPROVAL";
+    public static final String PENDING_ACTION_TASK = "PENDING_ACTION";
 
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
