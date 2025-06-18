@@ -356,7 +356,7 @@ public class DpsEventService implements IDpsEventService {
             List<DpsEventResponse.DpsFieldDataResponse> dpsFieldDataResponseList =
                     dpsEvent.getDpsFieldData() != null
                             ? dpsEvent.getDpsFieldData().stream()
-                            .map(dpsFieldData -> new DpsEventResponse.DpsFieldDataResponse(dpsFieldData.getKey(), dpsFieldData.getValue()))
+                            .map(dpsFieldData -> new DpsEventResponse.DpsFieldDataResponse(dpsFieldData.getKey(), dpsFieldData.getValue(), dpsFieldData.getId()))
                             .collect(Collectors.toList())
                             : Collections.emptyList();
 
