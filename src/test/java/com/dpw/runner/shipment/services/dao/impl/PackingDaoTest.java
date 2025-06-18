@@ -4,9 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -68,8 +66,6 @@ class PackingDaoTest {
     private static Packing testPacking;
 
     private static ObjectMapper objectMapperTest;
-    private static PackingRequest testPackingRequest;
-    private static PackingResponse testPackingResponse;
 
     @BeforeAll
     static void init(){
@@ -84,8 +80,6 @@ class PackingDaoTest {
     @BeforeEach
     void setUp() {
         testPacking = jsonTestUtility.getTestPacking();
-        testPackingRequest = objectMapperTest.convertValue(testPacking , PackingRequest.class);
-        testPackingResponse = objectMapperTest.convertValue(testPacking , PackingResponse.class);
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
@@ -926,6 +920,12 @@ class PackingDaoTest {
     void testGetPackingAssignmentCountByShipmentInAndTenant() {
         PackingAssignmentProjection packingAssignmentProjection = packingDao.getPackingAssignmentCountByShipmentInAndTenant(List.of(1L, 2L), 2);
         assertNull(packingAssignmentProjection);
+    }
+
+    @Test
+    void testCheckPackingExistsForShipment() {
+        when(packingRepository.existsPackingByShipmentId(1L)).thenReturn(true);
+        assertDoesNotThrow(() -> packingDao.checkPackingExistsForShipment(1L));
     }
 
 }

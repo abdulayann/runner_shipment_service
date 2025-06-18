@@ -726,6 +726,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setConsolidationList(null);
             entity.setContainersList(null);
+            setShipmentCargoFields(entity, oldEntity.get());
 
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
@@ -2694,5 +2695,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) || Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
             return;
         containerV3Service.updateAttachedContainersData(List.of(shipmentDetails.getContainerAssignedToShipmentCargo()));
+    }
+
+    protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
+        boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
+        if (packsAvailable) {
+            shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
+            shipmentDetails.setWeight(oldShipment.getWeight());
+            shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
+            shipmentDetails.setVolume(oldShipment.getVolume());
+            shipmentDetails.setVolumeUnit(oldShipment.getVolumeUnit());
+            shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
+            shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
+        }
     }
 }
