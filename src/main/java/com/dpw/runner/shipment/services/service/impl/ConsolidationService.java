@@ -644,6 +644,14 @@ public class ConsolidationService implements IConsolidationService {
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+
+        // Check carrier name presence in Master Data and Populate the respective in Shipment request before proceeding
+        String scacCodeFromIntraa = request.getCarrierDetails().getScacCode();
+        if (scacCodeFromIntraa != null) {
+            String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
+            request.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+        }
+
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1763,6 +1771,13 @@ public class ConsolidationService implements IConsolidationService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
+        // Check carrier name presence in Master Data and Populate the respective in Shipment request before proceeding
+        String scacCodeFromIntraa = consolidationDetailsRequest.getCarrierDetails().getScacCode();
+        if (scacCodeFromIntraa != null) {
+            String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
+            consolidationDetailsRequest.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+        }
+
         consolidationDetailsRequest.setShipmentsList(null);
 
         try {
@@ -1789,6 +1804,14 @@ public class ConsolidationService implements IConsolidationService {
             log.error(responseMsg, e);
             throw new GenericException(e.getMessage());
         }
+    }
+
+    private String getCarrierNameFromMasterDataUsingScacCodeFromIntraa(String scacCode) {
+        String carrierItemValueFromSCAC = masterDataUtils.getCarrierItemValueFromSCAC(scacCode);
+        if (carrierItemValueFromSCAC == null) {
+            throw new IllegalArgumentException("Data not present in Carrier Master data");
+        }
+        return carrierItemValueFromSCAC;
     }
 
     private void addAuditLogConsolidation(ConsolidationDetails entity, ConsolidationDetails prevEntity, String operationName) {
