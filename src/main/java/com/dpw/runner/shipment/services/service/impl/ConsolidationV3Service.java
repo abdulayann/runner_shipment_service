@@ -1619,12 +1619,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
 
-
-//        try {
-//            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
-//        } catch (Exception e) {
-//            log.error("Error Syncing Consol");
-//        }
+        
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";
