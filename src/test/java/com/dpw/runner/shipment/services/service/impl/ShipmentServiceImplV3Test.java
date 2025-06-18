@@ -4449,4 +4449,48 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         additionalDetails.setEmptyContainerReturned(isEmptyContainerReturned);
         return additionalDetails;
     }
+
+    @Test
+    void testSetShipmentCargoFields_whenPacksExist_shouldCopyFieldsFromOldShipment() {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setNoOfPacks(10);
+        oldShipment.setWeight(BigDecimal.valueOf(100.0));
+        oldShipment.setWeightUnit("KG");
+        oldShipment.setVolume(BigDecimal.valueOf(20.0));
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        when(packingDao.checkPackingExistsForShipment(1L)).thenReturn(true);
+
+        shipmentServiceImplV3.setShipmentCargoFields(newShipment, oldShipment);
+
+        assertEquals(10, newShipment.getNoOfPacks());
+        assertEquals("KG", newShipment.getWeightUnit());
+        assertEquals("CBM", newShipment.getVolumeUnit());
+        assertEquals("KG", newShipment.getVolumetricWeightUnit());
+    }
+
+    @Test
+    void testSetShipmentCargoFields_whenPacksNotExist_shouldNotModifyShipment() {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(2L);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+
+        when(packingDao.checkPackingExistsForShipment(2L)).thenReturn(false);
+
+        shipmentServiceImplV3.setShipmentCargoFields(newShipment, oldShipment);
+
+        assertNull(newShipment.getNoOfPacks());
+        assertNull(newShipment.getWeight());
+        assertNull(newShipment.getWeightUnit());
+        assertNull(newShipment.getVolume());
+        assertNull(newShipment.getVolumeUnit());
+        assertNull(newShipment.getVolumetricWeight());
+        assertNull(newShipment.getVolumetricWeightUnit());
+    }
 }
