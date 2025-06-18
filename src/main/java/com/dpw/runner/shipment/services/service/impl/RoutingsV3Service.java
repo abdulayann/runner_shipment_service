@@ -332,6 +332,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         if(Boolean.TRUE.equals(carrierDetails.getIsSameAsOriginPort())) {
             carrierDetails.setOrigin(carrierDetails.getOriginPort());
             carrierDetails.setOriginLocCode(carrierDetails.getOriginPortLocCode());
+            carrierDetails.setOriginCountry(carrierDetails.getOriginPortCountry());
         }
 
         carrierDetails.setEta(lastLeg.getEta());
@@ -341,6 +342,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         if(Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())) {
             carrierDetails.setDestination(carrierDetails.getDestinationPort());
             carrierDetails.setDestinationLocCode(carrierDetails.getDestinationPortLocCode());
+            carrierDetails.setDestinationCountry(carrierDetails.getDestinationPortCountry());
         }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
