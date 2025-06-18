@@ -1103,10 +1103,12 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
 
         // Check carrier name presence in Master Data and Populate the respective in Shipment request before proceeding
-        String scacCodeFromIntraa = request.getCarrierDetails().getScacCode();
-        if (scacCodeFromIntraa != null) {
-            String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
-            request.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+        if (request.getCarrierDetails() != null) {
+            String scacCodeFromIntraa = request.getCarrierDetails().getScacCode();
+            if (scacCodeFromIntraa != null) {
+                String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
+                request.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+            }
         }
 
         try {
@@ -2045,10 +2047,12 @@ public class ShipmentService implements IShipmentService {
         }
 
         // Check carrier name presence in Master Data and Populate the respective in Shipment request before proceeding
-        String scacCodeFromIntraa = shipmentRequest.getCarrierDetails().getScacCode();
-        if (scacCodeFromIntraa != null) {
-            String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
-            shipmentRequest.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+        if (shipmentRequest.getCarrierDetails() != null) {
+            String scacCodeFromIntraa = shipmentRequest.getCarrierDetails().getScacCode();
+            if (scacCodeFromIntraa != null) {
+                String carrierNameFromMasterData = getCarrierNameFromMasterDataUsingScacCodeFromIntraa(scacCodeFromIntraa);
+                shipmentRequest.getCarrierDetails().setShippingLine(carrierNameFromMasterData);
+            }
         }
 
         try {
