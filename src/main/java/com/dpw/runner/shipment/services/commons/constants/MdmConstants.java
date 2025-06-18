@@ -10,7 +10,6 @@ public class MdmConstants {
 
     public static final String LIKE_OPERATOR = "like";
     public static final String EQ = "eq";
-    public static final String IN = "in";
 
     public static final String TASK_TYPE = "taskType";
     public static final String ENTITY_UUID = "entityUuid";

@@ -196,9 +196,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         try {
             MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).searchCriteriaList(
                 List.of(
-                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.ENTITY_UUID).operator(MdmConstants.IN).value(entityUuid).build(),
-                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.STATUS).operator(MdmConstants.IN).value(status).build(),
-                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.ENTITY_TYPE).operator(MdmConstants.LIKE_OPERATOR).value(entityType).build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.ENTITY_UUID).operator(MdmConstants.EQ).value(entityUuid).build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.STATUS).operator(MdmConstants.EQ).value(status).build(),
+                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.ENTITY_TYPE).operator(MdmConstants.EQ).value(entityType).build(),
                     MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.TASK_TYPE).operator(MdmConstants.EQ).value(taskType).build()
                 )).build();
 
