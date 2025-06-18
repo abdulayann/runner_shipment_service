@@ -109,6 +109,7 @@ public class ConsolidationV3Controller {
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         log.info("Received attachShipments request: {}", request);
+        request.setFromConsolidation(true);
         String warning = consolidationV3Service.attachShipments(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }

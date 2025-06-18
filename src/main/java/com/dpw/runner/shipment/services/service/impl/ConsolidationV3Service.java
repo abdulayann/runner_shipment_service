@@ -1486,6 +1486,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ShipmentRequestedType shipmentRequestedType = request.getShipmentRequestedType();
         boolean fromConsolidation = request.isFromConsolidation();
 
+        if (Boolean.FALSE.equals(fromConsolidation) && shipmentRequestedType != null) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
+
         // Ensure request is valid and has required IDs
         consolidationValidationV3Util.validateConsolidationIdAndShipmentIds(consolidationId, shipmentIds);
 
@@ -1496,7 +1500,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             throw new RunnerException("Attach/Detach not allowed");
 
         // Set inter-branch context if type is not explicitly provided
-        setContextIfNeeded(shipmentRequestedType, consolidationDetails);
+        if (Boolean.TRUE.equals(fromConsolidation))
+            setContextIfNeededForHub(shipmentRequestedType, consolidationDetails);
 
         // Validate messaging logic for air consoles
         awbDao.validateAirMessaging(consolidationId);
@@ -1618,11 +1623,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
 
-        try {
-            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
-        } catch (Exception e) {
-            log.error("Error Syncing Consol");
-        }
+
+//        try {
+//            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
+//        } catch (Exception e) {
+//            log.error("Error Syncing Consol");
+//        }
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";
@@ -2635,7 +2641,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @param shipmentRequestedType type of shipment request, can be null
      * @param consolidationDetails  consolidation details with inter-branch flag
      */
-    private void setContextIfNeeded(ShipmentRequestedType shipmentRequestedType, ConsolidationDetails consolidationDetails) {
+    private void setContextIfNeededForHub(ShipmentRequestedType shipmentRequestedType, ConsolidationDetails consolidationDetails) {
         if (shipmentRequestedType == null && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
         }
@@ -3390,10 +3396,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         AutoAttachConsolidationV3Request request = (AutoAttachConsolidationV3Request) commonRequestModel.getData();
         ListCommonRequest consolListRequest = request;
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
-                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
-            commonUtils.setInterBranchContextForColoadStation();
-        }
+//        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
+//                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+//            commonUtils.setInterBranchContextForColoadStation();
+//        }
 
         consolListRequest = CommonUtils.andCriteria(TRANSPORT_MODE, request.getTransportMode(), "=", consolListRequest);
         if (!Objects.isNull(request.getDirection()))
