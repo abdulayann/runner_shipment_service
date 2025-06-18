@@ -22,6 +22,7 @@ public class PartiesConstants {
     public static final String FULLNAME = "FullName";
     public static final String ADDRESS1 = "Address1";
     public static final String ADDRESS2 = "Address2";
+    public static final String TAX_REG_NUMBER = "TaxRegNumber";
     public static final String COUNTRY = "Country";
     public static final String CITY = "City";
     public static final String ID = "Id";
