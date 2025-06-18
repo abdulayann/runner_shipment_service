@@ -2812,10 +2812,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
                 packs = packs + (shipmentDetails.getNoOfPacks() != null ? shipmentDetails.getNoOfPacks() : 0);
+                dgPacks = dgPacks + (shipmentDetails.getDgPacksCount() != null ? shipmentDetails.getDgPacksCount() : 0);
+                slacCount = slacCount + (shipmentDetails.getSlac() != null ? shipmentDetails.getSlac() : 0);
                 if(isStringNullOrEmpty(packsType))
                     packsType = shipmentDetails.getPacksUnit();
                 else if(!isStringNullOrEmpty(shipmentDetails.getPacksUnit()) && !Objects.equals(packsType, shipmentDetails.getPacksUnit()))
                     packsType = PackingConstants.PKG;
+                if(isStringNullOrEmpty(dgPacksType))
+                    dgPacksType = shipmentDetails.getDgPacksUnit();
+                else if(!isStringNullOrEmpty(shipmentDetails.getDgPacksUnit()) && !Objects.equals(dgPacksType, shipmentDetails.getDgPacksUnit()))
+                    dgPacksType = PackingConstants.PKG;
                 updateContainerMap(shipmentDetails, containersMap);
             }
         }
@@ -2861,7 +2867,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
                 .build();
-        // TODO: update dg packages and slac count when fields got added in shipment as well
     }
 
     @Override
