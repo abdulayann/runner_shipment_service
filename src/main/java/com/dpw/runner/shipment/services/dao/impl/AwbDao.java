@@ -638,7 +638,8 @@ public class AwbDao implements IAwbDao {
         if (Objects.isNull(awb)
                 || Objects.isNull(awb.getAwbCargoInfo())
                 || StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber())
-                || Boolean.TRUE.equals(awb.getAwbCargoInfo().getIsUserInitialsManuallyAdded())) {
+                || Boolean.TRUE.equals(awb.getAwbCargoInfo().getIsUserInitialsManuallyAdded())
+                || Objects.isNull(UserContext.getUser())) {
             return;
         }
         awb.getAwbCargoInfo().setUserInitials(AwbUtility.getScreenerName(UserContext.getUser().getDisplayName()));
