@@ -1486,10 +1486,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ShipmentRequestedType shipmentRequestedType = request.getShipmentRequestedType();
         boolean fromConsolidation = request.isFromConsolidation();
 
-        if (Boolean.FALSE.equals(fromConsolidation) && shipmentRequestedType != null) {
-            commonUtils.setInterBranchContextForColoadStation();
-        }
-
         // Ensure request is valid and has required IDs
         consolidationValidationV3Util.validateConsolidationIdAndShipmentIds(consolidationId, shipmentIds);
 
@@ -3396,10 +3392,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         AutoAttachConsolidationV3Request request = (AutoAttachConsolidationV3Request) commonRequestModel.getData();
         ListCommonRequest consolListRequest = request;
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-//        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
-//                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
-//            commonUtils.setInterBranchContextForColoadStation();
-//        }
+        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
 
         consolListRequest = CommonUtils.andCriteria(TRANSPORT_MODE, request.getTransportMode(), "=", consolListRequest);
         if (!Objects.isNull(request.getDirection()))
