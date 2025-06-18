@@ -5647,7 +5647,7 @@ public class ConsolidationService implements IConsolidationService {
             log.error(e.getMessage());
         }
         try {
-            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldEntity != null ? oldEntity.getContainersList() : null);
+            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldEntity != null ? oldEntity.getContainersList() : null, null);
         }
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());

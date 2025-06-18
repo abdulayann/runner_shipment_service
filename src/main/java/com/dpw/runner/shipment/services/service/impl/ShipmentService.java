@@ -2947,7 +2947,6 @@ public class ShipmentService implements IShipmentService {
         log.info("shipment afterSave createShipmentRouteInConsole..... ");
         Hbl hbl = getHblInAfterSave(shipmentDetails, updatedContainers, updatedPackings);
         log.info("shipment afterSave hblService.checkAllContainerAssigned..... ");
-        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
             consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
@@ -2957,6 +2956,7 @@ public class ShipmentService implements IShipmentService {
         deletePendingStateAfterCancellation(shipmentDetails, oldEntity);
         log.info("shipment afterSave consoleShipmentMappingDao.deletePendingStateByShipmentId..... ");
         processSyncV1AndAsyncFunctions(shipmentDetails, oldEntity, shipmentSettingsDetails, syncConsole, hbl, deletedContGuids, packsForSync, consolidationDetails);
+        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
         log.info("shipment afterSave end..... ");
     }
 
@@ -3062,14 +3062,21 @@ public class ShipmentService implements IShipmentService {
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
         // Syncing shipment to V1
+        CompletableFuture<Void> bookingUpdateFuture = null;
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         log.info("shipment afterSave syncShipment..... ");
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
+            bookingUpdateFuture = CompletableFuture.runAsync(
+                    masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
+                    executorService
+            );
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        if (bookingUpdateFuture != null) {
+            bookingUpdateFuture.join();
+        }
     }
 
     private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
@@ -4631,7 +4638,11 @@ public class ShipmentService implements IShipmentService {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
-            Set<Containers> oldContainers = shipmentDetails.getContainersList();
+            ShipmentDetails oldShipmentDetails = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
+            Set<Containers> oldContainers = new HashSet<>();
+            if(shipmentDetails.getContainersList()!=null) {
+                oldContainers.addAll(shipmentDetails.getContainersList());
+            }
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
@@ -4644,7 +4655,11 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds(), shipmentDetails.getGuid().toString());
             makeShipmentsDG(containersMap, shipmentDetails);
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
+
+            if(shipmentDetails.getContainersList()!=null) {
+                shipmentDetails.getContainersList().addAll(containersMap.values());
+            }
+            postContainerAssignmentUpdates(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4707,13 +4722,20 @@ public class ShipmentService implements IShipmentService {
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             Map<Long, Containers> containersMap = containers.getContent().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
             ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
-            Set<Containers> oldContainers = shipmentDetails.getContainersList();
+            ShipmentDetails oldShipmentDetails = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
+            Set<Containers> oldContainers = new HashSet<>();
+            if(shipmentDetails.getContainersList()!=null) {
+                oldContainers.addAll(shipmentDetails.getContainersList());
+            }
             List<Long> containerIds = getContainerIds(lclAndSeaOrRoadFlag, containers, shipmentId, containersList, isConsolidatorFlag, shipmentDetails);
             if(!Objects.isNull(containerIds) && !containerIds.isEmpty()) {
                 shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
-            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
+            if(shipmentDetails.getContainersList()!=null) {
+                shipmentDetails.getContainersList().addAll(containersMap.values());
+            }
+            postContainerAssignmentUpdates(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4721,6 +4743,18 @@ public class ShipmentService implements IShipmentService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private void postContainerAssignmentUpdates(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails, Set<Containers> oldContainers) {
+        Hbl hbl = getHblInAfterSave(shipmentDetails, shipmentDetails.getContainersList(), shipmentDetails.getPackingList());
+        log.info("shipment assignShipmentContainers hblService.checkAllContainerAssigned..... ");
+        ConsolidationDetails consolidationDetails = null;
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()){
+            consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        }
+
+        processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
+        dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
     }
 
     private List<Long> getContainerIds(boolean lclAndSeaOrRoadFlag, Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean isConsolidatorFlag, ShipmentDetails shipmentDetails) throws RunnerException {
