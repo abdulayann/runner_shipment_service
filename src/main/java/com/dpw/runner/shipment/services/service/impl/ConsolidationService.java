@@ -1213,7 +1213,7 @@ public class ConsolidationService implements IConsolidationService {
             // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
             // If true, throw a RunnerException with a detailed error message including the shipment ID.
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
-                throw new RunnerException(DpsConstants.DPS_ERROR_2 + " : " + shipmentDetails.getShipmentId());
+                throw new RunnerException(DpsConstants.DPS_ERROR_1 + " : " + shipmentDetails.getShipmentId());
             }
         }
 
@@ -5642,7 +5642,7 @@ public class ConsolidationService implements IConsolidationService {
         // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
         // If true, throw a RuntimeException with a detailed error message including the shipment ID.
         if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentRes.get().getGuid().toString()), DpsConstants.CONCR))) {
-            throw new GenericException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
+            throw new GenericException(DpsConstants.DPS_ERROR_1 + " : " + shipmentRes.get().getShipmentId());
         }
 
         var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
