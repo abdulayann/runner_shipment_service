@@ -291,8 +291,8 @@ class DpsEventServiceTest {
 
         // Add FieldsDetectedValues (non-empty)
         List<DpsFieldDataDto> fieldsDetectedValues = List.of(
-                new DpsFieldDataDto("field1", "value1"),
-                new DpsFieldDataDto("field2", "value2")
+                new DpsFieldDataDto("field1","123", "value1"),
+                new DpsFieldDataDto("field2", "123","value2")
         );
         dataDto.setFieldsDetectedValues(fieldsDetectedValues);
 
@@ -330,7 +330,7 @@ class DpsEventServiceTest {
         dpsEvent.setMatchingCondition("matchingCondition");
         dpsEvent.setImplicationList(List.of("implication1", "implication2"));
         dpsEvent.setConditionMessageList(List.of("message1", "message2"));
-        dpsEvent.setDpsFieldData(List.of(new DpsFieldData("key1", "value1")));
+        dpsEvent.setDpsFieldData(List.of(new DpsFieldData("key1","123", "value1")));
         dpsEvent.setUsernameList(List.of("user1", "user2"));
         dpsEvent.setEventTimestamp(LocalDateTime.now());
         dpsEvent.setTasks(List.of("task1", "task2"));

@@ -48,6 +48,7 @@ public class DpsDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DpsFieldDataDto {
         private String key;
+        private String id;
         private String value;
     }
 
