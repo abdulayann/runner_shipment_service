@@ -2382,7 +2382,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
             shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
         }
-        if (oldShipmentDetails != null && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty()) {
+        if (oldShipmentDetails != null && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty() && shipmentDetails != null  && (shipmentDetails.getConsolidationList() == null || shipmentDetails.getConsolidationList().isEmpty())) {
             ConsolidationDetails oldConsole = oldShipmentDetails.getConsolidationList().iterator().next();
             if (oldConsole != null && oldConsole.getId() != null) {
                 awbDao.validateAirMessaging(oldConsole.getId());
