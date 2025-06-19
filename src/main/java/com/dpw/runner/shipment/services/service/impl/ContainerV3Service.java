@@ -67,6 +67,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
@@ -128,6 +129,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    IShipmentSync shipmentSync;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -1091,6 +1095,9 @@ public class ContainerV3Service implements IContainerV3Service {
         // validate before assign container
         containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap);
 
+        // marking the shipment DG if eligible
+        checkAndMakeDG(shipmentDetailsMap, container);
+
         // Do calculations/logic implementation
         List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, request,
                                                                 shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
@@ -1099,6 +1106,36 @@ public class ContainerV3Service implements IContainerV3Service {
         container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container, shipmentIdsForAttachment);
 
         return jsonHelper.convertValue(container, ContainerResponse.class);
+    }
+
+    private void checkAndMakeDG(Map<Long, ShipmentDetails> shipmentDetailsMap, Containers container) throws RunnerException {
+        boolean isDG = false;
+        boolean isDGClass1Added = false;
+        //TODO : 1. Check container set Hazardous ? 2. Packs attached to container iteration required ?
+        if(Boolean.TRUE.equals(container.getHazardous())) {
+            isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(container.getDgClass());
+            isDG = true;
+        }
+        if(isDG) {
+            for (ShipmentDetails shipmentDetails : shipmentDetailsMap.values()) {
+                saveDGShipment(shipmentDetails, isDGClass1Added);
+            }
+        }
+    }
+
+    private void saveDGShipment(ShipmentDetails shipmentDetails, boolean isDGClass1Added) throws RunnerException {
+        shipmentDao.entityDetach(List.of(shipmentDetails));
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentDetails.getId());
+        if(!optionalShipmentDetails.isPresent())
+            return;
+        shipmentDetails = optionalShipmentDetails.get();
+        boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
+        shipmentDetails.setContainsHazardous(true);
+        saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+        if(saveShipment) {
+            shipmentDetails = shipmentDao.save(shipmentDetails, false);
+            shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
+        }
     }
 
     private Containers fetchDataForAssignContainer(AssignContainerRequest request,
