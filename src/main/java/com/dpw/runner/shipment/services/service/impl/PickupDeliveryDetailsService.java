@@ -58,6 +58,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -113,6 +114,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         return createPickupDeliveryDetails(commonRequestModel);
     }
+
     private ResponseEntity<IRunnerResponse> updateTransportInstruction(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
@@ -125,7 +127,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             log.debug("Request Id is null for Pickup Delivery update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildFailedResponse("Request Id is null for Pickup Delivery update with Request Id " + LoggerHelper.getRequestIdFromMDC());
         }
-        if(StringUtility.isEmpty(request.getTiReferenceNumber())) {
+        if (StringUtility.isEmpty(request.getTiReferenceNumber())) {
             log.debug("TI Reference number is empty for Pickup Delivery update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildFailedResponse("TI Reference number is empty for Pickup Delivery update with Request Id " + LoggerHelper.getRequestIdFromMDC());
         }
@@ -374,8 +376,12 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             for (TiLegsRequest tiLegsRequest : tiLegsList) {
                 PartiesRequest origin = tiLegsRequest.getOrigin();
                 PartiesRequest destination = tiLegsRequest.getDestination();
-                validateOrgAndAddress(origin);
-                validateOrgAndAddress(destination);
+                if (!Objects.isNull(origin)) {
+                    validateOrgAndAddress(origin);
+                }
+                if (!Objects.isNull(destination)) {
+                    validateOrgAndAddress(destination);
+                }
                 validateDates(tiLegsRequest);
             }
         }

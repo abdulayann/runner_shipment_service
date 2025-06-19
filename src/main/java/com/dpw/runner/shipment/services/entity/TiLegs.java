@@ -19,6 +19,7 @@ import org.hibernate.annotations.Where;
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -58,22 +59,22 @@ public class TiLegs extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiReferences> tiReferences;
+    private List<TiReferences> tiReferences = new ArrayList<>();;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiTruckDriverDetails> tiTruckDriverDetails;
+    private List<TiTruckDriverDetails> tiTruckDriverDetails = new ArrayList<>();;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiContainers> tiContainers;
+    private List<TiContainers> tiContainers = new ArrayList<>();;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiPackages> tiPackages;
+    private List<TiPackages> tiPackages = new ArrayList<>();
 
     @Column(name = "estimated_pickup")
     private LocalDateTime estimatedPickup;
