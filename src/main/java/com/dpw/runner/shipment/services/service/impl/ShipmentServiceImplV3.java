@@ -22,7 +22,10 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasureme
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
@@ -3426,5 +3429,117 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
         innerFilters.add(filterCriteria);
     }
+
+    /**
+     * This method will provide Interbranch Pending Notifications - Includes both Pull & Push requests for shipment
+     * @param commonRequestModel
+     * @return
+     */
+
+    @Override
+    public ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel) {
+        AibNotificationRequest request = (AibNotificationRequest) commonRequestModel.getData();
+        PendingNotificationResponse<PendingShipmentActionsResponse> response = new PendingNotificationResponse<>();
+        if(Objects.isNull(request.getId())) {
+            log.info("Received empty request for pending notification in shipments", LoggerHelper.getRequestIdFromMDC());
+            return ResponseHelper.buildSuccessResponse(response);
+        }
+        var notificationMap = getNotificationMap(request);
+        response.setNotificationMap(notificationMap);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private Map<Long, List<PendingShipmentActionsResponse>> getNotificationMap(AibNotificationRequest request) {
+        // Get data of all consolidation pulling this shipment that are not yet attached
+        Map<Long, List<PendingShipmentActionsResponse>> notificationResultMap = new HashMap<>();
+
+        if(commonUtils.getCurrentTenantSettings() == null || !Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled())) {
+            return notificationResultMap;
+        }
+
+        try {
+            ListCommonRequest listRequest = constructListCommonRequest("shipmentId", request.getId(), "=");
+            listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
+            Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
+            Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
+
+            List<Long> consolidationIds = mappingPage.getContent().stream().map(ConsoleShipmentMapping::getConsolidationId).toList();
+            final var consoleShipmentsMap = mappingPage.getContent().stream().collect(Collectors.toMap(
+                    ConsoleShipmentMapping::getConsolidationId, Function.identity(), (oldVal, newVal) -> oldVal)
+            );
+
+            commonUtils.setInterBranchContextForColoadStation();
+
+            listRequest = constructListCommonRequest("id", consolidationIds, "IN");
+            listRequest.setContainsText(request.getContainsText());
+            listRequest.setSortRequest(request.getSortRequest());
+            Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class, ConsolidationService.tableNames);
+            Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
+
+            var tenantIdList = new HashSet<String>();
+            var locCodeList =  new HashSet<String>();
+            final CarrierDetails nullCarrierDetails = new CarrierDetails();
+            consolPage.getContent().stream().forEach(i -> {
+                tenantIdList.add(StringUtility.convertToString(i.getTenantId()));
+                var carrierDetails = Optional.ofNullable(i.getCarrierDetails()).orElse(nullCarrierDetails);
+                locCodeList.add(carrierDetails.getOriginPort());
+                locCodeList.add(carrierDetails.getDestinationPort());
+            });
+            Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
+            Map<String, EntityTransferUnLocations> v1LocationData = masterDataUtils.fetchInBulkUnlocations(locCodeList, EntityTransferConstants.LOCATION_SERVICE_GUID);
+
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS, tenantIdList, new TenantModel(), null);
+            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS, locCodeList, new EntityTransferUnLocations(), null);
+
+            // console id vs list of ship ids
+            Map<Long, List<Long>> consolVsShipIdMap = new HashMap<>();
+
+            // generate mapping for shipment id vs list of pulling consol(s)
+            for(var mapping : mappingPage.getContent()) {
+                if(!notificationResultMap.containsKey(mapping.getShipmentId())) {
+                    notificationResultMap.put(mapping.getShipmentId(), new ArrayList<>());
+                }
+                if(!consolVsShipIdMap.containsKey(mapping.getConsolidationId())) {
+                    consolVsShipIdMap.put(mapping.getConsolidationId(), new ArrayList<>());
+                }
+                consolVsShipIdMap.get(mapping.getConsolidationId()).add(mapping.getShipmentId());
+            }
+
+            consolPage.getContent().stream().forEach(i -> {
+                var res = mapToNotification(i, consoleShipmentsMap, v1TenantData, v1LocationData);
+                consolVsShipIdMap.get(i.getId()).forEach(shipId -> notificationResultMap.get(shipId).add(res));
+            });
+
+        }
+        catch(Exception e) {
+            log.error("Error while generating notification map for input Shipment", LoggerHelper.getRequestIdFromMDC(), e.getMessage());
+        }
+
+        return notificationResultMap;
+    }
+
+    private PendingShipmentActionsResponse mapToNotification(ConsolidationDetails consol, Map<Long, ConsoleShipmentMapping> consoleShipmentsMap, Map<String, TenantModel> v1TenantData, Map<String, EntityTransferUnLocations> v1LocationData) {
+        var carrierDetails = Optional.ofNullable(consol.getCarrierDetails()).orElse(new CarrierDetails());
+        var tenantData = Optional.ofNullable(v1TenantData.get(StringUtility.convertToString(consol.getTenantId()))).orElse(new TenantModel());
+        return PendingShipmentActionsResponse.builder()
+                .consolId(consol.getId())
+                .consolidationNumber(consol.getReferenceNumber())
+                .masterBill(consol.getMawb())
+                .ata(carrierDetails.getAta())
+                .atd(carrierDetails.getAtd())
+                .eta(carrierDetails.getEta())
+                .etd(carrierDetails.getEtd())
+                .pol(Optional.ofNullable(v1LocationData.get(carrierDetails.getOriginPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getOriginPort()))
+                .pod(Optional.ofNullable(v1LocationData.get(carrierDetails.getDestinationPort())).map(EntityTransferUnLocations::getLookupDesc).orElse(carrierDetails.getDestinationPort()))
+                .lat(consol.getLatDate())
+                .branch(tenantData.getCode() + " - " + tenantData.getTenantName())
+                .branchDisplayName(tenantData.displayName)
+                .hazardous(consol.getHazardous())
+                .requestedBy(consoleShipmentsMap.get(consol.getId()).getCreatedBy())
+                .requestedOn(consoleShipmentsMap.get(consol.getId()).getCreatedAt())
+                .requestedType(consoleShipmentsMap.get(consol.getId()).getRequestedType())
+                .build();
+    }
+
 
 }

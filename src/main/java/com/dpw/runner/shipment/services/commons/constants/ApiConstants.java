@@ -197,5 +197,6 @@ public class ApiConstants {
     public static final String SHIPMENT_SERVICES = "/shipment-services";
 
     public static final String AIB_ACTION = "/aib/action";
+    public static final String AIB_NOTIFICATIONS = "/aib/notification";
 
 }

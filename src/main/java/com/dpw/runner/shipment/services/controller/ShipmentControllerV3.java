@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
@@ -10,8 +11,10 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
@@ -236,6 +239,17 @@ public class ShipmentControllerV3 {
             return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @PostMapping(ApiConstants.AIB_NOTIFICATIONS)
+    public ResponseEntity<IRunnerResponse> aibPendingNotifications(@RequestBody AibNotificationRequest request) {
+        log.info("{} Request received for aibPendingNotifications for shipment {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        try {
+            return shipmentService.aibPendingNotification(CommonRequestModel.builder().data(request).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
 

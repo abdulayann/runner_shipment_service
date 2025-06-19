@@ -60,5 +60,5 @@ public interface IConsolidationV3Service {
     ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) throws RunnerException;
     void updateConsolidationCargoSummary(ConsolidationDetails consolidationDetails, ShipmentWtVolResponse oldShipmentWtVolResponse) throws RunnerException;
     ResponseEntity<IRunnerResponse> aibAction(AibActionConsolidation request) throws RunnerException;
-
+    ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel);
 }
