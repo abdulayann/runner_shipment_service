@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
@@ -134,10 +135,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         long id = request.getId();
         Optional<PickupDeliveryDetails> oldEntity = pickupDeliveryDetailsDao.findById(id);
         if (!oldEntity.isPresent()) {
-            log.debug("Pickup Delivery Details is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            log.debug("Pickup Delivery entity is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        ShipmentDetails shipmentDetails = transportInstructionValidationUtil.validateShipmentId(request);
+        transportInstructionValidationUtil.validateShipmentId(request);
         validateTransportInstructionLegs(request);
         validateTransportInstructionLegsTruckDriverDetails(request);
         validateTransportInstructionLegsReferenceNumbers(request);
@@ -219,42 +220,52 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 if (!CollectionUtils.isEmpty(packages)) {
                     for (TiPackagesRequest packagesRequest : packages) {
                         validateDimensions(packagesRequest.getDimensions());
-                        if ((packagesRequest.getGrossWeight() != null && StringUtility.isEmpty(packagesRequest.getGrossWeightUnit())) ||
-                                (packagesRequest.getGrossWeight() == null && StringUtility.isNotEmpty(packagesRequest.getGrossWeightUnit()))) {
-                            throw new ValidationException("Packages: Gross weight and gross weight unit must both be provided or both be null.");
-                        }
-                        if (packagesRequest.getGrossWeight() != null && StringUtility.isNotEmpty(packagesRequest.getGrossWeightUnit())) {
-                            String combinedGrossWeight = packagesRequest.getGrossWeight().toPlainString() + packagesRequest.getGrossWeightUnit().trim();
-                            if (combinedGrossWeight.length() > 15) {
-                                throw new ValidationException("Packages: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
-                            }
-                        }
-
-                        // Net Weight & Unit Validation
-                        if ((packagesRequest.getNetWeight() != null && StringUtility.isEmpty(packagesRequest.getNetWeightUnit())) ||
-                                (packagesRequest.getNetWeight() == null && StringUtility.isNotEmpty(packagesRequest.getNetWeightUnit()))) {
-                            throw new ValidationException("Packages: Net weight and net weight unit must both be provided or both be null.");
-                        }
-                        if (packagesRequest.getNetWeight() != null && StringUtility.isNotEmpty(packagesRequest.getNetWeightUnit())) {
-                            String combined = packagesRequest.getNetWeight().toPlainString() + packagesRequest.getNetWeightUnit().trim();
-                            if (combined.length() > 15) {
-                                throw new ValidationException("Packages: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
-                            }
-                        }
-
+                        validateGrossWeightForPackages(packagesRequest);
+                        validateNetWeightForContainers(packagesRequest);
                         // Volume & Unit Validation
-                        if ((packagesRequest.getVolume() != null && StringUtility.isEmpty(packagesRequest.getVolumeUnit())) ||
-                                (packagesRequest.getVolume() == null && StringUtility.isNotEmpty(packagesRequest.getVolumeUnit()))) {
-                            throw new ValidationException("Packages: Volume and volume unit must both be provided or both be null.");
-                        }
-                        if (packagesRequest.getVolume() != null && StringUtility.isNotEmpty(packagesRequest.getVolumeUnit())) {
-                            String combined = packagesRequest.getVolume().toPlainString() + packagesRequest.getVolumeUnit().trim();
-                            if (combined.length() > 10) {
-                                throw new ValidationException("Packages: Combined length of volume and volumeUnit must not exceed 10 characters.");
-                            }
-                        }
+                        validateVolumeForContainers(packagesRequest);
                     }
                 }
+            }
+        }
+    }
+
+    private static void validateGrossWeightForPackages(TiPackagesRequest packagesRequest) {
+        if ((packagesRequest.getGrossWeight() != null && StringUtility.isEmpty(packagesRequest.getGrossWeightUnit())) ||
+                (packagesRequest.getGrossWeight() == null && StringUtility.isNotEmpty(packagesRequest.getGrossWeightUnit()))) {
+            throw new ValidationException("Packages: Gross weight and gross weight unit must both be provided or both be null.");
+        }
+        if (packagesRequest.getGrossWeight() != null && StringUtility.isNotEmpty(packagesRequest.getGrossWeightUnit())) {
+            String combinedGrossWeight = packagesRequest.getGrossWeight().toPlainString() + packagesRequest.getGrossWeightUnit().trim();
+            if (combinedGrossWeight.length() > 15) {
+                throw new ValidationException("Packages: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
+            }
+        }
+    }
+
+    private static void validateVolumeForContainers(TiPackagesRequest packagesRequest) {
+        if ((packagesRequest.getVolume() != null && StringUtility.isEmpty(packagesRequest.getVolumeUnit())) ||
+                (packagesRequest.getVolume() == null && StringUtility.isNotEmpty(packagesRequest.getVolumeUnit()))) {
+            throw new ValidationException("Packages: Volume and volume unit must both be provided or both be null.");
+        }
+        if (packagesRequest.getVolume() != null && StringUtility.isNotEmpty(packagesRequest.getVolumeUnit())) {
+            String combined = packagesRequest.getVolume().toPlainString() + packagesRequest.getVolumeUnit().trim();
+            if (combined.length() > 10) {
+                throw new ValidationException("Packages: Combined length of volume and volumeUnit must not exceed 10 characters.");
+            }
+        }
+    }
+
+    private static void validateNetWeightForContainers(TiPackagesRequest packagesRequest) {
+        // Net Weight & Unit Validation
+        if ((packagesRequest.getNetWeight() != null && StringUtility.isEmpty(packagesRequest.getNetWeightUnit())) ||
+                (packagesRequest.getNetWeight() == null && StringUtility.isNotEmpty(packagesRequest.getNetWeightUnit()))) {
+            throw new ValidationException("Packages: Net weight and net weight unit must both be provided or both be null.");
+        }
+        if (packagesRequest.getNetWeight() != null && StringUtility.isNotEmpty(packagesRequest.getNetWeightUnit())) {
+            String combined = packagesRequest.getNetWeight().toPlainString() + packagesRequest.getNetWeightUnit().trim();
+            if (combined.length() > 15) {
+                throw new ValidationException("Packages: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
             }
         }
     }
@@ -285,50 +296,64 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 if (!CollectionUtils.isEmpty(containers)) {
                     Set<String> containerNumbers = new HashSet<>();
                     for (TiContainersRequest containersRequest : containers) {
-                        if (containerNumbers.contains(containersRequest.getNumber())) {
-                            throw new ValidationException("Container Number cannot be same for two different containers in same legs");
-                        }
-                        ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(containersRequest.getNumber());
-                        if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
-                            throw new ValidationException("Invalid container number");
-                        }
+                        validateContainerNumber(containerNumbers, containersRequest);
                         containerNumbers.add(containersRequest.getNumber());
-                        if ((containersRequest.getGrossWeight() != null && StringUtility.isEmpty(containersRequest.getGrossWeightUnit())) ||
-                                (containersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(containersRequest.getGrossWeightUnit()))) {
-                            throw new ValidationException("Containers: Gross weight and gross weight unit must both be provided or both be null.");
-                        }
-                        if (containersRequest.getGrossWeight() != null && StringUtility.isNotEmpty(containersRequest.getGrossWeightUnit())) {
-                            String combinedGrossWeight = containersRequest.getGrossWeight().toPlainString() + containersRequest.getGrossWeightUnit().trim();
-                            if (combinedGrossWeight.length() > 15) {
-                                throw new ValidationException("Containers: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
-                            }
-                        }
-
+                        validateGrossWeightForContainers(containersRequest);
                         // Net Weight & Unit Validation
-                        if ((containersRequest.getNetWeight() != null && StringUtility.isEmpty(containersRequest.getNetWeightUnit())) ||
-                                (containersRequest.getNetWeight() == null && StringUtility.isNotEmpty(containersRequest.getNetWeightUnit()))) {
-                            throw new ValidationException("Containers: Net weight and net weight unit must both be provided or both be null.");
-                        }
-                        if (containersRequest.getNetWeight() != null && StringUtility.isNotEmpty(containersRequest.getNetWeightUnit())) {
-                            String combined = containersRequest.getNetWeight().toPlainString() + containersRequest.getNetWeightUnit().trim();
-                            if (combined.length() > 15) {
-                                throw new ValidationException("Containers: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
-                            }
-                        }
-
-                        // Volume & Unit Validation
-                        if ((containersRequest.getVolume() != null && StringUtility.isEmpty(containersRequest.getVolumeUnit())) ||
-                                (containersRequest.getVolume() == null && StringUtility.isNotEmpty(containersRequest.getVolumeUnit()))) {
-                            throw new ValidationException("Containers: Volume and volume unit must both be provided or both be null.");
-                        }
-                        if (containersRequest.getVolume() != null && StringUtility.isNotEmpty(containersRequest.getVolumeUnit())) {
-                            String combined = containersRequest.getVolume().toPlainString() + containersRequest.getVolumeUnit().trim();
-                            if (combined.length() > 10) {
-                                throw new ValidationException("Containers: Combined length of volume and volumeUnit must not exceed 10 characters.");
-                            }
-                        }
+                        validateNetWeightForContainers(containersRequest);
+                        validateVolumeForContainers(containersRequest);
                     }
                 }
+            }
+        }
+    }
+
+    private void validateContainerNumber(Set<String> containerNumbers, TiContainersRequest containersRequest) {
+        if (containerNumbers.contains(containersRequest.getNumber())) {
+            throw new ValidationException("Container Number cannot be same for two different containers in same legs");
+        }
+        ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(containersRequest.getNumber());
+        if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
+            throw new ValidationException("Invalid container number");
+        }
+    }
+
+    private static void validateGrossWeightForContainers(TiContainersRequest containersRequest) {
+        if ((containersRequest.getGrossWeight() != null && StringUtility.isEmpty(containersRequest.getGrossWeightUnit())) ||
+                (containersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(containersRequest.getGrossWeightUnit()))) {
+            throw new ValidationException("Containers: Gross weight and gross weight unit must both be provided or both be null.");
+        }
+        if (containersRequest.getGrossWeight() != null && StringUtility.isNotEmpty(containersRequest.getGrossWeightUnit())) {
+            String combinedGrossWeight = containersRequest.getGrossWeight().toPlainString() + containersRequest.getGrossWeightUnit().trim();
+            if (combinedGrossWeight.length() > 15) {
+                throw new ValidationException("Containers: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
+            }
+        }
+    }
+
+    private static void validateVolumeForContainers(TiContainersRequest containersRequest) {
+        // Volume & Unit Validation
+        if ((containersRequest.getVolume() != null && StringUtility.isEmpty(containersRequest.getVolumeUnit())) ||
+                (containersRequest.getVolume() == null && StringUtility.isNotEmpty(containersRequest.getVolumeUnit()))) {
+            throw new ValidationException("Containers: Volume and volume unit must both be provided or both be null.");
+        }
+        if (containersRequest.getVolume() != null && StringUtility.isNotEmpty(containersRequest.getVolumeUnit())) {
+            String combined = containersRequest.getVolume().toPlainString() + containersRequest.getVolumeUnit().trim();
+            if (combined.length() > 10) {
+                throw new ValidationException("Containers: Combined length of volume and volumeUnit must not exceed 10 characters.");
+            }
+        }
+    }
+
+    private static void validateNetWeightForContainers(TiContainersRequest containersRequest) {
+        if ((containersRequest.getNetWeight() != null && StringUtility.isEmpty(containersRequest.getNetWeightUnit())) ||
+                (containersRequest.getNetWeight() == null && StringUtility.isNotEmpty(containersRequest.getNetWeightUnit()))) {
+            throw new ValidationException("Containers: Net weight and net weight unit must both be provided or both be null.");
+        }
+        if (containersRequest.getNetWeight() != null && StringUtility.isNotEmpty(containersRequest.getNetWeightUnit())) {
+            String combined = containersRequest.getNetWeight().toPlainString() + containersRequest.getNetWeightUnit().trim();
+            if (combined.length() > 15) {
+                throw new ValidationException("Containers: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
             }
         }
     }
@@ -338,13 +363,17 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         if (!CollectionUtils.isEmpty(tiLegsList)) {
             for (TiLegsRequest tiLegsRequest : tiLegsList) {
                 List<TiTruckDriverDetailsRequest> tiTruckDriverDetails = tiLegsRequest.getTiTruckDriverDetails();
-                if (!CollectionUtils.isEmpty(tiTruckDriverDetails)) {
-                    for (TiTruckDriverDetailsRequest truckDriver : tiTruckDriverDetails) {
-                        if (StringUtility.isEmpty(truckDriver.getDriverName()) && StringUtility.isEmpty(truckDriver.getDriverMobileNumber()) && StringUtility.isEmpty(truckDriver.getTruckOrTrailerType())
-                                && StringUtility.isEmpty(truckDriver.getTrailerNumberPlate()) && StringUtility.isEmpty(truckDriver.getTruckNumberPlate())) {
-                            throw new ValidationException("Atleast one field is required to save, or please discard by clicking the cancel(x)");
-                        }
-                    }
+                validateTruckDriverRequest(tiTruckDriverDetails);
+            }
+        }
+    }
+
+    private static void validateTruckDriverRequest(List<TiTruckDriverDetailsRequest> tiTruckDriverDetails) {
+        if (!CollectionUtils.isEmpty(tiTruckDriverDetails)) {
+            for (TiTruckDriverDetailsRequest truckDriver : tiTruckDriverDetails) {
+                if (StringUtility.isEmpty(truckDriver.getDriverName()) && StringUtility.isEmpty(truckDriver.getDriverMobileNumber()) && StringUtility.isEmpty(truckDriver.getTruckOrTrailerType())
+                        && StringUtility.isEmpty(truckDriver.getTrailerNumberPlate()) && StringUtility.isEmpty(truckDriver.getTruckNumberPlate())) {
+                    throw new ValidationException("Atleast one field is required to save, or please discard by clicking the cancel(x)");
                 }
             }
         }
@@ -355,16 +384,20 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         if (!CollectionUtils.isEmpty(tiLegsList)) {
             for (TiLegsRequest tiLegsRequest : tiLegsList) {
                 List<TiReferencesRequest> tiReferences = tiLegsRequest.getTiReferences();
-                if (!CollectionUtils.isEmpty(tiReferences)) {
-                    for (TiReferencesRequest tiReferencesRequest : tiReferences) {
-                        if (StringUtility.isNotEmpty(tiReferencesRequest.getType()) && StringUtility.isEmpty(tiReferencesRequest.getReference())) {
-                            throw new ValidationException("Missing Reference when Type is selected");
-                        } else if (StringUtility.isEmpty(tiReferencesRequest.getType()) && StringUtility.isNotEmpty(tiReferencesRequest.getReference())) {
-                            throw new ValidationException("Missing Type when Reference is present");
-                        } else if (StringUtility.isEmpty(tiReferencesRequest.getType()) && StringUtility.isEmpty(tiReferencesRequest.getReference())) {
-                            throw new ValidationException("Missing both type and reference number");
-                        }
-                    }
+                validateReferenceNumberRequest(tiReferences);
+            }
+        }
+    }
+
+    private static void validateReferenceNumberRequest(List<TiReferencesRequest> tiReferences) {
+        if (!CollectionUtils.isEmpty(tiReferences)) {
+            for (TiReferencesRequest tiReferencesRequest : tiReferences) {
+                if (StringUtility.isNotEmpty(tiReferencesRequest.getType()) && StringUtility.isEmpty(tiReferencesRequest.getReference())) {
+                    throw new ValidationException("Missing Reference when Type is selected");
+                } else if (StringUtility.isEmpty(tiReferencesRequest.getType()) && StringUtility.isNotEmpty(tiReferencesRequest.getReference())) {
+                    throw new ValidationException("Missing Type when Reference is present");
+                } else if (StringUtility.isEmpty(tiReferencesRequest.getType()) && StringUtility.isEmpty(tiReferencesRequest.getReference())) {
+                    throw new ValidationException("Missing both type and reference number");
                 }
             }
         }
@@ -727,6 +760,29 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     @Override
     public ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel) {
         return this.retrieveById(commonRequestModel);
+    }
+
+    @Override
+    public Optional<PickupDeliveryDetails> findById(Long id) {
+        return pickupDeliveryDetailsDao.findById(id);
+    }
+
+    @Override
+    public List<PickupDeliveryDetails> findByShipmentId(Long shipmentId) {
+        return pickupDeliveryDetailsDao.findByShipmentId(shipmentId);
+    }
+
+    @Override
+    public void processDownStreamConsumerData(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId, PushToDownstreamEventDto message, String transactionId) {
+        List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, isCreateRequest(message), shipmentId)), executorService);
+    }
+
+    private static boolean isCreateRequest(PushToDownstreamEventDto message) {
+        if (message.getMeta() != null && message.getMeta().getIsCreate() != null) {
+            return message.getMeta().getIsCreate();
+        }
+        return false;
     }
 
 
