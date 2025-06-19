@@ -226,7 +226,6 @@ public class ShipmentConstants {
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
     public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
-    public static final String AIB_ACTION_SHIPMENT = "/aib/action";
     public static final String AIB_PUSH_REQUEST = "/aib/push";
 
     // Shipment V3.0 API Endpoints

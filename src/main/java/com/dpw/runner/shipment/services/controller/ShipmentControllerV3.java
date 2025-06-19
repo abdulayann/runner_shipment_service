@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
@@ -27,6 +28,8 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import java.util.Optional;
 import javax.validation.Valid;
+
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -203,7 +206,7 @@ public class ShipmentControllerV3 {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.AIB_ACTION, response = UpstreamDateUpdateResponse.class)})
-    @PutMapping(ShipmentConstants.AIB_ACTION_SHIPMENT)
+    @PutMapping(ApiConstants.AIB_ACTION)
     public ResponseEntity<IRunnerResponse> aibAction(@RequestBody AibActionShipment request) {
         log.info("{} | Request received for :/aib/action on shipments with body: {}", LoggerHelper.getRequestIdFromMDC(),  jsonHelper.convertToJson(request));
         try {
@@ -223,6 +226,16 @@ public class ShipmentControllerV3 {
             return shipmentService.aibPushRequest(shipId, consoleId, rejectRemarks);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @PostMapping(value = "/attach-list-shipment")
+    public ResponseEntity<IRunnerResponse> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
+        try {
+            return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
 
