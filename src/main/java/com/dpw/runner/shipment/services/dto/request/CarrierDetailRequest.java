@@ -53,4 +53,9 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String destinationPortLocCode;
     private Boolean isSameAsOriginPort;
     private Boolean isSameAsDestinationPort;
+    private String originCountry;
+    private String destinationCountry;
+    private String originPortCountry;
+    private String destinationPortCountry;
+    private String vehicleNumber;
 }
