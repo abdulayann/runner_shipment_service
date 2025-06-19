@@ -86,4 +86,7 @@ public interface IShipmentServiceV3 {
 
     ResponseEntity<IRunnerResponse> aibAction(AibActionShipment request) throws RunnerException;
     ResponseEntity<IRunnerResponse> aibPushRequest(Long shipId, Long consoleId, String remarks) throws RunnerException;
+    ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel);
+
 }
