@@ -10,8 +10,9 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -24,10 +25,18 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
+import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.interfaces.IPushToDownstreamService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,11 +45,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -73,6 +77,9 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     @Autowired
     private ITrackingServiceAdapter trackingServiceAdapter;
 
+    @Autowired
+    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+
     @Transactional
     @Override
     public void process(PushToDownstreamEventDto message, String transactionId) {
@@ -83,7 +90,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
             this.pushShipmentData(message.getParentEntityId(), message.getMeta().getIsCreate(), message.getMeta().getIsAutoSellRequired());
 
             // Processing the Dependent Triggers for given parent trigger
-            if(message.getTriggers() != null) {
+            if (message.getTriggers() != null) {
                 message.getTriggers().forEach(trigger -> {
 
                     // Dependent Triggers for Shipment
@@ -99,12 +106,28 @@ public class PushToDownstreamService implements IPushToDownstreamService {
             }
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(message.getParentEntityName())) {
             pushConsolidationDataToService(message, transactionId);
-        } else if(Objects.equals(message.getParentEntityName(), Constants.CUSTOMER_BOOKING)) {
+        } else if (Objects.equals(message.getParentEntityName(), Constants.CUSTOMER_BOOKING)) {
             this.pushCustomerBookingDataToPlatform(message, transactionId);
+        } else if (Objects.equals(message.getParentEntityName(), Constants.TRANSPORT_INSTRUCTION)) {
+            pushTransportInstructionDataToTIQueue(message, transactionId);
         }
     }
 
-    private void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId){
+    private void pushTransportInstructionDataToTIQueue(PushToDownstreamEventDto message, String transactionId) {
+        Optional<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsService.findById(message.getParentEntityId());
+        if (pickupDeliveryDetails.isPresent()) {
+            PickupDeliveryDetails pickupDeliveryDetailsEntity = pickupDeliveryDetails.get();
+            if (pickupDeliveryDetailsEntity.getShipmentId() != null) {
+                List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsService.findByShipmentId(pickupDeliveryDetailsEntity.getShipmentId());
+                if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
+                    log.info("Processing TI down stream data for shipment id: {}", pickupDeliveryDetailsEntity.getShipmentId());
+                    pickupDeliveryDetailsService.processDownStreamConsumerData(pickupDeliveryDetailsList, pickupDeliveryDetailsEntity.getShipmentId(), message, transactionId);
+                }
+            }
+        }
+    }
+
+    private void pushConsolidationDataToService(PushToDownstreamEventDto message, String transactionId) {
         if (Constants.CONSOLIDATION_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
             this.pushConsolidationData(message, transactionId);
         }
@@ -244,7 +267,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         Integer tenantId = downstreamEventDto.getMeta().getTenantId();
         TenantContext.setCurrentTenant(tenantId);
         Optional<CustomerBooking> customerBooking = customerBookingDao.findById(downstreamEventDto.getParentEntityId());
-        if(customerBooking.isEmpty()) {
+        if (customerBooking.isEmpty()) {
             log.info("[InternalKafkaConsume] Customer Booking: {} | transactionId={} not found.", downstreamEventDto.getParentEntityId(), transactionId);
             return;
         }
@@ -257,7 +280,7 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
     private void pushShipmentData(Long entityId, boolean isCreate, boolean isAutoSellRequired) {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
-        if(shipmentDetails.isEmpty()) {
+        if (shipmentDetails.isEmpty()) {
             log.info("Shipment {} not found.", entityId);
             return;
         }
@@ -280,7 +303,6 @@ public class PushToDownstreamService implements IPushToDownstreamService {
             log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
     }
-
 
 
 }
