@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,5 +17,6 @@ public interface IPickupDeliveryDetailsRepository extends MultiTenancyRepository
     }
     List<PickupDeliveryDetails> findAll();
     List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
-
+    @Query(value = "SELECT count(*) from pickup_delivery_details where shipment_id = :shipmentId and is_deleted in(true,false)", nativeQuery = true)
+    Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId);
 }
