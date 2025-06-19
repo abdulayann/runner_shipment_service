@@ -226,6 +226,9 @@ public class ShipmentConstants {
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
     public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
+    public static final String AIB_ACTION_SHIPMENT = "/aib/action";
+    public static final String AIB_PUSH_REQUEST = "/aib/push";
+
     // Shipment V3.0 API Endpoints
     public static final String SHIPMENT_API_HANDLE_V3 = "/api/v3/shipment";
     public static final String COUNT_PENDING_NOTIFICATION_API = "/count/pending/notification";
@@ -236,6 +239,7 @@ public class ShipmentConstants {
     public static final String ALL_SHIPMENT_COUNT = "All shipment count fetched successfully";
     public static final String LATEST_CARGO_DELIVERY_DATE = "Latest cargo delivery date out of shipments fetched successfully";
     public static final String UPDATE_SHIPMENT_STATUS = "Shipment status has been updated successfully";
+    public static final String AIB_ACTION = "Inter branch operation has been done successfully";
 
     // Shipment Statuses
     public static final String PENDING = "PENDING";
