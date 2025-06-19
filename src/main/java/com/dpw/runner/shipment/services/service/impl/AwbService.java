@@ -3388,7 +3388,6 @@ public class AwbService implements IAwbService {
         if (!Objects.isNull(packsInfo)) {
             if (!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()) && Objects.equals(goodsDescriptionInfos.get(0).getEntityType(), Constants.DMAWB)) {
                 if (goodsDescriptionInfos.size() == 1) {
-                    request.setPackUpdate(true);
                     guidBasedAwbPackingList.put(goodsDescriptionInfos.get(0).getGuid(), packsInfo);
                 }
             } else if (!Objects.isNull(request.getIsFromShipment()) && Boolean.TRUE.equals(request.getIsFromShipment()))
