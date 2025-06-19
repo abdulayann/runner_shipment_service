@@ -89,8 +89,10 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
@@ -1263,9 +1265,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setId(100L);
         shipment.setPackingList(List.of(pack1, pack2));
 
-        // Mocks
-        ContainerInfoProjection mockProjection = mock(ContainerInfoProjection.class);
-
         when(shipmentsContainersMappingDao.findByContainerId(containerId)).thenReturn(mappings);
         when(shipmentDao.findShipmentsByIds(Set.of(100L))).thenReturn(List.of(shipment));
 
@@ -1280,8 +1279,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .thenReturn(List.of(shipmentsDto));
         when(jsonHelper.convertValueToList(eq(List.of(pack1)), eq(ShipmentPacksUnAssignContainerTrayDto.Shipments.Packages.class)))
                 .thenReturn(List.of(packing));
-//        when(mockProjection.getContainerNumber()).thenReturn("");
-//        when(mockProjection.getContainerCode()).thenReturn("");
 
         // When
         ShipmentPacksUnAssignContainerTrayDto result = shipmentServiceImplV3.getShipmentAndPacksForConsolidationUnAssignContainerTray(containerId);
@@ -1488,6 +1485,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setShipmentAddresses(null);
         mockShipment.setTruckDriverDetails(new ArrayList<>());
         mockShipment.setReferenceNumbersList(new ArrayList<>());
+        testConsol.setShipmentsList(new HashSet<>());
         mockShipment.setConsolidationList(Set.of(testConsol));
         mockShipment.setSourceTenantId(null);
 
@@ -1513,6 +1511,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(referenceNumbersDao.updateEntityFromShipment(anyList(), any())).thenReturn(List.of(new ReferenceNumbers()));
         doNothing().when(auditLogService).addAuditLog(any());
         when(jsonHelper.convertToJson(any())).thenReturn("Shipment");
+        when(jsonHelper.convertValue(any(), eq(ShipmentWtVolResponse.class))).thenReturn(ShipmentWtVolResponse.builder().build());
+        doNothing().when(consolidationV3Service).updateConsolidationCargoSummary(any(), any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
 
@@ -1557,6 +1557,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentRequest.setShipmentAddresses(List.of(new PartiesRequest()));
         shipmentRequest.setTruckDriverDetails(List.of(new TruckDriverDetailsRequest()));
         shipmentRequest.setReferenceNumbersList(List.of(new ReferenceNumbersRequest()));
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         when(commonUtils.convertToEntityList(any(), eq(Parties.class), anyBoolean()))
@@ -1573,7 +1577,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .thenReturn(List.of(new ReferenceNumbers()));
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, shipmentRequest, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, shipmentRequest, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(partiesDao).updateEntityFromOtherEntity(any(), anyLong(), any());
         verify(truckDriverDetailsDao).updateEntityFromShipment(any(), anyLong());
@@ -1595,13 +1599,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setAdditionalDetails(new AdditionalDetails());
         oldShipment.setAdditionalDetails(new AdditionalDetails());
         newShipment.getAdditionalDetails().setEfreightStatus(Constants.EAW);
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         mockTenantSettings();
         mockShipmentSettings();
         doNothing().when(awbDao).updatedAwbInformationEvent(any(), any());
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(), ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(), ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(awbDao).updatedAwbInformationEvent(newShipment, oldShipment);
     }
@@ -1622,6 +1630,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setAdditionalDetails(new AdditionalDetails());
         newShipment.getAdditionalDetails().setEfreightStatus(Constants.NON);
         testConsol.setEfreightStatus(null);
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
 
         ShipmentV3Request shipmentRequest = new ShipmentV3Request();
 
@@ -1630,7 +1642,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, shipmentRequest, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, shipmentRequest, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         assertNull(newShipment.getConsolidationList());
     }
@@ -1645,11 +1657,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         request.setShipmentAddresses(null);
         request.setTruckDriverDetails(null);
         request.setReferenceNumbersList(null);
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
 
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, request, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, request, ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(partiesDao, never()).updateEntityFromOtherEntity(any(), anyLong(), any());
         verify(truckDriverDetailsDao, never()).updateEntityFromShipment(any(), anyLong());
@@ -1664,6 +1680,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setMasterBill("NEWMBL");
         ShipmentDetails oldShipment = new ShipmentDetails();
         oldShipment.setMasterBill("OLDMBL");
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
 
         ConsolidationDetailsProjection projection = mock(ConsolidationDetailsProjection.class);
         when(projection.getConsolidationNumber()).thenReturn("C123");
@@ -1672,7 +1692,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(consolidationDetailsDao.findMblNumberInDifferentTenant(any())).thenReturn(List.of(projection));
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(), ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(), ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(auditLogService).addAuditLog(any());
     }
@@ -1692,11 +1712,16 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldShipment.setAdditionalDetails(new AdditionalDetails());
         oldShipment.setConsolidationList(Set.of(details));
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(details));
 
         assertThrows(RunnerException.class, () -> {
-            shipmentServiceImplV3.afterSave(shipment, oldShipment, false, new ShipmentV3Request(), ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+            shipmentServiceImplV3.afterSave(shipment, oldShipment, new ShipmentV3Request(), ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
         });
     }
 
@@ -1714,13 +1739,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ShipmentV3Request shipmentRequest = new ShipmentV3Request();
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
         tenantSettings.setIsMAWBColoadingEnabled(true);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
         mockShipmentSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, shipmentRequest,
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, shipmentRequest,
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(consoleShipmentMappingDao).deletePendingStateByShipmentId(newShipment.getId());
     }
@@ -1743,6 +1773,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentV3Request shipmentRequest = new ShipmentV3Request();
         ShipmentSettingsDetails shipmentSettings = new ShipmentSettingsDetails();
         shipmentSettings.setAutoEventCreate(true);
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
 
         when(eventsV3Util.createOrUpdateEvents(any(), any(), any(), anyBoolean()))
                 .thenReturn(eventsList);
@@ -1750,8 +1784,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .thenReturn(eventsList);
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, shipmentRequest,
-                shipmentSettings, false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, shipmentRequest,
+                shipmentSettings, consoleShipmentData);
 
         verify(eventsV3Util).createOrUpdateEvents(eq(newShipment), eq(oldShipment), any(), eq(false));
         verify(commonUtils).updateEventWithMasterData(any());
@@ -1769,10 +1803,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetails shipmentSettings = new ShipmentSettingsDetails();
         shipmentSettings.setAutoEventCreate(true);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                shipmentSettings, false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                shipmentSettings, consoleShipmentData);
 
         verify(eventsV3Util).autoGenerateCreateEvent(newShipment);
     }
@@ -1788,11 +1827,16 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentSettings.setIsNetworkTransferEntityEnabled(true);
         shipmentSettings.setIsAutomaticTransferEnabled(true);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                shipmentSettings, false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                shipmentSettings, consoleShipmentData);
 
         verify(masterDataUtils, times(2)).withMdc(any());
     }
@@ -1804,10 +1848,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setGuid(UUID.randomUUID());
         newShipment.setAdditionalDetails(new AdditionalDetails());
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        assertDoesNotThrow(() -> shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                new ShipmentSettingsDetails(), false, false));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                new ShipmentSettingsDetails(), consoleShipmentData));
     }
 
     @Test
@@ -1834,13 +1883,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consolidationSet.add(consolidation);
         oldShipment.setConsolidationList(consolidationSet);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                new ShipmentSettingsDetails(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                new ShipmentSettingsDetails(), consoleShipmentData);
 
         verify(consolidationDetailsDao).save(any(ConsolidationDetails.class), eq(false), eq(true));
         assertTrue(consolidation.getHazardous());
@@ -1870,14 +1924,19 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consolidationSet.add(consolidation);
         oldShipment.setConsolidationList(consolidationSet);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>());
 
         mockTenantSettings();
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                new ShipmentSettingsDetails(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                new ShipmentSettingsDetails(), consoleShipmentData);
 
         assertFalse(consolidation.getHazardous());
     }
@@ -1906,13 +1965,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consolidationSet.add(consolidation);
         oldShipment.setConsolidationList(consolidationSet);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>());
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                new ShipmentSettingsDetails(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                new ShipmentSettingsDetails(), consoleShipmentData);
 
         verify(consolidationDetailsDao).save(any(ConsolidationDetails.class), eq(false), anyBoolean());
         assertEquals(AwbConstants.T1, consolidation.getSci());
@@ -1953,12 +2017,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consolidationSet.add(consolidation);
         oldShipment.setConsolidationList(consolidationSet);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                new ShipmentSettingsDetails(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                new ShipmentSettingsDetails(), consoleShipmentData);
 
         verify(consolidationDetailsDao).save(any(ConsolidationDetails.class), eq(false), anyBoolean());
 
@@ -2025,14 +2094,19 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment2.setAdditionalDetails(new AdditionalDetails());
         shipment2.setCarrierDetails(new CarrierDetails());
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(mappings);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipment1, shipment2));
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                new ShipmentSettingsDetails(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                new ShipmentSettingsDetails(), consoleShipmentData);
 
         verify(shipmentDao).saveAll(any());
 
@@ -2060,10 +2134,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentV3Request shipmentRequest = new ShipmentV3Request();
         shipmentRequest.setIsAutoSellRequired(true);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, shipmentRequest,
-                new ShipmentSettingsDetails(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, shipmentRequest,
+                new ShipmentSettingsDetails(), consoleShipmentData);
 
         verify(dateTimeChangeLogService).createEntryFromShipment(any(), isNull());
     }
@@ -2078,10 +2157,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentSettingsDetails shipmentSettings = new ShipmentSettingsDetails();
         shipmentSettings.setAutoEventCreate(true);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                shipmentSettings, false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                shipmentSettings, consoleShipmentData);
 
         verify(eventsV3Util).autoGenerateCreateEvent(newShipment);
     }
@@ -2095,10 +2179,16 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         newShipment.setAdditionalDetails(new AdditionalDetails());
         oldShipment.setAdditionalDetails(new AdditionalDetails());
+
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(awbDao, never()).updatedAwbInformationEvent(any(), any());
     }
@@ -2114,11 +2204,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldShipment.setSecurityStatus("NOT_SECURE");
         newShipment.setAdditionalDetails(new AdditionalDetails());
         oldShipment.setAdditionalDetails(new AdditionalDetails());
+
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         mockShipmentSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(awbDao).updatedAwbInformationEvent(newShipment, oldShipment);
     }
@@ -2139,11 +2235,16 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldDetails.setSci("OLD_SCI");
         oldShipment.setAdditionalDetails(oldDetails);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         mockShipmentSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(awbDao).updatedAwbInformationEvent(newShipment, oldShipment);
     }
@@ -2164,11 +2265,16 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldDetails.setEfreightStatus(Constants.NON);
         oldShipment.setAdditionalDetails(oldDetails);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         mockShipmentSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(awbDao).updatedAwbInformationEvent(newShipment, oldShipment);
     }
@@ -2181,10 +2287,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setMasterBill("");
         newShipment.setAdditionalDetails(new AdditionalDetails());
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(consolidationDetailsDao, never()).findMblNumberInDifferentTenant(anyString());
     }
@@ -2197,6 +2308,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setMasterBill("ERROR-MBL");
         newShipment.setAdditionalDetails(new AdditionalDetails());
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         ConsolidationDetailsProjection projection = mock(ConsolidationDetailsProjection.class);
         when(projection.getConsolidationNumber()).thenReturn("C123");
         when(projection.getTenantId()).thenReturn(5);
@@ -2206,8 +2322,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockTenantSettings();
 
         // Should not throw exception
-        assertDoesNotThrow(() -> shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false));
+        assertDoesNotThrow(() -> shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData));
     }
 
     @Test
@@ -2217,10 +2333,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setGuid(UUID.randomUUID());
         newShipment.setAdditionalDetails(new AdditionalDetails());
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(true);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, null, true, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, null, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         assertNull(newShipment.getConsolidationList());
     }
@@ -2245,12 +2366,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         consolidationSet.add(consolidation);
         oldShipment.setConsolidationList(consolidationSet);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
         when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         assertTrue(consolidation.getHazardous());
     }
@@ -3063,6 +3189,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldShipment.setMasterBill("OLDMBL");
         oldShipment.setAdditionalDetails(new AdditionalDetails());
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         ConsolidationDetailsProjection projection = mock(ConsolidationDetailsProjection.class);
         when(projection.getConsolidationNumber()).thenReturn("C123");
         when(projection.getTenantId()).thenReturn(5);
@@ -3070,8 +3201,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(consolidationDetailsDao.findMblNumberInDifferentTenant(any())).thenReturn(List.of(projection));
         mockTenantSettings();
 
-        shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+        shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
 
         verify(auditLogService).addAuditLog(any());
 
@@ -3102,12 +3233,17 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldShipment.setAdditionalDetails(new AdditionalDetails());
         oldShipment.setConsolidationList(Set.of(consolidation));
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setCreate(false);
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         mockTenantSettings();
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidation));
 
         RunnerException exception = assertThrows(RunnerException.class, () -> {
-            shipmentServiceImplV3.afterSave(newShipment, oldShipment, false, new ShipmentV3Request(),
-                    ShipmentSettingsDetailsContext.getCurrentTenantSettings(), false, false);
+            shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
+                    ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
         });
 
         assertEquals("EFreight status can only be EAW as Consolidation EFrieght Status is EAW", exception.getMessage());
@@ -3819,8 +3955,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         AutoUpdateWtVolResponse result = shipmentServiceImplV3.calculateVW(request, response, true);
 
-        assertEquals(BigDecimal.valueOf(1.0), result.getChargable());
-        assertEquals(Constants.VOLUME_UNIT_M3, result.getChargeableUnit());
+        assertEquals(BigDecimal.valueOf(10), result.getChargable());
+        assertEquals(Constants.WEIGHT_UNIT_KG, result.getChargeableUnit());
     }
 
     @Test
@@ -3984,7 +4120,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         mockTenantSettings();
 
-        shipmentServiceImplV3.beforeSave(shipment, null, true, request, settings, false);
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
+        shipmentServiceImplV3.beforeSave(shipment, null, true, request, settings, false, consoleShipmentData);
 
         verify(hblDao).delete(hbl);
         assertFalse(shipment.getAdditionalDetails().getDraftPrinted());
@@ -4007,6 +4147,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentV3Request request = new ShipmentV3Request();
         request.setIsChargableEditable(false);
 
+        ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
+        consoleShipmentData.setFromET(false);
+        consoleShipmentData.setSyncConsole(false);
+
         ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
 
         doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
@@ -4014,7 +4158,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ValidationException exception = assertThrows(
                 ValidationException.class,
-                () -> shipmentServiceImplV3.beforeSave(shipment, oldEntity, false, request, settings, false)
+                () -> shipmentServiceImplV3.beforeSave(shipment, oldEntity, false, request, settings, false, consoleShipmentData)
         );
 
         assertEquals("Consolidation type cannot be changed as the original BL has been generated for this shipment.", exception.getMessage());

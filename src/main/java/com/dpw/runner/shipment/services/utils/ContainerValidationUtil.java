@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,10 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
@@ -75,7 +72,7 @@ public class ContainerValidationUtil {
         }
     }
 
-    public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) throws RunnerException {
+    public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
             throw new ValidationException(String.format(
                     "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
@@ -83,11 +80,11 @@ public class ContainerValidationUtil {
         }
     }
 
-    public void validateBeforeAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap) throws RunnerException {
+    public void validateBeforeAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap) {
         if(shipmentDetailsMap.values().size() > 1) {
             for(ShipmentDetails shipmentDetails: shipmentDetailsMap.values()) {
-                if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
-                    throw new ValidationException("Container being or already assigned to FCL Shipment should be linked to only one shipment");
+                if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+                    throw new ValidationException("Container being or already assigned to FCL/FTL Shipment should be linked to only one shipment");
                 }
             }
         }

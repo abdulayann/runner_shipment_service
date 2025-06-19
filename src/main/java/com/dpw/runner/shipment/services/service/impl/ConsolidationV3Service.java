@@ -1,6 +1,33 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
+import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANT_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import static java.util.stream.Collectors.toMap;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -98,16 +125,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
-import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
+
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.helpers.ResponseHelper.buildDependentServiceResponse;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-import static java.util.stream.Collectors.toMap;
 
 @SuppressWarnings("ALL")
 @Service
@@ -841,8 +860,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
 
-        if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) &&
-                Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+        String cargoType = consolidationDetails.getContainerCategory();
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
+        if (isSeaLCL || isRoadLCLorLTL) {
             applyLclSeaOverrides(consolidationDetails);
         }
 
@@ -1104,8 +1125,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     private long getConsoleContainerCount(ConsolidationDetails consolidationDetails, Containers container, Set<String> uniqueContainerNumbers, long consoleCont) {
 
-        // Check if the container category is LCL (Less than Container Load).
-        if (Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+        // Check if the container category is LCL (Less than Container Load) or LTL.
+        if (commonUtils.isLCLorLTL(consolidationDetails.getContainerCategory())) {
 
             // For LCL, count unique container numbers only.
             if (ObjectUtils.isNotEmpty(container.getContainerNumber())) {
@@ -1405,10 +1426,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         String transportMode = consolidationDetails.getTransportMode();
         String containerCategory = consolidationDetails.getContainerCategory();
 
-        // Valid if LCL + SEA or any AIR transport
-        return (Constants.SHIPMENT_TYPE_LCL.equals(containerCategory)
-                && Constants.TRANSPORT_MODE_SEA.equals(transportMode))
-                || Constants.TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, containerCategory);
+        boolean isAir = TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, containerCategory);
+
+        // Valid if LCL + SEA or any AIR transport or ROAD + LCL or LTL
+        return isSeaLCL || isAir || isRoadLCLorLTL;
     }
 
     /**

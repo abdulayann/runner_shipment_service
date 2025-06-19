@@ -2707,4 +2707,16 @@ public class CommonUtils {
             log.error("Error sending email: " + e.getMessage());
         }
     }
+
+    public boolean isRoadLCLorLTL(String transportMode, String cargoType) {
+        return Constants.TRANSPORT_MODE_ROA.equals(transportMode) && isLCLorLTL(cargoType);
+    }
+
+    public boolean isSeaLCL(String transportMode, String cargoType) {
+        return Constants.TRANSPORT_MODE_SEA.equals(transportMode) && Constants.SHIPMENT_TYPE_LCL.equals(cargoType);
+    }
+
+    public boolean isLCLorLTL(String cargoType) {
+        return (Constants.SHIPMENT_TYPE_LCL.equals(cargoType) || CARGO_TYPE_LTL.equals(cargoType));
+    }
 }

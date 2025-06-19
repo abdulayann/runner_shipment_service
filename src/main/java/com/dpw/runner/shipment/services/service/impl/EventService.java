@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_LTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -796,11 +798,11 @@ public class EventService implements IEventService {
     }
 
     private boolean isFclShipment(String shipmentType) {
-        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType));
+        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(safeString(shipmentType));
     }
 
     private boolean isLclShipment(String shipmentType) {
-        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType));
+        return Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(safeString(shipmentType)) || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(safeString(shipmentType));
     }
 
     private boolean isAirShipment(String transportMode) {
@@ -894,10 +896,14 @@ public class EventService implements IEventService {
                 }
                 isShipmentUpdateRequired = true;
         }
+
+        String transportMode = shipment.getTransportMode();
+        String cargoType = shipment.getShipmentType();
+        boolean isSeaFCL = Constants.TRANSPORT_MODE_SEA.equals(transportMode) && Constants.CARGO_TYPE_FCL.equals(cargoType);
+        boolean isRoadFCLorFTL = Constants.TRANSPORT_MODE_ROA.equals(transportMode) && (Constants.SHIPMENT_TYPE_LCL.equals(cargoType) || CARGO_TYPE_LTL.equals(cargoType));
         if (isEmptyContainerReturnedEvent && shipment.getAdditionalDetails() != null &&
                 !Boolean.TRUE.equals(shipment.getAdditionalDetails().getEmptyContainerReturned()) &&
-                Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
+                (isSeaFCL || isRoadFCLorFTL)) {
                 shipment.getAdditionalDetails().setEmptyContainerReturned(true);
                 isShipmentUpdateRequired = true;
         }

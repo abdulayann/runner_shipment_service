@@ -92,7 +92,22 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -1663,7 +1678,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
             if (assignedShipmentsList.contains(shipments.getId())) {
                 shipments.setSelectedContainerAssigned(true);
-                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType())) {
+                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType()) || CARGO_TYPE_FTL.equalsIgnoreCase(shipments.getShipmentType())) {
                     response.setIsFCLShipmentAssigned(true);
                     response.setAssignedFCLShipment(shipments.getId());
                 }
@@ -2514,7 +2529,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
             }
             response.setChargeableUnit(vwOb.getChargeableUnit());
-            if (request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !isStringNullOrEmpty(request.getShipmentType()) && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
+            if (checkConditionForSEAorROAD(request)){
                 double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
                 response.setChargable(BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3)));
@@ -2527,6 +2542,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         }
         return response;
+    }
+
+    private boolean checkConditionForSEAorROAD(AutoUpdateWtVolRequest request) {
+        String transportMode = request.getTransportMode();
+        String cargoType = request.getShipmentType();
+
+        if (isStringNullOrEmpty(cargoType)) return false;
+
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
+
+        return isSeaLCL || isRoadLCLorLTL;
     }
 
     protected AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws RunnerException { // to account for updateShipmentDetails flag in v1 container summary
@@ -2598,9 +2625,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void updateResponseFromDto(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, ShipmentMeasurementDetailsDto dto, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) &&
-                Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) ||
-                Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+        String transportMode = request.getTransportMode();
+        String cargoType = request.getShipmentType();
+
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
+        boolean isAir = TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
+
+        if (isSeaLCL || isAir || isRoadLCLorLTL) {
             response.setInnerPacks(dto.getInnerPacks());
             response.setInnerPackUnit(dto.getInnerPackUnit());
         }
