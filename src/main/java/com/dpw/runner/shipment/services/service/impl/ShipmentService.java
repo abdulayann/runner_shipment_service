@@ -2342,7 +2342,25 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processIsNewConsolAttached(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isCreate, MutableBoolean isNewConsolAttached, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
-        if (Boolean.TRUE.equals(isNewConsolAttached.getValue()) && (oldShipmentDetails.getConsolidationList() == null || oldShipmentDetails.getConsolidationList().isEmpty())) {
+        Set<ConsolidationDetails> oldConsolidation = oldShipmentDetails != null ? oldShipmentDetails.getConsolidationList() : null;
+        Set<ConsolidationDetails> newConsolidation = shipmentDetails != null ? shipmentDetails.getConsolidationList() : null;
+
+        boolean isConsolDetached = (oldConsolidation != null && !oldConsolidation.isEmpty()) && (newConsolidation == null || newConsolidation.isEmpty());
+        boolean isConsolUpdated = false;
+
+        if (!isConsolDetached && oldConsolidation != null && newConsolidation != null && !oldConsolidation.isEmpty() && !newConsolidation.isEmpty()) {
+            Long oldId = oldConsolidation.iterator().next().getId();
+            Long newId = newConsolidation.iterator().next().getId();
+            isConsolUpdated = !Objects.equals(oldId, newId);
+        }
+
+        if (isConsolDetached || (isConsolUpdated && oldConsolidation != null && !oldConsolidation.isEmpty())) {
+            ConsolidationDetails oldConsole = oldConsolidation.iterator().next();
+            if (oldConsole != null && oldConsole.getId() != null) {
+                awbDao.validateAirMessaging(oldConsole.getId());
+            }
+        }
+        if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             handleNewConsoleAttachment(shipmentDetails, isCreate);
         } else {
             handleExistingConsoleOrRouting(shipmentDetails, oldShipmentDetails, isRouteMasterEnabled, mainCarriageRoutings);
@@ -2381,24 +2399,6 @@ public class ShipmentService implements IShipmentService {
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
             shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
             shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
-        }
-        Set<ConsolidationDetails> oldConsolidation = oldShipmentDetails != null ? oldShipmentDetails.getConsolidationList() : null;
-        Set<ConsolidationDetails> newConsolidation = shipmentDetails != null ? shipmentDetails.getConsolidationList() : null;
-
-        boolean isConsolRemoved = (oldConsolidation != null && !oldConsolidation.isEmpty()) && (newConsolidation == null || newConsolidation.isEmpty());
-        boolean isConsolUpdated = false;
-
-        if (!isConsolRemoved && oldConsolidation != null && newConsolidation != null && !oldConsolidation.isEmpty() && !newConsolidation.isEmpty()) {
-            Long oldId = oldConsolidation.iterator().next().getId();
-            Long newId = newConsolidation.iterator().next().getId();
-            isConsolUpdated = !Objects.equals(oldId, newId);
-        }
-
-        if (isConsolRemoved || isConsolUpdated && oldConsolidation != null && !oldConsolidation.isEmpty()) {
-            ConsolidationDetails oldConsole = oldConsolidation.iterator().next();
-            if (oldConsole != null && oldConsole.getId() != null) {
-                awbDao.validateAirMessaging(oldConsole.getId());
-            }
         }
     }
 
