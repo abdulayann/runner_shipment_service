@@ -1,0 +1,3 @@
+UPDATE shipment_setting
+set is_network_transfer_entity_enabled=true
+where is_entity_transfer_prerequisite_enabled=true;
