@@ -4293,7 +4293,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         container.setId(id);
         return container;
     }
-    
+
     @Test
     void testSetContainerNumberAndMasterData() {
         ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
@@ -4448,5 +4448,25 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         additionalDetails.setPickupByConsigneeCompleted(isPickupByConsigneeCompleted);
         additionalDetails.setEmptyContainerReturned(isEmptyContainerReturned);
         return additionalDetails;
+    }
+
+    @Test
+    void getIdFromGuid_success() {
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+
+        when(shipmentDao.findByGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"))).thenReturn(Optional.of(shipmentDetails));
+        ShipmentDetailsResponse mockShipmentResponse = ShipmentDetailsResponse.builder().id(
+                shipmentDetails.getId()
+        ).build();
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentServiceImplV3.getIdFromGuid(commonRequestModel);
+
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    @Test
+    void getIdFromGuidCatch() {
+        assertEquals(HttpStatus.BAD_REQUEST, shipmentServiceImplV3.getIdFromGuid(null).getStatusCode());
     }
 }
