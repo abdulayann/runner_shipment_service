@@ -928,8 +928,14 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     public ContainerListResponse list(ListCommonRequest request, boolean getMasterData, String xSource) throws RunnerException {
         try {
+            Pair<Specification<Containers>, Pageable> tuple;
+            if(ObjectUtils.isEmpty(request.getContainsText())){
+                tuple = fetchData(request, Containers.class);
+            } else {
+                tuple = fetchData(request, Containers.class, ContainerConstants.TABLES_NAMES);
+            }
             // construct specifications for filter request
-            Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class, ContainerConstants.TABLES_NAMES);
+
             Page<Containers> containersPage;
             if (Objects.equals(xSource, NETWORK_TRANSFER))
                 containersPage = containerDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
