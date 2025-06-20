@@ -100,7 +100,6 @@ import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingSched
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
-import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
@@ -4641,6 +4640,24 @@ if (unitConversionUtilityMockedStatic != null) {
     assertNotNull(response);
     verify(routingsV3Service).updateBulk(any(BulkUpdateRoutingsRequest.class), eq("CONSOLIDATION"));
     verify(shipmentV3Service, never()).saveAll(any());
+  }
+
+  @Test
+  void testGetIdFromGuid_Success() {
+    ConsolidationDetails consolidationDetails = testConsol;
+    when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
+    ResponseEntity<IRunnerResponse> responseEntity = consolidationV3Service.getIdFromGuid(
+            CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(consolidationDetails.getGuid().toString()).build()));
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+  }
+
+  @Test
+  void testGetIdFromGuid_Failure() {
+    ConsolidationDetails consolidationDetails = testConsol;
+    when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.empty());
+    ResponseEntity<IRunnerResponse> responseEntity = consolidationV3Service.getIdFromGuid(
+            CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(consolidationDetails.getGuid().toString()).build()));
+    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
   }
 
 }
