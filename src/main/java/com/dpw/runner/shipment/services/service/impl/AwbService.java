@@ -932,7 +932,7 @@ public class AwbService implements IAwbService {
                 .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request, awbCargoInfo, tenantResponse))
                 .awbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails, request))
                 .awbRoutingInfo(generateMawbRoutingInfo(consolidationDetails, request))
-                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, null, packSummary))
+                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, mawbPackingInfo, packSummary))
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
                 //.awbPackingInfo(awbPackingInfo)
                 .consolidationId(consolidationDetails.getId())
@@ -2021,7 +2021,13 @@ public class AwbService implements IAwbService {
     private void processAwbPacksAndGoods(ResetAwbRequest resetAwbRequest, Optional<ConsolidationDetails> consolidationDetails, Awb awb, CreateAwbRequest createAwbRequest, Long awbId, Optional<ShipmentDetails> shipmentDetails) throws RunnerException {
         if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
             PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
-            awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null, packSummary));
+            List<Long> shipmentDetailsIdList = consolidationDetails.get().getShipmentsList()
+                    .stream()
+                    .map(ShipmentDetails::getId)
+                    .toList();
+            List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
+            List<AwbPackingInfo> mawbPackingInfo = getAwbPackingInfos(awbList, shipmentDetailsIdList);
+            awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, mawbPackingInfo, packSummary));
             updateLinkHawbMawb(consolidationDetails.get(), awbId);
         } else {
             awb.setAwbPackingInfo(generateAwbPackingInfo(shipmentDetails.get(), shipmentDetails.get().getPackingList()));
@@ -2030,23 +2036,12 @@ public class AwbService implements IAwbService {
     }
 
     private void processMAWBAllCase(ConsolidationDetails consolidationDetails, CreateAwbRequest createAwbRequest, Awb awb, PrintType printType) throws RunnerException {
-        List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
         List<Long> shipmentDetailsIdList = consolidationDetails.getShipmentsList()
                 .stream()
                 .map(ShipmentDetails::getId)
                 .toList();
         List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
-        Map<Long, Awb> shipmentIdToAwbMap = awbList.stream()
-                .collect(Collectors.toMap(Awb::getShipmentId, awb1 -> awb1));
-        if (awbList.size() != shipmentDetailsIdList.size()) {
-            throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
-        }
-        for (Long shipmentId : shipmentDetailsIdList) {
-            Awb linkAwb = shipmentIdToAwbMap.get(shipmentId);
-            if (linkAwb.getAwbPackingInfo() != null) {
-                mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
-            }
-        }
+        List<AwbPackingInfo> mawbPackingInfo = getAwbPackingInfos(awbList, shipmentDetailsIdList);
         Awb resetAwb = generateMawb(createAwbRequest, consolidationDetails, mawbPackingInfo);
         awb.setAwbShipmentInfo(resetAwb.getAwbShipmentInfo());
         awb.setAwbNotifyPartyInfo(resetAwb.getAwbNotifyPartyInfo());
@@ -2064,6 +2059,22 @@ public class AwbService implements IAwbService {
         awb.setPrintType(printType);
         if (!awbList.isEmpty())
             updateSciFieldFromMawb(awb, awbList);
+    }
+
+    private List<AwbPackingInfo> getAwbPackingInfos(List<Awb> awbList, List<Long> shipmentDetailsIdList) {
+        List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
+        Map<Long, Awb> shipmentIdToAwbMap = awbList.stream()
+                .collect(Collectors.toMap(Awb::getShipmentId, awb1 -> awb1));
+        if (awbList.size() != shipmentDetailsIdList.size()) {
+            throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+        }
+        for (Long shipmentId : shipmentDetailsIdList) {
+            Awb linkAwb = shipmentIdToAwbMap.get(shipmentId);
+            if (linkAwb.getAwbPackingInfo() != null) {
+                mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
+            }
+        }
+        return mawbPackingInfo;
     }
 
     @Override
