@@ -197,6 +197,15 @@ public class ContainerV3Service implements IContainerV3Service {
         // before save operations
         containerV3Util.containerBeforeSave(originalContainers);
 
+        for(ContainerV3Request containerRequest : containerRequestList){
+            List<Containers> containersList = getSiblingContainers(containerRequest);
+            if(containerRequest.getId() != null) {
+                containersList.removeIf(container -> container.getId() != null && container.getId()
+                        .equals(containerRequest.getId()));
+            }
+
+            containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
+        }
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
