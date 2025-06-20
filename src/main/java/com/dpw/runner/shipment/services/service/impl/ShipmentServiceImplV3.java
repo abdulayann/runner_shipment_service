@@ -7,6 +7,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_D
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
@@ -246,6 +247,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
 
 @SuppressWarnings({"ALL", "java:S1172"})
 @Service
@@ -1811,7 +1813,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         for (ShipmentPacksAssignContainerTrayDto.Shipments shipments : response.getShipmentsList()) {
             if (assignedShipmentsList.contains(shipments.getId())) {
                 shipments.setSelectedContainerAssigned(true);
-                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType())) {
+                if (CARGO_TYPE_FCL.equals(shipments.getShipmentType()) || CARGO_TYPE_FTL.equalsIgnoreCase(shipments.getShipmentType())) {
                     response.setIsFCLShipmentAssigned(true);
                     response.setAssignedFCLShipment(shipments.getId());
                 }
@@ -2662,7 +2664,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
             }
             response.setChargeableUnit(vwOb.getChargeableUnit());
-            if (request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !isStringNullOrEmpty(request.getShipmentType()) && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
+            if (checkConditionForSEAorROAD(request)){
                 double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
                 response.setChargable(BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3)));
@@ -2675,6 +2677,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         }
         return response;
+    }
+
+    private boolean checkConditionForSEAorROAD(AutoUpdateWtVolRequest request) {
+        String transportMode = request.getTransportMode();
+        String cargoType = request.getShipmentType();
+
+        if (isStringNullOrEmpty(cargoType)) return false;
+
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
+
+        return isSeaLCL || isRoadLCLorLTL;
     }
 
     protected AutoUpdateWtVolResponse updateShipmentDetails(AutoUpdateWtVolResponse response, List<Containers> containersList) throws RunnerException { // to account for updateShipmentDetails flag in v1 container summary
@@ -2746,9 +2760,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void updateResponseFromDto(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, ShipmentMeasurementDetailsDto dto, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if ((Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) &&
-                Objects.equals(request.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) ||
-                Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
+        String transportMode = request.getTransportMode();
+        String cargoType = request.getShipmentType();
+
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
+        boolean isAir = TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
+
+        if (isSeaLCL || isAir || isRoadLCLorLTL) {
             response.setInnerPacks(dto.getInnerPacks());
             response.setInnerPackUnit(dto.getInnerPackUnit());
         }

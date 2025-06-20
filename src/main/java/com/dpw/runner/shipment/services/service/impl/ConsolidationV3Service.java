@@ -255,6 +255,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+
 @SuppressWarnings("ALL")
 @Service
 @Slf4j
@@ -988,8 +989,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
 
-        if (Constants.TRANSPORT_MODE_SEA.equals(transportMode) &&
-                Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+        String cargoType = consolidationDetails.getContainerCategory();
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
+        if (isSeaLCL || isRoadLCLorLTL) {
             applyLclSeaOverrides(consolidationDetails);
         }
 
@@ -1251,8 +1254,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     private long getConsoleContainerCount(ConsolidationDetails consolidationDetails, Containers container, Set<String> uniqueContainerNumbers, long consoleCont) {
 
-        // Check if the container category is LCL (Less than Container Load).
-        if (Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+        // Check if the container category is LCL (Less than Container Load) or LTL.
+        if (commonUtils.isLCLorLTL(consolidationDetails.getContainerCategory())) {
 
             // For LCL, count unique container numbers only.
             if (ObjectUtils.isNotEmpty(container.getContainerNumber())) {
@@ -1552,10 +1555,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         String transportMode = consolidationDetails.getTransportMode();
         String containerCategory = consolidationDetails.getContainerCategory();
 
-        // Valid if LCL + SEA or any AIR transport
-        return (Constants.SHIPMENT_TYPE_LCL.equals(containerCategory)
-                && Constants.TRANSPORT_MODE_SEA.equals(transportMode))
-                || Constants.TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, containerCategory);
+        boolean isAir = TRANSPORT_MODE_AIR.equals(transportMode);
+        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, containerCategory);
+
+        // Valid if LCL + SEA or any AIR transport or ROAD + LCL or LTL
+        return isSeaLCL || isAir || isRoadLCLorLTL;
     }
 
     /**
@@ -1765,7 +1770,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
 
-        
+
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";

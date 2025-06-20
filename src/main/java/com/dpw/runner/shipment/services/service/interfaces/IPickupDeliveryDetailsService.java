@@ -21,7 +21,7 @@ public interface IPickupDeliveryDetailsService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> deleteV2(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel, boolean populateRAKC);
 
     Optional<PickupDeliveryDetails> findById(Long parentEntityId);
 

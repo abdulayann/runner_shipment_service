@@ -658,6 +658,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
+        return retrieveById(commonRequestModel, false);
+    }
+
+    private ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean populateRAKC) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -676,7 +680,16 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Pickup Delivery details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            Set<String> addressIds = new HashSet<>();
+            Map<String, RAKCDetailsResponse> rakcDetailsMap = new HashMap<>();
+            if (Boolean.TRUE.equals(populateRAKC)) {
+                getAddressIds(pickupDeliveryDetails.get(), addressIds);
+                rakcDetailsMap = this.getRAKCDetailsMap(addressIds.stream().toList());
+            }
             PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
+            if (Boolean.TRUE.equals(populateRAKC) && !rakcDetailsMap.isEmpty()) {
+                this.populateRAKCDetails(response, rakcDetailsMap);
+            }
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -697,19 +710,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         Map<String, RAKCDetailsResponse> rakcDetailsMap;
         if (Boolean.TRUE.equals(populateRAKC)) {
             Set<String> addressIds = new HashSet<>();
-            lst.forEach(pickupDeliveryDetails -> {
-                if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getTransporterDetail())) {
-                    addressIds.add(pickupDeliveryDetails.getTransporterDetail().getAddressId());
-                }
-
-                if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getSourceDetail())) {
-                    addressIds.add(pickupDeliveryDetails.getSourceDetail().getAddressId());
-                }
-
-                if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
-                    addressIds.add(pickupDeliveryDetails.getDestinationDetail().getAddressId());
-                }
-            });
+            lst.forEach(pickupDeliveryDetails -> getAddressIds(pickupDeliveryDetails, addressIds));
             rakcDetailsMap = this.getRAKCDetailsMap(addressIds.stream().toList());
         } else {
             rakcDetailsMap = new HashMap<>();
@@ -722,6 +723,20 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             responseList.add(response);
         });
         return responseList;
+    }
+
+    private void getAddressIds(PickupDeliveryDetails pickupDeliveryDetails, Set<String> addressIds) {
+        if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getTransporterDetail())) {
+            addressIds.add(pickupDeliveryDetails.getTransporterDetail().getAddressId());
+        }
+
+        if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getSourceDetail())) {
+            addressIds.add(pickupDeliveryDetails.getSourceDetail().getAddressId());
+        }
+
+        if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
+            addressIds.add(pickupDeliveryDetails.getDestinationDetail().getAddressId());
+        }
     }
 
     public PickupDeliveryDetails convertRequestToEntity(PickupDeliveryDetailsRequest request) {
@@ -758,8 +773,8 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     // retrieve
     @Override
-    public ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel) {
-        return this.retrieveById(commonRequestModel);
+    public ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel, boolean populateRAKC) {
+        return this.retrieveById(commonRequestModel, populateRAKC);
     }
 
     @Override
