@@ -25,7 +25,7 @@ import javax.validation.Valid;
 @Slf4j
 @SuppressWarnings("ALL")
 @RestController
-@RequestMapping(value = AuditLogConstants.AUDIT_LOG_API_HANDLE)
+@RequestMapping(value = {AuditLogConstants.AUDIT_LOG_API_HANDLE, AuditLogConstants.AUDIT_LOG_V3_API_HANDLE})
 public class AuditLogController {
 
     private final IAuditLogService auditLogService;
