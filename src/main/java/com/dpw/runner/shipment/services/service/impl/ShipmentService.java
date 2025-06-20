@@ -2342,7 +2342,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processIsNewConsolAttached(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isCreate, MutableBoolean isNewConsolAttached, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
-        if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
+        if (Boolean.TRUE.equals(isNewConsolAttached.getValue()) && (oldShipmentDetails.getConsolidationList() == null || oldShipmentDetails.getConsolidationList().isEmpty())) {
             handleNewConsoleAttachment(shipmentDetails, isCreate);
         } else {
             handleExistingConsoleOrRouting(shipmentDetails, oldShipmentDetails, isRouteMasterEnabled, mainCarriageRoutings);
@@ -2382,8 +2382,20 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
             shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
         }
-        if (oldShipmentDetails != null && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty()) {
-            ConsolidationDetails oldConsole = oldShipmentDetails.getConsolidationList().iterator().next();
+        Set<ConsolidationDetails> oldConsolidation = oldShipmentDetails != null ? oldShipmentDetails.getConsolidationList() : null;
+        Set<ConsolidationDetails> newConsolidation = shipmentDetails != null ? shipmentDetails.getConsolidationList() : null;
+
+        boolean isConsolRemoved = (oldConsolidation != null && !oldConsolidation.isEmpty()) && (newConsolidation == null || newConsolidation.isEmpty());
+        boolean isConsolUpdated = false;
+
+        if (!isConsolRemoved && oldConsolidation != null && newConsolidation != null && !oldConsolidation.isEmpty() && !newConsolidation.isEmpty()) {
+            Long oldId = oldConsolidation.iterator().next().getId();
+            Long newId = newConsolidation.iterator().next().getId();
+            isConsolUpdated = !Objects.equals(oldId, newId);
+        }
+
+        if (isConsolRemoved || isConsolUpdated && oldConsolidation != null && !oldConsolidation.isEmpty()) {
+            ConsolidationDetails oldConsole = oldConsolidation.iterator().next();
             if (oldConsole != null && oldConsole.getId() != null) {
                 awbDao.validateAirMessaging(oldConsole.getId());
             }
