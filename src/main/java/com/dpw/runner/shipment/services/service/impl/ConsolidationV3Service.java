@@ -2288,7 +2288,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
         if(fromAttachShipment != null && fromAttachShipment){
-            String oldPartner = oldEntity.getPartner();
+            String oldPartner = Objects.isNull(oldEntity) ? null : oldEntity.getPartner();
             String newPartner = consolidationDetails.getPartner();
 
             if(newPartner != null && !newPartner.equals(oldPartner)){
@@ -2307,13 +2307,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void setCoload_BookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
         if(fromAttachShipment != null && fromAttachShipment) {
-                if(!isFieldChanged(oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
+                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
                     shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 }
-                if(!isFieldChanged(oldEntity.getCoLoadMBL(), shipmentDetails.getCoLoadBlNumber())){
+                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadMBL(), shipmentDetails.getCoLoadBlNumber())){
                     shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
                 }
-                if(!isFieldChanged(oldEntity.getCoLoadBookingReference(), shipmentDetails.getCoLoadBkgNumber())){
+                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadBookingReference(), shipmentDetails.getCoLoadBkgNumber())){
                     shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
                 }
         }else{
