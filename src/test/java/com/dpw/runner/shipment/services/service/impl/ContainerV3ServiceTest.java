@@ -262,6 +262,28 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testContainerUpdate1() throws RunnerException {
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(containers, ContainerResponse.class)));
+        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        assertNotNull(response);
+    }
+
+    @Test
+    void testContainerUpdate4() throws RunnerException {
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(containers, ContainerResponse.class)));
+        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        assertNotNull(response);
+    }
+
+    @Test
     void testContainerUpdate2() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
