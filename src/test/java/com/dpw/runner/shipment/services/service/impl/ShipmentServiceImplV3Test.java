@@ -1341,7 +1341,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testCreate_successWithDestinationQuote() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testCreate_successWithDestinationQuoteValidationException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
         ShipmentDetails mockShipment = testShipment;
         mockShipment.setMasterBill(null);
@@ -1356,7 +1356,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
         ListContractResponse listContractResponse = getMockListContractResponse();
-        listContractResponse.getContracts().get(0)x
+        ListContractResponse.FilterParams filterParams = listContractResponse.getContracts().get(0).getContract_usage().get(0).getFilter_params();
+        filterParams.setCargo_type(List.of("20GP"));
+        listContractResponse.getContracts().get(0).getContract_usage().get(0).setFilter_params(filterParams);
 
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
         List<Events> eventsList = List.of(Events.builder()
@@ -1388,17 +1390,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(eventsV3Service).updateAtaAtdInShipment(anyList(), any(), any());
         when(commonUtils.convertToEntityList(anyList(), any(), any())).thenReturn(List.of(new Parties()));
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
-        when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        when(jsonHelper.convertValueToList(any(), eq(ContainerV3Request.class))).thenReturn(List.of(new ContainerV3Request()));
-        doNothing().when(auditLogService).addAuditLog(any());
-
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
-
-        ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
-
-        assertNotNull(actualResponse);
-        assertEquals(mockShipmentResponse, actualResponse);
+        assertThrows(ValidationException.class, () -> shipmentServiceImplV3.create(commonRequestModel));
     }
 
     @Test
