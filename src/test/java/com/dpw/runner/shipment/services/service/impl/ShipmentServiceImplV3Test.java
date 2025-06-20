@@ -47,6 +47,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -1351,7 +1352,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockCarrierDetails.setEtd(LocalDateTime.now());
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setDestinationContractId("DPWQ-124");
-        mockShipment.setDestinationCurrentPartyForQuote("Client");
+        mockShipment.setDestinationCurrentPartyForQuote("CLIENT");
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
@@ -1374,7 +1375,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse(listContractResponse));
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(getMockListContractResponse());
+        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
@@ -1404,7 +1407,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockCarrierDetails.setEtd(LocalDateTime.now());
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setDestinationContractId("DPWQ-124");
-        mockShipment.setDestinationCurrentPartyForQuote("Client");
+        mockShipment.setDestinationCurrentPartyForQuote("CLIENT");
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
@@ -1424,7 +1427,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse(listContractResponse));
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(getMockListContractResponse());
+        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
@@ -1440,9 +1445,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(eventsV3Service).updateAtaAtdInShipment(anyList(), any(), any());
         when(commonUtils.convertToEntityList(anyList(), any(), any())).thenReturn(List.of(new Parties()));
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
-        when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        when(jsonHelper.convertValueToList(any(), eq(ContainerV3Request.class))).thenReturn(List.of(new ContainerV3Request()));
+        when(containerV3Service.createBulk(any(), any())).thenReturn(new BulkContainerResponse());
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
@@ -1464,7 +1467,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockCarrierDetails.setEtd(LocalDateTime.now());
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setContractId("DPWQ-124");
-        mockShipment.setCurrentPartyForQuote("Client");
+        mockShipment.setCurrentPartyForQuote("CLIENT");
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
@@ -1484,7 +1487,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse(listContractResponse));
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(getMockListContractResponse());
+        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
@@ -1500,9 +1505,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         doNothing().when(eventsV3Service).updateAtaAtdInShipment(anyList(), any(), any());
         when(commonUtils.convertToEntityList(anyList(), any(), any())).thenReturn(List.of(new Parties()));
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
-        when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
-        when(jsonHelper.convertValueToList(any(), eq(ContainerV3Request.class))).thenReturn(List.of(new ContainerV3Request()));
+        when(containerV3Service.createBulk(any(), any())).thenReturn(new BulkContainerResponse());
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
@@ -1526,7 +1529,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockCarrierDetails.setEtd(LocalDateTime.now());
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setContractId("DPWQ-124");
-        mockShipment.setCurrentPartyForQuote("Client");
+        mockShipment.setCurrentPartyForQuote("CLIENT");
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
@@ -1548,7 +1551,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
-        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse(listContractResponse));
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(getMockListContractResponse());
+        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
         doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
@@ -1861,13 +1866,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockCarrierDetails.setEtd(LocalDateTime.now());
         mockShipment.setAdditionalDetails(additionalDetails);
         mockShipment.setContractId("DPWQ-124");
-        mockShipment.setCurrentPartyForQuote("Client");
+        mockShipment.setCurrentPartyForQuote("CLIENT");
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
         ShipmentDetails oldShipmentDetails = mockShipment;
         oldShipmentDetails.setContractId("DPWQ-6754");
-        oldShipmentDetails.setCurrentPartyForQuote("Client");
+        oldShipmentDetails.setCurrentPartyForQuote("CLIENT");
 
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
 
@@ -1875,7 +1880,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
         mockShipmentRequest.setIsChargableEditable(true);
         mockShipmentRequest.setContractId("DPWQ-6754");
-        mockShipmentRequest.setCurrentPartyForQuote("Client");
+        mockShipmentRequest.setCurrentPartyForQuote("CLIENT");
         commonRequestModel.setData(mockShipmentRequest);
         mockShipment.setId(2L);
 

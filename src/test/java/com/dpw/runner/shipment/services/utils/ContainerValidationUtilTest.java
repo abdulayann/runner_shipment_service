@@ -106,6 +106,36 @@ class ContainerValidationUtilTest extends CommonMocks {
     }
 
     @Test
+    void testValidateContainerNumberUniqueness_ForCreateBulk_Success() {
+        ContainerV3Request containerV3Request1 = new ContainerV3Request();
+        containerV3Request1.setContainerNumber("CNT123");
+        ContainerV3Request containerV3Request2 = new ContainerV3Request();
+        containerV3Request2.setContainerNumber("CNT456");
+        containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(List.of(containerV3Request1, containerV3Request2));
+    }
+
+    @Test
+    void testValidateContainerNumberUniqueness_ForCreateBulk_Failure() {
+        ContainerV3Request containerV3Request1 = new ContainerV3Request();
+        containerV3Request1.setContainerNumber("CNT123");
+        ContainerV3Request containerV3Request2 = new ContainerV3Request();
+        containerV3Request2.setContainerNumber("CNT123");
+        assertThrows(IllegalArgumentException.class, () -> containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(List.of(containerV3Request1, containerV3Request2)));
+    }
+
+    @Test
+    void testValidateCreateBulkRequest() {
+        List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        containerValidationUtil.validateCreateBulkRequest(containerV3Requests);
+        assertNotNull(containerV3Requests);
+    }
+
+    @Test
+    void testValidateCreateBulkRequestFailure() {
+        assertThrows(IllegalArgumentException.class, () -> containerValidationUtil.validateCreateBulkRequest(null));
+    }
+
+    @Test
     void testValidateUpdateBulkRequest() {
         List<ContainerV3Request> containerV3Requests = List.of(ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
         containerValidationUtil.validateUpdateBulkRequest(containerV3Requests);

@@ -9,10 +9,8 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -57,6 +55,22 @@ public class ContainerValidationUtil {
         }
     }
 
+    public void validateCreateBulkRequest(List<ContainerV3Request> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new IllegalArgumentException("Bulk create request cannot be null or empty.");
+        }
+
+        for (int index = 0; index < requests.size(); index++) {
+            ContainerV3Request container = requests.get(index);
+            if (container.getConsolidationId() == null && container.getShipmentsId() == null) {
+                throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
+            }
+            if(container.getConsolidationId() != null && container.getShipmentsId() != null){
+                throw new ValidationException("Only one of ConsolidationId or ShipmentsId should be provided, not both.");
+            }
+        }
+    }
+
     public void validateContainerNumberUniqueness(String containerNumber, List<Containers> containersList) {
         if (StringUtility.isEmpty(containerNumber) || containerNumber.length() < 10) {
             return;
@@ -69,6 +83,20 @@ public class ContainerValidationUtil {
 
         if (exists) {
             throw new IllegalArgumentException("Container number '" + containerNumber + "' already exists.");
+        }
+    }
+
+    public void validateContainerNumberUniquenessForCreateBulk(List<ContainerV3Request> containersList) {
+        if (containersList.isEmpty()) {
+            return;
+        }
+        List<String> containerNumbers = containersList.stream()
+                .map(ContainerV3Request::getContainerNumber)
+                .filter(Objects::nonNull)
+                .toList();
+        Set<String> uniqueContainerNumbers = new HashSet<>(containerNumbers);
+        if (uniqueContainerNumbers.size() != containerNumbers.size()) {
+            throw new IllegalArgumentException("Duplicate container numbers found in the request");
         }
     }
 
