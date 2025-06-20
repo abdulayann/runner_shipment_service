@@ -650,6 +650,7 @@ public class Constants {
     public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
+    public static final String TRANSPORT_INSTRUCTION = "TRANSPORT_INSTRUCTION";
 
     private Constants() {
     }

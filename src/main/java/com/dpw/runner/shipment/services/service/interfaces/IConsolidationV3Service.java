@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -61,4 +59,6 @@ public interface IConsolidationV3Service {
 
     ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) throws RunnerException;
     void updateConsolidationCargoSummary(ConsolidationDetails consolidationDetails, ShipmentWtVolResponse oldShipmentWtVolResponse) throws RunnerException;
+    ResponseEntity<IRunnerResponse> aibAction(AibActionConsolidation request) throws RunnerException;
+    ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel);
 }

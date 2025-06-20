@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -20,6 +21,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,6 +46,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
@@ -82,6 +87,9 @@ class PushToDownstreamServiceTest {
 
     @Mock
     private CustomerBookingDao customerBookingDao;
+
+    @Mock
+    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -307,6 +315,20 @@ class PushToDownstreamServiceTest {
         PushToDownstreamEventDto.Meta meta = new PushToDownstreamEventDto.Meta();
         meta.setSourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING);
         pushToDownstreamEventDto.setMeta(meta);
+        assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
+    }
+    @Test
+    void testProcess9() {
+        PushToDownstreamEventDto pushToDownstreamEventDto = new PushToDownstreamEventDto();
+        pushToDownstreamEventDto.setParentEntityId(123L);
+        pushToDownstreamEventDto.setTriggers(new ArrayList<>());
+        pushToDownstreamEventDto.setParentEntityName(Constants.TRANSPORT_INSTRUCTION);
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        pickupDeliveryDetails.setId(1l);
+        pickupDeliveryDetails.setShipmentId(1l);
+        doNothing().when(pickupDeliveryDetailsService).processDownStreamConsumerData(anyList(), any(),any(),any());
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(pickupDeliveryDetails));
+        when(pickupDeliveryDetailsService.findByShipmentId(anyLong())).thenReturn(List.of(pickupDeliveryDetails));
         assertDoesNotThrow(() -> pushToDownstreamService.process(pushToDownstreamEventDto, "123"));
     }
 }

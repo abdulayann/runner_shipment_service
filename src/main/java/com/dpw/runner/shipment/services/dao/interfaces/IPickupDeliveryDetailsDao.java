@@ -18,4 +18,6 @@ public interface IPickupDeliveryDetailsDao {
     List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
     List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
     List<PickupDeliveryDetails> findByShipmentId(Long shipmentId);
+
+    Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId);
 }
