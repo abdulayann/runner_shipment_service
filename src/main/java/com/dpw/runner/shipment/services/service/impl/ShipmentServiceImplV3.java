@@ -712,7 +712,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             mid = System.currentTimeMillis();
             boolean syncConsole = false;
             ListContractResponse npmContractResponse = null;
-            if (isContractUpdated(entity, oldConvertedShipment)) {
+            if (Boolean.TRUE.equals(isContractUpdated(entity, oldConvertedShipment))) {
                 npmContractResponse = getNpmContract(entity);
                 populateShipmentDetailsFromContract(npmContractResponse, entity, entity.getContractId() != null);
             }
@@ -806,7 +806,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean isDestination) throws RunnerException {
+    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean isDestination) {
         if (listContractResponse == null || listContractResponse.getContracts() == null || listContractResponse.getContracts().isEmpty()) return;
 
         List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
@@ -848,8 +848,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         listContractRequest.setFilter_contract_id(shipmentDetails.getContractId());
 
         ResponseEntity<IRunnerResponse> response = npmServiceAdapter.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
-        ListContractResponse listContractResponse = jsonHelper.convertValue(response.getBody(), ListContractResponse.class);
-        return listContractResponse;
+        return jsonHelper.convertValue(response.getBody(), ListContractResponse.class);
     }
 
     private String extractOrgCode(ShipmentDetails shipmentDetails, String party) {
@@ -903,9 +902,33 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, ShipmentDetails shipmentDetails) {
         var request = new PackingV3Request();
         var filters = usage.getFilter_params();
+        var meta = usage.getMeta();
         if (filters != null) {
             if (!isEmpty(filters.getCargo_type())) request.setPacksType(filters.getCargo_type().get(0));
             if (!isEmpty(filters.getCommodity())) request.setCommodityGroup(filters.getCommodity().get(0));
+        }
+        if(meta != null)
+        {
+            var loadAttributes = meta.getLoad_attributes();
+            request.setPacks(loadAttributes.getQuantity() != null ? loadAttributes.getQuantity().toString() : null);
+            request.setWeight(loadAttributes.getWeight());
+            request.setWeightUnit(loadAttributes.getWeight_uom());
+            request.setVolume(loadAttributes.getVolume());
+            request.setVolumeUnit(loadAttributes.getVolume_uom());
+            request.setIsDimension(false);
+            if(loadAttributes.getDimensions() != null)
+            {
+                if(loadAttributes.getDimensions().getLength() != null)
+                    request.setLength(BigDecimal.valueOf(loadAttributes.getDimensions().getLength()));
+                if(loadAttributes.getDimensions().getWidth() != null)
+                    request.setWidth(BigDecimal.valueOf(loadAttributes.getDimensions().getWidth()));
+                if(loadAttributes.getDimensions().getHeight() != null)
+                    request.setHeight(BigDecimal.valueOf(loadAttributes.getDimensions().getHeight()));
+                request.setLengthUnit(loadAttributes.getDimensions().getUom());
+                request.setHeightUnit(loadAttributes.getDimensions().getUom());
+                request.setWidthUnit(loadAttributes.getDimensions().getUom());
+                request.setIsDimension(true);
+            }
         }
         if (shipmentDetails.getId() != null) request.setShipmentId(shipmentDetails.getId());
         return request;

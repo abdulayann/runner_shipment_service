@@ -1356,6 +1356,67 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
         ListContractResponse listContractResponse = getMockListContractResponse();
+        listContractResponse.getContracts().get(0)x
+
+        ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
+        List<Events> eventsList = List.of(Events.builder()
+                .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
+                .eventCode("eventType").build());
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsV3Response mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsV3Response.class);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipmentRequest.getClient().setOrgCode("FRC1234");
+        commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
+
+        when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
+        when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseHelper.buildSuccessResponse(listContractResponse));
+        mockShipmentSettings();
+        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
+        mockTenantSettings();
+        when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        doNothing().when(dateTimeChangeLogService).createEntryFromShipment(any(), any());
+        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
+        when(eventsV3Util.createOrUpdateEvents(any(), any(), anyList(), anyBoolean())).thenReturn(eventsList);
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+        when(eventDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(eventsList);
+        doNothing().when(eventsV3Service).updateAtaAtdInShipment(anyList(), any(), any());
+        when(commonUtils.convertToEntityList(anyList(), any(), any())).thenReturn(List.of(new Parties()));
+        when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
+        when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
+        when(containerV3Service.updateBulk(any(), any())).thenReturn(new BulkContainerResponse());
+        when(jsonHelper.convertValueToList(any(), eq(ContainerV3Request.class))).thenReturn(List.of(new ContainerV3Request()));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
+
+        ShipmentDetailsV3Response actualResponse = shipmentServiceImplV3.create(commonRequestModel);
+
+        assertNotNull(actualResponse);
+        assertEquals(mockShipmentResponse, actualResponse);
+    }
+
+    @Test
+    void testCreate_successWithDestinationQuote() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setDestinationContractId("DPWQ-124");
+        mockShipment.setDestinationCurrentPartyForQuote("Client");
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ListContractResponse listContractResponse = getMockListContractResponse();
 
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
         List<Events> eventsList = List.of(Events.builder()
