@@ -1,0 +1,3 @@
+POST Deployment
+----------------
+1. RUN update_shipping_line.sql in PROD env
