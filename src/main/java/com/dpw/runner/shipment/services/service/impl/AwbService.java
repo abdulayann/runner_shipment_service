@@ -1344,10 +1344,18 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setGrossVolume(packSummary.getPacksVolume() != null ? packSummary.getPacksVolume().setScale(3, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP));
         awbGoodsDescriptionInfo.setGrossVolumeUnit("M3");
         if (awbPackingList != null) {
+            Set<String> uniqueHsCodes = new LinkedHashSet<>();
             for (var awbPacking : awbPackingList) {
                 awbPacking.setAwbGoodsDescriptionInfoGuid(awbGoodsDescriptionInfo.getGuid());
+
+                // Handle unique hscode
+                String hscode = awbPacking.getHsCode();
+                if (hscode != null && !hscode.isEmpty()) {
+                    uniqueHsCodes.add(hscode);
+                }
             }
             awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
+            awbGoodsDescriptionInfo.setHsCode(String.join(",", uniqueHsCodes));
         }
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
