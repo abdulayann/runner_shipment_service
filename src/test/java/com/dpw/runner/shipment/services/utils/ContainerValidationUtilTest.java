@@ -120,7 +120,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         containerV3Request1.setContainerNumber("CNT123");
         ContainerV3Request containerV3Request2 = new ContainerV3Request();
         containerV3Request2.setContainerNumber("CNT123");
-        assertThrows(IllegalArgumentException.class, () -> containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(List.of(containerV3Request1, containerV3Request2)));
+        List<ContainerV3Request> requests = List.of(containerV3Request1, containerV3Request2);
+        assertThrows(IllegalArgumentException.class, () -> containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(requests));
     }
 
     @Test

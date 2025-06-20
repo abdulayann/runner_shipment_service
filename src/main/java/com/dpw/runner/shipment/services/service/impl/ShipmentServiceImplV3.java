@@ -750,33 +750,42 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void updatePackingAndContainerFromContract(ListContractResponse.ContractResponse contractResponse, ShipmentDetails shipmentDetails, Boolean isDestinationQuote) throws RunnerException {
-        if(isDestinationQuote.equals(Boolean.TRUE)) {
+        if (Boolean.TRUE.equals(isDestinationQuote)) {
             validateDestinationQuoteIntegrity(contractResponse, shipmentDetails);
         }
-        if((TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType())) || TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
-            List<PackingV3Request> quotePackingV3Requests = new ArrayList<>();
-            for (var contractUsage : Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of())) {
-                quotePackingV3Requests.add(getPackingRequest(contractUsage, shipmentDetails));
-            }
-            if(shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingV3Requests.isEmpty()) {
-                List<PackingV3Request> packingV3Requests = jsonHelper.convertValueToList(shipmentDetails.getPackingList(), PackingV3Request.class);
-                packingV3Service.deleteBulk(packingV3Requests, SHIPMENT);
-            }
-            if(!quotePackingV3Requests.isEmpty()) {
-                packingV3Service.updateBulk(quotePackingV3Requests, SHIPMENT);
-            }
+        List<ListContractResponse.ContractUsage> contractUsages = Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of());
+        String transportMode = shipmentDetails.getTransportMode();
+        String shipmentType = shipmentDetails.getShipmentType();
+        if ((TRANSPORT_MODE_SEA.equals(transportMode) && SHIPMENT_TYPE_LCL.equals(shipmentType)) || TRANSPORT_MODE_AIR.equals(transportMode)) {
+            handlePackingUpdate(contractUsages, shipmentDetails);
         } else {
-            List<ContainerV3Request> quoteContainerV3Requests = new ArrayList<>();
-            for (var contractUsage : Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of())) {
-                quoteContainerV3Requests.add(getContainerRequest(contractUsage, shipmentDetails));
-            }
-            if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerV3Requests.isEmpty()) {
-                List<ContainerV3Request> containerV3Requests = jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class);
-                containerV3Service.deleteBulk(containerV3Requests, SHIPMENT);
-            }
-            if(!quoteContainerV3Requests.isEmpty()) {
-                containerV3Service.createBulk(quoteContainerV3Requests, SHIPMENT);
-            }
+            handleContainerUpdate(contractUsages, shipmentDetails);
+        }
+    }
+
+    private void handlePackingUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
+        List<PackingV3Request> quotePackingRequests = contractUsages.stream()
+                .map(usage -> getPackingRequest(usage, shipmentDetails))
+                .collect(Collectors.toList());
+        if (shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
+            List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(shipmentDetails.getPackingList(), PackingV3Request.class);
+            packingV3Service.deleteBulk(existingRequests, SHIPMENT);
+        }
+        if (!quotePackingRequests.isEmpty()) {
+            packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
+        }
+    }
+
+    private void handleContainerUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
+        List<ContainerV3Request> quoteContainerRequests = contractUsages.stream()
+                .map(usage -> getContainerRequest(usage, shipmentDetails))
+                .collect(Collectors.toList());
+        if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
+            List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class);
+            containerV3Service.deleteBulk(existingContainerRequests, SHIPMENT);
+        }
+        if (!quoteContainerRequests.isEmpty()) {
+            containerV3Service.createBulk(quoteContainerRequests, SHIPMENT);
         }
     }
 
@@ -821,18 +830,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         } else {
             shipmentDetails.setContractId(contract.getContract_id());
         }
-
         shipmentDetails.setContractType(contract.getContract_type());
         shipmentDetails.setCarrierDetails(createCarrierDetails(contract));
         shipmentDetails.setShipmentType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
-
         if (contract.getMeta() != null) {
             var meta = contract.getMeta();
             shipmentDetails.setTransportMode(meta.getMode_of_transport());
             shipmentDetails.setDirection(meta.getShipment_movement());
             shipmentDetails.setIncoterms(meta.getIncoterm());
             shipmentDetails.setServiceType(meta.getService_mode());
-
             if (meta.getBranch_info() != null) {
                 var branchInfo = meta.getBranch_info();
                 shipmentDetails.setPrimarySalesAgentEmail(branchInfo.getSales_agent_primary_email());
@@ -852,7 +858,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         listContractRequest.setFilter_contract_id(shipmentDetails.getContractId());
 
         ResponseEntity<IRunnerResponse> response = npmServiceAdapter.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
-        DependentServiceResponse npmResponse = (DependentServiceResponse) response.getBody();
+        IRunnerResponse body = response.getBody();
+        if (!(body instanceof DependentServiceResponse npmResponse)) {
+            throw new ValidationException("Invalid response received from NPM: null or incompatible type");
+        }
         return jsonHelper.convertValue(npmResponse.getData(), ListContractResponse.class);
     }
 
@@ -881,38 +890,55 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, ShipmentDetails shipmentDetails) {
-        var request = new PackingV3Request();
-        var filters = usage.getFilter_params();
-        var meta = usage.getMeta();
-        if (filters != null) {
-            if (!isEmpty(filters.getCargo_type())) request.setPacksType(filters.getCargo_type().get(0));
-            if (!isEmpty(filters.getCommodity())) request.setCommodityGroup(filters.getCommodity().get(0));
+        PackingV3Request request = new PackingV3Request();
+        setFilterParams(usage.getFilter_params(), request);
+        setMetaData(usage, request);
+        if (shipmentDetails.getId() != null) {
+            request.setShipmentId(shipmentDetails.getId());
         }
-        if(meta != null)
-        {
-            var loadAttributes = meta.getLoad_attributes();
-            request.setPacks(loadAttributes.getQuantity() != null ? loadAttributes.getQuantity().toString() : null);
-            request.setWeight(loadAttributes.getWeight());
-            request.setWeightUnit(loadAttributes.getWeight_uom());
-            request.setVolume(loadAttributes.getVolume());
-            request.setVolumeUnit(loadAttributes.getVolume_uom());
-            request.setIsDimension(false);
-            if(loadAttributes.getDimensions() != null)
-            {
-                if(loadAttributes.getDimensions().getLength() != null)
-                    request.setLength(BigDecimal.valueOf(loadAttributes.getDimensions().getLength()));
-                if(loadAttributes.getDimensions().getWidth() != null)
-                    request.setWidth(BigDecimal.valueOf(loadAttributes.getDimensions().getWidth()));
-                if(loadAttributes.getDimensions().getHeight() != null)
-                    request.setHeight(BigDecimal.valueOf(loadAttributes.getDimensions().getHeight()));
-                request.setLengthUnit(loadAttributes.getDimensions().getUom());
-                request.setHeightUnit(loadAttributes.getDimensions().getUom());
-                request.setWidthUnit(loadAttributes.getDimensions().getUom());
-                request.setIsDimension(true);
-            }
-        }
-        if (shipmentDetails.getId() != null) request.setShipmentId(shipmentDetails.getId());
         return request;
+    }
+
+    private void setFilterParams(ListContractResponse.FilterParams filters, PackingV3Request request) {
+        if (filters == null) return;
+        if (!isEmpty(filters.getCargo_type())) {
+            request.setPacksType(filters.getCargo_type().get(0));
+        }
+        if (!isEmpty(filters.getCommodity())) {
+            request.setCommodityGroup(filters.getCommodity().get(0));
+        }
+    }
+
+    private void setMetaData(ListContractResponse.ContractUsage usage, PackingV3Request request) {
+        var meta = usage.getMeta();
+        if (meta == null) return;
+        var loadAttributes = meta.getLoad_attributes();
+        request.setPacks(loadAttributes.getQuantity().toString());
+        request.setWeight(loadAttributes.getWeight());
+        request.setWeightUnit(loadAttributes.getWeight_uom());
+        request.setVolume(loadAttributes.getVolume());
+        request.setVolumeUnit(loadAttributes.getVolume_uom());
+        request.setIsDimension(false);
+        var dimensions = loadAttributes.getDimensions();
+        if (dimensions != null) {
+            setDimensions(dimensions, request);
+        }
+    }
+
+    private void setDimensions(ListContractResponse.Dimensions dimensions, PackingV3Request request) {
+        if (dimensions.getLength() != null) {
+            request.setLength(BigDecimal.valueOf(dimensions.getLength()));
+        }
+        if (dimensions.getWidth() != null) {
+            request.setWidth(BigDecimal.valueOf(dimensions.getWidth()));
+        }
+        if (dimensions.getHeight() != null) {
+            request.setHeight(BigDecimal.valueOf(dimensions.getHeight()));
+        }
+        request.setLengthUnit(dimensions.getUom());
+        request.setHeightUnit(dimensions.getUom());
+        request.setWidthUnit(dimensions.getUom());
+        request.setIsDimension(true);
     }
 
     private CarrierDetails createCarrierDetails(ListContractResponse.ContractResponse contract) {
