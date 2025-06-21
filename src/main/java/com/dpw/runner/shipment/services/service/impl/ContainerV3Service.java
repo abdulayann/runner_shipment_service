@@ -186,6 +186,38 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
+    public BulkContainerResponse createBulk(List<ContainerV3Request> containerRequests, String module) throws RunnerException {
+        containerValidationUtil.validateCreateBulkRequest(containerRequests);
+        containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(containerRequests);
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequests);
+
+        // Convert DTO to Entity
+        List<Containers> containers = jsonHelper.convertValueToList(containerRequests, Containers.class);
+        log.debug("Converted container request to entity | Entity: {}", containers);
+
+        // before save operations
+        containerV3Util.containerBeforeSave(new ArrayList<>(containers));
+
+        // Save to DB
+        List<Containers> savedContainers = containerDao.saveAll(containers);
+        log.info("Saved containerList entity to DB | Request ID: {}", requestId);
+        handlePostSaveActionsBulk(savedContainers, containerRequests, module);
+
+        // Audit logging
+        recordAuditLogs(null, savedContainers, DBOperationType.CREATE);
+        log.info("Audit log recorded for container creation | Request ID: {}", requestId);
+
+        List<ContainerResponse> containerResponses = jsonHelper.convertValueToList(containers, ContainerResponse.class);
+        log.info("Returning containers response | Response: {}", containerResponses);
+        return BulkContainerResponse.builder()
+                .containerResponseList(containerResponses)
+                .message(prepareBulkUpdateMessage(containerResponses))
+                .build();
+    }
+
+    @Override
     @Transactional
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         // Validate the incoming request to ensure all mandatory fields are present
@@ -959,6 +991,36 @@ public class ContainerV3Service implements IContainerV3Service {
                 false
             ));
 
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    }
+
+    private void handlePostSaveActionsBulk(List<Containers> containers, List<ContainerV3Request> requests, String module) {
+        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        for (int i = 0; i < containers.size(); i++) {
+            Containers container = containers.get(i);
+            ContainerV3Request request = requests.get(i); // assuming same index mapping
+
+            // Async afterSave
+            futures.add(CompletableFuture.runAsync(
+                    masterDataUtils.withMdc(() -> afterSave(container, true)),
+                    executorService
+            ));
+
+            // Shipment assignment (sync)
+            Optional.ofNullable(module)
+                    .filter(SHIPMENT::equals)
+                    .filter(m -> container.getId() != null)
+                    .filter(m -> request.getShipmentsId() != null)
+                    .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
+                            container.getId(),
+                            Set.of(request.getShipmentsId()),
+                            false
+                    ));
+        }
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
