@@ -4322,4 +4322,227 @@ public abstract class IReport {
             throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }
+
+    // Main orchestrator method that populates the data dump dictionary with all required details
+    public void populateShipmentReportData(Map<String, Object> dict, ShipmentDetails shipmentDetails, Long shipmentId) {
+        if (shipmentId == null && shipmentDetails == null) {
+            return;
+        }
+
+        if (shipmentId != null) {
+            Optional<ShipmentDetails> byId = shipmentDao.findById(shipmentId);
+            if (byId.isPresent()) {
+                shipmentDetails = byId.get();
+            }
+        }
+
+        if (dict == null) {
+            dict = new HashMap<>();
+        }
+        // Add various grouped information into the map
+        addBasicShipmentFields(dict, shipmentDetails);
+        addReferenceNumbers(dict, shipmentDetails.getReferenceNumbersList());
+        addRoutingDetails(dict, shipmentDetails.getRoutingsList());
+        addPartyDetails(dict, shipmentDetails. getShipmentAddresses());
+        addAgentDetails(dict, "S_OriginAgent", shipmentDetails.getAdditionalDetails().getSendingAgent());
+        addAgentDetails(dict, "S_DestinationAgent", shipmentDetails.getAdditionalDetails().getReceivingAgent());
+        addBranchAndTriangulationDetails(dict, shipmentDetails);
+    }
+
+    // Adds simple scalar fields and nested allocation/quantity-related values
+    private void addBasicShipmentFields(Map<String, Object> dictionary, ShipmentDetails details) {
+        dictionary.put(S_CONTROLLED, details.getControlled());
+        dictionary.put(S_CONTROLLED_REF_NO, details.getControlledReferenceNumber());
+        dictionary.put(S_INCOTERM_LOCATION, details.getIncotermsLocation());
+        dictionary.put(S_PARTNER_DROP_DOWN, details.getPartner());
+        dictionary.put(S_CO_LOADER_NAME, details.getCoLoadCarrierName());
+        dictionary.put(S_CO_LOADER_BKG_NO, details.getCoLoadBkgNumber());
+        dictionary.put(S_CO_LOADER_BL_NO, details.getCoLoadBlNumber());
+        dictionary.put(S_CO_LOADER_AWB_NO, details.getCoLoadBlNumber());
+        dictionary.put(S_BOOKING_AGENT, details.getBookingAgent());
+        dictionary.put(S_BOOKING_AGENT_BKG_NO, details.getCoLoadBkgNumber());
+        dictionary.put(S_BOOKING_AGENT_BL_NO, details.getCoLoadBlNumber());
+        dictionary.put(S_BOOKING_AGENT_AWB_NO, details.getCoLoadBlNumber());
+        dictionary.put(S_PICKUP_AT_ORIGIN, details.getPickupAtOrigin());
+        dictionary.put(S_DELIVERY_AT_DESTINATION, details.getDeliveryAtDestination());
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, details.getBrokerageAtOrigin());
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, details.getBrokerageAtDestination());
+        dictionary.put(S_TERMINAL, details.getTerminalCutoff());
+        dictionary.put(S_VGM, details.getVerifiedGrossMassCutoff());
+        dictionary.put(S_SI, details.getShippingInstructionCutoff());
+        dictionary.put(S_EAR_EPY_EQ_PICK, details.getEarliestEmptyEquipmentPickUp());
+        dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
+        dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
+        dictionary.put(S_REEFER, details.getIsReefer());
+        dictionary.put(S_LAT, details.getLatestArrivalTime());
+        dictionary.put(S_BOE_NUMBER, details.getAdditionalDetails().getBOENumber());
+        dictionary.put(S_BOE_DATE, details.getAdditionalDetails().getBOEDate());
+        dictionary.put(S_OWNERSHIP, details.getAdditionalDetails().getOwnership().getDescription());
+        dictionary.put(S_OWNERSHIP_NAME, details.getAdditionalDetails().getOwnershipName());
+        dictionary.put(S_PASSED_BY, details.getAdditionalDetails().getPassedBy().getDescription());
+        dictionary.put(S_PASSED_BY_PERSON, details.getAdditionalDetails().getPassedByPerson());
+
+    }
+
+    // Adds reference numbers into the map using their type as a key suffix
+    private void addReferenceNumbers(Map<String, Object> dict, List<ReferenceNumbers> refs) {
+        if (refs == null) {
+            return;
+        }
+
+        for (ReferenceNumbers ref : refs) {
+            if (ref != null && ref.getType() != null) {
+                dict.put("S_" + ref.getType(), ref.getReferenceNumber());
+            }
+        }
+    }
+
+    // Adds first and last routing information from MAIN_CARRIAGE legs only
+    private void addRoutingDetails(Map<String, Object> dict, List<Routings> routings) {
+        if (routings == null || routings.isEmpty()) {
+            return;
+        }
+
+        // Filter only main carriage routes
+        List<Routings> main = routings.stream()
+                .filter(r -> r != null && r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+
+        if (main.isEmpty()) {
+            return;
+        }
+
+        Routings first = main.get(0);
+        Routings last = main.get(main.size() - 1);
+
+        // Add last routing info
+        if (last != null) {
+            dict.put(S_LAST_VESSEL, last.getVesselName());
+            dict.put(S_LAST_VOYAGE, last.getVoyage());
+            dict.put(S_LAST_CARRIER, last.getCarrier());
+            dict.put(S_LAST_FLIGHT_NUMBER, last.getFlightNumber());
+        }
+
+        // Add first routing info
+        if (first != null) {
+            dict.put(S_FIRST_VESSEL, first.getVesselName());
+            dict.put(S_FIRST_VOYAGE, first.getVoyage());
+            dict.put(S_FIRST_CARRIER, first.getCarrier());
+            dict.put(S_FIRST_FLIGHT_NUMBER, first.getFlightNumber());
+        }
+    }
+
+    // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
+    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties) {
+        if (parties == null) {
+            return;
+        }
+
+        for (Parties party : parties) {
+            if (party != null && party.getType() != null) {
+                dict.put("S_" + party.getType(), buildPartyMap(party));
+            }
+        }
+    }
+
+    // Adds single agent party (either origin or destination) using a provided key
+    private void addAgentDetails(Map<String, Object> dict, String key, Parties agent) {
+        if (agent != null) {
+            dict.put(key, buildPartyMap(agent));
+        }
+    }
+
+    // Converts a Parties object into a consistent map of address/organization values
+    private List<Map<String, Object>> buildPartyMap(Parties party) {
+        Map<String, Object> map = new HashMap<>();
+
+        // Add organization name if available
+        if (party.getOrgData() != null) {
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.FULLNAME, party.getOrgData().get(PartiesConstants.FULLNAME));
+        }
+
+        // Add address lines if available
+        if (party.getAddressData() != null) {
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.ADDRESS1, party.getAddressData().get(PartiesConstants.ADDRESS1));
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.ADDRESS2, party.getAddressData().get(PartiesConstants.ADDRESS2));
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.CITY, party.getAddressData().get(PartiesConstants.CITY));
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.STATE, party.getAddressData().get(PartiesConstants.STATE));
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.ZIP_POST_CODE, party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
+            putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.COUNTRY, party.getAddressData().get(PartiesConstants.COUNTRY));
+        }
+
+        return List.of(map); // wrap in list as required by caller
+    }
+
+    // Adds origin/receiving branches and triangulated partner branch info
+    private void addBranchAndTriangulationDetails(Map<String, Object> dict, ShipmentDetails details) {
+        Long origin = details.getOriginBranch();
+        Long receiving = details.getReceivingBranch();
+        List<TriangulationPartner> triangulations = details.getTriangulationPartnerList();
+
+        if (origin == null || receiving == null) {
+            return; // cannot proceed if key branches are missing
+        }
+
+        Set<String> tenantIds = new HashSet<>();
+        tenantIds.add(origin.toString());
+        tenantIds.add(receiving.toString());
+
+        // Add triangulation partner tenant IDs if present
+        if (triangulations != null) {
+            tenantIds.addAll(triangulations.stream()
+                    .filter(Objects::nonNull)
+                    .map(tp -> tp.getTriangulationPartner().toString())
+                    .collect(Collectors.toSet()));
+        }
+
+        // Fetch full tenant data in bulk
+        Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
+        masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+
+        // Add origin & destination branches
+        dict.put("S_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
+        dict.put("S_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
+
+        // Add triangulation partner branches with indexed keys
+        if (triangulations != null) {
+            for (int i = 0; i < triangulations.size(); i++) {
+                TriangulationPartner tp = triangulations.get(i);
+                if (tp != null && tp.getTriangulationPartner() != null) {
+                    TenantModel model = tenantData.get(tp.getTriangulationPartner().toString());
+                    dict.put("S_TriangulationBranch" + (i + 1), buildTenantMap(model));
+                }
+            }
+        }
+    }
+
+    // Builds a map from a tenant's address and name info
+    private List<Map<String, Object>> buildTenantMap(TenantModel tenant) {
+        if (tenant == null) {
+            return List.of();
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.FULLNAME, tenant.getDisplayName());
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.ADDRESS1, tenant.getAddress1());
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.ADDRESS2, tenant.getAddress2());
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.CITY, tenant.getCity());
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.STATE, tenant.getState());
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
+        putUpperCaseIfNotNullString(map, "S_" + PartiesConstants.COUNTRY, tenant.getCountry());
+
+        return List.of(map); // wrap in list
+    }
+
+    private void putUpperCaseIfNotNullString(Map<String, Object> map, String key, Object value) {
+        if (value == null) {
+            return;
+        }
+
+        if (value instanceof String) {
+            map.put(key, ((String) value).toUpperCase());
+        } else {
+            map.put(key, value);
+        }
+    }
 }

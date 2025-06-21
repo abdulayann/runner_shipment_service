@@ -135,6 +135,9 @@ public class FreightCertificationReport extends IReport{
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
         processBillingList(freightCertificationModel, dictionary);
+        if(freightCertificationModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, freightCertificationModel.shipmentDetails.getId());
+        }
         return dictionary;
     }
 

@@ -119,6 +119,10 @@ public class PackingListReport extends IReport {
             dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, masterData != null ? masterData.getItemDescription() : null);
         }
 
+        if(model.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, model.getShipmentDetails().getId());
+        }
+
         return dictionary;
     }
 

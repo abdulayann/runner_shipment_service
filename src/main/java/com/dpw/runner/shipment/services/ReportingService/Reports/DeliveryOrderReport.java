@@ -185,6 +185,10 @@ public class DeliveryOrderReport extends IReport{
 
         ReportHelper.addTenantDetails(dictionary, deliveryOrderModel.getTenantModel());
 
+        if (deliveryOrderModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, deliveryOrderModel.shipmentDetails.getId());
+        }
+
         return dictionary;
     }
 

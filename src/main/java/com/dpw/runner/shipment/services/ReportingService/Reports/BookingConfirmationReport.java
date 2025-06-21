@@ -96,6 +96,10 @@ public class BookingConfirmationReport extends IReport{
         ReportHelper.addPartyNameAndAddressInCaps(bookingConfirmationModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
         ReportHelper.addTenantDetails(dictionary, bookingConfirmationModel.hblModel.tenant);
+
+        if(bookingConfirmationModel.hblModel.shipment != null) {
+            this.populateShipmentReportData(dictionary, null, bookingConfirmationModel.hblModel.shipment.getId());
+        }
         return dictionary;
     }
 

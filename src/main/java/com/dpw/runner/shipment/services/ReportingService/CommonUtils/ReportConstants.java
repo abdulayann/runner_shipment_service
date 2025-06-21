@@ -1394,4 +1394,51 @@ public class ReportConstants {
     public static final String DESTINATION_AGENT_NAME_IN_CAPS = "DestinationAgentNameInCaps";
     public static final String DESTINATION_AGENT_ADDRESS_IN_CAPS = "DestinationAgentAddressInCaps";
 
+    // Shipment 3.0 tags
+    public static final String S_CONTROLLED = "S_Controlled";
+    public static final String S_CONTROLLED_REF_NO = "S_ControlledRefNo";
+    public static final String S_INCOTERM_LOCATION = "S_IncotermLocation";
+    public static final String S_PARTNER_DROP_DOWN = "S_PartnerDrop-down";
+    public static final String S_CO_LOADER_NAME = "S_Co-LoaderName";
+    public static final String S_CO_LOADER_BKG_NO = "S_Co-LoaderBKGNo";
+    public static final String S_CO_LOADER_BL_NO = "S_Co-LoaderBLNo";
+    public static final String S_CO_LOADER_AWB_NO = "S_Co-LoaderAWBNo";
+    public static final String S_BOOKING_AGENT = "S_BookingAgent";
+    public static final String S_BOOKING_AGENT_BKG_NO = "S_BookingAgtBkgNo";
+    public static final String S_BOOKING_AGENT_BL_NO = "S_BookingAgtBLNo";
+    public static final String S_BOOKING_AGENT_AWB_NO = "S_BookingAgtAWBNo";
+    public static final String S_PICKUP_AT_ORIGIN = "S_PickupatOrigin";
+    public static final String S_DELIVERY_AT_DESTINATION = "S_DeliveryatDestination";
+    public static final String S_CUSTOM_BROKERAGE_AT_ORIGIN = "S_CustomBrokerageatOrigin";
+    public static final String S_CUSTOM_BROKERAGE_AT_DESTINATION = "S_CustomBrokerageatDestination";
+    public static final String S_TERMINAL = "S_Terminal";
+    public static final String S_VGM = "S_VGM";
+    public static final String S_SI = "S_SI";
+    public static final String S_EAR_EPY_EQ_PICK = "S_EarEpyEqPick";
+    public static final String S_LAT_FULL_EQ_DELI = "S_LatFullEQDeli";
+    public static final String S_EAR_DROP_OFF = "S_EarDropoff";
+    public static final String S_REEFER = "S_Reefer";
+    public static final String S_LAT = "S_LAT";
+    public static final String S_BOE_NUMBER = "S_BOENumber";
+    public static final String S_BOE_DATE = "S_Date";
+    public static final String S_OWNERSHIP = "S_Ownership";
+    public static final String S_OWNERSHIP_NAME = "S_Ownership Name";
+    public static final String S_PASSED_BY = "S_PassedBy";
+    public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
+
+    public static final String S_LAST_VESSEL = "S_LastVessel";
+    public static final String S_LAST_VOYAGE = "S_LastVoyage";
+    public static final String S_LAST_FLIGHT_NUMBER = "S_LastFlightNumber";
+    public static final String S_LAST_CARRIER = "S_LastCarrier";
+
+    public static final String S_FIRST_VESSEL = "S_FirstVessel";
+    public static final String S_FIRST_VOYAGE = "S_FirstVoyage";
+    public static final String S_FIRST_FLIGHT_NUMBER = "S_FirstFlightNumber";
+    public static final String S_FIRST_CARRIER = "S_FirstCarrier";
+
+
+
+
+
+
 }

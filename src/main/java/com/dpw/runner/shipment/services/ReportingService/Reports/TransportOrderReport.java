@@ -97,6 +97,9 @@ public class TransportOrderReport extends IReport{
         addFreightLocalTags(shipmentModel, dictionary, v1TenantSettingsResponse);
         if(shipmentModel.getTransportInstructionId() != null)
             addTransportInstructionTags(dictionary, shipmentModel);
+        if(transportOrderModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, transportOrderModel.shipmentDetails.getId());
+        }
         return dictionary;
     }
 

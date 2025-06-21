@@ -169,6 +169,10 @@ public class PreAlertReport extends IReport {
 
         ReportHelper.addTenantDetails(dictionary, preAlertModel.tenantDetails);
 
+        if (preAlertModel.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, preAlertModel.getShipmentDetails().getId());
+        }
+
         return dictionary;
     }
 

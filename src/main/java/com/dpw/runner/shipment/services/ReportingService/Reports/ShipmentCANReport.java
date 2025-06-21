@@ -139,6 +139,10 @@ public class ShipmentCANReport extends IReport {
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        if(shipmentCANModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, shipmentCANModel.shipmentDetails.getId());
+        }
+
         return dictionary;
     }
 

@@ -151,6 +151,9 @@ public class HawbReport extends IReport{
             dictionary.put(AWB_NOTIFY_PARTY_NAME, (party.getName() != null && !party.getName().isEmpty()) ?  "Notify: " + hawbModel.getAwb().getAwbNotifyPartyInfo().get(0).getName() : "");
         }
 
+        if (hawbModel.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, hawbModel.getShipmentDetails().getId());
+        }
         return dictionary;
     }
 

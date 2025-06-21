@@ -134,6 +134,9 @@ public class ArrivalNoticeReport extends IReport {
         ReportHelper.addPartyNameAndAddressInCaps(arrivalNoticeModel.shipmentDetails.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
         ReportHelper.addTenantDetails(dictionary, getTenant());
+        if (arrivalNoticeModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, arrivalNoticeModel.shipmentDetails.getId());
+        }
         return dictionary;
     }
 

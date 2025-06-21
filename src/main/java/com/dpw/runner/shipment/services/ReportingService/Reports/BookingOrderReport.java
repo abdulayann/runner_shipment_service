@@ -82,6 +82,10 @@ public class BookingOrderReport extends IReport {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(bookingOrderModel.getShipmentModel().getAdditionalDetails().getNotifyParty()));
         }
 
+        if(bookingOrderModel.getShipmentModel() != null) {
+            this.populateShipmentReportData(dictionary, null, bookingOrderModel.getShipmentModel().getId());
+        }
+
         return dictionary;
     }
 

@@ -91,6 +91,7 @@ public class FCRDocumentReport extends IReport{
         populateFcrPlaceOfIssue(dictionary, unLocationsMap);
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
+        this.populateShipmentReportData(dictionary, null, fcrDocumentModel.getShipmentModel().getId());
         return convertValuesToUpperCase(dictionary);
     }
 
