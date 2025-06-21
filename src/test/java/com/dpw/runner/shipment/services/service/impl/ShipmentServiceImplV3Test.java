@@ -1064,7 +1064,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void testUpdateCargoDetailsInShipment_shouldCallDao() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         Long shipmentId = 1L;
+        shipmentDetails1.setId(shipmentId)
         CargoDetailsResponse response = new CargoDetailsResponse();
         response.setNoOfPacks(10);
         response.setPacksUnit("PKG");
@@ -1077,7 +1079,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         response.setChargable(BigDecimal.valueOf(105.0));
         response.setChargeableUnit("KG");
 
-        shipmentServiceImplV3.updateCargoDetailsInShipment(shipmentId, response);
+        shipmentServiceImplV3.updateCargoDetailsInShipment(shipmentDetails1, response);
 
         verify(shipmentDao).updateCargoDetailsInShipment(
                 eq(shipmentId),

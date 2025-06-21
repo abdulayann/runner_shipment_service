@@ -88,6 +88,7 @@ public class ApiConstants {
     public static final String API_CALCULATE_UTILIZATION = "/calculate/utilization";
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
+    public static final String API_GET_SYNC_ACHIEVED_DATA = "/get/console-sync-achieved";
     public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
     public static final String STATE_BASED_LIST = "/state-based-list";
     public static final String API_LIST_BILL_CHARGES_SHIPMENTS = "/list-for-bill-charges";

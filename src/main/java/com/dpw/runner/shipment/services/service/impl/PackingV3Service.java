@@ -204,7 +204,7 @@ public class PackingV3Service implements IPackingV3Service {
             cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
             cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
             cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
-            shipmentService.updateCargoDetailsInShipment(shipmentDetails.getId(), cargoDetailsResponse);
+            shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
 
         }
         return packings;

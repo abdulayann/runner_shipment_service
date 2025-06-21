@@ -25,7 +25,7 @@ public interface IContainerV3Service {
 
     BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
-    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module);
+    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException;
 
