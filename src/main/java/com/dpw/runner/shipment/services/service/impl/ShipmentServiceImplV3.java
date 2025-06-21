@@ -1656,7 +1656,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse) {
+    public void updateCargoDetailsInShipment(ShipmentDetails shipmentDetails, CargoDetailsResponse cargoDetailsResponse) {
+        Long shipmentId = shipmentDetails.getId();
         shipmentDao.updateCargoDetailsInShipment(shipmentId,
                 cargoDetailsResponse.getNoOfPacks(),
                 cargoDetailsResponse.getPacksUnit(),
@@ -1669,7 +1670,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 cargoDetailsResponse.getChargable(),
                 cargoDetailsResponse.getChargeableUnit());
         shipmentDao.updateDgPacksDetailsInShipment(cargoDetailsResponse.getDgPacks(), cargoDetailsResponse.getDgPacksUnit(), shipmentId);
-
+        shipmentDetails.setNoOfPacks(cargoDetailsResponse.getNoOfPacks());
+        shipmentDetails.setPacksUnit(cargoDetailsResponse.getPacksUnit());
+        shipmentDetails.setVolume(cargoDetailsResponse.getVolume());
+        shipmentDetails.setVolumeUnit(cargoDetailsResponse.getVolumeUnit());
+        shipmentDetails.setWeight(cargoDetailsResponse.getWeight());
+        shipmentDetails.setWeightUnit(cargoDetailsResponse.getWeightUnit());
+        shipmentDetails.setVolumetricWeight(cargoDetailsResponse.getVolumetricWeight());
+        shipmentDetails.setVolumetricWeightUnit(cargoDetailsResponse.getVolumetricWeightUnit());
+        shipmentDetails.setChargable(cargoDetailsResponse.getChargable());
+        shipmentDetails.setChargeableUnit(cargoDetailsResponse.getChargeableUnit());
+        shipmentDetails.setDgPacksCount(cargoDetailsResponse.getDgPacks());
+        shipmentDetails.setDgPacksUnit(cargoDetailsResponse.getDgPacksUnit());
     }
 
     @Override

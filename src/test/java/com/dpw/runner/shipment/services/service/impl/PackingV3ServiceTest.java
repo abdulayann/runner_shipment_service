@@ -28,8 +28,6 @@ import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -53,33 +51,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class})
 @Execution(CONCURRENT)
@@ -185,7 +163,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         doNothing().when(auditLogService).addAuditLog(any());
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(anyLong(), any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
         mockShipmentSettings();
 
         PackingResponse actual = packingV3Service.create(request, "SHIPMENT");
@@ -209,7 +187,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(PackingResponse.class))).thenReturn(response);
         doNothing().when(auditLogService).addAuditLog(any());
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(anyLong(), any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
 
         PackingResponse result = packingV3Service.update(request, "SHIPMENT");
 
@@ -229,7 +207,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(anyLong(), any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
 
         String result = packingV3Service.delete(1L, "SHIPMENT");
 

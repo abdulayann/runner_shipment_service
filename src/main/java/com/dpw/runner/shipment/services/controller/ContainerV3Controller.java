@@ -78,7 +78,7 @@ public class ContainerV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request) {
+    public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
     }
 

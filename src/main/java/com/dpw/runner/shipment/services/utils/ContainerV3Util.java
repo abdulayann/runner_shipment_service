@@ -380,10 +380,4 @@ public class ContainerV3Util {
         container.setPacks(String.valueOf(Integer.parseInt(isStringNullOrEmpty(container.getPacks()) ? "0" : container.getPacks()) + packs));
     }
 
-    public void containerBeforeSave(List<Containers> containers) throws RunnerException {
-        for(Containers container: containers) {
-            setContainerNetWeight(container);
-        }
-    }
-
 }
