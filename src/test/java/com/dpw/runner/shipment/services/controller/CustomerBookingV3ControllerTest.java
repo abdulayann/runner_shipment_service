@@ -159,7 +159,7 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void deleteBookingContainers() {
+    void deleteBookingContainers() throws RunnerException {
         when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
         var responseEntity = customerBookingV3Controller.deleteBookingContainers(List.of(new ContainerV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
