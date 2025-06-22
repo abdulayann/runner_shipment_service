@@ -1513,7 +1513,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         awbDao.validateAirMessaging(consolidationId);
         log.info("Air messaging validated for consolidationId: {}", consolidationId);
 
-        ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails, consolidationDetails.getShipmentsList().stream().toList());
+        ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
 
         // Fetch shipment details for all requested IDs
         List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
@@ -2793,13 +2793,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     protected void calculateShipmentWtVol(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response consolidationDetailsV3Response) throws RunnerException {
-        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails, consolidationDetails.getShipmentsList().stream().toList());
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
         consolidationDetailsV3Response.setShipmentWtVolResponse(shipmentWtVolResponse);
         consolidationDetailsV3Response.setShipmentsCount(shipmentWtVolResponse.getShipmentsCount());
     }
 
-    public ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) throws RunnerException {
-        return calculateShipmentWtVol(consolidationDetails.getTransportMode(), shipmentDetailsList, consolidationDetails.getContainersList());
+    @Override
+    public ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails) throws RunnerException {
+        return calculateShipmentWtVol(consolidationDetails.getTransportMode(), consolidationDetails.getShipmentsList().stream().toList(),
+                                        consolidationDetails.getContainersList());
     }
 
     public ShipmentWtVolResponse calculateShipmentWtVol(String transportMode, List<ShipmentDetails> shipmentDetailsList,
@@ -2851,12 +2853,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 dgContCount++;
         }
 
-        for(Containers containers: consoleContainersList) {
-            consoleNoOfCont++;
-            if(Objects.nonNull(containers.getTeu()))
-                consoleTeus = consoleTeus.add(containers.getTeu());
-            if(Boolean.TRUE.equals(containers.getHazardous()))
-                consoleDgContCount++;
+        if(!listIsNullOrEmpty(consoleContainersList)) {
+            for(Containers containers: consoleContainersList) {
+                consoleNoOfCont++;
+                if(Objects.nonNull(containers.getTeu()))
+                    consoleTeus = consoleTeus.add(containers.getTeu());
+                if(Boolean.TRUE.equals(containers.getHazardous()))
+                    consoleDgContCount++;
+            }
         }
 
         VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
@@ -3454,7 +3458,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<Long> shipmentIdList = new ArrayList<>(shipmentIds);
 
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
-        ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails, consolidationDetails.getShipmentsList().stream().toList());
+        ShipmentWtVolResponse oldShipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
 
         if(consolidationId != null && shipmentIds!= null && !shipmentIds.isEmpty()) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIdList);
@@ -4366,7 +4370,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     public AchievedQuantitiesResponse getConsoleSyncAchievedData(Long consolidationId) throws RunnerException, JsonMappingException {
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
         AchievedQuantitiesResponse achievedQuantitiesResponse = jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class);
-        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails, consolidationDetails.getShipmentsList().stream().toList());
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
         jsonHelper.updateValue(achievedQuantitiesResponse, shipmentWtVolResponse);
         achievedQuantitiesResponse.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
         achievedQuantitiesResponse.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());

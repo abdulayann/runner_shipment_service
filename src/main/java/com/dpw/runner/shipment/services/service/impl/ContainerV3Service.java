@@ -301,8 +301,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if(consolidationId != null) {
             ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
             containerBeforeSaveRequest.setConsolidationDetails(consolidationDetails);
-            containerBeforeSaveRequest.setShipmentWtVolResponse(consolidationV3Service.calculateShipmentWtVol(consolidationDetails,
-                    consolidationDetails.getShipmentsList().stream().toList()));
+            containerBeforeSaveRequest.setShipmentWtVolResponse(consolidationV3Service.calculateShipmentWtVol(consolidationDetails));
         }
     }
 

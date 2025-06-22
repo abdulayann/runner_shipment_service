@@ -62,7 +62,7 @@ public interface IConsolidationV3Service {
     ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException;
 
-    ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) throws RunnerException;
+    ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails) throws RunnerException;
     void updateConsolidationCargoSummary(ConsolidationDetails consolidationDetails, ShipmentWtVolResponse oldShipmentWtVolResponse) throws RunnerException;
     ResponseEntity<IRunnerResponse> aibAction(AibActionConsolidation request) throws RunnerException;
     ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel);
