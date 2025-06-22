@@ -649,6 +649,9 @@ public class Constants {
     public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
+    public static final String CLIENT_PARTY = "CLIENT";
+    public static final String CONSIGNEE_PARTY = "CONSIGNEE";
+    public static final String CONSIGNOR_PARTY = "CONSIGNOR";
 
     private Constants() {
     }

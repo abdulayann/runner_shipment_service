@@ -436,9 +436,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private String extractOrgCode(CustomerBooking customerBooking, String party) {
         if (customerBooking == null || party == null) return null;
         return switch (party.toUpperCase()) {
-            case "CLIENT" -> customerBooking.getCustomer() !=null ? customerBooking.getCustomer().getOrgCode() : null;
-            case "CONSIGNEE" -> customerBooking.getConsignee() != null ? customerBooking.getConsignee().getOrgCode() : null;
-            case "CONSIGNOR" -> customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null;
+            case CLIENT_PARTY -> customerBooking.getCustomer() !=null ? customerBooking.getCustomer().getOrgCode() : null;
+            case CONSIGNEE_PARTY -> customerBooking.getConsignee() != null ? customerBooking.getConsignee().getOrgCode() : null;
+            case CONSIGNOR_PARTY -> customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null;
             default -> {
                 var notifyParty = customerBooking.getNotifyParty() != null
                         ? customerBooking.getNotifyParty()
@@ -470,10 +470,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Override
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
-        if (request == null || request.getId() == null) {
-            log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
-        }
+        validateBookingUpdateRequest(request);
         Long id = request.getId();
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
         if (!oldEntity.isPresent()) {
@@ -2341,6 +2338,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }  catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private void validateBookingUpdateRequest(CustomerBookingV3Request request) {
+        if (request == null || request.getId() == null) {
+            log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
     }
 }

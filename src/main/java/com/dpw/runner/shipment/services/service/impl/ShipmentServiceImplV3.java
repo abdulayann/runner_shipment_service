@@ -871,9 +871,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private String extractOrgCode(ShipmentDetails shipmentDetails, String party) {
         if (shipmentDetails == null || party == null) return null;
         return switch (party.toUpperCase()) {
-            case "CLIENT" -> shipmentDetails.getClient() != null ? shipmentDetails.getClient().getOrgCode() : null;
-            case "CONSIGNEE" -> shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgCode() : null;
-            case "CONSIGNOR" -> shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgCode() : null;
+            case CLIENT_PARTY -> shipmentDetails.getClient() != null ? shipmentDetails.getClient().getOrgCode() : null;
+            case CONSIGNEE_PARTY -> shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgCode() : null;
+            case CONSIGNOR_PARTY -> shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgCode() : null;
             default -> {
                 var notifyParty = shipmentDetails.getAdditionalDetails() != null
                         ? shipmentDetails.getAdditionalDetails().getNotifyParty()
