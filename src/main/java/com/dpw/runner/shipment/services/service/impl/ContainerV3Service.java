@@ -1078,7 +1078,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException {
+    public ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException {
         // make sure pack ids is empty (never null)
         request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
                 .collect(Collectors.toMap(
@@ -1103,7 +1103,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, request,
-                                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks);
+                                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks, module);
 
         // Save the data
         container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container, shipmentIdsForAttachment);
@@ -1153,7 +1153,7 @@ public class ContainerV3Service implements IContainerV3Service {
     protected List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
                                                            AssignContainerRequest request, List<Long> shipmentIdsToSetContainerCargo,
                                                            Containers container, Map<Long, Packing> packingListMap,
-                                                           List<Packing> assignedPacks) throws RunnerException {
+                                                           List<Packing> assignedPacks, String module) throws RunnerException {
         List<Long> shipmentIdsForAttachment = new ArrayList<>();
         for (Long id : request.getShipmentPackIds().keySet()) {
             ShipmentDetails shipmentDetails = shipmentDetailsMap.get(id);
@@ -1163,7 +1163,7 @@ public class ContainerV3Service implements IContainerV3Service {
             if (listIsNullOrEmpty(request.getShipmentPackIds().get(id))) { // zero packages came for this shipment
                 assignContainerOnlyToShipment(shipmentDetails, container, shipmentIdsToSetContainerCargo);
             } else { // assigning some packages
-                assignContainerToShipmentAndPackages(shipmentDetails, request, container, packingListMap);
+                assignContainerToShipmentAndPackages(shipmentDetails, request, container, packingListMap, module);
             }
         }
         if (!listIsNullOrEmpty(assignedPacks)) { // adding weight/volume of already assigned packs
@@ -1203,8 +1203,8 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void assignContainerToShipmentAndPackages(ShipmentDetails shipmentDetails, AssignContainerRequest request, Containers container,
-                                                      Map<Long, Packing> packingListMap) throws RunnerException {
-        containerValidationUtil.validateCanAssignPackageToContainer(shipmentDetails);
+                                                      Map<Long, Packing> packingListMap, String module) throws RunnerException {
+        containerValidationUtil.validateCanAssignPackageToContainer(shipmentDetails, module);
         for (Long packingId : request.getShipmentPackIds().get(shipmentDetails.getId())) { // assigning new packs and adding its weight/volume
             Packing packing = packingListMap.get(packingId);
             packing.setContainerId(container.getId());
@@ -1270,7 +1270,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ContainerResponse unAssignContainers(UnAssignContainerRequest request) throws RunnerException {
+    public ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module) throws RunnerException {
         // make sure pack ids is empty (never null)
         request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
                 .collect(Collectors.toMap(
@@ -1374,6 +1374,8 @@ public class ContainerV3Service implements IContainerV3Service {
                     container.getId())) { // shipment cargo was linked to this container
                 shipmentIdsForCargoDetachment.add(shipmentId);
             }
+            // remove containerId from packages
+            packingList.forEach(e -> e.setContainerId(null));
             // if any other container not linked with any pack or cargo summary, link any first container to cargo summary
             if(!checkIfAnyPackOrCargoSummaryIsAssignedToAnotherContainer(shipmentDetails, container.getId())) {
                 addAnyFirstContainerToCargoSummary(shipmentDetails, container, containerShipmentCargoAttachmentMap);
@@ -1384,6 +1386,8 @@ public class ContainerV3Service implements IContainerV3Service {
             for (Packing packing : packingList) { // loop over all the assigned packs of shipment
                 if (!removePackIds.contains(packing.getId())) { // this pack is not being detached
                     addPackageDataToContainer(container, packing);
+                } else { // this pack is being detached
+                    packing.setContainerId(null);
                 }
             }
         }

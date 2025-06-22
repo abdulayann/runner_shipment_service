@@ -18,9 +18,13 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -1336,6 +1340,36 @@ public class PackingV3Service implements IPackingV3Service {
                         Function.identity(),
                         (existing, replacement) -> existing
                 ));
+    }
+
+    @Override
+    public ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException {
+        return containerV3Service.assignContainers(request, Constants.PACKING);
+    }
+
+    @Override
+    public void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException {
+        List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
+        List<UnAssignContainerRequest> unAssignContainerRequests = new ArrayList<>();
+        Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
+        for(Packing packing: packingList) {
+            containerIdPacksIdMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
+            containerIdPacksIdMap.get(packing.getContainerId()).add(packing);
+        }
+        for(Map.Entry<Long, List<Packing>> entry: containerIdPacksIdMap.entrySet()) {
+            UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
+            unAssignContainerRequest.setContainerId(entry.getKey());
+            Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+            for(Packing packing: entry.getValue()) {
+                shipmentPackIds.computeIfAbsent(packing.getShipmentId(), k -> new ArrayList<>());
+                shipmentPackIds.get(packing.getShipmentId()).add(packing.getId());
+            }
+            unAssignContainerRequest.setShipmentPackIds(shipmentPackIds);
+            unAssignContainerRequests.add(unAssignContainerRequest);
+        }
+        for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
+            containerV3Service.unAssignContainers(unAssignContainerRequest, Constants.PACKING);
+        }
     }
 
 }

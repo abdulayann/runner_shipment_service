@@ -20,7 +20,9 @@ public class ContainerConstants {
     public static final String CONTAINER_VALIDATED = "Container Validation Completed";
     public static final String GET_CONTAINERS = "/get/containers";
     public static final String ASSIGN_CONTAINERS = "/assignContainers";
+    public static final String ASSIGN_PACKAGES = "/assignPackages";
     public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
+    public static final String UN_ASSIGN_PACKAGES = "/unAssignPackages";
     public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
     public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
