@@ -154,6 +154,7 @@ public class Constants {
     public static final String SHIPMENT_TYPE_SCN = "SCN";
     public static final String SHIPMENT_TYPE_BCN = "BCN";
     public static final String CARGO_TYPE_FCL = "FCL";
+    public static final String CARGO_TYPE_LCL = "LCL";
     public static final String CARGO_TYPE_LSE = "LSE";
     public static final String CARGO_TYPE_FTL = "FTL";
     public static final String DIRECTION_EXP = "EXP";

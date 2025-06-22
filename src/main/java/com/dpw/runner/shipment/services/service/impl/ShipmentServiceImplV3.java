@@ -819,18 +819,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean isDestination) {
+    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean hasDestinationContract) {
         if (listContractResponse == null || listContractResponse.getContracts() == null || listContractResponse.getContracts().isEmpty()) return;
-
         List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
-
         ListContractResponse.ContractResponse contract = contracts.get(0);
-        if (isDestination) {
+        if (hasDestinationContract) {
             shipmentDetails.setDestinationContractId(contract.getContract_id());
+            shipmentDetails.setDestinationContractType(contract.getContract_type());
         } else {
             shipmentDetails.setContractId(contract.getContract_id());
+            shipmentDetails.setContractType(contract.getContract_type());
         }
-        shipmentDetails.setContractType(contract.getContract_type());
         shipmentDetails.setCarrierDetails(createCarrierDetails(contract));
         shipmentDetails.setShipmentType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
         if (contract.getMeta() != null) {
@@ -850,12 +849,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private ListContractResponse getNpmContract(ShipmentDetails shipmentDetails) throws RunnerException {
         String partyForQuote = shipmentDetails.getContractId() != null ? shipmentDetails.getCurrentPartyForQuote() : shipmentDetails.getDestinationCurrentPartyForQuote();
+        String contractId = shipmentDetails.getContractId() !=null ? shipmentDetails.getContractId() : shipmentDetails.getDestinationContractId();
         String orgCode = extractOrgCode(shipmentDetails, partyForQuote);
+        if(contractId == null || orgCode == null) {
+            return null;
+        }
         ListContractRequest listContractRequest = new ListContractRequest();
         listContractRequest.setCustomer_org_id(orgCode);
         listContractRequest.setOrg_role("DPW");
         listContractRequest.setFilter_contract_states(List.of("ENABLED"));
-        listContractRequest.setFilter_contract_id(shipmentDetails.getContractId());
+        listContractRequest.setFilter_contract_id(contractId);
 
         ResponseEntity<IRunnerResponse> response = npmServiceAdapter.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
         IRunnerResponse body = response.getBody();
@@ -866,11 +869,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private String extractOrgCode(ShipmentDetails shipmentDetails, String party) {
-        return switch (party) {
-            case "CLIENT" -> shipmentDetails.getClient().getOrgCode();
-            case "CONSIGNEE" -> shipmentDetails.getConsignee().getOrgCode();
-            case "CONSIGNER" -> shipmentDetails.getConsigner().getOrgCode();
-            default -> shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode();
+        if (shipmentDetails == null || party == null) return null;
+        return switch (party.toUpperCase()) {
+            case "CLIENT" -> shipmentDetails.getClient() != null ? shipmentDetails.getClient().getOrgCode() : null;
+            case "CONSIGNEE" -> shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgCode() : null;
+            case "CONSIGNOR" -> shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgCode() : null;
+            default -> {
+                var notifyParty = shipmentDetails.getAdditionalDetails() != null
+                        ? shipmentDetails.getAdditionalDetails().getNotifyParty()
+                        : null;
+                yield notifyParty != null ? notifyParty.getOrgCode() : null;
+            }
         };
     }
 

@@ -1870,9 +1870,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
-        ShipmentDetails oldShipmentDetails = mockShipment;
-        oldShipmentDetails.setContractId("DPWQ-6754");
-        oldShipmentDetails.setCurrentPartyForQuote("CLIENT");
+        mockShipment.setContractId("DPWQ-6754");
+        mockShipment.setCurrentPartyForQuote("CLIENT");
 
         ShipmentV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
 
