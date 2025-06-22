@@ -941,13 +941,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId) {
-        for (ShipmentDetails shipmentDetails : shipments) {
-            try {
-                shipmentSync.sync(shipmentDetails, null, null, transactionId, false);
-            } catch (Exception e) {
-                log.error("Error performing sync on shipment entity, {}", e);
-            }
-        }
+        // TODO Why Sync is needed for V3? ~Subham
+//        for (ShipmentDetails shipmentDetails : shipments) {
+//            try {
+//                shipmentSync.sync(shipmentDetails, null, null, transactionId, false);
+//            } catch (Exception e) {
+//                log.error("Error performing sync on shipment entity, {}", e);
+//            }
+//        }
     }
 
     protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
