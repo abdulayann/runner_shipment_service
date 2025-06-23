@@ -3,9 +3,9 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BILL_CHARGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CALCULATED_VALUE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_DESCRIPTION_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CMS_REMARKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CURRENT_SELL_RATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
@@ -45,6 +45,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.TaxPair;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentCANModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -61,6 +62,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -138,6 +140,13 @@ public class ShipmentCANReport extends IReport {
         populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
+        if (shipmentCANModel.shipmentDetails != null) {
+            if (ObjectUtils.isNotEmpty(shipmentCANModel.shipmentDetails.getConsolidationList())) {
+                ConsolidationModel consolidationModel = shipmentCANModel.shipmentDetails.getConsolidationList().get(0);
+                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
+            }
+        }
 
         return dictionary;
     }

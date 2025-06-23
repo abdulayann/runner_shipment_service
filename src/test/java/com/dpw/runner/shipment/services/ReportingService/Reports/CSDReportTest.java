@@ -1,9 +1,37 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNMENT_STATUS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CSDModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.AdditionalDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ArrivalDepartureDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.TruckDriverDetailsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
@@ -11,14 +39,26 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,17 +68,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -52,6 +81,8 @@ class CSDReportTest {
 
     @Mock
     CommonUtils commonUtils;
+    @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Mock
     IAwbDao awbDao;
@@ -284,6 +315,13 @@ class CSDReportTest {
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
         when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        consolidationModel.setPlaceOfIssue("Test");
+        consolidationModel.setCarrierDetails(new CarrierDetailModel());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         var resp = spyReport.populateDictionary(getSampleCSDModel());
         assertNotNull(resp);
     }
@@ -298,6 +336,13 @@ class CSDReportTest {
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
         when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        consolidationModel.setPlaceOfIssue("Test");
+        consolidationModel.setCarrierDetails(new CarrierDetailModel());
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         CSDModel csdModel = getSampleCSDModel();
         csdModel.getConsolidationModel().setScreeningStatus(List.of("AOM", "SCC"));
         var resp = spyReport.populateDictionary(csdModel);
