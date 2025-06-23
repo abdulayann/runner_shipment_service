@@ -4,14 +4,12 @@ import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -32,11 +30,6 @@ class NpmContractV3UtilTest {
     @InjectMocks
     private NpmContractV3Util npmContractV3Util;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
     void testCreateCarrierDetails_withValidData() {
         var meta = ListContractResponse.Meta.builder()
@@ -49,15 +42,15 @@ class NpmContractV3UtilTest {
         var contract = ListContractResponse.ContractResponse.builder()
                 .origin("IN")
                 .destination("US")
-                .carrier_codes(List.of("MSC"))
+                .carrier_codes(List.of("MAEU"))
                 .meta(meta)
                 .build();
 
         var carrier = new EntityTransferCarrier();
         carrier.setItemValue("Maersk");
 
-        when(masterDataUtils.fetchInBulkCarriersBySCACCode(List.of("MSC")))
-                .thenReturn(Map.of("MSC", carrier));
+        when(masterDataUtils.fetchInBulkCarriersBySCACCode(List.of("MAEU")))
+                .thenReturn(Map.of("MAEU", carrier));
 
         var details = npmContractV3Util.createCarrierDetails(contract);
 
@@ -65,9 +58,9 @@ class NpmContractV3UtilTest {
         assertEquals("US", details.getDestination());
         assertEquals("INMAA", details.getOriginPort());
         assertEquals("USNYC", details.getDestinationPort());
-        assertEquals("Maersk", details.getShippingLine());
         assertEquals("100", details.getMinTransitHours());
         assertEquals("200", details.getMaxTransitHours());
+        assertEquals("Maersk", details.getShippingLine());
     }
 
     @Test
