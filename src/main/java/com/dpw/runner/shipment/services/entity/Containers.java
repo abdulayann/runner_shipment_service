@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
@@ -11,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -19,6 +21,8 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Entity
 @Setter
@@ -55,9 +59,6 @@ public class Containers extends MultiTenancy {
     @Column(name = "description_of_goods")
     @Size(max = 2048, message = "max size is 2048 for description_of_goods")
     private String descriptionOfGoods;
-
-    @Column(name = "no_of_packages")
-    private Long noOfPackages;
 
     @Column(name = "net_weight")
     private BigDecimal netWeight;
@@ -159,7 +160,7 @@ public class Containers extends MultiTenancy {
     private String dgClass;
 
     @Column(name = "hazardous")
-    private Boolean hazardous;
+    private Boolean hazardous = false;
 
     @Column(name = "hazardous_un")
     private String hazardousUn;
@@ -289,9 +290,11 @@ public class Containers extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "entity_id")
     @Where(clause = "entity_type = 'CONTAINER'")
+    @BatchSize(size = 50)
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
+    @BatchSize(size = 50)
     private List<Packing> packsList;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -299,11 +302,13 @@ public class Containers extends MultiTenancy {
             joinColumns = @JoinColumn(name = "container_id"),
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "containersList", allowSetters = true)
-    private List<ShipmentDetails> shipmentsList;
+    @BatchSize(size = 50)
+    private Set<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,
             mappedBy = "containersList")
     @JsonIgnore
+    @BatchSize(size = 50)
     private List<BookingCharges> bookingCharges;
 
     @Column(name = "commodity_group")
@@ -331,6 +336,7 @@ public class Containers extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "container_id")
+    @BatchSize(size = 50)
     private List<TruckDriverDetails> truckingDetails;
 
     @Column(name = "invoice_number")
@@ -341,4 +347,46 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "invoice_value")
     private BigDecimal invoiceValue;
+
+    @Column(name = "un_number")
+    @Size(max=31, message = "max size is 31 for un_number")
+    private String unNumber;
+
+    @Column(name = "proper_shipping_name")
+    @Size(max=63, message = "max size is 63 for proper_shipping_name")
+    private String properShippingName;
+
+    @Column(name = "packing_group")
+    @Size(max=31, message = "max size is 31 for packing_group")
+    @MasterData(type = MasterDataType.PACKING_GROUP)
+    private String packingGroup;
+
+    @Column(name = "minimum_flash_point")
+    private BigDecimal minimumFlashPoint;
+
+    @Column(name = "minimum_flash_point_unit")
+    @MasterData(type = MasterDataType.TEMPERATURE_UNIT)
+    @Size(max = 3, message = "max size is 3 for minimum_flash_point_unit")
+    private String minimumFlashPointUnit;
+
+    @Column(name = "marine_pollutant")
+    private Boolean marinePollutant = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pra_status")
+    private ContainerPraStatus praStatus;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Containers that = (Containers) o;
+        return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
 }

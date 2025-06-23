@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -15,11 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -63,6 +63,8 @@ class TruckDriverDetailsDaoTest {
     void setUp() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         testData = jsonTestUtility.getTestTruckDriverDetails();
+        UserContext.setUser(
+            UsersDto.builder().Username("user").TenantId(1).build());
         MockitoAnnotations.openMocks(this);
     }
 
@@ -124,7 +126,7 @@ class TruckDriverDetailsDaoTest {
     void updateEntityFromShipment_ExceptionThrown_ReturnsEmptyList() {
         Long shipmentId = 1L;
         var truckDriverDetailsDaoSpy = Mockito.spy(truckDriverDetailsDao);
-        doThrow(new RuntimeException("Test")).when(truckDriverDetailsDaoSpy).findAll(any(),any());
+        when(truckDriverDetailsDao.findByShipmentId(anyLong())).thenThrow(new RuntimeException("Test"));
         assertThrows(RunnerException.class, () -> truckDriverDetailsDaoSpy.updateEntityFromShipment(Collections.emptyList(), shipmentId));
     }
 
@@ -133,7 +135,6 @@ class TruckDriverDetailsDaoTest {
         Long shipmentId = 1L;
         List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(new TruckDriverDetails(), new TruckDriverDetails());
         var truckDriverDetailsDaoSpy = Mockito.spy(truckDriverDetailsDao);
-        doReturn(mock(Page.class)).when(truckDriverDetailsDaoSpy).findAll(any(), any());
         doReturn(truckDriverDetailsList).when(truckDriverDetailsDaoSpy).saveEntityFromShipment(anyList(), eq(shipmentId), anyMap());
         List<TruckDriverDetails> result = truckDriverDetailsDaoSpy.updateEntityFromShipment(truckDriverDetailsList, shipmentId);
         assertEquals(truckDriverDetailsList, result);
@@ -143,7 +144,7 @@ class TruckDriverDetailsDaoTest {
     void updateEntityFromShipment_TruckDriverDetailsListIsEmpty_ReturnsEmptyList() throws RunnerException {
         Long shipmentId = 1L;
         testData.setId(1L);
-        when(truckDriverDetailsRepository.findAll((Specification<TruckDriverDetails>) any(), (Pageable) any())).thenReturn(new PageImpl<TruckDriverDetails>(List.of(testData)));
+        when(truckDriverDetailsRepository.findByShipmentId(any())).thenReturn(List.of(testData));
         List<TruckDriverDetails> result = truckDriverDetailsDao.updateEntityFromShipment(Collections.singletonList(testData), shipmentId);
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -172,9 +173,8 @@ class TruckDriverDetailsDaoTest {
         TruckDriverDetails truckDriverDetails2 = new TruckDriverDetails();
         hashMap.put(1L, truckDriverDetails1);
         hashMap.put(2L, truckDriverDetails2);
-        when(jsonHelper.convertToJson(any(TruckDriverDetails.class))).thenReturn("{}");
 
-        truckDriverDetailsDao.deleteTruckDriverDetails(hashMap, "entityType", 1L);
+        truckDriverDetailsDao.deleteTruckDriverDetails(hashMap, "entityType");
 
         verify(truckDriverDetailsRepository, times(2)).delete(any(TruckDriverDetails.class));
         verify(auditLogService, times(2)).addAuditLog(any());
@@ -220,7 +220,7 @@ class TruckDriverDetailsDaoTest {
     void saveEntityFromShipment_ExceptionThrown_ReturnsEmptyList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long shipmentId = 1L;
         testData.setId(1L);
-        List<TruckDriverDetails> truckDriverDetailss = Arrays.asList(testData);
+        List<TruckDriverDetails> truckDriverDetailss = List.of(testData);
         when(truckDriverDetailsDao.findById(anyLong())).thenReturn(Optional.of(testData));
         doThrow(IllegalArgumentException.class).when(auditLogService).addAuditLog(any());
         assertThrows(Exception.class, () -> truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailss, shipmentId));
@@ -229,7 +229,7 @@ class TruckDriverDetailsDaoTest {
     @Test
     void saveEntityFromShipment_TruckDriverDetailssListHasElements_ReturnsPopulatedList() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Long shipmentId = 1L;
-        List<TruckDriverDetails> truckDriverDetailss = Arrays.asList(testData);
+        List<TruckDriverDetails> truckDriverDetailss = Collections.singletonList(testData);
         when(truckDriverDetailsDao.findById(anyLong())).thenReturn(Optional.of(new TruckDriverDetails()));
         when(truckDriverDetailsDao.save(any())).thenReturn(new TruckDriverDetails());
         List<TruckDriverDetails> result = truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailss, shipmentId);
@@ -241,8 +241,7 @@ class TruckDriverDetailsDaoTest {
 
     @Test
     void delete_ValidTruckDriverDetails_ThrowsException() {
-        doThrow(new RuntimeException("test")).when(jsonHelper).convertToJson(any(TruckDriverDetails.class));
-        truckDriverDetailsDao.deleteTruckDriverDetails(Map.of(1L , testData),"truckDriverDetails", 1L);
+        assertDoesNotThrow(() ->truckDriverDetailsDao.deleteTruckDriverDetails(Map.of(1L , testData),"truckDriverDetails"));
     }
 
     @Test
@@ -294,14 +293,13 @@ class TruckDriverDetailsDaoTest {
         // Arrange
         long consolidationId = 123L;
         List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(
-                new ConsoleShipmentMapping(1L, 1L),
-                new ConsoleShipmentMapping(2L, 2L)
+                new ConsoleShipmentMapping(1L, 1L, true, null),
+                new ConsoleShipmentMapping(2L, 2L, true, null)
         );
         when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(consoleShipmentMappings);
 
         List<TruckDriverDetails> truckDriverDetails = List.of(testData);
-        List<Long> shipmentIds = List.of(1L, 2L);
-        when(truckDriverDetailsRepository.findAll((Specification<TruckDriverDetails>) any(), (Pageable) any())).thenReturn(new PageImpl<>(truckDriverDetails));
+        when(truckDriverDetailsRepository.findAll(ArgumentMatchers.<Specification<TruckDriverDetails>>any(), (Pageable) any())).thenReturn(new PageImpl<>(truckDriverDetails));
 
         // Act
         List<TruckDriverDetails> result = truckDriverDetailsDao.updateEntityFromConsole(truckDriverDetails, consolidationId);
@@ -309,7 +307,7 @@ class TruckDriverDetailsDaoTest {
         // Assert
         assertNotNull(result);
         verify(consoleShipmentMappingDao, times(1)).findByConsolidationId(consolidationId);
-        verify(truckDriverDetailsRepository, times(1)).findAll((Specification<TruckDriverDetails>) any(), (Pageable) any());
+        verify(truckDriverDetailsRepository, times(1)).findAll(ArgumentMatchers.<Specification<TruckDriverDetails>>any(), (Pageable) any());
     }
 
     @Test
@@ -317,7 +315,7 @@ class TruckDriverDetailsDaoTest {
         // Arrange
         long consolidationId = 123L;
         when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(new ArrayList<>());
-        when(truckDriverDetailsRepository.findAll((Specification<TruckDriverDetails>) any(), (Pageable) any())).thenReturn(new PageImpl<>(List.of(testData)));
+        when(truckDriverDetailsRepository.findAll(ArgumentMatchers.<Specification<TruckDriverDetails>>any(), (Pageable) any())).thenReturn(new PageImpl<>(List.of(testData)));
 
         // Act
         List<TruckDriverDetails> result = truckDriverDetailsDao.updateEntityFromConsole(new ArrayList<>(), consolidationId);
@@ -326,6 +324,40 @@ class TruckDriverDetailsDaoTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
         verify(consoleShipmentMappingDao, times(1)).findByConsolidationId(consolidationId);
+    }
+
+    @Test
+    void saveEntityFromShipmentEntityNotPresent() {
+        TruckDriverDetails truckDriverDetails = new TruckDriverDetails();
+        truckDriverDetails.setId(1L);
+        List<TruckDriverDetails> truckDriverDetailsList = List.of(truckDriverDetails);
+
+        when(truckDriverDetailsRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class,() -> truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L));
+    }
+
+    @Test
+    void saveEntityFromShipmentMapNotContainsId() {
+        TruckDriverDetails truckDriverDetails = new TruckDriverDetails();
+        truckDriverDetails.setId(1L);
+        List<TruckDriverDetails> truckDriverDetailsList = List.of(truckDriverDetails);
+        Map<Long, TruckDriverDetails> oldEntityMap = new HashMap<>();
+        assertThrows(DataRetrievalFailureException.class,() -> truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L, oldEntityMap));
+    }
+
+    @Test
+    void saveEntityFromShipment() {
+        TruckDriverDetails truckDriverDetails = new TruckDriverDetails();
+        truckDriverDetails.setId(1L);
+
+        HashMap<Long, TruckDriverDetails> map = new HashMap<>();
+        map.put(1L, truckDriverDetails);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(truckDriverDetailsRepository.saveAll(any())).thenReturn(List.of(truckDriverDetails));
+
+        List<TruckDriverDetails> truckDriverDetailsList = List.of(truckDriverDetails);
+        assertEquals(truckDriverDetailsList, truckDriverDetailsDao.saveEntityFromShipment(truckDriverDetailsList, 1L, map));
     }
 
 }

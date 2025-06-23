@@ -1,12 +1,25 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
+
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -17,12 +30,32 @@ import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
+import java.lang.reflect.InvocationTargetException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.type.StandardBasicTypes;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -30,21 +63,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -64,11 +82,21 @@ public class EventDao implements IEventDao {
     @Autowired
     private IAuditLogService auditLogService;
 
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private CommonUtils commonUtils;
+
     @PersistenceContext
     private EntityManager entityManager;
 
     @Override
     public Events save(Events events) {
+        updateUserFieldsInEvent(events, false);
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
@@ -96,6 +124,11 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Optional<Events> findByEntityIdAndEntityType(Long id, String entityType) {
+        return eventRepository.findByEntityIdAndEntityType(id, entityType);
+    }
+
+    @Override
     public Optional<Events> findByGuid(UUID id) {
         return eventRepository.findByGuid(id);
     }
@@ -110,18 +143,20 @@ public class EventDao implements IEventDao {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             Map<Long, Events> hashMap;
-//            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-                Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-                hashMap = events.stream()
-                        .collect(Collectors.toMap(Events::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+            if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
+                listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
+            }
+            Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+            Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
+            hashMap = eventsPage.stream()
+                    .collect(Collectors.toMap(Events::getId, Function.identity()));
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
+            eventsList = filterStaleEvents(eventsList, eventsPage.getContent());
+            if (!CommonUtils.listIsNullOrEmpty(eventsList)) {
                 for (Events request : eventsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -164,6 +199,7 @@ public class EventDao implements IEventDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Events.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -194,11 +230,18 @@ public class EventDao implements IEventDao {
                 String oldEntityJsonString = jsonHelper.convertToJson(oldEntityMap.get(id));
                 oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
-            req.setEntityId(entityId);
-            req.setEntityType(entityType);
+            if(req.getEntityId() == null)
+                req.setEntityId(entityId);
+            if(req.getEntityType() == null)
+                req.setEntityType(entityType);
             res.add(req);
         }
         res = saveAll(res);
+        addAuditLog(entityId, entityType, res, oldEntityJsonStringMap);
+        return res;
+    }
+
+    private void addAuditLog(Long entityId, String entityType, List<Events> res, Map<Long, String> oldEntityJsonStringMap) {
         for (var req : res) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
@@ -209,6 +252,7 @@ public class EventDao implements IEventDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Events.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -220,7 +264,6 @@ public class EventDao implements IEventDao {
                 log.error(e.getMessage());
             }
         }
-        return res;
     }
 
     private void deleteEvents(Map<Long, Events> hashMap, String entityType, Long entityId) {
@@ -231,19 +274,7 @@ public class EventDao implements IEventDao {
                 delete(event);
                 if(entityType != null)
                 {
-                    try {
-                        auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
-                                        .newData(null)
-                                        .prevData(jsonHelper.readFromJson(json, Events.class))
-                                        .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                        .parentId(entityId)
-                                        .operation(DBOperationType.DELETE.name()).build()
-                        );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                        log.error(e.getMessage());
-                    }
+                    addAuditLogForEvent(entityType, entityId, null, jsonHelper.readFromJson(json, Events.class), DBOperationType.DELETE.name());
                 }
             });
         } catch (Exception e) {
@@ -257,7 +288,7 @@ public class EventDao implements IEventDao {
     public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Events entity :
                     oldEntityList) {
                 eventsMap.put(entity.getGuid(), entity);
@@ -267,7 +298,7 @@ public class EventDao implements IEventDao {
         try {
             Events oldEntity;
             List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
+            if (eventsList != null && !eventsList.isEmpty()) {
                 for (Events request : eventsList) {
                     oldEntity = eventsMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -304,22 +335,22 @@ public class EventDao implements IEventDao {
         }
     }
 
-    public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent) {
+    public List<Events> getTheDataFromEntity(String entityType, long entityID, boolean publicEvent) {
         ListCommonRequest listCommonRequest;
         if (publicEvent) {
-            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
-            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            listCommonRequest = CommonUtils.andCriteria("entityId", entityID, "=", null);
+            CommonUtils.andCriteria("entityType", entityType, "=", listCommonRequest);
             CommonUtils.andCriteria("isPublicTrackingEvent", true, "=", listCommonRequest);
         } else {
-            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
-            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            listCommonRequest = CommonUtils.andCriteria("entityId", entityID, "=", null);
+            CommonUtils.andCriteria("entityType", entityType, "=", listCommonRequest);
             CommonUtils.andCriteria("isPublicTrackingEvent", false, "=", listCommonRequest);
         }
 
 
         Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
         Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-        if (events.getContent().size() > 0) {
+        if (!events.getContent().isEmpty()) {
             return events.getContent();
         }
         return null;
@@ -327,7 +358,7 @@ public class EventDao implements IEventDao {
 
     public boolean checkIfEventsRowExistsForEntityTypeAndEntityId(CustomAutoEventRequest request) {
         List<Events> eventsRowList = getTheDataFromEntity(request.entityType, request.entityId, true);
-        if (eventsRowList != null && eventsRowList.size() > 0) {
+        if (eventsRowList != null && !eventsRowList.isEmpty()) {
             for (Events eventsRow : eventsRowList) {
                 if (eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
                     log.info("Event already exists for given id: " + request.entityId + " and type: " + request.entityType + " and event code : " + request.eventCode);
@@ -342,52 +373,82 @@ public class EventDao implements IEventDao {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
-                eventsRow.setActual(LocalDate.now().atStartOfDay());
+                eventsRow.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
             }
 
             if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDate.now().atStartOfDay());
+                eventsRow.setEstimated(commonUtils.getUserZoneTime(LocalDateTime.now()));
             }
-            eventsRow.setSource(Constants.CARGO_RUNNER);
+
+            eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             eventsRow.setIsPublicTrackingEvent(true);
             eventsRow.setEntityType(entityType);
             eventsRow.setEntityId(entityId);
             eventsRow.setEventCode(eventCode);
             eventsRow.setPlaceName(placeName);
             eventsRow.setPlaceDescription(placeDesc);
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .newData(eventsRow)
-                                .prevData(null)
-                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                .parentId(entityId)
-                                .operation(DBOperationType.CREATE.name()).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-                log.error(e.getMessage());
-            }
-            eventsRow = eventRepository.save(eventsRow);
-            try {
-                eventsSync.sync(List.of(eventsRow));
-            } catch (Exception e) {
-                log.error("Error performing sync on event entity, {}", e);
-            }
+
+            updateEventDetails(eventsRow);
+
+            addAuditLogForEvent(entityType, entityId, eventsRow, null, DBOperationType.CREATE.name());
+            eventRepository.save(eventsRow);
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
         }
     }
 
+    private void addAuditLogForEvent(String entityType, long entityId, Events eventsRow, Events prev, String operationName) {
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(eventsRow)
+                            .prevData(prev)
+                            .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                            .parentId(entityId)
+                            .operation(operationName).build()
+            );
+        } catch (RunnerException | IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+        }
+    }
+
 
     @Override
+    @Transactional
     public void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt) {
-        eventRepository.createEventForAirMessagingStatus(guid, entityId, entityType, eventCode, description, estimated, actual, source, tenantId, status, createdAt, updatedAt);
+        Events events = new Events();
+        events.setGuid(guid);
+        events.setEntityId(entityId);
+        events.setEntityType(entityType);
+        events.setEventCode(eventCode);
+        events.setDescription(description);
+        events.setEstimated(estimated);
+        events.setActual(actual);
+        events.setSource(source);
+        events.setTenantId(tenantId);
+        events.setStatus(status);
+        events.setCreatedAt(createdAt);
+        events.setUpdatedAt(updatedAt);
+        updateEventDetails(events);
+        saveEventByEntityManager(events);
     }
 
     @Override
     @Transactional
     public void createEventForAirMessagingEvent(Events events) {
-        Query query = entityManager.createNativeQuery("insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        updateEventDetails(events);
+        saveEventByEntityManager(events);
+    }
+
+    private void saveEventByEntityManager(Events events) {
+        log.info("Air-messaging : preparing event save native query");
+        Query query = entityManager.createNativeQuery(
+                "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, " +
+                        "pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, " +
+                        "created_at, updated_at, estimated, actual, place_name, place_description, longitude, latitude, " +
+                        "consolidation_id, shipment_number, status) " +
+                        "VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 .setParameter(1, events.getGuid())
                 .setParameter(2, events.getEntityId())
                 .setParameter(3, events.getEntityType())
@@ -399,13 +460,15 @@ public class EventDao implements IEventDao {
                 .setParameter(9, new TypedParameterValue(StandardBasicTypes.INTEGER, events.getTotalPieces()))
                 .setParameter(10, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getWeight()))
                 .setParameter(11, new TypedParameterValue(StandardBasicTypes.BIG_DECIMAL, events.getTotalWeight()))
-                .setParameter(12, events.getIsPartial())
+                .setParameter(12, new TypedParameterValue(StandardBasicTypes.BOOLEAN, events.getIsPartial()))
                 .setParameter(15, events.getCreatedAt())
                 .setParameter(16, events.getUpdatedAt())
                 .setParameter(19, events.getPlaceName())
                 .setParameter(20, events.getPlaceDescription())
                 .setParameter(21, events.getLongitude())
-                .setParameter(22, events.getLatitude());
+                .setParameter(22, events.getLatitude())
+                .setParameter(24, events.getShipmentNumber())
+                .setParameter(25, events.getStatus());
 
         if(events.getReceivedDate() != null) {
             query.setParameter(13, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(events.getReceivedDate())));
@@ -427,8 +490,228 @@ public class EventDao implements IEventDao {
         } else {
             query.setParameter(18, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, null));
         }
-        query.executeUpdate();
+        if(events.getConsolidationId() != null) {
+            query.setParameter(23, events.getConsolidationId());
+        } else {
+            query.setParameter(23, new TypedParameterValue(StandardBasicTypes.BIG_INTEGER, null));
+        }
 
-//        eventRepository.createEventForAirMessagingEvent(guid, entityId, entityType, eventCode, description, source, tenantId, pieces, totalPieces, weight, totalWeight, partial, receivedDate, scheduledDate, createdAt, updatedAt);
+        log.info("Air-messaging : executing event save native query");
+        query.executeUpdate();
+        log.info("Air-messaging : native query execution complete");
     }
+
+    @Override
+    public void updateEventDetails(Events event) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available...");
+
+        Long entityId = event.getEntityId();
+        String entityType = event.getEntityType();
+
+        if (Constants.SHIPMENT.equals(entityType)) {
+            // Fetch shipment details and console mappings
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.getShipmentNumberFromId(List.of(entityId));
+            List<ConsoleShipmentMapping> consoleMappings = consoleShipmentMappingDao.findByShipmentId(entityId);
+
+            // Set consolidationId if required
+            shipmentDetailsList.stream().findFirst().ifPresent(shipmentDetails -> {
+                if (ObjectUtils.isNotEmpty(consoleMappings) &&
+                        shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                    event.setConsolidationId(consoleMappings.get(0).getConsolidationId());
+                }
+                // Set shipment number
+                event.setShipmentNumber(shipmentDetails.getShipmentId());
+                event.setEntityId(shipmentDetails.getId());
+                if (event.getDirection() == null) {
+                    event.setDirection(shipmentDetails.getDirection());
+                }
+            });
+
+        } else if (Constants.CONSOLIDATION.equals(entityType)) {
+            event.setConsolidationId(entityId);
+        }
+
+        updateUserFieldsInEvent(event, false);
+    }
+
+    @Override
+    public void updateAllEventDetails(List<Events> events) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available for multiple events...");
+
+        Set<Long> shipmentIds = events.stream()
+                .filter(event -> Constants.SHIPMENT.equals(event.getEntityType()))
+                .map(Events::getEntityId)
+                .collect(Collectors.toSet());
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(shipmentIds.stream().toList()).stream()
+                .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
+
+        Map<Long, Long> shipmentToConsolidationMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
+                .collect(Collectors.toMap(
+                        ConsoleShipmentMapping::getShipmentId,
+                        ConsoleShipmentMapping::getConsolidationId,
+                        (existing, replacement) -> existing  // Keep first occurrence
+                ));
+
+        Boolean automaticTransfer = isAutomaticTransfer();
+        for (Events event : events) {
+            if (Constants.SHIPMENT.equals(event.getEntityType())) {
+                processShipmentEvents(event, shipmentDetailsMap, shipmentToConsolidationMap);
+            } else if (Constants.CONSOLIDATION.equals(event.getEntityType())) {
+                event.setConsolidationId(event.getEntityId());
+            }
+
+            if (Boolean.FALSE.equals(automaticTransfer) && !Objects.equals(event.getUserName(), Constants.SYSTEM_GENERATED)) {
+                updateUserFieldsInEvent(event, false);
+            }
+        }
+    }
+
+    private void processShipmentEvents(Events event, Map<Long, ShipmentDetails> shipmentDetailsMap, Map<Long, Long> shipmentToConsolidationMap) {
+        ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
+
+        if (shipmentDetails != null) {
+            event.setShipmentNumber(shipmentDetails.getShipmentId());
+            event.setEntityId(shipmentDetails.getId());
+
+            if (event.getDirection() == null) {
+                event.setDirection(shipmentDetails.getDirection());
+            }
+
+            Long consolidationId = shipmentToConsolidationMap.get(event.getEntityId());
+            if (consolidationId != null &&
+                    shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                event.setConsolidationId(consolidationId);
+            }
+        }
+    }
+
+
+    /**
+     * Determines if an event should be sent from shipment to consolidation based on the transport mode
+     * and the event code associated with the shipment event.
+     *
+     * <p>This method checks if the provided transport mode has a corresponding set of event codes
+     * that warrant sending the event to consolidation. The event codes for each mode are predefined
+     * in a mapping for efficient lookup.</p>
+     *
+     * @param events       the event details containing the event code
+     * @param transportMode the mode of transport, e.g., "SEA" or "AIR"
+     * @return {@code true} if the event should be sent to consolidation, {@code false} otherwise
+     */
+    @Override
+    public boolean shouldSendEventFromShipmentToConsolidation(Events events, String transportMode) {
+        String eventCode = events.getEventCode().toUpperCase();
+
+        // Map each transport mode to its corresponding event codes
+        Map<String, Set<String>> eventCodesByMode = Map.of(
+                TRANSPORT_MODE_SEA, Set.of(
+                        EventConstants.BOCO, EventConstants.ECPK, EventConstants.FCGI, EventConstants.VSDP,
+                        EventConstants.FHBL, EventConstants.FNMU, EventConstants.PRST, EventConstants.ARDP,
+                        EventConstants.DOGE, EventConstants.DOTP, EventConstants.FUGO, EventConstants.CAFS,
+                        EventConstants.PRDE, EventConstants.EMCR, EventConstants.ECCC, EventConstants.BLRS,
+                        EventConstants.COOD, EventConstants.INGE, EventConstants.SISC, EventConstants.VGMS,
+                        EventConstants.BBCK, EventConstants.DORC, EventConstants.DNMU
+                ),
+                TRANSPORT_MODE_AIR, Set.of(
+                        EventConstants.BOCO, EventConstants.FLDR, EventConstants.PRST, EventConstants.DOGE,
+                        EventConstants.DOTP, EventConstants.CAFS, EventConstants.PRDE, EventConstants.HAWB,
+                        EventConstants.TRCF, EventConstants.TNFD, EventConstants.TRCS, EventConstants.ECCC,
+                        EventConstants.BLRS, EventConstants.COOD, EventConstants.FNMU, EventConstants.INGE,
+                        EventConstants.DNMU
+                )
+        );
+
+        // Check if the transport mode exists in the map and if the event code is present in its set
+        boolean shouldSend = eventCodesByMode.getOrDefault(transportMode.toUpperCase(), Set.of()).contains(eventCode);
+
+        // Log the decision result
+        log.info("Result of shouldSendEventFromShipmentToConsolidation for transportMode '{}' and eventCode '{}': {}",
+                transportMode, eventCode, shouldSend);
+
+        return shouldSend;
+    }
+
+    @Override
+    public void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails) {
+        // update events with consolidation id with condition
+        Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        AtomicReference<Long> consolidationId = new AtomicReference<>(null);
+        if(ObjectUtils.isNotEmpty(consolidationList)) {
+             consolidationId.set(consolidationList.iterator().next().getId());
+        }
+        eventsList.stream()
+                .map(vEvent -> updateUserFieldsInEvent(vEvent, false))
+                .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
+                .forEach(event -> event.setConsolidationId(consolidationId.get()));
+    }
+
+    @Override
+    public Events updateUserFieldsInEvent(Events event, Boolean forceUpdate) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getUserName())) {
+            event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
+        }
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getUserEmail())) {
+            event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
+        }
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getBranch())) {
+            event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+        }
+
+        if (Constants.SYSTEM_GENERATED.equals(event.getSource())) {
+            event.setUserEmail(null);
+        }
+
+        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource()) || Constants.DESCARTES.equals(event.getSource())) {
+            event.setUserName(EventConstants.SYSTEM_GENERATED);
+            event.setUserEmail(null);
+            event.setBranch(null);
+        }
+        return event;
+    }
+
+    @Override
+    @ExcludeTenantFilter
+    public List<Events> updateEventsList(List<Events> shipmentEvents) {
+        return eventRepository.saveAll(shipmentEvents);
+    }
+
+    private List<Events> filterStaleEvents(List<Events> requestList, List<Events> dbList) {
+        // requestList : remove any clashing key from dbList if id of request event < id of dbList event
+        Map<String, Events> dbEventsMap = dbList.stream().collect(Collectors.toMap(i -> commonUtils.getTrackingEventsUniqueKey(
+                i.getEventCode(),
+                i.getContainerNumber(),
+                i.getShipmentNumber(),
+                i.getSource(),
+                i.getPlaceName()
+        ) , Function.identity(), (existing, replacement) -> existing.getId() > replacement.getId() ? existing : replacement));
+
+        List<Events> newEventList = new ArrayList<>();
+        List<Events> filteredEvents = new ArrayList<>(requestList.stream().filter(e -> {
+            String uniqueKey = commonUtils.getTrackingEventsUniqueKey(
+                    e.getEventCode(),
+                    e.getContainerNumber(),
+                    e.getShipmentNumber(),
+                    e.getSource(),
+                    e.getPlaceName()
+            );
+            if (dbEventsMap.containsKey(uniqueKey)) {
+                Events dbEvent = dbEventsMap.get(uniqueKey);
+                if (e.getId() < dbEvent.getId()) {
+                    newEventList.add(dbEvent);
+                    return false;
+                }
+            }
+
+            return true;
+        }).toList());
+        filteredEvents.addAll(newEventList);
+        return filteredEvents;
+    }
+
+    private boolean isAutomaticTransfer() {
+        String automaticTransfer = MDC.get(LoggingConstants.AUTOMATIC_TRANSFER);
+        return automaticTransfer != null && automaticTransfer.equals("true");
+    }
+
 }

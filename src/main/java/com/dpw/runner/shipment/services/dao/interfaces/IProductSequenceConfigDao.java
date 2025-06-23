@@ -18,4 +18,5 @@ public interface IProductSequenceConfigDao {
     List<ProductSequenceConfig> updateEntityFromV1Settings(List<ProductSequenceConfig> productSequenceConfigList, Long shipmentSettingsId, List<ProductSequenceConfig> oldProductSequenceConfig) throws RunnerException;
     Page<ProductSequenceConfig> findAll(Specification<ProductSequenceConfig> spec, Pageable pageable);
     Optional<ProductSequenceConfig> findById(Long id);
+    ProductSequenceConfig findAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable);
 }

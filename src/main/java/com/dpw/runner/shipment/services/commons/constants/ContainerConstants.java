@@ -15,6 +15,7 @@ public class ContainerConstants {
     public static final String CONTAINER_DETACH_SUCCESSFUL = "Container Detached Successfully";
     public static final String CONTAINER_VALIDATED = "Container Validation Completed";
     public static final String GET_CONTAINERS = "/get/containers";
+    public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
     public static final String CHECK_CONTAINERS_DELETE = "/delete/checkMultipleShipment";
     public static final String SUCCESS = "API Successfully implemented";
     public static final String EMPTY_EXCEL_SHEET = "Empty excel sheet uploaded.";
@@ -24,4 +25,7 @@ public class ContainerConstants {
     public static final String GUID_NOT_VALID = "GUID not valid at row: ";
     public static final String EXCEL_SHEET_NOT_VALID = "Excel sheet is not valid. {}";
     public static final String EXCEL_SHEET_INVALID = "Excel sheet is not valid.";
+    public static final String CONTAINER_UPDATE_MSG = "ContainerUpdate";
+    public static final String HAZ = "HAZ";
+    public static final String ERROR_SYNCING_CONTAINERS = "Error syncing containers";
 }

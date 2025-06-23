@@ -9,15 +9,14 @@ import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
@@ -26,10 +25,12 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(CONCURRENT)
 class GetNextNumberHelperTest {
 
 
@@ -97,7 +98,7 @@ class GetNextNumberHelperTest {
 
         try {
             var spyBean = Mockito.spy(getNextNumberHelper);
-            doReturn("").when(spyBean).GetNextRegexSequenceNumber(any(), any());
+            doReturn("").when(spyBean).getNextRegexSequenceNumber(any(), any());
             var res = spyBean.generateCustomSequence(
                 sequenceSettings, regexPattern, tenantId, updateCounter, user, updateBranchCode
             );
@@ -202,16 +203,16 @@ class GetNextNumberHelperTest {
     }
 
     @Test
-    void GetNextRegexSequenceNumberThrowsExceptionForNullTimeZoneId() {
+    void getNextRegexSequenceNumberThrowsExceptionForNullTimeZoneId() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         String resetFreq = "daily";
 
         assertThrows(RunnerException.class,  () ->
-            getNextNumberHelper.GetNextRegexSequenceNumber(sequenceSettings, resetFreq));
+            getNextNumberHelper.getNextRegexSequenceNumber(sequenceSettings, resetFreq));
     }
 
     @Test
-    void GetNextRegexSequenceNumberWithSequenceStartTimeWithOlderDate() {
+    void getNextRegexSequenceNumberWithSequenceStartTimeWithOlderDate() {
         var user = UserContext.getUser();
         user.setTimeZoneId("IND");
 
@@ -222,7 +223,7 @@ class GetNextNumberHelperTest {
 
 
         try {
-            var nextSeq = getNextNumberHelper.GetNextRegexSequenceNumber(sequenceSettings, resetFreq);
+            var nextSeq = getNextNumberHelper.getNextRegexSequenceNumber(sequenceSettings, resetFreq);
             assertNotNull(nextSeq);
         }
         catch(Exception e) {
@@ -231,7 +232,7 @@ class GetNextNumberHelperTest {
     }
 
     @Test
-    void GetNextRegexSequenceNumber() {
+    void getNextRegexSequenceNumber() {
         var user = UserContext.getUser();
         user.setTimeZoneId("IND");
 
@@ -242,7 +243,7 @@ class GetNextNumberHelperTest {
         String resetFreq = "daily";
 
         try {
-            var nextSeq = getNextNumberHelper.GetNextRegexSequenceNumber(sequenceSettings, resetFreq);
+            var nextSeq = getNextNumberHelper.getNextRegexSequenceNumber(sequenceSettings, resetFreq);
             assertNotNull(nextSeq);
         }
         catch(Exception e) {
@@ -258,7 +259,7 @@ class GetNextNumberHelperTest {
         ProductSequenceConfig config = new ProductSequenceConfig();
         Page<ProductSequenceConfig> responsePage = new PageImpl<>(List.of(config));
 
-        when(productSequenceConfigDao.findAll(any(), any())).thenReturn(responsePage);
+        when(productSequenceConfigDao.findAndLock(any(), any())).thenReturn(config);
         var response = getNextNumberHelper.getProductSequence(productId, productProcessTypes);
 
         assertNotNull(response);
@@ -272,7 +273,7 @@ class GetNextNumberHelperTest {
         ProductSequenceConfig config = new ProductSequenceConfig();
         Page<ProductSequenceConfig> responsePage = new PageImpl<>(Collections.emptyList());
 
-        when(productSequenceConfigDao.findAll(any(), any())).thenReturn(responsePage);
+        when(productSequenceConfigDao.findAndLock(any(), any())).thenReturn(null);
         var response = getNextNumberHelper.getProductSequence(productId, productProcessTypes);
 
         assertNull(response);

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -103,6 +104,7 @@ public class BookingChargesDao implements IBookingChargesDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, BookingCharges.class))
                                         .parent(entity)
@@ -146,6 +148,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCharges.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
@@ -161,19 +164,19 @@ public class BookingChargesDao implements IBookingChargesDao {
         return res;
     }
 
-    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws RunnerException {
+    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> bookingChargesList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<BookingCharges> responseBookingCharges = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
             Pair<Specification<BookingCharges>, Pageable> pair = fetchData(listCommonRequest, BookingCharges.class);
             Page<BookingCharges> bookingCharges = findAll(pair.getLeft(), pair.getRight());
             Map<Long, BookingCharges> hashMap = bookingCharges.stream()
                     .collect(Collectors.toMap(BookingCharges::getId, Function.identity()));
             List<BookingCharges> bookingChargesRequestList = new ArrayList<>();
-            if (BookingChargesList != null && BookingChargesList.size() != 0) {
-                for (BookingCharges request : BookingChargesList) {
+            if (bookingChargesList != null && !bookingChargesList.isEmpty()) {
+                for (BookingCharges request : bookingChargesList) {
                     Long id = request.getId();
                     if (id != null) {
                         hashMap.remove(id);

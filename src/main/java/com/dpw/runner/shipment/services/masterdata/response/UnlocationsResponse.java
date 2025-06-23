@@ -1,12 +1,18 @@
 package com.dpw.runner.shipment.services.masterdata.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Objects;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UnlocationsResponse implements Serializable {
     @JsonProperty("Id")
     private int id;
@@ -34,6 +40,10 @@ public class UnlocationsResponse implements Serializable {
     private String countryName;
     @JsonProperty("CountryThreeDigitCode")
     private String CountryThreeDigitCode;
+    @JsonProperty("HasSeaPort")
+    private Boolean hasSeaPort;
+    @JsonProperty("HasAirport")
+    private Boolean hasAirport;
     public String getCountry() {
         return (!Objects.isNull(country) && country.length() == 2 && !Objects.isNull(CountryThreeDigitCode) ? CountryThreeDigitCode : country);
     }

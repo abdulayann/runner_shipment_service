@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.entity.commons;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.google.common.base.Strings;
 import lombok.*;
+import lombok.Generated;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
-import org.hibernate.annotations.Generated;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -23,6 +25,7 @@ import java.util.UUID;
 @ToString(onlyExplicitlyIncluded = true)
 @MappedSuperclass
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@Generated
 public class BaseEntity implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -77,6 +80,17 @@ public class BaseEntity implements Serializable {
 
         if (this.guid == null) {
             this.guid = UUID.randomUUID();
+        }
+
+        if(this instanceof Parties parties) {
+            if(Strings.isNullOrEmpty(parties.getOrgId()) && parties.getOrgData() != null && !parties.getOrgData().isEmpty() &&
+                    parties.getOrgData().containsKey("Id")) {
+                parties.setOrgId(String.valueOf(parties.getOrgData().get("Id")));
+            }
+            if(Strings.isNullOrEmpty(parties.getAddressId()) && parties.getAddressData() != null && !parties.getAddressData().isEmpty() &&
+                    parties.getAddressData().containsKey("Id")) {
+                parties.setAddressId(String.valueOf(parties.getAddressData().get("Id")));
+            }
         }
     }
 }

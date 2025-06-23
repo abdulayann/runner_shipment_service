@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
@@ -12,6 +13,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Entity
 @Setter
@@ -28,6 +30,12 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @Column(name = "estimated_pickup_or_delivery")
     private LocalDateTime estimatedPickupOrDelivery;
 
+    @Column(name = "estimated_pickup")
+    private LocalDateTime estimatedPickup;
+
+    @Column(name = "estimated_delivery")
+    private LocalDateTime estimatedDelivery;
+
     @Column(name = "required_by")
     private LocalDateTime requiredBy;
 
@@ -37,11 +45,18 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @Column(name = "actual_pickup_or_delivery")
     private LocalDateTime actualPickupOrDelivery;
 
+    @Column(name = "actual_pickup")
+    private LocalDateTime actualPickup;
+
+    @Column(name = "actual_delivery")
+    private LocalDateTime actualDelivery;
+
     @Column(name = "pickup_or_delivery")
     private LocalDateTime pickupOrDelivery;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "type")
-    private String type;
+    private InstructionType type;
 
     @Column(name = "shipment_id")
     private Long shipmentId;
@@ -70,6 +85,11 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @JoinColumn(name = "agent_id", referencedColumnName = "id")
     @BatchSize(size = 50)
     private Parties agentDetail;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'PICKUP_DELIVERY'")
+    @BatchSize(size = 50)
+    private List<Parties> partiesList;
 
     @Column(name = "drop_mode")
     private String dropMode;
@@ -125,4 +145,27 @@ public class PickupDeliveryDetails extends MultiTenancy {
 
     @Column(name = "pickup_delivery_instruction")
     public String pickupDeliveryInstruction;
+
+    @Column(name = "pickup_gate_in")
+    public LocalDateTime pickupGateIn;
+
+    @Column(name = "delivery_gate_in")
+    public LocalDateTime deliveryGateIn;
+
+    @Column(name = "pickup_gate_out")
+    public LocalDateTime pickupGateOut;
+
+    @Column(name = "delivery_gate_out")
+    public LocalDateTime deliveryGateOut;
+
+    @Column(name = "remarks")
+    public String remarks;
+
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "pickup_delivery_details_id", referencedColumnName = "id")
+    @BatchSize(size = 50)
+    private List<TiLegs> tiLegsList;
+
+    @Column(name = "is_direct_delivery")
+    private Boolean isDirectDelivery;
 }

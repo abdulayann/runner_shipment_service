@@ -24,6 +24,8 @@ public class MasterDataConstants {
     public static final String TENANT = "/tenant";
     public static final String LIST_COUSIN_BRANCH = "/listCousinBranches";
     public static final String LIST_COUSIN_BRANCH_WITHOUT_CURRENT = "/listCousinWithoutCurrent";
+    public static final String LIST_COUSIN_BRANCH_FOR_NTE_REASSIGN = "/listCousinBranchForNTEReassign";
+    public static final String LIST_COUSIN_BRANCH_FOR_ET = "/listCousinBranchForEt";
     public static final String SCHEDULE = "/schedule";
     public static final String IMPORT_SCHEDULE = "/import-schedule";
     public static final String IMPORT_FLIGHT_SCHEDULE = "/import-flight-schedule";
@@ -40,7 +42,9 @@ public class MasterDataConstants {
     public static final String LIST_MAIN_PAGE_TEMPLATE = "/main-page-template";
     public static final String LIST_ROLES = "/role/list";
     public static final String LIST_CHARGE_TYPES = "/chargeCode/list";
+    public static final String LIST_ORGS = "/list/orgs";
     public static final String DEFAULT_ORG = "/getDefaultOrg";
+    public static final String MULTIPLE_MASTER_DATA= "/multiple-master-data";
 
     public static final String ITEM_TYPE = "ItemType";
     public static final String ITEM_VALUE = "ItemValue";

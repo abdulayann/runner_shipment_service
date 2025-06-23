@@ -4,8 +4,9 @@ public enum BookingStatus {
     PENDING_FOR_KYC(1, "Pending KYC"),
     PENDING_FOR_CREDIT_LIMIT(2, "Pending Credit Check"),
     READY_FOR_SHIPMENT(3, "Ready for Shipment"),
-
-    CANCELLED(4, "Booking Cancelled");
+    CANCELLED(4, "Booking Cancelled"),
+    PENDING_FOR_REVIEW(5, "Pending for Review"),
+    REJECTED(6, "Rejected");
 
     private final int value;
     private final String description;

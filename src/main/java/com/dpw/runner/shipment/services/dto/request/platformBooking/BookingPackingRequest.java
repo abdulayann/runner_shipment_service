@@ -3,11 +3,9 @@ package com.dpw.runner.shipment.services.dto.request.platformBooking;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.swagger.models.auth.In;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
 @Builder

@@ -24,6 +24,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private Map<String, String> chargeDue;
         private Map<String, String> chargeBasis;
         private Map<String, String> rateClass;
+        private Map<String, String> schCodes;
         private OrgDetails shipper;
         private OrgDetails consignee;
         private OrgDetails issueingAgent;
@@ -35,6 +36,16 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String customOriginCode;
         private UserInfo userInfo;
         private String masterAwbNumber;
+        private String entityNumber;
+        private BigDecimal masterGrossWeightSum;
+        private String masterGrossWeightSumUnit;
+        private Integer masterPackCount;
+        private String executedAtCity;
+        private Integer currencyDecimalPlaces;
+        private Integer weightDecimalPlaces;
+        private Integer volumeDecimalPlaces;
+        private Boolean includeCSD;
+        private String additionalSecurityInfo;
     }
 
     @Data
@@ -44,7 +55,10 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String country;
         private String currency;
         private String number;
+        private String postCode;
         private LocalDateTime expiry;
+        private Boolean isRA;
+        private Boolean isKC;
     }
     @Data
     @Builder
@@ -66,6 +80,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private LocalDateTime expiry;
         private String branchName;
         private String branchCode;
+        private String legalEntityName;
     }
 
     @Data
@@ -90,5 +105,6 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
     @Builder
     public static class UserInfo implements Serializable {
         private String userName;
+        private String userDisplayName;
     }
 }

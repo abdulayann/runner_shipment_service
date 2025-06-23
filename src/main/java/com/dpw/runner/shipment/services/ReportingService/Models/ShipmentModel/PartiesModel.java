@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -11,6 +12,8 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Builder
+@SuppressWarnings("java:S1948")
 public class PartiesModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;

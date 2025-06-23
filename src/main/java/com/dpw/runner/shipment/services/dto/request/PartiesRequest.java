@@ -2,11 +2,9 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.Containers;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -15,6 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("java:S1948")
 public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long entityId;
@@ -23,7 +22,10 @@ public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private String orgCode;
     private Integer tenantId;
     private String addressCode;
+    private String orgId;
+    private String addressId;
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
     private Boolean isAddressFreeText;
+    private String countryCode;
 }

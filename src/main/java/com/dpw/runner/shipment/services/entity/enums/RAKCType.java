@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Getter;
 
 @Getter
+@Generated
 public enum RAKCType {
     REGULATED_AGENT(1, "Regulated Agent"),
     KNOWN_CONSIGNOR(2, "Known Consignor");

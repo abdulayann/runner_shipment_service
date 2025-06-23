@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,8 +16,10 @@ public interface IShipmentSettingsDao {
     Page<ShipmentSettingsDetails> list(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     void delete(ShipmentSettingsDetails shipmentSetting);
     List<ShipmentSettingsDetails> list();
+    Boolean getCustomisedSequence();
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
     Integer getShipmentConsoleImportApprovarRole(int tenantId);
     List<ShipmentSettingsDetails> getSettingsByTenantIds(List<Integer> tenantId);
     Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId);
+    Optional<ShipmentSettingsDetails> getSettingsByTenantIdWithCache(Integer tenantId);
 }

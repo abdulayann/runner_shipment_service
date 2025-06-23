@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.awb;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import io.swagger.annotations.ApiModel;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.*;
 
 @Data
@@ -10,6 +8,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Generated
 public  class AwbAddressParam
 {
     private String address1;

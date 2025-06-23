@@ -28,6 +28,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,8 @@ class ProductSequenceConfigDaoTest {
 
     @Mock
     private IProductSequenceConfigRepository productSequenceConfigRepository;
+    @Mock
+    private EntityManager entityManager;
 
     @InjectMocks
     private ProductSequenceConfigDao productSequenceConfigDao;
@@ -101,7 +104,7 @@ class ProductSequenceConfigDaoTest {
     void saveEntityFromSettings() {
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
         Mockito.when(productSequenceConfigRepository.findById(any())).thenReturn(Optional.of(testProductSequenceConfig));
-        Mockito.when(productSequenceConfigRepository.save(any())).thenReturn(testProductSequenceConfig);
+        Mockito.when(productSequenceConfigRepository.saveAll(any())).thenReturn(List.of(testProductSequenceConfig));
         List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.saveEntityFromSettings(productSequenceConfigList, 3L);
         assertEquals(productSequenceConfigList, productSequenceConfigs);
     }
@@ -110,7 +113,7 @@ class ProductSequenceConfigDaoTest {
     void saveEntityFromSettings_IdNull() {
         testProductSequenceConfig.setId(null);
         List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
-        Mockito.when(productSequenceConfigRepository.save(any())).thenReturn(testProductSequenceConfig);
+        Mockito.when(productSequenceConfigRepository.saveAll(any())).thenReturn(List.of(testProductSequenceConfig));
         List<ProductSequenceConfig> productSequenceConfigs = productSequenceConfigDao.saveEntityFromSettings(productSequenceConfigList, 3L);
         assertEquals(productSequenceConfigList, productSequenceConfigs);
     }
@@ -217,4 +220,15 @@ class ProductSequenceConfigDaoTest {
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromV1Settings(productSequenceConfigList, 3L, new ArrayList<>()));
     }
 
+    @Test
+    void findAndLock() {
+        List<ProductSequenceConfig> productSequenceConfigList = List.of(testProductSequenceConfig);
+        Mockito.when(productSequenceConfigRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl(productSequenceConfigList));
+        Specification<ProductSequenceConfig> spec = mock(Specification.class);
+        Pageable pageable = mock(Pageable.class);
+        var productSequenceConfig = productSequenceConfigDao.findAndLock(spec, pageable);
+
+        verify(entityManager, times(1)).lock(any(), any(), any());
+        assertEquals(testProductSequenceConfig, productSequenceConfig);
+    }
 }

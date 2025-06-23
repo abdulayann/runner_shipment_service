@@ -17,9 +17,6 @@ import java.util.Map;
 
 @Data
 public class HblModel implements IDocumentModel{
-    //public List<BillChargesRow> billCharges;
-    //public BigDecimal prepaidTotalAmount;
-    //public BigDecimal collectTotalAmount;
     public ShipmentModel shipment;
     public ConsolidationModel consolidation;
     public TenantModel tenant;
@@ -51,4 +48,5 @@ public class HblModel implements IDocumentModel{
     public String polName;
     public String polCountry;
     public String podName;
+    public Long transportInstructionId;
 }

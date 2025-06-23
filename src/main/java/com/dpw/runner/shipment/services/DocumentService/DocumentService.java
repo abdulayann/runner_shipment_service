@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -21,6 +23,7 @@ import java.net.URI;
 import java.util.Arrays;
 
 @Component
+@Generated
 public class DocumentService {
     @Value("${DocumentService.BaseUrl}")
     private String baseUrl;
@@ -69,7 +72,7 @@ public class DocumentService {
         body.set(FILE, file.getResource());
         body.set(PATH, path);
 
-        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+        HttpEntity<Object> request = new HttpEntity<>(body, headers);
 
         return restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
     }
@@ -125,16 +128,17 @@ public class DocumentService {
         body.set(APPLICATION_ID, templateApplicationId);
         body.set(TEMPLATE_NAME, templateRequest.getFile().getOriginalFilename());
         body.set(META_DATA, "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
-        HttpEntity<Object> request = new HttpEntity<Object>(body, headers);
+        HttpEntity<Object> request = new HttpEntity<>(body, headers);
 
         return restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
     }
     public ResponseEntity<byte[]> downloadDocumentTemplate(Object json, String templateId){
-        // TODO Provide json object with proper format
+        // Later: Provide json object with proper format
         String url = templateBaseUrl+templateId+"/document";
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_API_KEY, templatexApiKey);
+        headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Object> request = new HttpEntity<>(json,headers);

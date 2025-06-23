@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings( "java:S1948")
 public class RunnerResponse<T> implements IRunnerResponse {
 
     @ApiModelProperty(position = 1, name = "success")
@@ -31,6 +32,9 @@ public class RunnerResponse<T> implements IRunnerResponse {
 
     @ApiModelProperty(position = 6, name = "error")
     private ApiError error;
+
+    @ApiModelProperty(position = 7, name = "warning")
+    private String warning;
 
     @SuppressWarnings("unchecked")
     public T getData(@SuppressWarnings("rawtypes") Class clazz) {

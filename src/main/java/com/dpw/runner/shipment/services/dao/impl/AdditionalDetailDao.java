@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -32,7 +33,7 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
     public AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException {
         String responseMsg;
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             if (additionalDetail.getId() != null) {
                 long id = additionalDetail.getId();
                 Optional<AdditionalDetails> oldEntity = findById(id);
@@ -50,4 +51,10 @@ public class AdditionalDetailDao implements IAdditionalDetailDao {
             throw new RunnerException(e.getMessage());
         }
     }
+
+    @Override
+    public List<AdditionalDetails> findByIds(List<Long> id) {
+        return additionalDetailRepository.findByIdIn(id);
+    }
+
 }

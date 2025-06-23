@@ -1,15 +1,12 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.io.Serializable;
+import java.math.BigDecimal;
+import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
@@ -22,10 +19,6 @@ public class ShipmentBillingListResponse implements Serializable {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class BillingData implements Serializable {
-        @JsonProperty("BillStatus")
-        private String BillStatus;
-//        @JsonProperty("JobStatus")
-//        private String JobStatus;
         @JsonProperty("TotalEstimatedCost")
         private BigDecimal TotalEstimatedCost;
         @JsonProperty("TotalEstimatedRevenue")
@@ -50,8 +43,6 @@ public class ShipmentBillingListResponse implements Serializable {
         private BigDecimal TotalPostedProfit;
         @JsonProperty("TotalPostedProfitPercent")
         private BigDecimal TotalPostedProfitPercent;
-        @JsonProperty("WayBillNumber")
-        private String WayBillNumber;
         @JsonProperty("Id")
         private Long Id;
     }

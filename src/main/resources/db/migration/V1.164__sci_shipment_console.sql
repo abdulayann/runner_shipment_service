@@ -1,0 +1,5 @@
+ALTER TABLE IF EXISTS shipment_additional_details
+    ADD COLUMN IF NOT EXISTS sci VARCHAR(255);
+
+ALTER TABLE IF EXISTS consolidation_details
+    ADD COLUMN IF NOT EXISTS sci VARCHAR(255);

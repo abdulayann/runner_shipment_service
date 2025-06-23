@@ -12,10 +12,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.DetachPacksListDt
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
 import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
@@ -32,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.Objects;
 
 @Slf4j
 @SuppressWarnings(value = "ALL")
@@ -39,15 +38,13 @@ import java.io.IOException;
 @RequestMapping(value = PackingConstants.PACKING_API_HANDLE)
 public class PackingController {
     private final IPackingService packingService;
-    private final JsonHelper jsonHelper;
 
     private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
     private static class MyListResponseClass extends RunnerListResponse<PackingResponse>{}
 
     @Autowired
-    public PackingController(IPackingService packingService, JsonHelper jsonHelper) {
+    public PackingController(IPackingService packingService) {
         this.packingService = packingService;
-        this.jsonHelper = jsonHelper;
     }
 
     @ApiResponses(value = {
@@ -56,7 +53,7 @@ public class PackingController {
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
-        if (request.getFile().isEmpty()) {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
@@ -167,7 +164,7 @@ public class PackingController {
     public ResponseEntity<IRunnerResponse> syncPackingToService(@RequestBody @Valid PackingRequestV2 request) {
         String responseMsg = Constants.FAILURE_EXECUTING;
         try {
-            return packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+            return packingService.v1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Packings";
@@ -185,7 +182,7 @@ public class PackingController {
     public ResponseEntity<IRunnerResponse> syncBulkPackingToService(@RequestBody @Valid BulkPackingRequestV2 request) {
         String responseMsg = Constants.FAILURE_EXECUTING;
         try {
-            return packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return packingService.v1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";
@@ -198,67 +195,16 @@ public class PackingController {
             @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
-    @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) {
+    @PostMapping(ApiConstants.AUTO_CALCULATE_PACKS_DATA)
+    public ResponseEntity<IRunnerResponse> autoCalculatePacksData(@RequestBody AutoCalculatePackingRequest request) {
         String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
         try {
-            return packingService.autoCalculateVolumetricWeight(CommonRequestModel.buildRequest(request));
+            return packingService.autoCalculatePacksData(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error in auto calculate volmetric weight";
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @PostMapping(ApiConstants.AUTO_CALCULATE_CHARGABLE)
-    public ResponseEntity<IRunnerResponse> autoCalculateChargable(@RequestBody AutoCalculatePackingRequest request) {
-        String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
-        try {
-            return packingService.autoCalculateChargable(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error in auto calculate chargeable";
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL, response = AutoCalculatePackingResponse.class),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @PostMapping(ApiConstants.AUTO_CALCULATE_VOLUME)
-    public ResponseEntity<IRunnerResponse> autoCalculateVolume(@RequestBody AutoCalculatePackingRequest request) {
-        String responseMsg = PackingConstants.FAILURE_EXECUTING_REQUEST + request.getId();
-        try {
-            return packingService.autoCalculateVolume(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error in auto calculate volume";
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
-    }
-
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = ShipmentConstants.CALCULATION_SUCCESSFUL),
-            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
-    })
-    @PostMapping(ApiConstants.CALCULATE_VOLUMETRIC_WEIGHT)
-    public ResponseEntity<IRunnerResponse> calculateVolumetricWeight(@RequestBody AutoCalculatePackingRequest request) throws RunnerException {
-        String responseMsg;
-        try {
-            return packingService.calculateVolumetricWeightForAirAndChargeable(CommonRequestModel.buildRequest(request));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error in calculations";
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
     }
 }

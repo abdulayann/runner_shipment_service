@@ -1,17 +1,17 @@
 package com.dpw.runner.shipment.services.dto.request;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import lombok.*;
-import org.apache.kafka.common.protocol.types.Field;
 
 import java.time.LocalDateTime;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Builder
+@Getter
+@Setter
 @ToString
-public class AutoAttachConsolidationRequest implements IRunnerRequest {
+public class AutoAttachConsolidationRequest extends ListCommonRequest {
     private String masterBill;
     private String transportMode;
     private String voyageNumber;
@@ -20,4 +20,10 @@ public class AutoAttachConsolidationRequest implements IRunnerRequest {
     private String pod;
     private LocalDateTime eta;
     private LocalDateTime etd;
+    private PartiesRequest client;
+    private PartiesRequest consignee;
+    private PartiesRequest consigner;
+    private String direction;
+    private String shipmentType;
+    private Long shipId;
 }

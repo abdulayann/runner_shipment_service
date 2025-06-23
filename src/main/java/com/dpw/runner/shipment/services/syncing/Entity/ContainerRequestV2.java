@@ -114,8 +114,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private BigDecimal NetWeight;
     @JsonProperty("NetWeightUnit")
     private String NetWeightUnit;
-    @JsonProperty("NoOfPackages")
-    private Long NoOfPackages;
     @JsonProperty("PackageBreadth")
     private String PackageBreadth;
     @JsonProperty("PackageHeight")
@@ -138,8 +136,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private String SealNumber;
     @JsonProperty("SerialNumber")
     private String SerialNumber;
-//    @JsonProperty("ShipmentsList")
-//    private List<Long> ShipmentsList;
     @JsonProperty("ShipperSealNumber")
     private String ShipperSealNumber;
     @JsonProperty("StatusString")
@@ -168,8 +164,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private Boolean IsPart;
     @JsonProperty("IsAttached")
     private Boolean IsAttached;
-//    @JsonProperty("TruckingDetails") // removing truck from container sync for now
-//    private List<TruckDriverDetailsRequestV2> TruckingDetails;
     @JsonProperty("CommodityGroup")
     private String CommodityGroup;
     @JsonProperty("InvoiceNumber")

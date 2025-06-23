@@ -4,11 +4,15 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.dpw.runner.shipment.services.utils.Generated;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
+@Generated
+@Slf4j
 public class LocalTimeZoneHelper {
 
     private LocalTimeZoneHelper(){}
@@ -20,6 +24,16 @@ public class LocalTimeZoneHelper {
         Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
         String tenantTimeZone = userDetails.getTimeZoneId();
         return DateUtils.convertDateToUserTimeZone(value, timeZone, tenantTimeZone, enableTimeZoneFlag);
+    }
+
+    public static LocalDateTime getDateTimeFromUserTimeZone(LocalDateTime value) {
+        String timeZone = MDC.get("x-browser-time-zone");
+        if(timeZone == null)
+            timeZone = "UTC";
+        UsersDto userDetails = UserContext.getUser();
+        Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
+        String tenantTimeZone = userDetails.getTimeZoneId();
+        return DateUtils.convertDateFromUserTimeZone(value, timeZone, tenantTimeZone, enableTimeZoneFlag);
     }
 
     public static void transformTimeZone(Object obj) throws IllegalAccessException {
@@ -38,7 +52,7 @@ public class LocalTimeZoneHelper {
                     if(value != null)
                         field.set(obj, getDateTime(value));
                 } catch (IllegalAccessException e) {
-                    e.printStackTrace();
+                    log.error("An error occurred: {}", e.getMessage(), e);
                 }
             }
             else if(!(field.get(obj) instanceof Enum<?>) && field.get(obj) != null && field.get(obj).getClass().getName().startsWith("com.dpw"))

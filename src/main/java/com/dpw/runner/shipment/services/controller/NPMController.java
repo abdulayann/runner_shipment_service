@@ -8,10 +8,10 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
+import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
@@ -28,12 +28,10 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(value = NPMConstants.NPM_API_HANDLE)
 public class NPMController {
-    private final JsonHelper jsonHelper;
     private final INPMServiceAdapter npmService;
 
     @Autowired
-    public NPMController(JsonHelper jsonHelper, INPMServiceAdapter npmService) {
-        this.jsonHelper = jsonHelper;
+    public NPMController(INPMServiceAdapter npmService) {
         this.npmService = npmService;
     }
 
@@ -61,11 +59,10 @@ public class NPMController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
     })
     @ExcludeTimeZone
-    public ResponseEntity<IRunnerResponse> fetchContracts(@RequestBody @Valid ListContractRequest request) {
+    public ResponseEntity<IRunnerResponse> fetchContracts(@RequestBody @Valid ListContractsWithFilterRequest request) {
         String responseMsg;
-        ListContractRequest listContractRequest = jsonHelper.convertValue(request, ListContractRequest.class);
         try {
-             return  npmService.fetchContracts(CommonRequestModel.buildRequest(listContractRequest));
+             return  npmService.fetchContracts(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;

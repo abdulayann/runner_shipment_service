@@ -10,11 +10,14 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+import org.hibernate.annotations.WhereJoinTable;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -26,7 +29,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Accessors(chain = true)
-@SQLDelete(sql = "UPDATE containers SET is_deleted = true WHERE id=?")
+@SQLDelete(sql = "UPDATE consolidation_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class ConsolidationDetails extends MultiTenancy {
 
@@ -247,6 +250,11 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_consolidation", joinColumns = @JoinColumn(name = "consolidation_id"))
+    @BatchSize(size = 50)
+    private List<TriangulationPartner> triangulationPartnerList;
+
     @Column(name = "triangulation_partner")
     @TenantIdData
     private Long triangulationPartner;
@@ -279,47 +287,55 @@ public class ConsolidationDetails extends MultiTenancy {
     @UnlocationData
     private String placeOfIssue;
 
-    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = CarrierDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
 
-    @OneToOne(targetEntity = AchievedQuantities.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = AchievedQuantities.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "achieved_quantities_id", referencedColumnName = "id")
     private AchievedQuantities achievedQuantities;
 
-    @OneToOne(targetEntity = Allocations.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Allocations.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "allocations_id", referencedColumnName = "id")
     private Allocations allocations;
 
-    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "arrival_details_id", referencedColumnName = "id")
     private ArrivalDepartureDetails arrivalDetails;
 
-    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = ArrivalDepartureDetails.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "departure_details_id", referencedColumnName = "id")
     private ArrivalDepartureDetails departureDetails;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "sending_agent_country")
+    private String sendingAgentCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "receiving_agent_country")
+    private String receivingAgentCountry;
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
     @OrganizationData
     private Parties sendingAgent;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "receiving_agent_id", referencedColumnName = "id")
     @OrganizationData
     private Parties receivingAgent;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "borrowed_from_id", referencedColumnName = "id")
     @OrganizationData
     private Parties borrowedFrom;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "creditor_id", referencedColumnName = "id")
     @OrganizationData
     private Parties creditor;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
     @OrganizationData
     private Parties coLoadWith;
@@ -334,6 +350,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
+    @OrderBy("leg ASC")
     private List<Routings> routingsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy =  "consolidationId")
@@ -341,16 +358,11 @@ public class ConsolidationDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
-//    @BatchSize(size = 50)
-//    private List<TruckDriverDetails> truckDriverDetails;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
     private List<Jobs> jobsList;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-    @Where(clause = "entity_type = 'CONSOLIDATION'")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
     private List<Events> eventsList;
 
@@ -365,7 +377,8 @@ public class ConsolidationDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
-    private List<ShipmentDetails> shipmentsList;
+    @WhereJoinTable(clause = "is_attachment_done = 'True'")
+    private Set<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
@@ -397,4 +410,84 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "efreight_status")
     @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
+
+    @Column(name = "hazardous")
+    private Boolean hazardous = false;
+
+    @Column(name = "emergency_contact_number")
+    @Size(max=31, message = "max size is 31 for emergency_contact_number")
+    private String emergencyContactNumber;
+
+    @Column(name = "emergency_contact_number_code")
+    @Size(max=31, message = "max size is 31 for emergency_contact_number_code")
+    private String emergencyContactNumberCode;
+
+    @Column(name = "screening_status")
+    @Size(max=50, message = "max size is 50 for screening_status")
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
+    @BatchSize(size = 10)
+    private List<String> screeningStatus;
+
+    @Column(name = "exemption_codes")
+    @MasterData(type = MasterDataType.EXEMPTION_CODES)
+    private String exemptionCodes;
+
+    @Column(name = "aom_free_text")
+    private String aomFreeText;
+
+    @Column(name = "security_status")
+    private String securityStatus;
+
+    @Column(name = "sci")
+    @MasterData(type = MasterDataType.SCI)
+    private String sci;
+
+    @Column(name = "additional_security_information")
+    private String additionalSecurityInformation;
+
+    @Column(name = "cfs_cut_off_date")
+    private LocalDateTime cfsCutOffDate;
+
+    @Column(name = "open_for_attachment")
+    private Boolean openForAttachment;
+
+    @Column(name = "open_for_interbranch_attachment")
+    private Boolean interBranchConsole = false;
+
+    @Column(name = "lat_date")
+    private LocalDateTime latDate;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
+    @Where(clause = "is_attachment_done = 'false'")
+    @BatchSize(size = 50)
+    private List<ConsoleShipmentMapping> consoleShipmentMappings;
+
+    @Column(name = "department")
+    @Size(max=32, message = "max size is 32 for department")
+    @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
+    private String department;
+
+    @Column(name = "is_network_file")
+    private Boolean isNetworkFile;
+
+    @Column(name = "is_receiving_branch_manually")
+    private Boolean isReceivingBranchManually;
+
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConsolidationDetails that = (ConsolidationDetails) o;
+        return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
 }

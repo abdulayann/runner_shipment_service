@@ -15,13 +15,15 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @Builder
+@SuppressWarnings({"java:S1948", "java:S1319"})
 public class UsersDto implements Serializable {
     private static final long serialVersionUID = 1L;
     private Integer Id;
     public String Username;
     public String DisplayName;
     public String Email;
-    public Boolean IsAdmin;;
+    public String Phone;
+    public Boolean IsAdmin;
     public Integer TenantId;
     public String Code; //Tenant Code
     public String CompanyCode;

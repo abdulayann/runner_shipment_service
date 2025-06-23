@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.entity.Views;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +13,6 @@ public interface IViewsDao {
     Optional<Views> findById(Long id);
     void delete(Views views);
     List<Views> findAll();
+    List<String> findAllByUsername(String username);
+    Optional<Views> findByCreatedByAndEntityAndIsDefault(String createdBy, String entity);
 }

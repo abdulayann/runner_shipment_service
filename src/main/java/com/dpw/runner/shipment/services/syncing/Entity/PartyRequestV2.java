@@ -7,6 +7,7 @@ import lombok.Data;
 import java.util.Map;
 
 @Data
+@SuppressWarnings("java:S1948")
 public class PartyRequestV2 implements IRunnerRequest {
     @JsonProperty("AddressCode")
     private String AddressCode;
@@ -28,4 +29,6 @@ public class PartyRequestV2 implements IRunnerRequest {
     private Boolean IsFreeTextAddress;
     @JsonProperty("FreeTextAddress")
     private String FreeTextAddress;
+    private String orgId;
+    private String addressId;
 }

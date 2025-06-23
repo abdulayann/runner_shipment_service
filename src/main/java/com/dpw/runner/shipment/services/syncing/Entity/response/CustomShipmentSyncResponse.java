@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.syncing.Entity.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -165,7 +164,7 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     @JsonProperty("Betype")
     private String Betype;
     @JsonProperty("BlchargesDisplay")
-    private String BlchargesDisplay;//TODO : REMOVE
+    private String BlchargesDisplay;
     @JsonProperty("BlexporterShipment")
     private String BlexporterShipment;
     @JsonProperty("Boedate")
@@ -194,7 +193,7 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     @JsonProperty("DateOfReceipt")
     private LocalDateTime DateOfReceipt;
     @JsonProperty("DeliveryMode")
-    private String DeliveryMode; // TODO : REMOVE
+    private String DeliveryMode;
     @JsonProperty("DraftPrinted")
     private Boolean DraftPrinted;
 
@@ -313,33 +312,21 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
 
     @JsonProperty("BookingNumber")
     private String BookingNumber;
-    //bookingReference
-    // private String ReferenceNo;
     @JsonProperty("BookingType")
     private String BookingType;
     @JsonProperty("CargoFinanceBooking")
     private Boolean CargoFinanceBooking;
-    // private BigDecimal Chargeable;
-    // private String ChargableUnit;
 
     @JsonProperty("ConsolidationReferenceNumber")
     private String ConsolidationReferenceNumber;
     @JsonProperty("ContainerAutoWeightVolumeUpdate")
     private Boolean ContainerAutoWeightVolumeUpdate;
-    //Direction
-    // private String Custom_ShipType;
     @JsonProperty("DocumentationPartner")
     private Integer DocumentationPartner;
     @JsonProperty("FinanceClosedByUser")
     private String FinanceClosedByUser;
     @JsonProperty("FinanceClosedOn")
     private LocalDateTime FinanceClosedOn;
-    //GoodsDescription
-    // private String Description;
-
-    // private String IncoTerm;
-    //innerPackUnit
-    // private String InnersUnit;
     @JsonProperty("IntraBranch")
     private Boolean IntraBranch;
     @JsonProperty("IsLocked")
@@ -397,15 +384,10 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     @JsonProperty("DestinationName")
     private String DestinationName;
 
-
-
-    // private Integer ShipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TriangulationPartner")
-    private Integer TriangulationPartner;
 
 
 

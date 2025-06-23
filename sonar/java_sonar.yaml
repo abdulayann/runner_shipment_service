@@ -25,8 +25,8 @@ steps:
     projectName: DTLP
     organization: dpwhotfsonline
     productName: runner
-    serviceConnection: SonarQube Connection
-    javaVersion: "1.17"
+    serviceConnection: sonar-runner
+    javaVersion: '1.17'
     repoName: runner_shipment_service
     mavenPath: pom.xml
-    exclusion: '**/*.bin,Devops_Scripts/**'
+    exclusion: '**/*.bin,Devops_Scripts/**,**/*.css,**/*.html,**/*.js,**/node_modules/**,src/assets/**,src/environments/**,**/*.scss,**/shared/constants/**,**/jaxb/*.java,**/schemaobject/**'

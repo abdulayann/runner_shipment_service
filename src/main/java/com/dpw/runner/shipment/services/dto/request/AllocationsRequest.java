@@ -19,7 +19,6 @@ public class AllocationsRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
     private Integer shipmentsCount;
-    private Boolean hazardous;
     private LocalDateTime cutoffDate;
     private Boolean isTemperatureControlled;
     private BigDecimal weight;

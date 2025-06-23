@@ -16,6 +16,7 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
+@SuppressWarnings("java:S1700") // A field should not duplicate the name of its containing class
 public class OrderNumber extends MultiTenancy {
     @Column(name = "order_number")
     private Long orderNumber;

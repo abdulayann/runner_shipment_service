@@ -38,7 +38,6 @@ public class TenantTimeZoneAspect {
 
     @Around("controllerMethods()")
     public Object changeTimeZone(ProceedingJoinPoint joinPoint) throws Throwable {
-
         log.info("Inside TenantTimeZone Aspect");
 
         Object[] args = joinPoint.getArgs();
@@ -47,10 +46,11 @@ public class TenantTimeZoneAspect {
         Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
         String tenantTimeZone = userDetails.getTimeZoneId();
         String browserTimeZone = fetchTimeZoneIdFromRequestHeader();
+        boolean skipTimeZone = skipTimeZone();
 
         //for handling request
         for (Object arg : args) {
-            if(arg != null)
+            if(arg != null && !skipTimeZone)
                 transformTimeZoneRecursively(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, true);
         }
 
@@ -60,7 +60,7 @@ public class TenantTimeZoneAspect {
         // For handling Response
         if (response instanceof ResponseEntity<?>) {
             Object body = ((ResponseEntity<?>) response).getBody();
-            if (body != null) {
+            if (body != null && !skipTimeZone) {
                 transformTimeZoneRecursively(body, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, false);
             }
         }
@@ -76,6 +76,7 @@ public class TenantTimeZoneAspect {
      * @param enableTimeZoneFlag - Whether to consider Tenant Time Zone or Not
      * @param beforeExecution - To check whether timeZone Changes should be for Request(true) Or for Response(false)
      */
+    @SuppressWarnings("java:S135")
     private void transformTimeZoneRecursively(Object arg, String browserTimeZone, String tenantTimeZone, boolean enableTimeZoneFlag, boolean beforeExecution) throws IllegalAccessException {
         Class<?> currentFieldClass = arg.getClass();
 
@@ -89,33 +90,40 @@ public class TenantTimeZoneAspect {
                 Object fieldValue = field.get(arg);
 
                 if (fieldValue != null) {
-
-                    if (fieldValue instanceof List<?> list) {
-                        for (Object listItem : list) {
-                            transformTimeZoneRecursively(listItem, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, beforeExecution);
-                        }
-
-                    } else if (fieldValue instanceof LocalDateTime inputDate) {
-                        LocalDateTime transformedDate;
-                        if (beforeExecution) {
-                            transformedDate = DateUtils.convertDateFromUserTimeZone(
-                                    inputDate, browserTimeZone, tenantTimeZone, enableTimeZoneFlag);
-                        } else {
-                            transformedDate = DateUtils.convertDateToUserTimeZone(
-                                    inputDate, browserTimeZone, tenantTimeZone, enableTimeZoneFlag);
-                        }
-                        field.set(arg, transformedDate);
-
-                    } else if (!(fieldValue instanceof Enum<?>)
-                            && fieldValue.getClass().getName().startsWith("com.dpw")
-                    ) {
-                        transformTimeZoneRecursively(fieldValue, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, beforeExecution);
-                    }
+                    processFieldValue(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, beforeExecution, field, fieldValue);
                 }
             }
             currentFieldClass = currentFieldClass.getSuperclass();
         }
 
+    }
+
+    private void processFieldValue(Object arg, String browserTimeZone, String tenantTimeZone, boolean enableTimeZoneFlag, boolean beforeExecution, Field field, Object fieldValue) throws IllegalAccessException {
+        if (fieldValue instanceof List<?> list) {
+            for (Object listItem : list) {
+                transformTimeZoneRecursively(listItem, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, beforeExecution);
+            }
+
+        } else if (fieldValue instanceof LocalDateTime inputDate) {
+            setTransformedDate(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, beforeExecution, field, inputDate);
+
+        } else if (!(fieldValue instanceof Enum<?>)
+                && fieldValue.getClass().getName().startsWith("com.dpw")
+        ) {
+            transformTimeZoneRecursively(fieldValue, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, beforeExecution);
+        }
+    }
+
+    private void setTransformedDate(Object arg, String browserTimeZone, String tenantTimeZone, boolean enableTimeZoneFlag, boolean beforeExecution, Field field, LocalDateTime inputDate) throws IllegalAccessException {
+        LocalDateTime transformedDate;
+        if (beforeExecution) {
+            transformedDate = DateUtils.convertDateFromUserTimeZone(
+                    inputDate, browserTimeZone, tenantTimeZone, enableTimeZoneFlag);
+        } else {
+            transformedDate = DateUtils.convertDateToUserTimeZone(
+                    inputDate, browserTimeZone, tenantTimeZone, enableTimeZoneFlag);
+        }
+        field.set(arg, transformedDate);
     }
 
 
@@ -131,5 +139,16 @@ public class TenantTimeZoneAspect {
         }
         MDC.put(TimeZoneConstants.BROWSER_TIME_ZONE_NAME, xBrowserTimeZone);
         return xBrowserTimeZone;
+    }
+
+    private boolean skipTimeZone() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if(Objects.nonNull(requestAttributes))
+        {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) requestAttributes;
+            String skipTimeZone = attributes.getRequest().getHeader(TimeZoneConstants.SKIP_TIME_ZONE);
+            return Objects.equals(skipTimeZone, "true");
+        }
+        return false;
     }
 }

@@ -5,16 +5,16 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @NoArgsConstructor
@@ -23,6 +23,7 @@ import java.util.UUID;
 public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private Integer tenantId;
     private String consolidationNumber;
     private String consolidationType;
     private String transportMode;
@@ -88,6 +89,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -102,6 +104,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private AllocationsResponse allocations;
     private ArrivalDepartureDetailsResponse arrivalDetails;
     private ArrivalDepartureDetailsResponse departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesResponse sendingAgent;
     private PartiesResponse receivingAgent;
     private PartiesResponse borrowedFrom;
@@ -138,4 +142,30 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private String efreightStatus;
     private AwbStatus awbStatus;
     private AwbStatus linkedHawbStatus;
+    private Boolean hazardous;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
+    private Boolean creatingFromDgShipment;
+    private String securityStatus;
+    private List<String> screeningStatus;
+    private String exemptionCodes;
+    private String aomFreeText;
+    private PartiesResponse client;
+    private PartiesResponse consigner;
+    private PartiesResponse consignee;
+    private String sci;
+    private String additionalSecurityInformation;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime latDate;
+    private Integer pendingActionCount;
+    private String department;
+    private Boolean isNetworkFlag;
+    private String transferStatus;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

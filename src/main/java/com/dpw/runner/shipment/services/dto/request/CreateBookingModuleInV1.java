@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -130,6 +129,8 @@ public class CreateBookingModuleInV1 {
             private String PerMeasurementBasis;
             private BigDecimal TotalUnitsCount;
             private String MeasurementsUnit;
+            private String internalRemarks;
+            private String externalRemarks;
         }
 
         @Data

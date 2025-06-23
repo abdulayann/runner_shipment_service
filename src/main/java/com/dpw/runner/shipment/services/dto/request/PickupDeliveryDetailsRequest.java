@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -10,6 +12,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -21,6 +24,10 @@ import java.time.LocalTime;
 public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private LocalDateTime estimatedPickupOrDelivery;
+    private LocalDateTime estimatedPickup;
+    private LocalDateTime estimatedDelivery;
+    private LocalDateTime actualPickup;
+    private LocalDateTime actualDelivery;
     private LocalDateTime requiredBy;
     private LocalDateTime portTransportAdvised;
     private LocalDateTime actualPickupOrDelivery;
@@ -30,7 +37,7 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private PartiesRequest destinationDetail;
     private PartiesRequest sourceDetail;
     private PartiesRequest agentDetail;
-    private String type;
+    private InstructionType type;
     private Long shipmentId;
     private String dropMode;
     private BigDecimal labourCharge;
@@ -53,4 +60,12 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime emptyTruckInDate;
     private LocalDateTime loadedTruckGateOutDate;
     private String pickupDeliveryInstruction;
+    private LocalDateTime pickupGateIn;
+    private LocalDateTime deliveryGateIn;
+    private LocalDateTime pickupGateOut;
+    private LocalDateTime deliveryGateOut;
+    private List<Parties> partiesList;
+    private String remarks;
+    private List<TiLegsRequest> tiLegsList;
+    private Boolean isDirectDelivery;
 }

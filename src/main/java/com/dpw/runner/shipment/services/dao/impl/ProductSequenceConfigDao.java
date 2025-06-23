@@ -4,7 +4,9 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IProductSequenceConfigRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.PersistenceContext;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,10 +33,15 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Autowired
     private IProductSequenceConfigRepository productSequenceConfigRepository;
+    @PersistenceContext
+    EntityManager entityManager;
 
     @Override
     public ProductSequenceConfig save(ProductSequenceConfig productSequenceConfig) {
-        return productSequenceConfigRepository.save(productSequenceConfig);
+        long start = System.currentTimeMillis();
+        productSequenceConfig =  productSequenceConfigRepository.save(productSequenceConfig);
+        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(),  LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE, System.currentTimeMillis() - start);
+        return productSequenceConfig;
     }
 
     @Override
@@ -41,7 +51,10 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Override
     public List<ProductSequenceConfig> saveAll(List<ProductSequenceConfig> productSequenceConfigList) {
-        return productSequenceConfigRepository.saveAll(productSequenceConfigList);
+        long start = System.currentTimeMillis();
+        productSequenceConfigList = productSequenceConfigRepository.saveAll(productSequenceConfigList);
+        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(),  LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE_ALL, System.currentTimeMillis() - start);
+        return productSequenceConfigList;
     }
 
     @Override
@@ -57,10 +70,11 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
                 }
             }
             req.setShipmentSettingsId(shipmentSettingsId);
-            req = save(req);
+
             res.add(req);
         }
-        return res;
+
+        return saveAll(res);
     }
 
     @Override
@@ -73,14 +87,14 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         String responseMsg;
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<ProductSequenceConfig>, Pageable> pair = fetchData(listCommonRequest, ProductSequenceConfig.class);
             Page<ProductSequenceConfig> productSequenceConfigs = findAll(pair.getLeft(), pair.getRight());
             Map<Long, ProductSequenceConfig> hashMap = productSequenceConfigs.stream()
                     .collect(Collectors.toMap(ProductSequenceConfig::getId, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
-            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
+            if (productSequenceConfigList != null && !productSequenceConfigList.isEmpty()) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -106,10 +120,10 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
             Map<UUID, ProductSequenceConfig> hashMap = new HashMap<>();
-            if(oldProductSequenceConfig != null && oldProductSequenceConfig.size() > 0)
+            if(oldProductSequenceConfig != null && !oldProductSequenceConfig.isEmpty())
                 hashMap = oldProductSequenceConfig.stream().collect(Collectors.toMap(ProductSequenceConfig::getGuid, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
-            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
+            if (productSequenceConfigList != null && !productSequenceConfigList.isEmpty()) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     UUID guid = request.getGuid();
                     if(hashMap.containsKey(guid)) {
@@ -154,6 +168,20 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
                     : DaoConstants.DAO_GENERIC_DELETE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
+    }
+
+    @Override
+    public ProductSequenceConfig findAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
+        Page<ProductSequenceConfig> page = findAll(spec, pageable);
+        ProductSequenceConfig result = null;
+        if(!page.isEmpty()) {
+            // Acquire lock on this result row
+            result = page.getContent().get(0);
+            entityManager.lock(result, LockModeType.PESSIMISTIC_WRITE, Map.ofEntries(
+                Map.entry("javax.persistence.lock.timeout", 2000))
+            );
+        }
+        return result;
     }
 
 }

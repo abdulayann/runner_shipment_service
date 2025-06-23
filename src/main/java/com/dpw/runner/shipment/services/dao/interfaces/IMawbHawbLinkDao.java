@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
-import com.dpw.runner.shipment.services.entity.Jobs;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,4 +14,5 @@ public interface IMawbHawbLinkDao {
     Optional<MawbHawbLink> findById(Long id);
     void delete(MawbHawbLink mawbHawbLink);
     List<MawbHawbLink> findByMawbId(Long mawbId);
+    List<MawbHawbLink> findByHawbId(Long hawbId);
 }

@@ -162,7 +162,6 @@ class PackingDaoTest {
     void testUpdateEntityFromShipment() throws Exception{
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(packingList)).when(spyService).findAll(any(), any());
         doReturn(packingList).when(spyService).saveEntityFromShipment(any(), anyLong(), anyMap());
         List<Long> deletedConts = new ArrayList<>();
         deletedConts.add(5L);
@@ -175,7 +174,6 @@ class PackingDaoTest {
     void testUpdateEntityFromShipment_ContBranch() throws Exception{
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(packingList)).when(spyService).findAll(any(), any());
         doReturn(packingList).when(spyService).saveEntityFromShipment(any(), anyLong(), anyMap());
         List<Long> deletedConts = new ArrayList<>();
         deletedConts.add(6L);
@@ -188,7 +186,6 @@ class PackingDaoTest {
     void testUpdateEntityFromShipment_WithOldEntity_NullPacking() throws Exception{
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(packingList)).when(spyService).findAll(any(), any());
         List<Long> deletedConts = new ArrayList<>();
         List<Packing> packings = spyService.updateEntityFromShipment(null, 1L, deletedConts);
         assertEquals(new ArrayList<>(), packings);
@@ -199,7 +196,6 @@ class PackingDaoTest {
         List<Packing> packings = new ArrayList<>();
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(packingList)).when(spyService).findAll(any(), any());
         List<Long> deletedConts = new ArrayList<>();
         List<Packing> packingsList = spyService.updateEntityFromShipment(packings, 1L, deletedConts);
         assertEquals(new ArrayList<>(), packingsList);
@@ -210,7 +206,6 @@ class PackingDaoTest {
         List<Packing> packingList = Collections.singletonList(testPacking);
         packingList.get(0).setId(1L);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(packingList)).when(spyService).findAll(any(), any());
         doReturn(packingList).when(spyService).saveEntityFromShipment(any(), anyLong(), anyMap());
         List<Packing> routings = spyService.updateEntityFromShipment(packingList, 1L, null);
         assertNotNull(routings);
@@ -220,6 +215,7 @@ class PackingDaoTest {
     @Test
     void testUpdateEntityFromShipment_failure() throws Exception {
         PackingDao spyService = spy(packingDao);
+        doThrow(new RuntimeException()).when(spyService).findByShipmentId(any());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(null, 1L, null));
     }
 
@@ -645,7 +641,6 @@ class PackingDaoTest {
         List<Packing> oldPackingList = Arrays.asList(testPacking, objectMapperTest.convertValue(testPacking, Packing.class));
         oldPackingList.get(1).setId(5L);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(oldPackingList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
         List<Packing> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L, null);
         assertNotNull(routingsList1);
@@ -658,9 +653,7 @@ class PackingDaoTest {
         List<Packing> oldPackingList = Arrays.asList(testPacking, objectMapperTest.convertValue(testPacking, Packing.class));
         oldPackingList.get(1).setId(5L);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(oldPackingList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
         List<Packing> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L, null);
         assertNotNull(routingsList1);
         assertEquals(routingsList, routingsList1);
@@ -672,9 +665,7 @@ class PackingDaoTest {
         List<Packing> oldPackingList = Arrays.asList(testPacking, objectMapperTest.convertValue(testPacking, Packing.class));
         oldPackingList.get(1).setId(5L);
         PackingDao spyService = spy(packingDao);
-        doReturn(new PageImpl<>(oldPackingList)).when(spyService).findAll(any(), any());
         doReturn(packingList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        doThrow(RuntimeException.class).when(jsonHelper).convertToJson(any());
         List<Packing> routingsList1 = spyService.updateEntityFromShipment(packingList, 1L, null);
         assertNotNull(routingsList1);
         assertEquals(packingList, routingsList1);
@@ -732,7 +723,7 @@ class PackingDaoTest {
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(packingList).when(spyService).saveEntityFromShipment(anyList(), anyLong());
-        List<Packing> packings = spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new HashMap<>());
+        List<Packing> packings = spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), new ArrayList<>(), new HashSet<>(), new HashMap<>());
         assertEquals(packingList, packings);
     }
 
@@ -750,7 +741,7 @@ class PackingDaoTest {
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(packingList).when(spyService).saveEntityFromShipment(anyList(), anyLong());
-        List<Packing> packings = spyService.updateEntityFromShipment(packingList, 1L, packingList, new ArrayList<>(), new ArrayList<>(), new HashMap<>());
+        List<Packing> packings = spyService.updateEntityFromShipment(packingList, 1L, packingList, new ArrayList<>(), new HashSet<>(), new HashMap<>());
         assertEquals(packingList, packings);
     }
 
@@ -759,7 +750,7 @@ class PackingDaoTest {
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doReturn(packingList).when(spyService).saveEntityFromShipment(anyList(), anyLong());
-        List<Packing> packings = spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), List.of(testPacking), new ArrayList<>(), new HashMap<>());
+        List<Packing> packings = spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), List.of(testPacking), new HashSet<>(), new HashMap<>());
         assertEquals(packingList, packings);
     }
 
@@ -768,7 +759,7 @@ class PackingDaoTest {
         List<Packing> packingList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).saveEntityFromShipment(anyList(), anyLong());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), new HashMap<>()));
+        assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(packingList, 1L, new ArrayList<>(), new ArrayList<>(), new HashSet<>(), new HashMap<>()));
     }
 
 }

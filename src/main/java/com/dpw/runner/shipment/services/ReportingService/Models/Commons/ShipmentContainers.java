@@ -55,4 +55,11 @@ public class ShipmentContainers implements IRunnerResponse {
     public String DgClassDescription;
     public String HazardousUn;
     public String CargoGrossWeightUnit;
+    public String OceanUNNumber;
+    public String OceanDGPSN;
+    public String OceanDGClass;
+    public String PackingGroup;
+    public String FlashPointAndUnit;
+    public String MarinePollutant;
+    public String PacksUnitDesc;
 }

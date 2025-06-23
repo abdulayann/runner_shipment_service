@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestAirModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -33,6 +32,7 @@ public class ShippingRequestAirReport extends IReport{
     IDocumentModel getDocumentModel(Long id) {
         ShippingRequestAirModel shippingRequestAirModel = new ShippingRequestAirModel();
         shippingRequestAirModel.shipment = getShipment(id);
+        validateAirAndOceanDGCheck(shippingRequestAirModel.shipment);
         shippingRequestAirModel.setShipmentPacking(shippingRequestAirModel.shipment.getPackingList());
         return shippingRequestAirModel;
     }
@@ -42,7 +42,7 @@ public class ShippingRequestAirReport extends IReport{
         ShippingRequestAirModel shippingRequestAirModel = (ShippingRequestAirModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
         populateShipmentFields(shippingRequestAirModel.shipment, dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<Map<String, Object>> packDictionary = new ArrayList<>();
         List<PackingModel> listOfPacks = shippingRequestAirModel.getShipmentPacking();
@@ -54,8 +54,8 @@ public class ShippingRequestAirReport extends IReport{
             dict.put(ReportConstants.WIDTH, pack.getWidth());
             dict.put(ReportConstants.HEIGHT, pack.getHeight());
             dict.put(ReportConstants.PACK_COUNT, pack.getPacks());
-            dict.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse));
-            dict.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(pack.getVolume(), v1TenantSettingsResponse));
+            dict.put(ReportConstants.GROSS_WEIGHT, convertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse));
+            dict.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(pack.getVolume(), v1TenantSettingsResponse));
 
             packDictionary.add(dict);
 
@@ -66,7 +66,7 @@ public class ShippingRequestAirReport extends IReport{
                         "=",
                         pack.getCommodity()
                 );
-                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+                CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
                 V1DataResponse response = v1Service.fetchCommodityData(commonV1ListRequest);
 
                 List<EntityTransferCommodityType> commodityTypeList = jsonHelper.convertValueToList(response.entities, EntityTransferCommodityType.class);
@@ -82,7 +82,7 @@ public class ShippingRequestAirReport extends IReport{
         }
         dictionary.put(ReportConstants.LIST_OF_PACKINGS, packDictionary);
         dictionary.put(ReportConstants.COMMODITIES, commodities);
-        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(ReportConstants.PRINT_DATE, convertToDPWDateFormat(LocalDateTime.now()));
 
         return dictionary;
     }

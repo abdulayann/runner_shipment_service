@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.mapper;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.mapstruct.Condition;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import org.openapitools.jackson.nullable.JsonNullable;
 
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+@Generated
 public interface JsonNullableMapper {
 
     default <T> JsonNullable<T> wrap(T entity) {

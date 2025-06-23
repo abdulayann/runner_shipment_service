@@ -40,6 +40,16 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private Long shipmentId;
     private String originPort;
     private String destinationPort;
+    private String cfs;
     private LocalDateTime vesselBerthingDate;
     private String carrierCountry;
+    private String minTransitHours;
+    private String maxTransitHours;
+    private Boolean carrierAddedFromNpm;
+    private Boolean isCarrierChanged;
+    private String originLocCode;
+    private String destinationLocCode;
+    private String originPortLocCode;
+    private String destinationPortLocCode;
+    private String scacCode;
 }

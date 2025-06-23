@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS shipment_details
+    ADD COLUMN IF NOT EXISTS entity_transfer BOOLEAN DEFAULT FALSE;

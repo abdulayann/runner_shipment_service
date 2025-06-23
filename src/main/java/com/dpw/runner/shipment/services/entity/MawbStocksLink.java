@@ -7,7 +7,6 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
-import java.util.UUID;
 
 @Entity
 @Setter
@@ -40,8 +39,4 @@ public class MawbStocksLink extends MultiTenancy {
 
     @Column(name = "ship_cons_number")
     private String shipConsNumber;
-
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "parent_id", referencedColumnName = "id")
-//    private MawbStocks mawbStocks;
 }

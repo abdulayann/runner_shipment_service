@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -47,5 +48,6 @@ public class TenantProducts extends MultiTenancy {
     @Column(name = "transport_mode")
     @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "tenant_products_transport_mode", joinColumns = @JoinColumn(name = "tenant_product_id"))
+    @BatchSize(size = 50)
     private List<String> transportModes;
 }

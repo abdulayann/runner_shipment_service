@@ -22,7 +22,6 @@ public class AllocationsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
     private Integer shipmentsCount;
-    private Boolean hazardous;
     private LocalDateTime cutoffDate;
     private Boolean isTemperatureControlled;
     @JsonSerialize(using = CustomWeightValueSerializer.class)

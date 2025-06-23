@@ -13,20 +13,18 @@ import com.dpw.runner.shipment.services.syncing.Entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomConsolidationRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationReverseSync;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @Slf4j
+@Generated
 public class ConsolidationReverseSync implements IConsolidationReverseSync {
 
     @Autowired
@@ -49,8 +47,8 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return new ResponseEntity<>(HttpStatus.OK);
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
+                return ResponseHelper.buildSuccessResponse();
             }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
 
@@ -79,7 +77,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
             response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
-            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()), ContainerRequest.class));
+            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()).stream().toList(), ContainerRequest.class));
             response.setConsolidationAddresses(jsonHelper.convertValueToList(syncEntityConversionService.addressesV1ToV2(request.getConsolidationAddresses()), PartiesRequest.class));
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 
@@ -98,13 +96,12 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     private void mapReverseShipmentGuids(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
         if(request == null || request.getShipmentGuids() == null)
             return;
-        List<ShipmentRequest> req = request.getShipmentGuids().stream()
-                .map(item -> {
-                    ShipmentRequest p = new ShipmentRequest();
-                    p.setGuid(item);
-                    return p;
-                })
-                .toList();
+        Set<ShipmentRequest> req = new HashSet<>();
+        request.getShipmentGuids().forEach((key, value) -> {
+            ShipmentRequest shipmentRequest = new ShipmentRequest();
+            shipmentRequest.setGuid(key);
+            req.add(shipmentRequest);
+        });
         response.setShipmentsList(req);
     }
 
@@ -161,11 +158,11 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.getAllocations().setId(null);
     }
 
-    private void mapReverseArrivalDepartureDetails(ConsolidationDetailsRequest response_, CustomConsolidationRequest request_) {
-        if(request_ == null || request_.getArrivalDepartureDetails() == null)
+    private void mapReverseArrivalDepartureDetails(ConsolidationDetailsRequest consolidationDetailsRequest, CustomConsolidationRequest customConsolidationRequest) {
+        if(customConsolidationRequest == null || customConsolidationRequest.getArrivalDepartureDetails() == null)
             return;
 
-        ArrivalDepartureDetails request = request_.getArrivalDepartureDetails();
+        ArrivalDepartureDetails request = customConsolidationRequest.getArrivalDepartureDetails();
 
         // Arrival Details
         ArrivalDepartureDetailsRequest response1 = new ArrivalDepartureDetailsRequest();
@@ -187,7 +184,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         if(request.getACFSId() != null)
             response1.setCFSId(modelMapper.map(request.getACFSId(), PartiesRequest.class));
 
-        response_.setArrivalDetails(response1);
+        consolidationDetailsRequest.setArrivalDetails(response1);
 
         // Departure Details
         ArrivalDepartureDetailsRequest response2 = new ArrivalDepartureDetailsRequest();
@@ -209,7 +206,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         if(request.getDCFSId() != null)
             response2.setCFSId(modelMapper.map(request.getDCFSId(), PartiesRequest.class));
 
-        response_.setDepartureDetails(response2);
+        consolidationDetailsRequest.setDepartureDetails(response2);
     }
 
     private PartiesRequest mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {

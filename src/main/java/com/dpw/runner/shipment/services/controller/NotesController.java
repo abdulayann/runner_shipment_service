@@ -33,8 +33,8 @@ public class NotesController {
         this.notesService = notesService;
     }
 
-    private class MyResponseClass extends RunnerResponse<NotesResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<NotesResponse> {}
+    private static class MyResponseClass extends RunnerResponse<NotesResponse> {}
+    private static class MyListResponseClass extends RunnerListResponse<NotesResponse> {}
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {

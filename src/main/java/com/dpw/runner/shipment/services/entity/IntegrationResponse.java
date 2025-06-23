@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.MergeClass;
 import com.dpw.runner.shipment.services.entity.enums.Status;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;

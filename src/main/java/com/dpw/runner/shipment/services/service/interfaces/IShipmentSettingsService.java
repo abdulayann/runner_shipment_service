@@ -11,4 +11,8 @@ public interface IShipmentSettingsService extends ICommonService{
     ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> completeSettingsUpdateCreateV1(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> retrieveByTenantId(CommonRequestModel commonRequestModel);
-    }
+    ResponseEntity<IRunnerResponse> listCoLoadStationTenantIds();
+    ResponseEntity<IRunnerResponse> listHubTenantIds();
+    ResponseEntity<IRunnerResponse> hideManifest(boolean hideManifest);
+    ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel);
+}

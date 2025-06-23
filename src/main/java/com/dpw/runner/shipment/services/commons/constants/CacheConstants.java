@@ -13,6 +13,8 @@ public class CacheConstants {
     public static final String GET_USER_BY_TOKEN = "getUserByToken";
     public static final String USER_DEFINITION = "UserDefinition:";
     public static final String GET_TENANT_SETTINGS = "getV1TenantSettings";
+    public static final String GET_SHIPMENT_SETTINGS = "getSettingsByTenantIdWithCache";
+    public static final String SHIPMENT_SETTINGS = "ShipmentSettings:";
     public static final String TENANT_SETTINGS = "TenantSettings:";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String UNLOCATIONS_AWB = "UnlocationsAWB";
@@ -29,4 +31,10 @@ public class CacheConstants {
     public static final String ACTIVITY_TYPE = "ActivityType";
     public static final String SALES_AGENT = "SalesAgent";
     public static final String BILLING = "Billing";
+    public static final String COUNTRIES = "Countries";
+    public static final String ORGANIZATIONS_WITH_ADDRESSES = "OrganizationsWithAddresses";
+    public static final String COUSIN_BRANCHES_CACHE = "CousinBranchesCache";
+    public static final String CUSTOMER_BOOKING = "CustomerBooking";
+    public static final String CUSTOMER_BOOKING_ID = "CustomerBookingId";
+    public static final String CUSTOMER_BOOKING_GUID = "CustomerBookingGuid";
 }

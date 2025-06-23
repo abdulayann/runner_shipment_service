@@ -1,5 +1,26 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -12,33 +33,58 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.TrackingEventsResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.EventsDump;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto;
+import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.AccountReceivableDto.BillDto;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -56,33 +102,16 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 @TestPropertySource("classpath:application-test.properties")
-class EventServiceTest {
+class EventServiceTest extends CommonMocks {
 
     @Mock
     private IEventDao eventDao;
@@ -103,6 +132,9 @@ class EventServiceTest {
     private IShipmentDao shipmentDao;
 
     @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
+
+    @Mock
     private IShipmentSync shipmentSync;
 
     @Mock
@@ -113,6 +145,21 @@ class EventServiceTest {
 
     @Mock
     private SyncConfig syncConfig;
+
+    @Mock
+    private DateTimeChangeLogService dateTimeChangeLogService;
+
+    @Mock
+    private TrackingServiceAdapter trackingServiceAdapter;
+
+    @Mock
+    private IEventDumpDao eventDumpDao;
+
+    @Mock
+    private IV1Service v1Service;
+
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
@@ -173,18 +220,12 @@ class EventServiceTest {
         EventsRequest request = objectMapperTest.convertValue(null, EventsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
-        Events event = new Events();
-        event.setId(1L);
-        EventsResponse response = objectMapperTest.convertValue(event, EventsResponse.class);
-
-        when(jsonHelper.convertValue(any(), eq(Events.class))).thenReturn(null);
-        when(eventDao.save(any())).thenReturn(event);
-        when(jsonHelper.convertValue(any(Events.class), eq(EventsResponse.class))).thenReturn(response);
-
         ResponseEntity<IRunnerResponse> responseEntity = eventService.create(commonRequestModel);
 
         Assertions.assertNotNull(responseEntity);
-        assertEquals(ResponseHelper.buildSuccessResponse(response), responseEntity);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+        RunnerResponse runnerResponse = objectMapperTest.convertValue(responseEntity.getBody(), RunnerResponse.class);
+        assertEquals("Empty request received", runnerResponse.getError().getMessage());
     }
 
     @Test
@@ -490,20 +531,25 @@ class EventServiceTest {
 
     @Test
     void trackEventsForInputShipmentThrowsErrorWhenShipmentNotPresent() throws RunnerException {
-        Optional<Long> shipmentId = Optional.of(1L);
+        Long shipmentId = 1L;
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+
 
         var exception = assertThrows(DataRetrievalFailureException.class,
-                () -> eventService.trackEvents(shipmentId, null));
+                () -> eventService.trackEvents(trackingEventsRequest));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
     }
 
     @Test
     void trackEventsForInputConsolidationThrowsErrorWhenConsolidationNotPresent() throws RunnerException {
-        Optional<Long> consolidationId = Optional.of(1L);
+        Long consolidationId = 1L;
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidationId);
 
         var exception = assertThrows(DataRetrievalFailureException.class,
-                () -> eventService.trackEvents(Optional.empty(), consolidationId));
+                () -> eventService.trackEvents(trackingEventsRequest));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
     }
@@ -511,37 +557,47 @@ class EventServiceTest {
     @Test
     void trackEventsForEmptyRequest() throws RunnerException {
         var exception = assertThrows(RunnerException.class,
-                () -> eventService.trackEvents(Optional.empty(), Optional.empty()));
+                () -> eventService.trackEvents(new TrackingEventsRequest()));
 
         assertEquals("Both shipmentId and consolidationId are empty !", exception.getMessage());
     }
 
     @Test
     void trackEventsForInputShipment() throws RunnerException {
+        Long shipmentId = 1L;
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
         shipment.setShipmentId(referenceNumber);
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
         trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
-        trackingEventsResponse.setEvents(List.of(new EventsRequestV2()));
+        trackingEventsResponse.setEventsList(List.of(new Events()));
         EventsResponse eventsResponse = new EventsResponse();
 
         TrackingRequest trackingRequest = TrackingRequest.builder().referenceNumber(referenceNumber).build();
-        ResponseEntity<TrackingEventsResponse> mockResponseEntity = ResponseEntity.ok(trackingEventsResponse);
+//        ResponseEntity<TrackingEventsResponse> mockResponseEntity = ResponseEntity.ok(trackingEventsResponse);
 
+        Events mockEvent = Events.builder().build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<TrackingEventsResponse>>any(),
-                (Object[]) any())).thenReturn(mockResponseEntity);
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
         when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
 
-        var httpResponse = eventService.trackEvents(Optional.of(12L) , Optional.of(12L));
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
@@ -550,11 +606,93 @@ class EventServiceTest {
     }
 
     @Test
-    void trackEventsForInputShipmentThrowsException() throws RunnerException {
+    void trackEventsForInputConsolidation() throws RunnerException {
+        Long consolidationId = 1L;
+        var mockConsolidation = jsonTestUtility.getTestConsolidation();
+        mockConsolidation.setId(consolidationId);
+        String referenceNumber = mockConsolidation.getReferenceNumber() != null ? mockConsolidation.getReferenceNumber() : "CON01";
+        mockConsolidation.setReferenceNumber(referenceNumber);
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidationId);
+
+        EventsResponse eventsResponse = new EventsResponse();
+
+        Events mockEvent = Events.builder().build();
+
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(mockConsolidation));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void trackEventsForInputShipmentSavesUpstreamEvents() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
-        shipment.setId(1L);
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
         String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
         shipment.setShipmentId(referenceNumber);
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipment.setBookingNumber("1234-5678");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setEmptyContainerReturned(false);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "originPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDumpDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void trackEventsForInputShipmentThrowsException() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP01";
+        shipment.setShipmentId(referenceNumber);
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
 
         TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
         trackingEventsResponse.setShipmentAta(LocalDateTime.now());
@@ -570,14 +708,12 @@ class EventServiceTest {
 
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
-        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<TrackingEventsResponse>>any(),
-                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.UNAUTHORIZED));
-        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenThrow(new HttpServerErrorException(HttpStatus.UNAUTHORIZED));
 
         List<EventsResponse> eventsResponseList = new ArrayList<>();
         eventsResponseList.add(eventsResponse);
 
-        var e = assertThrows(V1ServiceException.class, () -> eventService.trackEvents(Optional.of(12L) , Optional.of(12L)));
+        var e = assertThrows(RunnerException.class, () -> eventService.trackEvents(trackingEventsRequest));
 
         assertNotNull(e);
     }
@@ -588,7 +724,7 @@ class EventServiceTest {
         Events upstreamEvent = new Events();
 
         upstreamEvent.setActual(LocalDateTime.now());
-        upstreamEvent.setEventCode(Constants.ATA_EVENT_CODES.get(0));
+        upstreamEvent.setEventCode(EventConstants.ATA_EVENT_CODES.get(0));
         eventsList.add(upstreamEvent);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
 
@@ -607,7 +743,7 @@ class EventServiceTest {
         Events upstreamEvent = new Events();
 
         upstreamEvent.setActual(LocalDateTime.now());
-        upstreamEvent.setEventCode(Constants.ATD_EVENT_CODES.get(0));
+        upstreamEvent.setEventCode(EventConstants.ATD_EVENT_CODES.get(0));
         eventsList.add(upstreamEvent);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
 
@@ -626,7 +762,7 @@ class EventServiceTest {
         when(eventDao.findByGuid(any())).thenReturn(Optional.of(mockEvent));
         when(modelMapper.map(any(), any())).thenReturn(mockEvent);
 
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.v1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -636,7 +772,7 @@ class EventServiceTest {
         field.setAccessible(true);
         field.set(syncConfig, false);
         ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
-        ResponseEntity<IRunnerResponse> response = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), true);
+        ResponseEntity<IRunnerResponse> response = eventService.v1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -650,7 +786,7 @@ class EventServiceTest {
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(eventDao.save(any())).thenReturn(mockEvent);
         when(objectMapper.convertValue(any(), eq(EventsResponse.class))).thenReturn(mockEventsResponse);
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.v1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -663,9 +799,508 @@ class EventServiceTest {
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(eventDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(testEventsRequestV2);
-        var e  = assertThrows(RuntimeException.class, () -> eventService.V1EventsCreateAndUpdate(commonRequestModel, false));
+        var e  = assertThrows(RuntimeException.class, () -> eventService.v1EventsCreateAndUpdate(commonRequestModel, false));
         assertNotNull(e);
     }
 
+    private Events getMockEvent(Long eventId, String eventCode, String entityType, String locationRole){
+        Events mockEvent = new Events();
+        mockEvent.setId(eventId);
+        mockEvent.setGuid(UUID.randomUUID());
+        mockEvent.setEventCode(eventCode);
+        mockEvent.setEntityType(entityType);
+        mockEvent.setLocationRole(locationRole);
+
+        return mockEvent;
+    }
+
+
+    @Test
+    void TestGateInWithContainerFullTrackEvent() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP02";
+        shipment.setShipmentId(referenceNumber);
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipment.setBookingNumber("5678-1234");
+
+        Events mockEvent = getMockEvent(1L, EventConstants.GATE_IN_WITH_CONTAINER_FULL,
+                EventConstants.GATE_IN_WITH_CONTAINER_FULL, "originPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
+        V1DataResponse v1DataResponse = new V1DataResponse();
+
+        EntityTransferMasterLists entityTransferMasterLists = EntityTransferMasterLists.builder()
+                .ItemValue("ItemValue")
+                .ItemType(99)
+                .ItemDescription("ItemDescription").build();
+        v1DataResponse.setEntities(List.of(entityTransferMasterLists));
+
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(entityTransferMasterLists));
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDumpDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void TestVesselDepartureWithContainerTrackEvent() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP03";
+        shipment.setShipmentId(referenceNumber);
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipment.setBookingNumber("938-1234");
+
+        Events mockEvent = getMockEvent(2L, EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER,
+                EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER, "originPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDumpDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+
+    @Test
+    void TestGateOutWithContainerFullTrackEvent() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        Long shipmentId = 1L;
+        shipment.setId(shipmentId);
+        String referenceNumber = shipment.getShipmentId() != null ? shipment.getShipmentId() : "SHP04";
+        shipment.setShipmentId(referenceNumber);
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipment.setBookingNumber("938-5284");
+
+        Events mockEvent = getMockEvent(6L, EventConstants.GATE_OUT_WITH_CONTAINER_FULL,
+                EventConstants.GATE_OUT_WITH_CONTAINER_FULL, "destinationPort");
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+
+        TrackingEventsResponse trackingEventsResponse = new TrackingEventsResponse();
+        trackingEventsResponse.setShipmentAta(LocalDateTime.now());
+        trackingEventsResponse.setShipmentAtd(LocalDateTime.now());
+        trackingEventsResponse.setEventsList(List.of(mockEvent));
+        EventsResponse eventsResponse = new EventsResponse();
+
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipment));
+        when(trackingServiceAdapter.getTrackingEventsResponse(any())).thenReturn(trackingEventsResponse);
+        when(modelMapper.map(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(List.of(mockEvent));
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+
+
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+        eventsResponseList.add(eventsResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+
+        var httpResponse = eventService.trackEvents(trackingEventsRequest);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        verify(eventDumpDao, times(1)).saveAll(any());
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void processUpstreamTrackingMessageReturnsTrueIfInputIsNull() {
+        var response = eventService.processUpstreamTrackingMessage(null, "messageId");
+        assertTrue(response);
+    }
+
+    @Test
+    void processUpstreamTrackingMessageReturnsTrueIfReferenceNumberIsNull() {
+        var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
+
+        container.getContainerBase().setShipmentReference(null);
+
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(new Events()));
+
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
+        assertTrue(response);
+    }
+
+    @Test
+    void processUpstreamTrackingMessageReturnsTrueIfTrackingEventsIsNullorEmpty() {
+        var container = new TrackingServiceApiResponse.Container();
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(Collections.emptyList());
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
+        assertTrue(response);
+    }
+
+    @Test
+    void processUpstreamTrackingMessageReturnsTrueInSuccess() {
+        var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
+
+        String refNum = container.getContainerBase().getShipmentReference();
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        ShipmentSettingsDetails mockTenantSettings = ShipmentSettingsDetails.builder().isAtdAtaAutoPopulateEnabled(true).build();
+
+        Events mockEvent = Events.builder().build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(new Events()));
+        when(shipmentDao.findByShipmentId(refNum)).thenReturn(List.of(shipmentDetails1, shipmentDetails2));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(mockTenantSettings));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
+
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
+        assertTrue(response);
+    }
+
+    @Test
+    void processUpstreamTrackingMessageForAirShipment() {
+        var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
+
+        String refNum = container.getContainerBase().getShipmentReference();
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTransportMode("AIR");
+
+        Events mockEvent = Events.builder().eventCode(EventConstants.TRCF).build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(mockEvent));
+        when(shipmentDao.findByShipmentId(refNum)).thenReturn(List.of(shipmentDetails1));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+        when(eventDao.saveAll(anyList())).thenReturn(List.of(mockEvent));
+        when(modelMapper.map(any(), eq(Events.class))).thenReturn(mockEvent);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
+
+        var response = eventService.processUpstreamTrackingMessage(container, "messageId");
+        assertTrue(response);
+    }
+
+//    @Test
+    void processUpstreamTrackingMessageReturnsFalseIfShipmentSaveFails() throws RunnerException {
+        var container = jsonTestUtility.getJson("TRACKING_CONTAINER", TrackingServiceApiResponse.Container.class);
+
+        String refNum = container.getContainerBase().getShipmentReference();
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        CarrierDetails carrierDetails = new CarrierDetails();
+
+        Events mockEvent = Events.builder().build();
+        EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
+
+        when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(new Events()));
+        when(shipmentDao.findByShipmentId(refNum)).thenReturn(List.of(shipmentDetails1, shipmentDetails2));
+        when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
+        when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mockEvent));
+        when(shipmentDao.saveWithoutValidation(any())).thenThrow(new RuntimeException());
+        var response = eventService.processUpstreamTrackingMessage(container, "");
+        assertFalse(response);
+    }
+
+    @Test
+    void testListEventsV2ForInputShipmentId() throws RunnerException {
+        Long shipmentId = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        mockShipmentSettings();
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void testListEventsV2ForInputConsolidationId() throws RunnerException {
+        Long consolidation = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidation);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        mockShipmentSettings();
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest));
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void processUpstreamBillingCommonEventMessage_SuccessfulExecution() {
+        // Arrange
+        BillingInvoiceDto billingInvoiceDto = mock(BillingInvoiceDto.class);
+        InvoiceDto invoiceDto = mock(InvoiceDto.class);
+        AccountReceivableDto accountReceivableDto = mock(AccountReceivableDto.class);
+        BillDto billDto1 = mock(BillDto.class);
+        BillDto billDto2 = mock(BillDto.class);
+
+        UUID guid1 = UUID.randomUUID();
+        UUID guid2 = UUID.randomUUID();
+
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setGuid(guid1);
+        shipment1.setId(1L);
+        shipment1.setShipmentId("S123");
+        shipment1.setTenantId(1);
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setGuid(guid2);
+        shipment2.setId(2L);
+        shipment2.setShipmentId("S456");
+        shipment2.setTenantId(2);
+
+        EventsRequest mockRequest1 = new EventsRequest(); // Populate as needed
+        EventsRequest mockRequest2 = new EventsRequest();
+        Events mockEvent = new Events();
+
+        when(billingInvoiceDto.getPayload()).thenReturn(invoiceDto);
+        when(invoiceDto.getAccountReceivable()).thenReturn(accountReceivableDto);
+        when(accountReceivableDto.getBills()).thenReturn(List.of(billDto1, billDto2));
+
+        when(billDto1.getModuleId()).thenReturn(guid1.toString());
+        when(billDto1.getModuleTypeCode()).thenReturn(Constants.SHIPMENT);
+        when(billDto2.getModuleId()).thenReturn(guid2.toString());
+        when(billDto2.getModuleTypeCode()).thenReturn(Constants.SHIPMENT);
+
+        when(shipmentDao.findByGuids(anyList())).thenReturn(List.of(shipment1, shipment2));
+        when(jsonHelper.convertValue(any(EventsRequest.class), eq(Events.class))).thenReturn(mockEvent);
+
+        doNothing().when(commonUtils).updateEventWithMasterData(anyList());
+        doNothing().when(eventDao).updateEventDetails(any());
+
+        when(eventDao.findAll(any(), any())).thenReturn(Page.empty());
+//        doNothing().when(eventDao).delete(any());
+        when(eventDao.save(any())).thenReturn(mockEvent);
+
+        // Act
+        eventService.processUpstreamBillingCommonEventMessage(billingInvoiceDto);
+
+        // Assert
+        verify(shipmentDao).findByGuids(List.of(guid1, guid2));
+        verify(eventDao, times(2)).save(any());
+        verify(commonUtils, times(2)).updateEventWithMasterData(anyList());
+        verify(eventDao, never()).delete(any()); // No duplicate events, so delete should not be called
+    }
+
+    @Test
+    void populateBranchNames_shouldReturnEarly_whenEventResponsesIsNull() {
+        // Act
+        eventService.populateBranchNames(null);
+
+        // Assert
+        // No interactions with v1Service or jsonHelper
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void populateBranchNames_shouldReturnEarly_whenEventResponsesIsEmpty() {
+        // Act
+        eventService.populateBranchNames(Collections.emptyList());
+
+        // Assert
+        verifyNoInteractions(v1Service, jsonHelper);
+    }
+
+    @Test
+    void populateBranchNames_shouldReturnEarly_whenV1ServiceReturnsNull() {
+        // Arrange
+        List<EventsResponse> responses = List.of(new EventsResponse());
+        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(null);
+
+        // Act
+        eventService.populateBranchNames(responses);
+
+        // Assert
+        verify(v1Service).listCousinBranches(Collections.emptyMap());
+        verifyNoInteractions(jsonHelper);
+    }
+
+
+    @Test
+    void populateBranchNames_shouldReturnEarly_whenEntitiesInResponseIsNull() {
+        // Arrange
+        List<EventsResponse> responses = List.of(new EventsResponse());
+        V1DataResponse response = new V1DataResponse();
+        response.setEntities(null);
+
+        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(response);
+
+        // Act
+        eventService.populateBranchNames(responses);
+
+        // Assert
+        verify(v1Service).listCousinBranches(Collections.emptyMap());
+        verifyNoInteractions(jsonHelper);
+    }
+
+    @Test
+    void populateBranchNames_shouldHandleV1ServiceExceptionGracefully() {
+        // Arrange
+        List<EventsResponse> responses = List.of(new EventsResponse());
+        when(v1Service.listCousinBranches(Collections.emptyMap())).thenThrow(new V1ServiceException("failed"));
+
+        // Act
+        eventService.populateBranchNames(responses);
+
+        // Assert
+        verify(v1Service).listCousinBranches(Collections.emptyMap());
+    }
+
+    @Test
+    void populateBranchNames_shouldHandleGenericExceptionGracefully() {
+        // Arrange
+        List<EventsResponse> responses = List.of(new EventsResponse());
+        V1DataResponse dataResponse = new V1DataResponse();
+        dataResponse.setEntities(List.of(new Object())); // raw data
+
+        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class)))
+                .thenThrow(new RuntimeException("conversion failed"));
+
+        // Act
+        eventService.populateBranchNames(responses);
+
+        // Assert
+        verify(jsonHelper).convertValueToList(any(), eq(V1TenantResponse.class));
+    }
+
+    @Test
+    void populateBranchNames_shouldPopulateBranchNames_whenCodeMatchExists() {
+        // Arrange
+        EventsResponse response1 = new EventsResponse();
+        response1.setBranch("DXB");
+
+        EventsResponse response2 = new EventsResponse();
+        response2.setBranch("DEL");
+
+        List<EventsResponse> eventResponses = List.of(response1, response2);
+
+        V1TenantResponse tenant1 = new V1TenantResponse();
+        tenant1.setCode("DXB");
+        tenant1.setDisplayName("Dubai");
+
+        V1TenantResponse tenant2 = new V1TenantResponse();
+        tenant2.setCode("DEL");
+        tenant2.setDisplayName("Delhi");
+
+        V1DataResponse dataResponse = new V1DataResponse();
+        dataResponse.setEntities(List.of(tenant1, tenant2));
+
+        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class))
+                .thenReturn(List.of(tenant1, tenant2));
+
+        // Act
+        eventService.populateBranchNames(eventResponses);
+
+        // Assert
+        assertEquals("Dubai", response1.getBranchName());
+        assertEquals("Delhi", response2.getBranchName());
+    }
+
+    @Test
+    void populateBranchNames_shouldNotSetBranchName_whenCodeNotFoundInMap() {
+        // Arrange
+        EventsResponse response = new EventsResponse();
+        response.setBranch("ABC");
+
+        V1TenantResponse tenant = new V1TenantResponse();
+        tenant.setCode("XYZ");
+        tenant.setDisplayName("Unknown");
+
+        V1DataResponse dataResponse = new V1DataResponse();
+        dataResponse.setEntities(List.of(tenant));
+
+        when(v1Service.listCousinBranches(Collections.emptyMap())).thenReturn(dataResponse);
+        when(jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class))
+                .thenReturn(List.of(tenant));
+
+        // Act
+        eventService.populateBranchNames(List.of(response));
+
+        // Assert
+        assertNull(response.getBranchName());
+    }
 
 }

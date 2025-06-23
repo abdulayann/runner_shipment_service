@@ -1,13 +1,11 @@
 package com.dpw.runner.shipment.services.adapters.config;
 
-import org.apache.http.HttpHost;
-import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
@@ -26,6 +24,14 @@ public class V1Config {
         HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);
         requestFactory.setConnectTimeout(60 * 1000);
         requestFactory.setReadTimeout(60 * 1000);
-        return new RestTemplate(requestFactory);
+
+        RestTemplate restTemplate = new RestTemplate(requestFactory);
+        restTemplate.getInterceptors().add((request, body, execution) -> {
+            HttpHeaders headers = request.getHeaders();
+            headers.add("SourceServiceType", "Shipment");
+            return execution.execute(request, body);
+        });
+
+        return restTemplate;
     }
 }

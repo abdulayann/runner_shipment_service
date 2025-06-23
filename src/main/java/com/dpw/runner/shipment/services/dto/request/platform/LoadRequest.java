@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request.platform;
 
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

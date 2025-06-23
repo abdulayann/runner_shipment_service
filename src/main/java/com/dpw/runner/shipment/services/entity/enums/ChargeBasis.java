@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Getter;
 
 @Getter
+@Generated
 public enum ChargeBasis {
     FLAT_AMOUNT(1, "Flat Amount"),
     CHARGEABLE_WEIGHT(2, "Chargeable Weight"),

@@ -9,5 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 @ToString
 public class ImportShipmentResponse implements IRunnerResponse {
-    String ShipmentId;
+    String shipmentId;
+    String message;
 }

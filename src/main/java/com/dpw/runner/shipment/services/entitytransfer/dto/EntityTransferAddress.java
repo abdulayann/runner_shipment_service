@@ -3,9 +3,13 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.enums.AddressTypes;
 import com.dpw.runner.shipment.services.entitytransfer.enums.RegStatus;
-import lombok.*;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @ToString
@@ -13,6 +17,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferAddress implements IEntityTranferBaseEntity {
+
+    @JsonProperty("Id")
+    private long id;
     public Long OrgId;
     public String AddressShortCode;
     public String CompanyName;
@@ -51,7 +58,10 @@ public class EntityTransferAddress implements IEntityTranferBaseEntity {
     public LocalDateTime ExemptionStartDate;
     public LocalDateTime ExemptionExpiryDate;
     public String ExemptionSection;
-    public int RAKCType;
+    @JsonProperty("RegulatedAgent")
+    private Boolean regulatedAgent;
+    @JsonProperty("KnownConsignor")
+    private Boolean knownConsignor;
     public String KCRANumber;
     public String KCRAExpiry;
 }

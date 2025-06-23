@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Set;
 
 public interface IHblService extends ICommonService {
 
@@ -18,7 +19,7 @@ public interface IHblService extends ICommonService {
     ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel buildRequest);
     ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel buildRequest) throws RunnerException;
     ResponseEntity<IRunnerResponse> saveV1Hbl(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
-    Hbl checkAllContainerAssigned(ShipmentDetails shipment, List<Containers> containersList, List<Packing> packings);
+    Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings);
     ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException;
 
 }

@@ -1,11 +1,6 @@
 package com.dpw.runner.shipment.services.commons.responses;
 
 
-import java.io.Serializable;
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +11,7 @@ import lombok.NoArgsConstructor;
  *  * Generic List response.
  *
  */
-@SuppressWarnings("rawtypes")
+@SuppressWarnings({"rawtypes", "java:S1948"})
 @Data
 @Builder
 @NoArgsConstructor

@@ -119,4 +119,12 @@ public class PackingRequestV2 implements IRunnerRequest {
     private String HandlingInfo;
     @JsonProperty("CommodityGroup")
     private String commodityGroup;
+    @JsonProperty("UnNumberAir")
+    private String unNumberAir;
+    @JsonProperty("DgClassAir")
+    private String dgClassAir;
+    @JsonProperty("DgClassAirDescription")
+    private String dgClassAirDescription;
+    @JsonProperty("TenantId")
+    private Integer tenantId;
 }

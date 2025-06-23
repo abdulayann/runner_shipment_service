@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import java.security.SecureRandom;
 
 /**
  * this helper is used to implement all common methods in all projects like utils function
  */
-@Generated
 public class StringUtility {
     private StringUtility(){}
     public static final SecureRandom random = new SecureRandom();
@@ -36,13 +36,10 @@ public class StringUtility {
                 .toString();
     }
 
-    public static String getEmptyString() {
-        return "";
-    }
 
     public static String convertToString(Object object) {
         if (object == null)
-            return getEmptyString();
+            return Constants.EMPTY_STRING;
 
         return String.valueOf(object);
     }

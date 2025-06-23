@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class CustomConsolidationRequest implements IRunnerResponse, IRunnerRequest {
@@ -21,9 +21,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private Allocations Allocations;
     @JsonProperty("ArrivalDepartureDetails")
     private ArrivalDepartureDetails ArrivalDepartureDetails;
-
-    // @JsonProperty("Copy
-    // private Integer Copy;
 
     // Carrier details
     @JsonProperty("DestinationName")
@@ -62,15 +59,11 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String DOPlaceOfIssueName;
     @JsonProperty("EDITransactionId")
     private String EDITransactionId;
-    // @JsonProperty("EstimatedTerminalCutoff
-    // private LocalDateTime EstimatedTerminalCutoff;
 
     @JsonProperty("Guid")
     private UUID Guid;
     @JsonProperty("SourceGuid")
     private UUID SourceGuid;
-//    @JsonProperty("Id")
-//    private Long Id;
     @JsonProperty("IntraBranch")
     private boolean IntraBranch;
     @JsonProperty("InwardDateandTime")
@@ -164,7 +157,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String SMTPIGMNumberCaps;
 
     @JsonProperty("ShipmentGuids")
-    private List<UUID> ShipmentGuids;
+    private Map<UUID, Integer> shipmentGuids;
 
     @JsonProperty("SendingAgent")
     private PartyRequestV2 SendingAgent;
@@ -191,8 +184,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String Type;
    @JsonProperty("ConsolidationNumber")
     private String ConsolidationNumber;
-    // @JsonProperty("ConsolidationId
-    // private Long ConsolidationId;
     @JsonProperty("TransportMode")
     private String TransportMode;
     @JsonProperty("DeliveryMode")
@@ -243,16 +234,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String ServiceLevel;
     @JsonProperty("Payment")
     private String Payment;
-//    @JsonProperty("ConsolidationContainers
-//    private List<ConsolidationContainersRow> ConsolidationContainers;
-
-//    @JsonProperty("CommonContainers
-//    private List<CommonContainersRequest> CommonContainers;
-
-    // @JsonProperty("Shipments
-    // private List<ShipmentsRow> Shipments;
-//    @JsonProperty("Routings
-//    private List<RoutingsRow> Routings;
     @JsonProperty("SendingAgentId")
     private Long SendingAgentId;
     @JsonProperty("SendingAgentAddressId")
@@ -370,7 +351,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("CutoffDate")
     private LocalDateTime CutoffDate;
     @JsonProperty("Hazardous")
-    private boolean Hazardous;
+    private Boolean hazardous;
     @JsonProperty("DGClass")
     private String DGClass;
     @JsonProperty("DGSubstance")
@@ -407,16 +388,6 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private BigDecimal ConsolidationChargeQuantity;
     @JsonProperty("ConsolidationChargeQuantityUnit")
     private String ConsolidationChargeQuantityUnit;
-//    @JsonProperty("DGClasses
-//    private List<DGRow> DGClasses;
-//    @JsonProperty("DGSubstances
-//    private List<DGSubstanceRow> DGSubstances;
-    // @JsonProperty("TempClasses
-    // private List<TemperatureClassRow> TempClasses;
-//    @JsonProperty("ReferenceNumbers
-//    private List<ReferenceNumbersRow> ReferenceNumbers;
-//    @JsonProperty("ConsolidationAddresses
-//    private List<ConsolidationAddressRow> ConsolidationAddresses;
 
     @JsonProperty("ShipmentIds")
     private List<Long> ShipmentIds;
@@ -458,18 +429,12 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private Integer Bookingstatus;
     @JsonProperty("BookingId")
     private String BookingId;
-//    @JsonProperty("ShipmentOrders
-//    private List<OrdersRow> ShipmentOrders;
-//    @JsonProperty("Docs
-//    private List<FileRepoRow> Docs;
     @JsonProperty("IsCharter")
     private boolean IsCharter;
     @JsonProperty("IsCargoOnly")
     private boolean IsCargoOnly;
     @JsonProperty("IsLinked")
     private boolean IsLinked;
-//    @JsonProperty("consolidatedBill
-//    private List<BillRow> consolidatedBill;
 
     //for print
     @JsonProperty("SendingAgentName")
@@ -536,4 +501,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String CreatedBy;
     @JsonProperty("CreatedDate")
     private LocalDateTime CreatedDate;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
 }

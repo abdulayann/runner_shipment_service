@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum ShipmentStatus {
     Created (0, "Created"),
     Booked (1, "Booked"),
@@ -10,7 +11,8 @@ public enum ShipmentStatus {
     GenerateHBL (6, "HBL Generated"),
     GenerateHAWB (7, "HAWB Generated"),
     Arrived (8, "Arrived"),
-    FinanceClosure (9 , "Finance Closure");
+    FinanceClosure (9 , "Finance Closure"),
+    NonMovement (10, "Non-Movement");
 
     private final int value;
     private final String description;

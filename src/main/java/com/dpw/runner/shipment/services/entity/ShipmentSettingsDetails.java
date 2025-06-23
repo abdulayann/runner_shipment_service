@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -25,6 +26,8 @@ import java.util.List;
 @SQLDelete(sql = "UPDATE shipment_setting SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class ShipmentSettingsDetails extends MultiTenancy {
+    private static final long serialVersionUID = 1L;
+
     @Column(name = "house_bill_number_lock")
     private Boolean houseBillNumberLock;
 
@@ -92,8 +95,9 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean isAtdAtaAutoPopulateEnabled;
 
     @Column(name = "restricted_locations")
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))//    @OneToMany(fetch = FetchType.EAGER)
+    @BatchSize(size = 50)
     private List<String> restrictedLocations;
 
     @Column(name = "shipment_console_import_approver_role")
@@ -123,10 +127,12 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Where(clause = "is_front_print = true")
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<HblTermsConditionTemplate> hblTermsConditionTemplate;
 
     @Where(clause = "is_front_print = false")
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<HblTermsConditionTemplate> hblHawbBackPrintTemplate;
 
     // CommonSettings
@@ -197,6 +203,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private String defaultFailureEmailIds;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<EmailTemplates> emailTemplates;
 
     // Quote Settings
@@ -461,9 +468,11 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean customisedSequence;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<TenantProducts> tenantProducts;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentSettingsId")
+    @BatchSize(size = 50)
     private List<ProductSequenceConfig> productSequenceConfig;
 
     //AWB Lock Settings
@@ -508,4 +517,93 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "disable_bl_parties_name")
     private Boolean disableBlPartiesName;
+
+    @Column(name = "air_dg_flag")
+    private Boolean airDGFlag;
+
+    @Column(name = "iata_tact_flag")
+    private Boolean iataTactFlag;
+
+    @Column(name = "enable_lcl_consolidation")
+    private Boolean enableLclConsolidation;
+
+    @Column(name = "booking_order")
+    private String bookingOrder;
+
+    @Column(name = "booking_order_mbl")
+    private String bookingOrderForMbl;
+
+    @Column(name = "booking_order_air")
+    private String bookingOrderAir;
+
+    @Column(name = "booking_order_air_mawb")
+    private String bookingOrderAirForMawb;
+
+    @Column(name = "transport_instruction_pickup_order")
+    private String transportInstructionPickupOrder;
+
+    @Column(name = "transport_instruction_delivery_order")
+    private String transportInstructionDeliveryOrder;
+    @Column(name = "enable_party_check_for_consolidation")
+    private Boolean enablePartyCheckForConsolidation;
+
+    @Column(name = "csd")
+    private String csd;
+
+    @Column(name = "hide_manifest")
+    private Boolean hideManifest = true;
+
+    @Column(name = "is_entity_transfer_prerequisite_enabled_date")
+    private LocalDateTime isEntityTransferPrerequisiteEnabledDate = null;
+
+    @Column(name = "is_entity_transfer_prerequisite_enabled")
+    private Boolean isEntityTransferPrerequisiteEnabled = false;
+
+    @Column(name = "is_network_transfer_entity_enabled")
+    private Boolean isNetworkTransferEntityEnabled = false;
+
+    @Column(name = "is_automatic_transfer_enabled")
+    private Boolean isAutomaticTransferEnabled = false;
+
+    @Column(name = "is_nte_additional_emails_enabled")
+    private Boolean isNteAdditionalEmailsEnabled = false;
+
+    @Column(name = "events_revamp_enabled")
+    private Boolean eventsRevampEnabled;
+
+    @Column(name = "is_always_utilization")
+    private Boolean isAlwaysUtilization;
+
+    @Column(name = "is_utilization_for_container_quoted")
+    private Boolean isUtilizationForContainerQuoted;
+
+    @Column(name = "has_no_utilization")
+    private Boolean hasNoUtilization;
+
+    @Column(name = "is_awb_revamp_enabled")
+    private Boolean isAwbRevampEnabled;
+
+    @Column(name = "fcr_document")
+    private String fcrDocument;
+
+    @Column(name = "is_runner_v3_enabled")
+    private Boolean isRunnerV3Enabled;
+
+    @Column(name = "is_ra_enabled")
+    private Boolean isRAEnabled;
+
+    @Column(name = "is_kc_enabled")
+    private Boolean isKCEnabled;
+
+    @Column(name = "country_air_cargo_security")
+    private Boolean countryAirCargoSecurity;
+    
+    @Column(name = "pre_alert_email_and_logs")
+    private Boolean preAlertEmailAndLogs;
+
+    @Column(name = "is_amr_freight_enabled")
+    private Boolean isAmrAirFreightEnabled;
+
+    @Column(name = "is_external_file_transfer_enabled")
+    private Boolean isExternalFileTransferEnabled;
 }

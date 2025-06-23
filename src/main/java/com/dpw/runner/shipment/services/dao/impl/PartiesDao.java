@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -26,9 +25,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -67,7 +63,7 @@ public class PartiesDao implements IPartiesDao {
     public Parties updateEntityFromShipment(Parties parties) throws RunnerException {
         String responseMsg;
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             if (parties.getId() != null) {
                 long id = parties.getId();
                 Optional<Parties> oldEntity = findById(id);
@@ -90,18 +86,13 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
-            Map<Long, Parties> hashMap;
-//            if(!Objects.isNull(partiesIdList) && !partiesIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                Pair<Specification<Parties>, Pageable> pair = fetchData(listCommonRequest, Parties.class);
-                Page<Parties> parties = findAll(pair.getLeft(), pair.getRight());
-                hashMap = parties.stream()
+            // LATER- Handle Transactions here
+            List<Parties> parties = findByEntityIdAndEntityType(entityId, entityType);
+            Map<Long, Parties> hashMap = parties.stream()
                         .collect(Collectors.toMap(Parties::getId, Function.identity()));
-//            }
             Map<Long, Parties> copyHashMap = new HashMap<>(hashMap);
             List<Parties> partiesRequestList = new ArrayList<>();
-            if (partiesList != null && partiesList.size() != 0) {
+            if (partiesList != null && !partiesList.isEmpty()) {
                 for (Parties request : partiesList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -119,6 +110,10 @@ public class PartiesDao implements IPartiesDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType) {
+        return partiesRepository.findByEntityIdAndEntityType(entityId, entityType);
     }
 
     public List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType) {
@@ -144,6 +139,7 @@ public class PartiesDao implements IPartiesDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Parties.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -189,6 +185,7 @@ public class PartiesDao implements IPartiesDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Parties.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -214,6 +211,7 @@ public class PartiesDao implements IPartiesDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Parties.class))
                                         .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -237,7 +235,7 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         Map<UUID, Parties> partiesMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Parties entity:
                     oldEntityList) {
                 partiesMap.put(entity.getGuid(), entity);
@@ -246,7 +244,7 @@ public class PartiesDao implements IPartiesDao {
         try {
             Parties oldEntity;
             List<Parties> partiesRequestList = new ArrayList<>();
-            if (partiesList != null && partiesList.size() != 0) {
+            if (partiesList != null && !partiesList.isEmpty()) {
                 for (Parties request : partiesList) {
                     oldEntity = partiesMap.get(request.getGuid());
                     if(oldEntity != null) {
@@ -269,6 +267,11 @@ public class PartiesDao implements IPartiesDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public List<Parties> findByIds(List<Long> id) {
+        return partiesRepository.findByIdIn(id);
     }
 
 }

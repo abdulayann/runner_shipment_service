@@ -1,0 +1,27 @@
+{
+  "direction": "IMP",
+  "transportMode": "SEA",
+  "isDomestic": true,
+  "status": 1,
+  "shipmentType": "LCL",
+  "bookingReference": "REFERENCE",
+  "containersList": [
+    {
+      "containerNumber": "CONT1212",
+      "measurement": 11
+    },
+    {
+      "containerNumber": "CONT1213",
+      "measurement": 11
+    },
+    {
+      "measurement": 12
+    }
+  ],
+  "carrierDetails": {
+    "eta": "26-04-18 19:15:44",
+    "etd": "24-04-18 19:15:44",
+    "origin": "AEJEA",
+    "destination": "AEJEA"
+  }
+}

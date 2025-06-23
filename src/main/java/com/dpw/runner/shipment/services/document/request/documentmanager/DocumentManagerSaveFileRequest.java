@@ -8,7 +8,7 @@ import lombok.Data;
 public class DocumentManagerSaveFileRequest {
     private String entityType;
 
-    private Long entityId;
+    private String entityId;
 
     private String fileName;
 
@@ -29,4 +29,7 @@ public class DocumentManagerSaveFileRequest {
     private String docName;
     private String entityKey;
     private String childType;
+    private Boolean isTransferEnabled;
+    private String transportMode;
+    private String shipmentType;
 }

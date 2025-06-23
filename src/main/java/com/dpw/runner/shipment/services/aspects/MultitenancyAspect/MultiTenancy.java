@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
 import lombok.Data;
 import lombok.Getter;
 import org.hibernate.annotations.Filter;
@@ -13,6 +14,7 @@ import javax.persistence.Column;
 import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
 
+@SuppressWarnings({"java:S1710", "ALL"})
 @Data
 @MappedSuperclass
 @FilterDef(name = MultiTenancy.TENANT_FILTER_NAME,
@@ -31,6 +33,7 @@ public class MultiTenancy extends BaseEntity {
     public static final String TENANT_PARAMETER_NAME = "tenant_id";
     public static final String TENANT_COLUMN = "tenant_id";
 
-    @Column(name = "tenant_id")
+    @TenantIdData
+    @Column(name = "tenant_id", nullable = false, updatable = false)
     private Integer tenantId;
 }

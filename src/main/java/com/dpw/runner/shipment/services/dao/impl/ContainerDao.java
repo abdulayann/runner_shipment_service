@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -7,8 +8,10 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -33,9 +36,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.util.CollectionUtils;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -66,46 +70,51 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Containers save(Containers containers) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers) , Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
-        if(Boolean.TRUE.equals(containers.getHazardous()) && IsStringNullOrEmpty(containers.getDgClass())) {
+        if(Boolean.TRUE.equals(containers.getHazardous()) && isStringNullOrEmpty(containers.getDgClass())) {
             errors.add("DG class is mandatory for Hazardous Goods Containers");
         }
         if (! errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if(containers.getId() != null) {
-            long id = containers.getId();
-            Optional<Containers> oldEntity = findById(id);
-            if (!oldEntity.isPresent()) {
-                log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            containers.setCreatedAt(oldEntity.get().getCreatedAt());
-            containers.setCreatedBy(oldEntity.get().getCreatedBy());
-            if(containers.getShipmentsList() == null) {
-                containers.setShipmentsList(oldEntity.get().getShipmentsList());
-            }
-            if(containers.getEventsList() == null) {
-                containers.setEventsList(oldEntity.get().getEventsList());
-            }
-            if(containers.getTruckingDetails() == null) {
-                containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
-            }
+            updateExistingContainerData(containers);
         }
-        if(containers.getEventsList() != null && containers.getEventsList().size() > 0) {
+        if(containers.getEventsList() != null && !containers.getEventsList().isEmpty()) {
             for (Events events : containers.getEventsList()) {
                 events.setEntityType(Constants.CONTAINER);
             }
         }
-        if(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty()){
-            containers.setIsAttached(true);
-        }else{
-            containers.setIsAttached(false);
-        }
+        containers.setIsAttached(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty());
         return containerRepository.save(containers);
+    }
+
+    private void updateExistingContainerData(Containers containers) {
+        long id = containers.getId();
+        Optional<Containers> oldEntity = findById(id);
+        if (oldEntity.isEmpty()) {
+            log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        containers.setCreatedAt(oldEntity.get().getCreatedAt());
+        containers.setCreatedBy(oldEntity.get().getCreatedBy());
+        if(containers.getShipmentsList() == null) {
+            containers.setShipmentsList(oldEntity.get().getShipmentsList());
+        }
+        if(containers.getEventsList() == null) {
+            containers.setEventsList(oldEntity.get().getEventsList());
+        }
+        if(containers.getTruckingDetails() == null) {
+            containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
+        }
     }
 
     @Override
     public Page<Containers> findAll(Specification<Containers> spec, Pageable pageable) {
         return containerRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId) {
+        return containerRepository.findAllLiteContainer(consolidationId);
     }
 
     @Override
@@ -129,7 +138,7 @@ public class ContainerDao implements IContainerDao {
     }
 
     private void deleteByIds(List<Long> ids) {
-        if(ids != null && ids.size() > 0) {
+        if(ids != null && !ids.isEmpty()) {
             for (Long id: ids)
                 deleteById(id);
         }
@@ -149,7 +158,7 @@ public class ContainerDao implements IContainerDao {
             Map<Long, Containers> hashMap = containers.stream()
                     .collect(Collectors.toMap(Containers::getId, Function.identity()));
             List<Containers> containersRequestList = new ArrayList<>();
-            if (containersList != null && containersList.size() != 0) {
+            if (containersList != null && !containersList.isEmpty()) {
                 for (Containers request : containersList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -193,6 +202,7 @@ public class ContainerDao implements IContainerDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Containers.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
@@ -219,6 +229,7 @@ public class ContainerDao implements IContainerDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Containers.class))
                                         .parent(entity)
@@ -243,78 +254,19 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(fromConsolidation) {
-                    Map<Long, Containers> hashMap;
-                    ListCommonRequest listCommonRequest;
-//                    if(!Objects.isNull(containersIdList) && !containersIdList.isEmpty()) {
-                        listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
-                        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
-                        hashMap = containersPage.stream()
-                                .collect(Collectors.toMap(Containers::getId, Function.identity()));
-//                    }
-                    for (Containers containers: containerList) {
-                        containers.setConsolidationId(consolidationId);
-                        Long id = containers.getId();
-                        if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
-                            containers.setAllocationDate(LocalDateTime.now());
-                        if (id != null) {
-                            hashMap.remove(id);
-                        }
-                    }
-                    deleteContainers(hashMap, null, null);
-                    if(!hashMap.isEmpty()) {
-                        List<Long> deletedContIds = hashMap.keySet().stream().toList();
-                        if(deletedContIds.size() > 0) {
-                            listCommonRequest = constructListCommonRequest("containerId", deletedContIds, "IN");
-                            Pair<Specification<Packing>, Pageable> pair2 = fetchData(listCommonRequest, Packing.class);
-                            Page<Packing> packingPage = packingDao.findAll(pair2.getLeft(), pair2.getRight());
-                            if(packingPage != null && !packingPage.isEmpty()) {
-                                for (Packing packing : packingPage.getContent()) {
-                                    packing.setContainerId(null);
-                                }
-                                packingDao.saveAll(packingPage.getContent());
-                                try {
-                                    packingsSync.sync(packingPage.getContent(), UUID.randomUUID().toString());
-                                } catch (Exception e) {
-                                    log.error("Error performing sync on packings list, {}", e.getMessage());
-                                }
-                            }
-                        }
-                    }
+                    processConsolidationContainers(consolidationId, containerList);
                 }
                 if(shipmentId != null)
                 {
                     for (Containers container: containerList) {
                         container.setConsolidationId(consolidationId);
-                        if (Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber()))
+                        if (canSetAllocationDate(container))
                             container.setAllocationDate(LocalDateTime.now());
-                        String operation = DBOperationType.CREATE.name();
-                        Containers oldEntityJson = null;
-                        if(container.getId() != null)
-                        {
-                            Optional<Containers> oldEntity = this.findById(container.getId());
-                            if(oldEntity.isPresent())
-                            {
-                                operation = DBOperationType.UPDATE.name();
-                                oldEntityJson = modelMapper.map(oldEntity.get(), Containers.class);
-                            }
-                        }
-                        try {
-                            auditLogService.addAuditLog(
-                                    AuditLogMetaData.builder()
-                                            .newData(container)
-                                            .prevData(oldEntityJson)
-                                            .parent(ShipmentDetails.class.getSimpleName())
-                                            .parentId(shipmentId)
-                                            .operation(operation).build()
-                            );
-                        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-                            log.error(e.getMessage());
-                        }
+                        addAuditLogInShipmentConsole(shipmentId, container);
                     }
                 }
                 responseContainers = saveAll(containerList);
@@ -325,6 +277,74 @@ public class ContainerDao implements IContainerDao {
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private boolean canSetAllocationDate(Containers container) {
+        return Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber());
+    }
+
+    private void addAuditLogInShipmentConsole(Long shipmentId, Containers container) throws RunnerException {
+        String operation = DBOperationType.CREATE.name();
+        Containers oldEntityJson = null;
+        if(container.getId() != null)
+        {
+            Optional<Containers> oldEntity = this.findById(container.getId());
+            if(oldEntity.isPresent())
+            {
+                operation = DBOperationType.UPDATE.name();
+                oldEntityJson = ContainersMapper.INSTANCE.toContainers(oldEntity.get());
+            }
+        }
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(container)
+                            .prevData(oldEntityJson)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentId)
+                            .operation(operation).build()
+            );
+        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void processConsolidationContainers(Long consolidationId, List<Containers> containerList) {
+        List<Containers> containersPage = findByConsolidationId(consolidationId);
+        Map<Long, Containers> hashMap = containersPage.stream()
+                    .collect(Collectors.toMap(Containers::getId, Function.identity()));
+        for (Containers containers: containerList) {
+            containers.setConsolidationId(consolidationId);
+            Long id = containers.getId();
+            if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
+                containers.setAllocationDate(LocalDateTime.now());
+            if (id != null) {
+                hashMap.remove(id);
+            }
+        }
+        deleteContainers(hashMap, null, null);
+        processHashMap(hashMap);
+    }
+
+    private void processHashMap(Map<Long, Containers> hashMap) {
+        if(!hashMap.isEmpty()) {
+            List<Long> deletedContIds = hashMap.keySet().stream().toList();
+            if(!deletedContIds.isEmpty()) {
+                List<Packing> packings = packingDao.findByContainerIdIn(deletedContIds);
+                if(!CollectionUtils.isEmpty(packings)) {
+                    for (Packing packing : packings) {
+                        packing.setContainerId(null);
+                    }
+                    packingDao.saveAll(packings);
+                    try {
+                        packingsSync.sync(packings, UUID.randomUUID().toString());
+                    } catch (Exception e) {
+                        log.error("Error performing sync on packings list, {}", e.getMessage());
+                    }
+                }
+            }
         }
     }
 
@@ -342,17 +362,11 @@ public class ContainerDao implements IContainerDao {
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
         List<Long> deleteContIds = new ArrayList<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Containers containers:
-                 oldEntityList) {
-                containersMap.put(containers.getGuid(), containers);
-                deleteContIds.add(containers.getId());
-            }
-        }
+        processOldEntityList(oldEntityList, containersMap, deleteContIds);
         Containers oldContainer;
         try {
-            // TODO- Handle Transactions here
-            if (containersList != null && containersList.size() != 0) {
+            // LATER- Handle Transactions here
+            if (containersList != null && !containersList.isEmpty()) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 for (Containers containers: containerList) {
                     if(containersMap.containsKey(containers.getGuid())) {
@@ -366,7 +380,7 @@ public class ContainerDao implements IContainerDao {
                 }
                 responseContainers = saveAll(containerList);
             }
-            if(deleteContIds.size() > 0) {
+            if(!deleteContIds.isEmpty()) {
                 deleteByIds(deleteContIds);
             }
             return responseContainers;
@@ -378,12 +392,22 @@ public class ContainerDao implements IContainerDao {
         }
     }
 
+    private void processOldEntityList(List<Containers> oldEntityList, Map<UUID, Containers> containersMap, List<Long> deleteContIds) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+            for (Containers containers:
+                    oldEntityList) {
+                containersMap.put(containers.getGuid(), containers);
+                deleteContIds.add(containers.getId());
+            }
+        }
+    }
+
     @Override
     public List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldEntityList) throws RunnerException {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Containers containers:
                     oldEntityList) {
                 containersMap.put(containers.getGuid(), containers);
@@ -391,8 +415,8 @@ public class ContainerDao implements IContainerDao {
         }
         Containers oldContainer;
         try {
-            // TODO- Handle Transactions here
-            if (containersList != null && containersList.size() != 0) {
+            // LATER- Handle Transactions here
+            if (containersList != null && !containersList.isEmpty()) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 for (Containers containers: containerList) {
                     if(containersMap.containsKey(containers.getGuid())) {
@@ -426,4 +450,17 @@ public class ContainerDao implements IContainerDao {
         return containerRepository.findByConsolidationId(consolidationId);
     }
 
+    @Override
+    public List<Containers> findByConsolidationIdIn(List<Long> consolidationIds) {
+        return containerRepository.findByConsolidationIdIn(consolidationIds);
+    }
+    @Override
+    public List<Containers> findByIdIn(List<Long> containerIds) {
+        return containerRepository.findByIdIn(containerIds);
+    }
+
+    @Override
+    public void deleteByIdIn(List<Long> containerIds) {
+        containerRepository.deleteAllById(containerIds);
+    }
 }

@@ -7,12 +7,9 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 
 @Entity
@@ -28,9 +25,6 @@ public class Allocations extends MultiTenancy {
 
     @Column(name = "shipments_count")
     private Integer shipmentsCount;
-
-    @Column(name = "hazardous")
-    private Boolean hazardous;
 
     @Column(name = "cutoff_date")
     private LocalDateTime cutoffDate;

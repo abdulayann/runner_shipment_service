@@ -5,11 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 @SuppressWarnings("rawtypes")
-@Generated
 public class ObjectUtility {
     private ObjectUtility(){}
 
-    public static Map<String, Class> getAllFields(final Class<?> type, Map<String, Class> fields) {
+    public static <T> Map<String, Class<T>> getAllFields(final Class<?> type, Map<String, Class<T>> fields) {
         if(fields == null) {
             fields = new HashMap<>();
         }
@@ -17,7 +16,7 @@ public class ObjectUtility {
             return fields;
         }
         for (Field field : type.getDeclaredFields()) {
-            fields.put(field.getName(), field.getType());
+            fields.put(field.getName(), (Class<T>) field.getType());
         }
         if(type.getSuperclass() != null) {
             getAllFields(type.getSuperclass(), fields);

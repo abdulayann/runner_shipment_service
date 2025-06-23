@@ -18,20 +18,21 @@ import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
+@Generated
 public class ShipmentReverseSync implements IShipmentReverseSync {
 
     @Autowired
@@ -52,18 +53,14 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             CustomShipmentSyncRequest cs = (CustomShipmentSyncRequest) commonRequestModel.getData();
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return new ResponseEntity<>(HttpStatus.OK);
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
+                return ResponseHelper.buildSuccessResponse();
             }
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);
             mapReverseShipmentGuids(sd, cs);
             mapShipmentServiceReverse(cs, sd);
 
-//            // Clarity required
-//            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
-//                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
-//            }
             sd.setLockedBy(cs.getLockedByUser());
             sd.setSourceGuid(cs.getSourceGuid());
 
@@ -84,11 +81,12 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setConsignorCountry(cs.getConsignorCountryFilter());
             sd.setNotifyPartyCountry(cs.getNotifyPartyCountryFilter());
             sd.setShipmentCreatedOn(cs.getCreatedDate());
+            sd.setCreatedAt(cs.getInsertDate());
             sd.setVolumetricWeight(cs.getVolumeWeight());
             sd.setVolumetricWeightUnit(cs.getWeightVolumeUnit());
-            if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))
+            if(!isStringNullOrEmpty(cs.getPrevShipmentStatusString()))
                 sd.setPrevShipmentStatus(ShipmentStatus.valueOf(cs.getPrevShipmentStatusString()).getValue());
-            if(!IsStringNullOrEmpty(cs.getStatusString()))
+            if(!isStringNullOrEmpty(cs.getStatusString()))
                 sd.setStatus(ShipmentStatus.valueOf(cs.getStatusString()).getValue());
 
             sd.setConsigner(mapPartyObjectWithFreetext(cs.getConsignerParty(), cs.getIsConsignerFreeTextAddress(), cs.getConsignerFreeTextAddress()));
@@ -103,7 +101,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             if(cs.getPackings_() != null)
                 map = cs.getPackings_().stream().filter(x-> x.getContainerNumber() != null).collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
             sd.setPackingList(syncEntityConversionService.packingsV1ToV2(cs.getPackings_()));
-            sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
@@ -123,13 +120,12 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     private void mapReverseShipmentGuids(ShipmentDetails response, CustomShipmentSyncRequest request) {
         if(request == null || request.getConsolidationGuids() == null)
             return;
-        List<ConsolidationDetails> req = request.getConsolidationGuids().stream()
-                .map(item -> {
-                    ConsolidationDetails p = new ConsolidationDetails();
-                    p.setGuid(item);
-                    return p;
-                })
-                .toList();
+        Set<ConsolidationDetails> req = new HashSet<>();
+        request.getConsolidationGuids().forEach((key, value) -> {
+            ConsolidationDetails p = new ConsolidationDetails();
+            p.setGuid(key);
+            req.add(p);
+        });
         response.setConsolidationList(req);
     }
 
@@ -167,16 +163,16 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
         additionalDetails.setNotifyParty(mapPartyObjectWithFreetext(cs.getNotifyParty(), cs.getIsNotifyPartyFreeTextAddress(), cs.getNotifyPartyFreeTextAddress()));
-        if(!IsStringNullOrEmpty(cs.getAndesStatusString()))
+        if(!isStringNullOrEmpty(cs.getAndesStatusString()))
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
-        if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
+        if(!isStringNullOrEmpty(cs.getOwnershipString())) {
             additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
             if(additionalDetails.getOwnership().equals(Ownership.Self))
                 additionalDetails.setOwnershipName(cs.getOwnershipName());
             else
                 additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));
         }
-        if(!IsStringNullOrEmpty(cs.getPassedByString()))
+        if(!isStringNullOrEmpty(cs.getPassedByString()))
             additionalDetails.setPassedBy(Ownership.valueOf(cs.getPassedByString()));
         additionalDetails.setBOEDate(cs.getBoedate());
         additionalDetails.setBOENumber(cs.getBoenumber());
@@ -207,9 +203,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             return;
         List<ServiceDetails> res = cs.getServicesList().stream().map(
                 i -> {
-                    var _service = modelMapper.map(i, ServiceDetails.class);
-                    _service.setServiceDuration(i.getServiceDurationSpan());
-                    return _service;
+                    var serviceDetails = modelMapper.map(i, ServiceDetails.class);
+                    serviceDetails.setServiceDuration(i.getServiceDurationSpan());
+                    return serviceDetails;
                 }
         ).toList();
         sd.setServicesList(res);

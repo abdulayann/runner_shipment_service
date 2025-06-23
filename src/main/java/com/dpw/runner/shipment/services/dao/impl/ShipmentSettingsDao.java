@@ -1,10 +1,13 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
+import com.dpw.runner.shipment.services.service.impl.CacheEvictionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -20,12 +23,17 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     @Autowired
     private IShipmentSettingsRepository shipmentSettingsRepository;
 
+    @Autowired
+    private CacheEvictionService cacheEvictionService;
+
     @Override
     public ShipmentSettingsDetails save(ShipmentSettingsDetails shipmentSetting) {
         if (shipmentSetting.getCancelledBLSuffix() != null && shipmentSetting.getCancelledBLSuffix().length() > 5) {
             throw new ValidationException("Maximum allowed characters is only upto 5 for cancelled bl suffix");
         }
-        return shipmentSettingsRepository.save(shipmentSetting);
+        shipmentSetting = shipmentSettingsRepository.save(shipmentSetting);
+        cacheEvictionService.clearCacheByName(CacheConstants.CACHE_KEY_USER, CacheConstants.SHIPMENT_SETTINGS + shipmentSetting.getTenantId());
+        return shipmentSetting;
     }
 
     @Override
@@ -59,12 +67,23 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     }
 
     @Override
+    public Boolean getCustomisedSequence() {
+        return shipmentSettingsRepository.getCustomisedSequence();
+    }
+
+    @Override
     public List<ShipmentSettingsDetails> getSettingsByTenantIds(List<Integer> tenantId) {
         return shipmentSettingsRepository.getTenantSetting(tenantId);
     }
 
     @Override
     public Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId) {
+        return shipmentSettingsRepository.findByTenantId(tenantId);
+    }
+
+    @Override
+    @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
+    public Optional<ShipmentSettingsDetails> getSettingsByTenantIdWithCache(Integer tenantId) {
         return shipmentSettingsRepository.findByTenantId(tenantId);
     }
 }

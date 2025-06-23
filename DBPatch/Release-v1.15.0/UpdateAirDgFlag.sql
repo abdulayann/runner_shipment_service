@@ -1,0 +1,1 @@
+update shipment_setting set air_dg_flag = true;

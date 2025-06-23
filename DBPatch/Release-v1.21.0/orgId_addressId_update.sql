@@ -1,0 +1,1 @@
+UPDATE parties SET org_id = org_data->'Id', address_id  = address_data -> 'Id'

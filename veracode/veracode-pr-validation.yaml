@@ -4,7 +4,7 @@ pool:
   name: Runner-self-hosted-agent
 
 variables:
-- template: pipelines/veracode/veracode-variables.yaml@devops_template
+- template: variable-templates/scanjob-variables.yaml@baseline_project_repo
 
 resources:
   repositories:
@@ -16,9 +16,11 @@ resources:
     name: veracode/_git/veracode
     endpoint: Connection-to-veracode-org
     type: git
-    ref: main
+    ref: dpwhotfsonline
 
 jobs:
 - template: pipelines/veracode/veracode-mvn.yaml@devops_template
   parameters:
-    mavenPath: pom.xml
+    pom_path: pom.xml
+    java_version: '1.17'
+    jar_file_name: runner-shipment-services-0.0.1.jar

@@ -14,7 +14,9 @@ import java.util.Map;
 public class SendConsolidationRequest implements IRunnerRequest {
     private Long consolId;
     private List<Integer> sendToBranch;
+    private Map<String, List<Integer>> shipmentGuidSendToBranch;
     private List<String> sendToOrg;
     private List<String> additionalDocs;
     private Map<String, List<String>> shipAdditionalDocs;
+    private Boolean isAutomaticTransfer;
 }

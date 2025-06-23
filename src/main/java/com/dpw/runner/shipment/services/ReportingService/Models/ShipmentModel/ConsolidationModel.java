@@ -1,16 +1,16 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TriangulationPartnerModel;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -163,6 +163,8 @@ public class ConsolidationModel implements IDocumentModel {
     private long sourceTenantId;
     @JsonProperty("EdiTransactionId")
     private String ediTransactionId;
+    @JsonProperty("TriangulationPartnerList")
+    private List<TriangulationPartnerModel> triangulationPartnerList;
     @JsonProperty("TriangulationPartner")
     private long triangulationPartner;
     @JsonProperty("ReceivingBranch")
@@ -224,4 +226,24 @@ public class ConsolidationModel implements IDocumentModel {
     private List<Long> shipmentIds;
     @JsonProperty("ConsolidationAddresses")
     private List<PartiesModel> consolidationAddresses;
+    @JsonProperty("Hazardous")
+    private Boolean hazardous;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
+    @JsonProperty("screeningStatus")
+    private List<String> screeningStatus;
+    @JsonProperty("exemptionCodes")
+    private String exemptionCodes;
+    @JsonProperty("aomFreeText")
+    private String aomFreeText;
+    @JsonProperty("securityStatus")
+    private String securityStatus;
+    @JsonProperty("consoleGrossWeightAndUnit")
+    private String consoleGrossWeightAndUnit;
+    @JsonProperty("Sci")
+    private String sci;
+    @JsonProperty("AdditionalSecurityInformation")
+    private String additionalSecurityInformation;
 }

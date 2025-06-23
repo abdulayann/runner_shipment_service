@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -66,5 +67,6 @@ public class MawbStocks extends MultiTenancy {
     private String borrowedFromFullName;
 
     @OneToMany(mappedBy = "parentId", orphanRemoval = true)
+    @BatchSize(size = 50)
     private List<MawbStocksLink> mawbStocksLinkRows;
 }

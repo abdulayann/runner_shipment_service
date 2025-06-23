@@ -5,9 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.persistence.Column;
-import java.util.UUID;
-
 @Getter
 @Setter
 @ApiModel("Reference Numbers Request Model")
@@ -23,4 +20,5 @@ public class ReferenceNumbersRequest extends CommonRequest implements IRunnerReq
     private String referenceNumber;
     private Long shipmentId;
     private Boolean isPortalEnable;
+    private Long bookingId;
 }

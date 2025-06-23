@@ -1,13 +1,19 @@
 package com.dpw.runner.shipment.services.notification.request;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Getter
 @Setter
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
+@SuppressWarnings("java:S1948")
 public class SendEmailBaseRequest implements Serializable {
     private String to;
     private String cc;
@@ -21,4 +27,7 @@ public class SendEmailBaseRequest implements Serializable {
     private String userName;
     private String branchId;
     private String userId;
+    private List<TagsData> tags;
+    private List<Object> attachments;
+    private Boolean sendMeCopy;
 }

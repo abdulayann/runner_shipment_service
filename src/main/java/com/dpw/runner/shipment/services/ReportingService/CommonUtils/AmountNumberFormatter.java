@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
@@ -11,20 +12,22 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Objects;
 
-import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.DisplayFormat;
 import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.formatValue;
 
 
 public class AmountNumberFormatter {
     private AmountNumberFormatter(){}
 
-    public static String Format(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
+    public static String format(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
         String formattedAmount = null;
 
         if (amount != null) {
 
             var user = UserContext.getUser();
             int numberDecimalDigits = 2;
+
+            if (!Objects.isNull(tenantSettings.getCurrencyDecimalPlace()))
+                numberDecimalDigits = tenantSettings.getCurrencyDecimalPlace();
 
             if (tenantSettings.getRoundoffLocalCurrencyAmount() != null
                     && tenantSettings.getRoundoffLocalCurrencyAmount() && Objects.equals(localCurrency, user.CompanyCurrency)) {
@@ -44,7 +47,7 @@ public class AmountNumberFormatter {
 
     public static String displayFormat(BigDecimal amount, int numberDecimalDigits, V1TenantSettingsResponse tenantSettings) {
         if (amount != null) {
-            return DisplayFormat(amount, numberDecimalDigits, tenantSettings);
+            return IReport.displayFormat(amount, numberDecimalDigits, tenantSettings, false);
         }
         return null;
     }
@@ -87,7 +90,7 @@ public class AmountNumberFormatter {
         }
     }
 
-    public static String FormatExchangeRate(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
+    public static String formatExchangeRate(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
         if (amount == null)
             return null;
         NumberFormat customFormat = NumberFormat.getNumberInstance(Locale.US);

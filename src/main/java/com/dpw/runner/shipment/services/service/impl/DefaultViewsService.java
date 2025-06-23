@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-
 @SuppressWarnings("ALL")
 @Service
 @Slf4j
@@ -173,9 +171,7 @@ public class DefaultViewsService implements IDefaultViewsService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(view -> {
-            responseList.add(convertEntityToDto(view));
-        });
+        lst.forEach(view -> responseList.add(convertEntityToDto(view)));
         return responseList;
     }
 

@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -15,9 +16,12 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @Data
+@SuppressWarnings("java:S1948")
 public class PlatformCreateRequest extends CommonRequest implements IRunnerRequest {
     @JsonProperty(value = "booking_reference_code")
     private String booking_ref_code;
+    @JsonProperty(value = "branch_id")
+    private Integer branchId;
     private String business_code;
     private String origin_code;
     private String destination_code;
@@ -33,4 +37,31 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private List<OrgRequest> bill_to_party;
     private String parent_contract_id;
     private ListContractResponse.BranchInfo branch_info;
+    @JsonProperty(value = "min_transit_hours")
+    private String minTransitHours;
+    @JsonProperty(value = "max_transit_hours")
+    private String maxTransitHours;
+    @JsonProperty(value = "carrier_code")
+    private String mainLegCarrierCode;
+    @JsonProperty(value = "carrier_display_name")
+    private String carrierDisplayName;
+    @JsonProperty(value = "vessel_name")
+    private String vesselName;
+    private String voyage;
+    private LocalDateTime eta;
+    private LocalDateTime ets;
+    private LocalDateTime ata;
+    private LocalDateTime ats;
+    @JsonProperty(value = "transport_mode")
+    private String transportMode;
+    @JsonProperty(value = "shipment_movement")
+    private String shipmentMovement;
+    @JsonProperty(value = "is_hazardous")
+    private Boolean isDg;
+    private String source;
+    private String status;
+    @JsonProperty(value = "reference_numbers")
+    private List<ReferenceNumbersRequest> referenceNumbers;
+    private List<Map<String, Object>> addresses;
+    private List<PurchaseOrdersResponse> purchase_orders;
 }

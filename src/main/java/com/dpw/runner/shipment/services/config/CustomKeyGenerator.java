@@ -2,14 +2,20 @@ package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Method;
-
 @Component("customKeyGenerator")
+@Generated
+@Slf4j
 public class CustomKeyGenerator implements KeyGenerator {
 
     @Value("${env.name}")
@@ -31,6 +37,11 @@ public class CustomKeyGenerator implements KeyGenerator {
                         .append(StringUtility.convertToString(params[0]));
                 break;
 
+            case CacheConstants.GET_SHIPMENT_SETTINGS:
+                keyBuilder.append(CacheConstants.SHIPMENT_SETTINGS)
+                        .append(StringUtility.convertToString(params[0]));
+                break;
+
             default:
                 keyBuilder.append(method.getName())
                         .append("_");
@@ -49,6 +60,8 @@ public class CustomKeyGenerator implements KeyGenerator {
     }
 
     public StringBuilder customCacheKeyForMasterData(String type, String value) {
+        if (Objects.isNull(UserContext.getUser()))
+            log.info("{} | User is Null", LoggerHelper.getRequestIdFromMDC());
         return new StringBuilder(ENV_NAME)
                 .append("_")
                 .append(type)
@@ -58,5 +71,16 @@ public class CustomKeyGenerator implements KeyGenerator {
                 .append(value);
     }
 
+    public String customCacheKey(Object... params) {
+        StringBuilder keyBuilder = cacheBaseKey();
+        if (params != null && params.length > 0) {
+            String joinedParams = String.join("_",
+                    Arrays.stream(params)
+                            .map(String::valueOf)
+                            .toArray(String[]::new)
+            );
+            keyBuilder.append("_").append(joinedParams);
+        }
+        return keyBuilder.toString();
+    }
 }
-
