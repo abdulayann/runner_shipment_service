@@ -142,6 +142,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -284,6 +285,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private ICarrierDetailsDao carrierDetailsDao;
     @Mock
     private INPMServiceAdapter npmServiceAdapter;
+    @Mock
+    private NpmContractV3Util npmContractV3Util;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;

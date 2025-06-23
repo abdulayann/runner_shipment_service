@@ -55,6 +55,7 @@ import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -148,6 +149,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private IBookingChargesDao bookingChargesDao;
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
+    @Mock
+    private NpmContractV3Util npmContractV3Util;
     @Mock
     private KafkaProducer producer;
     @Mock

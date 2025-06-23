@@ -70,6 +70,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -119,6 +120,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Autowired
+    private NpmContractV3Util npmContractV3Util;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -299,9 +302,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         request.setContainerCount(usage.getMeta() != null ? usage.getMeta().getOriginal_usage() : usage.getUsage());
         var filters = usage.getFilter_params();
         if (filters != null) {
-            if (!isEmpty(filters.getCargo_type()))
+            if (filters.getCargo_type() != null && !filters.getCargo_type().isEmpty())
                 request.setContainerCode(filters.getCargo_type().get(0));
-            if (!isEmpty(filters.getCommodity()))
+            if (filters.getCommodity() != null && !filters.getCommodity().isEmpty())
                 request.setCommodityGroup(filters.getCommodity().get(0));
         }
         if (customerBooking.getId() != null)
@@ -311,58 +314,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, CustomerBooking customerBooking) {
         PackingV3Request request = new PackingV3Request();
-        setFilterParams(usage.getFilter_params(), request);
-        setMetaData(usage, request);
+        npmContractV3Util.setFilterParams(usage.getFilter_params(), request);
+        npmContractV3Util.setMetaData(usage, request);
         if (customerBooking.getId() != null) {
             request.setBookingId(customerBooking.getId());
         }
         return request;
-    }
-
-    private boolean isEmpty(List<?> list) {
-        return list == null || list.isEmpty();
-    }
-
-    private void setFilterParams(ListContractResponse.FilterParams filters, PackingV3Request request) {
-        if (filters == null) return;
-        if (!isEmpty(filters.getCargo_type())) {
-            request.setPacksType(filters.getCargo_type().get(0));
-        }
-        if (!isEmpty(filters.getCommodity())) {
-            request.setCommodityGroup(filters.getCommodity().get(0));
-        }
-    }
-
-    private void setMetaData(ListContractResponse.ContractUsage usage, PackingV3Request request) {
-        var meta = usage.getMeta();
-        if (meta == null) return;
-        var loadAttributes = meta.getLoad_attributes();
-        request.setPacks(loadAttributes.getQuantity().toString());
-        request.setWeight(loadAttributes.getWeight());
-        request.setWeightUnit(loadAttributes.getWeight_uom());
-        request.setVolume(loadAttributes.getVolume());
-        request.setVolumeUnit(loadAttributes.getVolume_uom());
-        request.setIsDimension(false);
-        var dimensions = loadAttributes.getDimensions();
-        if (dimensions != null) {
-            setDimensions(dimensions, request);
-        }
-    }
-
-    private void setDimensions(ListContractResponse.Dimensions dimensions, PackingV3Request request) {
-        if (dimensions.getLength() != null) {
-            request.setLength(BigDecimal.valueOf(dimensions.getLength()));
-        }
-        if (dimensions.getWidth() != null) {
-            request.setWidth(BigDecimal.valueOf(dimensions.getWidth()));
-        }
-        if (dimensions.getHeight() != null) {
-            request.setHeight(BigDecimal.valueOf(dimensions.getHeight()));
-        }
-        request.setLengthUnit(dimensions.getUom());
-        request.setHeightUnit(dimensions.getUom());
-        request.setWidthUnit(dimensions.getUom());
-        request.setIsDimension(true);
     }
 
     private void populateCustomerBookingFromContract(ListContractResponse listContractResponse, CustomerBooking customerBooking) {
@@ -370,7 +327,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
         ListContractResponse.ContractResponse contract = contracts.get(0);
         customerBooking.setContractId(contract.getContract_id());
-        customerBooking.setCarrierDetails(createCarrierDetails(contract));
+        customerBooking.setCarrierDetails(npmContractV3Util.createCarrierDetails(contract));
         customerBooking.setCargoType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
         if (contract.getMeta() != null) {
             var meta = contract.getMeta();
@@ -385,31 +342,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 customerBooking.setSalesBranch(branchInfo.getId());
             }
         }
-    }
-
-    private CarrierDetails createCarrierDetails(ListContractResponse.ContractResponse contract) {
-        var meta = contract.getMeta();
-        return CarrierDetails.builder()
-                .origin(contract.getOrigin())
-                .destination(contract.getDestination())
-                .originPort(meta != null ? meta.getPol() : null)
-                .destinationPort(meta != null ? meta.getPod() : null)
-                .shippingLine(getCarrier(contract))
-                .minTransitHours(meta != null ? meta.getMinTransitHours() : null)
-                .maxTransitHours(meta != null ? meta.getMaxTransitHours() : null)
-                .build();
-    }
-
-    public String getCarrier(ListContractResponse.ContractResponse contract) {
-        List<String> carrierCodes = contract.getCarrier_codes();
-        if (carrierCodes == null) return null;
-        carrierCodes = new ArrayList<>(carrierCodes);
-        carrierCodes.removeAll(List.of(NPMConstants.ANY, NPMConstants.SQSN));
-        if (carrierCodes.isEmpty()) return null;
-        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
-        return Optional.ofNullable(map.get(carrierCodes.get(0)))
-                .map(EntityTransferCarrier::getItemValue)
-                .orElse(null);
     }
 
     private ListContractResponse getNpmContract(CustomerBooking customerBooking) throws RunnerException {
