@@ -11,6 +11,7 @@ public interface IEntityTransferService {
     ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> updateStatusFormExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importShipment(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> sendConsolidationValidation(CommonRequestModel commonRequestModel);

@@ -44,6 +44,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -76,6 +77,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.IntegrationResponse;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -195,11 +197,12 @@ public class EntityTransferService implements IEntityTransferService {
     private INotificationDao notificationDao;
     private DependentServiceHelper dependentServiceHelper;
     private IBridgeServiceAdapter bridgeServiceAdapter;
+    private IIntegrationResponseDao integrationResponseDao;
 
     @Autowired
     public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService
             , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao,
-                                 DependentServiceHelper dependentServiceHelper, IBridgeServiceAdapter bridgeServiceAdapter) {
+                                 DependentServiceHelper dependentServiceHelper, IBridgeServiceAdapter bridgeServiceAdapter, IIntegrationResponseDao integrationResponseDao) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -233,6 +236,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.eventService = eventService;
         this.dependentServiceHelper = dependentServiceHelper;
         this.bridgeServiceAdapter = bridgeServiceAdapter;
+        this.integrationResponseDao = integrationResponseDao;
     }
 
     @Transactional
@@ -456,7 +460,7 @@ public class EntityTransferService implements IEntityTransferService {
         var entityTransferPayload = prepareShipmentPayload(shipment);
         entityTransferPayload.setDirection(Constants.IMP);
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
-        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest, shipment.getId());
 
     }
     private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
@@ -477,10 +481,10 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
-        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest, console.getId());
     }
 
-    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
+    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest, Long entityId) throws RunnerException {
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setEntityPayload(entityPayload);
         networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
@@ -497,6 +501,43 @@ public class EntityTransferService implements IEntityTransferService {
         log.info("OutBound File Transfer Bridge Service Request: {}", jsonHelper.convertToJson(request));
         BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestOutBoundFileTransfer(CommonRequestModel.buildRequest(request));
         log.info("OutBound File Transfer Bridge Service Response: {}", jsonHelper.convertToJson(bridgeServiceResponse));
+        saveETIntegrationResponse(entityId, entityType, IntegrationType.ET_EXTERNAL_SYSTEM_INTEGRATION, Status.SUCCESS, jsonHelper.convertToJson(request), jsonHelper.convertToJson(bridgeServiceResponse));
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> updateStatusFormExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
+        UpdateStatusFromExternalRequest request = (UpdateStatusFromExternalRequest) commonRequestModel.getData();
+        if(Objects.equals(request.getEntityType(), SHIPMENT)){
+            updateShipmentStatus(request);
+        } else if (Objects.equals(request.getEntityType(), CONSOLIDATION)){
+            updateConsoleStatus(request);
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void updateShipmentStatus (UpdateStatusFromExternalRequest request) throws RunnerException {
+        var shipment = shipmentDao.findByGuid(UUID.fromString(request.getEntityGuid()));
+        if(shipment.isEmpty()) {
+            throw new DataRetrievalFailureException("No Shipment found with given entity guid: " + request.getEntityGuid());
+        }
+        saveETIntegrationResponse(shipment.get().getId(), request.getEntityType(), IntegrationType.ET_EXTERNAL_SYSTEM_CALL_BACK_STATUS, Status.SUCCESS, jsonHelper.convertToJson(request), null);
+    }
+
+    private void saveETIntegrationResponse(Long entityId, String entityType, IntegrationType integrationType, Status status, String responseBody, String requestBody) {
+        IntegrationResponse response = IntegrationResponse.builder()
+                .entityId(entityId).entityType(entityType).integrationType(integrationType).status(status)
+                .response_message(responseBody)
+                .requestBody(requestBody)
+                .build();
+        integrationResponseDao.save(response);
+    }
+
+    private void updateConsoleStatus (UpdateStatusFromExternalRequest request) throws RunnerException {
+        var consolidation = consolidationDetailsDao.findByGuid(UUID.fromString(request.getEntityGuid()));
+        if(consolidation.isEmpty()) {
+            throw new DataRetrievalFailureException("No Consolidation found with given entity guid: " + request.getEntityGuid());
+        }
+        saveETIntegrationResponse(consolidation.get().getId(), request.getEntityType(), IntegrationType.ET_EXTERNAL_SYSTEM_CALL_BACK_STATUS, Status.SUCCESS, jsonHelper.convertToJson(request), null);
     }
 
     private boolean shouldSaveShipment(ShipmentDetails shipment) {

@@ -87,6 +87,22 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @PostMapping(EntityTransferConstants.UPDATE_STATUS_FROM_EXTERNAL_SYSTEM)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EntityTransferConstants.UPDATE_STATUS_SUCCESSFUL, response = SendShipmentResponseClass.class)
+    })
+    public ResponseEntity<IRunnerResponse> updateStatusFormExternalSystem(@RequestBody @Valid UpdateStatusFromExternalRequest request) {
+        String responseMsg;
+        try {
+            return entityTransferService.updateStatusFormExternalSystem(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponse.class)
     })

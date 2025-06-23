@@ -358,5 +358,34 @@ class EntityTransferControllerTest {
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
+    @Test
+    void updateStatusFormExternalSystem() throws RunnerException {
+        // Mock
+        when(entityTransferService.updateStatusFormExternalSystem(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = entityTransferController.updateStatusFormExternalSystem(UpdateStatusFromExternalRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateStatusFormExternalSystem2() throws RunnerException {
+        // Mock
+        when(entityTransferService.updateStatusFormExternalSystem(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = entityTransferController.updateStatusFormExternalSystem(UpdateStatusFromExternalRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void updateStatusFormExternalSystem3() throws RunnerException {
+        // Mock
+        when(entityTransferService.updateStatusFormExternalSystem(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = entityTransferController.updateStatusFormExternalSystem(UpdateStatusFromExternalRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 }

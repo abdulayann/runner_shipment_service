@@ -10,6 +10,7 @@ public class EntityTransferConstants {
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
     public static final String SEND_ENTITY_TO_EXTERNAL_SYSTEM = "/send-file-to-external";
+    public static final String UPDATE_STATUS_FROM_EXTERNAL_SYSTEM = "/external/update-status";
     public static final String CHECK_RETRANSFER_ACCEPTED = "/check-retransfer-accepted";
     public static final String SEND_SHIPMENT_VALIDATION = "/send-shipment-validation";
     public static final String CHECK_TASK_EXIST = "/check-task-exist";
@@ -20,6 +21,7 @@ public class EntityTransferConstants {
     public static final String IMPORT_CONSOLIDATION = "/import-consolidation";
     public static final String POST_AR_VALIDATION = "/post-ar-validation";
     public static final String SEND_SHIPMENT_SUCCESSFUL = "Shipment is sent successfully";
+    public static final String UPDATE_STATUS_SUCCESSFUL = "Status updated successfully";
     public static final String RETRANSFER_ACCEPTED = "Accepted status checked successfully";
     public static final String SEND_CONSOLIDATION_SUCCESSFUL = "Consolidation is sent successfully";
     public static final String VALIDATION_SUCCESSFUL = "All validation passes successfully";

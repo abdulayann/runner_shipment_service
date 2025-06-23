@@ -46,4 +46,8 @@ public class IntegrationResponse extends MultiTenancy {
     @Column(name = "response_message", columnDefinition = "jsonb")
     private String response_message;
 
+    @Type(type = "jsonb")
+    @Column(name = "request_body", columnDefinition = "jsonb")
+    private String requestBody;
+
 }

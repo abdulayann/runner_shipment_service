@@ -169,6 +169,8 @@ class EntityTransferServiceTest extends CommonMocks {
     private INotificationDao notificationDao;
     @Mock
     private ExecutorService executorService;
+    @Mock
+    private IIntegrationResponseDao integrationResponseDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -3370,6 +3372,48 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.sendFileToExternalSystem(commonRequestModel));
+    }
+
+    @Test
+    void testUpdateStatusFormExternalSystem_Console() throws RunnerException {
+        UpdateStatusFromExternalRequest request = UpdateStatusFromExternalRequest.builder().entityType(Constants.CONSOLIDATION).entityGuid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        // Mock
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
+        //response
+        var response = entityTransferService.updateStatusFormExternalSystem(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testUpdateStatusFormExternalSystem1_Console() {
+        UpdateStatusFromExternalRequest request = UpdateStatusFromExternalRequest.builder().entityType(Constants.CONSOLIDATION).entityGuid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        // Mock
+        when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.empty());
+        //response
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.updateStatusFormExternalSystem(commonRequestModel));
+    }
+
+    @Test
+    void testUpdateStatusFormExternalSystem2_Shipment() throws RunnerException {
+        UpdateStatusFromExternalRequest request = UpdateStatusFromExternalRequest.builder().entityType(Constants.SHIPMENT).entityGuid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        // Mock
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        //response
+        var response = entityTransferService.updateStatusFormExternalSystem(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testUpdateStatusFormExternalSystem1_Shipment() {
+        UpdateStatusFromExternalRequest request = UpdateStatusFromExternalRequest.builder().entityType(Constants.SHIPMENT).entityGuid(UUID.randomUUID().toString()).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        // Mock
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+        //response
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.updateStatusFormExternalSystem(commonRequestModel));
     }
 
 }
