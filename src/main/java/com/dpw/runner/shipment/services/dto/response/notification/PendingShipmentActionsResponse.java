@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response.notification;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,6 +34,7 @@ public class PendingShipmentActionsResponse implements IPendingActionsResponse {
     private LocalDateTime lat;
 
     private String requestedBy;
+    private ShipmentRequestedType requestedType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
     private Boolean hazardous;

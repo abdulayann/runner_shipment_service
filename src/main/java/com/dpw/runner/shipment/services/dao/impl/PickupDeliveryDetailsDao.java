@@ -80,6 +80,11 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         return pickupDeliveryDetailsRepository.findByShipmentId(shipmentId);
     }
 
+    @Override
+    public Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId) {
+        return pickupDeliveryDetailsRepository.getTotalTransportInstructionCountIncludeDeleted(shipmentId);
+    }
+
     public List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {
         List<PickupDeliveryDetails> res = new ArrayList<>();
         for(PickupDeliveryDetails req : pickupDeliveryDetailsRequests){

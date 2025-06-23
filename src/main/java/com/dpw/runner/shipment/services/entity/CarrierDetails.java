@@ -153,4 +153,19 @@ public class CarrierDetails extends MultiTenancy {
 
     @Column(name = "is_same_as_destination_port")
     private Boolean isSameAsDestinationPort;
+
+    @Column(name = "origin_country")
+    private String originCountry;
+
+    @Column(name = "destination_country")
+    private String destinationCountry;
+
+    @Column(name = "origin_port_country")
+    private String originPortCountry;
+
+    @Column(name = "destination_port_country")
+    private String destinationPortCountry;
+
+    @Column(name = "vehicle_number")
+    private String vehicleNumber;
 }
