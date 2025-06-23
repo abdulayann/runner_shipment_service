@@ -3305,47 +3305,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
-    void testSyncShipmentsList_withMultipleShipments_shouldCallSyncForEach() throws RunnerException {
-        ShipmentDetails shipment1 = new ShipmentDetails();
-        shipment1.setId(1L);
-        ShipmentDetails shipment2 = new ShipmentDetails();
-        shipment2.setId(2L);
-
-        List<ShipmentDetails> shipments = Arrays.asList(shipment1, shipment2);
-        String transactionId = "txn-123";
-
-        shipmentServiceImplV3.syncShipmentsList(shipments, transactionId);
-
-        verify(shipmentSync, times(1)).sync(shipment1, null, null, transactionId, false);
-        verify(shipmentSync, times(1)).sync(shipment2, null, null, transactionId, false);
-    }
-
-    @Test
-    void testSyncShipmentsList_withEmptyList_shouldNotCallSync() throws RunnerException {
-        List<ShipmentDetails> shipments = new ArrayList<>();
-        String transactionId = "txn-456";
-
-        shipmentServiceImplV3.syncShipmentsList(shipments, transactionId);
-
-        verify(shipmentSync, never()).sync(any(), any(), any(), any(), anyBoolean());
-    }
-
-    @Test
-    void testSyncShipmentsList_whenSyncThrowsException_shouldCatchAndLog() throws RunnerException {
-        ShipmentDetails shipment = new ShipmentDetails();
-        List<ShipmentDetails> shipments = Collections.singletonList(shipment);
-        String transactionId = "txn-789";
-
-        doThrow(new RuntimeException("Sync failed"))
-                .when(shipmentSync)
-                .sync(eq(shipment), isNull(), isNull(), eq(transactionId), eq(false));
-
-        shipmentServiceImplV3.syncShipmentsList(shipments, transactionId);
-
-        verify(shipmentSync, times(1)).sync(any(), any(), any(), any(), anyBoolean());
-    }
-
-    @Test
     void testProcessBranchesAndPartner_withNonZeroReceivingBranch_shouldRemainUnchanged() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setReceivingBranch(100L); // Non-zero

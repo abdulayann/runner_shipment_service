@@ -167,6 +167,10 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             updateConsolCarrierDetails(mainCarriageList);
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
+
+            if (isInterBranchContextNeeded(consolidationDetails))
+                commonUtils.setInterBranchContextForHub();
+
             if (!CollectionUtils.isEmpty(shipmentsList)) {
                 for (ShipmentDetails shipmentDetails : shipmentsList) {
                     List<Routings> originalRoutings = shipmentDetails.getRoutingsList();
@@ -1003,5 +1007,16 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
         cloned.setInheritedFromConsolidation(true); // Mark as inherited
         return cloned;
+    }
+
+    private boolean isInterBranchContextNeeded(ConsolidationDetails consolidationDetails) {
+
+        if (Objects.isNull(consolidationDetails) || Objects.isNull(consolidationDetails.getShipmentsList()))
+            return false;
+
+        var interBranchShipments = consolidationDetails.getShipmentsList().stream()
+                .filter(s -> !Objects.equals(s.getTenantId(), consolidationDetails.getTenantId())).findFirst();
+
+        return interBranchShipments.isPresent() && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
     }
 }

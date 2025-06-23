@@ -53,8 +53,6 @@ public interface IShipmentServiceV3 {
 
     void createLogHistoryForShipment(ShipmentDetails shipmentDetails);
 
-    void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId);
-
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
     ShipmentPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);

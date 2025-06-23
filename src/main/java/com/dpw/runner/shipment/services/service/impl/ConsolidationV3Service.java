@@ -553,8 +553,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (Boolean.TRUE.equals(isCreate))
             consolidationDetails.setOpenForAttachment(true);
 
-        consolidationValidationV3Util.checkInterBranchPermission(consolidationDetails, oldEntity);
-
         populateUnlocCodeFuture.join();
     }
 
@@ -2114,6 +2112,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     public List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldConsolEntity,
             Boolean fromAttachShipment) throws RunnerException {
+
+        // Set interbranc context if Interbranch Flag is/was enabled
+        if (Boolean.TRUE.equals(console.getInterBranchConsole()) ||
+                (Objects.nonNull(oldConsolEntity) && Boolean.TRUE.equals(oldConsolEntity.getInterBranchConsole())) )
+            commonUtils.setInterBranchContextForHub();
 
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
@@ -3844,6 +3847,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         String carrierNameFromMasterData = masterDataUtils.getCarrierNameFromMasterDataUsingScacCodeFromIntraa(request.getScacCode());
         if(consolidationDetails.getShipmentsList() != null) {
+            if (isInterBranchContextNeeded(consolidationDetails))
+                commonUtils.setInterBranchContextForHub();
+
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                 shipmentV3Service.updateCutoffDetailsToShipment(jsonHelper.convertValue(request, ShipmentSailingScheduleRequest.class), shipmentDetails);
                 CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
@@ -4382,6 +4388,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         achievedQuantitiesResponse.setTeuCount(shipmentWtVolResponse.getConsoleTeuCount());
         achievedQuantitiesResponse.setDgContainerCount(shipmentWtVolResponse.getConsoleDgContainerCount());
         return achievedQuantitiesResponse;
+    }
+
+    private boolean isInterBranchContextNeeded(ConsolidationDetails consolidationDetails) {
+
+        if (Objects.isNull(consolidationDetails) || Objects.isNull(consolidationDetails.getShipmentsList()))
+            return false;
+
+        var interBranchShipments = consolidationDetails.getShipmentsList().stream()
+                .filter(s -> !Objects.equals(s.getTenantId(), consolidationDetails.getTenantId())).findFirst();
+
+        return interBranchShipments.isPresent() && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
     }
 
 }

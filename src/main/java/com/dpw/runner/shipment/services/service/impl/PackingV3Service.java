@@ -155,6 +155,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = (ShipmentDetails) entity;
             consolidationId = packingV3Util.updateConsolidationIdInPackings(shipmentDetails, List.of(packing));
+            packingV3Util.setColoadingStation(shipmentDetails);
         }
 
         if(consolidationId == null && packingRequest.getShipmentId() != null) {
