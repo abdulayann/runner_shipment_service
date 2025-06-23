@@ -4676,10 +4676,7 @@ public abstract class IReport {
         }
 
         if (consolId != null) {
-            Optional<ConsolidationDetails> byId = consolidationDetailsDao.findById(consolId);
-            if (byId.isPresent()) {
-                consolidationDetails = byId.get();
-            }
+            consolidationDetails = consolidationDetailsDao.findConsolidationsById(consolId);
         }
 
         if (dict == null) {
