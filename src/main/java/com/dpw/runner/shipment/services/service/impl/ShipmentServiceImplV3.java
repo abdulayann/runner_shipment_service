@@ -914,41 +914,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, ConsolidationDetails consolidationDetails) {
-        // Syncing shipment to V1
-        syncShipment(shipmentDetails, consolidationDetails, syncConsole);
         log.info("shipment afterSave syncShipment..... ");
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
-    }
-
-    private void syncShipment(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, boolean syncConsole) {
-        String transactionId = shipmentDetails.getGuid().toString();
-        try {
-            shipmentSync.sync(shipmentDetails, null, null, transactionId, false);
-        } catch (Exception e) {
-            log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-        }
-        if (syncConsole && consolidationDetails != null) {
-            try {
-                consolidationSync.sync(consolidationDetails, transactionId, false);
-            } catch (Exception e) {
-                log.error("Error performing sync on consol entity, {}", e);
-            }
-        }
-    }
-
-    @Override
-    public void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId) {
-        // TODO Why Sync is needed for V3? ~Subham
-//        for (ShipmentDetails shipmentDetails : shipments) {
-//            try {
-//                shipmentSync.sync(shipmentDetails, null, null, transactionId, false);
-//            } catch (Exception e) {
-//                log.error("Error performing sync on shipment entity, {}", e);
-//            }
-//        }
     }
 
     protected void deletePendingStateAfterCancellation(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
@@ -1982,7 +1952,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
-            setShipmentFromBooking(shipmentDetails, notesRequest);
 
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -2391,16 +2360,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
             hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
         }
-    }
-
-    public void setShipmentFromBooking(ShipmentDetails shipmentDetails, List<NotesRequest> notesRequest) {
-        try {
-            shipmentDetails.setNotesList(null);
-            shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
-        } catch (Exception e) {
-            log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-        }
-
     }
 
     private List<NotesRequest> getNotesRequests(ShipmentV3Request request, Long shipmentId) {

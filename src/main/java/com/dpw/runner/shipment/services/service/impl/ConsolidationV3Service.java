@@ -553,8 +553,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (Boolean.TRUE.equals(isCreate))
             consolidationDetails.setOpenForAttachment(true);
 
-//        consolidationValidationV3Util.checkInterBranchPermission(consolidationDetails, oldEntity);
-
         populateUnlocCodeFuture.join();
     }
 
