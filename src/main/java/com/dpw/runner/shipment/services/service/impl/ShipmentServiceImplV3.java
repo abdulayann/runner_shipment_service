@@ -114,6 +114,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
@@ -240,6 +241,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ICarrierDetailsDao carrierDetailsDao;
     @Autowired
     private KafkaProducer kafkaProducer;
+    @Autowired
+    private NpmContractV3Util npmContractV3Util;
 
 
     @Autowired
@@ -819,19 +822,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean isDestination) {
+    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean hasDestinationContract) {
         if (listContractResponse == null || listContractResponse.getContracts() == null || listContractResponse.getContracts().isEmpty()) return;
-
         List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
-
         ListContractResponse.ContractResponse contract = contracts.get(0);
-        if (isDestination) {
+        if (hasDestinationContract) {
             shipmentDetails.setDestinationContractId(contract.getContract_id());
+            shipmentDetails.setDestinationContractType(contract.getContract_type());
         } else {
             shipmentDetails.setContractId(contract.getContract_id());
+            shipmentDetails.setContractType(contract.getContract_type());
         }
-        shipmentDetails.setContractType(contract.getContract_type());
-        shipmentDetails.setCarrierDetails(createCarrierDetails(contract));
+        shipmentDetails.setCarrierDetails(npmContractV3Util.createCarrierDetails(contract));
         shipmentDetails.setShipmentType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
         if (contract.getMeta() != null) {
             var meta = contract.getMeta();
@@ -850,12 +852,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private ListContractResponse getNpmContract(ShipmentDetails shipmentDetails) throws RunnerException {
         String partyForQuote = shipmentDetails.getContractId() != null ? shipmentDetails.getCurrentPartyForQuote() : shipmentDetails.getDestinationCurrentPartyForQuote();
+        String contractId = shipmentDetails.getContractId() !=null ? shipmentDetails.getContractId() : shipmentDetails.getDestinationContractId();
         String orgCode = extractOrgCode(shipmentDetails, partyForQuote);
+        if(contractId == null || orgCode == null) {
+            return null;
+        }
         ListContractRequest listContractRequest = new ListContractRequest();
         listContractRequest.setCustomer_org_id(orgCode);
         listContractRequest.setOrg_role("DPW");
         listContractRequest.setFilter_contract_states(List.of("ENABLED"));
-        listContractRequest.setFilter_contract_id(shipmentDetails.getContractId());
+        listContractRequest.setFilter_contract_id(contractId);
 
         ResponseEntity<IRunnerResponse> response = npmServiceAdapter.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
         IRunnerResponse body = response.getBody();
@@ -866,11 +872,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private String extractOrgCode(ShipmentDetails shipmentDetails, String party) {
-        return switch (party) {
-            case "CLIENT" -> shipmentDetails.getClient().getOrgCode();
-            case "CONSIGNEE" -> shipmentDetails.getConsignee().getOrgCode();
-            case "CONSIGNER" -> shipmentDetails.getConsigner().getOrgCode();
-            default -> shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgCode();
+        if (shipmentDetails == null || party == null) return null;
+        return switch (party.toUpperCase()) {
+            case CLIENT_PARTY -> shipmentDetails.getClient() != null ? shipmentDetails.getClient().getOrgCode() : null;
+            case CONSIGNEE_PARTY -> shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgCode() : null;
+            case CONSIGNOR_PARTY -> shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgCode() : null;
+            default -> {
+                var notifyParty = shipmentDetails.getAdditionalDetails() != null
+                        ? shipmentDetails.getAdditionalDetails().getNotifyParty()
+                        : null;
+                yield notifyParty != null ? notifyParty.getOrgCode() : null;
+            }
         };
     }
 
@@ -879,9 +891,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         request.setContainerCount(usage.getMeta() != null ? usage.getMeta().getOriginal_usage() : usage.getUsage());
         var filters = usage.getFilter_params();
         if (filters != null) {
-            if (!isEmpty(filters.getCargo_type()))
+            if (filters.getCargo_type() != null && !filters.getCargo_type().isEmpty())
                 request.setContainerCode(filters.getCargo_type().get(0));
-            if (!isEmpty(filters.getCommodity()))
+            if (filters.getCommodity() != null && !filters.getCommodity().isEmpty())
                 request.setCommodityGroup(filters.getCommodity().get(0));
         }
         if (shipmentDetails.getId() != null)
@@ -891,86 +903,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, ShipmentDetails shipmentDetails) {
         PackingV3Request request = new PackingV3Request();
-        setFilterParams(usage.getFilter_params(), request);
-        setMetaData(usage, request);
+        npmContractV3Util.setFilterParams(usage.getFilter_params(), request);
+        npmContractV3Util.setMetaData(usage, request);
         if (shipmentDetails.getId() != null) {
             request.setShipmentId(shipmentDetails.getId());
         }
         return request;
-    }
-
-    private void setFilterParams(ListContractResponse.FilterParams filters, PackingV3Request request) {
-        if (filters == null) return;
-        if (!isEmpty(filters.getCargo_type())) {
-            request.setPacksType(filters.getCargo_type().get(0));
-        }
-        if (!isEmpty(filters.getCommodity())) {
-            request.setCommodityGroup(filters.getCommodity().get(0));
-        }
-    }
-
-    private void setMetaData(ListContractResponse.ContractUsage usage, PackingV3Request request) {
-        var meta = usage.getMeta();
-        if (meta == null) return;
-        var loadAttributes = meta.getLoad_attributes();
-        request.setPacks(loadAttributes.getQuantity().toString());
-        request.setWeight(loadAttributes.getWeight());
-        request.setWeightUnit(loadAttributes.getWeight_uom());
-        request.setVolume(loadAttributes.getVolume());
-        request.setVolumeUnit(loadAttributes.getVolume_uom());
-        request.setIsDimension(false);
-        var dimensions = loadAttributes.getDimensions();
-        if (dimensions != null) {
-            setDimensions(dimensions, request);
-        }
-    }
-
-    private void setDimensions(ListContractResponse.Dimensions dimensions, PackingV3Request request) {
-        if (dimensions.getLength() != null) {
-            request.setLength(BigDecimal.valueOf(dimensions.getLength()));
-        }
-        if (dimensions.getWidth() != null) {
-            request.setWidth(BigDecimal.valueOf(dimensions.getWidth()));
-        }
-        if (dimensions.getHeight() != null) {
-            request.setHeight(BigDecimal.valueOf(dimensions.getHeight()));
-        }
-        request.setLengthUnit(dimensions.getUom());
-        request.setHeightUnit(dimensions.getUom());
-        request.setWidthUnit(dimensions.getUom());
-        request.setIsDimension(true);
-    }
-
-    private CarrierDetails createCarrierDetails(ListContractResponse.ContractResponse contract) {
-        var meta = contract.getMeta();
-        return CarrierDetails.builder()
-                .origin(contract.getOrigin())
-                .destination(contract.getDestination())
-                .originPort(meta != null ? meta.getPol() : null)
-                .destinationPort(meta != null ? meta.getPod() : null)
-                .shippingLine(getCarrier(contract))
-                .minTransitHours(meta != null ? meta.getMinTransitHours() : null)
-                .maxTransitHours(meta != null ? meta.getMaxTransitHours() : null)
-                .build();
-    }
-
-    public String getCarrier(ListContractResponse.ContractResponse contract) {
-        List<String> carrierCodes = contract.getCarrier_codes();
-        if (carrierCodes == null) return null;
-
-        carrierCodes = new ArrayList<>(carrierCodes);
-        carrierCodes.removeAll(List.of(NPMConstants.ANY, NPMConstants.SQSN));
-
-        if (carrierCodes.isEmpty()) return null;
-
-        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
-        return Optional.ofNullable(map.get(carrierCodes.get(0)))
-                .map(EntityTransferCarrier::getItemValue)
-                .orElse(null);
-    }
-
-    private boolean isEmpty(List<?> list) {
-        return list == null || list.isEmpty();
     }
 
     private boolean checkIfAlreadyPushRequested(ShipmentDetails oldEntity) {

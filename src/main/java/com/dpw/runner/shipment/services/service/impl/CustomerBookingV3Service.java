@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
@@ -13,7 +14,6 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapte
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -35,15 +35,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadAttributesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
@@ -75,11 +67,10 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -129,6 +120,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Autowired
+    private NpmContractV3Util npmContractV3Util;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -153,6 +146,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final ModelMapper modelMapper;
     private final DependentServiceHelper dependentServiceHelper;
     private final IFusionServiceAdapter fusionServiceAdapter;
+    private final IPackingV3Service packingV3Service;
+    private final IContainerV3Service containerV3Service;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -195,7 +190,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     IV1Service v1Service,
                                     ModelMapper modelMapper,
                                     DependentServiceHelper dependentServiceHelper,
-                                    IFusionServiceAdapter fusionServiceAdapter){
+                                    IFusionServiceAdapter fusionServiceAdapter,
+                                    IContainerV3Service containerV3Service,
+                                    IPackingV3Service packingV3Service){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -219,6 +216,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.modelMapper = modelMapper;
         this.dependentServiceHelper = dependentServiceHelper;
         this.fusionServiceAdapter = fusionServiceAdapter;
+        this.packingV3Service = packingV3Service;
+        this.containerV3Service = containerV3Service;
     }
 
     @Override
@@ -234,7 +233,15 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }
         try {
+            ListContractResponse npmContractResponse = null;
+            if(customerBooking.getContractId() !=null) {
+                npmContractResponse = getNpmContract(customerBooking);
+                populateCustomerBookingFromContract(npmContractResponse, customerBooking);
+            }
             createEntities(customerBooking, customerBookingV3Request);
+            if(npmContractResponse != null) {
+                updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
+            }
             /**
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
@@ -251,6 +258,126 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
+    }
+
+    private void updatePackingAndContainerFromContract(ListContractResponse.ContractResponse contractResponse, CustomerBooking customerBooking) throws RunnerException {
+        List<ListContractResponse.ContractUsage> contractUsages = Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of());
+        String transportMode = customerBooking.getTransportType();
+        String cargoType = customerBooking.getCargoType();
+        if ((TRANSPORT_MODE_SEA.equals(transportMode) && CARGO_TYPE_LCL.equals(cargoType)) || TRANSPORT_MODE_AIR.equals(transportMode)) {
+            handlePackingUpdate(contractUsages, customerBooking);
+        } else {
+            handleContainerUpdate(contractUsages, customerBooking);
+        }
+    }
+
+    private void handlePackingUpdate(List<ListContractResponse.ContractUsage> contractUsages, CustomerBooking customerBooking) throws RunnerException {
+        List<PackingV3Request> quotePackingRequests = contractUsages.stream()
+                .map(usage -> getPackingRequest(usage, customerBooking))
+                .collect(Collectors.toList());
+        if (customerBooking.getPackingList() != null && !customerBooking.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
+            List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(customerBooking.getPackingList(), PackingV3Request.class);
+            packingV3Service.deleteBulk(existingRequests, BOOKING);
+        }
+        if (!quotePackingRequests.isEmpty()) {
+            packingV3Service.updateBulk(quotePackingRequests, BOOKING);
+        }
+    }
+
+    private void handleContainerUpdate(List<ListContractResponse.ContractUsage> contractUsages, CustomerBooking customerBooking) throws RunnerException {
+        List<ContainerV3Request> quoteContainerRequests = contractUsages.stream()
+                .map(usage -> getContainerRequest(usage, customerBooking))
+                .collect(Collectors.toList());
+        if (customerBooking.getContainersList() != null && !customerBooking.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
+            List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(customerBooking.getContainersList(), ContainerV3Request.class);
+            containerV3Service.deleteBulk(existingContainerRequests, BOOKING);
+        }
+        if (!quoteContainerRequests.isEmpty()) {
+            containerV3Service.createBulk(quoteContainerRequests, BOOKING);
+        }
+    }
+
+    private ContainerV3Request getContainerRequest(ListContractResponse.ContractUsage usage, CustomerBooking customerBooking) {
+        var request = new ContainerV3Request();
+        request.setContainerCount(usage.getMeta() != null ? usage.getMeta().getOriginal_usage() : usage.getUsage());
+        var filters = usage.getFilter_params();
+        if (filters != null) {
+            if (filters.getCargo_type() != null && !filters.getCargo_type().isEmpty())
+                request.setContainerCode(filters.getCargo_type().get(0));
+            if (filters.getCommodity() != null && !filters.getCommodity().isEmpty())
+                request.setCommodityGroup(filters.getCommodity().get(0));
+        }
+        if (customerBooking.getId() != null)
+            request.setBookingId(customerBooking.getId());
+        return request;
+    }
+
+    private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, CustomerBooking customerBooking) {
+        PackingV3Request request = new PackingV3Request();
+        npmContractV3Util.setFilterParams(usage.getFilter_params(), request);
+        npmContractV3Util.setMetaData(usage, request);
+        if (customerBooking.getId() != null) {
+            request.setBookingId(customerBooking.getId());
+        }
+        return request;
+    }
+
+    private void populateCustomerBookingFromContract(ListContractResponse listContractResponse, CustomerBooking customerBooking) {
+        if (listContractResponse == null || listContractResponse.getContracts() == null || listContractResponse.getContracts().isEmpty()) return;
+        List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
+        ListContractResponse.ContractResponse contract = contracts.get(0);
+        customerBooking.setContractId(contract.getContract_id());
+        customerBooking.setCarrierDetails(npmContractV3Util.createCarrierDetails(contract));
+        customerBooking.setCargoType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
+        if (contract.getMeta() != null) {
+            var meta = contract.getMeta();
+            customerBooking.setTransportType(meta.getMode_of_transport());
+            customerBooking.setDirection(meta.getShipment_movement());
+            customerBooking.setIncoTerms(meta.getIncoterm());
+            customerBooking.setServiceMode(meta.getService_mode());
+            if (meta.getBranch_info() != null) {
+                var branchInfo = meta.getBranch_info();
+                customerBooking.setPrimarySalesAgentEmail(branchInfo.getSales_agent_primary_email());
+                customerBooking.setSecondarySalesAgentEmail(branchInfo.getSales_agent_secondary_email());
+                customerBooking.setSalesBranch(branchInfo.getId());
+            }
+        }
+    }
+
+    private ListContractResponse getNpmContract(CustomerBooking customerBooking) throws RunnerException {
+        String partyForQuote = customerBooking.getCurrentPartyForQuote();
+        String contractId = customerBooking.getContractId();
+        String orgCode = extractOrgCode(customerBooking, partyForQuote);
+        if(contractId == null || orgCode == null) {
+            return null;
+        }
+        ListContractRequest listContractRequest = new ListContractRequest();
+        listContractRequest.setCustomer_org_id(orgCode);
+        listContractRequest.setOrg_role("DPW");
+        listContractRequest.setFilter_contract_states(List.of("ENABLED"));
+        listContractRequest.setFilter_contract_id(contractId);
+
+        ResponseEntity<IRunnerResponse> response = npmService.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
+        IRunnerResponse body = response.getBody();
+        if (!(body instanceof DependentServiceResponse npmResponse)) {
+            throw new ValidationException("Invalid response received from NPM: null or incompatible type");
+        }
+        return jsonHelper.convertValue(npmResponse.getData(), ListContractResponse.class);
+    }
+
+    private String extractOrgCode(CustomerBooking customerBooking, String party) {
+        if (customerBooking == null || party == null) return null;
+        return switch (party.toUpperCase()) {
+            case CLIENT_PARTY -> customerBooking.getCustomer() !=null ? customerBooking.getCustomer().getOrgCode() : null;
+            case CONSIGNEE_PARTY -> customerBooking.getConsignee() != null ? customerBooking.getConsignee().getOrgCode() : null;
+            case CONSIGNOR_PARTY -> customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null;
+            default -> {
+                var notifyParty = customerBooking.getNotifyParty() != null
+                        ? customerBooking.getNotifyParty()
+                        : null;
+                yield notifyParty != null ? notifyParty.getOrgCode() : null;
+            }
+        };
     }
 
     private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking) {
@@ -275,17 +402,14 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Override
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
-        if (request == null || request.getId() == null) {
-            log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
-        }
+        validateBookingUpdateRequest(request);
         Long id = request.getId();
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-
+        CustomerBooking oldCustomerBooking = jsonHelper.convertValue(oldEntity.get(), CustomerBooking.class);
         boolean eventPersisted = false;
         Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), Constants.BOOKING);
         if(persistedEvent.isPresent())
@@ -308,7 +432,15 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(checkNPMContractUtilization(customerBooking)) {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
+        ListContractResponse npmContractResponse = null;
+        if (Boolean.TRUE.equals(isContractUpdated(customerBooking, oldCustomerBooking))) {
+            npmContractResponse = getNpmContract(customerBooking);
+            populateCustomerBookingFromContract(npmContractResponse, customerBooking);
+        }
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
+        if(npmContractResponse != null) {
+            updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
+        }
         try {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -363,7 +495,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(CustomerBooking.class, null))));
         includeColumns.addAll(CustomerBookingConstants.LIST_INCLUDE_COLUMNS_V3);
         CustomerBookingV3Response customerBookingV3Response = (CustomerBookingV3Response) commonUtils.setIncludedFieldsToResponse(customerBooking, includeColumns.stream().collect(Collectors.toSet()), new CustomerBookingV3Response());
-        log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
+        log.info("Total time taken in setting customer details response {}", (System.currentTimeMillis() - start));
         return fetchAllMasterDataByKey(customerBookingV3Response);
     }
 
@@ -1343,6 +1475,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    private Boolean isContractUpdated(CustomerBooking customerBooking, CustomerBooking oldCustomerBooking) {
+        String oldContractId = oldCustomerBooking != null ? oldCustomerBooking.getContractId() : null;
+        String newContractId = customerBooking != null ? customerBooking.getContractId() : null;
+
+        return  (oldContractId == null && newContractId != null) || (oldContractId != null && !oldContractId.equals(newContractId));
+    }
+
     private void transformOrgAndAddressToRawData(PartiesRequest partiesRequest) {
         if(partiesRequest == null)
             return;
@@ -2131,6 +2270,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }  catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCarrierDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private void validateBookingUpdateRequest(CustomerBookingV3Request request) {
+        if (request == null || request.getId() == null) {
+            log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
     }
 }
