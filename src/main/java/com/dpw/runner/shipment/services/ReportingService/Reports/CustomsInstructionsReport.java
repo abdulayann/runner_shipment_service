@@ -93,6 +93,9 @@ public class CustomsInstructionsReport extends IReport{
         if (customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null)
             dictionary.put(ReportConstants.DATE_OF_ISSUE, convertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, v1TenantSettingsResponse));
         processShipmentContainers(customsInstructionsModel, dictionary, v1TenantSettingsResponse);
+        if(customsInstructionsModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, customsInstructionsModel.shipmentDetails.getId());
+        }
         return dictionary;
     }
 
