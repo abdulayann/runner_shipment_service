@@ -244,7 +244,7 @@ public class HawbReport extends IReport{
         dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  freightAmountText);
         dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, otherAmountText);
         Set<String> hsCodesSet = new HashSet<>();
-        Set<String> dgHsCodesSet = new HashSet<>();
+        Set<String> dgHsCodesSet = new LinkedHashSet<>();
         Set<String> slacCodeSet = new HashSet<>();
         setHsCodesSet(awbPackingInfo, hsCodesSet);
         processGoodsDescription(dictionary, v1TenantSettingsResponse, awbGoodsDescriptionInfo, ntrQtyGoods, cargoInfoRows, dgHsCodesSet, hsCodesSet, slacCodeSet, freightAmountText, totalPieces, totalGrossWeight, sumOfTotalAmount, sumOfChargeableWt);
@@ -385,12 +385,7 @@ public class HawbReport extends IReport{
             String commaHsCode = HSCODE + ": ";
             commaHsCode += String.join(", ", dgHsCodesSet);
             dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED, commaHsCode);
-
-            List<String> commaHsCodeList = new ArrayList<>();
-            for(String hscode: dgHsCodesSet) {
-                commaHsCodeList.add(HSCODE + ": " + hscode);
-            }
-            dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED1, commaHsCodeList);
+            dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED1, commaHsCode);
         }
 
         if (!hsCodesSet.isEmpty()) {
