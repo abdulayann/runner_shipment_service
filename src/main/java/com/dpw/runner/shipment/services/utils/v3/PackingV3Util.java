@@ -552,4 +552,12 @@ public class PackingV3Util {
     private List<Packing> getShipmentPacks(List<Long> shipmentIds) {
         return packingDao.findByShipmentIdIn(shipmentIds);
     }
+
+    public void setColoadingStation(ShipmentDetails shipmentDetails) {
+        var tenantSettings = commonUtils.getCurrentTenantSettings();
+        if (Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
+                && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
+            commonUtils.setInterBranchContextForColoadStation();
+        }
+    }
 }

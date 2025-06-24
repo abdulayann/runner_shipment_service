@@ -12,6 +12,9 @@ import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -251,6 +254,24 @@ public class ShipmentControllerV3 {
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL_SEND_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
+    public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody OceanDGApprovalRequest request) throws RunnerException {
+        log.info("Received for oceanDGSendForApproval with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String warning = shipmentService.sendOceanDGApprovalEmail(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
+    public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequestV3 request)
+        throws RunnerException {
+        log.info("Received for oceanDGApprovalResponse with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+
+        String warning = shipmentService.dgApprovalResponse(request);
+        return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
 }

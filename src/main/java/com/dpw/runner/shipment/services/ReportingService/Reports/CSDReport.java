@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DATE_OF_PRINT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TIME_OF_PRINT;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CSDModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -13,16 +18,17 @@ import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DATE_OF_PRINT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TIME_OF_PRINT;
 
 @Component
 public class CSDReport extends IReport{
@@ -75,6 +81,11 @@ public class CSDReport extends IReport{
             }
             if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
                 dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
+
+            if (csdModel.getConsolidationModel() != null) {
+                this.populateConsolidationReportData(dictionary, null, csdModel.getConsolidationModel().getId());
+            }
+
         }
         else {
             populateShipmentFields(csdModel.getShipmentModel(), dictionary);

@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.FreightCertificationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -38,9 +39,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -135,6 +136,14 @@ public class FreightCertificationReport extends IReport{
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
         processBillingList(freightCertificationModel, dictionary);
+
+        if (freightCertificationModel.shipmentDetails != null) {
+            if (ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
+                ConsolidationModel consolidationModel = freightCertificationModel.shipmentDetails.getConsolidationList().get(0);
+                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
+            }
+        }
+
         if(freightCertificationModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, freightCertificationModel.shipmentDetails.getId());
         }

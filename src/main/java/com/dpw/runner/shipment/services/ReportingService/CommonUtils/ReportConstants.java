@@ -8,6 +8,23 @@ public class ReportConstants {
     public static final String LEGAL_COMPANY_NAME = "LegalCompanyName";
     public static final String COMPANY_ADDRESS = "CompanyAddress";
     public static final String HAWB_PACKS_MAP = "hawbPacksMap";
+    public static final String C_D_DG = "C_D_DG";
+    public static final String C_D_Reefer = "C_D_Reefer";
+    public static final String C_CA_DGContainer = "C_CA_DGContainer";
+    public static final String C_CA_DGPackages = "C_CA_DGPackages";
+    public static final String C_C_DGPackagesType = "C_C_DGPackagesType";
+    public static final String C_C_DGContainer = "C_C_DGContainer";
+    public static final String C_C_DGPackages = "C_C_DGPackages";
+    public static final String C_C_AdditionalTerms = "C_C_AdditionalTerms";
+    public static final String C_C_SLACCount = "C_C_SLACCount";
+    public static final String C_LastVessel = "C_LastVessel";
+    public static final String C_LastVoyage = "C_LastVoyage";
+    public static final String C_FirstVessel = "C_FirstVessel";
+    public static final String C_LastFlightNumber = "C_LastFlightNumber";
+    public static final String C_LastCarrier = "C_LastCarrier";
+    public static final String C_FirstVoyage = "C_FirstVoyage";
+    public static final String C_FirstCarrier = "C_FirstCarrier";
+    public static final String C_FirstFlightNumber = "C_FirstFlightNumber";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";

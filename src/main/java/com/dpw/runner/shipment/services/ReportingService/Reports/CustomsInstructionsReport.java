@@ -1,25 +1,28 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addCommaWithoutDecimal;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.CustomsInstructionsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class CustomsInstructionsReport extends IReport{
@@ -93,6 +96,14 @@ public class CustomsInstructionsReport extends IReport{
         if (customsInstructionsModel.shipmentDetails.getAdditionalDetails() != null)
             dictionary.put(ReportConstants.DATE_OF_ISSUE, convertToDPWDateFormat(customsInstructionsModel.shipmentDetails.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, v1TenantSettingsResponse));
         processShipmentContainers(customsInstructionsModel, dictionary, v1TenantSettingsResponse);
+
+        if (customsInstructionsModel.shipmentDetails != null) {
+            if (ObjectUtils.isNotEmpty(customsInstructionsModel.shipmentDetails.getConsolidationList())) {
+                ConsolidationModel consolidationModel = customsInstructionsModel.shipmentDetails.getConsolidationList().get(0);
+                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
+            }
+        }
+
         if(customsInstructionsModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, customsInstructionsModel.shipmentDetails.getId());
         }
