@@ -69,6 +69,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     @Value("${mdm.approveOrRejectTaskUrl}")
     String approveOrRejectTaskUrl;
 
+    @Value("${mdm.listTaskUrl}")
+    String listTaskUrl;
+
     RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -192,7 +195,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Override
     public List<Map<String, Object>> getTaskList(String entityUuid, String entityType, String status, String taskType) {
-        String url = baseUrl + departmentListUrl;
+        String url = baseUrl + listTaskUrl;
         try {
             MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).searchCriteriaList(
                 List.of(
