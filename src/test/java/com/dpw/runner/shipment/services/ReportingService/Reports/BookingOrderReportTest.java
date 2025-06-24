@@ -376,6 +376,7 @@ class BookingOrderReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(bookingOrderReport.populateDictionary(bookingOrderModel));
     }
 

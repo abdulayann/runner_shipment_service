@@ -54,8 +54,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -303,6 +302,7 @@ class PackingListReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 
@@ -339,6 +339,7 @@ class PackingListReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(packingListReport.populateDictionary(packingListModel));
     }
 
