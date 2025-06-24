@@ -1452,10 +1452,4 @@ public class ReportConstants {
     public static final String S_FIRST_VOYAGE = "S_FirstVoyage";
     public static final String S_FIRST_FLIGHT_NUMBER = "S_FirstFlightNumber";
     public static final String S_FIRST_CARRIER = "S_FirstCarrier";
-
-
-
-
-
-
 }

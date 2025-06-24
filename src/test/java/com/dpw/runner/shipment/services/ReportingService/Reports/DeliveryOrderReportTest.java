@@ -423,6 +423,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
@@ -446,6 +447,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
@@ -495,6 +497,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(cacheManager.getCache(any())).thenReturn(cache);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
@@ -534,6 +537,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(cacheManager.getCache(any())).thenReturn(cache);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));

@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
@@ -382,6 +383,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -410,6 +412,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
     @Test
@@ -438,6 +441,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -467,6 +471,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Collections.emptyList());
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -502,6 +507,7 @@ class AWBLabelReportTest extends CommonMocks {
 //        when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
 //        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
 
@@ -531,6 +537,7 @@ class AWBLabelReportTest extends CommonMocks {
         unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
         unlocationsResponses.add(unlocationsResponse);
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
@@ -555,6 +562,7 @@ class AWBLabelReportTest extends CommonMocks {
         aWbLabelModel.getShipment().setTransportMode(AIR);
         aWbLabelModel.setConsolidation(null);
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
         unlocationsResponse.setName("Kempegowda International Airport BLR");
@@ -591,6 +599,7 @@ class AWBLabelReportTest extends CommonMocks {
 //        aWbLabelModel.getShipment().getCarrierDetails().setDestinationPort(null);
 //        aWbLabelModel.getShipment().getCarrierDetails().setOrigin(null);
         aWbLabelModel.setConsolidation(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -625,6 +634,7 @@ class AWBLabelReportTest extends CommonMocks {
 //        aWbLabelModel.getShipment().getCarrierDetails().setDestinationPort(null);
 //        aWbLabelModel.getShipment().getCarrierDetails().setOrigin(null);
         aWbLabelModel.setConsolidation(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -660,6 +670,7 @@ class AWBLabelReportTest extends CommonMocks {
 //        aWbLabelModel.getShipment().getCarrierDetails().setDestinationPort(null);
 //        aWbLabelModel.getShipment().getCarrierDetails().setOrigin(null);
         aWbLabelModel.setConsolidation(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -703,6 +714,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
 
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
@@ -1037,6 +1049,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df2", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(),
                 "bb69aefb-0294-4be9-baec-835a431123df1", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test1").build()));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
         when(packingService.calculatePackSummary(any(), any(), any(),any())).thenReturn(new PackSummaryResponse());
@@ -1103,6 +1116,7 @@ class AWBLabelReportTest extends CommonMocks {
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingService.calculatePackSummary(any(), any(), any(),any())).thenReturn(new PackSummaryResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
@@ -1135,6 +1149,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
@@ -1165,6 +1180,7 @@ class AWBLabelReportTest extends CommonMocks {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(unlocationsResponses);
         when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         mockTenantSettings();
         assertNotNull(awbLabelReport.populateDictionary(aWbLabelModel));
     }
@@ -1386,6 +1402,7 @@ class AWBLabelReportTest extends CommonMocks {
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setLocationsReferenceGUID("bb69aefb-0294-4be9-baec-835a431123df");
         unlocationsResponses.add(unlocationsResponse);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
 
@@ -1426,7 +1443,7 @@ class AWBLabelReportTest extends CommonMocks {
         unlocationsResponses.add(unlocationsResponse);
 
         when(masterDataUtils.getLocationData(any())).thenReturn(Map.of("test", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build(), "bb69aefb-0294-4be9-baec-835a431123df", UnlocationsResponse.builder().airPortName("name").portName("test").iataCode("test").build()));
-
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = unlocationsResponses;
