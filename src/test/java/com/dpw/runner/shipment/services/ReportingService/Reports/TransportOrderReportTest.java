@@ -44,6 +44,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -275,6 +276,7 @@ class TransportOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
         shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
@@ -290,6 +292,7 @@ class TransportOrderReportTest extends CommonMocks {
         truckDriverDetailsModels.add(truckDriverDetailsModel);
         shipmentModel.setTruckDriverDetails(truckDriverDetailsModels);
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }

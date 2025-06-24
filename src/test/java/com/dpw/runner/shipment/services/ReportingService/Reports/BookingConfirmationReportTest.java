@@ -5,12 +5,14 @@ import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmat
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -18,6 +20,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +40,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -51,6 +55,14 @@ class BookingConfirmationReportTest {
 
     @Mock
     private HblReport hblReport;
+
+    @Mock
+    IShipmentDao shipmentDao;
+
+    @Mock
+    MasterDataUtils masterDataUtils;
+
+    Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
     @BeforeAll
     static void init() throws IOException {
@@ -71,6 +83,25 @@ class BookingConfirmationReportTest {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).build());
+        // Mock tenant models with lowercase values
+        TenantModel origin = new TenantModel();
+        origin.setDisplayName("origin branch");
+        origin.setAddress1("origin addr1");
+        origin.setAddress2("origin addr2");
+        origin.setCity("origin city");
+        origin.setState("origin state");
+        origin.setZipPostCode("12345");
+        origin.setCountry("origin country");
+
+        TenantModel dest = new TenantModel();
+        dest.setDisplayName("dest branch");
+
+        TenantModel triang = new TenantModel();
+        triang.setDisplayName("triang branch");
+        // Prepare mocked tenant map
+        mockedTenantMap.put("100", origin);
+        mockedTenantMap.put("200", dest);
+        mockedTenantMap.put("300", triang);
     }
 
     private void populateModel(BookingConfirmationModel bookingConfirmationModel) {
@@ -261,6 +292,8 @@ class BookingConfirmationReportTest {
         Map<String, Object> chargeMap = new HashMap<>();
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
         assertNotNull(bookingConfirmationReport.populateDictionary(bookingConfirmationModel));
     }
@@ -279,6 +312,8 @@ class BookingConfirmationReportTest {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         assertNotNull(bookingConfirmationReport.populateDictionary(bookingConfirmationModel));
     }
 

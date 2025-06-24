@@ -57,6 +57,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -332,6 +333,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 
@@ -370,6 +372,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockRakc(cargoManifestAirShipmentModel.getShipmentDetails());
         mockShipmentSettings();
         mockTenantSettings();
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(cargoManifestAirShipmentReport.populateDictionary(cargoManifestAirShipmentModel));
     }
 
