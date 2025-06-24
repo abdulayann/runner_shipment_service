@@ -1907,7 +1907,7 @@ public class AwbService implements IAwbService {
 
         ArrayList<String> shipmentAddressIds = new ArrayList<>();
         if(shipmentDetails.isPresent()) {
-            collectAddressIds(shipmentDetails.get());
+            shipmentAddressIds = collectAddressIds(shipmentDetails.get());
         }
         Map<Long, AddressDataV1> shipmentAddressIdToAddressEntityMap = fetchAddressData(shipmentAddressIds);
 
@@ -3775,12 +3775,15 @@ public class AwbService implements IAwbService {
      * Fetches address data for the given address IDs.
      */
     private Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
-        CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
-        V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-        List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
 
-        return addressDataList.stream()
-                .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+            return addressDataList.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+        }
+        return new HashMap<>();
     }
 
     private void setTaxRegistrationForConsginer(ShipmentDetails shipmentDetails, Map<Long, AddressDataV1> addressIdToEntityOrgMap, AwbResponse awbResponse) {
