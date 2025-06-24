@@ -1115,8 +1115,18 @@ public class ReportService implements IReportService {
                 else {
                   threadSafeData.put(ReportConstants.COUNT, null);
                 }
+                int finalPacks = packs;
+                log.info("Submitting task for Pack: {} on Thread: {}", finalPacks, Thread.currentThread().getName());
+                futures.add(executorService.submit(() -> {
+                    log.info("Started processing Pack: {} on Thread: {}", finalPacks, Thread.currentThread().getName());
+                    long start = System.currentTimeMillis();
 
-                futures.add(executorService.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, pdfBytes, isCombi, packsCount, hawbPacksCountForCombi)));
+                    byte[] result = addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, pdfBytes, isCombi, packsCount, hawbPacksCountForCombi);
+
+                    long end = System.currentTimeMillis();
+                    log.info("Completed Pack: {} on Thread: {} in {} ms", finalPacks, Thread.currentThread().getName(), (end - start));
+                    return result;
+                }));
             }
 
             for (Future<byte[]> future : futures) {
