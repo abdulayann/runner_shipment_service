@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -39,6 +41,7 @@ public class ReportRequest implements IRunnerRequest {
     boolean isShipperAndConsignee;
     boolean isSecurityData;
     String transportInstructionId;
+    Set<Long> tiLegs = new HashSet<>();
     String remarks;
     boolean includeCsdInfo;
     boolean printCSD;

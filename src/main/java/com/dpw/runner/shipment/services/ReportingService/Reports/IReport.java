@@ -1175,7 +1175,7 @@ public abstract class IReport {
         }
     }
 
-    private void processVessels(ShipmentModel shipment, Map<String, Object> dictionary, Set<String> vesselIds, String carrierVesselId) {
+    public void processVessels(ShipmentModel shipment, Map<String, Object> dictionary, Set<String> vesselIds, String carrierVesselId) {
         vesselIds.add(carrierVesselId);
         Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
         Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
@@ -1212,7 +1212,7 @@ public abstract class IReport {
         return masterListsMap;
     }
 
-    private Map<String, UnlocationsResponse> getUnlocationsResponseMap(ShipmentModel shipment) {
+    public Map<String, UnlocationsResponse> getUnlocationsResponseMap(ShipmentModel shipment) {
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
         Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
         Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests), EntityTransferConstants.LOCATION_SERVICE_GUID);
@@ -1482,7 +1482,9 @@ public abstract class IReport {
     public ShipmentDetails getShipmentDetails(Long id) {
         return shipmentDao.findById(id).orElse(null);
     }
-
+    public ShipmentModel getShipmentModel(Long id) {
+        return modelMapper.map(getShipmentDetails(id), ShipmentModel.class);
+    }
     public ShipmentModel getShipmentByQuery(Long id) {
         var optional = shipmentDao.findShipmentsByIds(Set.of(id)).stream().findFirst();
         return getShipment(optional.orElse(null));

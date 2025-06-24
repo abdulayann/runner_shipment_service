@@ -25,6 +25,19 @@ public class ReportConstants {
     public static final String C_FirstVoyage = "C_FirstVoyage";
     public static final String C_FirstCarrier = "C_FirstCarrier";
     public static final String C_FirstFlightNumber = "C_FirstFlightNumber";
+    public static final String HAS_LEGS = "HasLegs";
+    public static final String TI_LEGS = "TILegs";
+    public static final String HAS_CONTAINERS = "HasContainers";
+    public static final String TI_CONTAINERS = "TI_Containers";
+    public static final String TI_PACKAGES = "TI_Packages";
+    public static final String TI_REFERENCES = "TI_ReferenceDetails";
+    public static final String TI_TRUCK_DRIVERS = "TI_Drivers";
+    public static final String HAS_PACKAGE_DETAILS = "HasPackDetails";
+    public static final String HAS_REFERENCE_DETAILS = "HasReferenceDetails";
+    public static final String HAS_TRUCK_DRIVERS = "HasDrivers";
+    public static final String PICKUP_ORDER_V3 = "PickupOrderV3";
+    public static final String DELIVERY_ORDER_V3 = "DeliveryOrderV3";
+    public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
