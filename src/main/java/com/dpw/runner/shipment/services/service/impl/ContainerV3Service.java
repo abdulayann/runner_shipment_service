@@ -43,6 +43,13 @@ import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -93,6 +100,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    IShipmentSync shipmentSync;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -1110,6 +1120,46 @@ public class ContainerV3Service implements IContainerV3Service {
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
 
+    private void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
+        boolean isDG = false;
+        boolean isDGClass1Added = false;
+        if(Boolean.TRUE.equals(container.getHazardous())) {
+            isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(container.getDgClass());
+            isDG = true;
+        }
+
+        if(!isDGClass1Added && !isDG && container.getPacksList() != null) {
+            for (Packing packing : container.getPacksList()) {
+                if (Boolean.TRUE.equals(packing.getHazardous())) {
+                    isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
+                    isDG = true;
+                }
+            }
+        }
+
+        if(isDG) {
+            for (Long shipmentId : shipmentIdsForAttachment) {
+                saveDGShipment(shipmentId, isDGClass1Added);
+            }
+        }
+    }
+
+    private void saveDGShipment(Long shipmentId, boolean isDGClass1Added) throws RunnerException {
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
+        if(!optionalShipmentDetails.isPresent())
+            return;
+        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+        shipmentDao.entityDetach(List.of(shipmentDetails));
+
+        boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
+        shipmentDetails.setContainsHazardous(true);
+        saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+        if(saveShipment) {
+            shipmentDetails = shipmentDao.save(shipmentDetails, false);
+            shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
+        }
+    }
+
     private Containers fetchDataForAssignContainer(AssignContainerRequest request,
                                                    Map<Long, ShipmentDetails> shipmentDetailsMap, Map<Long, Packing> packingListMap,
                                                    List<Packing> assignedPacks, List<ShipmentsContainersMapping> shipmentsContainersMappings,
@@ -1218,7 +1268,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
-                                                  Containers container, List<Long> shipmentIdsForAttachment) {
+                                                  Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
         if (!listIsNullOrEmpty(shipmentIdsToSetContainerCargo))
             shipmentDao.setShipmentIdsToContainer(shipmentIdsToSetContainerCargo, container.getId());
         if (!packingListMap.isEmpty() && !listIsNullOrEmpty(packingListMap.values().stream().toList()))
@@ -1235,6 +1285,8 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         if (!listIsNullOrEmpty(shipmentsContainersMappingList))
             shipmentsContainersMappingDao.saveAll(shipmentsContainersMappingList);
+
+        checkAndMakeDG(container, shipmentIdsForAttachment);
         return container;
     }
 
