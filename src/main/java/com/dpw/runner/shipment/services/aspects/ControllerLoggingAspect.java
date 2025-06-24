@@ -54,7 +54,7 @@ public class ControllerLoggingAspect {
                     String json = jsonHelper.convertToJson(arg);
                     jsonBodies.add(json);
                 } catch (Exception e) {
-                    jsonBodies.add("\"[Unserializable body: " + arg.getClass().getSimpleName() + "]\"");
+                    jsonBodies.add("\"[Unserializable body: " + e.getMessage() + "]\"");
                 }
             }
         }
@@ -73,8 +73,14 @@ public class ControllerLoggingAspect {
             response = joinPoint.proceed();
             return response;
         } finally {
+            String responseLog;
+            try {
+                responseLog = jsonHelper.convertToJson(response);
+            } catch (Exception e) {
+                responseLog = "[Unserializable Response: " + e.getMessage() + "]";
+            }
             log.info("{} | RESPONSE RETURNED [RESPONSE={}]",
-                    LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
+                    LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(responseLog));
         }
     }
 }
