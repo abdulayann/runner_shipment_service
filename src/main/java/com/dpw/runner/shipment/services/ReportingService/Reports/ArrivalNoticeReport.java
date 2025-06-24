@@ -163,6 +163,9 @@ public class ArrivalNoticeReport extends IReport {
             this.populateConsolidationReportData(dictionary, null, arrivalNoticeModel.consolidationDetails.getId());
         }
 
+        if (arrivalNoticeModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, arrivalNoticeModel.shipmentDetails.getId());
+        }
         return dictionary;
     }
 

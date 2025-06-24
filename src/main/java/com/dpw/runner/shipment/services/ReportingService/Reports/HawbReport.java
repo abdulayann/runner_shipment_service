@@ -222,6 +222,9 @@ public class HawbReport extends IReport{
             this.populateConsolidationReportData(dictionary, null, hawbModel.getConsolidationDetails().getId());
         }
 
+        if (hawbModel.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, hawbModel.getShipmentDetails().getId());
+        }
         return dictionary;
     }
 

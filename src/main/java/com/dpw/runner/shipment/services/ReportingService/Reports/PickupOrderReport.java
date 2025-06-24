@@ -104,6 +104,9 @@ public class PickupOrderReport extends IReport {
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
 
         ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
+        if (pickUpOrderReportModel.hblModel.getShipment() != null) {
+            this.populateShipmentReportData(dictionary, null, pickUpOrderReportModel.hblModel.getShipment() .getId());
+        }
 
         if (pickUpOrderReportModel.hblModel.getConsolidation() != null) {
             this.populateConsolidationReportData(dictionary, null, pickUpOrderReportModel.hblModel.getConsolidation().getId());

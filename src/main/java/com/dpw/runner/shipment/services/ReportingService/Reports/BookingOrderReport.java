@@ -99,6 +99,10 @@ public class BookingOrderReport extends IReport {
             }
         }
 
+        if(bookingOrderModel.getShipmentModel() != null) {
+            this.populateShipmentReportData(dictionary, null, bookingOrderModel.getShipmentModel().getId());
+        }
+
         return dictionary;
     }
 

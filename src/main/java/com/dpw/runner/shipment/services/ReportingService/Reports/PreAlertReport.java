@@ -188,6 +188,10 @@ public class PreAlertReport extends IReport {
             this.populateConsolidationReportData(dictionary, null, preAlertModel.getConsolidationDetails().getId());
         }
 
+        if (preAlertModel.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, preAlertModel.getShipmentDetails().getId());
+        }
+
         return dictionary;
     }
 

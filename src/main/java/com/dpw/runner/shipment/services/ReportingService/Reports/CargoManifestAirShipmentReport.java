@@ -96,6 +96,7 @@ public class CargoManifestAirShipmentReport extends IReport{
         }
         dictionary.put(CM_NO_OF_PACKAGES, cargoManifestAirShipmentModel.getShipmentDetails().getNoOfPacks());
         dictionary.put(CM_PACKS_UNIT, Constants.PIECES);
+        this.populateShipmentReportData(dictionary, null, cargoManifestAirShipmentModel.getShipmentDetails().getId());
         return dictionary;
     }
 }

@@ -227,6 +227,10 @@ public class DeliveryOrderReport extends IReport{
             this.populateConsolidationReportData(dictionary, null, deliveryOrderModel.consolidationDetails.getId());
         }
 
+        if (deliveryOrderModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, deliveryOrderModel.shipmentDetails.getId());
+        }
+
         return dictionary;
     }
 

@@ -130,6 +130,10 @@ public class PackingListReport extends IReport {
             this.populateConsolidationReportData(dictionary, null, model.getConsolidation().getId());
         }
 
+        if(model.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, model.getShipmentDetails().getId());
+        }
+
         return dictionary;
     }
 

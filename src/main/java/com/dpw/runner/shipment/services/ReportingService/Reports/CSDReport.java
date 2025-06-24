@@ -106,6 +106,9 @@ public class CSDReport extends IReport{
             dictionary.put(ReportConstants.REGULATORY_ENTITY_CATEGORY, additionalDetailModel.getRegulatedEntityCategory());
             if(!CollectionUtils.isEmpty(additionalDetailModel.getScreeningStatus()))
                 dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(additionalDetailModel.getScreeningStatus()));
+            if (csdModel.getShipmentModel() != null) {
+                this.populateShipmentReportData(dictionary, null, csdModel.getShipmentModel().getId());
+            }
         }
 
         var securityStatus = dictionary.get(ReportConstants.CONSIGNMENT_STATUS);

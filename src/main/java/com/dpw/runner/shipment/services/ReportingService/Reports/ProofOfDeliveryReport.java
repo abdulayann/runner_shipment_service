@@ -35,6 +35,9 @@ public class ProofOfDeliveryReport extends IReport {
             populateShipmentOrganizationsLL(proofOfDeliveryModel.hblModel.shipment, dictionary,
                 new ArrayList<>());
         }
+        if(proofOfDeliveryModel.hblModel.shipment != null) {
+            this.populateShipmentReportData(dictionary, null, proofOfDeliveryModel.hblModel.getShipment().getId());
+        }
         return dictionary;
     }
 }

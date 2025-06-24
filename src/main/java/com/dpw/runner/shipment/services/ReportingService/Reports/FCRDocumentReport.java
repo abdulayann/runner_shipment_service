@@ -114,6 +114,7 @@ public class FCRDocumentReport extends IReport{
             }
         }
 
+        this.populateShipmentReportData(dictionary, null, fcrDocumentModel.getShipmentModel().getId());
         return convertValuesToUpperCase(dictionary);
     }
 

@@ -2152,11 +2152,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Persist updated shipment details and event logs
             shipmentV3Service.saveAll(shipments);
             eventV3Service.saveAllEvent(events);
-
-            // Sync to external systems if triggered via attach UI
-            if (Boolean.TRUE.equals(fromAttachShipment)) {
-                shipmentV3Service.syncShipmentsList(shipments, StringUtility.convertToString(console.getGuid()));
-            }
         }
 
         return shipments;
