@@ -138,7 +138,6 @@ public class AwbDao implements IAwbDao {
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {
         var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
-        addScreenersName(awb);
         return awb;
     }
 
