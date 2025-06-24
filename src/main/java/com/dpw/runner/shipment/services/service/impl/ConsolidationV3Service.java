@@ -1925,7 +1925,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return !Boolean.TRUE.equals(consolidationDetails.getHazardous());
     }
 
-    private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
+    public boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
         if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag())) {
             return false;
         }
