@@ -707,6 +707,13 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "slac")
     private Integer slac;
 
+    @Column(name = "dg_packs_count")
+    private Integer dgPacksCount;
+
+    @Column(name = "dg_packs_unit")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String dgPacksUnit;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

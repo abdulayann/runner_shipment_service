@@ -1,8 +1,20 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_DATE_OF_ISSUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_PLACE_OF_ISSUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PLACE_OF_ISSUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIP_CONSIGNEE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIP_NOTIFY_PARTY_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USA_LOC_CODE_PREFIX;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressDetails;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.FCRDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -11,16 +23,19 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressDetails;
 
 @Component
 public class FCRDocumentReport extends IReport{
@@ -91,6 +106,14 @@ public class FCRDocumentReport extends IReport{
         populateFcrPlaceOfIssue(dictionary, unLocationsMap);
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
+
+        if (fcrDocumentModel.getShipmentModel() != null) {
+            if (ObjectUtils.isNotEmpty(fcrDocumentModel.getShipmentModel().getConsolidationList())) {
+                ConsolidationModel consolidationModel = fcrDocumentModel.getShipmentModel().getConsolidationList().get(0);
+                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
+            }
+        }
+
         return convertValuesToUpperCase(dictionary);
     }
 

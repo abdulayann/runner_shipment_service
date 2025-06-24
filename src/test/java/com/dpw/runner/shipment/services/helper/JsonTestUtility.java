@@ -63,7 +63,9 @@ public class JsonTestUtility {
     public String readJson(String fileName) throws IOException {
         return FileUtils.readFileToString(new File(fileName), StandardCharsets.UTF_8);
     }
-
+    public <T> T convertJsonTClazz(String jsonContent,Class<T> clazz) throws IOException {
+        return objectMapper.readValue(jsonContent, clazz);
+    }
     public String getMDMResponseString() throws JsonProcessingException {
         return convertToJson(payload.get("MDM_RESPONSE"));
     }

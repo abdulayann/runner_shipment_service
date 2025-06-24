@@ -40,7 +40,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
@@ -4374,6 +4373,56 @@ class CommonUtilsTest {
         commonUtils.sendExcelFileViaEmail(workbook, filename);
         assertEquals("him@gmail.com", UserContext.getUser().getEmail());
 
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_LCL() {
+        assertTrue(commonUtils.isRoadLCLorLTL("ROA", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_LTL() {
+        assertTrue(commonUtils.isRoadLCLorLTL("ROA", "LTL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadLCLorLTL("SEA", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadLCLorLTL("ROA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaLCL_Valid() {
+        assertTrue(commonUtils.isSeaLCL("SEA", "LCL"));
+    }
+
+    @Test
+    void testIsSeaLCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaLCL("SEA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaLCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaLCL("AIR", "LCL"));
+    }
+
+    @Test
+    void testIsLCLorLTL_LCL() {
+        assertTrue(commonUtils.isLCLorLTL("LCL"));
+    }
+
+    @Test
+    void testIsLCLorLTL_LTL() {
+        assertTrue(commonUtils.isLCLorLTL("LTL"));
+    }
+
+    @Test
+    void testIsLCLorLTL_Invalid() {
+        assertFalse(commonUtils.isLCLorLTL("FCL"));
     }
 
     private ShipmentDetails getMockShipmentDetails() {

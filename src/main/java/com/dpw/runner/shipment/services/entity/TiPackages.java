@@ -34,7 +34,7 @@ public class TiPackages extends MultiTenancy {
     private String noOfPackages;
 
     @Column(name = "package_type")
-    @MasterData(type = MasterDataType.PACKAGE_TYPE)
+    @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packageType;
 
     @Column(name = "description")

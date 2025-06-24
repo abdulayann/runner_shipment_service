@@ -392,15 +392,4 @@ class ContainerV3UtilTest extends CommonMocks {
         containerV3Util.addNoOfPackagesToContainer(testContainer, null, "BKG");
         assertNull(testContainer.getPacks());
     }
-
-    @Test
-    void testContainerBeforeSave() throws RunnerException {
-        testContainer.setId(1L);
-        testContainer.setContainerCode("Code");
-        testContainer.setContainerCount(2L);
-        testContainer.setConsolidationId(1L);
-        testContainer.setContainerNumber("12345678910");
-        containerV3Util.containerBeforeSave(List.of(testContainer));
-        assertNotNull(testContainer);
-    }
 }

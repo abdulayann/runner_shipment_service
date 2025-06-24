@@ -1,20 +1,23 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
@@ -31,6 +34,8 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import java.util.Optional;
 import javax.validation.Valid;
+
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,6 +171,7 @@ public class ShipmentControllerV3 {
     @PostMapping(ApiConstants.ATTACH_CONSOLIDATION)
     public ResponseEntity<IRunnerResponse> attachConsolidation(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         log.info("Received attachConsolidation request: {}", request);
+        request.setFromConsolidation(false);
         String warning = shipmentService.attachConsolidation(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
@@ -202,6 +208,51 @@ public class ShipmentControllerV3 {
             return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, consoleGuid, isAttached, getMasterData, fromNte);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.AIB_ACTION, response = UpstreamDateUpdateResponse.class)})
+    @PutMapping(ApiConstants.AIB_ACTION)
+    public ResponseEntity<IRunnerResponse> aibAction(@RequestBody AibActionShipment request) {
+        log.info("{} | Request received for :/aib/action on shipments with body: {}", LoggerHelper.getRequestIdFromMDC(),  jsonHelper.convertToJson(request));
+        try {
+            return shipmentService.aibAction(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
+    @GetMapping(ShipmentConstants.AIB_PUSH_REQUEST)
+    public ResponseEntity<IRunnerResponse> aibPushRequest(@RequestParam() Long shipId,
+                                                          @RequestParam() Long consoleId,
+                                                          @RequestParam(required = false) String rejectRemarks) {
+        log.info("{} | Request received for :/aib/push on shipments with ShipmentId: {} | ConsoleId: {} | Remarks: {}", LoggerHelper.getRequestIdFromMDC(), shipId, consoleId, rejectRemarks);
+        try {
+            return shipmentService.aibPushRequest(shipId, consoleId, rejectRemarks);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
+    @PostMapping(value = "/attach-list-shipment")
+    public ResponseEntity<IRunnerResponse> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
+        try {
+            return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @PostMapping(ApiConstants.AIB_NOTIFICATIONS)
+    public ResponseEntity<IRunnerResponse> aibPendingNotifications(@RequestBody AibNotificationRequest request) {
+        log.info("{} Request received for aibPendingNotifications for shipment {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        try {
+            return shipmentService.aibPendingNotification(CommonRequestModel.builder().data(request).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
 

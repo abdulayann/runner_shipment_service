@@ -36,6 +36,10 @@ public class AchievedQuantitiesResponse implements IRunnerResponse {
     private String volumeUtilization;
     private Integer packs;
     private String packsType;
+    private Integer dgPacks;
+    private String dgPacksType;
+    private Integer slacCount;
+    private Integer dgContainerCount;
     private Integer containerCount;
     private BigDecimal teuCount;
 }

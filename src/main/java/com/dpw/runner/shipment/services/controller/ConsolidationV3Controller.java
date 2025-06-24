@@ -4,9 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -14,34 +12,31 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import javax.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
@@ -109,6 +104,7 @@ public class ConsolidationV3Controller {
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
         log.info("Received attachShipments request: {}", request);
+        request.setFromConsolidation(true);
         String warning = consolidationV3Service.attachShipments(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
@@ -172,4 +168,35 @@ public class ConsolidationV3Controller {
         log.info("Received updateSailingSchedule request: {}", request);
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.updateSailingScheduleDataToShipment(request));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.AIB_ACTION, response = UpstreamDateUpdateResponse.class)})
+    @PutMapping(ApiConstants.AIB_ACTION)
+    public ResponseEntity<IRunnerResponse> aibAction(@RequestBody AibActionConsolidation request) {
+        log.info("{} | Request received for :/aib/action on console with body: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        try {
+            return consolidationV3Service.aibAction(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @PostMapping(ApiConstants.AIB_NOTIFICATIONS)
+    public ResponseEntity<IRunnerResponse> aibPendingNotifications(@RequestBody AibNotificationRequest request) {
+        log.info("{} Request received for aibPendingNotifications for consolidation {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        try {
+            return consolidationV3Service.aibPendingNotification(CommonRequestModel.builder().data(request).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+    
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)
+    })
+    @GetMapping(ApiConstants.API_GET_SYNC_ACHIEVED_DATA)
+    public ResponseEntity<IRunnerResponse> getConsoleSyncAchievedData(@RequestParam Long consolidationId) throws RunnerException, JsonMappingException {
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getConsoleSyncAchievedData(consolidationId));
+    }
+
 }

@@ -438,15 +438,18 @@ public class EventsV3Util {
     private boolean isLclOrFclOrAir(ShipmentDetails shipmentDetails) {
         return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
     private boolean isLclOrAir(ShipmentDetails shipmentDetails) {
         return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
     private boolean isFcl(ShipmentDetails shipmentDetails) {
-        return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
+        return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType());
     }
 }

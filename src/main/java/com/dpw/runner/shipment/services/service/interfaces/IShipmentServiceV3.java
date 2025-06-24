@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -8,7 +9,6 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
-import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
@@ -25,13 +25,12 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
-import org.apache.http.auth.AuthenticationException;
-import org.springframework.http.ResponseEntity;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.http.auth.AuthenticationException;
+import org.springframework.http.ResponseEntity;
 
 public interface IShipmentServiceV3 {
 
@@ -56,15 +55,13 @@ public interface IShipmentServiceV3 {
 
     void createLogHistoryForShipment(ShipmentDetails shipmentDetails);
 
-    void syncShipmentsList(List<ShipmentDetails> shipments, String transactionId);
-
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
     ShipmentPendingNotificationResponse getPendingNotificationData(CommonGetRequest request);
 
     Optional<ShipmentDetails> findById(Long shipmentId);
 
-    void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse);
+    void updateCargoDetailsInShipment(ShipmentDetails shipmentDetails, CargoDetailsResponse cargoDetailsResponse);
 
     void updateShipmentDetailsFromPacks(Long shipmentId, DateBehaviorType dateType, LocalDateTime shipmentGateInDate, ShipmentPackStatus shipmentPackStatus);
 
@@ -85,6 +82,13 @@ public interface IShipmentServiceV3 {
 
     ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData,
             boolean fromNte) throws AuthenticationException;
+
+    ResponseEntity<IRunnerResponse> aibAction(AibActionShipment request) throws RunnerException;
+    ResponseEntity<IRunnerResponse> aibPushRequest(Long shipId, Long consoleId, String remarks) throws RunnerException;
+    ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
 
     String sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
     String dgApprovalResponse(OceanDGRequestV3 request) throws RunnerException;

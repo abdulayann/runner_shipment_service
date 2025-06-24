@@ -1,5 +1,52 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CNEES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONT_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH_ADD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DSTN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_DOCUMENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MASTER_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH_ADD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PRE_ALERT_DOC;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
+
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
@@ -8,16 +55,50 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
+import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DocumentConstants;
+import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
@@ -28,8 +109,29 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.DocDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
@@ -56,7 +158,35 @@ import com.google.common.base.Strings;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.*;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfConcatenate;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfGState;
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfStamper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -69,24 +199,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
-import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
 @Service
 @Slf4j
@@ -2370,9 +2482,12 @@ public class ReportService implements IReportService {
     }
 
     public void pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
+        log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
+        log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
         // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
         if (shipmentSettings != null  && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
+            log.info("{} | {} Processing pushFileToDocumentMaster process as Shipment3.0Flag enabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE);
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
@@ -2414,16 +2529,20 @@ public class ReportService implements IReportService {
                 docUploadRequest.setFileName(filename);
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
             } catch (Exception e) {
-                log.error("{} | {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), "pushFileToDocumentMaster", e.getMessage());
+                log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE,"pushFileToDocumentMaster", e.getMessage());
             }
+        } else {
+            log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
         }
     }
 
     private void setDocumentServiceParameters(ReportRequest reportRequest,  DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;
         String shipmentType;
+        String consolidationType;
         String entityGuid;
         String entityType;
+        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
 
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
@@ -2431,6 +2550,7 @@ public class ReportService implements IReportService {
                 ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
                 transportMode = shipmentDetails.getTransportMode();
                 shipmentType = shipmentDetails.getDirection();
+                consolidationType = shipmentDetails.getJobType();
                 entityGuid = StringUtility.convertToString(shipmentDetails.getGuid());
                 entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
                 break;
@@ -2439,6 +2559,7 @@ public class ReportService implements IReportService {
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
                 transportMode = consolidationDetails.getTransportMode();
                 shipmentType = consolidationDetails.getShipmentType();
+                consolidationType = consolidationDetails.getConsolidationType();
                 entityGuid = StringUtility.convertToString(consolidationDetails.getGuid());
                 entityType = Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
                 break;
@@ -2452,7 +2573,215 @@ public class ReportService implements IReportService {
         docUploadRequest.setKey(entityGuid);
         docUploadRequest.setTransportMode(transportMode);
         docUploadRequest.setShipmentType(shipmentType);
-
+        docUploadRequest.setConsolidationType(consolidationType);
+        log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
         documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
     }
+
+    // Main orchestrator method that populates the data dump dictionary with all required details
+    public void populateConsolidationReportData(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
+        if (consolidationDetails == null) {
+            return;
+        }
+
+        if (dict == null) {
+            dict = new HashMap<>();
+        }
+        // Add various grouped information into the map
+        addBasicConsolidationFields(dict, consolidationDetails);
+        addReferenceNumbers(dict, consolidationDetails.getReferenceNumbersList());
+        addRoutingDetails(dict, consolidationDetails.getRoutingsList());
+        addPartyDetails(dict, consolidationDetails.getConsolidationAddresses());
+        addAgentDetails(dict, "C_OriginAgent", consolidationDetails.getSendingAgent());
+        addAgentDetails(dict, "C_DestinationAgent", consolidationDetails.getReceivingAgent());
+        addBranchAndTriangulationDetails(dict, consolidationDetails);
+    }
+
+    // Adds simple scalar fields and nested allocation/quantity-related values
+    private void addBasicConsolidationFields(Map<String, Object> dict, ConsolidationDetails details) {
+        dict.put(ReportConstants.C_D_Reefer, details.getReefer());
+        dict.put(ReportConstants.C_D_DG, details.getHazardous());
+
+        // Add container and package counts from allocation section if available
+        Allocations al = details.getAllocations();
+        if (al != null) {
+            dict.put(ReportConstants.C_CA_DGContainer, al.getDgContainerCount());
+            dict.put(ReportConstants.C_CA_DGPackages, al.getDgPacks());
+        }
+
+        // Add achieved quantities section if available
+        AchievedQuantities aq = details.getAchievedQuantities();
+        if (aq != null) {
+            dict.put(ReportConstants.C_C_DGPackagesType, aq.getDgPacksType());
+            dict.put(ReportConstants.C_C_DGContainer, aq.getDgContainerCount());
+            dict.put(ReportConstants.C_C_DGPackages, aq.getDgPacks());
+            dict.put(ReportConstants.C_C_SLACCount, aq.getSlacCount());
+        }
+
+        dict.put(ReportConstants.C_C_AdditionalTerms, details.getAdditionalTerms()); // terms
+    }
+
+    // Adds reference numbers into the map using their type as a key suffix
+    private void addReferenceNumbers(Map<String, Object> dict, List<ReferenceNumbers> refs) {
+        if (refs == null) {
+            return;
+        }
+
+        for (ReferenceNumbers ref : refs) {
+            if (ref != null && ref.getType() != null) {
+                dict.put("C_" + ref.getType(), ref.getReferenceNumber());
+            }
+        }
+    }
+
+    // Adds first and last routing information from MAIN_CARRIAGE legs only
+    private void addRoutingDetails(Map<String, Object> dict, List<Routings> routings) {
+        if (routings == null || routings.isEmpty()) {
+            return;
+        }
+
+        // Filter only main carriage routes
+        List<Routings> main = routings.stream()
+                .filter(r -> r != null && r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
+                .toList();
+
+        if (main.isEmpty()) {
+            return;
+        }
+
+        Routings first = main.get(0);
+        Routings last = main.get(main.size() - 1);
+
+        // Add last routing info
+        if (last != null) {
+            dict.put(ReportConstants.C_LastVessel, last.getVesselName());
+            dict.put(ReportConstants.C_LastVoyage, last.getVoyage());
+            dict.put(ReportConstants.C_LastCarrier, last.getCarrier());
+            dict.put(ReportConstants.C_LastFlightNumber, last.getFlightNumber());
+        }
+
+        // Add first routing info
+        if (first != null) {
+            dict.put(ReportConstants.C_FirstVessel, first.getVesselName());
+            dict.put(ReportConstants.C_FirstVoyage, first.getVoyage());
+            dict.put(ReportConstants.C_FirstCarrier, first.getCarrier());
+            dict.put(ReportConstants.C_FirstFlightNumber, first.getFlightNumber());
+        }
+    }
+
+    // Adds each party's mapped data using their type (like SHIPPER, CONSIGNEE) as the key
+    private void addPartyDetails(Map<String, Object> dict, List<Parties> parties) {
+        if (parties == null) {
+            return;
+        }
+
+        for (Parties party : parties) {
+            if (party != null && party.getType() != null) {
+                dict.put("C_" + party.getType(), buildPartyMap(party));
+            }
+        }
+    }
+
+    // Adds single agent party (either origin or destination) using a provided key
+    private void addAgentDetails(Map<String, Object> dict, String key, Parties agent) {
+        if (agent != null) {
+            dict.put(key, buildPartyMap(agent));
+        }
+    }
+
+    // Converts a Parties object into a consistent map of address/organization values
+    private List<Map<String, Object>> buildPartyMap(Parties party) {
+        Map<String, Object> map = new HashMap<>();
+
+        // Add organization name if available
+        if (party.getOrgData() != null) {
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, party.getOrgData().get(PartiesConstants.FULLNAME));
+        }
+
+        // Add address lines if available
+        if (party.getAddressData() != null) {
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, party.getAddressData().get(PartiesConstants.ADDRESS1));
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, party.getAddressData().get(PartiesConstants.ADDRESS2));
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, party.getAddressData().get(PartiesConstants.CITY));
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, party.getAddressData().get(PartiesConstants.STATE));
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
+            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, party.getAddressData().get(PartiesConstants.COUNTRY));
+        }
+
+        return List.of(map); // wrap in list as required by caller
+    }
+
+    // Adds origin/receiving branches and triangulated partner branch info
+    private void addBranchAndTriangulationDetails(Map<String, Object> dict, ConsolidationDetails details) {
+        Long origin = details.getOriginBranch();
+        Long receiving = details.getReceivingBranch();
+        List<TriangulationPartner> triangulations = details.getTriangulationPartnerList();
+
+        if (origin == null || receiving == null) {
+            return; // cannot proceed if key branches are missing
+        }
+
+        Set<String> tenantIds = new HashSet<>();
+        tenantIds.add(origin.toString());
+        tenantIds.add(receiving.toString());
+
+        // Add triangulation partner tenant IDs if present
+        if (triangulations != null) {
+            tenantIds.addAll(triangulations.stream()
+                    .filter(Objects::nonNull)
+                    .map(tp -> tp.getTriangulationPartner().toString())
+                    .collect(Collectors.toSet()));
+        }
+
+        // Fetch full tenant data in bulk
+        Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
+        masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+
+        // Add origin & destination branches
+        dict.put("C_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
+        dict.put("C_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
+
+        // Add triangulation partner branches with indexed keys
+        if (triangulations != null) {
+            for (int i = 0; i < triangulations.size(); i++) {
+                TriangulationPartner tp = triangulations.get(i);
+                if (tp != null && tp.getTriangulationPartner() != null) {
+                    TenantModel model = tenantData.get(tp.getTriangulationPartner().toString());
+                    dict.put("C_TriangulationBranch" + (i + 1), buildTenantMap(model));
+                }
+            }
+        }
+    }
+
+    // Builds a map from a tenant's address and name info
+    private List<Map<String, Object>> buildTenantMap(TenantModel tenant) {
+        if (tenant == null) {
+            return List.of();
+        }
+
+        Map<String, Object> map = new HashMap<>();
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, tenant.getDisplayName());
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, tenant.getAddress1());
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, tenant.getAddress2());
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, tenant.getCity());
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, tenant.getState());
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
+        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, tenant.getCountry());
+
+        return List.of(map); // wrap in list
+    }
+
+    private void putUpperCaseIfNotNullString(Map<String, Object> map, String key, Object value) {
+        if (value == null) {
+            return;
+        }
+
+        if (value instanceof String) {
+            map.put(key, ((String) value).toUpperCase());
+        } else {
+            map.put(key, value);
+        }
+    }
+
+
 }

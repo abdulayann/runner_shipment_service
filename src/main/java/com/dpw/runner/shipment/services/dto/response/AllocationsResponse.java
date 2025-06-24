@@ -42,6 +42,9 @@ public class AllocationsResponse implements IRunnerResponse {
     private String weightVolumeUnit;
     private Integer packs;
     private String packsType;
+    private Integer dgPacks;
+    private String dgPacksType;
+    private Integer dgContainerCount;
     private Integer containerCount;
     private BigDecimal teuCount;
 }

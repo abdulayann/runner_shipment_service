@@ -7,17 +7,19 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -72,19 +74,39 @@ public class ContainerValidationUtil {
         }
     }
 
-    public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails) throws RunnerException {
+    public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails, String module) {
         if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
+            if(Constants.PACKING.equals(module)) {
+                String msg = getErrorMessage(shipmentDetails.getContainersList());
+                throw new ValidationException(msg);
+            }
             throw new ValidationException(String.format(
                     "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
                     shipmentDetails.getShipmentId()));
         }
     }
 
-    public void validateBeforeAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap) throws RunnerException {
+    private String getErrorMessage(Set<Containers> containersList) {
+        StringBuilder message = new StringBuilder();
+
+        if (containersList.size() == 1) {
+            message.append("Please unassign the shipment cargo from the following container to assign individual packs:\n");
+        } else {
+            message.append("Please unassign the shipment cargo from the following container(s) to assign individual packs:\n");
+        }
+        for (Containers container : containersList) {
+            String containerNumber = container.getContainerNumber();
+            String containerCode = container.getContainerCode();
+            message.append(!isStringNullOrEmpty(containerNumber) ? containerNumber : containerCode).append("\n");
+        }
+        return message.toString().trim();
+    }
+
+    public void validateBeforeAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap) {
         if(shipmentDetailsMap.values().size() > 1) {
             for(ShipmentDetails shipmentDetails: shipmentDetailsMap.values()) {
-                if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
-                    throw new ValidationException("Container being or already assigned to FCL Shipment should be linked to only one shipment");
+                if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+                    throw new ValidationException("Container being or already assigned to FCL/FTL Shipment should be linked to only one shipment");
                 }
             }
         }

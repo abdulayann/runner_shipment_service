@@ -156,6 +156,7 @@ public class Constants {
     public static final String CARGO_TYPE_FCL = "FCL";
     public static final String CARGO_TYPE_LSE = "LSE";
     public static final String CARGO_TYPE_FTL = "FTL";
+    public static final String CARGO_TYPE_LTL = "LTL";
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
@@ -651,6 +652,7 @@ public class Constants {
     public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
+    public static final String TRANSPORT_INSTRUCTION = "TRANSPORT_INSTRUCTION";
 
     private Constants() {
     }

@@ -191,6 +191,7 @@ public class AWBLabelReport extends IReport{
 
         if (awbLabelModel.getConsolidation() != null) {
             processConsolidation(awbLabelModel, dictionary, unlocations);
+            this.populateConsolidationReportData(dictionary, null, awbLabelModel.getConsolidation().getId());
         }
 
         if (!unlocations.isEmpty()) {

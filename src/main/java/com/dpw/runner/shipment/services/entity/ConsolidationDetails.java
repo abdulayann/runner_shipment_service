@@ -140,7 +140,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime shipInstructionCutoff;
 
     @Column(name = "hazardous_booking_cutoff")
-    private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime hazardousBookingCutoff; // DG Cutoff
 
     @Column(name = "latest_full_equ_delivered_to_carrier")
     private LocalDateTime latestFullEquDeliveredToCarrier;
