@@ -279,6 +279,7 @@ class AwbServiceTest extends CommonMocks {
 
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setSecurityStatus(Constants.SHR);
+        testShipment.setIncoterms("EXW");
         addShipmentDataForAwbGeneration(testShipment);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
@@ -347,6 +348,7 @@ class AwbServiceTest extends CommonMocks {
 
         testShipment.setHouseBill("custom-house-bill");
         testShipment.setSecurityStatus(Constants.SHR);
+        testShipment.setIncoterms("EEE");
         addShipmentDataForAwbGeneration(testShipment);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
@@ -1713,6 +1715,7 @@ class AwbServiceTest extends CommonMocks {
         testConsol.setInterBranchConsole(true);
         testConsol.getSendingAgent().setAddressId("12");
         testConsol.getReceivingAgent().setAddressId("14");
+        testConsol.setIncoterms("CIF");
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
@@ -1779,6 +1782,7 @@ class AwbServiceTest extends CommonMocks {
         testConsol.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
         testConsol.getSendingAgent().setAddressId("12");
         testConsol.getReceivingAgent().setAddressId("14");
+        testConsol.setIncoterms("CCC");
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setPacksVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
@@ -2588,6 +2592,7 @@ class AwbServiceTest extends CommonMocks {
         mockAwb.getAwbPackingInfo().get(0).setGuid(testShipment.getPackingList().get(0).getGuid());
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         addShipmentDataForAwbGeneration(testShipment);
+        testShipment.setIncoterms("CIF");
 
         var tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setAutoUpdateShipmentAWB(true);
@@ -2633,6 +2638,7 @@ class AwbServiceTest extends CommonMocks {
         mockAwb.getAwbPackingInfo().get(0).setGuid(testShipment.getPackingList().get(0).getGuid());
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         addShipmentDataForAwbGeneration(testShipment);
+        testShipment.setIncoterms("CCC");
 
         var tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setAutoUpdateShipmentAWB(true);
@@ -2930,6 +2936,7 @@ class AwbServiceTest extends CommonMocks {
         Awb mockAwb = testMawb;
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         addConsolDataForMawbGeneration(testConsol);
+        testConsol.setIncoterms("EXW");
 
         var tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setAutoUpdateShipmentAWB(true);
@@ -2980,6 +2987,7 @@ class AwbServiceTest extends CommonMocks {
         List<AwbNotifyPartyInfo> awbNotifyPartyInfoList = new ArrayList<>();
         awbNotifyPartyInfoList.add(awbNotifyPartyInfo);
         mockAwb.setAwbNotifyPartyInfo(awbNotifyPartyInfoList);
+        testConsol.setIncoterms("EEE");
 
         var tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setAutoUpdateShipmentAWB(true);

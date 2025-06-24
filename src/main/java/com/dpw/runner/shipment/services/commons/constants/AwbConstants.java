@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import java.util.List;
+import java.util.Map;
 
 public class AwbConstants {
     private AwbConstants(){}
@@ -53,5 +54,10 @@ public class AwbConstants {
     public static final String EXEMPTION_CARGO_SECURITY_STATUS = "Exemption Cargo";
     public static final String SPX = "SPX";
     public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO", EXEMPTION_CARGO_SECURITY_STATUS);
+    public static final Map<String, String> incotermChargeCodeMap = Map.ofEntries(Map.entry("CFR", "PP"),
+            Map.entry("CIF", "PP"), Map.entry("CIP", "PP"), Map.entry("CPT", "PP"),
+            Map.entry("DAP", "PP"), Map.entry("DAT", "PP"), Map.entry("DDP", "PP"),
+            Map.entry("DPU", "PP"), Map.entry("EXW", "CC"), Map.entry("FAS", "PC"),
+            Map.entry("FCA", "PC"), Map.entry("FOB", "PC"));
 
 }
