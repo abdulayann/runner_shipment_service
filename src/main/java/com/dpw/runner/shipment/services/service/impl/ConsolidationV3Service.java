@@ -2165,7 +2165,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Basic carrier detail updates from consolidation to shipment
             shipmentDetails.getCarrierDetails().setVoyage(console.getCarrierDetails().getVoyage());
             shipmentDetails.getCarrierDetails().setVessel(console.getCarrierDetails().getVessel());
-            shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            if(!StringUtility.isEmpty(console.getCarrierDetails().getShippingLine())) {
+                shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            }
             shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
             shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
@@ -3329,7 +3331,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
 
             List<ShipmentDetails> shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
-            shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave);
+            shipmentV3Service.updateShipmentFieldsAfterDetach(shipmentDetailsToSave, consol);
             //delete routings from shipment which has isFromConsolidation as true
             routingsV3Service.deleteInheritedRoutingsFromShipment(shipmentDetailsToSave);
             shipmentDao.saveAll(shipmentDetailsToSave);

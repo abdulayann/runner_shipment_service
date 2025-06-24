@@ -1108,7 +1108,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipment.setMasterBill("MBL123");
         shipment.setBookingNumber("BK456");
 
-        shipmentServiceImplV3.updateShipmentFieldsAfterDetach(List.of(shipment));
+        shipmentServiceImplV3.updateShipmentFieldsAfterDetach(List.of(shipment), new ConsolidationDetails());
 
         assertNull(carrier.getEta());
         assertNull(carrier.getEtd());

@@ -1604,14 +1604,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments) {
+    public void updateShipmentFieldsAfterDetach(List<ShipmentDetails> detachedShipments, ConsolidationDetails consolidationDetails) {
         for (ShipmentDetails detachedShipment : detachedShipments) {
             if (detachedShipment.getCarrierDetails() != null) {
                 detachedShipment.getCarrierDetails().setEta(null);
                 detachedShipment.getCarrierDetails().setEtd(null);
                 detachedShipment.getCarrierDetails().setAta(null);
                 detachedShipment.getCarrierDetails().setAtd(null);
-                detachedShipment.getCarrierDetails().setShippingLine(null);
+                if(consolidationDetails.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetails.getCarrierDetails().getShippingLine())) {
+                    detachedShipment.getCarrierDetails().setShippingLine(null);
+                }
             }
             detachedShipment.setMasterBill(null);
             detachedShipment.setBookingNumber(null);
