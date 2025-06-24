@@ -11,6 +11,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -56,13 +57,8 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -410,7 +406,7 @@ class CSDReportTest {
     @Test
     void test_getDocumentModel_shipment() throws RunnerException {
         var spyReport = Mockito.spy(this.csdReport);
-        doReturn(new ShipmentModel()).when(spyReport).getShipment(Mockito.anyLong());
+        doReturn(new ShipmentModel()).when(spyReport).getShipment(anyLong());
         spyReport.setIsConsolidation(false);
         var resp = spyReport.getDocumentModel(12L);
         assertNotNull(resp);
