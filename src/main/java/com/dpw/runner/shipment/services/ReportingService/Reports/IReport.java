@@ -5081,6 +5081,7 @@ public abstract class IReport {
         for (Parties party : parties) {
             if (party != null && party.getType() != null) {
                 dict.put("S_" + party.getType(), buildPartyMap(party));
+                dict.put("S_" + party.getType() + "Contact", buildPartyContact(party));
             }
         }
     }
@@ -5089,6 +5090,7 @@ public abstract class IReport {
     private void addShipmentAgentDetails(Map<String, Object> dict, String key, Parties agent) {
         if (agent != null) {
             dict.put(key, buildPartyMap(agent));
+            dict.put(key + "Contact", buildPartyContact(agent));
         }
     }
 
@@ -5120,7 +5122,9 @@ public abstract class IReport {
 
         // Add origin & destination branches
         dict.put("S_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
+        dict.put("S_OriginBranchContact", buildTenantContact(tenantData.get(origin.toString())));
         dict.put("S_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
+        dict.put("S_DestinationBranchContact", buildTenantContact(tenantData.get(receiving.toString())));
 
         // Add triangulation partner branches with indexed keys
         if (triangulations != null) {
@@ -5129,6 +5133,7 @@ public abstract class IReport {
                 if (tp != null && tp.getTriangulationPartner() != null) {
                     TenantModel model = tenantData.get(tp.getTriangulationPartner().toString());
                     dict.put("S_TriangulationBranch" + (i + 1), buildTenantMap(model));
+                    dict.put("S_TriangulationBranch" + (i + 1) + "Contact", buildTenantContact(model));
                 }
             }
         }
