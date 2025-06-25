@@ -110,7 +110,7 @@ public class ShipmentDao implements IShipmentDao {
             String errorMessage = e.getMessage();
             if(e.getClass().equals(ConstraintViolationException.class))
                 errorMessage = getConstrainViolationErrorMessage(e);
-            throw new RunnerException(errorMessage);
+            throw new ValidationException(errorMessage);
         }
         return shipmentDetails;
     }

@@ -208,9 +208,6 @@ public class ReportService implements IReportService {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
 
-        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
-
-
         Map<String, Object> dataRetrived;
 
         if(report instanceof AWBLabelReport awbLabelReport1) {
@@ -590,6 +587,7 @@ public class ReportService implements IReportService {
         }
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
 
         triggerAutomaticTransfer(report, reportRequest);
         pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
