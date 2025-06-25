@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -926,7 +927,7 @@ public class HawbReport extends IReport{
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
+            dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
             dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
         }
