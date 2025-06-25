@@ -1,6 +1,317 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_COST_AT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_SECURITY_INFORMATION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR_DG_CLASS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR_DG_CLASS_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR_UN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AMS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AMS_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AOM_FREE_TEXT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AS_AGREED;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ATA_OR_ETA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BL_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOOKING_ORDER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOUNDED_WAREHOUSE_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BOUNDED_WAREHOUSE_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_GROSS_VOLUME_UNIT_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_GROSS_WEIGHT_UNIT_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_LOCATION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_TERMS_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGABLE_AND_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_AND_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_UNIT1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WEIGHT_DECIMAL_PLACES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_SMALL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLASS_DIVISION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADDRESS_CITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADDRESS_COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADDRESS_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADDWO_CONT_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADD_WITHOUT_CONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_CONSIGNEE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_CONSIGNER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_DESTINATION_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_ORIGIN_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY_DESC;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY_DESC_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_ADDRESS_FREE_TEXT_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_ADDRESS_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_ADDWO_CONT_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_ADD_WITHOUT_CONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_FREETEXT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNEE_NAME_FREETEST_INCAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER_ADDRESS_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER_ADDWO_CONT_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER_ADD_WITHOUT_CONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNER_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNMENT_STATUS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSIGNOR_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_DELIVERY_MODE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_MARKS_N_NUMBERS_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_PAYMENT_TERMS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_PAYMENT_TERMS_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_VOLUME_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_VOLUME_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_WEIGHT_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLE_WEIGHT_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLIDATED_VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOLIDATED_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_FIRST_FLIGHT_AND_DAY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_ORIGIN_AIRPORT_CODE_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_SECOND_FLIGHT_AND_DAY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON_ALIAS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT_WITH_ETC_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_NUMBER_WITH_ETC_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_SUMMARY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COPY_AS_AGREED;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COPY_CHARGES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CREDITOR_AGENT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CTO_FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOMS_REFERENCE_NUMBER_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CY_NAME_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DANGEROUS_GOODS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_INSTRUCTIONS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TO_ADDRESS_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TO_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DELIVERY_TRANSPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_AGENT_RN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_CODE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_COUNTRY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_PORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DG_CLASS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DG_EMERGENCY_CONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DG_SUBSTANCE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DLV;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DO_MESSAGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ERN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXEMPTION_CARGO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORTER_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXPORTER_REFERENCE_NUMBER_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLASH_POINT_AND_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FORWARDER_REFERENCE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FORWARDER_REFERENCE_NUMBER_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_CHARGES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACK_DETAILS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HS_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IMP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INSURANCE_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IS_DG;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IS_SECURITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KC;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KC_EXPIRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KC_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KNOWN_CONSIGNOR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOADED_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD_DESCRIPTION_REMARKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MARINE_POLLUTANT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAX_TEMP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAX_TEMP_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MIN_TEMP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MIN_TEMP_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MOBILE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NET_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NET_WEIGHT_UNIT_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY_ADDRESS_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY_ADD_WITHOUT_CONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PART_ADDWO_CONT_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NO_OF_PACKAGES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OCEAN_DG_CLASS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OCEAN_DG_PSN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OCEAN_UN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORDER_MANAGEMENT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_DATA_NOT_AVAILABLE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_FULL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGINAL_PRINT_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_RN_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_CODE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_PORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OVERSEAS_SELL_AMOUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKING_GROUP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_COMMODITY_GROUP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_CONTAINER_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_DETAILS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_GOODS_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_MARKS_NUMBERS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACK_SUMMARY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PAYMENT_TERMS_DESCRITION_WITH_CAMELCASE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_FROM_ADDRESS_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_FROM_LL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_INSTRUCTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_SHIPPERS_REF;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD_CODE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD_COUNTRY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL_CODE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL_COUNTRY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL_COUNTRY_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRINT_USER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RAILAGE_PLAYER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_EXPIRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REGULATED_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SCI;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SCREENING_CODES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SECURITY_STATUS_RECEIVED_FROM;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_CONTAINERS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DESTINATION_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_FIRST_FLIGHT_AND_DAY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_ID;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_ORIGIN_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_HEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_HEIGHT_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_LENGTH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_LENGTH_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_WIDTH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_WIDTH_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_SECOND_FLIGHT_AND_DAY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SI_CUT_OFF_TIME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SPH;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.STATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_BOE_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_BOE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_BOOKING_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_BOOKING_AGENT_AWB_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_BOOKING_AGENT_BKG_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_BOOKING_AGENT_BL_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CONTROLLED;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CONTROLLED_REF_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CO_LOADER_AWB_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CO_LOADER_BKG_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CO_LOADER_BL_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CO_LOADER_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CUSTOM_BROKERAGE_AT_DESTINATION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_CUSTOM_BROKERAGE_AT_ORIGIN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_DELIVERY_AT_DESTINATION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_DRIVER_ID;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_DRIVER_MOBILE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_DRIVER_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_EAR_DROP_OFF;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_EAR_EPY_EQ_PICK;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_FIRST_CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_FIRST_FLIGHT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_FIRST_VESSEL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_FIRST_VOYAGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_INCOTERM_LOCATION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_LAST_CARRIER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_LAST_FLIGHT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_LAST_VESSEL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_LAST_VOYAGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_LAT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_LAT_FULL_EQ_DELI;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_OWNERSHIP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_OWNERSHIP_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PARTNER_DROP_DOWN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PASSED_BY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PASSED_BY_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PICKUP_AT_ORIGIN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_REEFER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_SI;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TERMINAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRAILER_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRANSPORTER_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRANSPORT_BY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRUCK_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRUCK_TRAILER_TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_VGM;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TERMINAL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ACTUALDELIVERY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ACTUALPICKUP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERTO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERTOADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERTOCONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERY_AGENT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERY_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERY_AGENT_CONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERY_GATEIN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DELIVERY_GATEOUT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_DROPMODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ESTIMATEDDELIVERY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ESTIMATEDPICKUP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_FLIGHT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_INSTRUCTIONTYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ISAIR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_ISSEA;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_PICKUPFROM;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_PICKUPFROMADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_PICKUPFROMCONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_PICKUP_GATEIN;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_PICKUP_GATEOUT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_PORTTRANSPORTADVISED;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_REMARKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_REQUIREDBY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_TRANSPORTCOMPANY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_TRANSPORTCOMPANYADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TI_TRANSPORTCOMPANYCONTACT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TWO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TYPE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.UNID_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_DISPLAY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_INITIALS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USER_PHONE_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSELS_NAME_FLIGHT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VESSEL_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME_AND_UNIT_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME_UNIT_DESCRIPTION;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME_WEIGHT_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOYAGE_OR_FLIGHT_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.V_WEIGHT_AND_UNIT_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WAREHOUSE_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WAREHOUSE_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WEIGHT_AND_UNIT_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.WITH_CONSIGNOR;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.combineStringsWithComma;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getAddressList;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getCityCountry;
@@ -2459,6 +2770,23 @@ public abstract class IReport {
         }
     }
 
+    private static List<String> addEmailAndPhoneDetails(String email, String emailHeader, String phone, String phoneHeader) {
+        List<String> result = new ArrayList<>();
+
+        if (!Strings.isNullOrEmpty(email)) {
+            result.add(Strings.isNullOrEmpty(emailHeader) ? email : emailHeader + email);
+        }
+
+        if (!Strings.isNullOrEmpty(phone)) {
+            if (!result.isEmpty()) {
+                result.add(", ");
+            }
+            result.add(Strings.isNullOrEmpty(phoneHeader) ? phone : phoneHeader + phone);
+        }
+
+        return result;
+    }
+
     public static String addCommas(BigDecimal amount)
     {
         if (amount == null) return null;
@@ -4502,6 +4830,7 @@ public abstract class IReport {
         for (Parties party : parties) {
             if (party != null && party.getType() != null) {
                 dict.put("C_" + party.getType(), buildPartyMap(party));
+                dict.put("C_" + party.getType() + "Contact", buildPartyContact(party));
             }
         }
     }
@@ -4510,29 +4839,56 @@ public abstract class IReport {
     private void addAgentDetails(Map<String, Object> dict, String key, Parties agent) {
         if (agent != null) {
             dict.put(key, buildPartyMap(agent));
+            dict.put(key + "Contact", buildPartyContact(agent));
         }
     }
 
     // Converts a Parties object into a consistent map of address/organization values
-    private List<Map<String, Object>> buildPartyMap(Parties party) {
-        Map<String, Object> map = new HashMap<>();
-
-        // Add organization name if available
-        if (party.getOrgData() != null) {
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, party.getOrgData().get(PartiesConstants.FULLNAME));
+    private List<String> buildPartyMap(Parties party) {
+        if (party == null) {
+            return List.of();
         }
 
-        // Add address lines if available
-        if (party.getAddressData() != null) {
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, party.getAddressData().get(PartiesConstants.ADDRESS1));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, party.getAddressData().get(PartiesConstants.ADDRESS2));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, party.getAddressData().get(PartiesConstants.CITY));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, party.getAddressData().get(PartiesConstants.STATE));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, party.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
-            putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, party.getAddressData().get(PartiesConstants.COUNTRY));
+        // Extract values from party, safely
+        String orgName = party.getOrgData() != null
+                ? (String) party.getOrgData().get(PartiesConstants.FULLNAME)
+                : null;
+
+        Map<String, Object> addressData = party.getAddressData();
+        String address1 = addressData != null ? (String) addressData.get(PartiesConstants.ADDRESS1) : null;
+        String address2 = addressData != null ? (String) addressData.get(PartiesConstants.ADDRESS2) : null;
+        String city = addressData != null ? (String) addressData.get(PartiesConstants.CITY) : null;
+        String state = addressData != null ? (String) addressData.get(PartiesConstants.STATE) : null;
+        String zip = addressData != null ? (String) addressData.get(PartiesConstants.ZIP_POST_CODE) : null;
+        String country = addressData != null ? (String) addressData.get(PartiesConstants.COUNTRY) : null;
+
+        // Use getFormattedDetails to format all values
+        List<String> formatted = getFormattedDetails(
+                orgName, address1, address2, country, state,
+                city, zip, null
+        );
+
+        // Uppercase all non-null formatted values safely
+        return Optional.ofNullable(formatted).orElse(List.of())
+                .stream().map(value -> value != null ? value.toUpperCase() : null).toList();
+    }
+
+    private List<String> buildPartyContact(Parties party) {
+        if (party == null) {
+            return List.of();
         }
 
-        return List.of(map); // wrap in list as required by caller
+        String email = party.getOrgData() != null
+                ? (String) party.getOrgData().get(PartiesConstants.EMAIL) : null;
+
+        String phone = party.getOrgData() != null
+                ? (String) party.getOrgData().get(PartiesConstants.PHONE) : null;
+
+        List<String> formatted = addEmailAndPhoneDetails(email, "Email: ", phone, "Phone: ");
+
+        // Uppercase all non-null formatted values safely
+        return Optional.ofNullable(formatted).orElse(List.of())
+                .stream().map(value -> value != null ? value.toUpperCase() : null).toList();
     }
 
     // Adds origin/receiving branches and triangulated partner branch info
@@ -4563,7 +4919,9 @@ public abstract class IReport {
 
         // Add origin & destination branches
         dict.put("C_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
+        dict.put("C_OriginBranchContact", buildTenantContact(tenantData.get(origin.toString())));
         dict.put("C_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
+        dict.put("C_DestinationBranchContact", buildTenantContact(tenantData.get(receiving.toString())));
 
         // Add triangulation partner branches with indexed keys
         if (triangulations != null) {
@@ -4572,39 +4930,36 @@ public abstract class IReport {
                 if (tp != null && tp.getTriangulationPartner() != null) {
                     TenantModel model = tenantData.get(tp.getTriangulationPartner().toString());
                     dict.put("C_TriangulationBranch" + (i + 1), buildTenantMap(model));
+                    dict.put("C_TriangulationBranch" + (i + 1) + "Contact", buildTenantContact(model));
                 }
             }
         }
     }
 
     // Builds a map from a tenant's address and name info
-    private List<Map<String, Object>> buildTenantMap(TenantModel tenant) {
+    private List<String> buildTenantMap(TenantModel tenant) {
         if (tenant == null) {
             return List.of();
         }
 
-        Map<String, Object> map = new HashMap<>();
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.FULLNAME, tenant.getDisplayName());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS1, tenant.getAddress1());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ADDRESS2, tenant.getAddress2());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.CITY, tenant.getCity());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.STATE, tenant.getState());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.ZIP_POST_CODE, tenant.getZipPostCode());
-        putUpperCaseIfNotNullString(map, "C_" + PartiesConstants.COUNTRY, tenant.getCountry());
+        List<String> formattedDetails = getFormattedDetails(tenant.getDisplayName(), tenant.getAddress1(), tenant.getAddress2(), tenant.getCountry(), tenant.getState(),
+                tenant.getCity(),
+                tenant.getZipPostCode(), null);
 
-        return List.of(map); // wrap in list
+        return Optional.ofNullable(formattedDetails).orElse(List.of())
+                .stream().map(value -> value != null ? value.toUpperCase() : null).toList();
     }
 
-    private void putUpperCaseIfNotNullString(Map<String, Object> map, String key, Object value) {
-        if (value == null) {
-            return;
-        }
+    private List<String> buildTenantContact(TenantModel tenantModel) {
+        return Optional.ofNullable(tenantModel)
+                .map(tenant -> {
+                    String email = tenant.getEmail();
+                    String phone = tenant.getPhone();
 
-        if (value instanceof String) {
-            map.put(key, ((String) value).toUpperCase());
-        } else {
-            map.put(key, value);
-        }
+                    return addEmailAndPhoneDetails(email, "Email: ", phone, "Phone: ")
+                            .stream().map(value -> value != null ? value.toUpperCase() : null).toList();
+                })
+                .orElse(List.of());
     }
 
 
