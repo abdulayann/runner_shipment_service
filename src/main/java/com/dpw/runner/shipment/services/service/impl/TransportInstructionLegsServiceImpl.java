@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -169,6 +170,16 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
             throw new ValidationException("Invalid Ti legs Id: " + id);
         }
         return jsonHelper.convertValue(tiLegs.get(), TransportInstructionLegsResponse.class);
+    }
+
+    @Override
+    public List<TiLegs> retrieveByIdIn(Set<Long> tiLegs) {
+        return tiLegsDao.findByIdIn(tiLegs);
+    }
+
+    @Override
+    public List<TiLegs> findByTransportInstructionId(Long transportInstructionId) {
+        return tiLegsDao.findByPickupDeliveryDetailsId(transportInstructionId);
     }
 
     private void recordAuditLogs(TiLegs oldTiLegs, TiLegs newTiLegs, DBOperationType operationType) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {

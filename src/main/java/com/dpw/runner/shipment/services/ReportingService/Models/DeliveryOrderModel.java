@@ -22,4 +22,5 @@ public class DeliveryOrderModel implements IDocumentModel{
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public TenantModel tenantModel;
     public Long transportInstructionId;
+    public List<TILegsModel> legs;
 }

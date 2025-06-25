@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface ITiLegDao {
@@ -18,4 +19,8 @@ public interface ITiLegDao {
     Optional<TiLegs> findById(Long id);
     void delete(TiLegs tiLegs);
     List<TiLegs> updateTiLegDetails(List<TiLegs> tiLegsList);
+
+    List<TiLegs> findByIdIn(Set<Long> tiLegs);
+
+    List<TiLegs> findByPickupDeliveryDetailsId(Long transportInstructionId);
 }

@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -23,6 +24,15 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private LocalDateTime customsNoIssueDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime expiryDate;
+
+    private LocalDateTime blInstructionReceived;
+    private String additionalSecurityInformation;
+    private String regulatedEntityCategory;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String exemptionCodes;
+    private String aomFreeText;
+
+
     private String inspection;
     private String airwayBillDims;
     private BigDecimal shipperCOD;

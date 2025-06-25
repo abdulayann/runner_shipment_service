@@ -19,7 +19,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
-public class EntityTransferConsolidationDetails implements IEntityTranferBaseEntity {
+public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseEntity {
     private UUID guid;
     private String consolidationNumber;
     private String consolidationType;
@@ -87,6 +87,9 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
+
+    private Long originBranch;
+
     private boolean intraBranch;
     private Long documentationPartner;
     private Boolean isReceivingAgentFreeTextAddress;
@@ -106,7 +109,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private EntityTransferParties borrowedFrom;
     private EntityTransferParties creditor;
     private EntityTransferParties coLoadWith;
-    private Long bookingAgent;
+
     private List<EntityTransferPacking> packingList;
     private List<EntityTransferReferenceNumbers> referenceNumbersList;
     private List<EntityTransferRoutings> routingsList;
@@ -124,7 +127,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
-    private String efreightStatus;
+
     private Boolean hazardous;
     private String emergencyContactNumber;
     private String emergencyContactNumberCode;
@@ -133,6 +136,8 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private List<String> screeningStatus;
     private String exemptionCodes;
     private String aomFreeText;
+    private String additionalSecurityInformation;
+
     private EntityTransferParties client;
     private EntityTransferParties consigner;
     private EntityTransferParties consignee;
@@ -145,7 +150,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     @ExcludeTimeZone
     private LocalDateTime latDate;
 
-    private List<EntityTransferShipmentDetails> shipmentsList;
+    private List<EntityTransferV3ShipmentDetails> shipmentsList;
 
     private Map<UUID, UUID> packingVsContainerGuid;
     private Map<UUID, List<UUID>> containerVsShipmentGuid;
@@ -157,5 +162,13 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
 
     private List<String> additionalDocs;
     private Map<String, List<String>> shipAdditionalDocs;
+
+    private String incoterms;
+    private String incotermsLocation;
+    private String partner;
+    private Boolean reefer = false;
+    private Long bookingAgent; //booking agent
+    private Boolean borrowed;
+
 
 }

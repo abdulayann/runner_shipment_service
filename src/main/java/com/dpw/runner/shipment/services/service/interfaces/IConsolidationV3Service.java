@@ -8,13 +8,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
@@ -56,6 +59,7 @@ public interface IConsolidationV3Service {
     Optional<ConsolidationDetails> findById(Long consolidationId);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     String getBookingNumberFromConsol(Long consolidationId);
+    void checkSciForDetachConsole(Long consoleId) throws RunnerException;
 
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId);
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
@@ -69,4 +73,7 @@ public interface IConsolidationV3Service {
 
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
     AchievedQuantitiesResponse getConsoleSyncAchievedData(Long consolidationId) throws RunnerException, JsonMappingException;
+    ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationEtV3Request request);
+    ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationEtV3Request request) throws RunnerException;
+    Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsV3Response consolidationDetailsV3Response);
 }

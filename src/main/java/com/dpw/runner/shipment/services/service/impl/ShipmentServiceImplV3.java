@@ -110,6 +110,12 @@ import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
+import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -156,6 +162,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.CustomerBookingProjection;
@@ -170,8 +177,10 @@ import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import java.util.EnumMap;
@@ -185,7 +194,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.Cache;
@@ -215,13 +223,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import java.lang.reflect.InvocationTargetException;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 @SuppressWarnings({"ALL", "java:S1172"})
 @Service
@@ -241,6 +247,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private CacheManager cacheManager;
     @Autowired
     private CustomKeyGenerator keyGenerator;
+    @Autowired
+    private ObjectMapper objectMapper;
+    @Autowired
+    private ShipmentDetailsMapper shipmentDetailsMapper;
 
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
@@ -870,7 +880,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         /* Future to populate unloc code in shipment child entities*/
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
-        processVoyageAndFlightNumber(shipmentDetails);
+        shipmentsV3Util.processVoyageAndFlightNumber(shipmentDetails);
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
@@ -954,7 +964,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails)));
             syncConsole = true;
         }
-        processEventsInAfterSave(shipmentDetails, oldEntity, isCreate, shipmentSettingsDetails, eventsList, id, previousStatus);
+        shipmentsV3Util.processEventsInAfterSave(shipmentDetails, oldEntity, isCreate, shipmentSettingsDetails, eventsList, id);
 
         if (shipmentAddressList != null) {
             List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(shipmentAddressList, Parties.class, isCreate), id, Constants.SHIPMENT_ADDRESSES);
@@ -983,7 +993,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         log.info("shipment afterSave end..... ");
     }
 
-    protected void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate) {
+    public void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = new ArrayList<>();
         if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
             consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
@@ -1130,51 +1140,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return consolidationDetails;
         }
         return null;
-    }
-
-    protected void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<Events> eventsList, Long id, Integer previousStatus) throws RunnerException {
-        if (eventsList != null) {
-            eventsList = setEventDetails(eventsList, shipmentDetails);
-            eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, oldEntity, eventsList, isCreate);
-            if (eventsList != null) {
-                commonUtils.updateEventWithMasterData(eventsList);
-                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
-                shipmentDetails.setEventsList(updatedEvents);
-                eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
-            }
-        }
-        log.info("shipment afterSave eventDao.updateEntityFromOtherEntity.... ");
-
-        // create Shipment event on the bases of auto create event flag
-        if (isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
-            eventsV3Util.autoGenerateCreateEvent(shipmentDetails);
-        log.info("shipment afterSave autoGenerateCreateEvent.... ");
-
-        // Create events on basis of shipment status Confirmed/Created
-        autoGenerateEvents(shipmentDetails);
-        log.info("shipment afterSave generateEvents.... ");
-    }
-
-    @SuppressWarnings({"java:S1066", "java:S2583"})
-    protected void autoGenerateEvents(ShipmentDetails shipmentDetails) {
-        Events response = null;
-        if (shipmentDetails.getStatus() != null) {
-            // LATER : remove this
-            if (response != null) {
-                if (shipmentDetails.getEventsList() == null)
-                    shipmentDetails.setEventsList(new ArrayList<>());
-                shipmentDetails.getEventsList().add(response);
-            }
-        }
-    }
-
-    protected List<Events> setEventDetails(List<Events> eventsList, ShipmentDetails shipmentDetails) {
-        if (eventsList != null && !eventsList.isEmpty()) {
-            for (Events events : eventsList) {
-                events.setShipmentNumber(shipmentDetails.getShipmentId());
-            }
-        }
-        return eventsList;
     }
 
     private ConsolidationDetails updateLinkedShipmentData(ShipmentDetails shipment, ShipmentDetails oldEntity) throws RunnerException {
@@ -1427,16 +1392,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .thenCompose(v -> CompletableFuture.allOf(
                         CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(shipmentDetails.getCarrierDetails(), unLocationsMap), executorService)
                 ));
-    }
-
-    private void processVoyageAndFlightNumber(ShipmentDetails shipmentDetails) {
-        if (shipmentDetails.getCarrierDetails() != null) {
-            if (shipmentDetails.getTransportMode() != null && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
-                shipmentDetails.getCarrierDetails().setVoyage(null);
-            } else {
-                shipmentDetails.getCarrierDetails().setFlightNumber(null);
-            }
-        }
     }
 
     private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
@@ -2051,7 +2006,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
-            autoGenerateEvents(shipmentDetails);
+            shipmentsV3Util.autoGenerateEvents(shipmentDetails);
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
@@ -4169,6 +4124,118 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public ShipmentDetailsResponse completeUpdateShipmentFromEntityTransfer(ShipmentEtV3Request shipmentRequest) throws RunnerException {
+        long start = System.currentTimeMillis();
+        log.info("{} | starts completeUpdateShipment....", LoggerHelper.getRequestIdFromMDC());
+        long mid = System.currentTimeMillis();
+        ShipmentV3Request request = jsonHelper.convertValue(shipmentRequest, ShipmentV3Request.class);
+        Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(request);
+        log.info("{} | completeUpdateShipment db query: retrieveByIdOrGuid.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+        if (oldEntity.isEmpty()) {
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentRequest.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        try {
+            mid = System.currentTimeMillis();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
+            log.info("{} | completeUpdateShipment object mapper request.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            entity.setId(oldEntity.get().getId());
+            List<Long> removedConsolIds = new ArrayList<>();
+            MutableBoolean isNewConsolAttached = new MutableBoolean(false);
+
+            mid = System.currentTimeMillis();
+            ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
+            log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+
+            if(Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType()) && !Objects.equals(oldEntity.get().getJobType(), entity.getJobType()) &&  checkIfAlreadyPushRequested(oldEntity.get())) {
+                throw new ValidationException(ErrorConstants.VALIDATE_JOB_TYPE_CHANGE);
+            }
+            mid = System.currentTimeMillis();
+//
+            log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            mid = System.currentTimeMillis();
+            entity = shipmentDao.update(entity, false);
+            log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            mid = System.currentTimeMillis();
+            createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
+            log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+
+            mid = System.currentTimeMillis();
+            shipmentsV3Util.afterSaveforEt(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, false);
+            log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            ShipmentDetails finalEntity1 = entity;
+            String entityPayload = jsonHelper.convertToJson(finalEntity1);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalEntity1.getId(), finalEntity1.getGuid())), executorServiceMasterData);
+            log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
+            return shipmentDetailsMapper.map(entity);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error("Error occurred due to: " + e.getStackTrace());
+            log.error(responseMsg, e);
+            throw new ValidationException(e.getMessage());
+        }
+
+    }
+
+    public ShipmentDetailsResponse createShipmentFromEntityTransfer(ShipmentEtV3Request request, boolean includeGuid) {
+        if (request == null) {
+            log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+
+        ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
+        if(request.getConsolidationList() != null)
+            shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
+
+        try {
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            List<Long> removedConsolIds = new ArrayList<>();
+            MutableBoolean isNewConsolAttached = new MutableBoolean(false);
+
+            shipmentDetails = getShipment(shipmentDetails);
+            Long shipmentId = shipmentDetails.getId();
+
+            if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty())
+            {
+                for (Containers container: shipmentDetails.getContainersList()) {
+                    addAuditLogContainers(container, null, shipmentId, DBOperationType.CREATE.name());
+                }
+            }
+
+            shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid);
+
+            // audit logs
+            createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
+
+            ShipmentDetails finalShipmentDetails1 = shipmentDetails;
+            String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
+        } catch (Exception e) {
+            log.error("Error occurred due to: " + e.getStackTrace());
+            log.error(e.getMessage());
+            throw new ValidationException(e.getMessage());
+        }
+        return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+    }
+
+    private void addAuditLogContainers(Containers container, Containers prev, Long shipmentId, String operationName) throws RunnerException {
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(container)
+                            .prevData(prev)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentId)
+                            .operation(operationName).build()
+            );
+        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
         }
     }
 
