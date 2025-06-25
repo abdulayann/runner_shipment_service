@@ -1,0 +1,6 @@
+Release Version - Release-v1.36.0
+
+POST Deployment
+----------------
+1. RUN update_shipping_line.sql in PROD env
+2. Run Update_Screener_Name_AutoSync.sql on all env
