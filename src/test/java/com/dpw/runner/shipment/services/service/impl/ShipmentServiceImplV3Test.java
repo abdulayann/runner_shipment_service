@@ -1222,6 +1222,33 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     }
 
     @Test
+    void testGetAllMasterData_whenShipmentExists_shouldReturnMasterDataMap_ForNte() {
+        // Given
+        Long shipmentId = 123L;
+        String xSource = "network_transfer";
+
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
+        Map<String, Object> dummyMasterData = Map.of("key1", "value1");
+
+        when(shipmentDao.findShipmentByIdWithQuery(shipmentId)).thenReturn(Optional.of(shipmentDetails));
+
+        when(commonUtils.setIncludedFieldsToResponse(eq(shipmentDetails), anySet(), any(ShipmentDetailsResponse.class)))
+                .thenReturn(shipmentDetailsResponse);
+
+        ShipmentServiceImplV3 spyService = Mockito.spy(shipmentServiceImplV3);
+        doReturn(dummyMasterData).when(spyService).fetchAllMasterDataByKey(eq(shipmentDetails), eq(shipmentDetailsResponse));
+
+        Map<String, Object> result = spyService.getAllMasterData(shipmentId, xSource);
+
+        assertNotNull(result);
+        assertEquals("value1", result.get("key1"));
+
+        verify(shipmentDao).findShipmentByIdWithQuery(shipmentId);
+        verify(commonUtils).setIncludedFieldsToResponse(eq(shipmentDetails), anySet(), any(ShipmentDetailsResponse.class));
+        verify(spyService).fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
+    }
+
+    @Test
     void testGetShipmentAndPacks_whenNoMappings_thenReturnsEmptyResponse() {
         // Given
         Long containerId = 1L;
