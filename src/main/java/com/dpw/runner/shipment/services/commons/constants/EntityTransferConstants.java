@@ -8,6 +8,7 @@ import java.util.Set;
 public class EntityTransferConstants {
     private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
+    public static final String ENTITY_TRANSFER_V3_API_HANDLE = "/api/v3/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
     public static final String SEND_ENTITY_TO_EXTERNAL_SYSTEM = "/send-file-to-external";
     public static final String CHECK_RETRANSFER_ACCEPTED = "/check-retransfer-accepted";

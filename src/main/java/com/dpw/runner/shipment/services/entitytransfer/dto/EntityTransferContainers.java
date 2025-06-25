@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
@@ -111,5 +112,9 @@ public class EntityTransferContainers implements IEntityTranferBaseEntity {
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant = false;
+    private BigDecimal teu;
+    private BigDecimal humidity;
+    private BigDecimal vents;
+    private ContainerPraStatus praStatus;
 
 }
