@@ -501,6 +501,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max = 64, message = "max size is 64 for partner")
     private String partner;
 
+    @Column(name = "incoterms")
+    @MasterData(type = MasterDataType.INCOTERMS)
+    private String incoterms;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

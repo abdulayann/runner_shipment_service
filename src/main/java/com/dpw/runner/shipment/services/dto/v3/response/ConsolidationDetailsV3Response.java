@@ -173,4 +173,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Long originBranch;
     private Long shipmentsCount;
     private Boolean isMainCarriageAvailable = Boolean.FALSE;
+    private String incoterms;
 }

@@ -1277,7 +1277,8 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
-        awbCargoInfo.setChargeCode(fetchChargeCodes(consolidationDetails.getPayment()));
+        if(consolidationDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(consolidationDetails.getIncoterms()))
+            awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(consolidationDetails.getIncoterms()));
         populateCsdInfo(awbCargoInfo, tenantModel);
         // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
         awbCargoInfo.setScreeningStatus(consolidationDetails.getScreeningStatus());
@@ -1652,8 +1653,8 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setShippingInformation(StringUtility.isEmpty(shipmentDetails.getOrderManagementNumber()) ? null : String.format(AwbConstants.ORDER_NUMBER, shipmentDetails.getOrderManagementNumber()));
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
-        if (request.getAwbType().equalsIgnoreCase("DMAWB"))
-            awbCargoInfo.setChargeCode(fetchChargeCodes(shipmentDetails.getPaymentTerms()));
+        if(shipmentDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(shipmentDetails.getIncoterms()))
+            awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(shipmentDetails.getIncoterms()));
 
         // Set the RA Number and Country Code from branch default address
         populateCsdInfo(awbCargoInfo, tenantModel);
@@ -2100,7 +2101,7 @@ public class AwbService implements IAwbService {
         updateShipmentNotifyPartyinfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, addressDataV1Map);
         updateShipmemtRoutingInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
         updateAwbGoodsDescriptionInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
-        updateAwbCargoInfoFromShipment(request, awb, hawbLockSettings, mawbLockSettings);
+        updateAwbCargoInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
         updateAwbOtherInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
     }
 
@@ -2609,7 +2610,7 @@ public class AwbService implements IAwbService {
             awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
     }
 
-    private void updateAwbCargoInfoFromShipment(CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+    private void updateAwbCargoInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
 
 
@@ -2637,6 +2638,17 @@ public class AwbService implements IAwbService {
         if (isFieldLocked(request, hawbLockSettings.getShippingInformationLock(), mawbLockSettings.getShippingInformationLock())) {
             awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
             awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        }
+
+        updatChargeCodeCargoInfoAwb(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbCargoInfo);
+    }
+
+    private void updatChargeCodeCargoInfoAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbCargoInfo awbCargoInfo) {
+        if(isFieldLocked(request, hawbLockSettings.getChargeCodeLock(), mawbLockSettings.getChargeCodeLock())) {
+            if(shipmentDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(shipmentDetails.getIncoterms()))
+                awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(shipmentDetails.getIncoterms()));
+            else
+                awbCargoInfo.setChargeCode(null);
         }
     }
 
@@ -2975,6 +2987,17 @@ public class AwbService implements IAwbService {
             awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         }
 
+        updatChargeCodeCargoInfoMawb(consolidationDetails, mawbLockSettings, awbCargoInfo);
+
+    }
+
+    private void updatChargeCodeCargoInfoMawb(ConsolidationDetails consolidationDetails, MawbLockSettings mawbLockSettings, AwbCargoInfo awbCargoInfo) {
+        if(!Boolean.TRUE.equals(mawbLockSettings.getChargeCodeLock())) {
+            if(consolidationDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(consolidationDetails.getIncoterms()))
+                awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(consolidationDetails.getIncoterms()));
+            else
+                awbCargoInfo.setChargeCode(null);
+        }
     }
 
     private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings) {
