@@ -584,9 +584,7 @@ public class ReportConstants {
     //HAWB
     public static final String AGENT = "Agent";
     public static final String AGENT_REFERENCE = "AgentReference";
-    // TODO: SUbham
     public static final String SHIPPER_ADDRESS = "ShipperAddress";
-
     public static final String AWB_SHIPPER_ADDRESS = "AWB_ShipperAddress";
     public static final String CONSIGNEE_ADDRESS = "ConsigneeAddress";
     public static final String AWB_CONSIGNEE_ADDRESS = "AWB_ConsigneeAddress";
