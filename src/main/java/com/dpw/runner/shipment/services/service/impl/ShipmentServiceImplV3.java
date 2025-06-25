@@ -964,7 +964,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails)));
             syncConsole = true;
         }
-        shipmentsV3Util.processEventsInAfterSave(shipmentDetails, oldEntity, isCreate, shipmentSettingsDetails, eventsList, id);
+        processEventsInAfterSave(shipmentDetails, oldEntity, isCreate, shipmentSettingsDetails, eventsList, id, previousStatus);
 
         if (shipmentAddressList != null) {
             List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(shipmentAddressList, Parties.class, isCreate), id, Constants.SHIPMENT_ADDRESSES);
@@ -991,6 +991,51 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         log.info("shipment afterSave consoleShipmentMappingDao.deletePendingStateByShipmentId..... ");
         processSyncV1AndAsyncFunctions(shipmentDetails, oldEntity, shipmentSettingsDetails, syncConsole, consolidationDetails);
         log.info("shipment afterSave end..... ");
+    }
+
+    protected void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<Events> eventsList, Long id, Integer previousStatus) throws RunnerException {
+        if (eventsList != null) {
+            eventsList = setEventDetails(eventsList, shipmentDetails);
+            eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, oldEntity, eventsList, isCreate);
+            if (eventsList != null) {
+                commonUtils.updateEventWithMasterData(eventsList);
+                List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.SHIPMENT);
+                shipmentDetails.setEventsList(updatedEvents);
+                eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
+            }
+        }
+        log.info("shipment afterSave eventDao.updateEntityFromOtherEntity.... ");
+
+        // create Shipment event on the bases of auto create event flag
+        if (isCreate && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate()))
+            eventsV3Util.autoGenerateCreateEvent(shipmentDetails);
+        log.info("shipment afterSave autoGenerateCreateEvent.... ");
+
+        // Create events on basis of shipment status Confirmed/Created
+        autoGenerateEvents(shipmentDetails);
+        log.info("shipment afterSave generateEvents.... ");
+    }
+
+    @SuppressWarnings({"java:S1066", "java:S2583"})
+    protected void autoGenerateEvents(ShipmentDetails shipmentDetails) {
+        Events response = null;
+        if (shipmentDetails.getStatus() != null) {
+            // LATER : remove this
+            if (response != null) {
+                if (shipmentDetails.getEventsList() == null)
+                    shipmentDetails.setEventsList(new ArrayList<>());
+                shipmentDetails.getEventsList().add(response);
+            }
+        }
+    }
+
+    protected List<Events> setEventDetails(List<Events> eventsList, ShipmentDetails shipmentDetails) {
+        if (eventsList != null && !eventsList.isEmpty()) {
+            for (Events events : eventsList) {
+                events.setShipmentNumber(shipmentDetails.getShipmentId());
+            }
+        }
+        return eventsList;
     }
 
     public void triggerPushToDownStream(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, Boolean isCreate) {
@@ -2006,7 +2051,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
-            shipmentsV3Util.autoGenerateEvents(shipmentDetails);
+            autoGenerateEvents(shipmentDetails);
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
