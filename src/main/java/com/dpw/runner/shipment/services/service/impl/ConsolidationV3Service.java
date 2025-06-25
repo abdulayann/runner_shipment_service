@@ -1041,6 +1041,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 result.packsType = determinePackType(result.packsType, sd.getPacksUnit());
             }
             result.shipmentCount = shipments.size();
+            // Ensure packsType is assigned a defualt value
+            if (result.packsType == null) {
+                result.packsType = PackingConstants.PKG;
+            }
         }
 
         return result;
