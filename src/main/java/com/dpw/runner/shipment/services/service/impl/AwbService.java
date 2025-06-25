@@ -794,6 +794,7 @@ public class AwbService implements IAwbService {
                     .toList()
             );
         }
+        AwbUtility.addScreenersName(awbResponse);
         return awbResponse;
     }
 
