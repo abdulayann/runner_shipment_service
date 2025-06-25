@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -317,7 +318,7 @@ class AuditLogServiceTest {
 
     @Test
     void testList() {
-        var response = auditLogService.list(null);
+        var response = auditLogService.list(null, null);
         assertNotNull(response);
     }
 
@@ -337,7 +338,27 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testListNTE() {
+        AuditLog auditLog = new AuditLog();
+        AuditLogChanges auditLogChanges = new AuditLogChanges();
+        auditLogChanges.setFieldName("houseBill");
+        auditLogChanges.setNewValue("2");
+        auditLogChanges.setOldValue("1");
+        auditLog.setId(1L);
+        auditLog.setChanges(new HashMap<>());
+        auditLog.getChanges().put("houseBill", auditLogChanges);
+        auditLog.getChanges().put("Id", new AuditLogChanges("Id", 1, 2));
+        auditLog.setEntityId(1L);
+        auditLog.setEntity("ShipmentDetails");
+        auditLog.setParentType("ShipmentDetails");
+        auditLog.setCreatedAt(LocalDateTime.now());
+        when(auditLogDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), Constants.NETWORK_TRANSFER);
         assertNotNull(response);
     }
 
@@ -357,7 +378,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -377,7 +398,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -397,7 +418,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -417,7 +438,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -437,7 +458,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -457,7 +478,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -477,7 +498,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -497,7 +518,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -517,7 +538,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), null);
         assertNotNull(response);
     }
 
@@ -537,7 +558,7 @@ class AuditLogServiceTest {
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
         when(auditLogDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(auditLog)));
-        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(new ListCommonRequest()).build(), "");
         assertNotNull(response);
     }
 
@@ -554,7 +575,7 @@ class AuditLogServiceTest {
         auditLog.setEntityId(1L);
         auditLog.setParentType("ShipmentDetails");
         auditLog.setCreatedAt(LocalDateTime.now());
-        var response = auditLogService.list(CommonRequestModel.builder().data(null).build());
+        var response = auditLogService.list(CommonRequestModel.builder().data(null).build(), Constants.NETWORK_TRANSFER);
         assertNotNull(response);
     }
 }

@@ -2590,7 +2590,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consol.get();
     }
 
-    private Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException {
+    public Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
         if (!consolidationDetails.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, id, LoggerHelper.getRequestIdFromMDC());

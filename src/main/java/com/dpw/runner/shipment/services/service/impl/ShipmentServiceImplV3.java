@@ -449,7 +449,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return isNotAllowed;
     }
 
-    private Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+    public Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
         if (id != null) {
@@ -1748,7 +1748,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public Map<String, Object> getAllMasterData(Long shipmentId, String xSource) {
-        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(shipmentId);
+        Optional<ShipmentDetails> shipmentDetailsOptional;
+        if(Objects.equals(xSource, NETWORK_TRANSFER))
+            shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(shipmentId);
+        else
+            shipmentDetailsOptional = shipmentDao.findById(shipmentId);
         if (!shipmentDetailsOptional.isPresent()) {
             log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentId);
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);

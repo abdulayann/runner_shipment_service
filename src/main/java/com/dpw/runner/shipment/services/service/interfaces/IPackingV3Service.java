@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 public interface IPackingV3Service {
@@ -44,7 +46,7 @@ public interface IPackingV3Service {
 
     PackingListResponse fetchConsolidationPackages(ListCommonRequest commonRequestModel, String xSource);
 
-    PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest calculatePackSummaryRequest);
+    PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest calculatePackSummaryRequest, String xSource) throws AuthenticationException, RunnerException;
 
     Map<String, Object> getAllMasterData(Long id, String xSource);
 

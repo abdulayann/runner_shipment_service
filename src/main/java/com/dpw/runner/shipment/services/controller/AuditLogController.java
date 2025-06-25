@@ -40,8 +40,9 @@ public class AuditLogController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL,
             response = MyListResponseClass.class, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping("/list")
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        return auditLogService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest,
+                                                @RequestHeader(value = "x-source", required = false) String xSource) {
+        return auditLogService.list(CommonRequestModel.buildRequest(listCommonRequest), xSource);
     }
 
 

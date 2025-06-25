@@ -25,6 +25,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -182,8 +183,9 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_SUMMARY_SUCCESSFUL)})
     @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
-    public ResponseEntity<IRunnerResponse> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
-        PackSummaryV3Response packSummaryV3Response = packingV3Service.calculatePackSummary(calculatePackSummaryRequest);
+    public ResponseEntity<IRunnerResponse> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest,
+                                                                @RequestHeader(value = "x-source", required = false) String xSource) throws AuthenticationException, RunnerException {
+        PackSummaryV3Response packSummaryV3Response = packingV3Service.calculatePackSummary(calculatePackSummaryRequest, xSource);
         return ResponseHelper.buildSuccessResponse(packSummaryV3Response);
     }
 

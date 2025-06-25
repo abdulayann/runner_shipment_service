@@ -58,4 +58,5 @@ public interface IConsolidationV3Service {
         ConsolidationSailingScheduleRequest request) throws RunnerException;
 
     VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
+    Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
 }
