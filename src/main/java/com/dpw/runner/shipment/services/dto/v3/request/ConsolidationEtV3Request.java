@@ -1,31 +1,41 @@
-package com.dpw.runner.shipment.services.entitytransfer.dto;
+package com.dpw.runner.shipment.services.dto.v3.request;
 
-import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
-import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.*;
+import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
+import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
-@ToString
-public class EntityTransferConsolidationDetails implements IEntityTranferBaseEntity {
-    private UUID guid;
+@AllArgsConstructor
+@ValidCargoDeliveryDate
+@SuppressWarnings("java:S6539")
+public class ConsolidationEtV3Request extends CommonRequest implements IRunnerRequest {
+    private Long id;
     private String consolidationNumber;
     private String consolidationType;
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String mawb;
     private String serviceLevel;
     private String payment;
@@ -59,8 +69,11 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String bol;
     private Boolean isCargoOnly;
+    private Boolean isLocked;
+    private String lockedBy;
     private String specialInstructions;
     private String description;
     private String marksnNums;
@@ -84,7 +97,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
+    private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -94,36 +107,35 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private Boolean isSendingAgentFreeTextAddress;
     private String sendingAgentFreeTextAddress;
     private String placeOfIssue;
-
-
-    private EntityTransferCarrierDetails carrierDetails;
-    private EntityTransferAchievedQuantities achievedQuantities;
-    private EntityTransferAllocations allocations;
-    private EntityTransferArrivalDepartureDetails arrivalDetails;
-    private EntityTransferArrivalDepartureDetails departureDetails;
-    private EntityTransferParties sendingAgent;
-    private EntityTransferParties receivingAgent;
-    private EntityTransferParties borrowedFrom;
-    private EntityTransferParties creditor;
-    private EntityTransferParties coLoadWith;
+    private CarrierDetailRequest carrierDetails;
+    private AchievedQuantitiesRequest achievedQuantities;
+    private AllocationsRequest allocations;
+    private ArrivalDepartureDetailsRequest arrivalDetails;
+    private ArrivalDepartureDetailsRequest departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
+    private PartiesRequest sendingAgent;
+    private PartiesRequest receivingAgent;
+    private PartiesRequest borrowedFrom;
+    private PartiesRequest creditor;
+    private PartiesRequest coLoadWith;
     private Long bookingAgent;
-    private List<EntityTransferPacking> packingList;
-    private List<EntityTransferReferenceNumbers> referenceNumbersList;
-    private List<EntityTransferRoutings> routingsList;
-    private List<EntityTransferContainers> containersList;
-
-    private List<String> houseBills;
-    private List<String> shipmentIds;
-    private String bookingId;
-    private List<EntityTransferParties> consolidationAddresses;
-    private String bookingStatus;
-    private String bookingNumber;
+    private String coLoadCarrierName;
+    private List<PackingV3Request> packingList;
+    private List<ReferenceNumbersRequest> referenceNumbersList;
+    private List<RoutingsRequest> routingsList;
+    private List<ContainerV3Request> containersList;
+    private List<TruckDriverDetailsRequest> truckDriverDetails;
+    private List<JobRequest> jobsList;
+    private List<EventsRequest> eventsList;
+    private List<FileRepoRequest> fileRepoList;
+    private Set<ShipmentEtV3Request> shipmentsList;
+    private List<Long> shipmentIds;
+    private List<PartiesRequest> consolidationAddresses;
     private String carrierBookingRef;
-
-    private ContainerSummaryResponse containerSummary;
-    private PackSummaryResponse packSummary;
     private String modeOfBooking;
     private Boolean autoUpdateGoodsDesc;
+    private UUID sourceGuid;
     private String efreightStatus;
     private Boolean hazardous;
     private String emergencyContactNumber;
@@ -133,29 +145,23 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private List<String> screeningStatus;
     private String exemptionCodes;
     private String aomFreeText;
-    private EntityTransferParties client;
-    private EntityTransferParties consigner;
-    private EntityTransferParties consignee;
     private String sci;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private String additionalSecurityInformation;
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
     private Boolean interBranchConsole;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     @ExcludeTimeZone
     private LocalDateTime latDate;
+    private String department;
+    private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
+    private String partner;
 
-    private List<EntityTransferShipmentDetails> shipmentsList;
-
-    private Map<UUID, UUID> packingVsContainerGuid;
-    private Map<UUID, List<UUID>> containerVsShipmentGuid;
-
-    private Integer sendToBranch;
-    private String sourceBranchTenantName;
-
-    private transient Map<String, Object> masterData;
-
-    private List<String> additionalDocs;
-    private Map<String, List<String>> shipAdditionalDocs;
+    private Boolean borrowed;
+    private Long originBranch;
+    private String bookingId;
+    private String bookingStatus;
+    private String bookingNumber;
 
 }

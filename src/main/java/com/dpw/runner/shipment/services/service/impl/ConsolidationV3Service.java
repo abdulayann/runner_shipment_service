@@ -31,10 +31,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
-import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
+import com.dpw.runner.shipment.services.dto.v3.request.*;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -495,27 +492,30 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         Optional<ConsolidationDetails> oldEntity;
 
-        if(request.getId()!=null){
-            long id = request.getId();
+        oldEntity = getConsolidationDetails(request.getId(), request.getGuid());
+        return oldEntity;
+    }
+
+    private Optional<ConsolidationDetails> getConsolidationDetails(Long id, UUID guid) throws RunnerException {
+        Optional<ConsolidationDetails> oldEntity;
+        if(id!=null){
             oldEntity=consolidationDetailsDao.findById(id);
             if (!oldEntity.isPresent()) {
-                log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+                log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, id, LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
         }
-
-        else if(request.getGuid()!=null){
-            UUID guid = request.getGuid();
+        else if(guid!=null){
             oldEntity= consolidationDetailsDao.findByGuid(guid);
             if (!oldEntity.isPresent()) {
-                log.debug("Consolidation Details is null for GUID {} with Request GUID {}", request.getGuid(), LoggerHelper.getRequestIdFromMDC());
+                log.debug("Consolidation Details is null for GUID {} with Request GUID {}", guid, LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
         }
         else{
-            throw new RunnerException("Either Id or Guid is required");
+            throw new RunnerException("ither Id or Guid is required");
 
         }
         return oldEntity;
@@ -642,15 +642,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
         }
+        syncShipmentDataInPlatform(consolidationDetails);
+
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
+    }
+
+    private void syncShipmentDataInPlatform(ConsolidationDetails consolidationDetails) {
         if (consolidationDetails.getShipmentsList() != null) {
             consolidationDetails.getShipmentsList().forEach(shipment -> {
                 if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
                     CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
             });
         }
-
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
     }
 
     private Long setContainerAndPackingList(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails,
@@ -3980,6 +3984,44 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         return false;
     }
+    @Override
+    public void checkSciForDetachConsole(Long consoleId) throws RunnerException {
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        List<Long> shipIdList = consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+        List<Awb> mawbs = awbDao.findByConsolidationId(consoleId);
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consoleId);
+        if (consol.isPresent() && mawbs != null && !mawbs.isEmpty()) {
+            Awb mawb = mawbs.get(0);
+            if (mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(),
+                    AwbConstants.T1)) {
+                if (!shipIdList.isEmpty()) {
+                    processNonEmptyShipIdList(shipIdList, mawb, consol.get());
+                } else {
+                    mawb.getAwbCargoInfo().setSci(null);
+                    mawb.setAirMessageResubmitted(false);
+                    awbDao.save(mawb);
+                    consol.get().setSci(null);
+                    consolidationDetailsDao.save(consol.get(), false);
+                }
+            }
+        }
+    }
+
+    private void processNonEmptyShipIdList(List<Long> shipIdList, Awb mawb, ConsolidationDetails consol) throws RunnerException {
+        List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
+        if (awbs != null && !awbs.isEmpty()) {
+            var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
+            if (isShipmentSciT1.isEmpty()) {
+                mawb.setAirMessageResubmitted(false);
+                mawb.getAwbCargoInfo().setSci(null);
+                awbDao.save(mawb);
+                consol.setSci(null);
+                consolidationDetailsDao.save(consol, false);
+            }
+        }
+    }
+
+
 
     @Override
     @Transactional
@@ -4394,6 +4436,81 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .filter(s -> !Objects.equals(s.getTenantId(), consolidationDetails.getTenantId())).findFirst();
 
         return interBranchShipments.isPresent() && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
+    }
+
+    public ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationEtV3Request request) {
+        if (request == null) {
+            log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        try {
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            consolidationDetails.setShipmentsList(null);
+
+            beforeSave(consolidationDetails, null, true);
+
+            getConsolidation(consolidationDetails);
+
+            consolidationV3Util.afterSaveForET(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
+            syncShipmentDataInPlatform(consolidationDetails);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ValidationException(e.getMessage());
+        }
+        return jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
+    }
+
+    public ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationEtV3Request consolidationDetailsRequest) throws RunnerException {
+        Optional<ConsolidationDetails> oldEntity =  getConsolidationDetails(consolidationDetailsRequest.getId(), consolidationDetailsRequest.getGuid());
+        if (!oldEntity.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        consolidationDetailsRequest.setShipmentsList(null);
+
+        try {
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
+            setInterBranchContext(entity.getInterBranchConsole());
+            String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            ConsolidationDetails oldConvertedConsolidation = jsonHelper.convertValue(oldEntity.get(), ConsolidationDetails.class);
+
+            beforeSave(entity, oldEntity.get(), false);
+
+            entity = consolidationDetailsDao.update(entity, false);
+            ConsolidationDetails prevEntity = jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class);
+
+            addAuditLogConsolidation(entity, prevEntity, DBOperationType.UPDATE.name());
+
+            consolidationV3Util.afterSaveForET(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false);
+            ConsolidationDetails finalEntity1 = entity;
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
+            return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
+        } catch (Exception e) {
+            String responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new GenericException(e.getMessage());
+        }
+    }
+    private void addAuditLogConsolidation(ConsolidationDetails entity, ConsolidationDetails prevEntity, String operationName) {
+        try {
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(entity)
+                            .prevData(prevEntity)
+                            .parent(ConsolidationDetails.class.getSimpleName())
+                            .parentId(entity.getId())
+                            .operation(operationName).build()
+            );
+        }
+        catch (Exception e) {
+            log.error("Error writing audit service log", e);
+        }
     }
 
 }
