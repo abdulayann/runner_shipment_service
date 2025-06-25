@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
@@ -59,6 +60,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
@@ -708,22 +710,21 @@ public class PackingV3Service implements IPackingV3Service {
         private Long entityId;
     }
 
-    private PackingContext extractPackingContext(CalculatePackSummaryRequest request) {
+    private PackingContext extractPackingContext(CalculatePackSummaryRequest request, String xSource) throws AuthenticationException, RunnerException {
         Long consolidationId = request.getConsolidationId();
         Long shipmentId = request.getShipmentEntityId();
 
         if (ObjectUtils.isNotEmpty(consolidationId)) {
-            return createConsolidationContext(consolidationId);
+            return createConsolidationContext(consolidationId, xSource);
         } else if (ObjectUtils.isNotEmpty(shipmentId)) {
-            return createShipmentContext(shipmentId);
+            return createShipmentContext(shipmentId, xSource);
         } else {
             throw new IllegalArgumentException("Either Consolidation Id or Shipment Id must be provided.");
         }
     }
 
-    private PackingContext createConsolidationContext(Long consolidationId) {
-        ConsolidationDetails consolidation = consolidationV3Service.findById(consolidationId)
-            .orElseThrow(() -> new IllegalArgumentException("No Consolidation found with Id: " + consolidationId));
+    private PackingContext createConsolidationContext(Long consolidationId, String xSource) throws AuthenticationException, RunnerException {
+        ConsolidationDetails consolidation = getConsolidationDetails(consolidationId, xSource);
 
         List<Packing> packingList = new ArrayList<>();
 
@@ -739,9 +740,21 @@ public class PackingV3Service implements IPackingV3Service {
             .build();
     }
 
-    private PackingContext createShipmentContext(Long shipmentId) {
-        ShipmentDetails shipment = shipmentService.findById(shipmentId)
-            .orElseThrow(() -> new IllegalArgumentException("No Shipment found with Id: " + shipmentId));
+    private ConsolidationDetails getConsolidationDetails(Long consolidationId, String xSource) throws RunnerException, AuthenticationException {
+        Optional<ConsolidationDetails> optionalConsolidationDetails;
+        if (Objects.equals(xSource, NETWORK_TRANSFER)){
+            optionalConsolidationDetails = consolidationV3Service.retrieveForNte(consolidationId);
+        }else {
+            optionalConsolidationDetails = consolidationV3Service.findById(consolidationId);
+        }
+        if(optionalConsolidationDetails.isEmpty()){
+            throw new IllegalArgumentException("No Consolidation found with Id: " + consolidationId);
+        }
+        return optionalConsolidationDetails.get();
+    }
+
+    private PackingContext createShipmentContext(Long shipmentId, String xSource) throws AuthenticationException, RunnerException {
+        ShipmentDetails shipment = getShipmentDetails(shipmentId, xSource);
 
         return PackingContext.builder()
             .packingList(shipment.getPackingList())
@@ -751,9 +764,22 @@ public class PackingV3Service implements IPackingV3Service {
             .build();
     }
 
+    private ShipmentDetails getShipmentDetails(Long shipmentId, String xSource) throws RunnerException, AuthenticationException {
+        Optional<ShipmentDetails> optionalShipmentDetails;
+        if (Objects.equals(xSource, NETWORK_TRANSFER)){
+            optionalShipmentDetails = shipmentService.retrieveForNte(CommonGetRequest.builder().id(shipmentId).build());
+        }else {
+            optionalShipmentDetails = shipmentService.findById(shipmentId);
+        }
+        if(optionalShipmentDetails.isEmpty()){
+            throw new IllegalArgumentException("No Shipment found with Id: " + shipmentId);
+        }
+        return optionalShipmentDetails.get();
+    }
+
     @Override
-    public PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest request) {
-        PackingContext packingContext = extractPackingContext(request);
+    public PackSummaryV3Response calculatePackSummary(CalculatePackSummaryRequest request, String xSource) throws AuthenticationException, RunnerException {
+        PackingContext packingContext = extractPackingContext(request, xSource);
         List<Packing> packingList = packingContext.getPackingList();
         String transportMode = packingContext.getTransportMode();
         String module = packingContext.getModule();

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -182,9 +183,16 @@ class PackingV3ControllerTest {
     }
 
     @Test
-    void calculatePackSummary() {
+    void calculatePackSummary() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest calculatePackSummaryRequest = new CalculatePackSummaryRequest();
-        var response = packingV3Controller.calculatePackSummary(calculatePackSummaryRequest);
+        var response = packingV3Controller.calculatePackSummary(calculatePackSummaryRequest, null);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void calculatePackSummaryForNte() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest calculatePackSummaryRequest = new CalculatePackSummaryRequest();
+        var response = packingV3Controller.calculatePackSummary(calculatePackSummaryRequest, "network_transfer");
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

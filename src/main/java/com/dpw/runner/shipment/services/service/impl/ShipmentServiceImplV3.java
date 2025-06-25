@@ -449,7 +449,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return isNotAllowed;
     }
 
-    private Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+    public Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
         if (id != null) {
