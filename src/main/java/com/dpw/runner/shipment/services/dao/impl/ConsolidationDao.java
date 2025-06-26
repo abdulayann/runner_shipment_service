@@ -1,33 +1,17 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.MawbStocks;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
@@ -46,18 +30,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import javax.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -66,6 +38,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityManager;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -102,6 +83,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private IPackingDao packingDao;
 
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync) {
@@ -134,7 +117,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment) {
+    public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean allowDGValueChange) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails);
         ConsolidationDetails oldConsole = null;
@@ -149,7 +132,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 oldConsole = oldEntity;
             }
         }
-        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, updatingFromDgShipment);
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, allowDGValueChange);
         return consolidationDetails;
     }
 
@@ -762,12 +745,17 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        onSaveV3(consolidationDetails, errors, oldConsole);
+        onSaveV3(consolidationDetails, errors, oldConsole, false);
         return consolidationDetails;
     }
 
     @Override
     public ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails) {
+        return updateV3(consolidationDetails, false);
+    }
+
+    @Override
+    public ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails);
         ConsolidationDetails oldConsole = null;
@@ -779,7 +767,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity;
         }
-        onSaveV3(consolidationDetails, errors, oldConsole);
+        onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
         return consolidationDetails;
     }
 
@@ -806,8 +794,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
     }
 
-    private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole) {
-        errors.addAll(applyConsolidationValidationsV3(consolidationDetails));
+    private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
+        errors.addAll(applyConsolidationValidationsV3(consolidationDetails, allowDGValueChange));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         validateTransportModeAndCarrierDetails(consolidationDetails);
@@ -830,15 +818,15 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    public Set<String> applyConsolidationValidationsV3(ConsolidationDetails request) {
+    public Set<String> applyConsolidationValidationsV3(ConsolidationDetails request, boolean allowDGValueChange) {
         Set<String> errors = new LinkedHashSet<>();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
-            addAirCargoSecurityValidationsErrorsV3(request, errors);
+            addAirCargoSecurityValidationsErrorsV3(request, errors, allowDGValueChange);
         } else {
-            addNonDgValidationsErrorsV3(request, shipmentSettingsDetails, errors);
+            addNonDgValidationsErrorsV3(request, shipmentSettingsDetails, errors, allowDGValueChange);
         }
 
         // MBL number must be unique
@@ -862,26 +850,26 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return errors;
     }
 
-    private void addAirCargoSecurityValidationsErrorsV3(ConsolidationDetails request, Set<String> errors) {
+    private void addAirCargoSecurityValidationsErrorsV3(ConsolidationDetails request, Set<String> errors, boolean allowDGValueChange) {
         if (!CommonUtils.checkAirSecurityForConsolidation(request)) {
             errors.add("You don't have Air Security permission to create or update AIR EXP Consolidation.");
         }
         // Non dg consolidation validations
-        if (!Boolean.TRUE.equals(request.getHazardous())) {
+        if (!Boolean.TRUE.equals(request.getHazardous()) && !allowDGValueChange) {
             // Non dg Consolidations can not have dg shipments
-            boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
+            boolean isDGShipmentAttached = checkContainsDGShipmentV3(request);
             if (isDGShipmentAttached) {
                 errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
             }
 
             // Non dg Consolidations can not have dg packs
-            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
+            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackageV3(request)) {
                 errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
             }
         }
-        if (Boolean.TRUE.equals(request.getHazardous())) {
+        if (Boolean.TRUE.equals(request.getHazardous()) && !allowDGValueChange) {
             // Dg consolidation must have at least one dg shipment
-            boolean containsDgShipment = checkContainsDGShipment(request);
+            boolean containsDgShipment = checkContainsDGShipmentV3(request);
             if (!containsDgShipment)
                 errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
         }
@@ -904,20 +892,22 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private void addNonDgValidationsErrorsV3(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+    private void addNonDgValidationsErrorsV3(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails,
+                                             Set<String> errors, boolean allowDGValueChange) {
         // Non dg consolidation validations
-        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails) && (!allowDGValueChange)) {
             // Non dg Consolidations can not have dg shipments
-            boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
+            boolean isDGShipmentAttached = checkContainsDGShipmentV3(request);
             if (isDGShipmentAttached) {
                 errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
             }
 
             // Non dg Consolidations can not have dg packs
-            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
+            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackageV3(request)) {
                 errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
             }
         }
+
         // Dg consolidation validations
         if (checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
@@ -926,18 +916,32 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 errors.add("You don't have permission to update DG Consolidation");
 
             // Dg consolidation must have at least one dg shipment
-            boolean containsDgShipment = checkContainsDGShipment(request);
-            if (!containsDgShipment)
-                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+            if(!allowDGValueChange) {
+                boolean containsDgShipment = checkContainsDGShipmentV3(request);
+                if (!containsDgShipment)
+                    errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+            }
         }
     }
 
-    private boolean checkContainsDGShipment(ConsolidationDetails request) {
+    private boolean checkContainsDGShipmentV3(ConsolidationDetails request) {
         if (!CommonUtils.setIsNullOrEmpty(request.getShipmentsList())) {
             for (ShipmentDetails shipmentDetails : request.getShipmentsList()) {
                 if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                     return true;
                 }
+            }
+        }
+        return false;
+    }
+
+    private boolean checkContainsDGPackageV3(ConsolidationDetails request) {
+        List<Packing> packings = request.getPackingList();
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+            packings = packingDao.findByConsolidationId(request.getId());
+        for (Packing packing: packings) {
+            if(Boolean.TRUE.equals(packing.getHazardous())) {
+                return true;
             }
         }
         return false;

@@ -1,13 +1,10 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
@@ -40,6 +37,9 @@ public class PackingValidationV3Util {
 
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     public void validateUpdateBulkRequest(List<PackingV3Request> requests, List<Packing> existingPackings) {
         List<Long> incomingIds = requests.stream()
@@ -169,6 +169,27 @@ public class PackingValidationV3Util {
             }
             else if(shipmentDetails.getCarrierDetails().getEtd() != null && shipmentDetails.getShipmentGateInDate().isAfter(shipmentDetails.getCarrierDetails().getEtd()))
                 throw new RunnerException("Shipment Gate In Date cannot be greater than ETD.");
+        }
+    }
+
+    /* In old DG flow (Cargo Security is false), only DG users can update DG shipments
+      and DG package cannot be there in non DG Shipment */
+    public void validatePackageAfterSave(ShipmentDetails shipmentDetails, List<Packing> packings) {
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode()) &&
+                Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
+                !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity())) {
+
+            if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !UserContext.isAirDgUser()) {
+                throw new ValidationException("You don't have permission to update DG Shipment");
+            }
+            if(!Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                for(Packing packing: packings) {
+                    if(Boolean.TRUE.equals(packing.getHazardous())) {
+                        throw new ValidationException("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+                    }
+                }
+            }
+
         }
     }
 }

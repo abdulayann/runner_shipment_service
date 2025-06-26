@@ -154,6 +154,7 @@ public class ConsolidationValidationV3Util {
             boolean fromConsolidation,
             int existingShipments) throws RunnerException {
         boolean anyInterBranchShipment = false;
+        boolean anyDGShipment = false;
 
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
 
@@ -164,23 +165,28 @@ public class ConsolidationValidationV3Util {
                 throw new RunnerException("Shipment " + shipmentDetails.getShipmentId() + " Cargo Delivery Date is lesser than LAT Date.");
             }
 
-            // Rule 2: If it's an Air DG consolidation and shipment is from another branch
-            if (checkForAirDGFlag(consolidationDetails)
-                    && !Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
-                anyInterBranchShipment = true;
+            if(checkForAirDGFlag(consolidationDetails)) {
 
-                // Inter-branch Air DG shipment is not allowed
-                if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
-                    if (fromConsolidation) {
-                        throw new RunnerException(String.format(
-                                AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT,
-                                shipmentDetails.getShipmentId()
-                        ));
-                    } else {
-                        throw new RunnerException(String.format(
-                                AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION,
-                                consolidationDetails.getConsolidationNumber()
-                        ));
+                if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()))
+                    anyDGShipment = true;
+
+                // Rule 2: If it's an Air DG consolidation and shipment is from another branch
+                if (!Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
+                    anyInterBranchShipment = true;
+
+                    // Inter-branch Air DG shipment is not allowed
+                    if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                        if (fromConsolidation) {
+                            throw new RunnerException(String.format(
+                                    AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT,
+                                    shipmentDetails.getShipmentId()
+                            ));
+                        } else {
+                            throw new RunnerException(String.format(
+                                    AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION,
+                                    consolidationDetails.getConsolidationNumber()
+                            ));
+                        }
                     }
                 }
             }
@@ -188,6 +194,8 @@ public class ConsolidationValidationV3Util {
 
         // Additional validations specific to the consolidation as a whole
         validateAirDgHazardousForConsole(consolidationDetails, shipmentIds, fromConsolidation, existingShipments, anyInterBranchShipment);
+        // Permission check for DG shipments
+        validateDGShipmentConsolidationPermissionsInAttach(consolidationDetails, anyDGShipment);
     }
 
     /**
@@ -230,6 +238,23 @@ public class ConsolidationValidationV3Util {
                         consolidationDetails.getConsolidationNumber()
                 ));
             }
+        }
+    }
+
+    private void validateDGShipmentConsolidationPermissionsInAttach(ConsolidationDetails consolidationDetails, boolean anyDGShipment) {
+        if(checkForAirDGFlag(consolidationDetails) &&
+                (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                        !UserContext.isAirDgUser() &&
+                        (Boolean.TRUE.equals(consolidationDetails.getHazardous()) || anyDGShipment))) {
+            throw new ValidationException("You don't have permission to attach/detach DG Shipment");
+        }
+    }
+
+    public void validateAirDGPermissionsInDetach(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) {
+        if(checkForAirDGFlag(consolidationDetails) &&
+                (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                        !UserContext.isAirDgUser()) && (Boolean.TRUE.equals(consolidationDetails.getHazardous() || shipmentDetails.stream().anyMatch(s -> Boolean.TRUE.equals(s.getContainsHazardous()))))) {
+            throw new ValidationException("You don't have permission to attach/detach DG Shipment");
         }
     }
 

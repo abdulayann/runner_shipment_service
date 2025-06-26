@@ -51,6 +51,7 @@ public interface IConsolidationDetailsDao {
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
     ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails);
     ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails);
+    ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange);
 
     void updateSailingScheduleRelatedInfo(ConsolidationSailingScheduleRequest request, Long consolidationId);
 

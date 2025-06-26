@@ -190,7 +190,8 @@ public class PackingV3Service implements IPackingV3Service {
         if (!CommonUtils.listIsNullOrEmpty(packings) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = getShipment(shipmentDetails, packings.get(0).getShipmentId());
             List<Packing> finalPackings = updateCargoDetailsInShipment(shipmentDetails);
-            if (shipmentDetails != null && checkIfLCLConsolidationEligible(shipmentDetails)) {
+            packingValidationV3Util.validatePackageAfterSave(shipmentDetails, finalPackings);
+            if (checkIfLCLConsolidationEligible(shipmentDetails)) {
                 updateShipmentGateInDateAndStatusFromPacks(shipmentDetails, finalPackings);
             }
             if(consolidationDetails != null)
