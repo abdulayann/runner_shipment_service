@@ -31,7 +31,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -257,6 +256,14 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testDeletePacking_ValidationException() {
+        packing.setContainerId(1L);
+        when(packingDao.findById(1L)).thenReturn(Optional.of(packing));
+
+        assertThrows(ValidationException.class, () -> packingV3Service.delete(1L, "SHIPMENT"));
+    }
+
+    @Test
     void testUpdateBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         PackingV3Request newRequest = new PackingV3Request();
         List<PackingV3Request> requestList = List.of(request, newRequest);
@@ -356,6 +363,15 @@ class PackingV3ServiceTest extends CommonMocks {
         assertTrue(result.getMessage().contains("deleted successfully"));
         verify(packingDao).deleteByIdIn(anyList());
         verify(auditLogService).addAuditLog(any());
+    }
+
+    @SuppressWarnings("java:S5778")
+    @Test
+    void testDeleteBulk_ValidationException() {
+        packing.setContainerId(1L);
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+
+        assertThrows(ValidationException.class, () -> packingV3Service.deleteBulk(List.of(request), "SHIPMENT"));
     }
 
     @Test

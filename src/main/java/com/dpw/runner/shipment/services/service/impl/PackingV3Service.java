@@ -266,6 +266,9 @@ public class PackingV3Service implements IPackingV3Service {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Packing packing = optionalPacking.get();
+        if (packing.getContainerId() != null) {
+            throw new ValidationException("Assigned packages cannot be deleted, Please Unassign to delete.");
+        }
         packingDao.delete(packing);
 
         ParentResult parentResult = getParentDetails(List.of(packing), module);
@@ -404,6 +407,11 @@ public class PackingV3Service implements IPackingV3Service {
 
         if (packingsToDelete.isEmpty()) {
             throw new DataRetrievalFailureException("No packing found for the given Ids.");
+        }
+        for (Packing packing : packingsToDelete) {
+            if (packing.getContainerId() != null) {
+                throw new ValidationException("Assigned packages cannot be deleted, Please Unassign to delete.");
+            }
         }
 
         // Validate that all necessary packing IDs are present in the request
