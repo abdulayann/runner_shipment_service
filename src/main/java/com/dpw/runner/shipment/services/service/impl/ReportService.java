@@ -62,6 +62,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -142,6 +143,10 @@ public class ReportService implements IReportService {
     private MasterDataUtils masterDataUtils;
     @Autowired
     ExecutorService executorService;
+
+    @Qualifier("executorServiceReport")
+    @Autowired
+    ExecutorService executorServiceReport;
     @Autowired
     private IAwbDao awbDao;
     @Autowired
@@ -1117,7 +1122,7 @@ public class ReportService implements IReportService {
                 }
                 int finalPacks = packs;
                 log.info("Submitting task for Pack: {} on Thread: {}", finalPacks, Thread.currentThread().getName());
-                futures.add(executorService.submit(() -> {
+                futures.add(executorServiceReport.submit(() -> {
                     log.info("Started processing Pack: {} on Thread: {}", finalPacks, Thread.currentThread().getName());
                     long start = System.currentTimeMillis();
 
