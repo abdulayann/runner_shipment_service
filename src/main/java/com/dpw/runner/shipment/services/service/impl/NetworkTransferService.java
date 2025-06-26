@@ -555,7 +555,7 @@ public class NetworkTransferService implements INetworkTransferService {
             NetworkTransfer networkTransfer;
 
             if (Objects.equals(shipmentDetails.getReceivingBranch(), Long.valueOf(TenantContext.getCurrentTenant())))
-                return; // Skip processing if entry is getting created for existing branch
+                continue; // Skip processing if entry is getting created for existing branch
 
             var intTenantId =  Math.toIntExact(shipmentDetails.getReceivingBranch());
             networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, Constants.IMP, true);

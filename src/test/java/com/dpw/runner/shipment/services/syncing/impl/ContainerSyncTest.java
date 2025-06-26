@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
@@ -37,6 +38,7 @@ class ContainerSyncTest {
      */
     @Test
     void sync() {
+        SyncingContext.setContext(Boolean.TRUE);
         var input = new Containers();
         input.setGuid(UUID.randomUUID());
         input.setId(11L);

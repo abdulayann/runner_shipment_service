@@ -14,6 +14,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationServiceException;
@@ -56,7 +58,7 @@ public class NotificationV3Service implements INotificationV3Service {
 
     private final IShipmentServiceV3 shipmentService;
 
-    private final IConsolidationService consolidationService;
+    private final IConsolidationV3Service consolidationService;
 
     private final V1ServiceUtil v1ServiceUtil;
 
@@ -68,7 +70,7 @@ public class NotificationV3Service implements INotificationV3Service {
     public NotificationV3Service(JsonHelper jsonHelper, INotificationDao notificationDao,
                                  MasterDataUtils masterDataUtils, ExecutorService executorService,
                                  MasterDataKeyUtils masterDataKeyUtils, IShipmentServiceV3 shipmentService,
-                                 IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
+                                 IConsolidationV3Service consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
                                  IConsolidationDetailsDao consolidationDetailsDao) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
@@ -267,7 +269,7 @@ public class NotificationV3Service implements INotificationV3Service {
                 .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
         String branchType = getReassignType(notification.getReassignedFromBranchId().longValue(), shipmentDetailsResponse.getReceivingBranch(), triangulationPartners);
 
-        ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetailsResponse, ShipmentRequest.class);
+        ShipmentV3Request shipmentRequest = jsonHelper.convertValue(shipmentDetailsResponse, ShipmentV3Request.class);
         Long requestedBranchId = notification.getReassignedFromBranchId() != null ? notification.getReassignedFromBranchId().longValue() : null;
         Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
         if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
@@ -301,7 +303,7 @@ public class NotificationV3Service implements INotificationV3Service {
                 .map(TriangulationPartner::getTriangulationPartner).toList();
         String branchType = getReassignType(notification.getReassignedFromBranchId().longValue(), consolidationDetails.get().getReceivingBranch(), triangulationPartners);
 
-        ConsolidationDetailsRequest consolidationRequest = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsRequest.class);
+        ConsolidationDetailsV3Request consolidationRequest = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsV3Request.class);
         Long requestedBranchId = notification.getReassignedFromBranchId() != null ? notification.getReassignedFromBranchId().longValue() : null;
         Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
         if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
@@ -319,7 +321,7 @@ public class NotificationV3Service implements INotificationV3Service {
                 consolidationRequest.setTriangulationPartnerList(triangulationPartnerRequestList);
             }
         }
-        consolidationService.completeUpdate(CommonRequestModel.buildRequest(consolidationRequest));
+        consolidationService.completeUpdate(consolidationRequest);
     }
 
     public String getReassignType(Long requestedBranchId, Long receivingBranch, List<Long> triangulationPartners) {

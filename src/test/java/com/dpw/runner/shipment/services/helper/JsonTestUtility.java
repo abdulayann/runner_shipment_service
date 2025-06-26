@@ -479,6 +479,16 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
     }
 
+    public EntityTransferV3ShipmentDetails getV3ImportShipmentData() {
+        return objectMapper.convertValue(payload.get("ImportShipmentData"), EntityTransferV3ShipmentDetails.class);
+    }
+    public EntityTransferV3ConsolidationDetails getV3ImportConsolidationAir() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsAir"), EntityTransferV3ConsolidationDetails.class);
+    }
+    public EntityTransferV3ConsolidationDetails getV3ImportConsolidationSea() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferV3ConsolidationDetails.class);
+    }
+
     public Notification getNotification() {
         return objectMapper.convertValue(payload.get("NOTIFICATION_RESPONSE"), Notification.class);
     }
