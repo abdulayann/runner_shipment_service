@@ -1,6 +1,6 @@
 ALTER TABLE IF EXISTS customer_booking
     ADD COLUMN IF NOT EXISTS incoterms_location varchar(64),
-    ADD COLUMN IF NOT EXISTS controlled BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS controlled BOOLEAN,
     ADD COLUMN IF NOT EXISTS controlled_reference_number varchar(64),
     ADD COLUMN IF NOT EXISTS partner varchar(64),
     ADD COLUMN IF NOT EXISTS partner_bkg_number varchar(64),
