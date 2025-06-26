@@ -32,6 +32,8 @@ public class TransportInstructionLegsContainersRequest implements IRunnerRequest
     private String description;
     @Size(max=5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
+    @NotBlank(message = "Package Type is required")
+    private String packageType;
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     private BigDecimal netWeight;

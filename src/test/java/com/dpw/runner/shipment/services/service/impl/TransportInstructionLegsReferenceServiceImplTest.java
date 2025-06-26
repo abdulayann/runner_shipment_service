@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiReferenceDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
@@ -32,6 +33,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -88,6 +90,30 @@ class TransportInstructionLegsReferenceServiceImplTest {
         when(iTiReferenceDao.save(any())).thenReturn(new TiReferences());
         when(iTiLegRepository.findById(anyLong())).thenReturn(Optional.of(tiLegs));
         TransportInstructionLegsReferenceResponse response = transportInstructionLegsReferenceService.create(request);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testCreateBulk() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setReference("ref123");
+        request.setType("BLE");
+        request.setTiLegId(1l);
+        TiReferences tiReferences = new TiReferences();
+        tiReferences.setTiLegId(1l);
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(1l);
+        when(jsonHelper.convertValue(any(), eq(TransportInstructionLegsReferenceResponse.class))).thenReturn(new TransportInstructionLegsReferenceResponse());
+        when(jsonHelper.convertValue(request, TiReferences.class)).thenReturn(new TiReferences());
+        when(iTiReferenceDao.saveAll(any())).thenReturn(List.of(new TiReferences()));
+        when(iTiLegRepository.findById(anyLong())).thenReturn(Optional.of(tiLegs));
+        TransportInstructionLegsReferenceListRequest referenceListRequest = new TransportInstructionLegsReferenceListRequest();
+        referenceListRequest.setReferences(List.of(request));
+        TransportInstructionLegsReferenceListResponse response = transportInstructionLegsReferenceService.bulkCreate(referenceListRequest);
         assertNotNull(response);
     }
 
