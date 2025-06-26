@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ACTUAL_DELIVERY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDITIONAL_TERMS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
@@ -210,7 +209,13 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelpe
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -292,10 +297,9 @@ public class HblReport extends IReport {
             }
 
             if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType()))
-                && ObjectUtils.isNotEmpty(shipment.getJobType())
-                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
+                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                && ObjectUtils.isNotEmpty(shipment.getJobType()) && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
                 Hbl hblObject = getHbl(shipmentId);
                 shipmentService.validateHblContainerNumberCondition(shipment);
                 hblService.validateHblContainerNumberCondition(hblObject);
@@ -305,7 +309,7 @@ public class HblReport extends IReport {
                 List<ModuleValidationFieldType> missingFields = new ArrayList<>();
 
                 if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                    && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
                     && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
                     || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
                     && ObjectUtils.isNotEmpty(shipment.getJobType())
