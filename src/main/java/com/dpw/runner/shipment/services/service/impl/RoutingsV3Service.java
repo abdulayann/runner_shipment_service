@@ -166,6 +166,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             updateConsolCarrierDetails(mainCarriageList);
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
+            commonUtils.validateAirSecurityAndDGConsolidationPermissions(consolidationDetails);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
 
             if (isInterBranchContextNeeded(consolidationDetails))
