@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -69,8 +70,8 @@ public class NotificationV3Service implements INotificationV3Service {
     @Autowired
     public NotificationV3Service(JsonHelper jsonHelper, INotificationDao notificationDao,
                                  MasterDataUtils masterDataUtils, ExecutorService executorService,
-                                 MasterDataKeyUtils masterDataKeyUtils, IShipmentServiceV3 shipmentService,
-                                 IConsolidationV3Service consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
+                                 MasterDataKeyUtils masterDataKeyUtils, @Lazy IShipmentServiceV3 shipmentService,
+                                 @Lazy IConsolidationV3Service consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
                                  IConsolidationDetailsDao consolidationDetailsDao) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
