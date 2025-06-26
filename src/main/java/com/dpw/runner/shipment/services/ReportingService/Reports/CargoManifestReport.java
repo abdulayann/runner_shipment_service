@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -174,7 +175,7 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
             dictionary.put(RA_CSD, geteCSDInfo(cargoManifestModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(cargoManifestModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
+            dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(cargoManifestModel.awb));
         }
     }
 

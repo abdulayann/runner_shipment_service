@@ -1716,7 +1716,7 @@ public class ContainerService implements IContainerService {
         return responseList;
     }
 
-    public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers) {
+    public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers, ShipmentDetails shipmentDetails) {
         log.info("Starting pushContainersToDependentServices with containersList size: {} and oldContainers size: {}",
                 containersList != null ? containersList.size() : 0,
                 oldContainers != null ? oldContainers.size() : 0);
@@ -1724,10 +1724,15 @@ public class ContainerService implements IContainerService {
         log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
                 v1TenantSettingsResponse.getLogicAppIntegrationEnabled(),
                 v1TenantSettingsResponse.getTransportOrchestratorEnabled());
+        List<Containers> newContainers = fetchNewContainers(containersList, oldContainers);
         if(canProcessContainers(containersList, v1TenantSettingsResponse)) {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
-            List<ContainerPayloadDetails> payloadDetails = getContainerPayloadDetails(containersList);
+            List<ContainerPayloadDetails> oldContainerPayloadDetails = getContainerPayloadDetailsForExistingContainers(containersList);
+            List<ContainerPayloadDetails> newContainerPayloadDetails = getContainerPayloadDetailsForNewContainers(newContainers, shipmentDetails);
+            List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
+            payloadDetails.addAll(oldContainerPayloadDetails);
+            payloadDetails.addAll(newContainerPayloadDetails);
             if(CommonUtils.listIsNullOrEmpty(payloadDetails))
                 return;
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
@@ -1745,13 +1750,38 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private List<ContainerPayloadDetails> getContainerPayloadDetails(List<Containers> containersList) {
+    private List<Containers> fetchNewContainers(List<Containers> containersList, List<Containers> oldContainers) {
+        if (containersList == null) return Collections.emptyList();
+        return containersList.stream()
+                .filter(c -> c.getId() != null && (oldContainers == null || oldContainers.stream().noneMatch(o -> Objects.equals(o.getId(), c.getId()))))
+                .collect(Collectors.toList());
+    }
+
+    private List<ContainerPayloadDetails> getContainerPayloadDetailsForExistingContainers(List<Containers> containersList) {
         List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
         for (Containers containers : containersList) {
             if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
                 Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
                 for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
                     String platformBookingRef = shipmentDetail.getBookingReference();
+                    if (StringUtility.isNotEmpty(platformBookingRef)) {
+                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
+                        log.info("Preparing platform payload for container ID: {} with container number: {}",
+                                containers.getId(), containers.getContainerNumber());
+                        payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                    }
+                }
+            }
+        }
+        return payloadDetails;
+    }
+
+    private List<ContainerPayloadDetails> getContainerPayloadDetailsForNewContainers(List<Containers> containersList, ShipmentDetails shipmentDetails) {
+        List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
+        if(!Objects.isNull(shipmentDetails) && !containersList.isEmpty()) {
+            for (Containers containers : containersList) {
+                if(!StringUtility.isEmpty(containers.getContainerNumber())) {
+                    String platformBookingRef = shipmentDetails.getBookingReference();
                     if (StringUtility.isNotEmpty(platformBookingRef)) {
                         log.info("Platform Booking reference obtained: {}", platformBookingRef);
                         log.info("Preparing platform payload for container ID: {} with container number: {}",

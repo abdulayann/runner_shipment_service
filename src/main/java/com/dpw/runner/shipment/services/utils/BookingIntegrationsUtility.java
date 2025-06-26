@@ -689,6 +689,7 @@ public class BookingIntegrationsUtility {
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
                 .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))
+                .branchId(UserContext.getUser().getTenantId())
                 .branch_info(ListContractResponse.BranchInfo.builder().
                         id(StringUtility.isEmpty(shipmentDetails.getSalesBranch()) ? null : shipmentDetails.getSalesBranch()).
                         sales_agent_primary_email(StringUtility.isEmpty(shipmentDetails.getPrimarySalesAgentEmail()) ? null : shipmentDetails.getPrimarySalesAgentEmail()).

@@ -2,9 +2,11 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -226,6 +228,7 @@ public class AwbUtility {
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
+        addScreenersName(awbResponse);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
         checkAcasFlagInAwb(awbResponse);
@@ -479,6 +482,7 @@ public class AwbUtility {
         var shipmentSettingsDetails = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(shipmentDetails.getTenantId())).stream().findFirst().orElse(new ShipmentSettingsDetails());
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
+        addScreenersName(awbResponse);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
         checkAcasFlagInAwb(awbResponse);
@@ -1179,5 +1183,34 @@ public class AwbUtility {
         }
 
         return screenerName.toString();
+    }
+
+    public static void addScreenersName(AwbResponse awb) {
+        if (Objects.isNull(awb)
+                || Objects.isNull(awb.getAwbCargoInfo())
+                || StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber())
+                || Boolean.TRUE.equals(awb.getAwbCargoInfo().getIsUserInitialsManuallyAdded())
+                || Objects.isNull(UserContext.getUser())) {
+            return;
+        }
+        awb.getAwbCargoInfo().setUserInitials(AwbUtility.getScreenerName(UserContext.getUser().getDisplayName()));
+    }
+
+    private static boolean isScreenersNameNeeded(Awb awb) {
+        if (Objects.isNull(awb)
+                || Objects.isNull(awb.getAwbCargoInfo())
+                || StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber())
+                || Boolean.TRUE.equals(awb.getAwbCargoInfo().getIsUserInitialsManuallyAdded())
+                || Objects.isNull(UserContext.getUser())) {
+            return false;
+        }
+        return true;
+    }
+
+    public static String getScreenersName(Awb awb) {
+        String screenersName = isScreenersNameNeeded(awb) ? AwbUtility.getScreenerName(UserContext.getUser().getDisplayName()) :
+                Optional.ofNullable(awb.getAwbCargoInfo().getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING);
+        log.info("{} | Screener's Name : {}", LoggerHelper.getRequestIdFromMDC(), screenersName);
+        return screenersName;
     }
 }
