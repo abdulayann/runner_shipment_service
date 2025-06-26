@@ -2,7 +2,7 @@ UPDATE parties
 SET
   address_code ='FRO00031144',
   org_id = '238682',
-  org_code = '136099',
+  org_code = 'FRC00030167',
   address_id ='238682',
   org_data ='{"Id": 238682,
             "Guid": "5dcbae88-c893-47fd-8ddb-48c79921747b",
