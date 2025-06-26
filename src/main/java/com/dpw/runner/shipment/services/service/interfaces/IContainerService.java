@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import java.io.IOException;
 import java.util.List;
@@ -49,7 +50,7 @@ public interface IContainerService extends ICommonService {
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException;
     Containers calculateUtilization(Containers container);
     ResponseEntity<IRunnerResponse> containerSync(List<Long> request);
-    void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers);
+    void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers, ShipmentDetails shipmentDetails);
     void changeContainerWtVolForSeaFCLDetach(Containers container);
     void changeContainerWtVolForSeaLCLDetach(Containers container, Packing packing) throws RunnerException;
 
