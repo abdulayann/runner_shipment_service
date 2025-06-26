@@ -2468,6 +2468,22 @@ public class CommonUtils {
         return true;
     }
 
+    public void validateAirSecurityAndDGShipmentPermissions(ShipmentDetails shipmentDetails) {
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            // DG shipment can be updated only by DG users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
+                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !UserContext.isAirDgUser()) {
+                throw new ValidationException("You don't have permission to update DG Shipment");
+            }
+            // Air EXP shipment can be updated only by Air Security users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    !CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+                throw new ValidationException("You don't have Air Security permission to create or update AIR EXP Shipment.");
+            }
+        }
+    }
+
     public EventsRequest prepareEventRequest(Long entityId, String eventCode, String entityType, String referenceNumber) {
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setActual(getUserZoneTime(LocalDateTime.now()));

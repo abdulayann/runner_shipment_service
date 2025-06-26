@@ -266,6 +266,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         if (shipmentDetailsOptional.isEmpty())
             return;
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+        commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails.getCarrierDetails());
         updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails);
         carrierDetailsDao.update(shipmentDetails.getCarrierDetails());

@@ -195,7 +195,7 @@ public class ConsolidationValidationV3Util {
         // Additional validations specific to the consolidation as a whole
         validateAirDgHazardousForConsole(consolidationDetails, shipmentIds, fromConsolidation, existingShipments, anyInterBranchShipment);
         // Permission check for DG shipments
-        validateDGShipmentConsolidationPermissionsInAttach(consolidationDetails, anyDGShipment);
+        validateAirSecurityAndDGForAttachDetach(consolidationDetails, anyDGShipment);
     }
 
     /**
@@ -241,20 +241,20 @@ public class ConsolidationValidationV3Util {
         }
     }
 
-    private void validateDGShipmentConsolidationPermissionsInAttach(ConsolidationDetails consolidationDetails, boolean anyDGShipment) {
-        if(checkForAirDGFlag(consolidationDetails) &&
-                (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
-                        !UserContext.isAirDgUser() &&
-                        (Boolean.TRUE.equals(consolidationDetails.getHazardous()) || anyDGShipment))) {
-            throw new ValidationException("You don't have permission to attach/detach DG Shipment");
-        }
+    public void validateAirDGPermissionsInDetach(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) {
+        boolean anyDGShipment = shipmentDetails.stream().anyMatch(s -> Boolean.TRUE.equals(s.getContainsHazardous()));
+        validateAirSecurityAndDGForAttachDetach(consolidationDetails, anyDGShipment);
     }
 
-    public void validateAirDGPermissionsInDetach(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if(checkForAirDGFlag(consolidationDetails) &&
-                (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
-                        !UserContext.isAirDgUser()) && (Boolean.TRUE.equals(consolidationDetails.getHazardous() || shipmentDetails.stream().anyMatch(s -> Boolean.TRUE.equals(s.getContainsHazardous()))))) {
-            throw new ValidationException("You don't have permission to attach/detach DG Shipment");
+    public void validateAirSecurityAndDGForAttachDetach(ConsolidationDetails consolidationDetails, boolean anyDGShipment) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity())) {
+            if(!CommonUtils.checkAirSecurityForConsolidation(consolidationDetails))
+                throw new ValidationException("You don't have Air Security permission to attach/detach AIR EXP Shipment.");
+        } else {
+            if(checkForAirDGFlag(consolidationDetails) && !UserContext.isAirDgUser() &&
+                    (Boolean.TRUE.equals(consolidationDetails.getHazardous()) || anyDGShipment)) {
+                throw new ValidationException("You don't have permission to attach/detach DG Shipment");
+            }
         }
     }
 

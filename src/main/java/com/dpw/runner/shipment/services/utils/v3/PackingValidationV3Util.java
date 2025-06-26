@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
@@ -175,13 +174,8 @@ public class PackingValidationV3Util {
     /* In old DG flow (Cargo Security is false), only DG users can update DG shipments
       and DG package cannot be there in non DG Shipment */
     public void validatePackageAfterSave(ShipmentDetails shipmentDetails, List<Packing> packings) {
-        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode()) &&
-                Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
-                !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getCountryAirCargoSecurity())) {
-
-            if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !UserContext.isAirDgUser()) {
-                throw new ValidationException("You don't have permission to update DG Shipment");
-            }
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            // Shipment must be DG to have DG Packages
             if(!Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                 for(Packing packing: packings) {
                     if(Boolean.TRUE.equals(packing.getHazardous())) {
@@ -189,7 +183,8 @@ public class PackingValidationV3Util {
                     }
                 }
             }
-
+            commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
         }
     }
+
 }
