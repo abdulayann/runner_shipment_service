@@ -50,6 +50,8 @@ import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -155,6 +157,12 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IConsolidationV3Service consolidationV3Service;
+
+    @Autowired
+    private ConsolidationValidationV3Util consolidationValidationV3Util;
+
+    @Autowired
+    private ShipmentValidationV3Util shipmentValidationV3Util;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
@@ -305,6 +313,35 @@ public class ContainerV3Service implements IContainerV3Service {
             containerV3Util.setContainerNetWeight(container);
         }
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
+    }
+
+    private void processContainerDG(List<Containers> containers, List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
+            if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+
+            if(SHIPMENT.equalsIgnoreCase(module)){
+                for(ContainerV3Request containerV3Request : containerRequestList){
+                    Long shipmentId = containerV3Request.getShipmentsId();
+                    if(!containerV3Request.getHazardous()) continue;
+
+                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
+                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                    shipmentValidationV3Util.processDGValidations(shipmentDetails, shipmentDetails, shipmentDetails.getConsolidationList());
+                    if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())){
+                            //TODO : Make DG and change shipment status
+                    }
+                }
+            }else{
+                for(ContainerV3Request containerV3Request : containerRequestList){
+                    Long consolidationId = containerV3Request.getConsolidationId();
+                    if(!containerV3Request.getHazardous()) continue;
+
+                    ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
+                    consolidationDetails.setHazardous(true);
+                    if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails))
+                        throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+                    consolidationDetailsDao.update(consolidationDetails, false, false);
+                }
+            }
     }
 
     private void getConsoleAchievedDataBefore(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest) throws RunnerException {

@@ -575,7 +575,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 }
             }
         }
-        if(!checkConsolidationTypeValidation(consolidationDetails))
+        if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails))
             throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
     }
 
@@ -1830,7 +1830,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<ShipmentDetails> shipments = shipmentDetailsList.stream().filter(sd -> Boolean.TRUE.equals(sd.getContainsHazardous())).toList();
             if (ObjectUtils.isNotEmpty(shipments)) {
                 consolidationDetails.setHazardous(true);
-                if (!checkConsolidationTypeValidation(consolidationDetails)) {
+                if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
                     throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
                 }
                 consolidationDetailsDao.update(consolidationDetails, false, true);
@@ -1970,12 +1970,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 (Objects.isNull(count2) || Objects.equals(count2, BigDecimal.ZERO));
     }
 
-    private boolean checkConsolidationTypeValidation(ConsolidationDetails consolidationDetails) {
-        return !(Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && Boolean.TRUE.equals(consolidationDetails.getHazardous())
-                && Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
-                && !StringUtility.isEmpty(consolidationDetails.getConsolidationType()) && !Constants.CONSOLIDATION_TYPE_AGT.equals(consolidationDetails.getConsolidationType())
-                && !Constants.CONSOLIDATION_TYPE_CLD.equals(consolidationDetails.getConsolidationType()));
-    }
 
     private boolean checkForOceanNonDGConsolidation(ConsolidationDetails consolidationDetails) {
         return Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) && !Boolean.TRUE.equals(consolidationDetails.getHazardous());
