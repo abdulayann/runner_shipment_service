@@ -154,6 +154,7 @@ import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -203,7 +204,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     private IBridgeServiceAdapter bridgeServiceAdapter;
 
     @Autowired
-    public EntityTransferV3Service(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentServiceV3 shipmentService, IConsolidationV3Service consolidationService
+    public EntityTransferV3Service(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, @Lazy IShipmentServiceV3 shipmentService, @Lazy IConsolidationV3Service consolidationService
             , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper,
                                    IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao,
                                    IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService,

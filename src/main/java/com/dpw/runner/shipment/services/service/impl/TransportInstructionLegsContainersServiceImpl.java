@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiContainerDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsContainersListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsContainersRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsContainersListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsContainersResponse;
@@ -183,6 +184,55 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
             throw new ValidationException("Invalid Ti legs container Id: " + id);
         }
         return jsonHelper.convertValue(tiContainers.get(), TransportInstructionLegsContainersResponse.class);
+    }
+
+    @Override
+    public TransportInstructionLegsContainersListResponse bulkCreate(TransportInstructionLegsContainersListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Starting Transport Instruction Legs containers creation | Request ID: {} | Request Body: {}", requestId, request);
+        Long tiLegId = request.getContainersRequests().get(0).getTiLegId();
+        if (!request.getContainersRequests().stream()
+                .allMatch(req -> req.getTiLegId().equals(tiLegId))) {
+            throw new ValidationException("All tiLegId values must be the same");
+        }
+
+        Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
+        if (!tiLegs.isPresent()) {
+            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        }
+        TiLegs tiLegsEntity = tiLegs.get();
+        request.getContainersRequests().forEach(containersRequest -> {
+            validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), containersRequest.getNumber());
+            validateTransportInstructionLegsContainersDetails(containersRequest);
+        });
+        // Convert DTO to Entity
+        List<TiContainers> tiContainersList = new ArrayList<>();
+        for (TransportInstructionLegsContainersRequest containersRequest : request.getContainersRequests()) {
+            TiContainers tiContainers = jsonHelper.convertValue(containersRequest, TiContainers.class);
+            tiContainers.setTiLegId(tiLegId);
+            tiContainersList.add(tiContainers);
+            log.debug("Converted Transport Instruction Legs container request to entity | Entity: {}", tiContainers);
+        }
+        // Save to DB
+        List<TiContainers> tiContainersEntities = tiContainerDao.saveAll(tiContainersList);
+
+        // Audit logging
+        for (TiContainers tiContainersEntity : tiContainersEntities) {
+            recordAuditLogs(null, tiContainersEntity, DBOperationType.CREATE);
+            log.info("Audit log recorded for Transport Instruction Legs container creation | Transport Instruction Legs ID: {}", tiContainersEntity.getId());
+        }
+        TransportInstructionLegsContainersListResponse response = new TransportInstructionLegsContainersListResponse();
+        List<TransportInstructionLegsContainersResponse> instructionLegsContainersResponses = new ArrayList<>();
+        for (TiContainers tiContainersEntity : tiContainersEntities) {
+            TransportInstructionLegsContainersResponse packagesResponse = jsonHelper.convertValue(tiContainersEntity, TransportInstructionLegsContainersResponse.class);
+            instructionLegsContainersResponses.add(packagesResponse);
+        }
+        response.setTiLegsContainersResponses(instructionLegsContainersResponses);
+
+        // Triggering Event for shipment and console for DependentServices update
+        triggerPushToDownStreamForTransportInstruction(tiLegsEntity.getPickupDeliveryDetailsId());
+        return response;
     }
 
     private void recordAuditLogs(TiContainers oldTiContainer, TiContainers newTiContainers, DBOperationType operationType) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
