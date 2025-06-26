@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -14,6 +15,7 @@ import java.util.Optional;
 @Slf4j
 public class TransportInstructionValidationUtil {
     @Autowired
+    @Lazy
     private IShipmentServiceV3 shipmentServiceV3;
 
     public ShipmentDetails validateShipmentId(PickupDeliveryDetailsRequest request) {
