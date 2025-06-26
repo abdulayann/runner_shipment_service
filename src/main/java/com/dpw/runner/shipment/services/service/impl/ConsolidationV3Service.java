@@ -448,7 +448,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
+    public void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
         String sourceInfo) {
         PushToDownstreamEventDto pushToDownstreamEventDto = null;
 

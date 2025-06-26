@@ -34,7 +34,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             GenericException.class,
             ValidationException.class,
             IllegalArgumentException.class,
-            DataRetrievalFailureException.class
+            DataRetrievalFailureException.class,
+            NotificationServiceException.class
     })
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);

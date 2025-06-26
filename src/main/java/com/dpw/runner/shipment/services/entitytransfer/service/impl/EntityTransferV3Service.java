@@ -44,13 +44,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -88,7 +82,6 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
@@ -348,25 +341,27 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private void updateReceivingBranchFieldsInShipment(EntityTransferV3ShipmentDetails taskPayload){
-        taskPayload.getAdditionalDetails().setBlInstructionReceived(null);
-        taskPayload.getAdditionalDetails().setScreeningStatus(null);
-        taskPayload.getAdditionalDetails().setAomFreeText(null);
         taskPayload.setSecurityStatus(null);
-        taskPayload.getAdditionalDetails().setExemptionCodes(null);
-        taskPayload.getAdditionalDetails().setSci(null);
-        taskPayload.getAdditionalDetails().setSecurityStatusReceivedFrom(null);
-        taskPayload.getAdditionalDetails().setRegulatedEntityCategory(null);
-        taskPayload.getAdditionalDetails().setAdditionalSecurityInformation(null);
-        taskPayload.getAdditionalDetails().setHouseBillType(null);
-        taskPayload.getAdditionalDetails().setReleaseType(null);
-        taskPayload.getAdditionalDetails().setPlaceOfSupply(null);
-        taskPayload.getAdditionalDetails().setPlaceOfIssue(null);
-        taskPayload.getAdditionalDetails().setBLChargesDisplay(null);
-        taskPayload.getAdditionalDetails().setPaidPlace(null);
-        taskPayload.getAdditionalDetails().setDateOfIssue(null);
-        taskPayload.getAdditionalDetails().setDateOfReceipt(null);
-        taskPayload.getAdditionalDetails().setOriginal(null);
-        taskPayload.getAdditionalDetails().setCopy(null);
+        if(taskPayload.getAdditionalDetails()!=null) {
+            taskPayload.getAdditionalDetails().setBlInstructionReceived(null);
+            taskPayload.getAdditionalDetails().setScreeningStatus(null);
+            taskPayload.getAdditionalDetails().setAomFreeText(null);
+            taskPayload.getAdditionalDetails().setExemptionCodes(null);
+            taskPayload.getAdditionalDetails().setSci(null);
+            taskPayload.getAdditionalDetails().setSecurityStatusReceivedFrom(null);
+            taskPayload.getAdditionalDetails().setRegulatedEntityCategory(null);
+            taskPayload.getAdditionalDetails().setAdditionalSecurityInformation(null);
+            taskPayload.getAdditionalDetails().setHouseBillType(null);
+            taskPayload.getAdditionalDetails().setReleaseType(null);
+            taskPayload.getAdditionalDetails().setPlaceOfSupply(null);
+            taskPayload.getAdditionalDetails().setPlaceOfIssue(null);
+            taskPayload.getAdditionalDetails().setBLChargesDisplay(null);
+            taskPayload.getAdditionalDetails().setPaidPlace(null);
+            taskPayload.getAdditionalDetails().setDateOfIssue(null);
+            taskPayload.getAdditionalDetails().setDateOfReceipt(null);
+            taskPayload.getAdditionalDetails().setOriginal(null);
+            taskPayload.getAdditionalDetails().setCopy(null);
+        }
     }
 
 
@@ -384,10 +379,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return jsonHelper.convertJsonToMap(payloadString);
     }
 
-    private Boolean getIsNetworkTransferFeatureEnabled(){
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
-    }
 
     private boolean isTriangulationPartner(Integer tenant, ConsolidationDetails consol) {
         Long tenantId = Long.valueOf(tenant);
@@ -532,7 +523,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private void processInterConsoleCase(EntityTransferV3ConsolidationDetails consolidationPayload, Map<UUID, ShipmentDetails> guidVsShipmentMap, EntityTransferV3ShipmentDetails entityTransferShipment, UUID guid) {
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole()) && !Objects.equals(entityTransferShipment.getDirection(), DIRECTION_CTS)) {
+        if(Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole()) && !Objects.equals(entityTransferShipment.getDirection(), DIRECTION_CTS)) {
             this.sendOverarchingShipmentToNetworkTransfer(entityTransferShipment.getSendToBranch(), entityTransferShipment, guidVsShipmentMap.get(guid));
         }
     }
@@ -542,7 +533,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
     private void removePendingShipmentNotifications(EntityTransferV3ConsolidationDetails consolidationPayload, ConsolidationDetails consol, Integer tenant) {
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole())) {
+        if(Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole())) {
             List<Long> shipIds = consol.getShipmentsList().stream().map(BaseEntity::getId).toList();
             List<Notification> notificationList = notificationDao.findNotificationByEntityIdsForEntityTransfer(shipIds, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
             notificationDao.deleteAll(notificationList);
@@ -653,6 +644,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         // Update task status rejected
         if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
             rejectionForReTransferNte(importShipmentRequest.getTaskId(), importShipmentRequest.getRejectRemarks(), SHIPMENT);
+            return null;
         }
 
         if (importShipmentRequest.getEntityData() == null) {
@@ -750,6 +742,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         // Update task status rejected
         if(Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
             rejectionForReTransferNte(importConsolidationRequest.getTaskId(), importConsolidationRequest.getRejectRemarks(), CONSOLIDATION);
+            return ResponseHelper.buildSuccessResponse();
         }
         if (importConsolidationRequest.getEntityData() == null) {
             throw new ValidationException("No consolidation payload present please check");
@@ -918,11 +911,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             String authToken = RequestAuthContext.getAuthToken();
             sendCopyDocumentRequest(copyDocumentsRequest, authToken);
 
-            // Syncing Imported Shipment & Console to V1
-            this.syncToV1(consolidationDetailsResponse.getId(), shipmentIds);
-
             // Push data to dependant service
-            pushImportConsoleDataToDependantService(consolidationDetailsResponse.getId(), shipmentIds, isCreateConsole.isTrue(), isCreateShipMap);
+            pushImportConsoleDataToDependantService(consolidationDetailsResponse.getId(), shipmentIds, isCreateConsole.isTrue(), isCreateShipMap, oldConsolidationDetailsList);
         }
 
         // Send consolidated shipments email
@@ -938,14 +928,21 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return consolidationDetailsResponse;
     }
 
-    private void pushImportConsoleDataToDependantService(Long consoleId, List<Long> shipmentIds, boolean isCreateConsole, Map<Long, Boolean> isCreateShipMap) {
+    private void pushImportConsoleDataToDependantService(Long consoleId, List<Long> shipmentIds,  boolean isCreateConsole, Map<Long, Boolean> isCreateShipMap, List<ConsolidationDetails> oldConsolidationDetailsList) {
         try {
+            ConsolidationDetails oldConsolidationDetails;
+            if(!isCreateConsole){
+                oldConsolidationDetails = oldConsolidationDetailsList.get(0);
+            } else {
+                oldConsolidationDetails = null;
+            }
             Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findById(consoleId);
-            consolidation.ifPresent(consolidationDetails -> consolidationService.pushShipmentDataToDependentService(consolidationDetails, isCreateConsole, consolidationDetails));
+            consolidation.ifPresent(consolidationDetails -> consolidationService.triggerPushToDownStream(consolidationDetails, oldConsolidationDetails, Constants.CONSOLIDATION_AFTER_SAVE));
+            consolidation.ifPresent(consolidationDetails -> consolidationService.triggerPushToDownStream(consolidationDetails, oldConsolidationDetails, Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING));
 
             List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
             for (ShipmentDetails shipment : shipments) {
-                dependentServiceHelper.pushShipmentDataToDependentService(shipment, isCreateShipMap.containsKey(shipment.getId()) && Boolean.TRUE.equals(isCreateShipMap.get(shipment.getId())), false, shipment.getContainersList());
+                pushImportShipmentDataToDependantService(shipment.getId(), isCreateShipMap.containsKey(shipment.getId()) && Boolean.TRUE.equals(isCreateShipMap.get(shipment.getId())), shipment);
             }
         } catch (Exception ex) {
             log.error("Error occurred while pushing import console data to dependent service : {}", ex.getMessage());
@@ -1904,34 +1901,6 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return response;
     }
 
-    private void syncToV1(Long id, List<Long> shipmentIds) {
-        try {
-            SyncingContext.setContext(Boolean.TRUE);
-            List<ShipmentDetails> shipments = new ArrayList<>();
-            ConsolidationDetails consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
-            consolidationDetailsDao.entityDetach(List.of(consolidation));
-            if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
-                shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-                shipmentDao.entityDetach(shipments);
-                shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-            }
-            consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
-            Set<Long> containerIds = new HashSet<>();
-            for(ShipmentDetails shipment : shipments) {
-                if(!CommonUtils.setIsNullOrEmpty(shipment.getContainersList()))
-                    containerIds.addAll(shipment.getContainersList().stream().map(BaseEntity::getId).toList());
-            }
-            if(!CommonUtils.listIsNullOrEmpty(consolidation.getContainersList())) {
-                consolidation.getContainersList().removeIf(e -> containerIds.contains(e.getId()));
-            }
-            consolidation.setPackingList(null);
-            consolidationSync.sync(consolidation, StringUtility.convertToString(consolidation.getGuid()), false);
-            for (ShipmentDetails shipment : shipments)
-                shipmentSync.sync(shipment, null, null, StringUtility.convertToString(consolidation.getGuid()), false);
-        } catch (Exception ex) {
-            log.error(String.format(ErrorConstants.ERROR_WHILE_SYNC, ex.getMessage()));
-        }
-    }
 
     private List<String> getEmailsListByPermissionKeysAndTenantId(List<String> permissionKeys, Integer tenantId) {
         UserWithPermissionRequestV1 request = new UserWithPermissionRequestV1();

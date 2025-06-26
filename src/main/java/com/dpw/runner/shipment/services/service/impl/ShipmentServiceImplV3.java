@@ -4201,7 +4201,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 throw new ValidationException(ErrorConstants.VALIDATE_JOB_TYPE_CHANGE);
             }
             mid = System.currentTimeMillis();
-//
+
             log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
