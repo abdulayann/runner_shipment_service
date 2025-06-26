@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -67,6 +69,11 @@ class ContainersSyncTest {
     private SyncEntityConversionService syncEntityConversionService;
     @Mock
     private ISyncService syncService;
+
+    @BeforeEach
+    void setUp() {
+        SyncingContext.setContext(Boolean.TRUE);
+    }
 
     /**
      * Method under test: {@link ContainersSync#sync(List, Page)}

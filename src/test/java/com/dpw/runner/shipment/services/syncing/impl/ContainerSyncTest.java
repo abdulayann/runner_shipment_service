@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -33,12 +34,16 @@ class ContainerSyncTest {
     @Mock
     private ISyncService syncService;
 
+    @BeforeEach
+    void setUp() {
+        SyncingContext.setContext(Boolean.TRUE);
+    }
+
     /**
      * Method under test: {@link ContainerSync#sync(List, Long, Long)}
      */
     @Test
     void sync() {
-        SyncingContext.setContext(Boolean.TRUE);
         var input = new Containers();
         input.setGuid(UUID.randomUUID());
         input.setId(11L);
