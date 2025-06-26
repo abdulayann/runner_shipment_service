@@ -25,6 +25,8 @@ public class ApiConstants {
     public static final String GET_CARGO_CHARGEABLE = "/get/chargeable";
 
     public static final String API_CREATE = "/create";
+    public static final String API_CREATE_BULK = "/create/bulk";
+
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
     public static final String API_UPLOAD = "/upload";
     public static final String API_UPLOAD_EVENTS = "/upload-events";

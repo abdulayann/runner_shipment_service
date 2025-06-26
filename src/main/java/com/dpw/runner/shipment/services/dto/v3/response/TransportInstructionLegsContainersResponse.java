@@ -23,6 +23,7 @@ public class TransportInstructionLegsContainersResponse implements IRunnerRespon
     private String number;
     private String description;
     private String noOfPackages;
+    private String packageType;
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     private BigDecimal netWeight;
