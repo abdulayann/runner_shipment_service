@@ -1,0 +1,27 @@
+UPDATE parties
+SET
+  address_code ='FRO00031144',
+  org_id = '238682',
+  org_code = 'FRC00030167',
+  address_id ='238682',
+  org_data ='{"Id": 238682,
+            "Guid": "5dcbae88-c893-47fd-8ddb-48c79921747b",
+            "AddressShortCode": "FRO00031144",
+            "CompanyName": "DHL Express Czech Republic s.r.o.",
+            "AddressType": 2,
+            "Address1": "Nadrazni 2967/93, Moravska Ostrava",
+            "Country": "CZE",
+            "City": "Ostrava",
+            "ZipPostCode": "70200",
+            "Email": "petr.revaj@dhl.com",
+            "OrgGuid": "0247d8f1-2b63-40c3-8077-9164e115a964",
+            "OrgOrganizationCode": "FRC00030167",
+            "OrgSource": "CRP",
+            "OrgFullName": "DHL Express Czech Republic s.r.o.",
+            "OrgActiveClient": true,
+            "OrgReceivables": true,
+            "OrgPayables": false,
+            "TaxRegNumber": "CZ25683446",
+            "RegulatedAgent": false,
+            "KnownConsignor": false}'::jsonb
+WHERE id = '1038450';
