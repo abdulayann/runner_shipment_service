@@ -263,12 +263,6 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
                 (transportInstructionLegsPackagesRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Packages: Gross weight and gross weight unit must both be provided or both be null.");
         }
-        if (transportInstructionLegsPackagesRequest.getGrossWeight() != null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit())) {
-            String combinedGrossWeight = transportInstructionLegsPackagesRequest.getGrossWeight().toPlainString() + transportInstructionLegsPackagesRequest.getGrossWeightUnit().trim();
-            if (combinedGrossWeight.length() > 15) {
-                throw new ValidationException("Packages: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
-            }
-        }
 
         // Net Weight & Unit Validation
         validateNetWeight(transportInstructionLegsPackagesRequest);
@@ -294,12 +288,6 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         if ((transportInstructionLegsPackagesRequest.getNetWeight() != null && StringUtility.isEmpty(transportInstructionLegsPackagesRequest.getNetWeightUnit())) ||
                 (transportInstructionLegsPackagesRequest.getNetWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getNetWeightUnit()))) {
             throw new ValidationException("Packages: Net weight and net weight unit must both be provided or both be null.");
-        }
-        if (transportInstructionLegsPackagesRequest.getNetWeight() != null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getNetWeightUnit())) {
-            String combined = transportInstructionLegsPackagesRequest.getNetWeight().toPlainString() + transportInstructionLegsPackagesRequest.getNetWeightUnit().trim();
-            if (combined.length() > 15) {
-                throw new ValidationException("Packages: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
-            }
         }
     }
 
