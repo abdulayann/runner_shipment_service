@@ -38,9 +38,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -201,21 +201,19 @@ public class ContainerV3Util {
     private void sendJsonErrorResponse(HttpServletResponse response, String message) {
         try {
             if (!response.isCommitted()) {
-                response.reset(); // Clear buffer
+                response.reset();
                 response.setContentType("application/json");
                 response.setCharacterEncoding("UTF-8");
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 
-                // ✅ Reuse your centralized error builder
                 ResponseEntity<IRunnerResponse> entity =
                         ResponseHelper.buildFailedResponse(message, HttpStatus.INTERNAL_SERVER_ERROR);
-
-                // ✅ Get just the response body (RunnerResponse) and serialize it to JSON
                 String json = objectMapper.writeValueAsString(entity.getBody());
 
-                PrintWriter writer = response.getWriter();
-                writer.write(json);
-                writer.flush();
+                try (OutputStream out = response.getOutputStream()) {
+                    out.write(json.getBytes(StandardCharsets.UTF_8));
+                    out.flush();
+                }
             } else {
                 log.warn("Response already committed; cannot write JSON error.");
             }
