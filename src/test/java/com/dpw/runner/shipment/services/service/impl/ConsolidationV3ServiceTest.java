@@ -702,7 +702,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails,
-        null, true));
+        null, true, new HashMap<>()));
   }
 
   @Test
@@ -737,7 +737,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
     assertNotNull(shipmentDetailsList);
   }
 
@@ -775,7 +775,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
     assertNotNull(shipmentDetailsList);
   }
 
@@ -816,7 +816,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationValidationV3Util.checkIfShipmentDateGreaterThanConsole(any(), any())).thenReturn(true);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true));
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>()));
 
   }
 
@@ -4163,7 +4163,7 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails oldEntity = ConsolidationDetails.builder().shipmentType("HSE").carrierDetails(CarrierDetails.builder().build()).build();
 
     // method under test
-    boolean result = consolidationV3Service.canProcessConsole(console, oldEntity);
+    boolean result = consolidationV3Service.canProcessConsole(console, oldEntity, new HashMap<>());
 
     // assertions
     assertFalse(result);
