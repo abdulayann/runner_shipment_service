@@ -267,7 +267,7 @@ class PackingDaoTest {
         List<Packing> routingsList = Collections.singletonList(testPacking);
         PackingDao spyService = spy(packingDao);
         doThrow(new RuntimeException()).when(spyService).findAll(any(), any());
-        assertThrows(RunnerException.class, () -> spyService.updateEntityFromBooking(routingsList, 1L));
+        assertThrows(Exception.class, () -> spyService.updateEntityFromBooking(routingsList, 1L));
     }
 
     @Test

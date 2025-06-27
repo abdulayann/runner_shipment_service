@@ -117,7 +117,7 @@ public class PackingDao implements IPackingDao {
         return packingRepository.findByShipmentId(shipmentId);
     }
 
-    public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
+    public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
@@ -143,7 +143,7 @@ public class PackingDao implements IPackingDao {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
-            throw new RunnerException(e.getMessage());
+            throw e;
         }
     }
 
