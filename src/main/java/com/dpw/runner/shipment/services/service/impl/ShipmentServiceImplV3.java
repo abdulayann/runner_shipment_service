@@ -2355,7 +2355,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
                 bookingType("ONLINE").
-                consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getReferenceNumber() : "").
+                consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getConsolidationNumber() : "").
                 masterBill(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getBol() : null).
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
