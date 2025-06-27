@@ -422,6 +422,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
 
+    private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
+
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
     private static final String CLONE_SHIPMENT_NOT_ALLOWED = "Clone Shipment is not allowed. Please check the Transport Config.";

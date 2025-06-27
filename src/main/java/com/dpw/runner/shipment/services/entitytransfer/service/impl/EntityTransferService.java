@@ -1696,6 +1696,9 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void processNTEValidations(ConsolidationDetails consolidationDetails) {
+        if(!Objects.equals(consolidationDetails.getSourceGuid(), consolidationDetails.getGuid()) && Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_CTS)) {
+            throw new ValidationException("Already transferred CTS file is not allowed to transfer again");
+        }
         SendConsoleValidationResponse response;
         if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             response = this.networkTransferValidationsForAirConsolidation(consolidationDetails, false);
@@ -1793,14 +1796,14 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> missingField = this.airConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
         if(Objects.equals(consolidationDetails.getConsolidationType(), Constants.SHIPMENT_TYPE_STD)) {
             List<Awb> mawbs = awbDao.findByConsolidationId(consolidationDetails.getId());
-            if (Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP) && mawbs.isEmpty())
+            if (Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP) && (mawbs.isEmpty() || !Objects.equals(mawbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)))
                 isPrintMawbError = true;
         }
 
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
                 List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
-                if (Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP) && awbs.isEmpty()) {
+                if (Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP) && (awbs.isEmpty() || !Objects.equals(awbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))) {
                     isPrintHawbError = true;
                     errorShipments.add(shipment.getShipmentId());
                     errorShipIds.add(shipment.getId());
@@ -2145,6 +2148,9 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void validateNteSendShipmentValidations(ShipmentDetails shipmentDetails) {
+        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) && Objects.equals(shipmentDetails.getDirection(), DIRECTION_CTS)) {
+            throw new ValidationException("Already transferred CTS file is not allowed to transfer again");
+        }
         var sendShipmentValidationResponse = this.networkTransferValidationsForShipment(shipmentDetails, false);
         if(Boolean.TRUE.equals(sendShipmentValidationResponse.getIsError())) {
             throw new ValidationException(sendShipmentValidationResponse.getShipmentErrorMessage());
@@ -2281,7 +2287,7 @@ public class EntityTransferService implements IEntityTransferService {
             // Shipment Fields Validations
             List<String> missingField = this.airShipmentFieldValidations(shipmentDetails, isAutomaticTransfer);
 
-            if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) && awbs.isEmpty()) {
+            if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) && (awbs.isEmpty() || !Objects.equals(awbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))) {
                 isAwbPrintError = true;
             }
 
