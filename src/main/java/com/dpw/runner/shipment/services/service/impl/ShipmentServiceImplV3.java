@@ -300,6 +300,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Autowired
     private KafkaProducer kafkaProducer;
 
+    private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
+
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
     @Autowired
@@ -896,7 +898,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         processBranchesAndPartner(shipmentDetails);
 
         if (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getDraftPrinted())
-                && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && DIRECTION_EXM_CTS.contains(shipmentDetails.getDirection())) {
             List<Hbl> hbls = hblDao.findByShipmentId(shipmentDetails.getId());
             if (!hbls.isEmpty()) {
                 hblDao.delete(hbls.get(0));
@@ -1352,7 +1354,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return false;
         if (!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA))
             return false;
-        if (!Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP))
+        if (!DIRECTION_EXM_CTS.contains(shipmentDetails.getDirection()))
             return false;
         if (!Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal()))
             return false;
