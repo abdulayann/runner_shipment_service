@@ -3611,7 +3611,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
 
-    private void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
+    protected void updateShipmentDetailsIfConsolidationChanged(ConsolidationDetails oldConsolidation,
         ConsolidationDetails newConsolidation, List<ShipmentDetails> shipmentDetailsList, Boolean fromAttachShipment) {
 
         if(isValidCutoffCase(oldConsolidation, newConsolidation, shipmentDetailsList, fromAttachShipment)) return;
@@ -3770,22 +3770,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return new ConsolidationSailingScheduleResponse();
     }
 
-    private void updateCutoffDetailsToShipment(ConsolidationSailingScheduleRequest request, ShipmentDetails shipmentDetails){
-        String transportMode = shipmentDetails.getTransportMode();
 
-        if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
-            shipmentDetails.setTerminalCutoff(request.getTerminalCutoff());
-            shipmentDetails.setVerifiedGrossMassCutoff(request.getVerifiedGrossMassCutoff());
-            shipmentDetails.setShippingInstructionCutoff(request.getShippingInstructionCutoff());
-            shipmentDetails.setDgCutoff(request.getDgCutoff());
-            shipmentDetails.setReeferCutoff(request.getReeferCutoff());
-            shipmentDetails.setEarliestEmptyEquipmentPickUp(request.getEarliestEmptyEquipmentPickUp());
-            shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(request.getLatestFullEquipmentDeliveredToCarrier());
-            shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(request.getEarliestDropOffFullEquipmentToCarrier());
-        }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
-            shipmentDetails.setLatestArrivalTime(request.getLatestArrivalTime());
-        }
-    }
 
     private void updateCutoffDetailsToConsolidations(ConsolidationSailingScheduleRequest request, ConsolidationDetails consolidationDetails){
         String transportMode = consolidationDetails.getTransportMode();
