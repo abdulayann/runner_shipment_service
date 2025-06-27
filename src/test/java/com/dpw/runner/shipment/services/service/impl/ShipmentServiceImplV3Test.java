@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksU
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -50,6 +51,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingExce
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
+import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
@@ -68,6 +70,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.AfterEach;
@@ -199,6 +202,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IDpsEventService dpsEventService;
     @Mock
     private ICarrierDetailsDao carrierDetailsDao;
+    @Mock
+    private ObjectMapper objectMapperMocked;
+
+    @Mock
+    private ShipmentDetailsMapper shipmentDetailsMapper;
 
     private ShipmentDetails shipmentDetails;
     private ConsolidationDetails consolidationDetails;
@@ -5180,6 +5188,249 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals(2, responseBody.getNotificationMap().size()); // number of shipments with pending notifications
         assertEquals(2, responseBody.getNotificationMap().get(1L).size()); // notification count of shipment with id 1L
     }
+
+    @Test
+    void testCreateShipmentFromEntityTransfer() throws RunnerException, NoSuchFieldException, JsonProcessingException,
+            InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        mockShipment.setContainersList(Set.of(new Containers()));
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipment.setId(2L);
+        mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
+        doNothing().when(auditLogService).addAuditLog(any());
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        ShipmentDetailsResponse actualResponse = shipmentServiceImplV3.createShipmentFromEntityTransfer(mockShipmentRequest, true);
+        assertNotNull(actualResponse);
+        assertEquals(mockShipmentResponse, actualResponse);
+
+    }
+
+    @Test
+    void testCreateShipmentFromEntityTransfer2() throws RunnerException, NoSuchFieldException, JsonProcessingException,
+            InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipment.setId(2L);
+        mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
+        doNothing().when(auditLogService).addAuditLog(any());
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        ShipmentDetailsResponse actualResponse = shipmentServiceImplV3.createShipmentFromEntityTransfer(mockShipmentRequest, true);
+        assertNotNull(actualResponse);
+        assertEquals(mockShipmentResponse, actualResponse);
+
+    }
+
+    @Test
+    void testCreateShipmentFromEntityTransfer3() throws RunnerException{
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipment.setId(2L);
+        mockShipmentSettings();
+        when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        MutableBoolean isNewConsolAttached = new MutableBoolean(false);
+        doThrow(RunnerException.class).when(shipmentsV3Util).afterSaveforEt(any(), any(), eq(true), any(), any(), any(), eq(isNewConsolAttached), eq(true));
+        assertThrows(ValidationException.class, ()->shipmentServiceImplV3.createShipmentFromEntityTransfer(mockShipmentRequest, true));
+
+    }
+
+    @Test
+    void testCreateShipmentFromEntityTransfer4() throws RunnerException, NoSuchFieldException, JsonProcessingException,
+            InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        mockShipment.setContainersList(Set.of(new Containers()));
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipment.setId(2L);
+        mockShipmentSettings();
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentsV3Util.generateShipmentId(any())).thenReturn("ShipmentId");
+        when(shipmentDao.save(any(), anyBoolean())).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
+
+        doThrow(IllegalAccessException.class).when(auditLogService).addAuditLog(any());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        ShipmentDetailsResponse actualResponse = shipmentServiceImplV3.createShipmentFromEntityTransfer(mockShipmentRequest, true);
+        assertNotNull(actualResponse);
+        assertEquals(mockShipmentResponse, actualResponse);
+
+    }
+
+    @Test
+    void testCompleteUpdateShipmentFromEntityTransfer_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        mockShipment.setShipmentId("SHIP001");
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+
+        ShipmentV3Request mockShipmentRequest2 = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipmentRequest.setId(1L);
+        commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+
+        when(objectMapperMocked.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentDao.update(any(), anyBoolean())).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentV3Request.class))).thenReturn(mockShipmentRequest2);
+        doNothing().when(auditLogService).addAuditLog(any());
+        when(jsonHelper.convertToJson(any())).thenReturn("Shipment");
+
+        when(shipmentDetailsMapper.map(any(ShipmentDetails.class))).thenReturn(mockShipmentResponse);
+
+        ShipmentDetailsResponse actualResponse = shipmentServiceImplV3.completeUpdateShipmentFromEntityTransfer(mockShipmentRequest);
+
+        assertNotNull(actualResponse);
+        assertEquals(mockShipmentResponse, actualResponse);
+    }
+
+    @Test
+    void testCompleteUpdateShipmentFromEntityTransfer_Exception() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        mockShipment.setShipmentId("SHIP001");
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+
+        ShipmentV3Request mockShipmentRequest2 = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipmentRequest.setId(1L);
+        commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.empty());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentV3Request.class))).thenReturn(mockShipmentRequest2);
+
+        assertThrows(DataRetrievalFailureException.class, ()->shipmentServiceImplV3.completeUpdateShipmentFromEntityTransfer(mockShipmentRequest));
+    }
+
+    @Test
+    void testCompleteUpdateShipmentFromEntityTransfer_Exception2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAutoEventCreate(true);
+        ShipmentDetails mockShipment = testShipment;
+        mockShipment.setMasterBill(null);
+        mockShipment.setShipmentId("SHIP001");
+        AdditionalDetails additionalDetails = getMockAdditionalDetails(LocalDateTime.now(), true, true, true);
+        CarrierDetails mockCarrierDetails = mockShipment.getCarrierDetails();
+        mockCarrierDetails.setEta(LocalDateTime.now());
+        mockCarrierDetails.setEtd(LocalDateTime.now());
+        mockShipment.setAdditionalDetails(additionalDetails);
+        mockShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        mockShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentEtV3Request.class);
+
+        ShipmentV3Request mockShipmentRequest2 = objectMapper.convertValue(mockShipment, ShipmentV3Request.class);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        mockShipmentRequest.setIsChargableEditable(true);
+        mockShipmentRequest.setId(1L);
+        commonRequestModel.setData(mockShipmentRequest);
+        mockShipment.setId(2L);
+
+        when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+
+        when(objectMapperMocked.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
+        when(shipmentDao.update(any(), anyBoolean())).thenReturn(mockShipment);
+        when(jsonHelper.convertValue(any(), eq(ShipmentV3Request.class))).thenReturn(mockShipmentRequest2);
+        doNothing().when(auditLogService).addAuditLog(any());
+        when(jsonHelper.convertToJson(any())).thenReturn("Shipment");
+
+        var isNewConsoleAttached = new MutableBoolean(false);
+        doThrow(RunnerException.class).when(shipmentsV3Util).afterSaveforEt(any(), any(), eq(false), any(),any(), any(), eq(isNewConsoleAttached), eq(false));
+
+        assertThrows(ValidationException.class, ()->shipmentServiceImplV3.completeUpdateShipmentFromEntityTransfer(mockShipmentRequest)) ;
+    }
+
 
     @Test
     void testGetPendingNotificationsReturnsEmptyResponseIfTenantSettingsNotEnabled() {

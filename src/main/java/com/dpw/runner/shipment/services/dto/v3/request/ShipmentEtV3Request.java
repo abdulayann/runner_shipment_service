@@ -255,4 +255,7 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
     private List<ContainerIdDltReq> deletedContainerIds;
     private List<RoutingsRequest> routingsList;
 
+    private Integer dgPacksCount;
+    private String dgPacksUnit;
+
 }
