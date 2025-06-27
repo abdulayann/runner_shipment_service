@@ -9,9 +9,11 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
@@ -20,8 +22,12 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
+import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -38,9 +44,11 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -53,6 +61,7 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
@@ -250,7 +259,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
   private static ShipmentDetails testShipment;
   private static Containers testContainer;
   private static ShipmentSettingsDetails shipmentSettingsDetails;
-
+  private AibActionConsolidation aibActionConsolidation;
   private MockedStatic<UnitConversionUtility> unitConversionUtilityMockedStatic;
   private MockedStatic<TenantContext> tenantContextMockedStatic;
 
@@ -281,8 +290,9 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     customerBookingV3Request = new CustomerBookingV3Request();
     testShipment = jsonTestUtility.getTestShipment();
     testContainer = jsonTestUtility.getTestContainer();
-unitConversionUtilityMockedStatic = mockStatic(UnitConversionUtility.class);
+    unitConversionUtilityMockedStatic = mockStatic(UnitConversionUtility.class);
     tenantContextMockedStatic = mockStatic(TenantContext.class);
+    aibActionConsolidation = AibActionConsolidation.builder().build();
   }
 
   @AfterEach
@@ -4553,6 +4563,196 @@ if (unitConversionUtilityMockedStatic != null) {
     ResponseEntity<IRunnerResponse> responseEntity = consolidationV3Service.getIdFromGuid(
             CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(consolidationDetails.getGuid().toString()).build()));
     assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+  }
+
+
+
+    @Test
+    void testAibActionApprove() throws RunnerException {
+        ConsolidationV3Service spyService = spy(consolidationV3Service);
+        aibActionConsolidation.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+        aibActionConsolidation.setConsoleId(1L);
+        aibActionConsolidation.setListOfShipments(List.of(1L));
+
+        consolidationDetails.setInterBranchConsole(true);
+        testConsol.setOpenForAttachment(true);
+        testConsol.setShipmentsList(Set.of());
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(testConsol));
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
+        doNothing().when(spyService).sendEmailsForPushRequestAccept(any(), any(), any(), any());
+        doReturn("OK").when(spyService).attachShipments(any());
+        ResponseEntity<IRunnerResponse> response = spyService.aibAction(aibActionConsolidation);
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+  @Test
+  void testAibActionApprove_Exception() throws RunnerException {
+    ConsolidationV3Service spyService = spy(consolidationV3Service);
+    aibActionConsolidation.setShipmentRequestedType(ShipmentRequestedType.APPROVE);
+    aibActionConsolidation.setConsoleId(1L);
+    aibActionConsolidation.setListOfShipments(List.of(1L));
+
+    consolidationDetails.setInterBranchConsole(true);
+    testConsol.setOpenForAttachment(true);
+    testConsol.setShipmentsList(Set.of());
+    when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(testConsol));
+    doThrow(new RunnerException("Exception")).when(spyService).attachShipments(any());
+
+    ValidationException exception = assertThrows(ValidationException.class, () -> {
+      spyService.aibAction(aibActionConsolidation);
+    });
+
+    assertEquals("Exception", exception.getMessage());
+  }
+
+    @Test
+    void testAibActionReject() throws RunnerException {
+        ConsolidationV3Service spyService = spy(consolidationV3Service);
+        aibActionConsolidation.setShipmentRequestedType(ShipmentRequestedType.REJECT);
+        aibActionConsolidation.setConsoleId(1L);
+        aibActionConsolidation.setListOfShipments(List.of(1L));
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(ConsoleShipmentMapping.builder().build())));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        doNothing().when(spyService).sendEmailForPushRequestReject(any(), any(), any(), any(), any());
+
+        ResponseEntity<IRunnerResponse> response = spyService.aibAction(aibActionConsolidation);
+
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(1L, 1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAibActionWithdraw() throws RunnerException {
+        aibActionConsolidation.setShipmentRequestedType(ShipmentRequestedType.WITHDRAW);
+        aibActionConsolidation.setConsoleId(1L);
+        aibActionConsolidation.setListOfShipments(List.of(1L));
+
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(ConsoleShipmentMapping.builder().build())));
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        ResponseEntity<IRunnerResponse> response = consolidationV3Service.aibAction(aibActionConsolidation);
+
+        verify(consoleShipmentMappingDao).deletePendingStateByConsoleIdAndShipmentId(1L, 1L);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAibActionDataRetrievalFailure() {
+        aibActionConsolidation.setConsoleId(1L);
+
+        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
+
+        DataRetrievalFailureException exception = assertThrows(DataRetrievalFailureException.class, () -> {
+          consolidationV3Service.aibAction(aibActionConsolidation);
+        });
+
+        assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, exception.getMessage());
+    }
+
+    @Test
+    void testSendEmailsForPushRequestAccept() throws Exception {
+        ConsolidationV3Service spyService = spy(consolidationV3Service);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        spyService.sendEmailsForPushRequestAccept(testConsol, List.of(1L), new HashSet<>(), new ArrayList<>());
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPushRequestReject() throws Exception {
+        ConsolidationV3Service spyService = spy(consolidationV3Service);
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(shipmentDetails)));
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(2L).build();
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        spyService.sendEmailForPushRequestReject(consolidationDetails, List.of(2L), new HashSet<>(), "rejectRemarks", List.of(consoleShipmentMapping));
+        verify(commonUtils).sendEmailForPullPushRequestStatus(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+    }
+
+  @Test
+  void testGetPendingNotificationsSuccess() {
+    AibNotificationRequest request = new AibNotificationRequest();
+    request.setId(1L);
+
+    ShipmentDetails mockShip1 = jsonTestUtility.getTestShipment();
+    mockShip1.setTenantId(1);
+    mockShip1.setId(1L);
+    var mockShip2 = objectMapperTest.convertValue(mockShip1, ShipmentDetails.class);
+    mockShip2.setId(2L);
+    var mockShip3 = objectMapperTest.convertValue(mockShip1, ShipmentDetails.class);
+    mockShip3.setId(3L);
+
+    V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+    tenantSettingsResponse.setIsMAWBColoadingEnabled(true);
+    tenantSettingsResponse.setIsColoadingMAWBStationEnabled(true);
+    TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+
+    List<ConsoleShipmentMapping> mappings = new ArrayList<>();
+    mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(1L).consolidationId(1L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).isAttachmentDone(false).build());
+    mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(2L).consolidationId(1L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).isAttachmentDone(false).build());
+    mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(1L).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).isAttachmentDone(false).build());
+    mappings.add(ConsoleShipmentMapping.builder()
+            .shipmentId(3L).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).isAttachmentDone(false).build());
+
+    List<ShipmentDetails> shipmentDetailsList = List.of(mockShip1, mockShip2, mockShip3);
+
+    // mocking
+    mockTenantSettings();
+    when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(mappings));
+    when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(shipmentDetailsList));
+    // Test
+    var httpResponse = consolidationV3Service.aibPendingNotification(CommonRequestModel.buildRequest(request));
+    // Assert
+    assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    var runnerResponse = objectMapperTest.convertValue(httpResponse.getBody(), RunnerResponse.class);
+    JavaType javaType = objectMapperTest.getTypeFactory().constructParametricType(PendingNotificationResponse.class, PendingConsolidationActionResponse.class);
+    PendingNotificationResponse<PendingConsolidationActionResponse> responseBody = objectMapperTest.convertValue(runnerResponse.getData(), javaType);
+    assertEquals(2, responseBody.getNotificationMap().size()); // number of consol with pending notifications
+    assertEquals(2, responseBody.getNotificationMap().get(1L).size()); // notification count of consol with id 1L
+  }
+
+  @Test
+  void testGetPendingNotificationsReturnsEmptyResponseIfTenantSettingsNotEnabled() {
+    AibNotificationRequest request = new AibNotificationRequest();
+    request.setId(1L);
+
+    V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+    TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+
+    // Test
+    var httpResponse = consolidationV3Service.aibPendingNotification(CommonRequestModel.buildRequest(request));
+    // Assert
+    assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    var responseBody = objectMapperTest.convertValue(httpResponse.getBody(), PendingNotificationResponse.class);
+    assertNull(responseBody.getNotificationMap());
+  }
+
+  @Test
+  void testGetPendingNotificationsReturnsEmptyResponseForEmptyList() {
+    AibNotificationRequest request = new AibNotificationRequest();
+    PendingNotificationResponse mockResponse  = new PendingNotificationResponse();
+
+    var httpResponse = consolidationV3Service.aibPendingNotification(CommonRequestModel.buildRequest(request));
+
+    assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
+  }
+
+  @Test
+  void testSendEmailFOrPullRequestWithdraw() {
+      ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+      consolidationDetails.setId(1L);
+      boolean isSuccess = true;
+      when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipmentDetails));
+      when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+      consolidationV3Service.sendEmailForPullRequestWithdrawal(consolidationDetails, Arrays.asList(2L), Set.of(), "Remarks");
+      assertTrue(isSuccess);
   }
 
   @Test

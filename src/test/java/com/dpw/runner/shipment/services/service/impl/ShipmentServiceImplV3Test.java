@@ -4626,7 +4626,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         aibActionShipment.setShipmentId(1L);
         when(consolidationV3Service.attachShipments(any())).thenThrow(new RunnerException("TEST"));
 
-        var exception = assertThrows(BillingException.class, () -> {
+        var exception = assertThrows(ValidationException.class, () -> {
             spyService.aibAction(aibActionShipment);
         });
         assertNotNull(exception);

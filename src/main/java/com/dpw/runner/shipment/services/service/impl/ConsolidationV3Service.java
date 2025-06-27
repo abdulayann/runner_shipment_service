@@ -85,18 +85,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtil
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
-import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
@@ -1760,7 +1749,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if (ObjectUtils.isNotEmpty(newShipmentIds)) {
                 // Prepare filter criteria to fetch pending state mappings for same-branch shipments
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, newShipmentIds, "IN", null);
-                listCommonRequest = andCriteria("isAttachmentDone", false, "=", listCommonRequest);
+                listCommonRequest = andCriteria(Constants.IS_ATTACHMENT_DONE, false, "=", listCommonRequest);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
 
                 // Get mappings for email notifications before deletion
@@ -4231,44 +4220,44 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> aibAction(AibActionConsolidation request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> aibAction(AibActionConsolidation aibActionRequest) throws RunnerException {
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
-        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(aibActionRequest.getConsoleId());
         if (consolidationDetails.isPresent()) {
             if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole())) {
                 commonUtils.setInterBranchContextForHub();
             }
-            if (ShipmentRequestedType.APPROVE.equals(request.getShipmentRequestedType())) { // one console multiple shipments
-                request.getListOfShipments().stream().forEach(shipmentId -> {
+            if (ShipmentRequestedType.APPROVE.equals(aibActionRequest.getShipmentRequestedType())) { // one console multiple shipments
+                aibActionRequest.getListOfShipments().stream().forEach(shipmentId -> {
                     try {
                         this.attachShipments(
                                 ShipmentConsoleAttachDetachV3Request.builder()
-                                        .shipmentRequestedType(request.getShipmentRequestedType())
-                                        .consolidationId(request.getConsoleId())
-                                        .shipmentIds(new HashSet<>(request.getListOfShipments()))
+                                        .shipmentRequestedType(aibActionRequest.getShipmentRequestedType())
+                                        .consolidationId(aibActionRequest.getConsoleId())
+                                        .shipmentIds(new HashSet<>(aibActionRequest.getListOfShipments()))
                                         .isFromConsolidation(true)
                                         .build());
                     } catch (RunnerException e) {
-                        log.error("Error while attaching shipments: {}", e.getMessage(), e);
-                        throw new BillingException(e.getMessage());
+                        log.error("{} | Error while attaching shipments during AIB Action for Console: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
+                        throw new ValidationException(e.getMessage());
                     }
                 });
-                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, request.getListOfShipments(), "IN");
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), Constants.IN);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
 
-                consoleShipmentMappingDao.deletePendingStateByShipmentIds(request.getListOfShipments());
+                consoleShipmentMappingDao.deletePendingStateByShipmentIds(aibActionRequest.getListOfShipments());
                 // one console and list of approved shipments for shipment push accepted from console
                 // for each shipment pending multiple consolidation auto rejections (shipment push and shipment pull both got rejected)
-                sendEmailsForPushRequestAccept(consolidationDetails.get(), request.getListOfShipments(), shipmentRequestedTypes, consoleShipmentMappingsForEmails);
-            } else if (ShipmentRequestedType.REJECT.equals(request.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(request.getShipmentRequestedType())) {
-                ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, request.getListOfShipments(), "IN", null);
-                listCommonRequest = andCriteria(CONSOLIDATION_ID, request.getConsoleId(), "=", listCommonRequest);
+                sendEmailsForPushRequestAccept(consolidationDetails.get(), aibActionRequest.getListOfShipments(), shipmentRequestedTypes, consoleShipmentMappingsForEmails);
+            } else if (ShipmentRequestedType.REJECT.equals(aibActionRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(aibActionRequest.getShipmentRequestedType())) {
+                ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), Constants.IN, null);
+                listCommonRequest = andCriteria(CONSOLIDATION_ID, aibActionRequest.getConsoleId(), Constants.EQ, listCommonRequest);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair2 = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 List<ConsoleShipmentMapping> consoleShipmentMappings = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair2.getLeft(), pair2.getRight()).getContent(), ConsoleShipmentMapping.class);
-                request.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(request.getConsoleId(), shipmentId));
+                aibActionRequest.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(aibActionRequest.getConsoleId(), shipmentId));
                 // one console and multiple shipments (shipment push rejected)
-                sendRejectionEmails(request, shipmentRequestedTypes, consolidationDetails.get(), consoleShipmentMappings);
+                sendRejectionEmails(aibActionRequest, shipmentRequestedTypes, consolidationDetails.get(), consoleShipmentMappings);
             }
         } else {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
@@ -4278,96 +4267,96 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
-    public void sendEmailsForPushRequestAccept(ConsolidationDetails consolidationDetails, List<Long> shipmentIds, Set<ShipmentRequestedType> shipmentRequestedTypes, List<ConsoleShipmentMapping> consoleShipmentMappings) {
-        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
-        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
-        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+    public void sendEmailsForPushRequestAccept(ConsolidationDetails console, List<Long> shipmentIds, Set<ShipmentRequestedType> requestedTypes, List<ConsoleShipmentMapping> consoleShipMappings) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, UnlocationsResponse> locationsMap = new HashMap<>();
+        Map<String, CarrierMasterData> carriersMap = new HashMap<>();
+        Map<String, String> userEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
-        Set<String> usernamesList = new HashSet<>();
+        Set<String> userNames = new HashSet<>();
         List<ShipmentDetails> shipmentDetails = new ArrayList<>();
-        List<ConsolidationDetails> otherConsolidationDetails = new ArrayList<>();
-        Map<Long, String> requestedUsernameMap = new HashMap<>();
+        List<ConsolidationDetails> otherConsoles = new ArrayList<>();
+        Map<Long, String> requestedUserNamesMap = new HashMap<>();
 
         // fetching data from db
-        fetchShipmentsAndConsolidationsForPushRequestEmails(tenantIds, usernamesList, shipmentIds, consolidationDetails, shipmentDetails, otherConsolidationDetails, consoleShipmentMappings, requestedUsernameMap);
+        fetchShipmentsAndConsolidationsForPushRequestEmails(tenantIds, userNames, shipmentIds, console, shipmentDetails, otherConsoles, consoleShipMappings, requestedUserNamesMap);
 
         // making v1 calls for master data
-        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
-        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(consolidationDetails.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carrierMasterDataMap)), executorService);
-        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(consolidationDetails.getCarrierDetails().getOriginPort(), consolidationDetails.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), unLocMap)), executorService);
-        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getCarriersData(Stream.of(console.getCarrierDetails().getShippingLine()).filter(Objects::nonNull).toList(), carriersMap)), executorService);
+        var locationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUnLocationsData(Stream.of(console.getCarrierDetails().getOriginPort(), console.getCarrierDetails().getDestinationPort()).filter(Objects::nonNull).toList(), locationsMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, userEmailsMap)), executorService);
 
-        CompletableFuture.allOf(emailTemplateFuture, carrierFuture, unLocationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
+        CompletableFuture.allOf(emailTemplateFuture, carrierFuture, locationsFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
         // constructing and sending emails
-        constructAndSendEmailsForPushRequestAccept(shipmentDetails, consolidationDetails, otherConsolidationDetails, consoleShipmentMappings, shipmentRequestedTypes,
-                unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, emailTemplatesRequests, requestedUsernameMap);
+        constructAndSendEmailsForPushRequestAccept(shipmentDetails, console, otherConsoles, consoleShipMappings, requestedTypes,
+                locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, emailTemplatesMap, requestedUserNamesMap);
     }
 
-    private void fetchShipmentsAndConsolidationsForPushRequestEmails(Set<Integer> tenantIds, Set<String> usernamesList, List<Long> shipmentIds, ConsolidationDetails consolidationDetails,
-                                                                     List<ShipmentDetails> shipmentDetails, List<ConsolidationDetails> otherConsolidationDetails,
-                                                                     List<ConsoleShipmentMapping> consoleShipmentMappings, Map<Long, String> requestedUsernameMap) {
+    private void fetchShipmentsAndConsolidationsForPushRequestEmails(Set<Integer> tenantIds, Set<String> userNames, List<Long> shipmentIds, ConsolidationDetails console,
+                                                                     List<ShipmentDetails> shipments, List<ConsolidationDetails> otherConsoles,
+                                                                     List<ConsoleShipmentMapping> consoleShipMappings, Map<Long, String> requestedUsernameMap) {
         // fetching shipments
-        ListCommonRequest listCommonRequest = constructListCommonRequest(ID, shipmentIds, "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest(ID, shipmentIds, Constants.IN);
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-        for(ShipmentDetails shipmentDetails1 : shipmentDetailsPage.getContent()) {
-            tenantIds.add(shipmentDetails1.getTenantId());
-            usernamesList.add(shipmentDetails1.getCreatedBy());
-            usernamesList.add(shipmentDetails1.getAssignedTo());
-            shipmentDetails.add(shipmentDetails1);
+        for(ShipmentDetails shipmentDetails : shipmentDetailsPage.getContent()) {
+            tenantIds.add(shipmentDetails.getTenantId());
+            userNames.add(shipmentDetails.getCreatedBy());
+            userNames.add(shipmentDetails.getAssignedTo());
+            shipments.add(shipmentDetails);
         }
 
         // fetching other consolidations
         List<Long> otherConsoleIds = new ArrayList<>();
-        for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
+        for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipMappings) {
             if(!Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone())) {
                 otherConsoleIds.add(consoleShipmentMapping.getConsolidationId());
-            } else if(shipmentIds.contains(consoleShipmentMapping.getShipmentId()) && Objects.equals(consoleShipmentMapping.getConsolidationId(), consolidationDetails.getId())){
+            } else if(shipmentIds.contains(consoleShipmentMapping.getShipmentId()) && Objects.equals(consoleShipmentMapping.getConsolidationId(), console.getId())){
                 requestedUsernameMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping.getCreatedBy());
             }
-            usernamesList.add(consoleShipmentMapping.getCreatedBy());
+            userNames.add(consoleShipmentMapping.getCreatedBy());
         }
         Page<ConsolidationDetails> consolidationDetailsPage = null;
         if(!otherConsoleIds.isEmpty()) {
-            listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, "IN");
+            listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, Constants.IN);
             Pair<Specification<ConsolidationDetails>, Pageable> pair3 = fetchData(listCommonRequest, ConsolidationDetails.class);
             consolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
             for(ConsolidationDetails consolidationDetails1 : consolidationDetailsPage.getContent()) {
                 tenantIds.add(consolidationDetails1.getTenantId());
-                usernamesList.add(consolidationDetails1.getCreatedBy());
-                otherConsolidationDetails.add(consolidationDetails1);
+                userNames.add(consolidationDetails1.getCreatedBy());
+                otherConsoles.add(consolidationDetails1);
             }
         }
     }
 
-    private void constructAndSendEmailsForPushRequestAccept(List<ShipmentDetails> shipmentDetails, ConsolidationDetails consolidationDetails,
-                                                            List<ConsolidationDetails> otherConsolidationDetails, List<ConsoleShipmentMapping> consoleShipmentMappings,
-                                                            Set<ShipmentRequestedType> shipmentRequestedTypes,
-                                                            Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap,
-                                                            Map<String, String> usernameEmailsMap, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap,
-                                                            Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests, Map<Long, String> requestedUsernameMap) {
+    private void constructAndSendEmailsForPushRequestAccept(List<ShipmentDetails> shipments, ConsolidationDetails console,
+                                                            List<ConsolidationDetails> otherConsoles, List<ConsoleShipmentMapping> consoleShipMapping,
+                                                            Set<ShipmentRequestedType> requestedTypes,
+                                                            Map<String, UnlocationsResponse> locationsMap, Map<String, CarrierMasterData> carriersMap,
+                                                            Map<String, String> userEmailsMap, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap,
+                                                            Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap, Map<Long, String> requestedUsernameMap) {
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
-        if(shipmentDetails != null && !shipmentDetails.isEmpty()) {
-            shipmentDetailsMap = shipmentDetails.stream().collect(Collectors.toMap(BaseEntity::getId, e -> e));
-            shipmentDetails.forEach(shipment -> {
+        if(shipments != null && !shipments.isEmpty()) {
+            shipmentDetailsMap = shipments.stream().collect(Collectors.toMap(BaseEntity::getId, e -> e));
+            shipments.forEach(shipment -> {
                 try {
-                    commonUtils.sendEmailForPullPushRequestStatus(shipment, consolidationDetails, SHIPMENT_PUSH_ACCEPTED, null, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, requestedUsernameMap.get(shipment.getId()), null);
+                    commonUtils.sendEmailForPullPushRequestStatus(shipment, console, SHIPMENT_PUSH_ACCEPTED, null, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, requestedUsernameMap.get(shipment.getId()), null);
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
                 }
             });
         }
-        if(!otherConsolidationDetails.isEmpty()) {
-            Map<Long, ConsolidationDetails> finalConsolidationDetailsMap = otherConsolidationDetails.stream().collect(Collectors.toMap(BaseEntity::getId, y -> y));
+        if(!otherConsoles.isEmpty()) {
+            Map<Long, ConsolidationDetails> finalConsolidationDetailsMap = otherConsoles.stream().collect(Collectors.toMap(BaseEntity::getId, y -> y));
             Map<Long, ShipmentDetails> finalShipmentDetailsMap = shipmentDetailsMap;
-            consoleShipmentMappings.stream().filter(e -> !Boolean.TRUE.equals(e.getIsAttachmentDone())).forEach(consoleShipmentMapping -> {
+            consoleShipMapping.stream().filter(e -> !Boolean.TRUE.equals(e.getIsAttachmentDone())).forEach(consoleShipmentMapping -> {
                 try {
                     if(finalConsolidationDetailsMap.containsKey(consoleShipmentMapping.getConsolidationId()) && finalShipmentDetailsMap.containsKey(consoleShipmentMapping.getShipmentId())) {
-                        sendPullPushRequestStatusEmail(shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, emailTemplatesRequests, consoleShipmentMapping, finalShipmentDetailsMap, finalConsolidationDetailsMap);
+                        sendPullPushRequestStatusEmail(requestedTypes, locationsMap, carriersMap, userEmailsMap, tenantSettingsMap, emailTemplatesMap, consoleShipmentMapping, finalShipmentDetailsMap, finalConsolidationDetailsMap);
                     }
                 } catch (Exception e) {
                     log.error(ERROR_WHILE_SENDING_EMAIL);
@@ -4376,107 +4365,103 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void sendPullPushRequestStatusEmail(Set<ShipmentRequestedType> shipmentRequestedTypes,
-                                                Map<String, UnlocationsResponse> unLocMap, Map<String, CarrierMasterData> carrierMasterDataMap,
-                                                Map<String, String> usernameEmailsMap, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap,
-                                                Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests,
-                                                ConsoleShipmentMapping consoleShipmentMapping, Map<Long, ShipmentDetails> finalShipmentDetailsMap,
-                                                Map<Long, ConsolidationDetails> finalConsolidationDetailsMap) throws Exception {
-        if(consoleShipmentMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
-            commonUtils.sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+    private void sendPullPushRequestStatusEmail(Set<ShipmentRequestedType> requestedTypes,
+                                                Map<String, UnlocationsResponse> locationsMap, Map<String, CarrierMasterData> carriersMap,
+                                                Map<String, String> userEmailMap, Map<Integer, V1TenantSettingsResponse> tenantSettingsMap,
+                                                Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap,
+                                                ConsoleShipmentMapping consoleShipMapping, Map<Long, ShipmentDetails> finalShipMap,
+                                                Map<Long, ConsolidationDetails> finalConsoleMap) throws Exception {
+        if(consoleShipMapping.getRequestedType() == SHIPMENT_PUSH_REQUESTED)
+            commonUtils.sendEmailForPullPushRequestStatus(finalShipMap.get(consoleShipMapping.getShipmentId()), finalConsoleMap.get(consoleShipMapping.getConsolidationId()), SHIPMENT_PUSH_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailMap, tenantSettingsMap, consoleShipMapping.getCreatedBy(), null);
         else
-            commonUtils.sendEmailForPullPushRequestStatus(finalShipmentDetailsMap.get(consoleShipmentMapping.getShipmentId()), finalConsolidationDetailsMap.get(consoleShipmentMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesRequests, shipmentRequestedTypes, unLocMap, carrierMasterDataMap, usernameEmailsMap, v1TenantSettingsMap, consoleShipmentMapping.getCreatedBy(), null);
+            commonUtils.sendEmailForPullPushRequestStatus(finalShipMap.get(consoleShipMapping.getShipmentId()), finalConsoleMap.get(consoleShipMapping.getConsolidationId()), SHIPMENT_PULL_REJECTED, AUTO_REJECTION_REMARK, emailTemplatesMap, requestedTypes, locationsMap, carriersMap, userEmailMap, tenantSettingsMap, consoleShipMapping.getCreatedBy(), null);
     }
 
-    private void sendRejectionEmails(AibActionConsolidation updateConsoleShipmentRequest, Set<ShipmentRequestedType> shipmentRequestedTypes, ConsolidationDetails consolidationDetails, List<ConsoleShipmentMapping> consoleShipmentMappings) {
-        if(ShipmentRequestedType.REJECT.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
-            sendEmailForPushRequestReject(consolidationDetails, updateConsoleShipmentRequest.getListOfShipments(), shipmentRequestedTypes, updateConsoleShipmentRequest.getRejectRemarks(), consoleShipmentMappings);
-        } else if(ShipmentRequestedType.WITHDRAW.equals(updateConsoleShipmentRequest.getShipmentRequestedType())) {
-            sendEmailForPullRequestWithdrawal(consolidationDetails, updateConsoleShipmentRequest.getListOfShipments(), shipmentRequestedTypes, updateConsoleShipmentRequest.getRejectRemarks());
+    private void sendRejectionEmails(AibActionConsolidation aibActionRequest, Set<ShipmentRequestedType> requestedTypes, ConsolidationDetails console, List<ConsoleShipmentMapping> consoleShipMapping) {
+        if(ShipmentRequestedType.REJECT.equals(aibActionRequest.getShipmentRequestedType())) {
+            sendEmailForPushRequestReject(console, aibActionRequest.getListOfShipments(), requestedTypes, aibActionRequest.getRejectRemarks(), consoleShipMapping);
+        } else if(ShipmentRequestedType.WITHDRAW.equals(aibActionRequest.getShipmentRequestedType())) {
+            sendEmailForPullRequestWithdrawal(console, aibActionRequest.getListOfShipments(), requestedTypes, aibActionRequest.getRejectRemarks());
         }
     }
 
-    private void sendEmailForPushRequestReject(ConsolidationDetails consolidationDetails, List<Long> shipmentIds, Set<ShipmentRequestedType> shipmentRequestedTypes, String rejectRemarks, List<ConsoleShipmentMapping> consoleShipmentMappings) {
-        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+    public void sendEmailForPushRequestReject(ConsolidationDetails console, List<Long> shipmentIds, Set<ShipmentRequestedType> requestedTypes, String rejectRemarks, List<ConsoleShipmentMapping> consoleShipMappings) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> userEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
         Set<String> usernamesList = new HashSet<>();
 
-        ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.ID, shipmentIds, "IN");
+        ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.ID, shipmentIds, Constants.IN);
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
-        for(ShipmentDetails shipmentDetails1 : shipmentDetails.getContent()) {
-            shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
-            tenantIds.add(shipmentDetails1.getTenantId());
-            usernamesList.add(shipmentDetails1.getCreatedBy());
-            usernamesList.add(shipmentDetails1.getAssignedTo());
+        for(var shipmentDetail : shipmentDetails.getContent()) {
+            shipmentDetailsMap.put(shipmentDetail.getId(), shipmentDetail);
+            tenantIds.add(shipmentDetail.getTenantId());
+            usernamesList.add(shipmentDetail.getCreatedBy());
+            usernamesList.add(shipmentDetail.getAssignedTo());
         }
         if(shipmentDetails != null && !shipmentDetails.getContent().isEmpty())
             shipmentDetailsMap = shipmentDetails.stream().collect(Collectors.toMap(BaseEntity::getId, e -> e));
 
         Map<Long, String> shipmentRequestUserMap = new HashMap<>();
-        for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipmentMappings) {
+        for(ConsoleShipmentMapping consoleShipmentMapping : consoleShipMappings) {
             shipmentRequestUserMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping.getCreatedBy());
             usernamesList.add(consoleShipmentMapping.getCreatedBy());
         }
 
-        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
-        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, v1TenantSettingsMap)), executorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
+        var toAndCcEmailIdsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettings(tenantIds, tenantSettingsMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, userEmailsMap)), executorService);
         CompletableFuture.allOf(emailTemplateFuture, toAndCcEmailIdsFuture, userEmailsFuture).join();
 
         for(Long shipId : shipmentIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipId), consolidationDetails, SHIPMENT_PUSH_REJECTED, rejectRemarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, shipmentRequestUserMap.get(shipId), null);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipId), console, SHIPMENT_PUSH_REJECTED, rejectRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, shipmentRequestUserMap.get(shipId), null);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
         }
     }
 
-    public void sendEmailForPullRequestWithdrawal(ConsolidationDetails consolidationDetails, List<Long> shipmentIds, Set<ShipmentRequestedType> shipmentRequestedTypes, String withdrawRemarks) {
-        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesRequests =  new EnumMap<>(ShipmentRequestedType.class);
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap = new HashMap<>();
+    public void sendEmailForPullRequestWithdrawal(ConsolidationDetails console, List<Long> shipmentIds, Set<ShipmentRequestedType> requestedTypes, String withdrawRemarks) {
+        Map<ShipmentRequestedType, EmailTemplatesRequest> emailTemplatesMap =  new EnumMap<>(ShipmentRequestedType.class);
+        Map<String, String> userEmailsMap = new HashMap<>();
+        Map<Integer, V1TenantSettingsResponse> tenantSettingsMap = new HashMap<>();
         Set<Integer> tenantIds = new HashSet<>();
-        Set<String> usernamesList = new HashSet<>();
-        Map<Integer, TenantModel> tenantsModelMap = new HashMap<>();
+        Set<String> userNames = new HashSet<>();
+        Map<Integer, TenantModel> tenantsMap = new HashMap<>();
 
-        List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+        List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
-        if(!listIsNullOrEmpty(shipmentDetails)) {
-            for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
-                shipmentDetailsMap.put(shipmentDetails1.getId(), shipmentDetails1);
-                tenantIds.add(shipmentDetails1.getTenantId());
-                usernamesList.add(shipmentDetails1.getCreatedBy());
-                usernamesList.add(shipmentDetails1.getAssignedTo());
+        if(!listIsNullOrEmpty(shipments)) {
+            for(var shipment : shipments) {
+                shipmentDetailsMap.put(shipment.getId(), shipment);
+                tenantIds.add(shipment.getTenantId());
+                userNames.add(shipment.getCreatedBy());
+                userNames.add(shipment.getAssignedTo());
             }
         }
-        usernamesList.add(consolidationDetails.getCreatedBy());
-        tenantIds.add(consolidationDetails.getTenantId());
+        userNames.add(console.getCreatedBy());
+        tenantIds.add(console.getTenantId());
 
-        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesRequests)), executorService);
-        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(usernamesList, usernameEmailsMap)), executorService);
-        var tenantsDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettingsAndTenantsData(tenantIds, v1TenantSettingsMap, tenantsModelMap)), executorService);
+        var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getEmailTemplate(emailTemplatesMap)), executorService);
+        var userEmailsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserDetails(userNames, userEmailsMap)), executorService);
+        var tenantsDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getToAndCCEmailIdsFromTenantSettingsAndTenantsData(tenantIds, tenantSettingsMap, tenantsMap)), executorService);
         CompletableFuture.allOf(emailTemplateFuture, tenantsDataFuture, userEmailsFuture).join();
 
-        for(Long shipId : shipmentIds) {
+        for(Long shipmentId : shipmentIds) {
             try {
-                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipId), consolidationDetails, SHIPMENT_PULL_WITHDRAW, withdrawRemarks, emailTemplatesRequests, shipmentRequestedTypes, null, null, usernameEmailsMap, v1TenantSettingsMap, null, tenantsModelMap);
+                commonUtils.sendEmailForPullPushRequestStatus(shipmentDetailsMap.get(shipmentId), console, SHIPMENT_PULL_WITHDRAW, withdrawRemarks, emailTemplatesMap, requestedTypes, null, null, userEmailsMap, tenantSettingsMap, null, tenantsMap);
             } catch (Exception e) {
                 log.error(ERROR_WHILE_SENDING_EMAIL);
             }
         }
     }
 
-    private String getWarningMsg(Set<ShipmentRequestedType> shipmentRequestedTypes) {
-        String warning = null;
-        if (!shipmentRequestedTypes.isEmpty()) {
-            warning = TEMPLATE_NOT_FOUND_MESSAGE;
-        }
-        return warning;
+    private String getWarningMsg(Set<ShipmentRequestedType> requestedTypes) {
+        return !requestedTypes.isEmpty() ? TEMPLATE_NOT_FOUND_MESSAGE : null;
     }
 
     @Override
@@ -4502,8 +4487,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         try {
-            ListCommonRequest listRequest = constructListCommonRequest("consolidationId", request.getId(), "=");
-            listRequest = andCriteria("isAttachmentDone", false, "=", listRequest);
+            ListCommonRequest listRequest = constructListCommonRequest(CONSOLIDATION_ID, request.getId(), Constants.EQ);
+            listRequest = andCriteria(Constants.IS_ATTACHMENT_DONE, false, Constants.EQ, listRequest);
             Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
@@ -4514,26 +4499,26 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             commonUtils.setInterBranchContextForHub();
 
-            listRequest = constructListCommonRequest("id", shipmentIds, "IN");
+            listRequest = constructListCommonRequest(ID, shipmentIds, Constants.IN);
             listRequest.setContainsText(request.getContainsText());
             listRequest.setSortRequest(request.getSortRequest());
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
             Page<ShipmentDetails> shipmentsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
 
-            var tenantIdList = new HashSet<String>();
-            var locCodeList =  new HashSet<String>();
+            var tenantIds = new HashSet<String>();
+            var locations =  new HashSet<String>();
             final CarrierDetails nullCarrierDetails = new CarrierDetails();
             shipmentsPage.getContent().stream().forEach(i -> {
-                tenantIdList.add(StringUtility.convertToString(i.getTenantId()));
+                tenantIds.add(StringUtility.convertToString(i.getTenantId()));
                 var carrierDetails = Optional.ofNullable(i.getCarrierDetails()).orElse(nullCarrierDetails);
-                locCodeList.add(carrierDetails.getOriginPort());
-                locCodeList.add(carrierDetails.getDestinationPort());
+                locations.add(carrierDetails.getOriginPort());
+                locations.add(carrierDetails.getDestinationPort());
             });
-            Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIdList);
-            Map<String, EntityTransferUnLocations> v1LocationData = masterDataUtils.fetchInBulkUnlocations(locCodeList, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            Map<String, TenantModel> v1TenantData = masterDataUtils.fetchInTenantsList(tenantIds);
+            Map<String, EntityTransferUnLocations> v1LocationData = masterDataUtils.fetchInBulkUnlocations(locations, EntityTransferConstants.LOCATION_SERVICE_GUID);
 
-            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS, tenantIdList, new TenantModel(), null);
-            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS, locCodeList, new EntityTransferUnLocations(), null);
+            masterDataUtils.pushToCache(v1TenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
+            masterDataUtils.pushToCache(v1LocationData, CacheConstants.UNLOCATIONS, locations, new EntityTransferUnLocations(), null);
 
             // console id vs list of ship ids
             Map<Long, List<Long>> shipmentVsConsolIdMap = new HashMap<>();

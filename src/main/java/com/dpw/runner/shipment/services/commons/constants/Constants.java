@@ -388,6 +388,7 @@ public class Constants {
     public static final String VOYAGE = "voyage";
     public static final String ORIGIN_PORT = "originPort";
     public static final String DESTINATION_PORT = "destinationPort";
+    public static final String IS_ATTACHMENT_DONE = "isAttachmentDone";
 
     public static final String OCEAN_DG_ROLE = "OCEAN_DG_ROLE";
     public static final String COMMERCIAL_OCEAN_DG_ROLE = "COMMERCIAL_OCEAN_DG_ROLE";
