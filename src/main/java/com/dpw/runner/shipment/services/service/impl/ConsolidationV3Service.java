@@ -2174,7 +2174,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
             shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
-            shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            if(StringUtility.isNotEmpty(console.getCarrierDetails().getShippingLine())) {
+                shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            }
             shipmentDetails.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
             shipmentDetails.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
             shipmentDetails.getCarrierDetails().setEta(console.getCarrierDetails().getEta());

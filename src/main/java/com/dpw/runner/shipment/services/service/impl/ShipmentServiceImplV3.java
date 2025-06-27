@@ -1784,7 +1784,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 detachedShipment.getCarrierDetails().setEtd(null);
                 detachedShipment.getCarrierDetails().setAta(null);
                 detachedShipment.getCarrierDetails().setAtd(null);
-                detachedShipment.getCarrierDetails().setShippingLine(null);
             }
             detachedShipment.setMasterBill(null);
             detachedShipment.setBookingNumber(null);
