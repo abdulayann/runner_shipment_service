@@ -138,7 +138,7 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     """, nativeQuery = true)
     PackingAssignmentProjection getPackingAssignmentCountByShipmentInAndTenant(List<Long> shipmentIds, Integer tenantId);
 
-    @Query(value = "SELECT EXISTS (SELECT 1 FROM packing WHERE shipment_id = :shipmentId)", nativeQuery = true)
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM packing WHERE shipment_id = :shipmentId and is_deleted = false)", nativeQuery = true)
     boolean existsPackingByShipmentId(@Param("shipmentId") Long shipmentId);
 }
 
