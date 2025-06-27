@@ -61,7 +61,7 @@ public interface IShipmentServiceV3 {
 
     Optional<ShipmentDetails> findById(Long shipmentId);
 
-    void updateCargoDetailsInShipment(Long shipmentId, CargoDetailsResponse cargoDetailsResponse);
+    void updateCargoDetailsInShipment(ShipmentDetails shipmentDetails, CargoDetailsResponse cargoDetailsResponse);
 
     void updateShipmentDetailsFromPacks(Long shipmentId, DateBehaviorType dateType, LocalDateTime shipmentGateInDate, ShipmentPackStatus shipmentPackStatus);
 
