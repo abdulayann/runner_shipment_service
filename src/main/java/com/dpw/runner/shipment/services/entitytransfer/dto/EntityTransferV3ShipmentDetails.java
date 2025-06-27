@@ -202,7 +202,7 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private LocalDateTime latestArrivalTime;
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
-
-
+    private Integer dgPacksCount;
+    private String dgPacksUnit;
 
 }

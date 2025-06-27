@@ -33,6 +33,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPay
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
@@ -251,6 +252,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   private static ConsolidationDetailsResponse testConsolResponse;
   private static ConsolidationDetailsV3Request consolidationDetailsV3Request;
+  private static ConsolidationEtV3Request consolidationEtV3Request;
 
   private static ModelMapper modelMapperTest = new ModelMapper();
   private ConsolidationDetails consolidationDetails;
@@ -279,6 +281,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     testConsol = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
     testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
     consolidationDetailsV3Request = objectMapperTest.convertValue(testConsol , ConsolidationDetailsV3Request.class);
+    consolidationEtV3Request = objectMapperTest.convertValue(testConsol ,ConsolidationEtV3Request.class);
     consolidationV3Service.executorService = Executors.newFixedThreadPool(2);
     consolidationV3Service.executorServiceMasterData = Executors.newFixedThreadPool(2);
     shipmentDetails = jsonTestUtility.getCompleteShipment();
@@ -712,7 +715,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails,
-        null, true));
+        null, true, new HashMap<>()));
   }
 
   @Test
@@ -747,7 +750,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
     assertNotNull(shipmentDetailsList);
   }
 
@@ -785,7 +788,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true);
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
     assertNotNull(shipmentDetailsList);
   }
 
@@ -826,7 +829,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationValidationV3Util.checkIfShipmentDateGreaterThanConsole(any(), any())).thenReturn(true);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true));
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>()));
 
   }
 
@@ -4173,7 +4176,7 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails oldEntity = ConsolidationDetails.builder().shipmentType("HSE").carrierDetails(CarrierDetails.builder().build()).build();
 
     // method under test
-    boolean result = consolidationV3Service.canProcessConsole(console, oldEntity);
+    boolean result = consolidationV3Service.canProcessConsole(console, oldEntity, new HashMap<>());
 
     // assertions
     assertFalse(result);
@@ -4750,6 +4753,103 @@ if (unitConversionUtilityMockedStatic != null) {
 
       consolidationV3Service.sendEmailForPullRequestWithdrawal(consolidationDetails, Arrays.asList(2L), Set.of(), "Remarks");
       assertTrue(isSuccess);
+  }
+
+  @Test
+  void TestCreateConsolidationFromEntityTransfer(){
+    var spyService = Mockito.spy(consolidationV3Service);
+    CarrierDetails carrierDetails = new CarrierDetails();
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    mockShipmentSettings();
+    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
+    ConsolidationDetailsResponse createResponse = spyService.createConsolidationFromEntityTransfer(consolidationEtV3Request);
+
+    assertNotNull(createResponse);
+
+  }
+
+  @Test
+  void TestCreateConsolidationFromEntityTransfer2() throws RunnerException {
+    var spyService = Mockito.spy(consolidationV3Service);
+    CarrierDetails carrierDetails = new CarrierDetails();
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    mockShipmentSettings();
+    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    doThrow(new RunnerException("IllegalAccessException")).when(consolidationV3Util).afterSaveForET(any(), any(), any(), eq(true), any(), eq(false));
+    assertThrows(ValidationException.class, ()->spyService.createConsolidationFromEntityTransfer(consolidationEtV3Request));
+
+  }
+
+  @Test
+  void TestCompleteUpdateConsolidationFromEntityTransfer_Success() throws RunnerException {
+      consolidationEtV3Request.setId(1L);
+      consolidationDetails.setInterBranchConsole(true);
+      consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+      consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+
+      var spyService = Mockito.spy(consolidationV3Service);
+
+      when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+              .thenReturn(new BigDecimal("1000"));
+      when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+      when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+      when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+      when(consolidationDetailsDao.update(any(), eq(false))).thenReturn(consolidationDetails);
+      when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+      when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+      when(consolidationDetailsDao.findById(any())).thenReturn(Optional.ofNullable(consolidationDetails));
+      mockShipmentSettings();
+      mockTenantSettings();
+      when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(new ConsolidationDetailsResponse());
+
+      ConsolidationDetailsResponse consolidationDetailsV3Response = spyService.completeUpdateConsolidationFromEntityTransfer(consolidationEtV3Request);
+      assertNotNull(consolidationDetailsV3Response);
+  }
+
+  @Test
+  void TestCompleteUpdateConsolidationFromEntityTransfer_Exception() throws RunnerException {
+    consolidationEtV3Request.setId(1L);
+    consolidationDetails.setInterBranchConsole(true);
+    consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(new BigDecimal("1000"));
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(jsonHelper.convertToJson(any())).thenReturn("ABC");
+    when(consolidationDetailsDao.update(any(), eq(false))).thenReturn(consolidationDetails);
+    when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    when(consolidationDetailsDao.findById(any())).thenReturn(Optional.ofNullable(consolidationDetails));
+    mockShipmentSettings();
+    mockTenantSettings();
+    doThrow(new RunnerException("IllegalAccessException")).when(consolidationV3Util).afterSaveForET(any(), any(), any(), eq(false), any(), eq(false));
+    assertThrows(GenericException.class, ()->spyService.completeUpdateConsolidationFromEntityTransfer(consolidationEtV3Request));
+  }
+
+  @Test
+  void TestCompleteUpdateConsolidationFromEntityTransfer_Exception2() {
+    consolidationEtV3Request.setId(1L);
+    consolidationDetails.setInterBranchConsole(true);
+    consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+
+    var spyService = Mockito.spy(consolidationV3Service);
+
+    when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+
+    assertThrows(DataRetrievalFailureException.class, ()->spyService.completeUpdateConsolidationFromEntityTransfer(consolidationEtV3Request));
   }
 
 }

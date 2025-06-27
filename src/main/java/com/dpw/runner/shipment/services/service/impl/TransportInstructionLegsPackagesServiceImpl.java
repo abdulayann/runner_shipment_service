@@ -6,11 +6,15 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiPackageDao;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiPackages;
+import com.dpw.runner.shipment.services.entity.TiReferences;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -29,6 +33,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -172,6 +177,50 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         return jsonHelper.convertValue(tiPackages.get(), TransportInstructionLegsPackagesResponse.class);
     }
 
+    @Override
+    @Transactional
+    public TransportInstructionLegsPackagesListResponse bulkCreate(TransportInstructionLegsPackagesListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Starting Transport Instruction Legs packages creation | Request ID: {} | Request Body: {}", requestId, request);
+        Long tiLegId = request.getPackagesRequests().get(0).getTiLegId();
+        if (!request.getPackagesRequests().stream()
+                .allMatch(req -> req.getTiLegId().equals(tiLegId))) {
+            throw new ValidationException("All tiLegId values must be the same");
+        }
+        Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
+        if (!tiLegs.isPresent()) {
+            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        }
+        request.getPackagesRequests()
+                .forEach(this::validateTransportInstructionLegsPackagesDetails);
+        // Convert DTO to Entity
+        List<TiPackages> tiPackagesList = new ArrayList<>();
+        for (TransportInstructionLegsPackagesRequest packagesRequest : request.getPackagesRequests()) {
+            TiPackages tiPackages = jsonHelper.convertValue(packagesRequest, TiPackages.class);
+            tiPackages.setTiLegId(tiLegId);
+            tiPackagesList.add(tiPackages);
+            log.debug("Converted Transport Instruction Legs packages request to entity | Entity: {}", tiPackages);
+        }
+        // Save to DB
+        List<TiPackages> tiPackagesEntities = tiPackageDao.saveAll(tiPackagesList);
+        for (TiPackages tiPackagesEntity : tiPackagesEntities) {
+            // Audit logging
+            recordAuditLogs(null, tiPackagesEntity, DBOperationType.CREATE);
+        }
+        log.info("Audit log recorded for Transport Instruction Legs bulk packages creation");
+        TransportInstructionLegsPackagesListResponse response = new TransportInstructionLegsPackagesListResponse();
+        List<TransportInstructionLegsPackagesResponse> instructionLegsPackagesResponses = new ArrayList<>();
+        for (TiPackages tiPackagesEntity : tiPackagesEntities) {
+            TransportInstructionLegsPackagesResponse packagesResponse = jsonHelper.convertValue(tiPackagesEntity, TransportInstructionLegsPackagesResponse.class);
+            instructionLegsPackagesResponses.add(packagesResponse);
+        }
+        response.setTiLegsPackagesResponses(instructionLegsPackagesResponses);
+        // Triggering Event for shipment and console for DependentServices update
+        triggerPushToDownStreamForTransportInstruction(tiLegs.get().getPickupDeliveryDetailsId());
+        return response;
+    }
+
     private void recordAuditLogs(TiPackages oldTiPackages, TiPackages newTiPackages, DBOperationType operationType) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         auditLogService.addAuditLog(
                 AuditLogMetaData.builder()
@@ -214,12 +263,6 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
                 (transportInstructionLegsPackagesRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Packages: Gross weight and gross weight unit must both be provided or both be null.");
         }
-        if (transportInstructionLegsPackagesRequest.getGrossWeight() != null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit())) {
-            String combinedGrossWeight = transportInstructionLegsPackagesRequest.getGrossWeight().toPlainString() + transportInstructionLegsPackagesRequest.getGrossWeightUnit().trim();
-            if (combinedGrossWeight.length() > 15) {
-                throw new ValidationException("Packages: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
-            }
-        }
 
         // Net Weight & Unit Validation
         validateNetWeight(transportInstructionLegsPackagesRequest);
@@ -245,12 +288,6 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         if ((transportInstructionLegsPackagesRequest.getNetWeight() != null && StringUtility.isEmpty(transportInstructionLegsPackagesRequest.getNetWeightUnit())) ||
                 (transportInstructionLegsPackagesRequest.getNetWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getNetWeightUnit()))) {
             throw new ValidationException("Packages: Net weight and net weight unit must both be provided or both be null.");
-        }
-        if (transportInstructionLegsPackagesRequest.getNetWeight() != null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getNetWeightUnit())) {
-            String combined = transportInstructionLegsPackagesRequest.getNetWeight().toPlainString() + transportInstructionLegsPackagesRequest.getNetWeightUnit().trim();
-            if (combined.length() > 15) {
-                throw new ValidationException("Packages: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
-            }
         }
     }
 

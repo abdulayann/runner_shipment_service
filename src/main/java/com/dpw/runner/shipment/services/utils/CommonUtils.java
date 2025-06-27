@@ -1573,6 +1573,24 @@ public class CommonUtils {
         return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
     }
 
+    public boolean checkIfDGFieldsChangedInContainer(ContainerV3Request newContainer, Containers oldContainer) {
+        if (!oldContainer.getHazardous().equals(newContainer.getHazardous()))
+            return true;
+        if (!Objects.equals(newContainer.getDgClass(), oldContainer.getDgClass()))
+            return true;
+        if (!Objects.equals(newContainer.getUnNumber(), oldContainer.getUnNumber()))
+            return true;
+        if (!Objects.equals(newContainer.getProperShippingName(), oldContainer.getProperShippingName()))
+            return true;
+        if (!Objects.equals(newContainer.getPackingGroup(), oldContainer.getPackingGroup()))
+            return true;
+        if (!compareBigDecimals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
+            return true;
+        if (!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
+            return true;
+        return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
+    }
+
     public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {
         try {
             if (!Objects.isNull(carrierDetails) && (Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())

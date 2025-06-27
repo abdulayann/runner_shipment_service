@@ -4,13 +4,15 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -18,12 +20,8 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransportInstructionLegsReferenceRequest implements IRunnerRequest {
-    private Long id;
-    private UUID guid;
-    @NotNull(message = "Transport Instruction leg Id is required")
-    private Long tiLegId;
-    private String type;
-    @Size(max = 30, message = "max size is 30 for reference number")
-    private String reference;
+public class TransportInstructionLegsReferenceListRequest implements IRunnerRequest {
+    @Valid
+    @Size(min = 1, message = "Please provide the reference list data")
+    private List<TransportInstructionLegsReferenceRequest> references = new ArrayList<>();
 }
