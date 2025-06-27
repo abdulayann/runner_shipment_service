@@ -1,43 +1,5 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BL_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CLIENT_NAME_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNEE_NAME_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNOR_NAME_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_V3_IMPORT_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_CONSOLIDATION_V3_RECEIVED_BODY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_CONSOLIDATION_V3_RECEIVED_SUBJECT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_SHIPMENT_RECEIVED_SUBJECT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_SHIPMENT_V3_RECEIVED_BODY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.EMPTY_STRING;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.GROUPED_SHIPMENT_BODY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MBL_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NUMBER_OF_SHIPMENTS_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SENDER_USER_NAME_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SENT_DATE_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_IMPORT_V3_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_BRANCH_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSFERRED_DATE_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TYPE;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
@@ -48,25 +10,9 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
-import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -75,20 +21,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferV3ShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ConsolidationRequest;
@@ -106,12 +41,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import com.dpw.runner.shipment.services.service.interfaces.ITasksService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
@@ -121,29 +51,9 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import javax.transaction.Transactional;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -162,6 +72,21 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import javax.transaction.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -638,7 +563,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
     @Transactional
     @Override
-    public String importShipment (CommonRequestModel commonRequestModel) throws RunnerException {
+    public String importShipment (CommonRequestModel commonRequestModel) throws RunnerException, JsonMappingException {
         this.validateApprovalRoleForImport();
         ImportV3ShipmentRequest importShipmentRequest = (ImportV3ShipmentRequest) commonRequestModel.getData();
 
@@ -737,7 +662,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
     @Override
     @Transactional
-    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> importConsolidation (CommonRequestModel commonRequestModel) throws RunnerException, JsonMappingException {
         this.validateApprovalRoleForImport();
         ImportV3ConsolidationRequest importConsolidationRequest = (ImportV3ConsolidationRequest) commonRequestModel.getData();
         // Update task status rejected
@@ -830,7 +755,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
     }
 
-    private ConsolidationDetailsResponse createConsolidation (EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, Map<UUID, Long> oldVsNewShipIds) throws RunnerException {
+    private ConsolidationDetailsResponse createConsolidation (EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, Map<UUID, Long> oldVsNewShipIds) throws RunnerException, JsonMappingException {
         SyncingContext.setContext(false);
         List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
         Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
@@ -950,8 +875,9 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
     }
 
-    private ConsolidationDetailsResponse createOrUpdateConsolidation(EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, List<ConsolidationDetails> oldConsolidationDetailsList, MutableBoolean isCreateConsole) throws RunnerException {
-        ConsolidationEtV3Request consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationEtV3Request.class);
+    private ConsolidationDetailsResponse createOrUpdateConsolidation(EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, List<ConsolidationDetails> oldConsolidationDetailsList, MutableBoolean isCreateConsole) throws RunnerException, JsonMappingException {
+        ConsolidationEtV3Request consolidationDetailsRequest =  jsonHelper.convertValue(entityTransferConsolidationDetails, ConsolidationEtV3Request.class);
+        consolidationDetailsRequest.setHazardous(false); // setting it to false as it will be changed to true once attachment API is called
         ConsolidationDetailsResponse consolidationDetailsResponse;
         consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE));
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
@@ -967,7 +893,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             Long id = consolidationDetailsRequest.getId();
             UUID guid = consolidationDetailsRequest.getGuid();
             this.cleanAllListEntitiesForConsolidation(consolidationDetailsRequest);
-            modelMapper.map(entityTransferConsolidationDetails, consolidationDetailsRequest);
+            jsonHelper.updateValue(consolidationDetailsRequest, entityTransferConsolidationDetails);
             consolidationDetailsRequest.setId(id);
             consolidationDetailsRequest.setGuid(guid);
             consolidationDetailsRequest.setShipmentsList(null);
@@ -980,7 +906,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         return consolidationDetailsResponse;
     }
 
-    private void createOrUpdateShipment(EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, Long> oldVsNewShipIds, List<UUID> shipmentGuids, List<Long> shipmentIds, List<Long> interBranchShipment, CopyDocumentsRequest copyDocumentsRequest, Map<Long, Boolean> isCreateShipMap) throws RunnerException {
+    private void createOrUpdateShipment(EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, Long> oldVsNewShipIds, List<UUID> shipmentGuids, List<Long> shipmentIds, List<Long> interBranchShipment, CopyDocumentsRequest copyDocumentsRequest, Map<Long, Boolean> isCreateShipMap) throws RunnerException, JsonMappingException {
         if(!CommonUtils.listIsNullOrEmpty(entityTransferConsolidationDetails.getShipmentsList())) {
             String department = commonUtils.getAutoPopulateDepartment(entityTransferConsolidationDetails.getShipmentsList().get(0).getTransportMode(), entityTransferConsolidationDetails.getShipmentsList().get(0).getDirection(), MdmConstants.SHIPMENT_MODULE);
             for (var ship : entityTransferConsolidationDetails.getShipmentsList()) {
@@ -1044,8 +970,8 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
     }
 
 
-    private ShipmentDetailsResponse createShipment(EntityTransferV3ShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest, MutableBoolean isCreateShip, String department, List<ShipmentDetails> oldShipmentDetailsList) throws RunnerException {
-        ShipmentEtV3Request shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentEtV3Request.class);
+    private ShipmentDetailsResponse createShipment(EntityTransferV3ShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest, MutableBoolean isCreateShip, String department, List<ShipmentDetails> oldShipmentDetailsList) throws RunnerException, JsonMappingException {
+        ShipmentEtV3Request shipmentRequest = jsonHelper.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class);
         var tenantId = UserContext.getUser().getTenantId();
         shipmentRequest.setDepartment(department);
         if(entityTransferShipmentDetails.getSendToBranch() == null) {
@@ -1071,7 +997,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             Long id = shipmentRequest.getId();
             UUID guid = shipmentRequest.getGuid();
             this.cleanAllListEntitiesForShipment(shipmentRequest);
-            modelMapper.map(entityTransferShipmentDetails, shipmentRequest);
+            jsonHelper.updateValue(shipmentRequest, entityTransferShipmentDetails);
             shipmentRequest.setId(id);
             shipmentRequest.setGuid(guid);
             shipmentRequest.setSourceGuid(entityTransferShipmentDetails.getGuid());
