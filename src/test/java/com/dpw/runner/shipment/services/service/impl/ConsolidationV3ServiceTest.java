@@ -4597,7 +4597,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(testConsol));
     doThrow(new RunnerException("Exception")).when(spyService).attachShipments(any());
 
-    BillingException exception = assertThrows(BillingException.class, () -> {
+    ValidationException exception = assertThrows(ValidationException.class, () -> {
       spyService.aibAction(aibActionConsolidation);
     });
 
