@@ -1,5 +1,16 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -14,16 +25,24 @@ import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import javax.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,21 +52,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -84,6 +92,9 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @InjectMocks
     private ContainerV3Util containerV3Util;
+
+    @Mock
+    private ObjectMapper mockObjectMapper;
 
     private static ObjectMapper objectMapper;
 
@@ -131,6 +142,101 @@ class ContainerV3UtilTest extends CommonMocks {
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
         assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
+    }
+
+    @Test
+    void downloadContainers_success() {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        request.setConsolidationId("3");
+        request.setShipmentId("6");
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class)))
+                .thenReturn(List.of(new ContainersExcelModel()));
+
+        assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
+        assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.getContentType());
+    }
+
+    @Test
+    void downloadContainers_shipmentNotFound_shouldReturnJsonError() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setShipmentId("999");
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(mockObjectMapper.writeValueAsString(any())).thenReturn("{\"success\":false,\"message\":\"Shipment not found\"}");
+
+        containerV3Util.downloadContainers(response, request);
+
+        assertEquals(500, response.getStatus());
+        assertTrue(response.getContentType().startsWith("application/json"));
+
+        String responseBody = response.getContentAsString();
+        assertTrue(responseBody.contains("Shipment not found"));
+    }
+
+    @Test
+    void downloadContainers_consolidationNotFound_shouldReturnJsonError() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setConsolidationId("888");
+
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        when(mockObjectMapper.writeValueAsString(any()))
+                .thenReturn("{\"success\":false,\"message\":\"Consolidation not found\"}");
+
+        containerV3Util.downloadContainers(response, request);
+
+        assertEquals(500, response.getStatus());
+        assertTrue(response.getContentType().startsWith("application/json"));
+        assertTrue(response.getContentAsString().contains("Consolidation not found"));
+    }
+
+    @Test
+    void downloadContainers_noContainersFound_shouldReturnJsonError() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setShipmentId("6");
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(shipmentsContainersMappingDao.findByShipmentId(any()))
+                .thenReturn(List.of(new ShipmentsContainersMapping(1L, 2L))); // container ID
+        when(containerDao.findAll(any(), any())).thenReturn(Page.empty());
+        when(mockObjectMapper.writeValueAsString(any()))
+                .thenReturn("{\"success\":false,\"message\":\"No containers found for given input.\"}");
+
+        containerV3Util.downloadContainers(response, request);
+
+        assertEquals(500, response.getStatus());
+        assertTrue(response.getContentType().startsWith("application/json"));
+        assertTrue(response.getContentAsString().contains("No containers found"));
+    }
+
+    @Test
+    void downloadContainers_convertToListFails_shouldReturnJsonError() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setShipmentId("6");
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(shipmentsContainersMappingDao.findByShipmentId(any()))
+                .thenReturn(List.of(new ShipmentsContainersMapping(1L, 2L)));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class)))
+                .thenThrow(new RuntimeException("Mapping failed"));
+        when(mockObjectMapper.writeValueAsString(any()))
+                .thenReturn("{\"success\":false,\"message\":\"Failed to generate Excel file. Please try again.\"}");
+
+        containerV3Util.downloadContainers(response, request);
+
+        assertEquals(500, response.getStatus());
+        assertTrue(response.getContentType().startsWith("application/json"));
+        assertTrue(response.getContentAsString().contains("Failed to generate Excel"));
     }
 
     @Test

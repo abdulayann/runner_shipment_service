@@ -126,7 +126,7 @@ public class ContainerV3Util {
             // Shipment-related containers
             if (request.getShipmentId() != null) {
                 ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId()))
-                        .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
+                        .orElseThrow(() -> new RunnerException("Shipment not found"));
 
                 request.setTransportMode(shipmentDetails.getTransportMode());
                 request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection()));
@@ -146,7 +146,7 @@ public class ContainerV3Util {
             // Consolidation-related containers
             if (request.getConsolidationId() != null) {
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()))
-                        .orElseThrow(() -> new DataRetrievalFailureException("Consolidation not found"));
+                        .orElseThrow(() -> new RunnerException("Consolidation not found"));
 
                 request.setTransportMode(consolidationDetails.getTransportMode());
                 request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(consolidationDetails.getShipmentType()));
@@ -161,6 +161,12 @@ public class ContainerV3Util {
                 } else {
                     result = result.stream().filter(containersList::contains).toList();
                 }
+            }
+
+            if (result.isEmpty()) {
+                log.error("No containers found for given input.");
+                sendJsonErrorResponse(response, "No containers found for given input.");
+                return;
             }
 
             // Prepare response headers
