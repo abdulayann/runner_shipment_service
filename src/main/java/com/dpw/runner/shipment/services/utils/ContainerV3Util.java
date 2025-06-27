@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -34,8 +35,9 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nimbusds.jose.util.Pair;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -57,10 +59,9 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -114,215 +115,261 @@ public class ContainerV3Util {
             "containerComments"
     );
 
-    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
-        try {
-            log.info("Starting downloadContainers with request: {}", request);
-
-            List<ShipmentsContainersMapping> mappings;
-            List<Containers> result = new ArrayList<>();
-
-            if (request.getShipmentId() != null) {
-                log.info("Fetching shipment details for shipmentId: {}", request.getShipmentId());
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId()))
-                        .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
-                log.info("Found shipmentDetails: {}", shipmentDetails);
-
-                request.setTransportMode(shipmentDetails.getTransportMode());
-                log.info("Set transport mode: {}", shipmentDetails.getTransportMode());
-
-                request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                log.info("Set export flag: {}", request.isExport());
-
-                mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-                log.info("Found {} mappings for shipmentId {}", mappings.size(), request.getShipmentId());
-
-                List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
-                log.info("Extracted container IDs: {}", containerId);
-
-                ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
-                log.info("Constructed ListCommonRequest: {}", req);
-
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
-                log.info("Constructed specification and pageable pair");
-
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                log.info("Fetched containers page with {} records", containers.getTotalElements());
-
-                List<Containers> containersList = containers.getContent();
-                log.info("Extracted containers list: {}", containersList.size());
-
-                result.addAll(containersList);
-                log.info("Added containers to result. Current result size: {}", result.size());
-            }
-
-            if (request.getConsolidationId() != null) {
-                log.info("Fetching consolidation details for consolidationId: {}", request.getConsolidationId());
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()))
-                        .orElseThrow(() -> new DataRetrievalFailureException("Consolidation not found"));
-                log.info("Found consolidationDetails: {}", consolidationDetails);
-
-                request.setTransportMode(consolidationDetails.getTransportMode());
-                log.info("Set transport mode from consolidation: {}", consolidationDetails.getTransportMode());
-
-                request.setExport(consolidationDetails.getShipmentType() != null &&
-                        consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                log.info("Set export flag from consolidation: {}", request.isExport());
-
-                ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
-                log.info("Constructed ListCommonRequest for consolidation: {}", req2);
-
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
-                log.info("Constructed specification and pageable pair for consolidation");
-
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                log.info("Fetched containers page for consolidation with {} records", containers.getTotalElements());
-
-                List<Containers> containersList = containers.getContent();
-                log.info("Extracted containers list from consolidation: {}", containersList.size());
-
-                if (result.isEmpty()) {
-                    result.addAll(containersList);
-                    log.info("Result was empty. Added all consolidation containers. Result size now: {}", result.size());
-                } else {
-                    result = result.stream().filter(containersList::contains).toList();
-                    log.info("Performed intersection with consolidation containers. Result size now: {}", result.size());
-                }
-            }
-
-            LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
-            String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Containers_" + timestamp + Constants.XLSX;
-            log.info("Generated filename with timestamp: {}", filenameWithTimestamp);
-
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
-            log.info("Set response headers for Excel download");
-
-            try (XSSFWorkbook workbook = new XSSFWorkbook()) {
-                XSSFSheet sheet = workbook.createSheet("Containers");
-                log.info("Created new Excel sheet: Containers");
-
-                List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
-                log.info("Converted container list to excel model. Model size: {}", model.size());
-
-                convertModelToExcel(model, sheet, request);
-                log.info("Populated data into Excel sheet");
-
-                try (OutputStream outputStream = response.getOutputStream()) {
-                    workbook.write(outputStream);
-                    log.info("Excel file written to response output stream");
-                }
-            }
-
-        } catch (Exception ex) {
-            log.error("Error occurred in downloadContainers: {}", ex.getMessage(), ex);
-            throw new RunnerException(ex.getMessage());
-        }
-    }
-
-//    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
-//        List<Containers> result = new ArrayList<>();
-//
+//    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
 //        try {
-//            // Shipment-related containers
+//            log.info("Starting downloadContainers with request: {}", request);
+//
+//            List<ShipmentsContainersMapping> mappings;
+//            List<Containers> result = new ArrayList<>();
+//
 //            if (request.getShipmentId() != null) {
+//                log.info("Fetching shipment details for shipmentId: {}", request.getShipmentId());
 //                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId()))
-//                        .orElseThrow(() -> new RunnerException("Shipment not found"));
+//                        .orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
+//                log.info("Found shipmentDetails: {}", shipmentDetails);
 //
 //                request.setTransportMode(shipmentDetails.getTransportMode());
-//                request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection()));
+//                log.info("Set transport mode: {}", shipmentDetails.getTransportMode());
 //
-//                List<ShipmentsContainersMapping> mappings =
-//                        shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-//                List<Long> containerIds = mappings.stream()
-//                        .map(ShipmentsContainersMapping::getContainerId)
-//                        .toList();
+//                request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
+//                log.info("Set export flag: {}", request.isExport());
 //
-//                ListCommonRequest req = constructListCommonRequest("id", containerIds, "IN");
+//                mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+//                log.info("Found {} mappings for shipmentId {}", mappings.size(), request.getShipmentId());
+//
+//                List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
+//                log.info("Extracted container IDs: {}", containerId);
+//
+//                ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
+//                log.info("Constructed ListCommonRequest: {}", req);
+//
 //                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+//                log.info("Constructed specification and pageable pair");
+//
 //                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-//                result.addAll(containers.getContent());
+//                log.info("Fetched containers page with {} records", containers.getTotalElements());
+//
+//                List<Containers> containersList = containers.getContent();
+//                log.info("Extracted containers list: {}", containersList.size());
+//
+//                result.addAll(containersList);
+//                log.info("Added containers to result. Current result size: {}", result.size());
 //            }
 //
-//            // Consolidation-related containers
 //            if (request.getConsolidationId() != null) {
+//                log.info("Fetching consolidation details for consolidationId: {}", request.getConsolidationId());
 //                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()))
-//                        .orElseThrow(() -> new RunnerException("Consolidation not found"));
+//                        .orElseThrow(() -> new DataRetrievalFailureException("Consolidation not found"));
+//                log.info("Found consolidationDetails: {}", consolidationDetails);
 //
 //                request.setTransportMode(consolidationDetails.getTransportMode());
-//                request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(consolidationDetails.getShipmentType()));
+//                log.info("Set transport mode from consolidation: {}", consolidationDetails.getTransportMode());
 //
-//                ListCommonRequest req = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
-//                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
+//                request.setExport(consolidationDetails.getShipmentType() != null &&
+//                        consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
+//                log.info("Set export flag from consolidation: {}", request.isExport());
+//
+//                ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
+//                log.info("Constructed ListCommonRequest for consolidation: {}", req2);
+//
+//                Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
+//                log.info("Constructed specification and pageable pair for consolidation");
+//
 //                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
+//                log.info("Fetched containers page for consolidation with {} records", containers.getTotalElements());
+//
 //                List<Containers> containersList = containers.getContent();
+//                log.info("Extracted containers list from consolidation: {}", containersList.size());
 //
 //                if (result.isEmpty()) {
 //                    result.addAll(containersList);
+//                    log.info("Result was empty. Added all consolidation containers. Result size now: {}", result.size());
 //                } else {
 //                    result = result.stream().filter(containersList::contains).toList();
+//                    log.info("Performed intersection with consolidation containers. Result size now: {}", result.size());
 //                }
 //            }
 //
-//            if (result.isEmpty()) {
-//                log.error("No containers found for given input.");
-//                sendJsonErrorResponse(response, "No containers found for given input.");
-//                return;
-//            }
-//
-//            // Prepare response headers
-//            LocalDateTime now = LocalDateTime.now();
-//            String timestamp = now.format(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT));
-//            String filename = "Containers_" + timestamp + Constants.XLSX;
+//            LocalDateTime currentTime = LocalDateTime.now();
+//            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
+//            String timestamp = currentTime.format(formatter);
+//            String filenameWithTimestamp = "Containers_" + timestamp + Constants.XLSX;
+//            log.info("Generated filename with timestamp: {}", filenameWithTimestamp);
 //
 //            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-//            response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filename);
+//            response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
+//            log.info("Set response headers for Excel download");
 //
-//            // Create Excel workbook and stream it
-//            try (XSSFWorkbook workbook = new XSSFWorkbook();
-//                    OutputStream outputStream = response.getOutputStream()) {
-//
+//            try (XSSFWorkbook workbook = new XSSFWorkbook()) {
 //                XSSFSheet sheet = workbook.createSheet("Containers");
-//                List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
-//                convertModelToExcel(model, sheet, request);
+//                log.info("Created new Excel sheet: Containers");
 //
-//                workbook.write(outputStream);
-//                outputStream.flush();
+//                List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
+//                log.info("Converted container list to excel model. Model size: {}", model.size());
+//
+//                convertModelToExcel(model, sheet, request);
+//                log.info("Populated data into Excel sheet");
+//
+//                try (OutputStream outputStream = response.getOutputStream()) {
+//                    workbook.write(outputStream);
+//                    log.info("Excel file written to response output stream");
+//                }
 //            }
 //
-//        } catch (DataRetrievalFailureException e) {
-//            log.error("Missing data during container download", e);
-//            sendJsonErrorResponse(response, e.getMessage());
-//        } catch (Exception e) {
-//            log.error("Unexpected error during Excel generation", e);
-//            sendJsonErrorResponse(response, "Failed to generate Excel file. Please try again.");
+//        } catch (Exception ex) {
+//            log.error("Error occurred in downloadContainers: {}", ex.getMessage(), ex);
+//            throw new RunnerException(ex.getMessage());
 //        }
 //    }
 
-//    private void sendJsonErrorResponse(HttpServletResponse response, String message) {
-//        try {
-//            if (!response.isCommitted()) {
-//                response.reset();
-//                response.setContentType("application/json");
-//                response.setCharacterEncoding("UTF-8");
-//                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-//
-//                ResponseEntity<IRunnerResponse> entity =
-//                        ResponseHelper.buildFailedResponse(message, HttpStatus.INTERNAL_SERVER_ERROR);
-//                String json = objectMapper.writeValueAsString(entity.getBody());
-//
-//                try (OutputStream out = response.getOutputStream()) {
-//                    out.write(json.getBytes(StandardCharsets.UTF_8));
-//                    out.flush();
-//                }
-//            } else {
-//                log.warn("Response already committed; cannot write JSON error.");
-//            }
-//        } catch (IOException e) {
-//            log.error("Failed to write JSON error to response", e);
-//        }
-//    }
+    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
+        log.info("Starting container download with request: {}", request);
+
+        List<ContainersExcelModel> model;
+
+        // STEP 1: Fetch container data
+        try {
+            model = fetchContainerExcelModel(request);
+            log.info("Fetched {} container records", model.size());
+
+            if (model.isEmpty()) {
+                log.warn("No containers found for request: {}", request);
+                sendJsonErrorResponse(response, "No containers found for given input.");
+                return;
+            }
+        } catch (RunnerException e) {
+            log.error("Business error during container download: {}", e.getMessage(), e);
+            sendJsonErrorResponse(response, e.getMessage());
+            return;
+        } catch (Exception e) {
+            log.error("Unexpected error during data fetching: {}", e.getMessage(), e);
+            sendJsonErrorResponse(response, "Failed to fetch container data. Please try again.");
+            return;
+        }
+
+        // STEP 2: Generate Excel and write to response
+        try {
+            writeExcelToResponse(response, model, request);
+            log.info("Excel written to response successfully");
+        } catch (Exception e) {
+            log.error("Failed to write Excel to response: {}", e.getMessage(), e);
+            // ❗ Do not attempt to write a JSON error here. Response may already be committed.
+        }
+    }
+
+    private List<ContainersExcelModel> fetchContainerExcelModel(BulkDownloadRequest request) throws RunnerException {
+        log.info("Fetching container data for request: {}", request);
+        List<Containers> result = new ArrayList<>();
+
+        if (request.getShipmentId() != null) {
+            log.info("Fetching shipment with ID: {}", request.getShipmentId());
+            ShipmentDetails shipment = shipmentDao.findById(Long.valueOf(request.getShipmentId()))
+                    .orElseThrow(() -> new RunnerException("Shipment not found"));
+
+            log.info("Found shipment: {}", shipment);
+            request.setTransportMode(shipment.getTransportMode());
+            request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()));
+            log.info("Set transport mode: {}, export: {}", request.getTransportMode(), request.isExport());
+
+            List<ShipmentsContainersMapping> mappings =
+                    shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+            log.info("Found {} container mappings for shipment", mappings.size());
+
+            List<Long> containerIds = mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList();
+            log.info("Container IDs: {}", containerIds);
+
+            ListCommonRequest req = constructListCommonRequest("id", containerIds, "IN");
+            log.info("Constructed ListCommonRequest: {}", req);
+
+            Page<Containers> containers = containerDao.findAll(fetchData(req, Containers.class).getLeft(),
+                    fetchData(req, Containers.class).getRight());
+            log.info("Fetched {} containers from DB", containers.getTotalElements());
+
+            result.addAll(containers.getContent());
+        }
+
+        if (request.getConsolidationId() != null) {
+            log.info("Fetching consolidation with ID: {}", request.getConsolidationId());
+            ConsolidationDetails consolidation = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()))
+                    .orElseThrow(() -> new RunnerException("Consolidation not found"));
+
+            log.info("Found consolidation: {}", consolidation);
+            request.setTransportMode(consolidation.getTransportMode());
+            request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(consolidation.getShipmentType()));
+            log.info("Set transport mode: {}, export: {}", request.getTransportMode(), request.isExport());
+
+            ListCommonRequest req = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
+            log.info("Constructed ListCommonRequest for consolidation: {}", req);
+
+            Page<Containers> containers = containerDao.findAll(fetchData(req, Containers.class).getLeft(),
+                    fetchData(req, Containers.class).getRight());
+            log.info("Fetched {} containers from consolidation", containers.getTotalElements());
+
+            List<Containers> containersList = containers.getContent();
+
+            if (result.isEmpty()) {
+                result.addAll(containersList);
+                log.info("Result was empty. Added all consolidation containers.");
+            } else {
+                result = result.stream().filter(containersList::contains).toList();
+                log.info("Filtered intersection with consolidation containers. Final result size: {}", result.size());
+            }
+        }
+
+        List<ContainersExcelModel> models = commonUtils.convertToList(result, ContainersExcelModel.class);
+        log.info("Converted containers to excel model. Size: {}", models.size());
+        return models;
+    }
+
+    private void writeExcelToResponse(HttpServletResponse response, List<ContainersExcelModel> model, BulkDownloadRequest request) throws IOException, IllegalAccessException {
+        log.info("Generating Excel file for {} containers", model.size());
+
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT));
+        String filename = "Containers_" + timestamp + Constants.XLSX;
+
+        log.info("Generated filename: {}", filename);
+        response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+        response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filename);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+                OutputStream outputStream = response.getOutputStream()) {
+
+            XSSFSheet sheet = workbook.createSheet("Containers");
+            log.info("Created Excel sheet");
+
+            convertModelToExcel(model, sheet, request);
+            log.info("Populated data into Excel sheet");
+
+            workbook.write(outputStream);
+            outputStream.flush();
+            log.info("Excel workbook written and flushed to response");
+        }
+    }
+
+    private void sendJsonErrorResponse(HttpServletResponse response, String message) {
+        try {
+            if (!response.isCommitted()) {
+                log.info("Sending JSON error response: {}", message);
+                response.reset();
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+                ResponseEntity<IRunnerResponse> entity = ResponseHelper.buildFailedResponse(message, HttpStatus.INTERNAL_SERVER_ERROR);
+                String json = objectMapper.writeValueAsString(entity.getBody());
+
+                PrintWriter writer = response.getWriter();
+                writer.write(json);
+                writer.flush();
+                log.info("JSON error response sent successfully");
+            } else {
+                log.warn("Response already committed; cannot write JSON error.");
+            }
+        } catch (IOException e) {
+            log.error("Failed to write JSON error to response", e);
+        }
+    }
 
     private void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
 
