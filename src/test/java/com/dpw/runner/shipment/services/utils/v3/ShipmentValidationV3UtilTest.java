@@ -728,6 +728,20 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     }
 
     @Test
+    void testValidationFields_DOM_shouldPass() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().direction("DOM").build();
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
+    }
+
+    @Test
+    void testValidationForCutOffFields_DOM_exception() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().direction("DOM").latestArrivalTime(LocalDateTime.now()).build();
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForCutOffFields(newShipment));
+    }
+
+    @Test
     void testValidationForPolPodFields_Exception1() {
         ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
         newShipment.getCarrierDetails().setIsSameAsOriginPort(true);

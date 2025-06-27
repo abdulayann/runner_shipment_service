@@ -161,6 +161,7 @@ public class Constants {
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
     public static final String DIRECTION_CTS = "CTS";
+    public static final String DIRECTION_DOM = "DOM";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";

@@ -453,6 +453,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getHasNoUtilization() == null) {
                 request.setHasNoUtilization(oldEntity.get().getHasNoUtilization());
             }
+            if (request.getEnableDomesticMawbMblValidations() == null) {
+                request.setEnableDomesticMawbMblValidations(oldEntity.get().getEnableDomesticMawbMblValidations());
+            }
             setExistingFieldNotInV1(request, oldEntity.get());
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 

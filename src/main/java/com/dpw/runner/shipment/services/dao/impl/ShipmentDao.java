@@ -75,6 +75,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+@SuppressWarnings("java:S3776")
 @Repository
 @Slf4j
 public class ShipmentDao implements IShipmentDao {
@@ -223,6 +224,10 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void validateMawb(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if (Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection()) && !Boolean.TRUE.equals(shipmentSettingsDetails.getEnableDomesticMawbMblValidations())) {
+            return;
+        }
         if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
             throw new ValidationException("Please enter a valid MAWB number.");
         if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (oldShipment != null && oldShipment.getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
@@ -488,6 +493,10 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addMasterBillValidationErrors(ShipmentDetails request, Set<String> errors) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if (Constants.DIRECTION_DOM.equals(request.getDirection()) && !Boolean.TRUE.equals(shipmentSettingsDetails.getEnableDomesticMawbMblValidations())) {
+            return;
+        }
         if (!isStringNullOrEmpty(request.getMasterBill())) {
             var consoleList = consolidationDetailsDao.findByBol(request.getMasterBill());
             if (!consoleList.isEmpty()) {
