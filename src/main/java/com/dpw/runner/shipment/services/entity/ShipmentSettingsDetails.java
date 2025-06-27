@@ -606,4 +606,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "is_external_file_transfer_enabled")
     private Boolean isExternalFileTransferEnabled;
+
+    @Column(name = "enable_domestic_mawb_mbl_validations")
+    private Boolean enableDomesticMawbMblValidations;
 }

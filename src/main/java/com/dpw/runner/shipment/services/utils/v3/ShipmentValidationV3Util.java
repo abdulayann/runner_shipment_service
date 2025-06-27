@@ -179,12 +179,15 @@ public class ShipmentValidationV3Util {
         if(!Objects.equals(shipmentDetails.getCoLoadBlNumber(), coloadBlNumber) || !Objects.equals(shipmentDetails.getCoLoadBkgNumber(), coloadBkgNumber)) {
             throw new ValidationException("Update not allowed for Co-Loader/Booking Agent BkgNumber, BL No/AWB No. for STD shipments");
         }
-        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
+        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
             throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
         }
     }
 
     public void validationETAETDATAATDFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection())) {
+            return;
+        }
         CarrierDetails newCarrier = shipmentDetails.getCarrierDetails();
 
         if (newCarrier == null && (oldEntity == null || oldEntity.getCarrierDetails() == null)) return;
@@ -248,26 +251,30 @@ public class ShipmentValidationV3Util {
     }
 
     public void validationForCutOffFields(ShipmentDetails shipmentDetails) {
-        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && shipmentDetails.getLatestArrivalTime() != null){
-            throw new ValidationException("LatestArrivalTime is not applicable for Sea");
+        if ((TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) || Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection())) && shipmentDetails.getLatestArrivalTime() != null){
+            throw new ValidationException("LatestArrivalTime is not applicable for Sea/Domestic Shipments");
         }
-        if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) return;
+
+        boolean isAirOrDomestic = Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) ||
+                Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection());
+        if (!isAirOrDomestic) return;
+        // Apply these validations for AIR or Domestic Shipments
         if (shipmentDetails.getTerminalCutoff() != null)
-            throw new ValidationException("TerminalCutoff is not applicable for Air");
+            throw new ValidationException("TerminalCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getVerifiedGrossMassCutoff() != null)
-            throw new ValidationException("VerifiedGrossMassCutoff is not applicable for Air");
+            throw new ValidationException("VerifiedGrossMassCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getShippingInstructionCutoff() != null)
-            throw new ValidationException("ShippingInstructionCutoff is not applicable for Air");
+            throw new ValidationException("ShippingInstructionCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getDgCutoff() != null)
-            throw new ValidationException("DgCutoff is not applicable for Air");
+            throw new ValidationException("DgCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getReeferCutoff() != null)
-            throw new ValidationException("ReeferCutoff is not applicable for Air");
+            throw new ValidationException("ReeferCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getEarliestEmptyEquipmentPickUp() != null)
-            throw new ValidationException("EarliestEmptyEquipmentPickUp is not applicable for Air");
+            throw new ValidationException("EarliestEmptyEquipmentPickUp is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getLatestFullEquipmentDeliveredToCarrier() != null)
-            throw new ValidationException("LatestFullEquipmentDeliveredToCarrier is not applicable for Air");
+            throw new ValidationException("LatestFullEquipmentDeliveredToCarrier is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getEarliestDropOffFullEquipmentToCarrier() != null)
-            throw new ValidationException("LatestDropOffFullEquipmentToCarrier is not applicable for Air");
+            throw new ValidationException("LatestDropOffFullEquipmentToCarrier is not applicable for Air/Domestic Shipments");
     }
 
     public void validateBeforeSaveForEt(ShipmentDetails shipmentDetails) {
