@@ -661,7 +661,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetails));
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.singletonList(consoleShipmentMapping));
-        when(consolidationV3Service.getBookingNumberFromConsol(any())).thenReturn("bookingNumber");
         when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class)))
                 .thenReturn(shipmentRetrieveLiteResponse);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
