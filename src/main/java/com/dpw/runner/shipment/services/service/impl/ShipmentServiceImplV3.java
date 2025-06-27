@@ -568,7 +568,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         var pendingNotificationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setPendingCount(shipmentId, pendingCount)), executorService);
         var implicationListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setImplicationsResponse(guid, implications)), executorService);
         var containerTeuFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setContainerTeuCountResponse(shipmentRetrieveLiteResponse, shipmentDetailsEntity.getContainersList())), executorService);
-
+        setColoadingStation(shipmentDetailsEntity);
         ShipmentRetrieveLiteResponse response = modelMapper.map(shipmentDetailsEntity, ShipmentRetrieveLiteResponse.class);
         log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture, containerTeuFuture).join();
@@ -577,7 +577,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
         // set dps implications
         response.setImplicationList(implications);
-        setConsolBookingNumber(shipmentId, response);
+        setConsoleInfo(shipmentId, response);
         setDgPackCountAndType(shipmentDetailsEntity, response);
         setMainCarriageFlag(shipmentDetailsEntity, response);
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
@@ -585,13 +585,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private void setConsolBookingNumber(Long shipmentId, ShipmentRetrieveLiteResponse response) {
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
-        if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
-            Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
-            response.setConsolidationId(consolidationId);
-            String bookingNumber = consolidationV3Service.getBookingNumberFromConsol(consolidationId);
-            response.setConsolBookingNumber(bookingNumber);
+    private void setConsoleInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
+        try {
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentId);
+            if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
+                Long consolidationId = consoleShipmentMappings.get(0).getConsolidationId();
+                response.setConsolidationId(consolidationId);
+                var console = consolidationV3Service.getConsolidationDetails(consolidationId, null);
+                response.setConsolBookingNumber(console.get().getBookingNumber());
+                response.setIsInterBranchConsoleAttached(Boolean.TRUE.equals(console.get().getInterBranchConsole()) && !Objects.equals(TenantContext.getCurrentTenant(), console.get().getTenantId()));
+            }
+        } catch (Exception e) {
+            log.error("{} | Error in setConsoleInfo: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
         }
     }
 

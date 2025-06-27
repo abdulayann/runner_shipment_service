@@ -634,7 +634,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return oldEntity;
     }
 
-    private Optional<ConsolidationDetails> getConsolidationDetails(Long id, UUID guid) throws RunnerException {
+    public Optional<ConsolidationDetails> getConsolidationDetails(Long id, UUID guid) throws RunnerException {
         Optional<ConsolidationDetails> oldEntity;
         if(id!=null){
             oldEntity=consolidationDetailsDao.findById(id);
