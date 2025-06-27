@@ -4645,9 +4645,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     public ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationEtV3Request request) {
-        if (request == null) {
-            log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -4669,10 +4666,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     public ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationEtV3Request consolidationDetailsRequest) throws RunnerException {
         Optional<ConsolidationDetails> oldEntity =  getConsolidationDetails(consolidationDetailsRequest.getId(), consolidationDetailsRequest.getGuid());
-        if (!oldEntity.isPresent()) {
-            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, consolidationDetailsRequest.getId());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
 
         consolidationDetailsRequest.setShipmentsList(null);
 

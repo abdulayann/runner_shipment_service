@@ -4179,10 +4179,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentV3Request request = jsonHelper.convertValue(shipmentRequest, ShipmentV3Request.class);
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(request);
         log.info("{} | completeUpdateShipment db query: retrieveByIdOrGuid.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
-        if (oldEntity.isEmpty()) {
-            log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentRequest.getId());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
 
         try {
             mid = System.currentTimeMillis();
@@ -4229,11 +4225,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     public ShipmentDetailsResponse createShipmentFromEntityTransfer(ShipmentEtV3Request request, boolean includeGuid) {
-        if (request == null) {
-            log.error("Request is null for Shipment Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-        }
 
-        ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
+        ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
             shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
 
