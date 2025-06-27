@@ -191,7 +191,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         doNothing().when(auditLogService).addAuditLog(any());
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(anyLong(), any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
         mockShipmentSettings();
 
         PackingResponse actual = packingV3Service.create(request, "SHIPMENT");
@@ -215,7 +215,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(PackingResponse.class))).thenReturn(response);
         doNothing().when(auditLogService).addAuditLog(any());
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(anyLong(), any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
 
         PackingResponse result = packingV3Service.update(request, "SHIPMENT");
 
@@ -235,7 +235,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         when(shipmentService.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        doNothing().when(shipmentService).updateCargoDetailsInShipment(anyLong(), any());
+        doNothing().when(shipmentService).updateCargoDetailsInShipment(any(), any());
 
         String result = packingV3Service.delete(1L, "SHIPMENT");
 
