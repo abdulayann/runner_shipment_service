@@ -85,18 +85,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtil
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
-import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Request;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.EventsRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
@@ -1760,7 +1749,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if (ObjectUtils.isNotEmpty(newShipmentIds)) {
                 // Prepare filter criteria to fetch pending state mappings for same-branch shipments
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, newShipmentIds, "IN", null);
-                listCommonRequest = andCriteria(IS_ATTACHMENT_DONE, false, "=", listCommonRequest);
+                listCommonRequest = andCriteria(Constants.IS_ATTACHMENT_DONE, false, "=", listCommonRequest);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
 
                 // Get mappings for email notifications before deletion
@@ -4253,7 +4242,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         throw new ValidationException(e.getMessage());
                     }
                 });
-                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), IN);
+                ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), Constants.IN);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
 
@@ -4262,8 +4251,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 // for each shipment pending multiple consolidation auto rejections (shipment push and shipment pull both got rejected)
                 sendEmailsForPushRequestAccept(consolidationDetails.get(), aibActionRequest.getListOfShipments(), shipmentRequestedTypes, consoleShipmentMappingsForEmails);
             } else if (ShipmentRequestedType.REJECT.equals(aibActionRequest.getShipmentRequestedType()) || ShipmentRequestedType.WITHDRAW.equals(aibActionRequest.getShipmentRequestedType())) {
-                ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), IN, null);
-                listCommonRequest = andCriteria(CONSOLIDATION_ID, aibActionRequest.getConsoleId(), EQ, listCommonRequest);
+                ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), Constants.IN, null);
+                listCommonRequest = andCriteria(CONSOLIDATION_ID, aibActionRequest.getConsoleId(), Constants.EQ, listCommonRequest);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair2 = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 List<ConsoleShipmentMapping> consoleShipmentMappings = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair2.getLeft(), pair2.getRight()).getContent(), ConsoleShipmentMapping.class);
                 aibActionRequest.getListOfShipments().stream().forEach(shipmentId -> consoleShipmentMappingDao.deletePendingStateByConsoleIdAndShipmentId(aibActionRequest.getConsoleId(), shipmentId));
@@ -4311,7 +4300,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                                                                      List<ShipmentDetails> shipments, List<ConsolidationDetails> otherConsoles,
                                                                      List<ConsoleShipmentMapping> consoleShipMappings, Map<Long, String> requestedUsernameMap) {
         // fetching shipments
-        ListCommonRequest listCommonRequest = constructListCommonRequest(ID, shipmentIds, IN);
+        ListCommonRequest listCommonRequest = constructListCommonRequest(ID, shipmentIds, Constants.IN);
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair.getLeft(), pair.getRight());
         for(ShipmentDetails shipmentDetails : shipmentDetailsPage.getContent()) {
@@ -4333,7 +4322,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         Page<ConsolidationDetails> consolidationDetailsPage = null;
         if(!otherConsoleIds.isEmpty()) {
-            listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, IN);
+            listCommonRequest = constructListCommonRequest(ID, otherConsoleIds, Constants.IN);
             Pair<Specification<ConsolidationDetails>, Pageable> pair3 = fetchData(listCommonRequest, ConsolidationDetails.class);
             consolidationDetailsPage = consolidationDetailsDao.findAll(pair3.getLeft(), pair3.getRight());
             for(ConsolidationDetails consolidationDetails1 : consolidationDetailsPage.getContent()) {
@@ -4403,7 +4392,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Set<Integer> tenantIds = new HashSet<>();
         Set<String> usernamesList = new HashSet<>();
 
-        ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.ID, shipmentIds, IN);
+        ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.ID, shipmentIds, Constants.IN);
         Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
         Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
@@ -4498,8 +4487,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         try {
-            ListCommonRequest listRequest = constructListCommonRequest(CONSOLIDATION_ID, request.getId(), EQ);
-            listRequest = andCriteria(IS_ATTACHMENT_DONE, false, EQ, listRequest);
+            ListCommonRequest listRequest = constructListCommonRequest(CONSOLIDATION_ID, request.getId(), Constants.EQ);
+            listRequest = andCriteria(Constants.IS_ATTACHMENT_DONE, false, Constants.EQ, listRequest);
             Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
@@ -4510,7 +4499,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             commonUtils.setInterBranchContextForHub();
 
-            listRequest = constructListCommonRequest(ID, shipmentIds, IN);
+            listRequest = constructListCommonRequest(ID, shipmentIds, Constants.IN);
             listRequest.setContainsText(request.getContainsText());
             listRequest.setSortRequest(request.getSortRequest());
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
