@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.SortRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiContainerDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsContainersListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsContainersRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsContainersListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsContainersResponse;
@@ -285,7 +286,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiLegs.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setUpdatedBy("2020-03-01");
         Optional<TiLegs> ofResult = Optional.of(tiLegs);
-        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(Optional.empty());
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder dgClassResult = TransportInstructionLegsContainersRequest
                 .builder()
                 .dangerous(true)
@@ -298,7 +299,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .guid(UUID.randomUUID())
                 .id(1L);
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder unNumberResult = idResult
-                .netWeight(new BigDecimal("2.3"))
+                .netWeight(new BigDecimal("200000004506064040054.3"))
                 .netWeightUnit("Net Weight Unit")
                 .noOfPackages("java.text")
                 .number("42")
@@ -310,9 +311,14 @@ class TransportInstructionLegsContainersServiceImplTest {
         TransportInstructionLegsContainersRequest request = unNumberResult.volume(new BigDecimal("2.3"))
                 .volumeUnit("Volume Unit")
                 .build();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        when(iTiContainerDao.save(any())).thenReturn(new TiContainers());
+        when(jsonHelper.convertValue(request, TiContainers.class)).thenReturn(new TiContainers());
         assertThrows(ValidationException.class, () -> transportInstructionLegsContainersServiceImpl.create(request));
         verify(iTiLegRepository).findById(Mockito.<Long>any());
-        verify(iContainerV3Service).validateContainerNumber(Mockito.<String>any());
     }
 
     /**
@@ -604,6 +610,121 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .volumeUnit("M3")
                 .build();
         assertThrows(ValidationException.class, () -> transportInstructionLegsContainersServiceImpl.create(request));
+    }
+
+    @Test
+    void testCreateBulk() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
+            NoSuchMethodException, InvocationTargetException {
+        ContainerNumberCheckResponse containerNumberCheckResponse = new ContainerNumberCheckResponse();
+        containerNumberCheckResponse.setSuccess(true);
+        when(iContainerV3Service.validateContainerNumber("CONT1234567")).thenReturn(containerNumberCheckResponse);
+
+        Parties destination = new Parties();
+        destination.setAddressCode("42 Main St");
+        destination.setAddressData(new HashMap<>());
+        destination.setAddressId("42 Main St");
+        destination.setCountryCode("GB");
+        destination.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        destination.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        destination.setEntityId(1L);
+        destination.setEntityType("Entity Type");
+        destination.setGuid(UUID.randomUUID());
+        destination.setId(1L);
+        destination.setIsAddressFreeText(true);
+        destination.setIsDeleted(true);
+        destination.setOrgCode("Org Code");
+        destination.setOrgData(new HashMap<>());
+        destination.setOrgId("42");
+        destination.setTenantId(1);
+        destination.setType("Type");
+        destination.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        destination.setUpdatedBy("2020-03-01");
+
+        Parties origin = new Parties();
+        origin.setAddressCode("42 Main St");
+        origin.setAddressData(new HashMap<>());
+        origin.setAddressId("42 Main St");
+        origin.setCountryCode("GB");
+        origin.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        origin.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        origin.setEntityId(1L);
+        origin.setEntityType("Entity Type");
+        origin.setGuid(UUID.randomUUID());
+        origin.setId(1L);
+        origin.setIsAddressFreeText(true);
+        origin.setIsDeleted(true);
+        origin.setOrgCode("Org Code");
+        origin.setOrgData(new HashMap<>());
+        origin.setOrgId("42");
+        origin.setTenantId(1);
+        origin.setType("Type");
+        origin.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        origin.setUpdatedBy("2020-03-01");
+
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setActualDelivery(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setActualPickup(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        tiLegs.setDestination(destination);
+        tiLegs.setDropMode("Drop Mode");
+        tiLegs.setEstimatedDelivery(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setEstimatedPickup(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setGuid(UUID.randomUUID());
+        tiLegs.setId(1L);
+        tiLegs.setIsDeleted(true);
+        tiLegs.setLegType(TILegType.EMPTY);
+        tiLegs.setOrigin(origin);
+        tiLegs.setPickupDeliveryDetailsId(1L);
+        tiLegs.setRemarks("Remarks");
+        tiLegs.setRequiredBy(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setSequence(1L);
+        tiLegs.setTenantId(1);
+        tiLegs.setTiContainers(new ArrayList<>());
+        tiLegs.setTiPackages(new ArrayList<>());
+        tiLegs.setTiReferences(new ArrayList<>());
+        tiLegs.setTiTruckDriverDetails(new ArrayList<>());
+        tiLegs.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        tiLegs.setUpdatedBy("2020-03-01");
+        Optional<TiLegs> ofResult = Optional.of(tiLegs);
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder dgClassResult = TransportInstructionLegsContainersRequest
+                .builder()
+                .dangerous(true)
+                .description("The characteristics of someone or something")
+                .dgClass("Dg Class");
+        TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder grossWeightUnitResult = dgClassResult
+                .grossWeight(new BigDecimal("2.3"))
+                .grossWeightUnit("KG");
+        TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder idResult = grossWeightUnitResult
+                .guid(UUID.randomUUID())
+                .id(1L);
+        TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder unNumberResult = idResult
+                .netWeight(new BigDecimal("2.3"))
+                .netWeightUnit("KG")
+                .noOfPackages("20")
+                .number("CONT1234567")
+                .substanceName("Substance Name")
+                .tiLegId(1L)
+                .tunnelRestrictionCode("Tunnel Restriction Code")
+                .type("EMPTY")
+                .unNumber("42");
+        TransportInstructionLegsContainersRequest request = unNumberResult.volume(new BigDecimal("2.3"))
+                .volumeUnit("M3")
+                .build();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        when(jsonHelper.convertValue(any(), eq(TransportInstructionLegsContainersResponse.class))).thenReturn(new TransportInstructionLegsContainersResponse());
+        when(iTiContainerDao.saveAll(any())).thenReturn(List.of(new TiContainers()));
+        when(jsonHelper.convertValue(request, TiContainers.class)).thenReturn(new TiContainers());
+        TransportInstructionLegsContainersListRequest containersListRequest = new TransportInstructionLegsContainersListRequest();
+        containersListRequest.setContainersRequests(List.of(request));
+        TransportInstructionLegsContainersListResponse response = transportInstructionLegsContainersServiceImpl.bulkCreate(containersListRequest);
+        assertNotNull(response);
+        verify(iTiLegRepository).findById(Mockito.<Long>any());
+        verify(iContainerV3Service).validateContainerNumber(Mockito.<String>any());
     }
 
     @Test

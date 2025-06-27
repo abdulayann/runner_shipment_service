@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.TransportInstructionCo
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesListResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -47,7 +48,14 @@ public class TransportInstructionPackagesController {
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid TransportInstructionLegsPackagesRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsPackagesService.create(request));
     }
-
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_PACKAGES_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_CREATE_BULK)
+    public ResponseEntity<IRunnerResponse> bulkCreate(@RequestBody @Valid TransportInstructionLegsPackagesListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        return ResponseHelper.buildSuccessResponse(transportInstructionLegsPackagesService.bulkCreate(request));
+    }
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_PACKAGES_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@ApiParam(value = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_PACKAGES_ID, required = true) @RequestParam @Valid Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {

@@ -46,6 +46,10 @@ public class TiContainers extends MultiTenancy {
     @Size(max=5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
 
+    @Column(name = "package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String packageType;
+
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 

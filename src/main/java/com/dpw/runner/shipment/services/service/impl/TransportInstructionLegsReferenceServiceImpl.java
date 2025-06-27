@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiReferenceDao;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
@@ -29,6 +30,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -162,6 +164,51 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
             throw new ValidationException("Invalid Ti legs reference Id: " + id);
         }
         return jsonHelper.convertValue(tiReferences.get(), TransportInstructionLegsReferenceResponse.class);
+    }
+
+    @Override
+    @Transactional
+    public TransportInstructionLegsReferenceListResponse bulkCreate(TransportInstructionLegsReferenceListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Starting Transport Instruction Legs reference creation | Request ID: {} | Request Body: {}", requestId, request);
+        Long tiLegId = request.getReferences().get(0).getTiLegId();
+        if (!request.getReferences().stream()
+                .allMatch(req -> req.getTiLegId().equals(tiLegId))) {
+            throw new ValidationException("All tiLegId values must be the same");
+        }
+
+        Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
+        if (!tiLegs.isPresent()) {
+            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        }
+        request.getReferences()
+                .forEach(this::validateTransportInstructionLegsReferenceNumbers);
+        // Convert DTO to Entity
+        List<TiReferences> tiReferencesList = new ArrayList<>();
+        for (TransportInstructionLegsReferenceRequest referenceRequest : request.getReferences()) {
+            TiReferences tiReferences = jsonHelper.convertValue(referenceRequest, TiReferences.class);
+            tiReferences.setTiLegId(tiLegId);
+            tiReferencesList.add(tiReferences);
+            log.info("Converted Transport Instruction Legs reference request to entity | Entity: {}", tiReferences);
+        }
+        // Save to DB
+        List<TiReferences> referencesList = tiReferenceDao.saveAll(tiReferencesList);
+        // Audit logging
+        for (TiReferences tiReferenceEntity : referencesList) {
+            recordAuditLogs(null, tiReferenceEntity, DBOperationType.CREATE);
+            log.info("Audit log recorded for Transport Instruction Legs reference creation | Transport Instruction Legs reference ID: {}", tiReferenceEntity.getId());
+        }
+        TransportInstructionLegsReferenceListResponse response = new TransportInstructionLegsReferenceListResponse();
+        List<TransportInstructionLegsReferenceResponse> instructionLegsReferenceResponses = new ArrayList<>();
+        for (TiReferences tiReferenceEntity : referencesList) {
+            TransportInstructionLegsReferenceResponse referenceResponse = jsonHelper.convertValue(tiReferenceEntity, TransportInstructionLegsReferenceResponse.class);
+            instructionLegsReferenceResponses.add(referenceResponse);
+        }
+        response.setTiLegsReferenceResponses(instructionLegsReferenceResponses);
+        // Triggering Event for shipment and console for DependentServices update
+        triggerPushToDownStreamForTransportInstruction(tiLegs.get().getPickupDeliveryDetailsId());
+        return response;
     }
 
     private void recordAuditLogs(TiReferences oldTiReference, TiReferences newTiReference, DBOperationType operationType) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {

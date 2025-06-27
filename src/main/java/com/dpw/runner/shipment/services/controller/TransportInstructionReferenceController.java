@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.constants.TransportInstructionCo
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -46,6 +47,14 @@ public class TransportInstructionReferenceController {
     @PostMapping(ApiConstants.API_CREATE)
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid TransportInstructionLegsReferenceRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.create(request));
+    }
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_CREATE_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_CREATE_BULK)
+    public ResponseEntity<IRunnerResponse> bulkCreate(@RequestBody @Valid TransportInstructionLegsReferenceListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.bulkCreate(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_DELETE_SUCCESSFUL)})

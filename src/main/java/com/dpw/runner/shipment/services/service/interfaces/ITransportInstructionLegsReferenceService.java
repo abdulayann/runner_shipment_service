@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsReferenceRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
@@ -21,4 +23,6 @@ public interface ITransportInstructionLegsReferenceService {
     TransportInstructionLegsReferenceResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 
     TransportInstructionLegsReferenceResponse retrieveById(Long id);
+
+    TransportInstructionLegsReferenceListResponse bulkCreate(TransportInstructionLegsReferenceListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 }
