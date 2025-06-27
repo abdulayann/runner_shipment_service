@@ -6,6 +6,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTA
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_LIST;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -365,7 +366,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
                     ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
                     shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                    if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())){
+                    if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())){
                         callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
                         shipmentDao.save(shipmentDetails, false);
                     }
@@ -373,13 +374,14 @@ public class ContainerV3Service implements IContainerV3Service {
             }else{
                 for(ContainerV3Request containerV3Request : containerRequestList){
                     Long consolidationId = containerV3Request.getConsolidationId();
-                    if(!containerV3Request.getHazardous()) continue;
+                    if(containerV3Request.getHazardous()!= null && !containerV3Request.getHazardous()) continue;
 
                     ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
                     if(TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())){
                     consolidationDetails.setHazardous(true);
-                    if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails))
-                        throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+                    if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
+                       // throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+                    }
                     consolidationDetailsDao.update(consolidationDetails, false, false);
                     if(containerV3Request.getId() != null) {
                         List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(

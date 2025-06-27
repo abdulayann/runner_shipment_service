@@ -713,8 +713,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 }
             }
         }
-        if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails))
-            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+        if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
+            //throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+        }
     }
 
     private Map<Long, Containers> getOldContainersMap(ConsolidationDetails oldEntity) {
