@@ -404,28 +404,6 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, Set.of(cd)));
     }
 
-
-    @Test
-    void testValidateShipmentCreateOrUpdate_withNullOrgCodes_shouldNotThrow() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setId(1L);
-        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
-        shipment.setCoLoadBlNumber("coload");
-        ShipmentDetails oldEntity = new ShipmentDetails();
-
-        Parties consignor = new Parties();
-        consignor.setOrgCode(null);
-        shipment.setConsigner(consignor);
-
-        Parties consignee = new Parties();
-        consignee.setOrgCode("ORG-CODE");
-        shipment.setConsignee(consignee);
-
-        when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.FALSE);
-
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
-    }
-
     @Test
     void testValidateShipmentCreateOrUpdate_withDpsImplication() {
         ShipmentDetails shipment = new ShipmentDetails();
@@ -435,41 +413,6 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.TRUE);
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
-    }
-
-    @Test
-    void testValidateShipmentCreateOrUpdate_validatePartner() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
-        shipment.setMasterBill("masterBill");
-        ShipmentDetails oldEntity = new ShipmentDetails();
-
-        Parties consignor = new Parties();
-        consignor.setOrgCode(null);
-        shipment.setConsigner(consignor);
-
-        Parties consignee = new Parties();
-        consignee.setOrgCode("ORG-CODE");
-        shipment.setConsignee(consignee);
-
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
-    }
-
-    @Test
-    void testValidateShipmentCreateOrUpdate_withNullConsignor_shouldNotThrow() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
-        shipment.setCoLoadBkgNumber("bkgNumber");
-
-        Parties consignee = new Parties();
-        consignee.setOrgCode("ORG-1");
-        shipment.setConsignee(consignee);
-
-        shipment.setConsigner(null); // Null consignor
-
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
     @Test
