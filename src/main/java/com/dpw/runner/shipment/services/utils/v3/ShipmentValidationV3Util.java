@@ -119,8 +119,6 @@ public class ShipmentValidationV3Util {
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         // Validation for DPS Implication
         this.validateDPSImplication(shipmentDetails);
-        // Validation for Partner fields for 'STD' Shipment
-        this.validationForPartnerFields(shipmentDetails, oldEntity);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
         // Validation for cutoffFields
@@ -143,19 +141,6 @@ public class ShipmentValidationV3Util {
         }
         if(shipmentDetails.getControlled() != null && StringUtility.isEmpty(shipmentDetails.getControlledReferenceNumber())) {
             throw new ValidationException("If value in Controlled is selected please enter value in Controlled Reference Number");
-        }
-    }
-
-    public void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
-        String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
-        String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);
-        String masterBill = Optional.ofNullable(oldEntity).map(ShipmentDetails::getMasterBill).orElse(null);
-        if(!Objects.equals(shipmentDetails.getCoLoadBlNumber(), coloadBlNumber) || !Objects.equals(shipmentDetails.getCoLoadBkgNumber(), coloadBkgNumber)) {
-            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent BkgNumber, BL No/AWB No. for STD shipments");
-        }
-        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
-            throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
         }
     }
 
