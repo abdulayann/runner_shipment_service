@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.v3.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.validator.annotations.MaxTotalDigits;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -34,10 +36,13 @@ public class TransportInstructionLegsContainersRequest implements IRunnerRequest
     private String noOfPackages;
     @NotBlank(message = "Package Type is required")
     private String packageType;
+    @MaxTotalDigits(15)
     private BigDecimal grossWeight;
     private String grossWeightUnit;
+    @MaxTotalDigits(15)
     private BigDecimal netWeight;
     private String netWeightUnit;
+    @MaxTotalDigits(10)
     private BigDecimal volume;
     private String volumeUnit;
     private Boolean dangerous;

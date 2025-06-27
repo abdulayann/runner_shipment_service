@@ -280,12 +280,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
                 (transportInstructionLegsContainersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Containers: Gross weight and gross weight unit must both be provided or both be null.");
         }
-        if (transportInstructionLegsContainersRequest.getGrossWeight() != null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit())) {
-            String combinedGrossWeight = transportInstructionLegsContainersRequest.getGrossWeight().toPlainString() + transportInstructionLegsContainersRequest.getGrossWeightUnit().trim();
-            if (combinedGrossWeight.length() > 15) {
-                throw new ValidationException("Containers: Combined length of grossWeight and grossWeightUnit must not exceed 15 characters.");
-            }
-        }
 
         validateNetWeight(transportInstructionLegsContainersRequest);
 
@@ -298,12 +292,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
                 (transportInstructionLegsContainersRequest.getVolume() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getVolumeUnit()))) {
             throw new ValidationException("Containers: Volume and volume unit must both be provided or both be null.");
         }
-        if (transportInstructionLegsContainersRequest.getVolume() != null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getVolumeUnit())) {
-            String combined = transportInstructionLegsContainersRequest.getVolume().toPlainString() + transportInstructionLegsContainersRequest.getVolumeUnit().trim();
-            if (combined.length() > 10) {
-                throw new ValidationException("Containers: Combined length of volume and volumeUnit must not exceed 10 characters.");
-            }
-        }
     }
 
     private static void validateNetWeight(TransportInstructionLegsContainersRequest transportInstructionLegsContainersRequest) {
@@ -311,12 +299,6 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         if ((transportInstructionLegsContainersRequest.getNetWeight() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getNetWeightUnit())) ||
                 (transportInstructionLegsContainersRequest.getNetWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getNetWeightUnit()))) {
             throw new ValidationException("Containers: Net weight and net weight unit must both be provided or both be null.");
-        }
-        if (transportInstructionLegsContainersRequest.getNetWeight() != null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getNetWeightUnit())) {
-            String combined = transportInstructionLegsContainersRequest.getNetWeight().toPlainString() + transportInstructionLegsContainersRequest.getNetWeightUnit().trim();
-            if (combined.length() > 15) {
-                throw new ValidationException("Containers: Combined length of netWeight and netWeightUnit must not exceed 15 characters.");
-            }
         }
     }
 }
