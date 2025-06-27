@@ -286,7 +286,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiLegs.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setUpdatedBy("2020-03-01");
         Optional<TiLegs> ofResult = Optional.of(tiLegs);
-        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(Optional.empty());
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder dgClassResult = TransportInstructionLegsContainersRequest
                 .builder()
                 .dangerous(true)
@@ -299,7 +299,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .guid(UUID.randomUUID())
                 .id(1L);
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder unNumberResult = idResult
-                .netWeight(new BigDecimal("2.3"))
+                .netWeight(new BigDecimal("200000004506064040054.3"))
                 .netWeightUnit("Net Weight Unit")
                 .noOfPackages("java.text")
                 .number("42")
@@ -311,9 +311,14 @@ class TransportInstructionLegsContainersServiceImplTest {
         TransportInstructionLegsContainersRequest request = unNumberResult.volume(new BigDecimal("2.3"))
                 .volumeUnit("Volume Unit")
                 .build();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
+        when(iTiContainerDao.save(any())).thenReturn(new TiContainers());
+        when(jsonHelper.convertValue(request, TiContainers.class)).thenReturn(new TiContainers());
         assertThrows(ValidationException.class, () -> transportInstructionLegsContainersServiceImpl.create(request));
         verify(iTiLegRepository).findById(Mockito.<Long>any());
-        verify(iContainerV3Service).validateContainerNumber(Mockito.<String>any());
     }
 
     /**

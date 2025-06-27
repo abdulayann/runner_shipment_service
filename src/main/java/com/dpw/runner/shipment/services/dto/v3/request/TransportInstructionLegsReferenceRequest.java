@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.UUID;
 
 @Data
@@ -23,5 +24,6 @@ public class TransportInstructionLegsReferenceRequest implements IRunnerRequest 
     @NotNull(message = "Transport Instruction leg Id is required")
     private Long tiLegId;
     private String type;
+    @Size(max = 30, message = "max size is 30 for reference number")
     private String reference;
 }
