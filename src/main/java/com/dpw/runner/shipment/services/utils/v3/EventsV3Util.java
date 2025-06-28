@@ -123,7 +123,7 @@ public class EventsV3Util {
     }
 
     private void processBOCOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+        if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS))) {
             boolean shouldCreateBOCO = true;
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
@@ -150,7 +150,7 @@ public class EventsV3Util {
 
     private void processCADEEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
                         oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
 
@@ -169,7 +169,7 @@ public class EventsV3Util {
 
     private void processCACOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                         oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
@@ -189,7 +189,7 @@ public class EventsV3Util {
             Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment) && Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment) && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipmentDetails.getDirection()))) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                 for (Events event : dbEvents) {
@@ -325,7 +325,7 @@ public class EventsV3Util {
     }
 
     private void processECCCEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+        if ((Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
                 isEventChanged(shipmentDetails.getBrokerageAtOriginDate(),
                         oldEntity.getBrokerageAtOriginDate(), isNewShipment)) {
 
