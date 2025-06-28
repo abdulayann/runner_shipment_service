@@ -4532,7 +4532,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             beforeSave(entity, oldEntity.get(), false);
 
-            entity = consolidationDetailsDao.update(entity, false);
+            entity = consolidationDetailsDao.updateV3(entity, true);
             ConsolidationDetails prevEntity = jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class);
 
             addAuditLogConsolidation(entity, prevEntity, DBOperationType.UPDATE.name());
