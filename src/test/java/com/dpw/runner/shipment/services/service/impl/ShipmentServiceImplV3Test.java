@@ -2305,8 +2305,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         newShipment.setAdditionalDetails(new AdditionalDetails());
 
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(false);
+        AtomicBoolean makeConsoleDG = new AtomicBoolean(false);
 
-        ConsolidationDetails result = shipmentServiceImplV3.changeConsolidationDGValues(false, makeConsoleNonDG, null, newShipment);
+        ConsolidationDetails result = shipmentServiceImplV3.changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, null, newShipment);
 
         assertNull(result);
     }
@@ -2440,8 +2441,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(false);
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(false);
 
+        AtomicBoolean makeConsoleDG = new AtomicBoolean(false);
         ConsolidationDetails result = shipmentServiceImplV3.processLinkedConsolidationDetails(
-                shipment, null, consolidationSet, false, makeConsoleNonDG, makeConsoleSciT1);
+                shipment, null, consolidationSet, makeConsoleDG, makeConsoleNonDG, makeConsoleSciT1);
 
         assertNotNull(result.getCarrierDetails());
         assertEquals(shipment.getMasterBill(), result.getBol());

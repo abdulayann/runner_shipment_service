@@ -123,7 +123,7 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
     public String goodsValueCurrency;
     public BigDecimal insuranceValue;
     @Size(max=3, message = "max size is 3 for insurance value currency")
-    public String InsuranceValueCurrency;
+    public String InsuranceValueCurrency; //NOSONAR
     @Size(max=250, message = "max size is 250 for entry ref no")
     public String entryRefNo;
     private List<PartiesRequest> shipmentAddresses;
@@ -244,7 +244,7 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
 
     private Set<ConsolidationDetailsRequest> consolidationList;
     private List<PackingV3Request> packingList;
-    private Set<ContainerRequest> containersList;
+    private Set<ContainerV3Request> containersList;
     private List<BookingCarriageRequest> bookingCarriagesList;
     private List<ELDetailsRequest> elDetailsList;
     private List<EventsRequest> eventsList = new ArrayList<>();

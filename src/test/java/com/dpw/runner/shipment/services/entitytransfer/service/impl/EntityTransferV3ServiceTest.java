@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -651,7 +652,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_Success_Create() throws RunnerException {
+    void testImportShipment_Success_Create() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -679,7 +680,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_Success_Create_NetworkTransfer() throws RunnerException {
+    void testImportShipment_Success_Create_NetworkTransfer() throws RunnerException, JsonMappingException {
         EntityTransferV3ShipmentDetails entityTransferShipmentDetails = jsonTestUtility.getV3ImportShipmentData();
         ImportV3ShipmentRequest importShipmentRequest = ImportV3ShipmentRequest.builder()
                 .entityData(entityTransferShipmentDetails)
@@ -710,7 +711,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_UpdateTriangulationOrReceivingAccepted() throws RunnerException {
+    void testImportShipment_UpdateTriangulationOrReceivingAccepted() throws RunnerException, JsonMappingException {
         EntityTransferV3ShipmentDetails entityTransferShipmentDetails = jsonTestUtility.getV3ImportShipmentData();
         ImportV3ShipmentRequest importShipmentRequest = ImportV3ShipmentRequest.builder()
                 .entityData(entityTransferShipmentDetails)
@@ -743,7 +744,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_Success_Update() throws RunnerException {
+    void testImportShipment_Success_Update() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -781,7 +782,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
 
     @Test
-    void testImportConsolidation_rejectTask() throws RunnerException {
+    void testImportConsolidation_rejectTask() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -806,7 +807,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Create_Air() throws RunnerException {
+    void testImportConsolidation_Success_Create_Air() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -844,7 +845,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Update_Sea() throws RunnerException {
+    void testImportConsolidation_Success_Update_Sea() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -907,7 +908,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Create_Air_interBranch() throws RunnerException {
+    void testImportConsolidation_Success_Create_Air_interBranch() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -946,7 +947,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Create_Air_interBranch_NTE() throws RunnerException {
+    void testImportConsolidation_Success_Create_Air_interBranch_NTE() throws RunnerException, JsonMappingException {
         UserContext.getUser().setTenantId(728);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         Map<String, String> shipmentNumberAssignedToMap = new HashMap<>();
@@ -1012,7 +1013,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_UpdateTriangulationOrReceivingAccepted() throws RunnerException {
+    void testImportConsolidation_UpdateTriangulationOrReceivingAccepted() throws RunnerException, JsonMappingException {
         UserContext.getUser().setTenantId(728);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
@@ -1073,7 +1074,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_UpdateTriangulation_TenantNotMatching() throws RunnerException {
+    void testImportConsolidation_UpdateTriangulation_TenantNotMatching() throws RunnerException, JsonMappingException {
         UserContext.getUser().setTenantId(937);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
@@ -1943,7 +1944,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Rejection() throws RunnerException {
+    void testImportConsolidation_Rejection() throws RunnerException, JsonMappingException {
         ImportV3ConsolidationRequest importConsolidationRequest = ImportV3ConsolidationRequest.builder()
                 .taskId(1L)
                 .operation(TaskStatus.REJECTED.getDescription())
