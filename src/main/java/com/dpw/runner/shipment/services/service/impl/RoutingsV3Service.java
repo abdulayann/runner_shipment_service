@@ -166,6 +166,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             updateConsolCarrierDetails(mainCarriageList);
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
+            commonUtils.validateAirSecurityAndDGConsolidationPermissions(consolidationDetails);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
 
             if (isInterBranchContextNeeded(consolidationDetails))
@@ -266,6 +267,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         if (shipmentDetailsOptional.isEmpty())
             return;
         ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+        commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails.getCarrierDetails());
         updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails);
         carrierDetailsDao.update(shipmentDetails.getCarrierDetails());

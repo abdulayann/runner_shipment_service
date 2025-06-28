@@ -5,19 +5,24 @@ import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstant
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.*;
-import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportV3ShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.ImportShipmentResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsolidationResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentResponse;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -77,7 +82,7 @@ public class EntityTransferV3Controller {
             @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_SHIPMENT_SUCCESSFUL, response = ImportShipmentResponse.class)
     })
     @PostMapping(EntityTransferConstants.IMPORT_SHIPMENT)
-    public ResponseEntity<IRunnerResponse> importShipment(@RequestBody ImportV3ShipmentRequest request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> importShipment(@RequestBody ImportV3ShipmentRequest request) throws RunnerException, JsonMappingException {
         log.info("Received Import Shipment Request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String shipmentId =  entityTransferService.importShipment(CommonRequestModel.buildRequest(request));
         if(shipmentId==null)

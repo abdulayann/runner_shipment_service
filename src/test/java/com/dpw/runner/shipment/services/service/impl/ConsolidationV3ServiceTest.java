@@ -857,7 +857,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     when(jsonHelper.convertToJson(any())).thenReturn("ABC");
-    when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     mockShipmentSettings();
@@ -884,7 +884,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(new ShipmentSettingsDetails());
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     when(jsonHelper.convertToJson(any())).thenReturn("ABC");
-    when(consolidationDetailsDao.updateV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     doThrow(new GenericException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
     when(jsonHelper.readFromJson(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);

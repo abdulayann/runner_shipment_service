@@ -2468,6 +2468,38 @@ public class CommonUtils {
         return true;
     }
 
+    public void validateAirSecurityAndDGShipmentPermissions(ShipmentDetails shipmentDetails) {
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            // DG shipment can be updated only by DG users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
+                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !UserContext.isAirDgUser()) {
+                throw new ValidationException("You don't have permission to update DG Shipment");
+            }
+            // Air EXP shipment can be updated only by Air Security users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    !CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+                throw new ValidationException("You don't have Air Security permission to create or update AIR EXP Shipment.");
+            }
+        }
+    }
+
+    public void validateAirSecurityAndDGConsolidationPermissions(ConsolidationDetails consolidationDetails) {
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            // DG shipment can be updated only by DG users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
+                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    Boolean.TRUE.equals(consolidationDetails.getHazardous()) && !UserContext.isAirDgUser()) {
+                throw new ValidationException("You don't have permission to update DG Consolidation");
+            }
+            // Air EXP shipment can be updated only by Air Security users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    !CommonUtils.checkAirSecurityForConsolidation(consolidationDetails)) {
+                throw new ValidationException("You don't have Air Security permission to create or update AIR EXP Consolidation.");
+            }
+        }
+    }
+
     public EventsRequest prepareEventRequest(Long entityId, String eventCode, String entityType, String referenceNumber) {
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setActual(getUserZoneTime(LocalDateTime.now()));
