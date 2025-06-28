@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -651,7 +652,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_Success_Create() throws RunnerException {
+    void testImportShipment_Success_Create() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -670,7 +671,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         shipmentDetailsResponse.setShipmentId("TQAA24090140");
         shipmentDetailsResponse.setGuid(UUID.randomUUID());
 
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(any(), any())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
 
@@ -679,7 +680,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_Success_Create_NetworkTransfer() throws RunnerException {
+    void testImportShipment_Success_Create_NetworkTransfer() throws RunnerException, JsonMappingException {
         EntityTransferV3ShipmentDetails entityTransferShipmentDetails = jsonTestUtility.getV3ImportShipmentData();
         ImportV3ShipmentRequest importShipmentRequest = ImportV3ShipmentRequest.builder()
                 .entityData(entityTransferShipmentDetails)
@@ -700,7 +701,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         usersDto1.setUserId(1L);
         usersDtoList.add(usersDto1);
 
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(any(), any())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
@@ -710,7 +711,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_UpdateTriangulationOrReceivingAccepted() throws RunnerException {
+    void testImportShipment_UpdateTriangulationOrReceivingAccepted() throws RunnerException, JsonMappingException {
         EntityTransferV3ShipmentDetails entityTransferShipmentDetails = jsonTestUtility.getV3ImportShipmentData();
         ImportV3ShipmentRequest importShipmentRequest = ImportV3ShipmentRequest.builder()
                 .entityData(entityTransferShipmentDetails)
@@ -732,7 +733,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         usersDto1.setUserId(1L);
         usersDtoList.add(usersDto1);
 
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(any(), any())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
@@ -743,7 +744,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportShipment_Success_Update() throws RunnerException {
+    void testImportShipment_Success_Update() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -770,7 +771,6 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         ShipmentEtV3Request shipmentRequest = objectMapperTest.convertValue(shipmentDetails, ShipmentEtV3Request.class);
 
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(any(), any())).thenReturn(List.of(shipmentDetails));
         when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(shipmentRequest);
         when(shipmentService.completeUpdateShipmentFromEntityTransfer(any())).thenReturn(shipmentDetailsResponse);
@@ -781,7 +781,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
 
     @Test
-    void testImportConsolidation_rejectTask() throws RunnerException {
+    void testImportConsolidation_rejectTask() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -806,7 +806,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Create_Air() throws RunnerException {
+    void testImportConsolidation_Success_Create_Air() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -833,10 +833,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         consolidationDetailsResponse.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse);
 
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
@@ -844,7 +844,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Update_Sea() throws RunnerException {
+    void testImportConsolidation_Success_Update_Sea() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -888,13 +888,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         ShipmentEtV3Request shipmentRequest = objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class);
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of(oldConsolidationDetails));
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(shipmentRequest);
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of(oldShipmentDetails));
         when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(shipmentRequest);
         when(shipmentService.completeUpdateShipmentFromEntityTransfer(any())).thenReturn(shipmentDetailsResponse);
 
-        doNothing().when(modelMapper).map(any(EntityTransferV3ShipmentDetails.class), any(ShipmentEtV3Request.class));
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.completeUpdateConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse);
 
@@ -907,7 +904,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Create_Air_interBranch() throws RunnerException {
+    void testImportConsolidation_Success_Create_Air_interBranch() throws RunnerException, JsonMappingException {
         List<UsersDto> usersDtoList = new ArrayList<>();
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
@@ -935,10 +932,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         consolidationDetailsResponse.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse);
 
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
@@ -946,7 +943,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Success_Create_Air_interBranch_NTE() throws RunnerException {
+    void testImportConsolidation_Success_Create_Air_interBranch_NTE() throws RunnerException, JsonMappingException {
         UserContext.getUser().setTenantId(728);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         Map<String, String> shipmentNumberAssignedToMap = new HashMap<>();
@@ -979,11 +976,11 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
 
@@ -1012,7 +1009,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_UpdateTriangulationOrReceivingAccepted() throws RunnerException {
+    void testImportConsolidation_UpdateTriangulationOrReceivingAccepted() throws RunnerException, JsonMappingException {
         UserContext.getUser().setTenantId(728);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
@@ -1052,10 +1049,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse1);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails2));
@@ -1073,7 +1070,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_UpdateTriangulation_TenantNotMatching() throws RunnerException {
+    void testImportConsolidation_UpdateTriangulation_TenantNotMatching() throws RunnerException, JsonMappingException {
         UserContext.getUser().setTenantId(937);
         EntityTransferV3ConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getV3ImportConsolidationAir();
         ConsolidationDetails consolidationDetails2 = jsonTestUtility.getCompleteConsolidation();
@@ -1115,10 +1112,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         usersDtoList.add(usersDto1);
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse1);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
@@ -1162,10 +1159,10 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         usersDtoList.add(usersDto1);
 
         when(consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid())).thenReturn(List.of());
-        when(modelMapper.map(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
+        when(jsonHelper.convertValue(any(), eq(ShipmentEtV3Request.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentEtV3Request.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any(), eq(true))).thenReturn(shipmentDetailsResponse);
-        when(modelMapper.map(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
+        when(jsonHelper.convertValue(any(), eq(ConsolidationEtV3Request.class))).thenReturn(consolidationDetailsRequest);
         when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse1);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails2));
@@ -1943,7 +1940,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testImportConsolidation_Rejection() throws RunnerException {
+    void testImportConsolidation_Rejection() throws RunnerException, JsonMappingException {
         ImportV3ConsolidationRequest importConsolidationRequest = ImportV3ConsolidationRequest.builder()
                 .taskId(1L)
                 .operation(TaskStatus.REJECTED.getDescription())

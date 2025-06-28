@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntit
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -81,7 +82,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void importConsolidationValidation() throws RunnerException {
+    void importConsolidationValidation() throws RunnerException, JsonMappingException {
         // Mock
         when(entityTransferService.importConsolidation(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -91,7 +92,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void importConsolidationValidation2() throws RunnerException {
+    void importConsolidationValidation2() throws RunnerException, JsonMappingException {
         // Mock
         when(entityTransferService.importConsolidation(any())).thenThrow(new RuntimeException());
         // Test
@@ -101,7 +102,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void importConsolidationValidation3() throws RunnerException {
+    void importConsolidationValidation3() throws RunnerException, JsonMappingException {
         // Mock
         when(entityTransferService.importConsolidation(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
@@ -111,7 +112,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void importShipment() throws RunnerException {
+    void importShipment() throws RunnerException, JsonMappingException {
         // Mock
         when(entityTransferService.importShipment(any())).thenReturn("");
         // Test
@@ -121,7 +122,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void importShipment2() throws RunnerException {
+    void importShipment2() throws RunnerException, JsonMappingException {
         // Mock
         when(entityTransferService.importShipment(any())).thenThrow(new RuntimeException());
         ImportV3ShipmentRequest  importV3ShipmentRequest = ImportV3ShipmentRequest.builder().build();
@@ -130,7 +131,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void importShipment3() throws RunnerException {
+    void importShipment3() throws RunnerException, JsonMappingException {
         // Mock
         when(entityTransferService.importShipment(any())).thenThrow(new RuntimeException("RuntimeException"));
         ImportV3ShipmentRequest  importV3ShipmentRequest = ImportV3ShipmentRequest.builder().build();
