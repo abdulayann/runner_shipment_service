@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
@@ -116,7 +115,7 @@ public class MawbStocksService implements IMawbStocksService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
-        if(isBorrowed && consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getBorrowedFrom().getOrgCode() != request.getBorrowedFrom()){
+        if(isBorrowed && consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getBorrowedFrom().getOrgCode().equals(request.getBorrowedFrom())){
             consolidationDetails.getBorrowedFrom().setOrgCode(request.getBorrowedFrom());
             consolidationDetails.getBorrowedFrom().getOrgData().put("FullName", request.getBorrowedFromFullName());
             consolidationDao.save(consolidationDetails, false);
