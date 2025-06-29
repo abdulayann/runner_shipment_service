@@ -4783,7 +4783,7 @@ if (unitConversionUtilityMockedStatic != null) {
     mockShipmentSettings();
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
-    doThrow(new RunnerException("IllegalAccessException")).when(consolidationV3Util).afterSaveForET(any(), any(), any(), eq(true), any(), eq(false));
+    doThrow(new RunnerException("IllegalAccessException")).when(consolidationV3Util).afterSaveForET(any(), any(), any(), eq(true), any(), eq(false), eq(true));
     assertThrows(ValidationException.class, ()->spyService.createConsolidationFromEntityTransfer(consolidationEtV3Request));
 
   }
@@ -4834,7 +4834,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(any())).thenReturn(Optional.ofNullable(consolidationDetails));
     mockShipmentSettings();
     mockTenantSettings();
-    doThrow(new RunnerException("IllegalAccessException")).when(consolidationV3Util).afterSaveForET(any(), any(), any(), eq(false), any(), eq(false));
+    doThrow(new RunnerException("IllegalAccessException")).when(consolidationV3Util).afterSaveForET(any(), any(), any(), eq(false), any(), eq(false), eq(false));
     assertThrows(GenericException.class, ()->spyService.completeUpdateConsolidationFromEntityTransfer(consolidationEtV3Request));
   }
 

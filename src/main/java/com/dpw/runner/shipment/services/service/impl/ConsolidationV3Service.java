@@ -4508,7 +4508,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             getConsolidation(consolidationDetails);
 
-            consolidationV3Util.afterSaveForET(consolidationDetails, null, request, true, shipmentSettingsDetails, false);
+            consolidationV3Util.afterSaveForET(consolidationDetails, null, request, true, shipmentSettingsDetails, false, true);
             syncShipmentDataInPlatform(consolidationDetails);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
@@ -4537,7 +4537,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             addAuditLogConsolidation(entity, prevEntity, DBOperationType.UPDATE.name());
 
-            consolidationV3Util.afterSaveForET(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false);
+            consolidationV3Util.afterSaveForET(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false);
             ConsolidationDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
             return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
