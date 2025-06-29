@@ -284,6 +284,7 @@ class ConsolidationV3ServiceTest extends CommonMocks {
     consolidationV3Service.executorServiceMasterData = Executors.newFixedThreadPool(2);
     shipmentDetails = jsonTestUtility.getCompleteShipment();
     consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setConsolidationType(CONSOLIDATION_TYPE_CLD);
     shipmentSettingsDetails = new ShipmentSettingsDetails();
     customerBookingV3Request = new CustomerBookingV3Request();
     testShipment = jsonTestUtility.getTestShipment();
@@ -318,6 +319,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     mockShipmentSettings();
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(consolidationDetailsResponse);
@@ -338,6 +340,7 @@ if (unitConversionUtilityMockedStatic != null) {
     triangulationPartnerList.add(triangulationPartner);
 
     var spyService = Mockito.spy(consolidationV3Service);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     CarrierDetails carrierDetails = new CarrierDetails();
     consolidationDetails.setCarrierDetails(carrierDetails);
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -366,6 +369,7 @@ if (unitConversionUtilityMockedStatic != null) {
     triangulationPartnerList.add(triangulationPartner);
 
     var spyService = Mockito.spy(consolidationV3Service);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     CarrierDetails carrierDetails = new CarrierDetails();
     consolidationDetails.setCarrierDetails(carrierDetails);
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -398,6 +402,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     mockShipmentSettings();
     var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
 
@@ -420,6 +425,7 @@ if (unitConversionUtilityMockedStatic != null) {
     ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
     ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
     mockShipmentSettings();
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
 
     assertNotNull(response);
@@ -433,6 +439,7 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetailsResponse expectedResponse = testConsolResponse;
 
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     lenient().when(jsonHelper.convertValue(consoleDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
@@ -846,6 +853,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setInterBranchConsole(true);
     consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
     consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
     var spyService = Mockito.spy(consolidationV3Service);
     Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
@@ -873,6 +881,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setInterBranchConsole(true);
     consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
     consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
     var spyService = Mockito.spy(consolidationV3Service);
     Mockito.doReturn(Optional.of(consolidationDetails)).when(spyService).retrieveByIdOrGuid(any());
@@ -4761,6 +4770,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     mockShipmentSettings();
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
@@ -4778,6 +4788,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setCarrierDetails(carrierDetails);
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     mockShipmentSettings();
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
@@ -4794,6 +4805,7 @@ if (unitConversionUtilityMockedStatic != null) {
       consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
 
       var spyService = Mockito.spy(consolidationV3Service);
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
       when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
               .thenReturn(new BigDecimal("1000"));
@@ -4818,7 +4830,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setInterBranchConsole(true);
     consolidationDetails.setContainerCategory(SHIPMENT_TYPE_LCL);
     consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
-
+    when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     var spyService = Mockito.spy(consolidationV3Service);
 
     when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
