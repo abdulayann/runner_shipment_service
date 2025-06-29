@@ -6,11 +6,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -66,6 +69,9 @@ public class MawbStocksService implements IMawbStocksService {
     @Autowired
     private PartialFetchUtils partialFetchUtils;
 
+    @Autowired
+    private IConsolidationDetailsDao consolidationDao;
+
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -79,6 +85,22 @@ public class MawbStocksService implements IMawbStocksService {
         if (request == null) {
             log.debug("Request is empty for MAWB stocks create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+
+        ConsolidationDetails consolidationDetails = null;
+        boolean isBorrowed = false;
+        if(request.getConsolidationId() != null){
+            consolidationDetails = consolidationDao.findConsolidationsById(request.getConsolidationId());
+
+            if(consolidationDetails != null && Boolean.TRUE.equals(consolidationDetails.getBorrowed())){
+                isBorrowed = true;
+
+            }
+        }
+
+        if(isBorrowed && (request.getBorrowedFrom() == null || consolidationDetails.getBorrowedFrom() == null)){
+            throw new ValidationException("Please select the Borrowed From Party to add the MAWB Stock.");
+        }
+
         MawbStocks mawbStocks = convertRequestToEntity(request);
 
         try {
@@ -92,6 +114,12 @@ public class MawbStocksService implements IMawbStocksService {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+        if(isBorrowed && consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getBorrowedFrom().getOrgCode() != request.getBorrowedFrom()){
+            consolidationDetails.getBorrowedFrom().setOrgCode(request.getBorrowedFrom());
+            consolidationDetails.getBorrowedFrom().getOrgData().put("FullName", request.getBorrowedFromFullName());
+            consolidationDao.save(consolidationDetails, false);
         }
         callV1Sync(mawbStocks);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
@@ -234,7 +262,11 @@ public class MawbStocksService implements IMawbStocksService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airLinePrefix, String borrowedFrom){
+    public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airLinePrefix, String borrowedFrom,
+        boolean borrowed){
+        if(borrowed && StringUtility.isEmpty(borrowedFrom)){
+            throw new ValidationException("Please select the Borrowed From Party to fetch the MAWB");
+        }
         ListCommonRequest listCommonRequest;
         if (StringUtility.isEmpty(borrowedFrom))
             listCommonRequest = CommonUtils.andCriteria("borrowedFrom", null, "ISNULL", null);

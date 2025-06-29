@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MawbStocksConstants;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -14,11 +13,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.MawbStocksRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
 import com.dpw.runner.shipment.services.dto.response.MawbStocksResponse;
 import com.dpw.runner.shipment.services.dto.response.NextMawbCarrierResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -28,10 +25,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.syncing.Entity.MawbStocksV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IMawbStockSync;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.swagger.models.Response;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +41,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -608,7 +601,8 @@ class MawbStocksServiceTest {
         when(mawbStocksDao.findAll(any(), any())).thenReturn(mawbStocksPage);
 
         // Test
-        ResponseEntity<IRunnerResponse> httpResponse = mawbStocksService.getNextMawbNumberByCarrier(airLinePrefix, borrowedFrom);
+        ResponseEntity<IRunnerResponse> httpResponse = mawbStocksService.getNextMawbNumberByCarrier(airLinePrefix, borrowedFrom,
+            false);
 
         // Assert
         assertEquals(ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(mawbStocksPage.getContent().get(0).getNextMawbNumber()).build()), httpResponse);
@@ -625,7 +619,8 @@ class MawbStocksServiceTest {
         when(mawbStocksDao.findAll(any(), any())).thenReturn(mawbStocksPage);
 
         // Test
-        ResponseEntity<IRunnerResponse> httpResponse = mawbStocksService.getNextMawbNumberByCarrier(airLinePrefix, borrowedFrom);
+        ResponseEntity<IRunnerResponse> httpResponse = mawbStocksService.getNextMawbNumberByCarrier(airLinePrefix, borrowedFrom,
+            false);
 
         // Assert
         assertEquals(ResponseHelper.buildSuccessResponse(NextMawbCarrierResponse.builder().nextMawbNumber(null).build()), httpResponse);
