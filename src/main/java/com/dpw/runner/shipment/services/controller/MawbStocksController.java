@@ -100,8 +100,9 @@ public class MawbStocksController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = MawbStocksConstants.GET_NEXT_MAWB_SUCCESSFUL, response = MyNextMawbCarrierResponseClass.class)})
     @GetMapping(ApiConstants.API_GET_NEXT_MAWB)
-    public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix, @RequestParam(required = false) String borrowedFrom) {
-        return mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix, borrowedFrom);
+    public ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(@RequestParam @NonNull String airlinePrefix, @RequestParam(required = false) String borrowedFrom,
+        @RequestParam(required = false, defaultValue = "false") boolean borrowed) {
+        return mawbStocksService.getNextMawbNumberByCarrier(airlinePrefix, borrowedFrom, borrowed);
     }
 
     @ApiResponses(value = {
