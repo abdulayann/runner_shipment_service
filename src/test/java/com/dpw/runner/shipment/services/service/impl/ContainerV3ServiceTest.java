@@ -330,7 +330,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class)));
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
-        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATION");
         assertNotNull(response);
     }
 
@@ -341,7 +341,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         containers.setId(1L);
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(containers, ContainerResponse.class)));
-        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATIONS");
         assertNotNull(response);
     }
 
@@ -352,7 +352,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         containers.setId(1L);
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(containers, ContainerResponse.class)));
-        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATIONS");
         assertNotNull(response);
     }
 
@@ -365,7 +365,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class), objectMapper.convertValue(testContainer, ContainerResponse.class)));
         when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
-        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATION");
         assertNotNull(response);
     }
 

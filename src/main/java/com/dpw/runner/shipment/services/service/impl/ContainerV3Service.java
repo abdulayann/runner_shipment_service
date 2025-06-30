@@ -102,10 +102,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -287,7 +283,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         for (Containers containers: originalContainers) {
             Containers containers1 = oldContainers.get(containers.getGuid());
-            if (!Objects.equals(containers1.getContainerCount(), containers.getContainerCount()) || !Objects.equals(containers1.getContainerCode(), containers.getContainerCode())) {
+            if (containers1 != null && (!Objects.equals(containers1.getContainerCount(), containers.getContainerCount()) || !Objects.equals(containers1.getContainerCode(), containers.getContainerCode()))) {
                 isAutoSell = true;
                 break;
             }
@@ -297,7 +293,7 @@ public class ContainerV3Service implements IContainerV3Service {
         containerBeforeSave(originalContainers, containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
 
         for(ContainerV3Request containerRequest : containerRequestList){
-            List<Containers> containers = getSiblingContainers(containerRequest);
+            List<Containers> containers = new ArrayList<>(getSiblingContainers(containerRequest));
             if(containerRequest.getId() != null) {
               containers.removeIf(container -> container.getId() != null && container.getId()
                         .equals(containerRequest.getId()));
