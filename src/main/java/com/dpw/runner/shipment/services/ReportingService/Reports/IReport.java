@@ -3785,26 +3785,6 @@ public abstract class IReport {
         return value != null ? value.toString() : null;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private void processStringUtilityTags(PackingModel pack, Map<String, Object> dict) {
         if(!StringUtility.isEmpty(pack.getUnNumber()))
             dict.put(OCEAN_UN_NUMBER, pack.getUnNumber());
