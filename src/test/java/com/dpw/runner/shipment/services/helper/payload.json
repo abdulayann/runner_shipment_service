@@ -2336,6 +2336,7 @@
           "addressCode": null
         },
         "notifyParty": {
+          "addressId": "18",
           "orgCode": {
             "Id": 12310,
             "OrganizationCode": "{FirstName:3}{Sequence:9}12310",

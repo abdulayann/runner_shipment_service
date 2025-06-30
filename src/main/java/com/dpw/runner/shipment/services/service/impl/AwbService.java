@@ -80,6 +80,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB;
+import static com.dpw.runner.shipment.services.commons.constants.AwbConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -1001,7 +1002,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setShipperReferenceNumber(consolidationDetails.getAgentReference());
 
         processConsoleSendingAgentAndReceivingAgent(consolidationDetails, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map);
-        setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails(), false, false);
+        setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails());
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
 
         for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
@@ -1010,8 +1011,10 @@ public class AwbService implements IAwbService {
                 issuingAgentAddressList.add(orgRow.getAddressId());
                 Map<Long, AddressDataV1> issuingAgentAddressDataMap = fetchAddressData(issuingAgentAddressList);
                 AddressDataV1 issuingAgentAddressData = null;
-                if(orgRow.getAddressId() != null)
-                    issuingAgentAddressData = issuingAgentAddressDataMap.get(Long.valueOf(orgRow.getAddressId()));
+                if(orgRow.getAddressId() != null){
+                    String addressId = orgRow.getAddressId();
+                    issuingAgentAddressData = issuingAgentAddressDataMap.get(Long.valueOf(addressId));
+                }
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase());
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry, issuingAgentAddressData);
@@ -1050,13 +1053,23 @@ public class AwbService implements IAwbService {
     }
 
     private void processConsoleSendingAgentAndReceivingAgent(ConsolidationDetails consolidationDetails, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Map<Long, AddressDataV1> addressDataV1Map) {
-        constructShipperAddress(awbShipmentInfo, consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId())));
+        AddressDataV1 sendingAgentAddressData = null;
+        if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getAddressId() != null){
+            String sendingAddressId = consolidationDetails.getSendingAgent().getAddressId();
+            sendingAgentAddressData = addressDataV1Map.get(Long.valueOf(sendingAddressId));
+        }
+        constructShipperAddress(awbShipmentInfo, consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null, alpha2DigitToCountry, sendingAgentAddressData);
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
+        AddressDataV1 consigneeAddressData = null;
+        if(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getAddressId() != null){
+            String consigneeAddressId = consolidationDetails.getReceivingAgent().getAddressId();
+            consigneeAddressData = addressDataV1Map.get(Long.valueOf(consigneeAddressId));
+        }
         var consigneeName = StringUtility.convertToString(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getReceivingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
         awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getId().toString() : null);
-        constructConsigneeAddress(awbShipmentInfo, consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId())));
+        constructConsigneeAddress(awbShipmentInfo, consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null, alpha2DigitToCountry, consigneeAddressData);
     }
 
     private void constructShipperAddress(AwbShipmentInfo awbShipmentInfo, Map<String, Object> address, Map<String, String> alpha2ToCountryMap, AddressDataV1 shipperAddressData) {
@@ -1190,7 +1203,8 @@ public class AwbService implements IAwbService {
 
     private void processConsolidationAddress(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Parties party, Map<String, String> alpha2DigitToCountry, List<AwbNotifyPartyInfo> notifyPartyList, ArrayList<String> notifyAddressIdList, Map<Long, AddressDataV1> notifyPartyAddressDataMap) {
         if (party.getType() != null && (party.getType().equals("Notify Part 1") || party.getType().equals("Notify Part 2") || party.getType().equals("Notify Part 3"))) {
-            AddressDataV1 addressData = notifyPartyAddressDataMap.get(party.getAddressId());
+            String partyAddressId = party.getAddressId();
+            AddressDataV1 addressData = notifyPartyAddressDataMap.get(partyAddressId);
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
             var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
             notifyPartyInfo.setName(name == null ? name : name.toUpperCase());
@@ -1479,16 +1493,17 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setAwbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill());
         processShipmentConsignerConsginee(shipmentDetails, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map);
 
-        setAwbShipmentInfoUnLocationData(awbShipmentInfo, shipmentDetails.getCarrierDetails(), false, false);
+        setAwbShipmentInfoUnLocationData(awbShipmentInfo, shipmentDetails.getCarrierDetails());
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType().equals(Constants.FAG)) {
                 ArrayList<String> issuingAgentAddressList = new ArrayList<>();
                 issuingAgentAddressList.add(orgRow.getAddressId());
                 Map<Long, AddressDataV1> issuingAgentAddressDataMap = fetchAddressData(issuingAgentAddressList);
+                String addressId = orgRow.getAddressId();
                 var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
                 awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
-                constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry, issuingAgentAddressDataMap.get(orgRow.getAddressId()));
+                constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry, issuingAgentAddressDataMap.get(Long.valueOf(addressId)));
 
                 setAwbShipmentInfoCustomValue(shipmentDetails, awbCargoInfo, orgRow, issuingAgentAddressDataMap, awbShipmentInfo);
                 // awbOtherInfoRow.setExecutedAt(getCityId(orgRow.OrgId)); // fetch from master data
@@ -1537,15 +1552,17 @@ public class AwbService implements IAwbService {
 
     private void processShipmentConsignerConsginee(ShipmentDetails shipmentDetails, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Map<Long, AddressDataV1> addressDataV1Map) {
         AddressDataV1 shipperAddressData = null;
-        if(shipmentDetails.getConsigner().getAddressId() !=null && addressDataV1Map.get(shipmentDetails.getConsigner().getAddressId()) !=null) {
-            shipperAddressData = addressDataV1Map.get(shipmentDetails.getConsigner().getAddressId());
+        if(shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getAddressId() != null) {
+            String consignerAddressId = shipmentDetails.getConsigner().getAddressId();
+            shipperAddressData = addressDataV1Map.get(Long.valueOf(consignerAddressId));
         }
         var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getOrgData() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
         constructShipperAddress(awbShipmentInfo, shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null, alpha2DigitToCountry, shipperAddressData);
         AddressDataV1 consigneeAddressData = null;
-        if(shipmentDetails.getConsigner().getAddressId() !=null && addressDataV1Map.get(shipmentDetails.getConsigner().getAddressId()) !=null) {
-            consigneeAddressData = addressDataV1Map.get(shipmentDetails.getConsigner().getAddressId());
+        if(shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null) {
+            String consigneeAddressId = shipmentDetails.getConsignee().getAddressId();
+            consigneeAddressData = addressDataV1Map.get(Long.valueOf(consigneeAddressId));
         }
         var consigneeName = StringUtility.convertToString(shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getOrgData() != null ? shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
@@ -1564,7 +1581,8 @@ public class AwbService implements IAwbService {
     private List<AwbNotifyPartyInfo> generateAwbNotifyPartyinfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, Map<Long, AddressDataV1> addressDataV1Map) {
         AddressDataV1 notifyPartyAddressData = null;
         if(shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null && shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
-            notifyPartyAddressData = addressDataV1Map.get(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
+            String notifyPartyAddressId = shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId();
+            notifyPartyAddressData = addressDataV1Map.get(Long.valueOf(notifyPartyAddressId));
         }
         if (shipmentDetails.getAdditionalDetails() != null &&
                 shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
@@ -1959,7 +1977,7 @@ public class AwbService implements IAwbService {
                     carrierDetails = shipmentDetails.get().getCarrierDetails();
                 }
                 awbShipmentInfo.setFirstCarrier(carrierDetails.getShippingLine());
-                setAwbShipmentInfoUnLocationData(awbShipmentInfo, carrierDetails, false, false);
+                setAwbShipmentInfoUnLocationData(awbShipmentInfo, carrierDetails);
 
                 break;
             }
@@ -2107,18 +2125,21 @@ public class AwbService implements IAwbService {
 
         HawbLockSettings hawbLockSettings = shipmentSettingsDetails.getHawbLockSettings() != null ? shipmentSettingsDetails.getHawbLockSettings() : new HawbLockSettings();
         MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings() != null ? shipmentSettingsDetails.getMawbLockSettings() : new MawbLockSettings();
-
+        Map<String, Boolean> awbGroupLocks = AwbUtility.getGroupLockStatus(awb, hawbLockSettings, mawbLockSettings);
         Integer totalPacksCount = 0;
-        updateShipmentPackingInfoToAwb(shipmentDetails, packings, awb, request, hawbLockSettings, mawbLockSettings, totalPacksCount);
-        updateShipmentInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, addressDataV1Map);
-        updateShipmentNotifyPartyinfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, addressDataV1Map);
-        updateShipmemtRoutingInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
-        updateAwbGoodsDescriptionInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
-        updateAwbCargoInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
-        updateAwbOtherInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateShipmentPackingInfoToAwb(shipmentDetails, packings, awb, request, hawbLockSettings, mawbLockSettings, totalPacksCount, awbGroupLocks);
+        updateShipmentInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, addressDataV1Map, awbGroupLocks);
+        updateShipmentNotifyPartyinfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, addressDataV1Map, awbGroupLocks);
+        updateShipmemtRoutingInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, awbGroupLocks);
+        updateAwbGoodsDescriptionInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, awbGroupLocks);
+        updateAwbCargoInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, awbGroupLocks);
+        updateAwbOtherInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, awbGroupLocks);
     }
 
-    private void updateShipmentPackingInfoToAwb(ShipmentDetails shipmentDetails, List<Packing> packings, Awb awb, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Integer totalPacksCount) {
+    private void updateShipmentPackingInfoToAwb(ShipmentDetails shipmentDetails, List<Packing> packings, Awb awb, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Integer totalPacksCount, Map<String, Boolean> awbGroupLocks) {
+        if(!Boolean.TRUE.equals(awbGroupLocks.get(PACKING_LOCK_GROUP))) {
+            return;
+        }
         Map<UUID, Packing> packMap = new HashMap<>();
         packings.forEach(pack -> packMap.put(pack.getGuid(), pack));
         totalPacksCount = getTotalPacksCount(awb, request, hawbLockSettings, mawbLockSettings, totalPacksCount, packMap);
@@ -2202,203 +2223,119 @@ public class AwbService implements IAwbService {
     }
 
     private void updateShipmentPackingFieldToHbl(Packing packing, AwbPackingInfo awbPackingInfo, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingPacksLock(), mawbLockSettings.getPackingPacksLock()))
-            awbPackingInfo.setPacks(packing.getPacks());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingPacksTypeLock(), mawbLockSettings.getPackingPacksTypeLock()))
-            awbPackingInfo.setPacksType(packing.getPacksType());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingOriginLock(), mawbLockSettings.getPackingOriginLock()))
-            awbPackingInfo.setOrigin(packing.getOrigin());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingOrderLock(), mawbLockSettings.getPackingOrderLock()))
-            awbPackingInfo.setPackingOrder(packing.getPackingOrder());
-
+        awbPackingInfo.setPacks(packing.getPacks());
+        awbPackingInfo.setPacksType(packing.getPacksType());
+        awbPackingInfo.setOrigin(packing.getOrigin());
+        awbPackingInfo.setPackingOrder(packing.getPackingOrder());
         updateShipmentPackingAwbFields(packing, awbPackingInfo, request, hawbLockSettings, mawbLockSettings);
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingMarksnNumsLock(), mawbLockSettings.getPackingMarksnNumsLock()))
-            awbPackingInfo.setMarksnNums(packing.getMarksnNums());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingCountryCodeLock(), mawbLockSettings.getPackingCountryCodeLock()))
-            awbPackingInfo.setCountryCode(packing.getCountryCode());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingGoodsDescLock(), mawbLockSettings.getPackingGoodsDescLock()))
-            awbPackingInfo.setGoodsDescription(packing.getGoodsDescription() == null ? null : packing.getGoodsDescription().toUpperCase());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingReferenceNumberLock(), mawbLockSettings.getPackingReferenceNumberLock()))
-            awbPackingInfo.setReferenceNumber(packing.getReferenceNumber());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingInspectionsLock(), mawbLockSettings.getPackingInspectionsLock()))
-            awbPackingInfo.setInspections(packing.getInspections());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingDgClassLock(), mawbLockSettings.getPackingDgClassLock()))
-            awbPackingInfo.setDgClass(packing.getDGClass());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingDgSubstanceIdLock(), mawbLockSettings.getPackingDgSubstanceIdLock()))
-            awbPackingInfo.setDgSubstanceId(packing.getDGSubstanceId());
-
+        awbPackingInfo.setMarksnNums(packing.getMarksnNums());
+        awbPackingInfo.setCountryCode(packing.getCountryCode());
+        awbPackingInfo.setGoodsDescription(packing.getGoodsDescription() == null ? null : packing.getGoodsDescription().toUpperCase());
+        awbPackingInfo.setReferenceNumber(packing.getReferenceNumber());
+        awbPackingInfo.setInspections(packing.getInspections());
+        awbPackingInfo.setDgClass(packing.getDGClass());
+        awbPackingInfo.setDgSubstanceId(packing.getDGSubstanceId());
         updateTempAwbShipmentFields(packing, awbPackingInfo, request, hawbLockSettings, mawbLockSettings);
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingCommodityLock(), mawbLockSettings.getPackingCommodityLock()))
-            awbPackingInfo.setCommodity(packing.getCommodity());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingHsCodeLock(), mawbLockSettings.getPackingHsCodeLock()))
-            awbPackingInfo.setHsCode(packing.getHSCode());
+        awbPackingInfo.setCommodity(packing.getCommodity());
+        awbPackingInfo.setHsCode(packing.getHSCode());
         awbPackingInfo.setUnNumberAir(packing.getUnNumberAir());
         awbPackingInfo.setDgClassAir(packing.getDgClassAir());
         awbPackingInfo.setDgClassAirDescription(packing.getDgClassAirDescription());
     }
 
     private void updateTempAwbShipmentFields(Packing packing, AwbPackingInfo awbPackingInfo, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
-        if (isFieldLocked(request, hawbLockSettings.getPackingMinTempLock(), mawbLockSettings.getPackingMinTempLock()))
-            awbPackingInfo.setMinTemp(packing.getMinTemp());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingMinTempUnitLock(), mawbLockSettings.getPackingMinTempUnitLock()))
-            awbPackingInfo.setMinTempUnit(packing.getMinTempUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingMaxTempLock(), mawbLockSettings.getPackingMaxTempLock()))
-            awbPackingInfo.setMaxTemp(packing.getMaxTemp());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingMaxTempUnitLock(), mawbLockSettings.getPackingMaxTempUnitLock()))
-            awbPackingInfo.setMaxTempUnit(packing.getMaxTempUnit());
+        awbPackingInfo.setMinTemp(packing.getMinTemp());
+        awbPackingInfo.setMinTempUnit(packing.getMinTempUnit());
+        awbPackingInfo.setMaxTemp(packing.getMaxTemp());
+        awbPackingInfo.setMaxTempUnit(packing.getMaxTempUnit());
     }
 
     private void updateShipmentPackingAwbFields(Packing packing, AwbPackingInfo awbPackingInfo, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
-        if (isFieldLocked(request, hawbLockSettings.getPackingLengthLock(), mawbLockSettings.getPackingLengthLock()))
-            awbPackingInfo.setLength(packing.getLength());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingLengthUnitLock(), mawbLockSettings.getPackingLengthUnitLock()))
-            awbPackingInfo.setLengthUnit(packing.getLengthUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingWidthLock(), mawbLockSettings.getPackingWidthLock()))
-            awbPackingInfo.setWidth(packing.getWidth());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingWidthUnitLock(), mawbLockSettings.getPackingWidthUnitLock()))
-            awbPackingInfo.setWidthUnit(packing.getWidthUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingHeightLock(), mawbLockSettings.getPackingHeightLock()))
-            awbPackingInfo.setHeight(packing.getHeight());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingHeightUnitLock(), mawbLockSettings.getPackingHeightUnitLock()))
-            awbPackingInfo.setHeightUnit(packing.getHeightUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingWeightLock(), mawbLockSettings.getPackingWeightLock()))
-            awbPackingInfo.setWeight(packing.getWeight());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingWeightUnitLock(), mawbLockSettings.getPackingWeightUnitLock()))
-            awbPackingInfo.setWeightUnit(packing.getWeightUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingVolumeLock(), mawbLockSettings.getPackingVolumeLock()))
-            awbPackingInfo.setVolume(packing.getVolume());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingVolumeUnitLock(), mawbLockSettings.getPackingVolumeUnitLock()))
-            awbPackingInfo.setVolumeUnit(packing.getVolumeUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingNetWeightLock(), mawbLockSettings.getPackingNetWeightLock()))
-            awbPackingInfo.setNetWeight(packing.getNetWeight());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingNetWeightUnitLock(), mawbLockSettings.getPackingNetWeightUnitLock()))
-            awbPackingInfo.setNetWeightUnit(packing.getNetWeightUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingVolumeWeightLock(), mawbLockSettings.getPackingVolumeWeightLock()))
-            awbPackingInfo.setVolumeWeight(packing.getVolumeWeight());
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingVolumeWeightUnitLock(), mawbLockSettings.getPackingVolumeWeightUnitLock()))
-            awbPackingInfo.setVolumeWeightUnit(packing.getVolumeWeightUnit());
+        awbPackingInfo.setLength(packing.getLength());
+        awbPackingInfo.setLengthUnit(packing.getLengthUnit());
+        awbPackingInfo.setWidth(packing.getWidth());
+        awbPackingInfo.setWidthUnit(packing.getWidthUnit());
+        awbPackingInfo.setHeight(packing.getHeight());
+        awbPackingInfo.setHeightUnit(packing.getHeightUnit());
+        awbPackingInfo.setWeight(packing.getWeight());
+        awbPackingInfo.setWeightUnit(packing.getWeightUnit());
+        awbPackingInfo.setVolume(packing.getVolume());
+        awbPackingInfo.setVolumeUnit(packing.getVolumeUnit());
+        awbPackingInfo.setNetWeight(packing.getNetWeight());
+        awbPackingInfo.setNetWeightUnit(packing.getNetWeightUnit());
+        awbPackingInfo.setVolumeWeight(packing.getVolumeWeight());
+        awbPackingInfo.setVolumeWeightUnit(packing.getVolumeWeightUnit());
     }
 
-    private boolean isFieldLocked(CreateAwbRequest request, Boolean hawbLockChecker, Boolean mawbLockChecker) {
-        boolean isHawb = request.getAwbType().equals(Constants.HAWB);
-        boolean isDmawb = request.getAwbType().equals(Constants.DMAWB);
-        boolean isHawbOrMawbNotLocked = false;
-        if ((isHawb && !Boolean.TRUE.equals(hawbLockChecker)) || (isDmawb && !Boolean.TRUE.equals(mawbLockChecker))) {
-            isHawbOrMawbNotLocked = true;
-        }
-        return isHawbOrMawbNotLocked;
-    }
-
-    private void updateShipmentInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<Long, AddressDataV1> addressDataV1Map) {
+    private void updateShipmentInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<Long, AddressDataV1> addressDataV1Map, Map<String, Boolean> awbGroupLocks) {
         AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
         Map<String, String> alpha2DigitToCountry = masterDataUtils.shipmentAddressCountryMasterData(shipmentDetails);
 
-        if (isFieldLocked(request, hawbLockSettings.getAwbNumberLock(), mawbLockSettings.getAwbNumberLock()))
+        if (Boolean.TRUE.equals(awbGroupLocks.get(AWB_NUMBER_LOCK_GROUP)))
             awbShipmentInfo.setAwbNumber(shipmentDetails.getHouseBill());
 
-        if (isFieldLocked(request, hawbLockSettings.getShipperNameLock(), mawbLockSettings.getShipperNameLock())) {
+        if (Boolean.TRUE.equals(awbGroupLocks.get(SHIPPER_LOCK_GROUP))) {
             var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME) : "");
             awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
+            if(shipmentDetails.getConsigner()!=null && shipmentDetails.getConsigner().getAddressId() != null) {
+                String consignerAddressId = shipmentDetails.getConsigner().getAddressId();
+                constructShipperAddress(awbShipmentInfo, shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consignerAddressId)));
+            }
         }
-        if (isFieldLocked(request, hawbLockSettings.getShipperAddressLock(), mawbLockSettings.getShipperAddressLock())) {
-            var shipperAddress = AwbUtility.constructAddressForAwb(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null);
-            awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
-            if(shipmentDetails.getConsigner().getAddressId() != null)
-                constructShipperAddress(awbShipmentInfo, shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())));
+        if(shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null && Boolean.TRUE.equals(awbGroupLocks.get(CONSIGNEE_LOCK_GROUP))) {
+            String consigneeAddressId = shipmentDetails.getConsignee().getAddressId();
+            setConsgineeNameAndAddress(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consigneeAddressId)));
         }
-        if(shipmentDetails.getConsigner().getAddressId() != null) {
-            setConsgineeNameAndAddress(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())));
-        }
-        setUnLocationData(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbShipmentInfo);
+        setUnLocationData(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, awbGroupLocks);
 
-        if (isFieldLocked(request, hawbLockSettings.getFirstCarrierLock(), mawbLockSettings.getFirstCarrierLock()))
+        if (Boolean.TRUE.equals(awbGroupLocks.get(ROUTING_DETAILS_LOCK_GROUP)))
             awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
 
-        if (isFieldLocked(request, hawbLockSettings.getIataCodeLock(), mawbLockSettings.getIataCodeLock()))
+        if (Boolean.TRUE.equals(awbGroupLocks.get(ISSUING_AGENT_LOCK_GROUP)))
             awbShipmentInfo.setIataCode(iataCode);
 
-        processShipmentAddresses(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map);
+        processShipmentAddresses(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map, awbGroupLocks);
     }
 
     private void setConsgineeNameAndAddress(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, AddressDataV1 addressData) {
-        if (isFieldLocked(request, hawbLockSettings.getConsigneeNameLock(), mawbLockSettings.getConsigneeNameLock())) {
-            var consigneeName = StringUtility.convertToString(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.FULLNAME) : "");
-            awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
-        }
-        if (isFieldLocked(request, hawbLockSettings.getConsigneeAddressLock(), mawbLockSettings.getConsigneeAddressLock())) {
-            var consigneeAddress = AwbUtility.constructAddressForAwb(shipmentDetails.getConsignee().getAddressData());
-            awbShipmentInfo.setConsigneeAddress(consigneeAddress == null ? consigneeAddress : consigneeAddress.toUpperCase());
-            constructConsigneeAddress(awbShipmentInfo, shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null, alpha2DigitToCountry, addressData);
+        var consigneeName = StringUtility.convertToString(shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.FULLNAME) : "");
+        awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
+        constructConsigneeAddress(awbShipmentInfo, shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getAddressData() : null, alpha2DigitToCountry, addressData);
+    }
+
+    private void setUnLocationData(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo, Map<String, Boolean> awbGroupLocks) {
+        if (Boolean.TRUE.equals(awbGroupLocks.get(ROUTING_DETAILS_LOCK_GROUP))) {
+            setAwbShipmentInfoUnLocationData(awbShipmentInfo, shipmentDetails.getCarrierDetails());
         }
     }
 
-    private void setUnLocationData(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo) {
-        boolean originUpdate = (request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAirportOfDepartureLock()) ||
-                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAirportOfDepartureLock());
-
-        boolean destinationUpdate = (request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getAirportOfDestinationLock()) ||
-                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getAirportOfDestinationLock());
-
-        if (originUpdate || destinationUpdate) {
-            setAwbShipmentInfoUnLocationData(awbShipmentInfo, shipmentDetails.getCarrierDetails(), !originUpdate, !destinationUpdate);
-        }
-    }
-
-    private void processShipmentAddresses(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Map<Long, AddressDataV1> addressDataV1Map) {
+    private void processShipmentAddresses(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Map<Long, AddressDataV1> addressDataV1Map, Map<String, Boolean> awbGroupLocks) {
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType().equals(Constants.FAG)) {
-                if(orgRow.getAddressId() != null)
-                    setIssuingAgentAndAgentAddress(request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, orgRow, addressDataV1Map.get(Long.valueOf(orgRow.getAddressId())));
-                awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
-                        ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
-                        : awbShipmentInfo.getIataCode());
-                awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
-                        ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_CASS_CODE))
-                        : awbShipmentInfo.getAgentCASSCode());
+                if(orgRow.getAddressId() != null && Boolean.TRUE.equals(awbGroupLocks.get(ISSUING_AGENT_LOCK_GROUP))) {
+                    String addressId = orgRow.getAddressId();
+                    setIssuingAgentAndAgentAddress(request, hawbLockSettings, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, orgRow, addressDataV1Map.get(Long.valueOf(addressId)));
+                    awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
+                            ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
+                            : awbShipmentInfo.getIataCode());
+                    awbShipmentInfo.setAgentCASSCode(StringUtility.isEmpty(awbShipmentInfo.getAgentCASSCode())
+                            ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_CASS_CODE))
+                            : awbShipmentInfo.getAgentCASSCode());
+                }
             }
         }
     }
 
     private void setIssuingAgentAndAgentAddress(CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Parties orgRow, AddressDataV1 addressData) {
-        if (isFieldLocked(request, hawbLockSettings.getIssuingAgentNameLock(), mawbLockSettings.getIssuingAgentNameLock())) {
-            var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
-            awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
-        }
-        if (isFieldLocked(request, hawbLockSettings.getIssuingAgentAddressLock(), mawbLockSettings.getIssuingAgentAddressLock())) {
-            constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry, addressData);
-        }
+        var issuingAgentName = StringUtility.convertToString(orgRow.getOrgData().get(PartiesConstants.FULLNAME));
+        awbShipmentInfo.setIssuingAgentName(issuingAgentName == null ? issuingAgentName : issuingAgentName.toUpperCase()); // extract from orgdata
+        constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry, addressData);
     }
 
-    private void updateShipmentNotifyPartyinfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<Long, AddressDataV1> addressDataV1Map) {
+    private void updateShipmentNotifyPartyinfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<Long, AddressDataV1> addressDataV1Map, Map<String, Boolean> awbGroupLocks) {
+        if (!Boolean.TRUE.equals(awbGroupLocks.get(NOTIFY_LOCK_GROUP))) {
+            return;
+        }
         var party = shipmentDetails.getAdditionalDetails().getNotifyParty();
         boolean createNotifyParty = true;
         AwbNotifyPartyInfo deleteParty = new AwbNotifyPartyInfo();
@@ -2426,8 +2363,10 @@ public class AwbService implements IAwbService {
             awbParty.setAddress(AwbUtility.constructAddressForAwb(party.getAddressData()).toUpperCase());
             awbParty.setEntityId(shipmentDetails.getId());
             awbParty.setEntityType(request.getAwbType());
-            if(party.getAddressId() != null)
-                constructNotifyPartyAddress(awbParty, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(party.getAddressId())));
+            if(party.getAddressId() != null) {
+                String partyAddressId = party.getAddressId();
+                constructNotifyPartyAddress(awbParty, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(partyAddressId)));
+            }
             awbParty.setNotifyOrgId(party.getId());
             if (awb.getAwbNotifyPartyInfo() == null) {
                 awb.setAwbNotifyPartyInfo(new ArrayList<>());
@@ -2442,26 +2381,25 @@ public class AwbService implements IAwbService {
 
     private AwbNotifyPartyInfo getDeleteParty(CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbNotifyPartyInfo awbParty, Parties party, Map<String, String> alpha2DigitToCountry, AwbNotifyPartyInfo deleteParty, Map<Long, AddressDataV1> addressDataV1Map) {
         if (party != null) {
-            if ((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getNotifyOrganizationLock()) ||
-                    (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getNotifyOrganizationLock())) {
-                var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
-                awbParty.setName(name == null ? name : name.toUpperCase());
-                awbParty.setNotifyOrgId(party.getId());
+            var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
+            awbParty.setName(name == null ? name : name.toUpperCase());
+            awbParty.setNotifyOrgId(party.getId());
+            awbParty.setAddress(AwbUtility.constructAddressForAwb(party.getAddressData()).toUpperCase());
+            if(party.getAddressId() != null) {
+                String partyAddressId = party.getAddressId();
+                constructNotifyPartyAddress(awbParty, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(partyAddressId)));
             }
-            if ((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getNotifyOrganizationAddressLock()) ||
-                    (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getNotifyOrganizationAddressLock())) {
-                awbParty.setAddress(AwbUtility.constructAddressForAwb(party.getAddressData()).toUpperCase());
-                if(party.getAddressId() != null)
-                    constructNotifyPartyAddress(awbParty, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(party.getAddressId())));
-            }
-
-        } else {
+        }
+        else {
             deleteParty = awbParty;
         }
         return deleteParty;
     }
 
-    private void updateShipmemtRoutingInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+    private void updateShipmemtRoutingInfoToAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
+        if (!Boolean.TRUE.equals(awbGroupLocks.get(NEW_ROUTING_INFO_LOCK_GROUP))) {
+            return;
+        }
         boolean createRouting = true;
         AwbRoutingInfo deleteParty = new AwbRoutingInfo();
         if (awb.getAwbRoutingInfo() != null && !awb.getAwbRoutingInfo().isEmpty()) {
@@ -2512,28 +2450,21 @@ public class AwbService implements IAwbService {
     }
 
     private void processShipmentFieldsLockedOrNot(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbRoutingInfo awbRoute) {
+        awbRoute.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
+        awbRoute.setDestinationPortName(shipmentDetails.getCarrierDetails().getDestinationPort());
+        awbRoute.setByCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
 
-        if (isFieldLocked(request, hawbLockSettings.getOriginPortLock(), mawbLockSettings.getOriginPortLock())) {
-            awbRoute.setOriginPortName(shipmentDetails.getCarrierDetails().getOriginPort());
-        }
-        if (isFieldLocked(request, hawbLockSettings.getDestinationPortLock(), mawbLockSettings.getDestinationPortLock())) {
-            awbRoute.setDestinationPortName(shipmentDetails.getCarrierDetails().getDestinationPort());
-        }
-        if (isFieldLocked(request, hawbLockSettings.getByCarrierLock(), mawbLockSettings.getByCarrierLock()))
-            awbRoute.setByCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
-
-        if (isFieldLocked(request, hawbLockSettings.getFlightNumberLock(), mawbLockSettings.getFlightNumberLock()))
-            awbRoute.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
-
-        if (isFieldLocked(request, hawbLockSettings.getFlightDateLock(), mawbLockSettings.getFlightDateLock())) {
-            var flightDate = Objects.equals(request.getAwbType(), Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEtd() : null;
-            var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
-            awbRoute.setFlightDate(flightDate);
-            awbRoute.setEta(eta);
-        }
+        awbRoute.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
+        var flightDate = Objects.equals(request.getAwbType(), Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEtd() : null;
+        var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
+        awbRoute.setFlightDate(flightDate);
+        awbRoute.setEta(eta);
     }
 
-    private void updateAwbGoodsDescriptionInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+    private void updateAwbGoodsDescriptionInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
+        if(!Boolean.TRUE.equals(awbGroupLocks.get(GOODS_DESCRIPTION_LOCK_GROUP))) {
+            return;
+        }
         List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList = new ArrayList<>();
         if (awb.getAwbGoodsDescriptionInfo() != null && !awb.getAwbGoodsDescriptionInfo().isEmpty())
             awbGoodsDescriptionInfoList = awb.getAwbGoodsDescriptionInfo().stream().filter(good -> good.getIsShipmentCreated() != null && good.getIsShipmentCreated()).toList();
@@ -2559,7 +2490,6 @@ public class AwbService implements IAwbService {
             awb.getAwbGoodsDescriptionInfo().add(awbGoodsDescriptionInfo);
         } else {
             processGoodsDescriptionFieldsLockedOrNot(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings, awbGoodsDescriptionInfoList);
-
         }
     }
 
@@ -2582,24 +2512,11 @@ public class AwbService implements IAwbService {
     private void processGoodsDescriptionFieldsLockedOrNot(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfoList) {
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = awbGoodsDescriptionInfoList.get(0);
         Integer totalPacksCount = 0;
-
-        if (isFieldLocked(request, hawbLockSettings.getGrossWtLock(), mawbLockSettings.getGrossWtLock()))
-            awbGoodsDescriptionInfo.setGrossWt(shipmentDetails.getWeight());
-
-        if (isFieldLocked(request, hawbLockSettings.getGrossWtUnitLock(), mawbLockSettings.getGrossWtUnitLock()))
-            awbGoodsDescriptionInfo.setGrossWtUnit(shipmentDetails.getWeightUnit());
-
-        if (isFieldLocked(request, hawbLockSettings.getChargeableWtLock(), mawbLockSettings.getChargeableWtLock())) {
-            awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
-                    AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
-        }
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingVolumeLock(), mawbLockSettings.getPackingVolumeLock())) {
-            awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume() != null ? shipmentDetails.getVolume().setScale(3, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP));
-        }
-
-        if (isFieldLocked(request, hawbLockSettings.getPackingVolumeUnitLock(), mawbLockSettings.getPackingVolumeUnitLock()))
-            awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
+        awbGoodsDescriptionInfo.setGrossWt(shipmentDetails.getWeight());
+        awbGoodsDescriptionInfo.setGrossWtUnit(shipmentDetails.getWeightUnit());
+        awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ? AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
+        awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume() != null ? shipmentDetails.getVolume().setScale(3, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP));
+        awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
         setTotalPacksCountForAwbPackingInfo(request, awb, hawbLockSettings, mawbLockSettings, awbGoodsDescriptionInfo, totalPacksCount);
     }
 
@@ -2618,19 +2535,15 @@ public class AwbService implements IAwbService {
                 }
             }
         }
-
-        if (isFieldLocked(request, hawbLockSettings.getPiecesNoLock(), mawbLockSettings.getPackingVolumeUnitLock()))
-            awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
+        awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
     }
 
-    private void updateAwbCargoInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+    private void updateAwbCargoInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
-
-
-        if (isFieldLocked(request, hawbLockSettings.getAccountingInfoLock(), mawbLockSettings.getAccountingInfoLock()))
+        if (Boolean.TRUE.equals(awbGroupLocks.get(CARGO_DETAILS_LOCK_GROUP))) {
             awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
-
-        if (isFieldLocked(request, hawbLockSettings.getNtrQtyGoodsLock(), mawbLockSettings.getNtrQtyGoodsLock())) {
+        }
+        if (Boolean.TRUE.equals(awbGroupLocks.get(GOODS_DESCRIPTION_LOCK_GROUP))) {
             GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
             generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
             generateAwbPaymentInfoRequest.setAwbPackingInfo(awb.getAwbPackingInfo());
@@ -2638,43 +2551,32 @@ public class AwbService implements IAwbService {
             generateAwbPaymentInfoRequest.setIsFromShipment(false);
             generateAwbPaymentInfoRequest.setPackUpdate(false);
         }
-
-        if (isFieldLocked(request, hawbLockSettings.getCustomsValueLock(), mawbLockSettings.getCustomsValueLock()))
+        if (Boolean.TRUE.equals(awbGroupLocks.get(CARGO_DETAILS_LOCK_GROUP))) {
             awbCargoInfo.setCustomsValue(BigDecimal.valueOf(0.0));
-
-        if (isFieldLocked(request, hawbLockSettings.getCurrencyLock(), mawbLockSettings.getCurrencyLock()))
             awbCargoInfo.setCurrency(UserContext.getUser().getCompanyCurrency());
-
-        if (isFieldLocked(request, hawbLockSettings.getOtherInfoLock(), mawbLockSettings.getOtherInfoLock()))
-            awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
-
-        if (isFieldLocked(request, hawbLockSettings.getShippingInformationLock(), mawbLockSettings.getShippingInformationLock())) {
-            awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
-            awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         }
-
-        updatChargeCodeCargoInfoAwb(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbCargoInfo);
+        awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
+        awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
+        awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        if(Boolean.TRUE.equals(awbGroupLocks.get(CARGO_DETAILS_LOCK_GROUP))) {
+            updatChargeCodeCargoInfoAwb(shipmentDetails, request, hawbLockSettings, mawbLockSettings, awbCargoInfo);
+        }
     }
 
     private void updatChargeCodeCargoInfoAwb(ShipmentDetails shipmentDetails, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, AwbCargoInfo awbCargoInfo) {
-        if(isFieldLocked(request, hawbLockSettings.getChargeCodeLock(), mawbLockSettings.getChargeCodeLock())) {
-            if(shipmentDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(shipmentDetails.getIncoterms()))
-                awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(shipmentDetails.getIncoterms()));
-            else
-                awbCargoInfo.setChargeCode(null);
-        }
+        if(shipmentDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(shipmentDetails.getIncoterms()))
+            awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(shipmentDetails.getIncoterms()));
+        else
+            awbCargoInfo.setChargeCode(null);
     }
 
-    private void updateAwbOtherInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
-        AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
-        if ((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getShipperLock()) ||
-                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getShipperLock())) {
+    private void updateAwbOtherInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
+        if(Boolean.TRUE.equals(awbGroupLocks.get(OTHER_DETAILS_LOCK_GROUP))) {
+            AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
             var shipperName = StringUtility.convertToString(shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgData().get(PartiesConstants.FULLNAME) : "");
             awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
-        }
-        if ((request.getAwbType().equals(Constants.HAWB) && !hawbLockSettings.getExecutedOnLock()) ||
-                (request.getAwbType().equals(Constants.DMAWB) && !mawbLockSettings.getExecutedOnLock()))
             awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
+        }
     }
 
     @Override
@@ -2759,20 +2661,22 @@ public class AwbService implements IAwbService {
         if (awb.getAwbPackingInfo() == null) {
             awb.setAwbPackingInfo(new ArrayList<>());
         }
+        Map<String, Boolean> awbGroupLocks = AwbUtility.getGroupLockStatus(awb, null, mawbLockSettings);
         ArrayList<String> addressIds = collectAddressIds(consolidationDetails);
         Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(addressIds);
-        awb.setAwbPackingInfo(updateMawbPackingInfoFromShipment(consolidationDetails));
-        updateMawbShipmentInfoFromShipment(consolidationDetails, awb, mawbLockSettings, addressDataV1Map);
-        generateMawbNotifyPartyinfo(consolidationDetails, request, awb, mawbLockSettings);
-        updateMawbRoutingInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
-        updateMawbCargoInfoFromShipment(consolidationDetails, awb, mawbLockSettings);
-        generateMawbOtherInfo(consolidationDetails, awb, mawbLockSettings);
+        awb.setAwbPackingInfo(updateMawbPackingInfoFromShipment(consolidationDetails, awbGroupLocks));
+        updateMawbShipmentInfoFromShipment(consolidationDetails, awb, mawbLockSettings, addressDataV1Map, awbGroupLocks);
+        generateMawbNotifyPartyinfo(consolidationDetails, request, awb, mawbLockSettings, awbGroupLocks);
+        updateMawbRoutingInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings, awbGroupLocks);
+        updateMawbCargoInfoFromShipment(consolidationDetails, awb, mawbLockSettings, awbGroupLocks);
+        generateMawbOtherInfo(consolidationDetails, awb, mawbLockSettings, awbGroupLocks);
     }
 
-    private List<AwbPackingInfo> updateMawbPackingInfoFromShipment(ConsolidationDetails consolidationDetails) {
-
+    private List<AwbPackingInfo> updateMawbPackingInfoFromShipment(ConsolidationDetails consolidationDetails, Map<String, Boolean> awbGroupLocks) {
         List<AwbPackingInfo> hawbPacksLinkedToMawb = new ArrayList<>();
-
+        if(!Boolean.TRUE.equals(PACKING_LOCK_GROUP)) {
+            return hawbPacksLinkedToMawb;
+        }
         if (consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
             for (var consoleShipment : consolidationDetails.getShipmentsList()) {
                 if (!StringUtility.isEmpty(consoleShipment.getGoodsDescription())) {
@@ -2806,36 +2710,43 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings, Map<Long,AddressDataV1> addressDataV1Map) {
+    private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings, Map<Long,AddressDataV1> addressDataV1Map, Map<String, Boolean> awbGroupLocks) {
         AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
         Map<String, String> alpha2DigitToCountry = masterDataUtils.consolidationAddressCountryMasterData(consolidationDetails);
-        var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
-        awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
-        if (!Boolean.TRUE.equals(mawbLockSettings.getFirstCarrierLock()))
-            awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-        if (!Boolean.TRUE.equals(mawbLockSettings.getShipperAddressLock())) {
+        if (Boolean.TRUE.equals(awbGroupLocks.get(SHIPPER_LOCK_GROUP))) {
+            var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
+            awbShipmentInfo.setShipperName(shipperName == null ? shipperName : shipperName.toUpperCase());
             var shipperAddress = AwbUtility.constructAddressForAwb(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null);
             awbShipmentInfo.setShipperAddress(shipperAddress == null ? shipperAddress : shipperAddress.toUpperCase());
-            if(consolidationDetails.getSendingAgent().getAddressId() != null) {
-                constructShipperAddress(awbShipmentInfo, consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consolidationDetails.getSendingAgent().getAddressId())));
+            if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getAddressId() != null) {
+                String shipperAddressId = consolidationDetails.getSendingAgent().getAddressId();
+                constructShipperAddress(awbShipmentInfo, consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(shipperAddressId)));
             }
         }
-        processReceivingAgentInMawbShipmentInfo(consolidationDetails, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map);
+        if(Boolean.TRUE.equals(awbGroupLocks.get(CONSIGNEE_LOCK_GROUP))) {
+            processReceivingAgentInMawbShipmentInfo(consolidationDetails, mawbLockSettings, awbShipmentInfo, alpha2DigitToCountry, addressDataV1Map);
+        }
         // AwbUtility.getConsolidationForwarderDetails(uow, consolidationRow, awbShipmentInfo, awbOtherInfoRow, awbCargoInfo); LATER
-        setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails(), false, false);
+        if (Boolean.TRUE.equals(awbGroupLocks.get(ROUTING_DETAILS_LOCK_GROUP))) {
+            setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails());
+            awbShipmentInfo.setFirstCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+        }
     }
 
     private void processReceivingAgentInMawbShipmentInfo(ConsolidationDetails consolidationDetails, MawbLockSettings mawbLockSettings, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Map<Long,AddressDataV1> addressDataV1Map) {
         var consigneeName = StringUtility.convertToString(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getOrgData() != null ? consolidationDetails.getReceivingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbShipmentInfo.setConsigneeName(consigneeName == null ? consigneeName : consigneeName.toUpperCase());
-        if (!Boolean.TRUE.equals(mawbLockSettings.getConsigneeAddressLock())) {
-            if(consolidationDetails.getReceivingAgent().getAddressId() != null)
-                constructConsigneeAddress(awbShipmentInfo, consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId())));
+        if(consolidationDetails.getReceivingBranch() != null && consolidationDetails.getReceivingAgent().getAddressId() != null) {
+            String consigneeAddressId = consolidationDetails.getReceivingAgent().getAddressId();
+            constructConsigneeAddress(awbShipmentInfo, consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null, alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(consigneeAddressId)));
+            awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getId().toString() : null);
         }
-        awbShipmentInfo.setConsigneeReferenceNumber(consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getId().toString() : null);
     }
 
-    private void generateMawbNotifyPartyinfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void generateMawbNotifyPartyinfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbLockGroups) {
+        if(!Boolean.TRUE.equals(awbLockGroups.get(NOTIFY_LOCK_GROUP))) {
+            return;
+        }
         Map<UUID, Parties> consolidationAddressMap = getConsolidationAddressMap(consolidationDetails);
         Map<String, String> alpha2DigitToCountry = masterDataUtils.consolidationAddressCountryMasterData(consolidationDetails);
         List<AwbNotifyPartyInfo> deleteAwbPartyList = new ArrayList<>();
@@ -2862,15 +2773,12 @@ public class AwbService implements IAwbService {
         if(party.getAddressId() != null)
             notifyPartyIdList.add(party.getAddressId());
         Map<Long, AddressDataV1> addressDataV1Map = fetchAddressData(notifyPartyIdList);
-        if (!Boolean.TRUE.equals(mawbLockSettings.getNotifyOrganizationLock())) {
-            var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
-            awbParty.setName(name == null ? name : name.toUpperCase());
+        var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
+        awbParty.setName(name == null ? name : name.toUpperCase());
+        if (party != null && party.getAddressId() != null && party.getAddressData() != null) {
+            String partyAddressId = party.getAddressId();
+            constructNotifyPartyAddress(awbParty, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(partyAddressId)));
         }
-        if (Boolean.FALSE.equals(mawbLockSettings.getNotifyOrganizationAddressLock()) && party.getAddressData() != null) {
-            if(party.getAddressId() != null)
-                constructNotifyPartyAddress(awbParty, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(party.getAddressId())));
-        }
-
         consolidationAddressMap.remove(awbParty.getGuid());
     }
 
@@ -2906,8 +2814,10 @@ public class AwbService implements IAwbService {
                 notifyPartyInfo.setEntityType(request.getAwbType());
                 notifyPartyInfo.setIsShipmentCreated(true);
                 notifyPartyInfo.setGuid(party.getGuid());
-                if(party.getAddressId() != null)
-                    constructNotifyPartyAddress(notifyPartyInfo, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(party.getAddressId())));
+                if(party != null && party.getAddressId() != null) {
+                    String partyAddressId = party.getAddressId();
+                    constructNotifyPartyAddress(notifyPartyInfo, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(partyAddressId)));
+                }
                 // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
                 notifyPartyInfo.setNotifyOrgId(consolidationDetails.getId());
                 if (awb.getAwbNotifyPartyInfo() == null) {
@@ -2918,7 +2828,10 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbRoutingInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void updateMawbRoutingInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
+        if(!Boolean.TRUE.equals(awbGroupLocks.get(NEW_ROUTING_INFO_LOCK_GROUP))) {
+            return;
+        }
         boolean createRouting = true;
         createRouting = isCreateRouting(consolidationDetails, awb, mawbLockSettings, createRouting);
 
@@ -2962,21 +2875,15 @@ public class AwbService implements IAwbService {
     }
 
     private void processMawbLockSettingsField(ConsolidationDetails consolidationDetails, MawbLockSettings mawbLockSettings, AwbRoutingInfo awbRoute) {
-        if (!Boolean.TRUE.equals(mawbLockSettings.getOriginPortLock())) {
-            awbRoute.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
-        }
-        if (!Boolean.TRUE.equals(mawbLockSettings.getDestinationPortLock())) {
-            awbRoute.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
-        }
-        if (!Boolean.TRUE.equals(mawbLockSettings.getByCarrierLock()))
-            awbRoute.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-        if (!Boolean.TRUE.equals(mawbLockSettings.getFlightNumberLock()))
-            awbRoute.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
+        awbRoute.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
+        awbRoute.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
+        awbRoute.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+        awbRoute.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
     }
 
-    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
-        if (!Boolean.TRUE.equals(mawbLockSettings.getNtrQtyGoodsLock())) {
+        if (Boolean.TRUE.equals(awbGroupLocks.get(GOODS_DESCRIPTION_LOCK_GROUP))) {
             GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
             generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
             generateAwbPaymentInfoRequest.setAwbPackingInfo(awb.getAwbPackingInfo());
@@ -2985,41 +2892,35 @@ public class AwbService implements IAwbService {
             generateAwbPaymentInfoRequest.setPackUpdate(false);
         }
 
-        if (!Boolean.TRUE.equals(mawbLockSettings.getCustomsValueLock()))
+        if (Boolean.TRUE.equals(awbGroupLocks.get(CARGO_DETAILS_LOCK_GROUP))) {
             awbCargoInfo.setCustomsValue(BigDecimal.valueOf(0.0));
-        if (!Boolean.TRUE.equals(mawbLockSettings.getCurrencyLock()))
             awbCargoInfo.setCurrency(UserContext.getUser().getCompanyCurrency());
-        awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION, awb.getAwbPackingInfo(), consolidationDetails.getHazardous()));
-        if (!Boolean.TRUE.equals(mawbLockSettings.getAccountingInfoLock()))
+            awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION, awb.getAwbPackingInfo(), consolidationDetails.getHazardous()));
             awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
-        if (!Boolean.TRUE.equals(mawbLockSettings.getOtherInfoLock()))
-            awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
-
-        if (!Boolean.TRUE.equals(mawbLockSettings.getShippingInformationLock())) {
-            awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
-            awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
         }
-
-        updatChargeCodeCargoInfoMawb(consolidationDetails, mawbLockSettings, awbCargoInfo);
-
+        awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
+        awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
+        awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
+        if (Boolean.TRUE.equals(awbGroupLocks.get(CARGO_DETAILS_LOCK_GROUP))) {
+            updatChargeCodeCargoInfoMawb(consolidationDetails, mawbLockSettings, awbCargoInfo);
+        }
     }
 
     private void updatChargeCodeCargoInfoMawb(ConsolidationDetails consolidationDetails, MawbLockSettings mawbLockSettings, AwbCargoInfo awbCargoInfo) {
-        if(!Boolean.TRUE.equals(mawbLockSettings.getChargeCodeLock())) {
-            if(consolidationDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(consolidationDetails.getIncoterms()))
-                awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(consolidationDetails.getIncoterms()));
-            else
-                awbCargoInfo.setChargeCode(null);
-        }
+        if(consolidationDetails.getIncoterms() != null && AwbConstants.incotermChargeCodeMap.containsKey(consolidationDetails.getIncoterms()))
+            awbCargoInfo.setChargeCode(AwbConstants.incotermChargeCodeMap.get(consolidationDetails.getIncoterms()));
+        else
+            awbCargoInfo.setChargeCode(null);
     }
 
-    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
+        if(!Boolean.TRUE.equals(awbGroupLocks.get(OTHER_DETAILS_LOCK_GROUP))) {
+            return;
+        }
         AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
-        if (!Boolean.TRUE.equals(mawbLockSettings.getExecutedOnLock()))
-            awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
-
+        awbOtherInfo.setExecutedOn(jsonHelper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class));
     }
 
     private void setTenantFieldsInAwbShipmentInfo(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel) {
@@ -3686,7 +3587,7 @@ public class AwbService implements IAwbService {
         return defaultAwbShipmentInfo;
     }
 
-    private void setAwbShipmentInfoUnLocationData(AwbShipmentInfo awbShipmentInfo, CarrierDetails carrierDetails, boolean blockOrigin, boolean blockDestination) {
+    private void setAwbShipmentInfoUnLocationData(AwbShipmentInfo awbShipmentInfo, CarrierDetails carrierDetails) {
 
         List<String> locationReferenceGuids = new ArrayList<>();
         locationReferenceGuids.add(carrierDetails.getOriginPort());
@@ -3703,12 +3604,8 @@ public class AwbService implements IAwbService {
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
 
         var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getLocationsReferenceGUID, EntityTransferUnLocations::getName, (oldValue, newValue) -> oldValue));
-        if (!blockOrigin) {
-            awbShipmentInfo.setOriginAirport(locMap.get(carrierDetails.getOriginPort()));
-        }
-        if (!blockDestination) {
-            awbShipmentInfo.setDestinationAirport(locMap.get(carrierDetails.getDestinationPort()));
-        }
+        awbShipmentInfo.setOriginAirport(locMap.get(carrierDetails.getOriginPort()));
+        awbShipmentInfo.setDestinationAirport(locMap.get(carrierDetails.getDestinationPort()));
     }
 
     private void getAwbOtherInfoMasterData(AwbOtherInfo awbOtherInfo, String awbType) {
