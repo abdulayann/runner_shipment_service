@@ -1724,19 +1724,19 @@ public class EntityTransferService implements IEntityTransferService {
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             if(isPrintMawbError)
-                missingFieldString = missingFieldString + " and print the original MAWB";
+                missingFieldString = missingFieldString + " and generate MAWB";
             errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
         } else if (isPrintMawbError) {
-            errorMsg = "Please print the original MAWB for the consolidation";
+            errorMsg = "Please generate MAWB for the consolidation";
         }
         if(isPrintHawbError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments);
+                errorMsg = errorMsg + " and generate HAWB for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments);
+                errorMsg = "Please generate HAWB for the shipment/s " + String.join(", " ,errorShipments);
             }
             shipErrorMsg.setLength(0);
-            shipErrorMsg.append("Please print the Original HAWB to retrigger the transfer.");
+            shipErrorMsg.append("Please generate HAWB to retrigger the transfer.");
         }
         if(isHawbNumberError) {
             if (!errorMsg.isEmpty()) {
@@ -1764,7 +1764,7 @@ public class EntityTransferService implements IEntityTransferService {
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
                 List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
-                if (hbls.isEmpty() || !Boolean.TRUE.equals(shipment.getAdditionalDetails().getPrintedOriginal())) {
+                if (hbls.isEmpty()) {
                     isPrintHblError = true;
                     errorShipments.add(shipment.getShipmentId());
                     errorShipIds.add(shipment.getId());
@@ -1780,11 +1780,11 @@ public class EntityTransferService implements IEntityTransferService {
         String shipErrorMsg = "";
         if(isPrintHblError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HBL for the shipment/s "+ String.join(", " ,errorShipments);
+                errorMsg = errorMsg + " and generate HBL for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please print the Original HBL for the shipment/s " + String.join(", " ,errorShipments);
+                errorMsg = "Please generate HBL for the shipment/s " + String.join(", " ,errorShipments);
             }
-            shipErrorMsg = "Please print the Original HBL to retrigger the transfer.";
+            shipErrorMsg = "Please generate HBL to retrigger the transfer.";
         }
         if(!errorMsg.isEmpty()){
             errorMsg = errorMsg + msgSuffix;
@@ -2065,11 +2065,11 @@ public class EntityTransferService implements IEntityTransferService {
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(",", missingField);
             if(isAwbPrintError)
-                responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + " and print original MAWB" + msgSuffix;
+                responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + " and generate MAWB" + msgSuffix;
             else
                 responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + msgSuffix;
         } else if (isAwbPrintError) {
-            responseErrorMsg = "Please print original MAWB" + msgSuffix;
+            responseErrorMsg = "Please generate MAWB" + msgSuffix;
         }
         return responseErrorMsg;
     }

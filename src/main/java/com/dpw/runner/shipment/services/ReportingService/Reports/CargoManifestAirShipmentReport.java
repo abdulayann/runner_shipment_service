@@ -70,6 +70,7 @@ public class CargoManifestAirShipmentReport extends IReport{
         List<Awb> awbList = new ArrayList<>();
         awbList.add(cargoManifestAirShipmentModel.getAwb());
         dictionary.put(IS_SECURITY, isSecurityData);
+        populateAwbPartiesInfo(dictionary, cargoManifestAirShipmentModel.getAwb());
         dictionary = populateHAWBAndSecurityData(List.of(cargoManifestAirShipmentModel.getShipmentDetails()), awbList, dictionary, isSecurityData, isShipperAndConsignee, false);
         boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirShipmentModel.getShipmentDetails().getRoutingsList(), dictionary, true);
         CarrierDetailModel carrierDetailModel = cargoManifestAirShipmentModel.getShipmentDetails().getCarrierDetails();

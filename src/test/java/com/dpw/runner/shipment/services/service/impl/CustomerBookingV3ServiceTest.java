@@ -26,11 +26,13 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -42,14 +44,18 @@ import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -144,6 +150,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
     @Mock
+    private NpmContractV3Util npmContractV3Util;
+    @Mock
     private KafkaProducer producer;
     @Mock
     private OrderManagementAdapter orderManagementAdapter;
@@ -153,6 +161,10 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private DependentServiceHelper dependentServiceHelper;
     @Mock
     private MasterDataKeyUtils masterDataKeyUtils;
+    @Mock
+    private IContainerV3Service containerV3Service;
+    @Mock
+    private IPackingV3Service packingV3Service;
 
     @Mock
     private INotesDao notesDao;
@@ -244,6 +256,94 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
 
+        // Assert
+        assertEquals(customerBookingV3Response, actualResponse);
+    }
+
+    @Test
+    void testCreateV3_PopulateBookingWithNpmContract() throws RunnerException {
+        CustomerBookingV3Request request = new CustomerBookingV3Request();
+        request.setContractId("DPWQ-124");
+        request.setCurrentPartyForQuote("CLIENT");
+
+        Parties parties = new Parties();
+        parties.setOrgCode("FRC0001234");
+        Containers containers = new Containers();
+        containers.setContainerNumber("CNT123454");
+        containers.setContainerCount(1L);
+        containers.setBookingId(3L);
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .currentPartyForQuote("CLIENT")
+                .contractId("DPWQ-124")
+                .containersList(List.of(containers))
+                .customer(parties)
+                .bookingNumber("DBAR-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        CustomerBookingV3Response customerBookingV3Response = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(getMockListContractResponse());
+        when(npmService.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(getMockListContractResponse());
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
+        when(containerV3Service.deleteBulk(any(), anyString())).thenReturn(new BulkContainerResponse());
+        when(containerV3Service.createBulk(any(), any())).thenReturn(new BulkContainerResponse());
+        mockShipmentSettings();
+        // Test
+        CustomerBookingV3Response actualResponse = customerBookingService.create(request);
+        // Assert
+        assertEquals(customerBookingV3Response, actualResponse);
+    }
+
+    @Test
+    void testCreateV3_PopulateBookingWithNpmContractAndAirTransportMode() throws RunnerException {
+        CustomerBookingV3Request request = new CustomerBookingV3Request();
+        request.setContractId("DPWQ-124");
+        request.setCurrentPartyForQuote("CLIENT");
+
+        Parties parties = new Parties();
+        parties.setOrgCode("FRC0001234");
+        Packing packing = new Packing();
+        packing.setPacks("2");
+        packing.setVolume(BigDecimal.TEN);
+        packing.setVolumeUnit("M3");
+        packing.setWeight(BigDecimal.ONE);
+        packing.setWeightUnit("Kg");
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .transportType("AIR")
+                .cargoType("LCL")
+                .isPlatformBookingCreated(false)
+                .currentPartyForQuote("CLIENT")
+                .contractId("DPWQ-124")
+                .packingList(List.of(packing))
+                .customer(parties)
+                .bookingNumber("DBAR-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
+        ListContractResponse listContractResponse = getMockListContractResponse();
+        listContractResponse.getContracts().get(0).getMeta().setMode_of_transport("AIR");
+        CustomerBookingV3Response customerBookingV3Response = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(listContractResponse);
+        when(npmService.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
+        when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
+        when(packingV3Service.deleteBulk(any(), anyString())).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), any())).thenReturn(new BulkPackingResponse());
+        mockShipmentSettings();
+        // Test
+        CustomerBookingV3Response actualResponse = customerBookingService.create(request);
         // Assert
         assertEquals(customerBookingV3Response, actualResponse);
     }
@@ -1268,6 +1368,150 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testV3BookingUpdateWithSuccess_WithContractIdChanged() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        Parties parties = new Parties();
+        parties.setOrgCode("FRC0001234");
+        Packing packing = new Packing();
+        packing.setPacksType("BAG");
+        packing.setVolume(BigDecimal.TEN);
+        packing.setVolumeUnit("M3");
+        CustomerBooking inputCustomerBooking = new CustomerBooking();
+        inputCustomerBooking.setId(1L);
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        inputCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        inputCustomerBooking.setContractId("DPWQ-6758");
+        inputCustomerBooking.setTransportType("AIR");
+        inputCustomerBooking.setCreatedBy("testUser");
+        inputCustomerBooking.setCargoType("LCL");
+        inputCustomerBooking.setIsPlatformBookingCreated(false);
+        inputCustomerBooking.setSource(BookingSource.Runner);
+        inputCustomerBooking.setPackingList(List.of(packing));
+        inputCustomerBooking.setCustomer(parties);
+
+        CustomerBooking oldCustomerBooking = new CustomerBooking();
+        oldCustomerBooking.setId(1L);
+        oldCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
+        oldCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        oldCustomerBooking.setContractId("DPWQ-3421");
+        oldCustomerBooking.setCargoType("LCL");
+        oldCustomerBooking.setCreatedBy("testUser");
+        oldCustomerBooking.setTransportType("AIR");
+        oldCustomerBooking.setCurrentPartyForQuote("CLIENT");
+        oldCustomerBooking.setIsPlatformBookingCreated(false);
+        oldCustomerBooking.setSource(BookingSource.Runner);
+        oldCustomerBooking.setPackingList(List.of(packing));
+        oldCustomerBooking.setCustomer(parties);
+
+        var container = Containers.builder().build();
+        inputCustomerBooking.setContainersList(List.of(container));
+
+        CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
+
+        CustomerBookingV3Response expectedResponse = objectMapper.convertValue(request, CustomerBookingV3Response.class);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ListContractResponse listContractResponse = getMockListContractResponse();
+        listContractResponse.getContracts().get(0).getMeta().setMode_of_transport("AIR");
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(listContractResponse);
+        when(npmService.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
+        when(jsonHelper.convertValue(any(CustomerBookingV3Request.class), eq(CustomerBooking.class))).thenReturn(oldCustomerBooking);
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(CustomerBooking.class), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
+        when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
+        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        when(packingDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(packing));
+        when(packingV3Service.deleteBulk(any(),anyString())).thenReturn(new BulkPackingResponse());
+        when(packingV3Service.updateBulk(any(), anyString())).thenReturn(new BulkPackingResponse());
+        doNothing().when(auditLogService).addAuditLog(any());
+        mockShipmentSettings();
+
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+    }
+
+    @Test
+    void testV3BookingUpdateWithSuccess_WithContractIdChangedAndUpdateContainers() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        Parties parties = new Parties();
+        parties.setOrgCode("FRC0001234");
+        Packing packing = new Packing();
+        packing.setPacksType("BAG");
+        packing.setVolume(BigDecimal.TEN);
+        packing.setVolumeUnit("M3");
+        CustomerBooking inputCustomerBooking = new CustomerBooking();
+        inputCustomerBooking.setId(1L);
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        inputCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        inputCustomerBooking.setContractId("DPWQ-6758");
+        inputCustomerBooking.setTransportType("SEA");
+        inputCustomerBooking.setCreatedBy("testUser");
+        inputCustomerBooking.setCargoType("FCL");
+        inputCustomerBooking.setIsPlatformBookingCreated(false);
+        inputCustomerBooking.setSource(BookingSource.Runner);
+        inputCustomerBooking.setPackingList(List.of(packing));
+        inputCustomerBooking.setCustomer(parties);
+
+        CustomerBooking oldCustomerBooking = new CustomerBooking();
+        oldCustomerBooking.setId(1L);
+        oldCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
+        oldCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        oldCustomerBooking.setContractId("DPWQ-3421");
+        oldCustomerBooking.setCargoType("FCL");
+        oldCustomerBooking.setCreatedBy("testUser");
+        oldCustomerBooking.setTransportType("SEA");
+        oldCustomerBooking.setCurrentPartyForQuote("CLIENT");
+        oldCustomerBooking.setIsPlatformBookingCreated(false);
+        oldCustomerBooking.setSource(BookingSource.Runner);
+        oldCustomerBooking.setPackingList(List.of(packing));
+        oldCustomerBooking.setCustomer(parties);
+
+        var container = Containers.builder().build();
+        inputCustomerBooking.setContainersList(List.of(container));
+
+        CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
+
+        CustomerBookingV3Response expectedResponse = objectMapper.convertValue(request, CustomerBookingV3Response.class);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ListContractResponse listContractResponse = getMockListContractResponse();
+        listContractResponse.getContracts().get(0).getMeta().setMode_of_transport("AIR");
+        DependentServiceResponse mockResponse = new DependentServiceResponse();
+        mockResponse.setData(listContractResponse);
+        when(npmService.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
+
+        // Mock
+        when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
+        when(jsonHelper.convertValue(any(CustomerBookingV3Request.class), eq(CustomerBooking.class))).thenReturn(oldCustomerBooking);
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(CustomerBooking.class), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
+        when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
+        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        when(packingDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(packing));
+        when(containerV3Service.deleteBulk(any(),anyString())).thenReturn(new BulkContainerResponse());
+        when(containerV3Service.createBulk(any(), anyString())).thenReturn(new BulkContainerResponse());
+        doNothing().when(auditLogService).addAuditLog(any());
+        mockShipmentSettings();
+
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+    }
+
+    @Test
     void testV3BookingUpdateWithPendingWithKycStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         CustomerBooking inputCustomerBooking = new CustomerBooking();
@@ -1654,9 +1898,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Mocks
         when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(existingBooking));
         when(eventDao.findByEntityIdAndEntityType(bookingId, Constants.BOOKING)).thenReturn(Optional.of(new Events()));
-        when(jsonHelper.convertValue(request, CustomerBooking.class)).thenReturn(updatedBooking);
         when(jsonHelper.convertToJson(existingBooking)).thenReturn("{}");
         when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
         mockTenantSettings();
         mockShipmentSettings();
@@ -1712,9 +1956,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Mocks
         when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(existingBooking));
         when(eventDao.findByEntityIdAndEntityType(bookingId, Constants.BOOKING)).thenReturn(Optional.of(new Events()));
-        when(jsonHelper.convertValue(request, CustomerBooking.class)).thenReturn(updatedBooking);
         when(jsonHelper.convertToJson(existingBooking)).thenReturn("{}");
         when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
         doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
         mockTenantSettings();
@@ -1771,9 +2015,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Mocks
         when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(existingBooking));
         when(eventDao.findByEntityIdAndEntityType(bookingId, Constants.BOOKING)).thenReturn(Optional.empty());
-        when(jsonHelper.convertValue(request, CustomerBooking.class)).thenReturn(updatedBooking);
         when(jsonHelper.convertToJson(existingBooking)).thenReturn("{}");
         when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
         mockTenantSettings();
         mockShipmentSettings();
@@ -3334,6 +3578,153 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         verify(spyService).addAllSalesAgentInSingleCall(any(), any());
         verify(spyService).addAllVesselDataInSingleCall(any(), any());
         verify(spyService).addAllOrganizationDataInSingleCall(any(), any());
+    }
+
+    private ListContractResponse getMockListContractResponse(){
+        EntityTransferCarrier evergreenCarrier = EntityTransferCarrier.builder()
+                .ItemValue("EVERGREEN LINE")
+                .ItemDescription("EVERGREEN LINE")
+                .ValuenDesc("EVERGREEN LINE (EVERGREEN LINE)")
+                .Identifier1("EGLV")
+                .IATACode("22")
+                .AirlineCode("111")
+                .HasSeaPort(true)
+                .HasAirPort(true)
+                .ValuenDescAir("EVERGREEN LINE (22)")
+                .build();
+
+        UnlocationsResponse originUnloc = UnlocationsResponse.builder()
+                .id(138013)
+                .country("EG")
+                .name("Damietta")
+                .portName("Damietta")
+                .locCode("EGDAM")
+                .nameWoDiacritics("DAMIETTA")
+                .locationsReferenceGUID("EGDAM_POR")
+                .lookupDescAir("DAMIETTA")
+                .lookupDescSea("DAMIETTA - EGDAM, Damietta")
+                .countryName("Egypt")
+                .hasSeaPort(true)
+                .hasAirport(false)
+                .build();
+
+        UnlocationsResponse destinationUnloc = UnlocationsResponse.builder()
+                .id(138078)
+                .country("GB")
+                .name("Felixstowe Port")
+                .portName("Felixstowe Port")
+                .locCode("GBFXT")
+                .nameWoDiacritics("Felixstowe Port")
+                .locationsReferenceGUID("GBFXT_POR")
+                .lookupDescAir("Felixstowe Port")
+                .lookupDescSea("Felixstowe Port - GBFXT, Felixstowe Port")
+                .countryName("United Kingdom")
+                .hasSeaPort(true)
+                .hasAirport(false)
+                .build();
+
+        Map<String, UnlocationsResponse> unlocMasterData = new HashMap<>();
+        unlocMasterData.put("EGDAM_POR", originUnloc);
+        unlocMasterData.put("GBFXT_POR", destinationUnloc);
+
+        ListContractResponse.FilterParams filterParams = ListContractResponse.FilterParams.builder()
+                .load_type(List.of("FCL"))
+                .cargo_type(List.of("20GP", "BAG"))
+                .commodity(List.of("FAK"))
+                .build();
+
+        ListContractResponse.ContractUsage contractUsage = ListContractResponse.ContractUsage.builder()
+                .usage_id("0e4d51fb-b526-435a-9a4f-a92d63453fb6")
+                .filter_params(filterParams)
+                .usage(1L)
+                .usage_uom("unit")
+                .meta(ListContractResponse.ContractUsageMeta.builder()
+                        .original_usage(1L)
+                        .original_usage_uom("unit")
+                        .load_attributes(ListContractResponse.LoadAttributes.builder()
+                                .weight(BigDecimal.ONE)
+                                .quantity(1L)
+                                .weight_uom("KG")
+                                .quantity_uom("unit")
+                                .dimensions(ListContractResponse.Dimensions.builder().build())
+                                .build())
+                        .build())
+                .build();
+
+        ListContractResponse.Route route1 = ListContractResponse.Route.builder()
+                .type("NODE")
+                .node(ListContractResponse.RouteInfo.builder().code("EGDAM_POR").build())
+                .build();
+
+        ListContractResponse.Route route2 = ListContractResponse.Route.builder()
+                .type("LEG")
+                .origin(ListContractResponse.RouteInfo.builder().code("EGDAM_POR").build())
+                .destination(ListContractResponse.RouteInfo.builder().code("GBFXT_POR").build())
+                .build();
+
+        ListContractResponse.Route route3 = ListContractResponse.Route.builder()
+                .type("NODE")
+                .node(ListContractResponse.RouteInfo.builder().code("GBFXT_POR").build())
+                .build();
+
+        ListContractResponse.Meta meta = ListContractResponse.Meta.builder()
+                .pol("EGDAM_POR")
+                .pod("GBFXT_POR")
+                .route(List.of(route1, route2, route3))
+                .incoterm("EXW")
+                .service_mode("P2P")
+                .payment_terms("PPD")
+                .additional_info("NA")
+                .mode_of_transport("SEA")
+                .shipment_movement("EXP")
+                .branch_info(ListContractResponse.BranchInfo.builder()
+                        .id("GBLHR")
+                        .country("United Kingdom")
+                        .build())
+                .minTransitHours("0")
+                .maxTransitHours("360")
+                .build();
+
+        ListContractResponse.ContractResponse contract = ListContractResponse.ContractResponse.builder()
+                ._id("ea0bfbae-57a2-4eb4-a0f9-7c6b1e2392a1")
+                .contract_id("DPWQ-399521-110033")
+                .parent_contract_id("DPWQ-966695-109218")
+                .contract_type("MULTI_USAGE")
+                .source("QUOTE_MODULE")
+                .source_type("QUOTE_MODULE")
+                .customer_org_id("FRC00003242")
+                .origin("EGDAM_POR")
+                .destination("GBFXT_POR")
+                .valid_from(LocalDateTime.of(2025, 6, 10, 0, 0))
+                .valid_till(LocalDateTime.of(2025, 6, 24, 0, 0))
+                .product_type("EXIM")
+                .state("ENABLED")
+                .tenant_id("0cc13a27-6a08-4c0c-b45a-596c5af46df2")
+                .offer_type("ONLY_CONTRACT_OFFERS")
+                .via_nodes(Collections.singletonList(null))
+                .load_types(List.of("FCL"))
+                .cargo_types(List.of("20GP"))
+                .commodities(List.of("FAK"))
+                .carrier_codes(List.of("EVERGREEN LINE"))
+                .cha("ANY")
+                .forwarder("ANY")
+                .bco("ANY")
+                .cycle("ANY")
+                .meta(meta)
+                .createdAt(LocalDateTime.of(2025, 6, 10, 5, 55, 19, 927000000))
+                .updatedAt(LocalDateTime.of(2025, 6, 10, 5, 55, 19, 927000000))
+                .contract_usage(List.of(contractUsage))
+                .origin_name("Damietta")
+                .destination_name("Felixstowe Port")
+                .build();
+
+        ListContractResponse listContractResponse = ListContractResponse.builder()
+                .contracts(List.of(contract))
+                .count(1L)
+                .unlocMasterData(unlocMasterData)
+                .carrierMasterData(Map.of("EVERGREEN LINE", evergreenCarrier))
+                .build();
+        return listContractResponse;
     }
 
 }

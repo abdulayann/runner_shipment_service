@@ -33,9 +33,9 @@ class AuditLogControllerTest {
     @Test
     void sendShipment() {
         // Mock
-        when(auditLogService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(auditLogService.list(any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = auditLogController.list(ListCommonRequest.builder().build());
+        var responseEntity = auditLogController.list(ListCommonRequest.builder().build(), null);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

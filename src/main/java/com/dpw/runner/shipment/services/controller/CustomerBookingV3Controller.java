@@ -193,7 +193,7 @@ public class CustomerBookingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
-    @GetMapping(ApiConstants.BOOKING_API_LIST_CONTAINERS)
+    @PostMapping(ApiConstants.BOOKING_API_LIST_CONTAINERS)
     public ResponseEntity<IRunnerResponse> listBookingContainers(@RequestBody ListCommonRequest listCommonRequest) throws RunnerException {
         ContainerListResponse containerListResponse = containerV3Service.list(listCommonRequest, true, null);
         return ResponseHelper.buildSuccessResponse(containerListResponse);
@@ -221,7 +221,7 @@ public class CustomerBookingV3Controller {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_LIST_SUCCESSFUL, response = PackingListResponse.class)})
-    @GetMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
+    @PostMapping(ApiConstants.BOOKING_API_LIST_PACKAGES)
     public ResponseEntity<IRunnerResponse> listBookingPackages(@RequestBody ListCommonRequest listCommonRequest) {
         PackingListResponse packingListResponse = packingV3Service.list(listCommonRequest, true, null);
         return ResponseHelper.buildSuccessResponse(packingListResponse);

@@ -170,6 +170,7 @@ public class DpsEvent {
     @Embeddable
     public static class DpsFieldData {
         private String key;
+        private String id;
         private String value;
     }
 

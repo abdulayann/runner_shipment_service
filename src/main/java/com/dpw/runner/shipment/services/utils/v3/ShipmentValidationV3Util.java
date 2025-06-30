@@ -125,8 +125,6 @@ public class ShipmentValidationV3Util {
         // Validation for Partner fields
         // Validation for DPS Implication
         this.validateDPSImplication(shipmentDetails);
-        // Validation for Partner fields for 'STD' Shipment
-        this.validationForPartnerFields(shipmentDetails, oldEntity);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
         // Validation for cutoffFields

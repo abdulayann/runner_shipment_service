@@ -25,25 +25,18 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.response.AttachedShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerBeforeSaveRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -82,29 +75,8 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -117,6 +89,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 
 
 @Service
@@ -250,6 +235,38 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
+    public BulkContainerResponse createBulk(List<ContainerV3Request> containerRequests, String module) throws RunnerException {
+        containerValidationUtil.validateCreateBulkRequest(containerRequests);
+        containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(containerRequests);
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequests);
+
+        // Convert DTO to Entity
+        List<Containers> containers = jsonHelper.convertValueToList(containerRequests, Containers.class);
+        log.debug("Converted container request to entity | Entity: {}", containers);
+
+        // before save operations
+        containerV3Util.containerBeforeSave(new ArrayList<>(containers));
+
+        // Save to DB
+        List<Containers> savedContainers = containerDao.saveAll(containers);
+        log.info("Saved containerList entity to DB | Request ID: {}", requestId);
+        handlePostSaveActionsBulk(savedContainers, containerRequests, module);
+
+        // Audit logging
+        recordAuditLogs(null, savedContainers, DBOperationType.CREATE);
+        log.info("Audit log recorded for container creation | Request ID: {}", requestId);
+
+        List<ContainerResponse> containerResponses = jsonHelper.convertValueToList(containers, ContainerResponse.class);
+        log.info("Returning containers response | Response: {}", containerResponses);
+        return BulkContainerResponse.builder()
+                .containerResponseList(containerResponses)
+                .message(prepareBulkUpdateMessage(containerResponses))
+                .build();
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         // Validate the incoming request to ensure all mandatory fields are present
@@ -266,7 +283,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         for (Containers containers: originalContainers) {
             Containers containers1 = oldContainers.get(containers.getGuid());
-            if (!Objects.equals(containers1.getContainerCount(), containers.getContainerCount()) || !Objects.equals(containers1.getContainerCode(), containers.getContainerCode())) {
+            if (containers1 != null && (!Objects.equals(containers1.getContainerCount(), containers.getContainerCount()) || !Objects.equals(containers1.getContainerCode(), containers.getContainerCode()))) {
                 isAutoSell = true;
                 break;
             }
@@ -275,6 +292,15 @@ public class ContainerV3Service implements IContainerV3Service {
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
         containerBeforeSave(originalContainers, containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
 
+        for(ContainerV3Request containerRequest : containerRequestList){
+            List<Containers> containers = new ArrayList<>(getSiblingContainers(containerRequest));
+            if(containerRequest.getId() != null) {
+              containers.removeIf(container -> container.getId() != null && container.getId()
+                        .equals(containerRequest.getId()));
+            }
+
+            containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containers);
+        }
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
@@ -1150,6 +1176,36 @@ public class ContainerV3Service implements IContainerV3Service {
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }
 
+  private void handlePostSaveActionsBulk(List<Containers> containers, List<ContainerV3Request> requests, String module) {
+    if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+    for (int i = 0; i < containers.size(); i++) {
+      Containers container = containers.get(i);
+      ContainerV3Request request = requests.get(i); // assuming same index mapping
+
+      // Async afterSave
+      futures.add(CompletableFuture.runAsync(
+          masterDataUtils.withMdc(() -> afterSave(container, true, true)),
+          executorService
+      ));
+
+      // Shipment assignment (sync)
+      Optional.ofNullable(module)
+          .filter(SHIPMENT::equals)
+          .filter(m -> container.getId() != null)
+          .filter(m -> request.getShipmentsId() != null)
+          .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
+              container.getId(),
+              Set.of(request.getShipmentsId()),
+              false
+          ));
+    }
+
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+  }
+
     private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
@@ -1351,7 +1407,8 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         for(Long id: assignedShipIds) { // adding weight/volume of already assigned Shipment Cargo
             ShipmentDetails shipmentDetails = shipmentDetailsMap.get(id);
-            addShipmentCargoToContainer(container, shipmentDetails);
+            if(Objects.equals(shipmentDetails.getContainerAssignedToShipmentCargo(), container.getId()))
+                addShipmentCargoToContainer(container, shipmentDetails);
         }
         containerV3Util.setContainerNetWeight(container); // set container gross weight from cargo weight (net weight) and tare weight
         return shipmentIdsForAttachment;

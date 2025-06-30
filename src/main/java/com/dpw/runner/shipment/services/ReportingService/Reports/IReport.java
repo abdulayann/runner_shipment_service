@@ -31,6 +31,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_UNIT1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WEIGHT_DECIMAL_PLACES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_SMALL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
@@ -42,9 +43,12 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADD_WITHOUT_CONTACT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_LL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_CONSIGNEE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_CONSIGNEE_AWB_ADDRESS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_CONSIGNER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_DESTINATION_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_NOTIFY_AWB_ADDRESS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_ORIGIN_AGENT_ADDRESS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CM_SHIPPER_AWB_ADDRESS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY_DESC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY_DESC_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
@@ -366,6 +370,9 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasureme
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillChargesFilterRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.BillRetrieveRequest;
@@ -1651,6 +1658,30 @@ public abstract class IReport {
                 dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
                 dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
             }
+            populateAwbPartiesInfo(dict, awb);
+            if(!listIsNullOrEmpty(awb.getAwbGoodsDescriptionInfo())) {
+                List<String> chargeableWt = new ArrayList<>();
+                for(AwbGoodsDescriptionInfo awbGoodsDescriptionInfo : awb.getAwbGoodsDescriptionInfo()) {
+                    if(awbGoodsDescriptionInfo.getChargeableWt() != null) {
+                        chargeableWt.add(roundUpToNextHalf(awbGoodsDescriptionInfo.getChargeableWt().toString()));
+                    }
+                }
+                dict.put(CHARGEABLE_WT, chargeableWt);
+            }
+        }
+    }
+
+    public void populateAwbPartiesInfo(Map<String, Object> dictionary, Awb awb) {
+        if(awb == null)
+            return;
+        if(awb.getAwbShipmentInfo() != null) {
+            AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
+            dictionary.put(CM_SHIPPER_AWB_ADDRESS, formattedOrgAddress(awbShipmentInfo.getShipperName(), awbShipmentInfo.getShipperAddress(), awbShipmentInfo.getShipperAddress2(), awbShipmentInfo.getShipperCity(), awbShipmentInfo.getShipperState(), awbShipmentInfo.getShipperZipCode(), awbShipmentInfo.getShipperCountryName()));
+            dictionary.put(CM_CONSIGNEE_AWB_ADDRESS, formattedOrgAddress(awbShipmentInfo.getConsigneeName(), awbShipmentInfo.getConsigneeAddress(), awbShipmentInfo.getConsigneeAddress2(), awbShipmentInfo.getConsigneeCity(), awbShipmentInfo.getConsigneeState(), awbShipmentInfo.getConsigneeZipCode(), awbShipmentInfo.getConsigneeCountryName()));
+            if(!listIsNullOrEmpty(awb.getAwbNotifyPartyInfo())) {
+                AwbNotifyPartyInfo awbNotifyPartyInfo = awb.getAwbNotifyPartyInfo().get(0);
+                dictionary.put(CM_NOTIFY_AWB_ADDRESS, formattedOrgAddress(awbNotifyPartyInfo.getName(), awbNotifyPartyInfo.getAddress(), awbNotifyPartyInfo.getAddress2(), awbNotifyPartyInfo.getCity(), awbNotifyPartyInfo.getState(), awbNotifyPartyInfo.getZipCode(), awbNotifyPartyInfo.getCountryName()));
+            }
         }
     }
 
@@ -2668,7 +2699,7 @@ public abstract class IReport {
         List<Awb> awb = awbDao.findByConsolidationId(id);
         if(awb != null && !awb.isEmpty()) {
             if(withPacks) {
-                awbService.getMawnLinkPacks(awb.get(0));
+                awbService.getMawnLinkPacks(awb.get(0), false, null);
             }
             return awb.get(0);
         }
@@ -2750,6 +2781,54 @@ public abstract class IReport {
         addContactAndPhoneDetails(contactName, phone, addStringPHReqd, details);
         if (!Strings.isNullOrEmpty(taxRegistrationNumber)) details.add(taxRegistrationNumber);
         return details;
+    }
+
+    public static String formattedOrgAddress(
+            String name,
+            String addressLine1,
+            String addressLine2,
+            String city,
+            String state,
+            String zipcode,
+            String country
+    ) {
+        StringBuilder sb = new StringBuilder();
+
+        if (!CommonUtils.isStringNullOrEmpty(name)) {
+            sb.append(name.trim()).append("\n");
+        }
+
+        if (!CommonUtils.isStringNullOrEmpty(addressLine1)) {
+            sb.append(addressLine1.trim()).append("\n");
+        }
+
+        if (!CommonUtils.isStringNullOrEmpty(addressLine2)) {
+            sb.append(addressLine2.trim()).append("\n");
+        }
+
+        // Combine city, state, zipcode, and country into one line
+        StringBuilder lastLine = new StringBuilder();
+        if (!CommonUtils.isStringNullOrEmpty(city)) {
+            lastLine.append(city.trim());
+        }
+        if (!CommonUtils.isStringNullOrEmpty(state)) {
+            if (lastLine.length() > 0) lastLine.append(" ");
+            lastLine.append(state.trim());
+        }
+        if (!CommonUtils.isStringNullOrEmpty(zipcode)) {
+            if (lastLine.length() > 0) lastLine.append(" ");
+            lastLine.append(zipcode.trim());
+        }
+        if (!CommonUtils.isStringNullOrEmpty(country)) {
+            if (lastLine.length() > 0) lastLine.append(" ");
+            lastLine.append(country.trim());
+        }
+
+        if (lastLine.length() > 0) {
+            sb.append(lastLine.toString());
+        }
+
+        return sb.toString().trim(); // Remove any trailing newlines
     }
 
     private static void addContactAndPhoneDetails(String contactName, String phone, boolean addStringPHReqd, List<String> details) {
@@ -3049,6 +3128,17 @@ public abstract class IReport {
         if(value != null)
             return value.toString();
         return null;
+    }
+
+    public String roundUpToNextHalf(String input) {
+        double value = Double.parseDouble(input);
+
+        // Multiply by 2, apply Math.ceil to round up to nearest 0.5, then divide back
+        double rounded = Math.ceil(value * 2) / 2.0;
+
+        // Format to keep 1 decimal place
+        DecimalFormat df = new DecimalFormat("#0.0");
+        return df.format(rounded);
     }
 
     public static String getDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {

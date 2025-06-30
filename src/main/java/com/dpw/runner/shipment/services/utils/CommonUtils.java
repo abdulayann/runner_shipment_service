@@ -2757,16 +2757,14 @@ public class CommonUtils {
     }
 
     public static BigDecimal roundBigDecimal(BigDecimal number, int decimalPlaces, RoundingMode roundingMode) {
-        MathContext mathContext = new MathContext(decimalPlaces, roundingMode);
-        return number.round(mathContext);
+        return number.setScale(decimalPlaces, roundingMode);
     }
 
     public static BigDecimal divide(BigDecimal consolidatedValue, BigDecimal value, Integer decimalPlaces, RoundingMode roundingMode) {
         if (value.compareTo(BigDecimal.ZERO) == 0) {
             return BigDecimal.ZERO; // Handle division by zero
         }
-        MathContext mathContext = new MathContext(decimalPlaces, roundingMode);
-        return consolidatedValue.divide(value, mathContext);
+        return consolidatedValue.divide(value, decimalPlaces, roundingMode);
     }
 
     public static double calculatePercentage(BigDecimal consolidatedValue, BigDecimal value, Integer decimalPlaces, RoundingMode roundingMode) {

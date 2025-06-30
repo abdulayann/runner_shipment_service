@@ -74,6 +74,12 @@ public class AuditLogDao implements IAuditLogDao {
     }
 
     @Override
+    public Page<AuditLog> findAllWithoutTenantFilter(Specification<AuditLog> spec, Pageable pageable) {
+        return auditLogRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+
+    @Override
     public Optional<AuditLog> findById(Long id) {
         return auditLogRepository.findById(id);
     }

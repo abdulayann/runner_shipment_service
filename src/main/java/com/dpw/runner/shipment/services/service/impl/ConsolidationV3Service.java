@@ -728,6 +728,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 Long count = containerV3Request.getContainerCount();
                 for (int i = 0; i < count; i++) {
                     ContainerV3Request newContainer = jsonHelper.convertValue(containerV3Request, ContainerV3Request.class);
+                    newContainer.setId(null);
+                    newContainer.setGuid(null);
                     newContainer.setContainerCount(1L);
                     expandedContainers.add(newContainer);
                 }
@@ -974,6 +976,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 result.packsType = determinePackType(result.packsType, sd.getPacksUnit());
             }
             result.shipmentCount = shipments.size();
+            // Ensure packsType is assigned a defualt value
+            if (result.packsType == null) {
+                result.packsType = PackingConstants.PKG;
+            }
         }
 
         return result;
@@ -1304,7 +1310,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             log.error(e.getMessage());
         }
         try {
-            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldEntity != null ? oldEntity.getContainersList() : null);
+            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldEntity != null ? oldEntity.getContainersList() : null, null);
         }
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());
@@ -2238,13 +2244,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
             shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
-            shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            if(StringUtility.isNotEmpty(console.getCarrierDetails().getShippingLine())) {
+                shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
+            }
             shipmentDetails.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
             shipmentDetails.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
             shipmentDetails.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
             shipmentDetails.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
-            shipmentDetails.getCarrierDetails().setOrigin(console.getCarrierDetails().getOrigin());
-            shipmentDetails.getCarrierDetails().setDestination(console.getCarrierDetails().getDestination());
 
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
@@ -2724,7 +2730,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consol.get();
     }
 
-    private Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException {
+    public Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
         if (!consolidationDetails.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, id, LoggerHelper.getRequestIdFromMDC());
