@@ -6074,4 +6074,109 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 //        // Assert
 //        verify(commonUtils, never()).setInterBranchContextForHub();
 //    }
+
+    @Test
+    void testUpdateContainerFromCargo() throws RunnerException {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+        newShipment.setContainerAssignedToShipmentCargo(1L);
+        newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setNoOfPacks(10);
+        oldShipment.setWeight(BigDecimal.valueOf(100.0));
+        oldShipment.setWeightUnit("KG");
+        oldShipment.setVolume(BigDecimal.valueOf(20.0));
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
+        verify(containerV3Service).updateAttachedContainersData(List.of(1L));
+    }
+
+    @Test
+    void testUpdateContainerFromCargo1() throws RunnerException {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+        newShipment.setContainerAssignedToShipmentCargo(1L);
+        newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setWeight(BigDecimal.valueOf(100.0));
+        oldShipment.setWeightUnit("KG");
+        oldShipment.setVolume(BigDecimal.valueOf(20.0));
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
+        verify(containerV3Service).updateAttachedContainersData(List.of(1L));
+    }
+
+    @Test
+    void testUpdateContainerFromCargo2() throws RunnerException {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+        newShipment.setContainerAssignedToShipmentCargo(1L);
+        newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setWeightUnit("KG");
+        oldShipment.setVolume(BigDecimal.valueOf(20.0));
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
+        verify(containerV3Service).updateAttachedContainersData(List.of(1L));
+    }
+
+    @Test
+    void testUpdateContainerFromCargo3() throws RunnerException {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+        newShipment.setContainerAssignedToShipmentCargo(1L);
+        newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setVolume(BigDecimal.valueOf(20.0));
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
+        verify(containerV3Service).updateAttachedContainersData(List.of(1L));
+    }
+
+    @Test
+    void testUpdateContainerFromCargo4() throws RunnerException {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+        newShipment.setContainerAssignedToShipmentCargo(1L);
+        newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
+        verify(containerV3Service).updateAttachedContainersData(List.of(1L));
+    }
+
+    @Test
+    void testUpdateContainerFromCargo5() throws RunnerException {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setId(1L);
+        newShipment.setContainerAssignedToShipmentCargo(1L);
+        newShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
+        verify(containerV3Service, times(0)).updateAttachedContainersData(List.of(1L));
+    }
 }

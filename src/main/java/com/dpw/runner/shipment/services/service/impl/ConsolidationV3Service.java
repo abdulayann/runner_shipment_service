@@ -504,7 +504,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         }
         else{
-            throw new RunnerException("ither Id or Guid is required");
+            throw new RunnerException("Either Id or Guid is required");
 
         }
         return oldEntity;
@@ -2213,18 +2213,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments;
     }
 
-    private void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldConsolEntity, Boolean fromAttachShipment, ShipmentDetails sd) {
-        if (fromAttachShipment != null && fromAttachShipment) {
-            if (!CommonUtils.isStringNullOrEmpty(console.getBookingNumber())) {
-                sd.setBookingNumber(console.getBookingNumber());
-            } else {
-                sd.setBookingNumber(console.getCarrierBookingRef());
-            }
-        } else {
-            if (CommonUtils.isStringNullOrEmpty(oldConsolEntity.getBookingNumber())) {
-                sd.setBookingNumber(console.getCarrierBookingRef());
-            }
-        }
+    private void setBookingNumberInShipment(ConsolidationDetails console, ShipmentDetails sd) {
+        sd.setBookingNumber(console.getCarrierBookingRef());
     }
 
     /**

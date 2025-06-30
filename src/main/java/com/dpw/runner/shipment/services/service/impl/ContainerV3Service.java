@@ -246,9 +246,6 @@ public class ContainerV3Service implements IContainerV3Service {
         List<Containers> containers = jsonHelper.convertValueToList(containerRequests, Containers.class);
         log.debug("Converted container request to entity | Entity: {}", containers);
 
-        // before save operations
-        containerV3Util.containerBeforeSave(new ArrayList<>(containers));
-
         // Save to DB
         List<Containers> savedContainers = containerDao.saveAll(containers);
         log.info("Saved containerList entity to DB | Request ID: {}", requestId);
