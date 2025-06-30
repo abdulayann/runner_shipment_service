@@ -4862,4 +4862,66 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThrows(DataRetrievalFailureException.class, ()->spyService.completeUpdateConsolidationFromEntityTransfer(consolidationEtV3Request));
   }
 
+  @Test
+  void testSeaMode_AttachedShipment_UpdatesAllFields() {
+    ConsolidationDetails newConsolidation = new ConsolidationDetails();
+    ShipmentDetails shipment = new ShipmentDetails();
+    newConsolidation.setTerminalCutoff(LocalDateTime.of(2025, 1, 1, 10, 0));
+    newConsolidation.setVerifiedGrossMassCutoff(LocalDateTime.of(2025, 1, 2, 10, 0));
+    newConsolidation.setShipInstructionCutoff(LocalDateTime.of(2025, 1, 3, 10, 0));
+    newConsolidation.setHazardousBookingCutoff(LocalDateTime.of(2025, 1, 4, 10, 0));
+    newConsolidation.setReeferCutoff(LocalDateTime.of(2025, 1, 5, 10, 0));
+    newConsolidation.setEarliestEmptyEquPickUp(LocalDateTime.of(2025, 1, 6, 10, 0));
+    newConsolidation.setLatestFullEquDeliveredToCarrier(LocalDateTime.of(2025, 1, 7, 10, 0));
+    newConsolidation.setEarliestDropOffFullEquToCarrier(LocalDateTime.of(2025, 1, 8, 10, 0));
+
+    shipment.setTransportMode(TRANSPORT_MODE_SEA);
+
+    consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(null, newConsolidation,
+        List.of(shipment), true);
+
+    assertThat(shipment.getTerminalCutoff()).isEqualTo(LocalDateTime.of(2025, 1, 1, 10, 0));
+  }
+
+  @Test
+  void testAirMode_AttachedShipment_SetsLatestArrivalTime() {
+    ConsolidationDetails newConsolidation = new ConsolidationDetails();
+    ShipmentDetails shipment = new ShipmentDetails();
+    newConsolidation.setLatDate(LocalDateTime.of(2025, 2, 1, 10, 0));
+    shipment.setTransportMode(TRANSPORT_MODE_AIR);
+
+    consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(null, newConsolidation, List.of(shipment), true);
+
+    assertThat(shipment.getLatestArrivalTime()).isEqualTo(LocalDateTime.of(2025, 2, 1, 10, 0));
+  }
+
+  @Test
+  void testSeaMode_UpdateOnlyIfChanged() {
+    ConsolidationDetails oldCon = new ConsolidationDetails();
+    ConsolidationDetails newCon = new ConsolidationDetails();
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTransportMode(TRANSPORT_MODE_SEA);
+
+    oldCon.setTerminalCutoff(LocalDateTime.of(2025, 1, 1, 10, 0));
+    newCon.setTerminalCutoff(LocalDateTime.of(2025, 1, 2, 10, 0)); // different, should update
+
+    consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(oldCon, newCon, List.of(shipment), false);
+
+    assertThat(shipment.getTerminalCutoff()).isEqualTo(LocalDateTime.of(2025, 1, 2, 10, 0));
+  }
+
+  @Test
+  void testAirMode_UpdateOnlyIfChanged() {
+    ConsolidationDetails oldCon = new ConsolidationDetails();
+    ConsolidationDetails newCon = new ConsolidationDetails();
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setTransportMode(TRANSPORT_MODE_AIR);
+
+    oldCon.setLatDate(LocalDateTime.of(2025, 1, 1, 10, 0));
+    newCon.setLatDate(LocalDateTime.of(2025, 1, 3, 10, 0)); // changed
+
+    consolidationV3Service.updateShipmentDetailsIfConsolidationChanged(oldCon, newCon, List.of(shipment), false);
+
+    assertThat(shipment.getLatestArrivalTime()).isEqualTo(LocalDateTime.of(2025, 1, 3, 10, 0));
+  }
 }
