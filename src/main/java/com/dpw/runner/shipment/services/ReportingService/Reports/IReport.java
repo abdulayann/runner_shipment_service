@@ -5017,9 +5017,9 @@ public abstract class IReport {
         dictionary.put(S_LAT, details.getLatestArrivalTime());
         dictionary.put(S_BOE_NUMBER, details.getAdditionalDetails().getBOENumber());
         dictionary.put(S_BOE_DATE, details.getAdditionalDetails().getBOEDate());
-        dictionary.put(S_OWNERSHIP, details.getAdditionalDetails().getOwnership().getDescription());
+        dictionary.put(S_OWNERSHIP, details.getAdditionalDetails().getOwnership() != null ? details.getAdditionalDetails().getOwnership().getDescription() : null);
         dictionary.put(S_OWNERSHIP_NAME, details.getAdditionalDetails().getOwnershipName());
-        dictionary.put(S_PASSED_BY, details.getAdditionalDetails().getPassedBy().getDescription());
+        dictionary.put(S_PASSED_BY, details.getAdditionalDetails().getPassedBy() != null ? details.getAdditionalDetails().getPassedBy().getDescription() : null);
         dictionary.put(S_PASSED_BY_PERSON, details.getAdditionalDetails().getPassedByPerson());
 
     }
