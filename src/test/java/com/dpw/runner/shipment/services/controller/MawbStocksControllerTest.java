@@ -155,9 +155,9 @@ class MawbStocksControllerTest {
     @Test
     void getNextMawbNumberByCarrier() {
         // Mock
-        when(mawbStocksService.getNextMawbNumberByCarrier(anyString(), anyString())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(mawbStocksService.getNextMawbNumberByCarrier(anyString(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = mawbStocksController.getNextMawbNumberByCarrier("AIIIT", "org");
+        var responseEntity = mawbStocksController.getNextMawbNumberByCarrier("AIIIT", "org", false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

@@ -520,6 +520,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
         Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
+        if(consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getCoLoadCarrierName() != null){
+            throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None");
+        }
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
         consolidationValidationV3Util.checkCFSValidation(consolidationDetails, isCreate, shipmentDetails);
@@ -565,7 +568,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             }
         }
         if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
-            //throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
         }
     }
 
@@ -4532,7 +4535,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             beforeSave(entity, oldEntity.get(), false);
 
-            entity = consolidationDetailsDao.update(entity, false);
+            entity = consolidationDetailsDao.updateV3(entity, true);
             ConsolidationDetails prevEntity = jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class);
 
             addAuditLogConsolidation(entity, prevEntity, DBOperationType.UPDATE.name());

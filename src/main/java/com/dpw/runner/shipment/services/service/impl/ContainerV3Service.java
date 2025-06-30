@@ -380,7 +380,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     if(TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())){
                     consolidationDetails.setHazardous(true);
                     if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
-                       // throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+                        throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
                     }
                     consolidationDetailsDao.update(consolidationDetails, false, false);
                     if(containerV3Request.getId() != null) {

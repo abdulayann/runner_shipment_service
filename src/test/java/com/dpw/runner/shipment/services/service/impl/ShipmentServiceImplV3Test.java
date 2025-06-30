@@ -47,7 +47,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodi
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
@@ -814,13 +813,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void test_changeConsolidationDGValues_makeConsoleDG_true() {
         Long consolidationId = 1L;
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidationDetails);
 
         ConsolidationDetails result = shipmentServiceImplV3.changeConsolidationDGValues(
                 true, new AtomicBoolean(false), consolidationId, shipmentDetails, null);
 
         assertNotNull(result);
-        verify(consolidationDetailsDao).save(any(), eq(false), eq(true));
+        verify(consolidationDetailsDao).updateV3(any(), anyBoolean());
     }
 
     @Test
@@ -839,14 +838,14 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentDao.findByShipmentIdInAndContainsHazardous(anyList(), eq(true)))
                 .thenReturn(Collections.emptyList());
         when(consoleShipmentMappingDao.findByConsolidationId(consolidationId)).thenReturn(List.of(consoleShipmentMapping1, consoleShipmentMapping2));
-        when(consolidationDetailsDao.save(any(), eq(false), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidationDetails);
 
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(true);
         ConsolidationDetails result = shipmentServiceImplV3.changeConsolidationDGValues(
                 false, makeConsoleNonDG, consolidationId, shipmentDetails, consolidationDetails);
 
         assertNotNull(result);
-        verify(consolidationDetailsDao).save(any(), eq(false), eq(false));
+        verify(consolidationDetailsDao).updateV3(any(), anyBoolean());
     }
 
     @Test
@@ -935,7 +934,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void test_saveConsolidationDGValue_dgFlag_true_changeRequired() {
         consolidationDetails.setHazardous(false);
-        when(consolidationDetailsDao.save(any(), eq(false), eq(true))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidationDetails);
 
         ConsolidationDetails result = shipmentServiceImplV3.saveConsolidationDGValue(true, consolidationDetails);
         assertTrue(result.getHazardous());
@@ -944,7 +943,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void test_saveConsolidationDGValue_dgFlag_false_changeRequired() {
         consolidationDetails.setHazardous(true);
-        when(consolidationDetailsDao.save(any(), eq(false), eq(false))).thenReturn(consolidationDetails);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidationDetails);
 
         ConsolidationDetails result = shipmentServiceImplV3.saveConsolidationDGValue(false, consolidationDetails);
         assertFalse(result.getHazardous());
@@ -1807,12 +1806,12 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockTenantSettings();
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 new ShipmentSettingsDetails(), consoleShipmentData);
 
-        verify(consolidationDetailsDao).save(any(ConsolidationDetails.class), eq(false), eq(true));
+        verify(consolidationDetailsDao).updateV3(any(ConsolidationDetails.class), anyBoolean());
         assertTrue(consolidation.getHazardous());
     }
 
@@ -1888,13 +1887,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>());
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 new ShipmentSettingsDetails(), consoleShipmentData);
 
-        verify(consolidationDetailsDao).save(any(ConsolidationDetails.class), eq(false), anyBoolean());
+        verify(consolidationDetailsDao).updateV3(any(ConsolidationDetails.class), anyBoolean());
         assertEquals(AwbConstants.T1, consolidation.getSci());
     }
 
@@ -1940,15 +1939,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 new ShipmentSettingsDetails(), consoleShipmentData);
 
-        verify(consolidationDetailsDao).save(any(ConsolidationDetails.class), eq(false), anyBoolean());
+        verify(consolidationDetailsDao).updateV3(any(ConsolidationDetails.class), any(Boolean.class));
 
         ArgumentCaptor<ConsolidationDetails> consolidationCaptor = ArgumentCaptor.forClass(ConsolidationDetails.class);
-        verify(consolidationDetailsDao).save(consolidationCaptor.capture(), eq(false), anyBoolean());
+        verify(consolidationDetailsDao).updateV3(consolidationCaptor.capture(), anyBoolean());
         ConsolidationDetails savedConsolidation = consolidationCaptor.getValue();
 
         assertNotNull(savedConsolidation.getSendingAgent());
@@ -2017,7 +2016,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(mappings);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(Arrays.asList(shipment1, shipment2));
 
@@ -2289,7 +2288,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         mockTenantSettings();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidation));
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
         shipmentServiceImplV3.afterSave(newShipment, oldShipment, new ShipmentV3Request(),
                 ShipmentSettingsDetailsContext.getCurrentTenantSettings(), consoleShipmentData);
@@ -2350,13 +2349,12 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ConsolidationDetails consolidation = new ConsolidationDetails();
         consolidation.setHazardous(false);
 
-        when(consolidationDetailsDao.save(any(), anyBoolean(), anyBoolean())).thenReturn(consolidation);
+        when(consolidationDetailsDao.updateV3(any(), anyBoolean())).thenReturn(consolidation);
 
         ConsolidationDetails result = shipmentServiceImplV3.saveConsolidationDGValue(true, consolidation);
 
         assertNotNull(result);
         assertTrue(consolidation.getHazardous());
-        verify(consolidationDetailsDao).save(consolidation, false, true);
     }
 
     @Test
@@ -2440,6 +2438,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         AtomicBoolean makeConsoleNonDG = new AtomicBoolean(false);
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(false);
+        AtomicBoolean makeConsoleDG = new AtomicBoolean(false);
 
         AtomicBoolean makeConsoleDG = new AtomicBoolean(false);
         ConsolidationDetails result = shipmentServiceImplV3.processLinkedConsolidationDetails(
