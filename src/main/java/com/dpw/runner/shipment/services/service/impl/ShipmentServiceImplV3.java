@@ -1744,16 +1744,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentDetails.setChargeableUnit(cargoDetailsResponse.getChargeableUnit());
         shipmentDetails.setDgPacksCount(cargoDetailsResponse.getDgPacks());
         shipmentDetails.setDgPacksUnit(cargoDetailsResponse.getDgPacksUnit());
-        shipmentDetails.setNoOfPacks(cargoDetailsResponse.getNoOfPacks());
-        shipmentDetails.setPacksUnit(cargoDetailsResponse.getPacksUnit());
-        shipmentDetails.setVolume(cargoDetailsResponse.getVolume());
-        shipmentDetails.setVolumeUnit(cargoDetailsResponse.getVolumeUnit());
-        shipmentDetails.setWeight(cargoDetailsResponse.getWeight());
-        shipmentDetails.setWeightUnit(cargoDetailsResponse.getWeightUnit());
-        shipmentDetails.setVolumetricWeight(cargoDetailsResponse.getVolumetricWeight());
-        shipmentDetails.setVolumetricWeightUnit(cargoDetailsResponse.getVolumetricWeightUnit());
-        shipmentDetails.setChargable(cargoDetailsResponse.getChargable());
-        shipmentDetails.setChargeableUnit(cargoDetailsResponse.getChargeableUnit());
     }
 
     @Override
