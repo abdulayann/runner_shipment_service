@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload.UniversalEventsPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -4924,4 +4925,288 @@ if (unitConversionUtilityMockedStatic != null) {
 
     assertThat(shipment.getLatestArrivalTime()).isEqualTo(LocalDateTime.of(2025, 1, 3, 10, 0));
   }
+  
+  @Test
+  void testUpdateConsolidationCargoSummary() throws RunnerException {
+    ShipmentWtVolResponse oldShipmentWtVolResponse = new ShipmentWtVolResponse();
+    consolidationV3Service.updateConsolidationCargoSummary(null, oldShipmentWtVolResponse);
+    verify(consoleShipmentMappingDao, never()).findByConsolidationId(any());
+  }
+
+  @Test
+  void testUpdateConsolidationCargoSummary1() throws RunnerException {
+    var spyService = Mockito.spy(consolidationV3Service);
+    ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+    AchievedQuantities achievedQuantities = new AchievedQuantities();
+    ShipmentWtVolResponse oldShipmentWtVolResponse = new ShipmentWtVolResponse();
+    ShipmentWtVolResponse newShipmentWtVolResponse = new ShipmentWtVolResponse();
+
+    oldShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightVolumeUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setPacks(1);
+    oldShipmentWtVolResponse.setPacksType(MPK);
+    oldShipmentWtVolResponse.setDgPacks(1);
+    oldShipmentWtVolResponse.setDgPacksType(MPK);
+    oldShipmentWtVolResponse.setConsoleContainerCount(1);
+    oldShipmentWtVolResponse.setConsoleDgContainerCount(1);
+    oldShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setSlacCount(1);
+
+    newShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightVolumeUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    newShipmentWtVolResponse.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setPacks(1);
+    newShipmentWtVolResponse.setPacksType(MPK);
+    newShipmentWtVolResponse.setDgPacks(1);
+    newShipmentWtVolResponse.setDgPacksType(MPK);
+    newShipmentWtVolResponse.setConsoleContainerCount(1);
+    newShipmentWtVolResponse.setConsoleDgContainerCount(1);
+    newShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    newShipmentWtVolResponse.setSlacCount(1);
+
+    achievedQuantities.setConsolidatedVolume(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setConsolidatedWeight(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setWeightVolume(BigDecimal.ONE);
+    achievedQuantities.setWeightVolumeUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setConsolidationChargeQuantity(BigDecimal.ONE);
+    achievedQuantities.setConsolidationChargeQuantityUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setPacks(1);
+    achievedQuantities.setPacksType(MPK);
+    achievedQuantities.setDgPacks(1);
+    achievedQuantities.setDgPacksType(MPK);
+    achievedQuantities.setContainerCount(1);
+    achievedQuantities.setDgContainerCount(1);
+    achievedQuantities.setTeuCount(BigDecimal.ONE);
+    achievedQuantities.setSlacCount(1);
+
+    consolidationDetails.setAchievedQuantities(achievedQuantities);
+
+    doReturn(newShipmentWtVolResponse).when(spyService).calculateShipmentWtVol(any(), any(), any());
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(BigDecimal.ONE);
+    spyService.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
+    verify(consoleShipmentMappingDao).findByConsolidationId(any());
+  }
+
+  @Test
+  void testUpdateConsolidationCargoSummary2() throws RunnerException {
+    var spyService = Mockito.spy(consolidationV3Service);
+    ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+    AchievedQuantities achievedQuantities = new AchievedQuantities();
+    ShipmentWtVolResponse oldShipmentWtVolResponse = new ShipmentWtVolResponse();
+    ShipmentWtVolResponse newShipmentWtVolResponse = new ShipmentWtVolResponse();
+
+    oldShipmentWtVolResponse.setVolume(null);
+    oldShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setWeight(null);
+    oldShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightVolumeUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setPacks(1);
+    oldShipmentWtVolResponse.setPacksType(MPK);
+    oldShipmentWtVolResponse.setDgPacks(1);
+    oldShipmentWtVolResponse.setDgPacksType(MPK);
+    oldShipmentWtVolResponse.setConsoleContainerCount(1);
+    oldShipmentWtVolResponse.setConsoleDgContainerCount(null);
+    oldShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setSlacCount(1);
+
+    newShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightVolumeUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    newShipmentWtVolResponse.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setPacks(1);
+    newShipmentWtVolResponse.setPacksType(MPK);
+    newShipmentWtVolResponse.setDgPacks(1);
+    newShipmentWtVolResponse.setDgPacksType(MPK);
+    newShipmentWtVolResponse.setConsoleContainerCount(1);
+    newShipmentWtVolResponse.setConsoleDgContainerCount(1);
+    newShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    newShipmentWtVolResponse.setSlacCount(1);
+
+    achievedQuantities.setConsolidatedVolume(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setConsolidatedWeight(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setWeightVolume(null);
+    achievedQuantities.setWeightVolumeUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setConsolidationChargeQuantity(BigDecimal.ONE);
+    achievedQuantities.setConsolidationChargeQuantityUnit(null);
+    achievedQuantities.setPacks(null);
+    achievedQuantities.setPacksType(MPK);
+    achievedQuantities.setDgPacks(null);
+    achievedQuantities.setDgPacksType(MPK);
+    achievedQuantities.setContainerCount(null);
+    achievedQuantities.setDgContainerCount(1);
+    achievedQuantities.setTeuCount(null);
+    achievedQuantities.setSlacCount(null);
+
+    consolidationDetails.setAchievedQuantities(achievedQuantities);
+
+    doReturn(newShipmentWtVolResponse).when(spyService).calculateShipmentWtVol(any(), any(), any());
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(BigDecimal.ONE);
+    spyService.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
+    verify(consoleShipmentMappingDao).findByConsolidationId(any());
+  }
+
+  @Test
+  void testUpdateConsolidationCargoSummary3() throws RunnerException {
+    var spyService = Mockito.spy(consolidationV3Service);
+    ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    AchievedQuantities achievedQuantities = new AchievedQuantities();
+    ShipmentWtVolResponse oldShipmentWtVolResponse = new ShipmentWtVolResponse();
+    ShipmentWtVolResponse newShipmentWtVolResponse = new ShipmentWtVolResponse();
+
+    oldShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    oldShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightVolumeUnit(VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setPacks(1);
+    oldShipmentWtVolResponse.setPacksType(MPK);
+    oldShipmentWtVolResponse.setDgPacks(1);
+    oldShipmentWtVolResponse.setDgPacksType(MPK);
+    oldShipmentWtVolResponse.setConsoleContainerCount(1);
+    oldShipmentWtVolResponse.setConsoleDgContainerCount(1);
+    oldShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setSlacCount(1);
+
+    newShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightVolumeUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    newShipmentWtVolResponse.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setPacks(1);
+    newShipmentWtVolResponse.setPacksType(MPK);
+    newShipmentWtVolResponse.setDgPacks(1);
+    newShipmentWtVolResponse.setDgPacksType(MPK);
+    newShipmentWtVolResponse.setConsoleContainerCount(1);
+    newShipmentWtVolResponse.setConsoleDgContainerCount(1);
+    newShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    newShipmentWtVolResponse.setSlacCount(1);
+
+    achievedQuantities.setConsolidatedVolume(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setConsolidatedWeight(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setWeightVolume(BigDecimal.ONE);
+    achievedQuantities.setWeightVolumeUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setConsolidationChargeQuantity(BigDecimal.ONE);
+    achievedQuantities.setConsolidationChargeQuantityUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setPacks(1);
+    achievedQuantities.setPacksType(MPK);
+    achievedQuantities.setDgPacks(1);
+    achievedQuantities.setDgPacksType(MPK);
+    achievedQuantities.setContainerCount(1);
+    achievedQuantities.setDgContainerCount(1);
+    achievedQuantities.setTeuCount(BigDecimal.ONE);
+    achievedQuantities.setSlacCount(1);
+
+    consolidationDetails.setAchievedQuantities(achievedQuantities);
+
+    doReturn(newShipmentWtVolResponse).when(spyService).calculateShipmentWtVol(any(), any(), any());
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(BigDecimal.ONE);
+    spyService.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
+    verify(consoleShipmentMappingDao).findByConsolidationId(any());
+  }
+
+  @Test
+  void testUpdateConsolidationCargoSummary4() throws RunnerException {
+    var spyService = Mockito.spy(consolidationV3Service);
+    ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+    AchievedQuantities achievedQuantities = new AchievedQuantities();
+    ShipmentWtVolResponse oldShipmentWtVolResponse = new ShipmentWtVolResponse();
+    ShipmentWtVolResponse newShipmentWtVolResponse = new ShipmentWtVolResponse();
+
+    oldShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setVolumeUnit(null);
+    oldShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightUnit(null);
+    oldShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setWeightVolumeUnit(Constants.VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+    oldShipmentWtVolResponse.setPacks(1);
+    oldShipmentWtVolResponse.setPacksType(MPK);
+    oldShipmentWtVolResponse.setDgPacks(1);
+    oldShipmentWtVolResponse.setDgPacksType(MPK);
+    oldShipmentWtVolResponse.setConsoleContainerCount(1);
+    oldShipmentWtVolResponse.setConsoleDgContainerCount(null);
+    oldShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    oldShipmentWtVolResponse.setSlacCount(1);
+
+    newShipmentWtVolResponse.setVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setWeight(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+    newShipmentWtVolResponse.setWeightVolume(BigDecimal.ONE);
+    newShipmentWtVolResponse.setWeightVolumeUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setChargable(BigDecimal.ONE);
+    newShipmentWtVolResponse.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+    newShipmentWtVolResponse.setPacks(1);
+    newShipmentWtVolResponse.setPacksType(MPK);
+    newShipmentWtVolResponse.setDgPacks(1);
+    newShipmentWtVolResponse.setDgPacksType(MPK);
+    newShipmentWtVolResponse.setConsoleContainerCount(1);
+    newShipmentWtVolResponse.setConsoleDgContainerCount(1);
+    newShipmentWtVolResponse.setConsoleTeuCount(BigDecimal.ONE);
+    newShipmentWtVolResponse.setSlacCount(1);
+
+    achievedQuantities.setConsolidatedVolume(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setConsolidatedWeight(BigDecimal.ONE);
+    achievedQuantities.setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG);
+    achievedQuantities.setWeightVolume(null);
+    achievedQuantities.setWeightVolumeUnit(Constants.VOLUME_UNIT_M3);
+    achievedQuantities.setConsolidationChargeQuantity(BigDecimal.ONE);
+    achievedQuantities.setConsolidationChargeQuantityUnit(null);
+    achievedQuantities.setPacks(null);
+    achievedQuantities.setPacksType(MPK);
+    achievedQuantities.setDgPacks(null);
+    achievedQuantities.setDgPacksType(MPK);
+    achievedQuantities.setContainerCount(null);
+    achievedQuantities.setDgContainerCount(1);
+    achievedQuantities.setTeuCount(null);
+    achievedQuantities.setSlacCount(null);
+
+    consolidationDetails.setAchievedQuantities(achievedQuantities);
+
+    doReturn(newShipmentWtVolResponse).when(spyService).calculateShipmentWtVol(any(), any(), any());
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(BigDecimal.ONE);
+    spyService.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
+    verify(consoleShipmentMappingDao).findByConsolidationId(any());
+  }
+
 }
