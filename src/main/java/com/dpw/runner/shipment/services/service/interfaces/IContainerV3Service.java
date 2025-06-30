@@ -22,6 +22,7 @@ import java.util.Set;
 
 public interface IContainerV3Service {
     ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException;
+    BulkContainerResponse createBulk(List<ContainerV3Request> containerV3Requests, String module) throws RunnerException;
 
     BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 

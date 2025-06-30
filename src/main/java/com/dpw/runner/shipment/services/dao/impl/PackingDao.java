@@ -586,4 +586,8 @@ public class PackingDao implements IPackingDao {
         return packingRepository.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, tenantId);
     }
 
+    public boolean checkPackingExistsForShipment(Long shipmentId) {
+        return packingRepository.existsPackingByShipmentId(shipmentId);
+    }
+
 }

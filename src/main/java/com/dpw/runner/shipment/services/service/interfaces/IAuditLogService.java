@@ -12,7 +12,7 @@ import java.lang.reflect.InvocationTargetException;
 
 public interface IAuditLogService {
     Resource downloadExcel(CommonRequestModel commonRequestModel) throws RunnerException;
-    ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, String xSource);
 
     void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException;
 }

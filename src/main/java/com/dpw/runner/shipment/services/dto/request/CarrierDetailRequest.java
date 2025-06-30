@@ -58,4 +58,5 @@ public class CarrierDetailRequest implements IRunnerRequest {
     private String originPortCountry;
     private String destinationPortCountry;
     private String vehicleNumber;
+    private String scacCode;
 }

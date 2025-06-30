@@ -34,6 +34,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.validation.Valid;
+import org.apache.http.auth.AuthenticationException;
+import org.springframework.http.ResponseEntity;
 
 public interface IConsolidationV3Service {
     ShipmentGridChangeV3Response calculateAchievedValues(CalculateAchievedValueRequest request) throws RunnerException;
@@ -77,4 +80,5 @@ public interface IConsolidationV3Service {
     Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsV3Response consolidationDetailsV3Response);
     void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
                                  String sourceInfo);
+    Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
 }

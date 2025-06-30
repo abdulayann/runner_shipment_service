@@ -4,12 +4,18 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -31,6 +37,8 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
@@ -67,6 +75,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
@@ -124,6 +133,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstan
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -194,10 +204,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private final IRoutingsV3Service routingsV3Service;
     private final INotificationService notificationService;
     private final IMDMServiceAdapter mdmServiceAdapter;
+    private INPMServiceAdapter npmServiceAdapter;
     @Autowired
     private ICarrierDetailsDao carrierDetailsDao;
     @Autowired
     private KafkaProducer kafkaProducer;
+    @Autowired
+    private NpmContractV3Util npmContractV3Util;
 
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
 
@@ -242,8 +255,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
             MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService,
-            IPackingV3Service packingV3Service, INotificationService notificationService,
-        IMDMServiceAdapter mdmServiceAdapter) {
+            IPackingV3Service packingV3Service, INPMServiceAdapter npmServiceAdapater,
+            INotificationService notificationService, IMDMServiceAdapter mdmServiceAdapter) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -287,6 +300,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.packingV3Service = packingV3Service;
         this.notificationService = notificationService;
         this.mdmServiceAdapter = mdmServiceAdapter;
+        this.npmServiceAdapter = npmServiceAdapater;
     }
 
     @Override
@@ -409,7 +423,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return isNotAllowed;
     }
 
-    private Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+    public Optional<ShipmentDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
         Long id = request.getId();
         Optional<ShipmentDetails> shipmentDetails;
         if (id != null) {
@@ -603,6 +617,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             boolean syncConsole = false;
 
+            ListContractResponse npmContractResponse = null;
+            Boolean hasDestinationContract = shipmentDetails.getDestinationContractId() != null && !shipmentDetails.getDestinationContractId().isEmpty();
+            if(shipmentDetails.getContractId() !=null || shipmentDetails.getDestinationContractId() != null) {
+                npmContractResponse = getNpmContract(shipmentDetails);
+                populateShipmentDetailsFromContract(npmContractResponse, shipmentDetails, hasDestinationContract);
+            }
+
+
             ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
             beforeSave(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid, consoleShipmentData);
             shipmentDetails.setConsolidationList(null);
@@ -614,6 +636,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consoleShipmentData.setSyncConsole(syncConsole);
             consoleShipmentData.setFromET(isFromET);
             afterSave(shipmentDetails, null, request, shipmentSettingsDetails, consoleShipmentData);
+
+            if(npmContractResponse != null) {
+                updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), shipmentDetails, hasDestinationContract);
+            }
 
             // audit logs
             auditLogService.addAuditLog(
@@ -684,9 +710,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             boolean syncConsole = false;
             ConsoleShipmentData consoleShipmentData = new ConsoleShipmentData();
             beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, false, consoleShipmentData);
+            ListContractResponse npmContractResponse = null;
+            if (Boolean.TRUE.equals(isContractUpdated(entity, oldConvertedShipment))) {
+                npmContractResponse = getNpmContract(entity);
+                populateShipmentDetailsFromContract(npmContractResponse, entity, entity.getContractId() != null);
+            }
+
             log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setConsolidationList(null);
             entity.setContainersList(null);
+            setShipmentCargoFields(entity, oldEntity.get());
 
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
@@ -700,6 +733,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consoleShipmentData.setSyncConsole(syncConsole);
             consoleShipmentData.setFromET(isFromET);
             afterSave(entity, oldConvertedShipment, shipmentRequest, shipmentSettingsDetails, consoleShipmentData);
+            if(npmContractResponse != null) {
+                updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), entity, entity.getContractId()!=null);
+            }
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             // Trigger Kafka event for PushToDownStreamServices
             this.triggerPushToDownStream(entity, oldConvertedShipment, false);
@@ -712,6 +748,177 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
+    }
+
+    private Boolean isContractUpdated(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails) {
+        String oldContractId = oldShipmentDetails != null ? oldShipmentDetails.getContractId() : null;
+        String newContractId = shipmentDetails != null ? shipmentDetails.getContractId() : null;
+
+        String oldDestinationContractId = oldShipmentDetails != null ? oldShipmentDetails.getDestinationContractId() : null;
+        String newDestinationContractId = shipmentDetails != null ? shipmentDetails.getDestinationContractId() : null;
+
+        boolean isContractIdChanged = (oldContractId == null && newContractId != null) || (oldContractId != null && !oldContractId.equals(newContractId));
+        boolean isDestinationContractIdChanged = (oldDestinationContractId == null && newDestinationContractId != null) || (oldDestinationContractId != null && !oldDestinationContractId.equals(newDestinationContractId));
+        return (isContractIdChanged || isDestinationContractIdChanged);
+    }
+
+    private void updatePackingAndContainerFromContract(ListContractResponse.ContractResponse contractResponse, ShipmentDetails shipmentDetails, Boolean isDestinationQuote) throws RunnerException {
+        if (Boolean.TRUE.equals(isDestinationQuote)) {
+            validateDestinationQuoteIntegrity(contractResponse, shipmentDetails);
+        }
+        List<ListContractResponse.ContractUsage> contractUsages = Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of());
+        String transportMode = shipmentDetails.getTransportMode();
+        String shipmentType = shipmentDetails.getShipmentType();
+        if ((TRANSPORT_MODE_SEA.equals(transportMode) && SHIPMENT_TYPE_LCL.equals(shipmentType)) || TRANSPORT_MODE_AIR.equals(transportMode)) {
+            handlePackingUpdate(contractUsages, shipmentDetails);
+        } else {
+            handleContainerUpdate(contractUsages, shipmentDetails);
+        }
+    }
+
+    private void handlePackingUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
+        List<PackingV3Request> quotePackingRequests = contractUsages.stream()
+                .map(usage -> getPackingRequest(usage, shipmentDetails))
+                .collect(Collectors.toList());
+        if (shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
+            List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(shipmentDetails.getPackingList(), PackingV3Request.class);
+            packingV3Service.deleteBulk(existingRequests, SHIPMENT);
+        }
+        if (!quotePackingRequests.isEmpty()) {
+            packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
+        }
+    }
+
+    private void handleContainerUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
+        List<ContainerV3Request> quoteContainerRequests = contractUsages.stream()
+                .map(usage -> getContainerRequest(usage, shipmentDetails))
+                .collect(Collectors.toList());
+        if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
+            List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class);
+            containerV3Service.deleteBulk(existingContainerRequests, SHIPMENT);
+        }
+        if (!quoteContainerRequests.isEmpty()) {
+            containerV3Service.createBulk(quoteContainerRequests, SHIPMENT);
+        }
+    }
+
+    private void validateDestinationQuoteIntegrity(ListContractResponse.ContractResponse contractResponse, ShipmentDetails shipmentDetails) throws RunnerException {
+        Set<String> contractCargoTypes = Optional.ofNullable(contractResponse.getContract_usage())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(ListContractResponse.ContractUsage::getFilter_params)
+                .filter(Objects::nonNull)
+                .flatMap(fp -> Optional.ofNullable(fp.getCargo_type()).orElse(Collections.emptyList()).stream())
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .collect(Collectors.toSet());
+
+        Set<String> missingContainerCodes = Optional.ofNullable(shipmentDetails.getContainersList())
+                .orElse(Collections.emptySet())
+                .stream()
+                .map(Containers::getContainerCode)
+                .filter(code -> code != null && !contractCargoTypes.contains(code.trim()))
+                .collect(Collectors.toSet());
+
+        List<String> missingPackTypes = Optional.ofNullable(shipmentDetails.getPackingList())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(Packing::getPacksType)
+                .filter(type -> type != null && !contractCargoTypes.contains(type.trim()))
+                .collect(Collectors.toList());
+
+        if (!missingContainerCodes.isEmpty() || !missingPackTypes.isEmpty()) {
+            throw new RunnerException("The quote selected doesn’t have the same package/container information");
+        }
+    }
+
+    private void populateShipmentDetailsFromContract(ListContractResponse listContractResponse, ShipmentDetails shipmentDetails, boolean hasDestinationContract) {
+        if (listContractResponse == null || listContractResponse.getContracts() == null || listContractResponse.getContracts().isEmpty()) return;
+        List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
+        ListContractResponse.ContractResponse contract = contracts.get(0);
+        if (hasDestinationContract) {
+            shipmentDetails.setDestinationContractId(contract.getContract_id());
+            shipmentDetails.setDestinationContractType(contract.getContract_type());
+        } else {
+            shipmentDetails.setContractId(contract.getContract_id());
+            shipmentDetails.setContractType(contract.getContract_type());
+        }
+        shipmentDetails.setCarrierDetails(npmContractV3Util.createCarrierDetails(contract));
+        shipmentDetails.setShipmentType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
+        if (contract.getMeta() != null) {
+            var meta = contract.getMeta();
+            shipmentDetails.setTransportMode(meta.getMode_of_transport());
+            shipmentDetails.setDirection(meta.getShipment_movement());
+            shipmentDetails.setIncoterms(meta.getIncoterm());
+            shipmentDetails.setServiceType(meta.getService_mode());
+            if (meta.getBranch_info() != null) {
+                var branchInfo = meta.getBranch_info();
+                shipmentDetails.setPrimarySalesAgentEmail(branchInfo.getSales_agent_primary_email());
+                shipmentDetails.setSecondarySalesAgentEmail(branchInfo.getSales_agent_secondary_email());
+                shipmentDetails.setSalesBranch(branchInfo.getId());
+            }
+        }
+    }
+
+    private ListContractResponse getNpmContract(ShipmentDetails shipmentDetails) throws RunnerException {
+        String partyForQuote = shipmentDetails.getContractId() != null ? shipmentDetails.getCurrentPartyForQuote() : shipmentDetails.getDestinationCurrentPartyForQuote();
+        String contractId = shipmentDetails.getContractId() !=null ? shipmentDetails.getContractId() : shipmentDetails.getDestinationContractId();
+        String orgCode = extractOrgCode(shipmentDetails, partyForQuote);
+        if(contractId == null || orgCode == null) {
+            return null;
+        }
+        ListContractRequest listContractRequest = new ListContractRequest();
+        listContractRequest.setCustomer_org_id(orgCode);
+        listContractRequest.setOrg_role("DPW");
+        listContractRequest.setFilter_contract_states(List.of("ENABLED"));
+        listContractRequest.setFilter_contract_id(contractId);
+
+        ResponseEntity<IRunnerResponse> response = npmServiceAdapter.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
+        IRunnerResponse body = response.getBody();
+        if (!(body instanceof DependentServiceResponse npmResponse)) {
+            throw new ValidationException("Invalid response received from NPM: null or incompatible type");
+        }
+        return jsonHelper.convertValue(npmResponse.getData(), ListContractResponse.class);
+    }
+
+    private String extractOrgCode(ShipmentDetails shipmentDetails, String party) {
+        if (shipmentDetails == null || party == null) return null;
+        return switch (party.toUpperCase()) {
+            case CLIENT_PARTY -> shipmentDetails.getClient() != null ? shipmentDetails.getClient().getOrgCode() : null;
+            case CONSIGNEE_PARTY -> shipmentDetails.getConsignee() != null ? shipmentDetails.getConsignee().getOrgCode() : null;
+            case CONSIGNOR_PARTY -> shipmentDetails.getConsigner() != null ? shipmentDetails.getConsigner().getOrgCode() : null;
+            default -> {
+                var notifyParty = shipmentDetails.getAdditionalDetails() != null
+                        ? shipmentDetails.getAdditionalDetails().getNotifyParty()
+                        : null;
+                yield notifyParty != null ? notifyParty.getOrgCode() : null;
+            }
+        };
+    }
+
+    private ContainerV3Request getContainerRequest(ListContractResponse.ContractUsage usage, ShipmentDetails shipmentDetails) {
+        var request = new ContainerV3Request();
+        request.setContainerCount(usage.getMeta() != null ? usage.getMeta().getOriginal_usage() : usage.getUsage());
+        var filters = usage.getFilter_params();
+        if (filters != null) {
+            if (filters.getCargo_type() != null && !filters.getCargo_type().isEmpty())
+                request.setContainerCode(filters.getCargo_type().get(0));
+            if (filters.getCommodity() != null && !filters.getCommodity().isEmpty())
+                request.setCommodityGroup(filters.getCommodity().get(0));
+        }
+        if (shipmentDetails.getId() != null)
+            request.setShipmentsId(shipmentDetails.getId());
+        return request;
+    }
+
+    private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, ShipmentDetails shipmentDetails) {
+        PackingV3Request request = new PackingV3Request();
+        npmContractV3Util.setFilterParams(usage.getFilter_params(), request);
+        npmContractV3Util.setMetaData(usage, request);
+        if (shipmentDetails.getId() != null) {
+            request.setShipmentId(shipmentDetails.getId());
+        }
+        return request;
     }
 
     private boolean checkIfAlreadyPushRequested(ShipmentDetails oldEntity) {
@@ -1537,6 +1744,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentDetails.setChargeableUnit(cargoDetailsResponse.getChargeableUnit());
         shipmentDetails.setDgPacksCount(cargoDetailsResponse.getDgPacks());
         shipmentDetails.setDgPacksUnit(cargoDetailsResponse.getDgPacksUnit());
+        shipmentDetails.setNoOfPacks(cargoDetailsResponse.getNoOfPacks());
+        shipmentDetails.setPacksUnit(cargoDetailsResponse.getPacksUnit());
+        shipmentDetails.setVolume(cargoDetailsResponse.getVolume());
+        shipmentDetails.setVolumeUnit(cargoDetailsResponse.getVolumeUnit());
+        shipmentDetails.setWeight(cargoDetailsResponse.getWeight());
+        shipmentDetails.setWeightUnit(cargoDetailsResponse.getWeightUnit());
+        shipmentDetails.setVolumetricWeight(cargoDetailsResponse.getVolumetricWeight());
+        shipmentDetails.setVolumetricWeightUnit(cargoDetailsResponse.getVolumetricWeightUnit());
+        shipmentDetails.setChargable(cargoDetailsResponse.getChargable());
+        shipmentDetails.setChargeableUnit(cargoDetailsResponse.getChargeableUnit());
     }
 
     @Override
@@ -1551,7 +1768,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @Override
     public Map<String, Object> getAllMasterData(Long shipmentId, String xSource) {
-        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(shipmentId);
+        Optional<ShipmentDetails> shipmentDetailsOptional;
+        if(Objects.equals(xSource, NETWORK_TRANSFER))
+            shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(shipmentId);
+        else
+            shipmentDetailsOptional = shipmentDao.findById(shipmentId);
         if (!shipmentDetailsOptional.isPresent()) {
             log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, shipmentId);
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -1574,7 +1795,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 detachedShipment.getCarrierDetails().setEtd(null);
                 detachedShipment.getCarrierDetails().setAta(null);
                 detachedShipment.getCarrierDetails().setAtd(null);
-                detachedShipment.getCarrierDetails().setShippingLine(null);
             }
             detachedShipment.setMasterBill(null);
             detachedShipment.setBookingNumber(null);
@@ -2117,6 +2337,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 volumetricWeight(customerBookingRequest.getWeightVolume()).
                 volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
                 bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
+                bookingReference(customerBookingRequest.getBookingNumber()).
                 bookingCreatedDate(customerBookingRequest.getBookingDate()).
                 shipmentCreatedOn(LocalDateTime.now()).
                 client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry())).
@@ -2152,7 +2373,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
                 bookingType("ONLINE").
-                consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getReferenceNumber() : "").
+                consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getConsolidationNumber() : "").
                 masterBill(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getBol() : null).
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
@@ -4184,4 +4405,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+
+    protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
+        boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
+        if (packsAvailable) {
+            shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
+            shipmentDetails.setWeight(oldShipment.getWeight());
+            shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
+            shipmentDetails.setVolume(oldShipment.getVolume());
+            shipmentDetails.setVolumeUnit(oldShipment.getVolumeUnit());
+            shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
+            shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
+        }
+    }
 }

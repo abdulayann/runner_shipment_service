@@ -8,7 +8,10 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
@@ -16,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -34,6 +38,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,6 +93,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private DependentServiceHelper dependentServiceHelper;
     @Mock
     private HttpServletResponse httpServletResponse;
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     private Packing packing;
     private PackingV3Request request;
@@ -96,6 +103,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private static JsonTestUtility jsonTestUtility;
 
     private static ShipmentDetails testShipment;
+
+    private static ConsolidationDetails testconsol;
 
     @BeforeAll
     static void init() {
@@ -131,6 +140,9 @@ class PackingV3ServiceTest extends CommonMocks {
         testShipment = jsonTestUtility.getTestShipment();
         testShipment.setShipmentType("LCL");
         testShipment.setId(1L);
+
+        testconsol = jsonTestUtility.getTestConsolidation();
+        testconsol.setShipmentsList(Collections.singleton(testShipment));
 
         packingV3Service.executorServiceMasterData = Executors.newFixedThreadPool(2);
 
@@ -225,6 +237,14 @@ class PackingV3ServiceTest extends CommonMocks {
 
         assertTrue(result.contains("deleted successfully"));
         verify(packingDao).delete(packing);
+    }
+
+    @Test
+    void testDeletePacking_ValidationException() {
+        packing.setContainerId(1L);
+        when(packingDao.findById(1L)).thenReturn(Optional.of(packing));
+
+        assertThrows(ValidationException.class, () -> packingV3Service.delete(1L, "SHIPMENT"));
     }
 
     @Test
@@ -327,6 +347,15 @@ class PackingV3ServiceTest extends CommonMocks {
         assertTrue(result.getMessage().contains("deleted successfully"));
         verify(packingDao).deleteByIdIn(anyList());
         verify(auditLogService).addAuditLog(any());
+    }
+
+    @SuppressWarnings("java:S5778")
+    @Test
+    void testDeleteBulk_ValidationException() {
+        packing.setContainerId(1L);
+        when(packingDao.findByIdIn(anyList())).thenReturn(List.of(packing));
+
+        assertThrows(ValidationException.class, () -> packingV3Service.deleteBulk(List.of(request), "SHIPMENT"));
     }
 
     @Test
@@ -728,6 +757,66 @@ class PackingV3ServiceTest extends CommonMocks {
         assertNull(actual.getPackings().get(0).getContainerNumber()); // container mapping not done
         assertEquals(1L, actual.getAssignedPackageCount());
         assertEquals(2L, actual.getUnassignedPackageCount());
+    }
+
+    @Test
+    void testCalculatePackSummary() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
+        request1.setShipmentEntityId(14388L);
+        when(shipmentService.findById(any())).thenReturn(Optional.of(testShipment));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, null);
+        assertNotNull(response1);
+    }
+
+    @Test
+    void testCalculatePackSummary2() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
+        request1.setShipmentEntityId(14388L);
+        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.of(testShipment));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
+        assertNotNull(response1);
+    }
+
+    @Test
+    void testCalculatePackSummary3() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
+        request1.setShipmentEntityId(14388L);
+        when(shipmentService.retrieveForNte(any())).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
+    }
+
+    @Test
+    void testCalculatePackSummary4() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
+        request1.setConsolidationId(14388L);
+        when(consolidationService.findById(any())).thenReturn(Optional.of(testconsol));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, null);
+        assertNotNull(response1);
+    }
+
+    @Test
+    void testCalculatePackSummary5() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
+        request1.setConsolidationId(14388L);
+        when(consolidationService.retrieveForNte(any())).thenReturn(Optional.of(testconsol));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        PackSummaryV3Response response1 = packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER);
+        assertNotNull(response1);
+    }
+
+    @Test
+    void testCalculatePackSummary6() throws AuthenticationException, RunnerException {
+        CalculatePackSummaryRequest request1 = new CalculatePackSummaryRequest();
+        request1.setConsolidationId(14388L);
+        when(consolidationService.retrieveForNte(any())).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
     }
 
 }

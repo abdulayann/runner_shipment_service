@@ -17,6 +17,7 @@ public class CompanyDetailsRequest {
   private String stateName;
   private String taxApplicable = "N";
   private String addressLine1;
+  private String addressLine2;
   private String cityName;
   private String postalCode;
   private String companyEmail;
