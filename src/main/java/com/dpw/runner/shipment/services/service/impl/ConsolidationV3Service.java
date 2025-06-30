@@ -2280,7 +2280,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             //Editable Fields
             setCoload_BookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+            setBookingNumberInShipment(console, shipmentDetails);
             serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
         }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
@@ -2290,7 +2290,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
-            setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+            setBookingNumberInShipment(console, shipmentDetails);
             serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
             setCoload_BookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
