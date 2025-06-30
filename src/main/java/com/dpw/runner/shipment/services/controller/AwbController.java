@@ -34,7 +34,7 @@ import java.util.Optional;
 
 @SuppressWarnings("ALL")
 @RestController
-@RequestMapping(AwbConstants.AWB_V3_API_HANDLE)
+@RequestMapping(value = {AwbConstants.AWB_API_HANDLE, AwbConstants.AWB_V3_API_HANDLE})
 @Slf4j
 public class AwbController {
     private final IAwbService awbService;
