@@ -1,0 +1,50 @@
+update parties set
+ org_code = 'FRC00027912',
+ address_code = 'FRO00028809',
+ org_id = '155396',
+ address_id = '258853',
+ org_data =
+ '{
+     "Receivables": true,
+     "Email": "usaid@amscosal.com",
+     "CompanyId": 372,
+     "ZipPostCode": "37748 23326",
+     "Payables": false,
+     "City": "Jeddah",
+     "Guid": "407641f9-0fba-400a-a68c-c9d1a778e0f9",
+     "label": "Modern Supply Trading Company",
+     "Address1": "Al shehri Street , Andalusia Dist , Ibrahim Al-Juffali, Makkah",
+     "ForworderAgent": false,
+     "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+     "FullName": "Modern Supply Trading Company",
+     "Country": "SAU",
+     "OrganizationCode": "FRC00027912",
+     "Id": 155396,
+     "value": "FRC00027912",
+     "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com"
+  }',
+ address_data =
+ '{
+                  "AddressShortCode": "FRO00028809",
+                  "Email": "usaid@amscosal.com",
+                  "OrgFullName": "Modern Supply Trading Company",
+                  "RegulatedAgent": false,
+                  "OrgSource": "CRP",
+                  "ZipPostCode": "37748 23326",
+                  "KnownConsignor": false,
+                  "OrgReceivables": true,
+                  "SiteIdentifier": "1917750_001_FF-BE_001_B",
+                  "City": "Jeddah",
+                  "Guid": "f8993dbb-0031-4e8b-be04-3049b92add73",
+                  "Address1": "Al shehri Street , Andalusia Dist , Ibrahim Al-Juffali, Makkah",
+                  "OrgGuid": "407641f9-0fba-400a-a68c-c9d1a778e0f9",
+                  "CompanyName": "Modern Supply Trading Company",
+                  "TaxRegNumber": "310415735200003",
+                  "OrgOrganizationCode": "FRC00027912",
+                  "Country": "SAU",
+                  "Id": 258853,
+                  "OrgActiveClient": true,
+                  "AddressType": 1,
+                  "OrgPayables": false
+              }'
+ where id IN ('1016033');
