@@ -3590,7 +3590,6 @@ public abstract class IReport {
         List<Map<String, List<Map<String, Object>>>> groupedDict = new ArrayList<>();
         groupPacksDetails(shipment.getPackingList(), groupedDict, v1TenantSettingsResponse);
         dictionary.put(SHIPMENT_PACKS, groupedDict);
-        dictionary.put(HAS_PACK_DETAILS, true);
         for(var pack : shipment.getPackingList()) {
             packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
         }
