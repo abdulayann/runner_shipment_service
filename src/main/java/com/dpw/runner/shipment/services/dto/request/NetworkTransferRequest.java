@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -21,6 +22,7 @@ public class NetworkTransferRequest implements IRunnerRequest {
     private String entityType;
     private String entityNumber;
     private Long entityId;
+    private UUID entityGuid;
     private Long createdEntityId;
     private String transportMode;
     private Long sourceBranchId;

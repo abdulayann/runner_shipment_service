@@ -18,6 +18,7 @@ public class UpdateStatusFromExternalRequest implements IRunnerRequest {
     private String createdBy;
     private String operation;
     private String rejectRemarks;
+    private Long destinationTaskId;
     private int destinationTenantId;
     private String destinationEntityGuid;
 }

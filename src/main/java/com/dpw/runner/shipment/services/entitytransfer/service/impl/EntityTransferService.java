@@ -504,6 +504,28 @@ public class EntityTransferService implements IEntityTransferService {
         saveETIntegrationResponse(entityId, entityType, IntegrationType.ET_EXTERNAL_SYSTEM_INTEGRATION, Status.SUCCESS, jsonHelper.convertToJson(request), jsonHelper.convertToJson(bridgeServiceResponse));
     }
 
+    private void prepareCallBackToV1Payload(String entityGuid, String entityType, String operation, String rejectRemarks, String createdBy, String destinationEntityGuid, Long taksId) throws RunnerException {
+        UpdateStatusFromExternalRequest updateStatusFromExternalRequest = UpdateStatusFromExternalRequest.builder()
+                .entityGuid(entityGuid)
+                .entityType(entityType)
+                .createdBy(createdBy)
+                .operation(operation)
+                .rejectRemarks(rejectRemarks)
+                .destinationTenantId(TenantContext.getCurrentTenant())
+                .destinationEntityGuid(destinationEntityGuid)
+                .destinationTaskId(taksId)
+                .build();
+
+        BridgeRequest request = BridgeRequest.builder()
+                .requestCode("V2_STATUS_CALLBACK")
+                .transactionId(UUID.randomUUID().toString())
+                .payload(updateStatusFromExternalRequest)
+                .build();
+        log.info("Call Back status update Bridge Service Request: {}", jsonHelper.convertToJson(request));
+        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestOutBoundFileTransfer(CommonRequestModel.buildRequest(request));
+        log.info("Call Back status update Bridge Service Response: {}", jsonHelper.convertToJson(bridgeServiceResponse));
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> updateStatusFormExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
         UpdateStatusFromExternalRequest request = (UpdateStatusFromExternalRequest) commonRequestModel.getData();
@@ -801,7 +823,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    private void updateNteStatus(boolean isNetworkTransferFeatureEnabled, ImportShipmentRequest importShipmentRequest, ShipmentDetailsResponse shipmentDetailsResponse) {
+    private void updateNteStatus(boolean isNetworkTransferFeatureEnabled, ImportShipmentRequest importShipmentRequest, ShipmentDetailsResponse shipmentDetailsResponse) throws RunnerException {
         if(isNetworkTransferFeatureEnabled) {
             networkTransferService.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
             var nte = networkTransferDao.findById(importShipmentRequest.getTaskId());
@@ -813,6 +835,8 @@ public class EntityTransferService implements IEntityTransferService {
                         .filter(Objects::nonNull)
                         .anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
                     shipmentDao.updateIsAcceptedTriangulationPartner(nte.get().getEntityId(), tenantId, Boolean.TRUE);
+            } else if (Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL) && nte.get().getEntityGuid() != null) {
+                prepareCallBackToV1Payload(nte.get().getEntityGuid().toString(), SHIPMENT, TaskStatus.APPROVED.getDescription(), null, nte.get().getCreatedBy(), shipmentDetailsResponse.getGuid().toString(), nte.get().getId());
             }
         } else{
             throw new ValidationException("Network Transfer feature is not enabled");
@@ -881,6 +905,8 @@ public class EntityTransferService implements IEntityTransferService {
                 var nte = networkTransferDao.findById(importConsolidationRequest.getTaskId());
                 if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL)) {
                     updateNteStatus(nte.get(), consolidationDetailsResponse, oldVsNewShipIds);
+                } else if (Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL) && nte.get().getEntityGuid() != null) {
+                    prepareCallBackToV1Payload(nte.get().getEntityGuid().toString(), CONSOLIDATION, TaskStatus.APPROVED.getDescription(), null, nte.get().getCreatedBy(), consolidationDetailsResponse.getGuid().toString(), nte.get().getId());
                 }
             } else {
                 throw new ValidationException("Network Transfer feature is not enabled");
