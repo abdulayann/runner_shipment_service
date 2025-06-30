@@ -1,18 +1,29 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -23,35 +34,36 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.nimbusds.jose.util.Pair;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.servlet.http.HttpServletResponse;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Component
@@ -81,6 +93,9 @@ public class ContainerV3Util {
     @Autowired
     private MasterDataKeyUtils masterDataKeyUtils;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
             "hblDeliveryMode", "containerNumber", "containerCount", "descriptionOfGoods", "handlingInfo",
@@ -100,61 +115,121 @@ public class ContainerV3Util {
             "containerComments"
     );
 
-    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
+    public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
+        log.info("Initiating container download for request: {}", request);
+
+        List<ContainersExcelModel> model;
+
+        // STEP 1: Fetch container data
         try {
-            List<ShipmentsContainersMapping> mappings;
-            List<Containers> result = new ArrayList<>();
-            if (request.getShipmentId() != null) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).orElseThrow(() -> new DataRetrievalFailureException("Shipment not found"));
-                request.setTransportMode(shipmentDetails.getTransportMode());
-                request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-                List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
-
-                ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                List<Containers> containersList = containers.getContent();
-                result.addAll(containersList);
+            model = fetchContainerExcelModel(request);
+            if (model.isEmpty()) {
+                log.warn("No containers found for request: {}", request);
+                sendJsonErrorResponse(response, "No containers found for given input.");
+                return;
             }
-
-            if (request.getConsolidationId() != null) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).orElseThrow(() -> new DataRetrievalFailureException("Consolidation not found"));
-                request.setTransportMode(consolidationDetails.getTransportMode());
-                request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                List<Containers> containersList = containers.getContent();
-                if (result.isEmpty()) {
-                    result.addAll(containersList);
-                } else {
-                    result = result.stream().filter(result::contains).toList();
-                }
-            }
-            LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
-            String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Containers_" + timestamp + Constants.XLSX;
-
-            try(XSSFWorkbook workbook = new XSSFWorkbook()) {
-                XSSFSheet sheet = workbook.createSheet("Containers");
-
-                List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
-                convertModelToExcel(model, sheet, request);
-
-                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-                response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
-
-                try (OutputStream outputStream = response.getOutputStream()) {
-                    workbook.write(outputStream);
-                }
-            }
-
-        } catch (Exception ex) {
-            throw new RunnerException(ex.getMessage());
+        } catch (RunnerException e) {
+            log.error("Business error during container download: {}", e.getMessage(), e);
+            sendJsonErrorResponse(response, e.getMessage());
+            return;
+        } catch (Exception e) {
+            log.error("Unexpected error during data fetching: {}", e.getMessage(), e);
+            sendJsonErrorResponse(response, "Failed to fetch container data. Please try again.");
+            return;
         }
 
+        // STEP 2: Generate Excel and write to response
+        try {
+            writeExcelToResponse(response, model, request);
+            log.info("Excel file successfully written to response.");
+        } catch (Exception e) {
+            log.error("Failed to write Excel to response: {}", e.getMessage(), e);
+            // Don't write to response here; it might be already committed.
+        }
+    }
+
+    private List<ContainersExcelModel> fetchContainerExcelModel(BulkDownloadRequest request) throws RunnerException {
+        List<Containers> result = new ArrayList<>();
+
+        if (request.getShipmentId() != null) {
+            ShipmentDetails shipment = shipmentDao.findById(Long.valueOf(request.getShipmentId()))
+                    .orElseThrow(() -> new RunnerException("Shipment not found"));
+
+            request.setTransportMode(shipment.getTransportMode());
+            request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()));
+
+            List<ShipmentsContainersMapping> mappings =
+                    shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
+            List<Long> containerIds = mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList();
+
+            ListCommonRequest req = constructListCommonRequest("id", containerIds, "IN");
+            Page<Containers> containers = containerDao.findAll(fetchData(req, Containers.class).getLeft(),
+                    fetchData(req, Containers.class).getRight());
+
+            result.addAll(containers.getContent());
+        }
+
+        if (request.getConsolidationId() != null) {
+            ConsolidationDetails consolidation = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()))
+                    .orElseThrow(() -> new RunnerException("Consolidation not found"));
+
+            request.setTransportMode(consolidation.getTransportMode());
+            request.setExport(Constants.DIRECTION_EXP.equalsIgnoreCase(consolidation.getShipmentType()));
+
+            ListCommonRequest req = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
+            Page<Containers> containers = containerDao.findAll(fetchData(req, Containers.class).getLeft(),
+                    fetchData(req, Containers.class).getRight());
+
+            List<Containers> containersList = containers.getContent();
+
+            if (result.isEmpty()) {
+                result.addAll(containersList);
+            } else {
+                result = result.stream().filter(containersList::contains).toList();
+            }
+        }
+
+        return commonUtils.convertToList(result, ContainersExcelModel.class);
+    }
+
+    private void writeExcelToResponse(HttpServletResponse response, List<ContainersExcelModel> model, BulkDownloadRequest request) throws IOException, IllegalAccessException {
+        String timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT));
+        String filename = "Containers_" + timestamp + Constants.XLSX;
+
+        response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+        response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filename);
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook();
+                OutputStream outputStream = response.getOutputStream()) {
+
+            XSSFSheet sheet = workbook.createSheet("Containers");
+            convertModelToExcel(model, sheet, request);
+            workbook.write(outputStream);
+            outputStream.flush();
+        }
+    }
+
+    private void sendJsonErrorResponse(HttpServletResponse response, String message) {
+        try {
+            if (!response.isCommitted()) {
+                response.reset();
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+                ResponseEntity<IRunnerResponse> entity = ResponseHelper.buildFailedResponse(message, HttpStatus.INTERNAL_SERVER_ERROR);
+                String json = objectMapper.writeValueAsString(entity.getBody());
+
+                PrintWriter writer = response.getWriter();
+                writer.write(json);
+                writer.flush();
+            } else {
+                log.warn("Response already committed; cannot write JSON error.");
+            }
+        } catch (IOException e) {
+            log.error("Failed to write JSON error to response", e);
+        }
     }
 
     private void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {

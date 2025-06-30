@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -180,6 +181,10 @@ public class JsonHelper {
 
     public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
         return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(List.class, clazz));
+    }
+
+    public <T, F> Set<F> convertValueToSet(T object, Class<F> clazz) {
+        return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(Set.class, clazz));
     }
 
     public Map<String, Object> convertJsonToMap(String json) {

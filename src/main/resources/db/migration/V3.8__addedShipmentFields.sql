@@ -1,6 +1,6 @@
 ALTER TABLE IF EXISTS shipment_details
     ADD COLUMN IF NOT EXISTS incoterms_location varchar(64),
-    ADD COLUMN IF NOT EXISTS controlled BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS controlled BOOLEAN,
     ADD COLUMN IF NOT EXISTS controlled_reference_number varchar(64),
     ADD COLUMN IF NOT EXISTS partner varchar(64),
     ADD COLUMN IF NOT EXISTS co_load_bkg_number varchar(64),

@@ -32,11 +32,13 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -44,7 +46,17 @@ import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -127,6 +139,12 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Mock
     private IConsolidationV3Service consolidationV3Service;
+
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
+
+    @Mock
+    private IAuditLogService auditLogService;
 
     @InjectMocks
     private ContainerV3Service containerV3Service;
@@ -226,6 +244,64 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCreateBulkContainers() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        ContainerV3Request request1 = ContainerV3Request.builder()
+                .containerNumber("CNT123")
+                .containerCode("20GP")
+                .containerCount(1L)
+                .commodityGroup("Metals")
+                .consolidationId(101L)
+                .build();
+
+        ContainerV3Request request2 = ContainerV3Request.builder()
+                .containerNumber("CNT456")
+                .containerCode("20GP")
+                .containerCount(1L)
+                .commodityGroup("Metals")
+                .consolidationId(101L)
+                .build();
+
+        List<ContainerV3Request> containerRequests = List.of(request1, request2);
+        Containers container1 = new Containers();
+        container1.setId(1L);
+        container1.setContainerNumber("CNT123");
+
+        Containers container2 = new Containers();
+        container2.setId(2L);
+        container2.setContainerNumber("CNT456");
+        List<Containers> containers = List.of(container1, container2);
+
+        ContainerResponse containerResponse1 = new ContainerResponse();
+        containerResponse1.setContainerNumber("CNT123");
+        ContainerResponse containerResponse2 = new ContainerResponse();
+        containerResponse2.setContainerNumber("CNT456");
+        List<ContainerResponse> responseList = List.of(containerResponse1, containerResponse2);
+
+        doNothing().when(containerValidationUtil).validateCreateBulkRequest(containerRequests);
+        doNothing().when(containerValidationUtil).validateContainerNumberUniquenessForCreateBulk(containerRequests);
+        doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), anyString());
+        when(jsonHelper.convertValueToList(containerRequests, Containers.class)).thenReturn(containers);
+        when(containerDao.saveAll(containers)).thenReturn(containers);
+        doNothing().when(auditLogService).addAuditLog(any());
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+
+        when(jsonHelper.convertValueToList(containers, ContainerResponse.class)).thenReturn(responseList);
+
+        // When
+        BulkContainerResponse result = containerV3Service.createBulk(containerRequests, "CONSOLIDATION");
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.getContainerResponseList().size());
+        assertTrue(result.getMessage().contains("Bulk edit success! All selected containers have been updated."));
+    }
+
+    @Test
     void testContainerCreate() throws RunnerException {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
@@ -254,6 +330,28 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class)));
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
+        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        assertNotNull(response);
+    }
+
+    @Test
+    void testContainerUpdate1() throws RunnerException {
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(containers, ContainerResponse.class)));
+        BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
+        assertNotNull(response);
+    }
+
+    @Test
+    void testContainerUpdate4() throws RunnerException {
+        ContainerV3Request containerV3Request =ContainerV3Request.builder().containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
+        Containers containers = new Containers();
+        containers.setId(1L);
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(containers));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(containers, ContainerResponse.class)));
         BulkContainerResponse response = containerV3Service.updateBulk(List.of(containerV3Request), "CONSOLIDATION");
         assertNotNull(response);
     }

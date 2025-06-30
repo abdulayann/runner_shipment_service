@@ -1,8 +1,7 @@
 trigger: none
 
 pool:
-  name: Runner-self-hosted-agent
-
+  vmImage: ubuntu-latest
 variables:
 - template: variable-templates/scanjob-variables.yaml@baseline_project_repo
 

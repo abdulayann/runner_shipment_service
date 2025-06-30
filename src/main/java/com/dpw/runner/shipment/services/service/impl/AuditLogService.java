@@ -120,7 +120,7 @@ public class AuditLogService implements IAuditLogService {
     public Resource downloadExcel(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         try {
-            var triplet = fetchList(commonRequestModel);
+            var triplet = fetchList(commonRequestModel, null);
             List<Map<String, Object>> listAsMap = getData(triplet.getLeft());
             return excelUtils.createExcelAsResource(listAsMap, COLUMN_HEADERS_TO_FIELD_NAME, "Audit_Logs");
         } catch (Exception e) {
@@ -249,10 +249,10 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, String xSource) {
         String responseMsg;
         try {
-            var triplet = fetchList(commonRequestModel);
+            var triplet = fetchList(commonRequestModel, xSource);
             return ResponseHelper.buildListSuccessResponse(
                     triplet.getLeft(),
                     triplet.getMiddle(),
@@ -265,13 +265,17 @@ public class AuditLogService implements IAuditLogService {
         }
     }
 
-    public Triple<List<IRunnerResponse>, Integer, Long> fetchList(CommonRequestModel commonRequestModel) {
+    public Triple<List<IRunnerResponse>, Integer, Long> fetchList(CommonRequestModel commonRequestModel, String xSource) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for audit log list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Pair<Specification<AuditLog>, Pageable> tuple = fetchData(request, AuditLog.class);
-        Page<AuditLog> auditLogPage = auditLogDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<AuditLog> auditLogPage;
+        if(Objects.equals(xSource, Constants.NETWORK_TRANSFER))
+            auditLogPage = auditLogDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+        else
+            auditLogPage = auditLogDao.findAll(tuple.getLeft(), tuple.getRight());
         log.info("Audit log list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         return Triple.of(
                 convertEntityListToDtoList(auditLogPage.getContent()),

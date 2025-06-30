@@ -1419,7 +1419,7 @@ if (unitConversionUtilityMockedStatic != null) {
     lenient().when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(payload);
     when(jsonHelper.convertToJson(any())).thenReturn("Adaf");
 
-    doThrow(new GenericException("Ex")).when(containerService).pushContainersToDependentServices(anyList(), anyList());
+    doThrow(new GenericException("Ex")).when(containerService).pushContainersToDependentServices(anyList(), anyList(), any());
     doThrow(new GenericException("EX")).when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue(any(), any());
 
     consolidationV3Service.pushShipmentDataToDependentService(consolidationDetails, true, oldEntity);
