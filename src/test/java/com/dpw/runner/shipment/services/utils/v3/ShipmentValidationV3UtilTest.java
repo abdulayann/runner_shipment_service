@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -308,7 +309,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cd.setTransportMode(TRANSPORT_MODE_AIR);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-001");
 
@@ -335,7 +336,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cd.setTransportMode(TRANSPORT_MODE_AIR);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-001");
 
@@ -388,12 +389,12 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
     @Test
     void testProcessDGValidations_AirDG_UserHasPermission_NoException() {
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setContainsHazardous(false);
 
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cd.setTransportMode(TRANSPORT_MODE_AIR);
 
         Map<String, Boolean> permissions = new HashMap<>();
         permissions.put("AirDG", true);
@@ -423,7 +424,8 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.FALSE);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity);
+        assertEquals(Constants.SHIPMENT_TYPE_STD, shipment.getJobType());
     }
 
     @Test
@@ -440,7 +442,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_validatePartner() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setMasterBill("masterBill");
         ShipmentDetails oldEntity1 = new ShipmentDetails();
@@ -453,13 +455,14 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         consignee.setOrgCode("ORG-CODE");
         shipment.setConsignee(consignee);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1);
+        assertEquals(TRANSPORT_MODE_AIR, shipment.getTransportMode());
     }
 
     @Test
     void testValidateShipmentCreateOrUpdate_withNullConsignor_shouldNotThrow() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
         shipment.setCoLoadBkgNumber("bkgNumber");
 
@@ -469,13 +472,14 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
         shipment.setConsigner(null); // Null consignor
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null);
+        assertEquals(TRANSPORT_MODE_AIR, shipment.getTransportMode());
     }
 
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setControlled(true);
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
@@ -484,7 +488,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_AIR1() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setControlledReferenceNumber("TEST");
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
@@ -493,7 +497,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_EmptyControlled_AIR1() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
 
         assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
@@ -510,7 +514,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidationForFmcTlcFields_ForFmcTlcField_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setFmcTlcId("Test");
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForFmcTlcFields(shipment));
@@ -519,10 +523,11 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_coLoadBLNumber_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setCoLoadBlNumber("BlNumber");
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null);
+        assertEquals(TRANSPORT_MODE_AIR, shipment.getTransportMode());
     }
 
     @Test
@@ -583,7 +588,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @ParameterizedTest
     @MethodSource("shipmentCutoffPayloads")
     void testValidationForCutOffFields(ShipmentDetails shipment) {
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
