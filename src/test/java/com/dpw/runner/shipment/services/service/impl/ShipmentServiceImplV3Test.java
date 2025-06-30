@@ -2440,7 +2440,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(false);
         AtomicBoolean makeConsoleDG = new AtomicBoolean(false);
 
-        AtomicBoolean makeConsoleDG = new AtomicBoolean(false);
         ConsolidationDetails result = shipmentServiceImplV3.processLinkedConsolidationDetails(
                 shipment, null, consolidationSet, makeConsoleDG, makeConsoleNonDG, makeConsoleSciT1);
 
