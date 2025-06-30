@@ -58,6 +58,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.*;
@@ -80,7 +81,6 @@ import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -2284,12 +2284,16 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     public void updateCargoInformation(Long bookingId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
-        CustomerBooking booking = customerBookingDao.findById(bookingId).get();
+        Optional<CustomerBooking> optionalBooking = customerBookingDao.findById(bookingId);
+        if (!optionalBooking.isPresent()) {
+            throw new RunnerException("CustomerBooking not found with id: " + bookingId);
+        }
+        CustomerBooking booking = optionalBooking.get();
         List<Containers> containers = Optional.ofNullable(booking.getContainersList())
                 .orElse(Collections.emptyList());
         List<Packing> packings = Optional.ofNullable(booking.getPackingList())
                 .orElse(Collections.emptyList());
-        if(!packings.isEmpty()) {
+        if (!packings.isEmpty()) {
             calculateCargoDetails(packings, booking);
         }
         if (!containers.isEmpty()) {
@@ -2305,8 +2309,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
             return containerTypes.stream()
                     .collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
-        } catch (Exception ex) {
-            throw new RuntimeException("Failed to fetch containerCode to Teu mapping from MDM");
+        } catch (RunnerException ex) {
+            throw new MdmException(ex.getMessage());
         }
     }
 
