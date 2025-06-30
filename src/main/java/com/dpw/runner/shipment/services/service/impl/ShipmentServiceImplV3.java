@@ -2170,11 +2170,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
-            List<RoutingsRequest> routingsRequest = customerBookingV3Request.getRoutingList();
+            //List<RoutingsRequest> routingsRequest = customerBookingV3Request.getRoutingList();
 
-            if (ObjectUtils.isNotEmpty(routingsRequest)) {
-                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(shipmentDetails.getRoutingsList(), shipmentId));
-            }
+//            if (ObjectUtils.isNotEmpty(routingsRequest)) {
+//                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(shipmentDetails.getRoutingsList(), shipmentId));
+//            }
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
