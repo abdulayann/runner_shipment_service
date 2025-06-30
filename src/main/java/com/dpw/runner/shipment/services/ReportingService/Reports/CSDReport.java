@@ -108,6 +108,7 @@ public class CSDReport extends IReport{
                 dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(additionalDetailModel.getScreeningStatus()));
             if (csdModel.getShipmentModel() != null) {
                 this.populateShipmentReportData(dictionary, null, csdModel.getShipmentModel().getId());
+                this.getPackingDetails(csdModel.getShipmentModel(), dictionary);
             }
         }
 

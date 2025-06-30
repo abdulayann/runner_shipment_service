@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
@@ -90,6 +91,9 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     @Mock
     private V1ServiceUtil v1ServiceUtil;
