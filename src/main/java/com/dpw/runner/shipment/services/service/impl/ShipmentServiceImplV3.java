@@ -1338,7 +1338,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (consolidationDetails.getCarrierDetails() == null)
             consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
-        consolidationDetails.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
         consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
         consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
         consolidationDetails.setShipmentType(shipment.getDirection());
