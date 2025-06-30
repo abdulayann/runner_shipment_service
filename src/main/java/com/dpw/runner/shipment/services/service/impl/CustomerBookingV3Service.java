@@ -4,6 +4,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
@@ -35,6 +36,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadAttributesRequest;
@@ -73,20 +75,12 @@ import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.nimbusds.jose.util.Pair;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -148,6 +142,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final IFusionServiceAdapter fusionServiceAdapter;
     private final IPackingV3Service packingV3Service;
     private final IContainerV3Service containerV3Service;
+    private final IConsolidationService consolidationService;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -192,7 +187,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     DependentServiceHelper dependentServiceHelper,
                                     IFusionServiceAdapter fusionServiceAdapter,
                                     IContainerV3Service containerV3Service,
-                                    IPackingV3Service packingV3Service){
+                                    IPackingV3Service packingV3Service,
+                                    IConsolidationService consolidationService){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -218,6 +214,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.fusionServiceAdapter = fusionServiceAdapter;
         this.packingV3Service = packingV3Service;
         this.containerV3Service = containerV3Service;
+        this.consolidationService = consolidationService;
     }
 
     @Override
@@ -226,6 +223,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(this::getCodeTeuMapping, executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(customerBookingV3Request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
         // Update NPM for contract utilization
@@ -242,6 +240,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             if(npmContractResponse != null) {
                 updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
             }
+            Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            updateCargoInformation(customerBooking.getId(), containerTeuMap);
             /**
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
@@ -404,6 +404,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
         validateBookingUpdateRequest(request);
         Long id = request.getId();
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(this::getCodeTeuMapping, executorServiceMasterData);
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -441,6 +442,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(npmContractResponse != null) {
             updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
         }
+        Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+        updateCargoInformation(customerBooking.getId(), containerTeuMap);
         try {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -2278,5 +2281,96 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
+    }
+
+    public void updateCargoInformation(Long bookingId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
+        CustomerBooking booking = customerBookingDao.findById(bookingId).get();
+        List<Containers> containers = Optional.ofNullable(booking.getContainersList())
+                .orElse(Collections.emptyList());
+        List<Packing> packings = Optional.ofNullable(booking.getPackingList())
+                .orElse(Collections.emptyList());
+        if(!packings.isEmpty()) {
+            calculateCargoDetails(packings, booking);
+        }
+        if (!containers.isEmpty()) {
+            booking.setContainers(getTotalContainerCount(containers));
+            booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
+        }
+        customerBookingDao.save(booking);
+    }
+
+    private Map<String, BigDecimal> getCodeTeuMapping() {
+        try {
+            DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
+            List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
+            return containerTypes.stream()
+                    .collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
+        } catch (Exception ex) {
+            throw new RuntimeException("Failed to fetch containerCode to Teu mapping from MDM");
+        }
+    }
+
+    private Long getTotalContainerCount(List<Containers> containers) {
+        return containers.stream().mapToLong(c -> c.getContainerCount() != null ? c.getContainerCount() : 0).sum();
+    }
+
+    private BigDecimal getTotalTeu(List<Containers> containers, Map<String, BigDecimal> teuMap) {
+        return containers.stream()
+                .map(c -> teuMap.getOrDefault(c.getContainerCode(), BigDecimal.ZERO)
+                        .multiply(BigDecimal.valueOf(Optional.ofNullable(c.getContainerCount()).orElse(0L))))
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(1, RoundingMode.UNNECESSARY);
+    }
+
+    private void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking) throws RunnerException {
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        int totalPacks = 0;
+        for (Packing p : packings) {
+            if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
+                totalWeight = totalWeight.add(new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()));
+            }
+            if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
+                totalVolume = totalVolume.add(new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), customerBooking.getVolumeUnit()).toString()));
+            }
+            if (!isStringNullOrEmpty(p.getPacks())) {
+                totalPacks += Integer.parseInt(p.getPacks());
+            }
+        }
+        customerBooking.setGrossWeight(totalWeight);
+        customerBooking.setVolume(totalVolume);
+        customerBooking.setPackages((long) totalPacks);
+        customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+        customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        customerBooking.setPackageType(Constants.PACKAGES);
+        calculateVW(customerBooking);
+    }
+
+    private void calculateVW(CustomerBooking customerBooking) throws RunnerException {
+        if (isStringNullOrEmpty(customerBooking.getTransportType()))
+            return;
+        if (!isStringNullOrEmpty(customerBooking.getGrossWeightUnit()) && !isStringNullOrEmpty(customerBooking.getVolumeUnit())) {
+            VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(customerBooking.getTransportType(), customerBooking.getGrossWeightUnit(), customerBooking.getVolumeUnit(), customerBooking.getGrossWeight(), customerBooking.getVolume());
+            customerBooking.setChargeable(vwOb.getChargeable());
+            if (Constants.TRANSPORT_MODE_AIR.equals(customerBooking.getTransportType())) {
+                customerBooking.setChargeable(BigDecimal.valueOf(roundOffAirShipment(customerBooking.getChargeable().doubleValue())));
+            }
+            customerBooking.setChargeableUnit(vwOb.getChargeableUnit());
+            if (Constants.TRANSPORT_MODE_SEA.equals(customerBooking.getTransportType()) && !isStringNullOrEmpty(customerBooking.getCargoType()) && Constants.SHIPMENT_TYPE_LCL.equals(customerBooking.getCargoType())) {
+                double volInM3 = convertUnit(Constants.VOLUME, customerBooking.getVolume(), customerBooking.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, customerBooking.getGrossWeight(), customerBooking.getGrossWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
+                customerBooking.setChargeable(BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3)));
+                customerBooking.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+                vwOb = consolidationService.calculateVolumeWeight(customerBooking.getTransportType(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
+            }
+
+            customerBooking.setWeightVolume(vwOb.getVolumeWeight());
+            customerBooking.setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
+        }
+    }
+
+    private double roundOffAirShipment(double charge) {
+        return (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) ?
+                Math.floor(charge) + 0.5 : Math.ceil(charge);
     }
 }
