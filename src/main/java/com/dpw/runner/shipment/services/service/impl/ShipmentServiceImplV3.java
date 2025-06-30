@@ -1062,10 +1062,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             // Update AWB
             updateAwb(shipmentDetails, oldEntity);
             // Update Container From Cargo
-            updateContainerFromCargo(shipmentDetails);
+          updateContainerFromCargo(shipmentDetails, oldEntity);
             // update consolidation wt vol
             if(Objects.nonNull(consoleShipmentData.getConsolidationDetails()))
                 consolidationV3Service.updateConsolidationCargoSummary(consoleShipmentData.getConsolidationDetails(), jsonHelper.convertValue(consoleShipmentData, ShipmentWtVolResponse.class));
+            updateContainerFromCargo(shipmentDetails, oldEntity);
         }
         log.info("shipment afterSave isCreate .... ");
         shipmentRequest.setId(id);
@@ -1349,7 +1350,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (consolidationDetails.getCarrierDetails() == null)
             consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
-        consolidationDetails.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
         consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
         consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
         consolidationDetails.setShipmentType(shipment.getDirection());
@@ -2181,11 +2181,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
-            List<RoutingsRequest> routingsRequest = customerBookingV3Request.getRoutingList();
-
-            if (ObjectUtils.isNotEmpty(routingsRequest)) {
-                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(shipmentDetails.getRoutingsList(), shipmentId));
-            }
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
@@ -2881,8 +2876,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void updateContainerFromCargo(ShipmentDetails shipmentDetails) throws RunnerException {
-        if (!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) || Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
+    public void updateContainerFromCargo(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) throws RunnerException {
+        if (!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) ||
+                Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()) ||
+                !isShipmentCargoFieldsChanged(shipmentDetails, oldShipment))
             return;
         containerV3Service.updateAttachedContainersData(List.of(shipmentDetails.getContainerAssignedToShipmentCargo()));
     }
@@ -4405,6 +4402,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+
+    private boolean isShipmentCargoFieldsChanged(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
+        return !Objects.equals(shipmentDetails.getNoOfPacks(), oldShipment.getNoOfPacks()) ||
+                !Objects.equals(shipmentDetails.getPacksUnit(), oldShipment.getPacksUnit()) ||
+                !Objects.equals(shipmentDetails.getWeight(), oldShipment.getWeight()) ||
+                !Objects.equals(shipmentDetails.getWeightUnit(), oldShipment.getWeightUnit()) ||
+                !Objects.equals(shipmentDetails.getVolume(), oldShipment.getVolume()) ||
+                !Objects.equals(shipmentDetails.getVolumeUnit(), oldShipment.getVolumeUnit());
+    }
 
     protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
         boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
