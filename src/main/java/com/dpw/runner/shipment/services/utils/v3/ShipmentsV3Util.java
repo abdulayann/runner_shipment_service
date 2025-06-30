@@ -27,17 +27,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
@@ -52,7 +49,6 @@ public class ShipmentsV3Util {
     private ProductIdentifierUtility productEngine;
     private JsonHelper jsonHelper;
     private IShipmentDao shipmentDao;
-    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private CommonUtils commonUtils;
     private MasterDataUtils masterDataUtils;
     private ConsolidationDao consolidationDetailsDao;
@@ -69,6 +65,7 @@ public class ShipmentsV3Util {
     private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
     private EventsV3Util eventsV3Util;
     private IEventsV3Service eventsV3Service;
+    private IDateTimeChangeLogService dateTimeChangeLogService;
 
     @Autowired @Lazy
     private BookingIntegrationsUtility bookingIntegrationsUtility;
@@ -80,14 +77,15 @@ public class ShipmentsV3Util {
     public ShipmentsV3Util(IShipmentSettingsDao shipmentSettingsDao, GetNextNumberHelper getNextNumberHelper,
                            IV1Service v1Service, ProductIdentifierUtility productEngine,
                            IShipmentDao shipmentDao, JsonHelper jsonHelper,
-                           IConsoleShipmentMappingDao consoleShipmentMappingDao, CommonUtils commonUtils,
+                           CommonUtils commonUtils,
                            MasterDataUtils masterDataUtils,
                            ConsolidationDao consolidationDetailsDao, IRoutingsDao routingsDao, IAwbDao awbDao,
                            IEventDao eventDao, IAuditLogService auditLogService,
                            IPackingDao packingDao, ITruckDriverDetailsDao truckDriverDetailsDao,
                            IReferenceNumbersDao referenceNumbersDao, INotesDao notesDao,
                            IPartiesDao partiesDao, IServiceDetailsDao serviceDetailsDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao,
-                           EventsV3Util eventsV3Util, IEventsV3Service eventsV3Service
+                           EventsV3Util eventsV3Util, IEventsV3Service eventsV3Service,
+                           IDateTimeChangeLogService dateTimeChangeLogService
     ) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.getNextNumberHelper = getNextNumberHelper;
@@ -95,7 +93,6 @@ public class ShipmentsV3Util {
         this.productEngine = productEngine;
         this.shipmentDao = shipmentDao;
         this.jsonHelper = jsonHelper;
-        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.commonUtils = commonUtils;
         this.masterDataUtils =masterDataUtils;
         this.consolidationDetailsDao = consolidationDetailsDao;
@@ -112,6 +109,7 @@ public class ShipmentsV3Util {
         this.pickupDeliveryDetailsDao = pickupDeliveryDetailsDao;
         this.eventsV3Util = eventsV3Util;
         this.eventsV3Service = eventsV3Service;
+        this.dateTimeChangeLogService = dateTimeChangeLogService;
 
     }
 
@@ -291,6 +289,7 @@ public class ShipmentsV3Util {
         }
         log.info("shipment afterSave isCreate .... ");
         shipmentRequest.setId(id);
+        dateTimeChangeLogService.createEntryFromShipment(jsonHelper.convertValue(shipmentRequest, ShipmentRequest.class), oldEntity);
         log.info("shipment afterSave dateTimeChangeLogService .... ");
         log.info("shipment afterSave bookingCarriageDao.... ");
         if (truckDriverDetailsRequestList != null) {
@@ -331,22 +330,7 @@ public class ShipmentsV3Util {
             eventsV3Util.autoGenerateCreateEvent(shipmentDetails);
         log.info("shipment afterSave autoGenerateCreateEvent.... ");
 
-        // Create events on basis of shipment status Confirmed/Created
-        autoGenerateEvents(shipmentDetails);
         log.info("shipment afterSave generateEvents.... ");
-    }
-
-    @SuppressWarnings({"java:S1066", "java:S2583"})
-    public void autoGenerateEvents(ShipmentDetails shipmentDetails) {
-        Events response = null;
-        if (shipmentDetails.getStatus() != null) {
-            // LATER : remove this
-            if (response != null) {
-                if (shipmentDetails.getEventsList() == null)
-                    shipmentDetails.setEventsList(new ArrayList<>());
-                shipmentDetails.getEventsList().add(response);
-            }
-        }
     }
 
     public List<Events> setEventDetails(List<Events> eventsList, ShipmentDetails shipmentDetails) {
@@ -379,31 +363,6 @@ public class ShipmentsV3Util {
         log.info("shipment afterSave packingDao.updateEntityFromShipment..... ");
     }
 
-
-    public boolean checkAttachDgAirShipments(ConsolidationDetails consolidationDetails){
-        if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            return true;
-        if(!Boolean.TRUE.equals(consolidationDetails.getHazardous()))
-            return true;
-        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
-            return true;
-        if(consolidationDetails.getShipmentsList() == null || consolidationDetails.getShipmentsList().isEmpty())
-            return false;
-        return consolidationDetails.getShipmentsList().stream().anyMatch(ship -> Boolean.TRUE.equals(ship.getContainsHazardous()));
-    }
-
-    @SuppressWarnings("java:S3655")
-    private ConsolidationDetails makeConsoleNonDg(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, List<Long> removedConsolIds, ConsolidationDetails consolidationDetails) {
-        if(!isCreate && removedConsolIds != null && !removedConsolIds.isEmpty()) {
-            boolean makeConsoleNonDG = checkForDGShipmentAndAirDgFlag(oldEntity); // check if removed shipment was dg
-            if(makeConsoleNonDG) {
-                consolidationDetails = consolidationDetailsDao.findById(removedConsolIds.get(0)).get();
-                if(!checkAttachDgAirShipments(consolidationDetails)) // check if any other attached shipment is dg
-                    changeConsolidationDGValues(false, new AtomicBoolean(true), removedConsolIds.get(0), shipmentDetails, consolidationDetails);
-            }
-        }
-        return consolidationDetails;
-    }
 
     private void processListRequests(ShipmentDetails shipmentDetails, boolean isCreate, List<ReferenceNumbersRequest> referenceNumbersRequestList, Long id, List<RoutingsRequest> routingsRequestList, List<ServiceDetailsRequest> serviceDetailsRequestList, List<NotesRequest> notesRequestList, List<PartiesRequest> shipmentAddressList, List<PickupDeliveryDetailsRequest> pickupDeliveryDetailsRequests) throws RunnerException {
         if (referenceNumbersRequestList != null) {
@@ -445,66 +404,4 @@ public class ShipmentsV3Util {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)), executorService);
     }
 
-    public ConsolidationDetails getConsolidationDetails(Long consolidationId, ConsolidationDetails consolidationDetails) {
-        if(!Objects.isNull(consolidationDetails))
-            return consolidationDetails;
-        Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(consolidationId);
-        if(optionalConsolidationDetails.isPresent())
-            return optionalConsolidationDetails.get();
-        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-    }
-
-    public ConsolidationDetails saveConsolidationDGValue(boolean dgFlag, ConsolidationDetails consolidationDetails) {
-        if( (!Boolean.TRUE.equals(consolidationDetails.getHazardous()) && dgFlag)
-                || (!dgFlag && Boolean.TRUE.equals(consolidationDetails.getHazardous())) ) {
-            consolidationDetails.setHazardous(dgFlag);
-            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, dgFlag);
-            return consolidationDetails;
-        }
-        return null;
-    }
-
-    public boolean checkIfAllShipmentsAreNonDG(List<Long> shipmentIdList) {
-        if (!shipmentIdList.isEmpty()) {
-            List<ShipmentDetails> shipmentDetails = shipmentDao.findByShipmentIdInAndContainsHazardous(shipmentIdList, true);
-            if(!CollectionUtils.isEmpty(shipmentDetails))
-                return false;
-        }
-        return true;
-    }
-
-    public ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Long consolidationId, ShipmentDetails shipment, ConsolidationDetails consolidationDetails) {
-        if(makeConsoleDG) {
-            consolidationDetails = getConsolidationDetails(consolidationId, consolidationDetails);
-            return saveConsolidationDGValue(true, consolidationDetails);
-        }
-        if(makeConsoleNonDG.get()) {
-            List<Long> shipmentIdList = getShipmentIdsExceptCurrentShipment(consolidationId, shipment);
-            makeConsoleNonDG.set(checkIfAllShipmentsAreNonDG(shipmentIdList));
-            if(makeConsoleNonDG.get()) {
-                consolidationDetails = getConsolidationDetails(consolidationId, consolidationDetails);
-                return saveConsolidationDGValue(false, consolidationDetails);
-            }
-        }
-        return null;
-    }
-
-
-    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
-            return true;
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
-    }
-
-    private boolean checkForDGShipmentAndAirDgFlag(ShipmentDetails shipment) {
-        if(checkForNonAirDGFlag(shipment, commonUtils.getShipmentSettingFromContext()))
-            return false;
-        return Boolean.TRUE.equals(shipment.getContainsHazardous());
-    }
-
-    private List<Long> getShipmentIdsExceptCurrentShipment(Long consolidationId, ShipmentDetails shipment) {
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
-        return consoleShipmentMappings.stream().filter(c -> !Objects.equals(c.getShipmentId(), shipment.getId()))
-                .map(ConsoleShipmentMapping::getShipmentId).toList();
-    }
 }

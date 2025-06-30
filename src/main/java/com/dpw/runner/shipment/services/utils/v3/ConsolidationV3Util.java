@@ -114,7 +114,9 @@ public class ConsolidationV3Util {
         return new ArrayList<>(page.getContent());
     }
 
-    public void afterSaveForET(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationEtV3Request consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking) throws RunnerException {
+    public void afterSaveForET(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity,
+                               ConsolidationEtV3Request consolidationDetailsRequest, boolean isCreate,
+                               ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid) throws RunnerException {
         List<PackingV3Request> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerV3Request> containerRequestList = consolidationDetailsRequest.getContainersList();
 
@@ -130,7 +132,7 @@ public class ConsolidationV3Util {
             awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
         }
 
-        setContainerAndPackingList(consolidationDetails, isCreate, shipmentSettingsDetails, isFromBooking, true, containerRequestList, id, packingRequestList);
+        setContainerAndPackingList(consolidationDetails, isCreate, shipmentSettingsDetails, isFromBooking, includeGuid, containerRequestList, id, packingRequestList);
 
         // Events section
         setEventsForConsole(consolidationDetails, isCreate, shipmentSettingsDetails, isFromBooking, eventsRequestList, id);
