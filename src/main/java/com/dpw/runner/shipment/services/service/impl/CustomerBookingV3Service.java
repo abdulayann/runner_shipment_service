@@ -241,7 +241,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
             }
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
-            updateCargoInformation(customerBooking.getId(), containerTeuMap);
+            updateCargoInformation(customerBooking, containerTeuMap);
             /**
              * Platform service integration
              * Criteria for update call to platform service : check flag IsPlatformBookingCreated, if true then update otherwise dont update
@@ -443,7 +443,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
         }
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
-        updateCargoInformation(customerBooking.getId(), containerTeuMap);
+        updateCargoInformation(customerBooking, containerTeuMap);
         try {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -2283,12 +2283,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    public void updateCargoInformation(Long bookingId, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
-        Optional<CustomerBooking> optionalBooking = customerBookingDao.findById(bookingId);
-        if (!optionalBooking.isPresent()) {
-            throw new RunnerException("CustomerBooking not found with id: " + bookingId);
-        }
-        CustomerBooking booking = optionalBooking.get();
+    public void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
         List<Containers> containers = Optional.ofNullable(booking.getContainersList())
                 .orElse(Collections.emptyList());
         List<Packing> packings = Optional.ofNullable(booking.getPackingList())
