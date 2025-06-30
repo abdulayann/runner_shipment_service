@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -102,6 +103,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -263,6 +267,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
         packingModel.setPacks("10");
+        packingModel.setContainerNumber("CONT1234567");
         packingModels.add(packingModel);
 
         PackingModel packingModel2 = new PackingModel();
@@ -271,6 +276,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
         packingModel2.setHeight(BigDecimal.TEN);
         packingModel2.setPacks("20");
         packingModels.add(packingModel2);
+
+        PackingModel packingModel3 = new PackingModel();
+        packingModels.add(packingModel3);
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
@@ -687,6 +695,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
         ContainerModel containerModel = new ContainerModel();
         containerModel.setHazardous(true);
+        containerModel.setContainerCode("Code");
         shipmentModel.setContainersList(Arrays.asList(containerModel));
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);

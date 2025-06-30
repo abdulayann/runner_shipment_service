@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -89,6 +90,9 @@ class CSDReportTest {
 
     @Mock
     IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 

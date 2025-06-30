@@ -25,6 +25,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_TERMS_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_CONTACT_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER_SEAL_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CEN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGABLE_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE;
@@ -83,8 +84,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON_ALIAS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PHONE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_COUNT_WITH_ETC_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_NUM;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_NUMBER_WITH_ETC_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_SUMMARY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTAINER_TYPE_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COPY_AS_AGREED;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COPY_CHARGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
@@ -122,8 +125,12 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FRN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WEIGHT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_CHARGES;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACK_DETAILS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HS_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IMP;
@@ -139,6 +146,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOADED_DATE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD_DESCRIPTION_REMARKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MARINE_POLLUTANT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MARKS_N_NUMS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAX_TEMP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAX_TEMP_UNIT;
@@ -173,6 +181,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_DETAILS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_GOODS_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_MARKS_NUMBERS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACK_SUMMARY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PAYMENT_TERMS_DESCRITION_WITH_CAMELCASE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PICKUP_FROM_ADDRESS_LL;
@@ -215,6 +224,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_WIDTH;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKING_WIDTH_UNIT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_SECOND_FLIGHT_AND_DAY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SI_CUT_OFF_TIME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SPH;
@@ -258,6 +268,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PASSED_BY_PERSON;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_PICKUP_AT_ORIGIN;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_REEFER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_SHIPMENT_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_SI;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TERMINAL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.S_TRAILER_NO;
@@ -361,6 +372,7 @@ import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -468,6 +480,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -495,6 +508,9 @@ public abstract class IReport {
     public static final String REGEX_S_S = "%s %s";
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IContainerDao containerDao;
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -3661,6 +3677,9 @@ public abstract class IReport {
         List<Map<String, Object>> packsDictionary = new ArrayList<>();
         Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        List<Map<String, List<Map<String, Object>>>> groupedDict = new ArrayList<>();
+        groupPacksDetails(shipment.getPackingList(), groupedDict, v1TenantSettingsResponse);
+        dictionary.put(SHIPMENT_PACKS, groupedDict);
         for(var pack : shipment.getPackingList()) {
             packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
         }
@@ -3718,6 +3737,141 @@ public abstract class IReport {
         }
 
         return dict;
+    }
+
+    public void groupPacksDetails(List<PackingModel> packingList,
+                                  List<Map<String, List<Map<String, Object>>>> groupedSummaryList,
+                                  V1TenantSettingsResponse v1TenantSettingsResponse) {
+
+        Map<String, List<Map<String, Object>>> finalContainerNumberMap = new HashMap<>();
+        Map<String, List<Map<String, Object>>> finalContainerTypeMap = new HashMap<>();
+        List<Map<String, Object>> unassignedPacksList = new ArrayList<>();
+
+        for (PackingModel pack : packingList) {
+            Containers container = containerDao.findById(pack.getContainerId()).orElse(null);
+            Map<String, Object> dict = createBaseDict(pack, container);
+
+            if (pack.getContainerNumber() != null) {
+                finalContainerNumberMap
+                        .computeIfAbsent(pack.getContainerNumber(), k -> new ArrayList<>())
+                        .add(dict);
+            } else if (container != null && container.getContainerCode() != null) {
+                populateFromContainer(container, dict);
+                finalContainerTypeMap
+                        .computeIfAbsent(container.getContainerCode(), k -> new ArrayList<>())
+                        .add(dict);
+            } else {
+                unassignedPacksList.add(dict);
+            }
+        }
+
+        processGroupedMap(finalContainerNumberMap, groupedSummaryList, v1TenantSettingsResponse);
+        processGroupedMap(finalContainerTypeMap, groupedSummaryList, v1TenantSettingsResponse);
+        processGroupedMap(Collections.singletonMap("", unassignedPacksList), groupedSummaryList, v1TenantSettingsResponse);
+    }
+
+    private Map<String, Object> createBaseDict(PackingModel pack, Containers container) {
+        Map<String, Object> dict = new HashMap<>();
+        dict.put(CONTAINER_NUM, pack.getContainerNumber());
+        dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
+        dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
+        dict.put(PACKS_UNIT, pack.getPacksType());
+        dict.put(CARRIER_SEAL_NUMBER, container != null ? container.getCarrierSealNumber() : null);
+        dict.put(CONTAINER_TYPE_CODE, container != null ? container.getContainerCode() : null);
+
+        if (pack.getPacks() != null) {
+            dict.put(PACKS, new BigDecimal(pack.getPacks()));
+        }
+        if (pack.getWeight() != null) {
+            dict.put(GROSS_WEIGHT, pack.getWeight());
+        }
+        if (pack.getVolume() != null) {
+            dict.put(GROSS_VOLUME, pack.getVolume());
+        }
+
+        return dict;
+    }
+
+    private void populateFromContainer(Containers container, Map<String, Object> dict) {
+        dict.put(MARKS_N_NUMS, container.getMarksNums());
+        dict.put(GOODS_DESCRIPTION, container.getDescriptionOfGoods());
+        dict.put(PACKS, container.getPacks());
+        dict.put(GROSS_WEIGHT, container.getGrossWeight());
+        dict.put(GROSS_VOLUME, container.getGrossVolume());
+        dict.put(PACKS_UNIT, container.getPacksType());
+    }
+
+
+    private void processGroupedMap(Map<String, List<Map<String, Object>>> groupedMap,
+                                   List<Map<String, List<Map<String, Object>>>> outputList,
+                                   V1TenantSettingsResponse settings) {
+
+        Map<String, List<Map<String, Object>>> outputMap = new HashMap<>();
+
+        for (Map.Entry<String, List<Map<String, Object>>> entry : groupedMap.entrySet()) {
+            Map<String, Object> summary = buildSummaryForGroup(entry.getKey(), entry.getValue(), settings);
+            outputMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(summary);
+        }
+
+        outputList.add(outputMap);
+    }
+
+    private Map<String, Object> buildSummaryForGroup(String groupKey, List<Map<String, Object>> groupList, V1TenantSettingsResponse settings) {
+        Set<String> marksSet = new LinkedHashSet<>();
+        Set<String> descSet = new LinkedHashSet<>();
+        BigDecimal totalPacks = BigDecimal.ZERO;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+
+        String sealNumber = null;
+        String containerType = null;
+        String packUnit = null;
+
+        for (Map<String, Object> pack : groupList) {
+            collectTextField(pack, PACKS_MARKS_NUMBERS, marksSet);
+            collectTextField(pack, PACKS_GOODS_DESCRIPTION, descSet);
+
+            totalPacks = addIfPresent(pack, PACKS, totalPacks);
+            totalWeight = addIfPresent(pack, GROSS_WEIGHT, totalWeight);
+            totalVolume = addIfPresent(pack, GROSS_VOLUME, totalVolume);
+
+            if (sealNumber == null) sealNumber = getFirstValue(pack, CARRIER_SEAL_NUMBER);
+            if (containerType == null) containerType = getFirstValue(pack, CONTAINER_TYPE_CODE);
+            if (packUnit == null) packUnit = getFirstValue(pack, PACKS_UNIT);
+        }
+
+        Map<String, Object> summary = new HashMap<>();
+        summary.put(CONTAINER_NUM, groupKey);
+        summary.put(CARRIER_SEAL_NUMBER, sealNumber);
+        summary.put(CONTAINER_TYPE_CODE, containerType);
+        summary.put(PACKS_MARKS_NUMBERS, String.join(", ", marksSet));
+        summary.put(PACKS_GOODS_DESCRIPTION, String.join(", ", descSet));
+        summary.put(PACKS, getDPWWeightVolumeFormat(totalPacks, 0, settings));
+        summary.put(GROSS_WEIGHT, getDPWWeightVolumeFormat(totalWeight, 2, settings));
+        summary.put(GROSS_VOLUME, getDPWWeightVolumeFormat(totalVolume, 2, settings));
+        summary.put(PACKS_UNIT, packUnit);
+
+        return summary;
+    }
+
+    private void collectTextField(Map<String, Object> map, String key, Set<String> collector) {
+        Object value = map.get(key);
+        if (value != null) {
+            collector.add(value.toString());
+        }
+    }
+
+    private BigDecimal addIfPresent(Map<String, Object> map, String key, BigDecimal currentTotal) {
+        Object value = map.get(key);
+        if (value instanceof BigDecimal) {
+            return currentTotal.add((BigDecimal) value);
+        }
+        return currentTotal;
+    }
+
+    private String getFirstValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value != null ? value.toString() : null;
     }
 
     private void processStringUtilityTags(PackingModel pack, Map<String, Object> dict) {
@@ -5227,5 +5381,24 @@ public abstract class IReport {
                 }
             }
         }
+    }
+
+    public List<Map<String, Object>> populatePacksAndContainerTags(ShipmentModel shipment, Map<String, Object> dictionary) {
+            if(shipment.getPackingList() == null || shipment.getPackingList().isEmpty()) {
+                dictionary.put(HAS_PACKS, false);
+                return null;
+            }
+
+            List<Map<String, Object>> packsDictionary = new ArrayList<>();
+            Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
+            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+            for(var pack : shipment.getPackingList()) {
+                packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
+            }
+
+            dictionary.put(HAS_PACKS, true);
+            dictionary.put(S_SHIPMENT_PACKS, packsDictionary);
+            return packsDictionary;
+
     }
 }

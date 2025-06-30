@@ -37,6 +37,7 @@ public class ProofOfDeliveryReport extends IReport {
         }
         if(proofOfDeliveryModel.hblModel.shipment != null) {
             this.populateShipmentReportData(dictionary, null, proofOfDeliveryModel.hblModel.getShipment().getId());
+            this.getPackingDetails(proofOfDeliveryModel.hblModel.getShipment(), dictionary);
         }
         return dictionary;
     }

@@ -146,6 +146,7 @@ public class FreightCertificationReport extends IReport{
 
         if(freightCertificationModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, freightCertificationModel.shipmentDetails.getId());
+            this.getPackingDetails(freightCertificationModel.shipmentDetails, dictionary);
         }
         return dictionary;
     }

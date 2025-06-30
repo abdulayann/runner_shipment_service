@@ -112,9 +112,9 @@ public class BookingConfirmationReport extends IReport{
             this.populateConsolidationReportData(dictionary, null, bookingConfirmationModel.hblModel.consolidation.getId());
         }
 
-
         if(bookingConfirmationModel.hblModel.shipment != null) {
             this.populateShipmentReportData(dictionary, null, bookingConfirmationModel.hblModel.shipment.getId());
+            this.getPackingDetails(bookingConfirmationModel.hblModel.getShipment(), dictionary);
         }
         return dictionary;
     }

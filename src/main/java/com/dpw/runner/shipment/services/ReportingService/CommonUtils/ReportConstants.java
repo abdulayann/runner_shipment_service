@@ -175,6 +175,7 @@ public class ReportConstants {
     public static final String DELIVERY_TIME = "DeliveryTime";
     public static final String DELIVERY_AGENT = "DeliveryAgent";
     public static final String MARKS_N_NUMS = "MarksnNums";
+    public static final String GOODS_DESCRIPTION = "GoodsDescription";
     public static final String MARKS_NO = "MarksNo";
     public static final String MARKS_AND_NUMBER = "Marks&Number";
     public static final String ORIGINALS = "Originals";
@@ -1469,4 +1470,7 @@ public class ReportConstants {
     public static final String S_FIRST_VOYAGE = "S_FirstVoyage";
     public static final String S_FIRST_FLIGHT_NUMBER = "S_FirstFlightNumber";
     public static final String S_FIRST_CARRIER = "S_FirstCarrier";
+
+    public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
+    public static final String HAS_PACKS = "HasPacks1";
 }

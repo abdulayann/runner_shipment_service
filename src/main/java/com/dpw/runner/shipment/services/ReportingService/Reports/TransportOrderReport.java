@@ -100,6 +100,7 @@ public class TransportOrderReport extends IReport{
             addTransportInstructionTags(dictionary, shipmentModel);
         if(transportOrderModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, transportOrderModel.shipmentDetails.getId());
+            this.getPackingDetails(transportOrderModel.shipmentDetails, dictionary);
         }
         return dictionary;
     }

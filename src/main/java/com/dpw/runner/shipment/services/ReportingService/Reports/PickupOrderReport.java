@@ -106,6 +106,7 @@ public class PickupOrderReport extends IReport {
         ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
         if (pickUpOrderReportModel.hblModel.getShipment() != null) {
             this.populateShipmentReportData(dictionary, null, pickUpOrderReportModel.hblModel.getShipment() .getId());
+            this.getPackingDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
         }
 
         if (pickUpOrderReportModel.hblModel.getConsolidation() != null) {

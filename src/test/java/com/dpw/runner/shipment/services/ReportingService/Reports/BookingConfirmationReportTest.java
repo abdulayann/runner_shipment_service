@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingConfirmationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -20,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,7 +48,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class BookingConfirmationReportTest {
+class BookingConfirmationReportTest extends CommonMocks {
 
     @InjectMocks
     private BookingConfirmationReport bookingConfirmationReport;
@@ -61,6 +64,9 @@ class BookingConfirmationReportTest {
 
     @Mock
     MasterDataUtils masterDataUtils;
+
+    @Mock
+    private IContainerDao containerDao;
 
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
@@ -295,6 +301,7 @@ class BookingConfirmationReportTest {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
+        mockTenantSettings();
         assertNotNull(bookingConfirmationReport.populateDictionary(bookingConfirmationModel));
     }
 
@@ -314,6 +321,7 @@ class BookingConfirmationReportTest {
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
+        mockTenantSettings();
         assertNotNull(bookingConfirmationReport.populateDictionary(bookingConfirmationModel));
     }
 
