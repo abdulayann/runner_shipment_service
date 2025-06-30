@@ -2143,18 +2143,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments;
     }
 
-    private void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldConsolEntity, Boolean fromAttachShipment, ShipmentDetails sd) {
-        if (fromAttachShipment != null && fromAttachShipment) {
-            if (!CommonUtils.isStringNullOrEmpty(console.getBookingNumber())) {
-                sd.setBookingNumber(console.getBookingNumber());
-            } else {
-                sd.setBookingNumber(console.getCarrierBookingRef());
-            }
-        } else {
-            if (CommonUtils.isStringNullOrEmpty(oldConsolEntity.getBookingNumber())) {
-                sd.setBookingNumber(console.getCarrierBookingRef());
-            }
-        }
+    private void setBookingNumberInShipment(ConsolidationDetails console, ShipmentDetails sd) {
+        sd.setBookingNumber(console.getCarrierBookingRef());
     }
 
     /**
@@ -2223,7 +2213,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();
-        setBookingNumberInShipment(console, oldEntity, fromAttachShipment, shipmentDetails);
+        setBookingNumberInShipment(console, shipmentDetails);
 
         if (!Objects.equals(oldBookingNumber, shipmentDetails.getBookingNumber())
                 && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
