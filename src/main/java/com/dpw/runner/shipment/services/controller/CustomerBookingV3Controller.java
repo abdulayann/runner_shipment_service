@@ -301,4 +301,10 @@ public class CustomerBookingV3Controller {
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long bookingId) {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getAllMasterData(bookingId));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.DEFAULT_BOOKING_GENERATED_SUCCESSFULLY, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.API_DEFAULT_BOOKING)
+    public ResponseEntity<IRunnerResponse> getDefaultBooking() {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.getDefaultBooking());
+    }
 }

@@ -42,6 +42,7 @@ public class CustomerBookingConstants {
     public static final String GCR_FUSION = "GCR";
     public static final String MASTER_DATA_RETRIEVE_SUCCESS = "Master Data Retrieve Successfully";
     public static final String BOOKING_DETAILS_NULL_FOR_ID_ERROR = "Booking Details is null for Id {}";
+    public static final String DEFAULT_BOOKING_GENERATED_SUCCESSFULLY = "Default booking generated successfully";
     public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "referenceNumbersList", "containersList", "packingList", "routingList");
 
     public static final String IMMEDIATE= "IMMEDIATE";
