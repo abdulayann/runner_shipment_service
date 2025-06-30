@@ -799,6 +799,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     ContainerV3Request newContainer = jsonHelper.convertValue(containerV3Request, ContainerV3Request.class);
                     newContainer.setId(null);
                     newContainer.setGuid(null);
+                    newContainer.setBookingId(null);
                     newContainer.setContainerCount(1L);
                     expandedContainers.add(newContainer);
                 }
