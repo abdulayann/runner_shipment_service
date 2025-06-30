@@ -1350,7 +1350,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (consolidationDetails.getCarrierDetails() == null)
             consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
-        consolidationDetails.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
         consolidationDetails.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
         consolidationDetails.getCarrierDetails().setVoyage(shipment.getCarrierDetails().getVoyage());
         consolidationDetails.setShipmentType(shipment.getDirection());
@@ -2182,11 +2181,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
-            List<RoutingsRequest> routingsRequest = customerBookingV3Request.getRoutingList();
-
-            if (ObjectUtils.isNotEmpty(routingsRequest)) {
-                shipmentDetails.setRoutingsList(routingsDao.saveEntityFromShipment(shipmentDetails.getRoutingsList(), shipmentId));
-            }
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
             if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
