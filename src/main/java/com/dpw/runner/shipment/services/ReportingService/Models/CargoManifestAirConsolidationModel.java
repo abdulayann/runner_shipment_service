@@ -15,4 +15,5 @@ public class CargoManifestAirConsolidationModel implements IDocumentModel{
     private List<Awb> awbList;
     private TenantModel tenantModel;
     private PackSummaryResponse packSummaryResponse;
+    private Awb consolidationAwb;
 }

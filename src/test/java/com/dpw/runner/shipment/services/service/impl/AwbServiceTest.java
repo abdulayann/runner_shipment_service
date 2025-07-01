@@ -1578,7 +1578,7 @@ class AwbServiceTest extends CommonMocks {
 
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
         when(awbDao.findByIds(anyList())).thenReturn(List.of(Awb.builder().awbPackingInfo(Arrays.asList()).build()));
-        var awbResponse = awbService.getMawnLinkPacks(testMawb);
+        var awbResponse = awbService.getMawnLinkPacks(testMawb, true, null);
 
         assertEquals(testMawb, awbResponse);
 
@@ -2332,7 +2332,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testMawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(testHawb));
-
+        when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }

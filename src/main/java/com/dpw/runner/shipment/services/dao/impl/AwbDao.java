@@ -24,9 +24,7 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -110,58 +108,75 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Page<Awb> findAll(Specification<Awb> spec, Pageable pageable) {
-        return awbRepository.findAll(spec, pageable);
+        var page = awbRepository.findAll(spec, pageable);
+        return page;
     }
 
     @Override
     public Optional<Awb> findById(Long id) {
-        return awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
+        var awb = awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
+        return awb;
     }
 
     @Override
     public Optional<Awb> findByGuid(UUID guid) {
-        return awbRepository.findByGuid(guid);
+        var awb = awbRepository.findByGuid(guid);
+        return awb;
     }
 
     @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
-        return awbRepository.findByShipmentId(shipmentId);
+        var awb = awbRepository.findByShipmentId(shipmentId);
+        return awb;
     }
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {
-        return awbRepository.findByConsolidationIdByQuery(consolidationId);
+        var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
+        return awb;
     }
 
     @Override
     public List<Awb> findByShipmentIdList(List<Long> shipmentIds) {
-        return awbRepository.findByShipmentIdList(shipmentIds);
+        var awb = awbRepository.findByShipmentIdList(shipmentIds);
+        return awb;
     }
 
     @Override
     public List<Awb> findByShipmentIdByQuery(Long shipmentId) {
-        return awbRepository.findByShipmentIdByQuery(shipmentId);
+        var awb = awbRepository.findByShipmentIdByQuery(shipmentId);
+        return awb;
     }
 
     @Override
     public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
-        return awbRepository.findByShipmentIdsByQuery(shipmentIds);
+        var awb = awbRepository.findByShipmentIdsByQuery(shipmentIds);
+        return awb;
     }
     
     @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
-        return awbRepository.findByConsolidationIdByQuery(consolidationId);
+        var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
+        return awb;
     }
 
     @Override
-    public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
+    public List<Awb> findByIssuingAgent(String issuingAgent) {
+        var awb = awbRepository.findByIssuingAgent(issuingAgent);
+        return awb;
+
+    }
 
     @Override
-    public List<Awb> findByAwbNumber(List<String> awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
+    public List<Awb> findByAwbNumber(List<String> awbNumber) {
+        var awb = awbRepository.findByAwbNumber(awbNumber);
+        return awb;
+    }
 
     @Override
     public List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent) {
-        return awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
+        var awb = awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
+        return awb;
     }
 
     @Override
@@ -172,6 +187,24 @@ public class AwbDao implements IAwbDao {
             CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, false)), executorService);
         }
         return entities;
+    }
+
+    @Override
+    public List<Awb> findByIds(List<Long> id) {
+        var awbList = awbRepository.findAwbByIds(id);
+        return awbList;
+    }
+
+    @Override
+    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
+        var awbList = awbRepository.findAwbByAwbNumbers(awbNumbers);
+        return awbList;
+    }
+
+    @Override
+    public Awb findAwbByGuidByQuery(UUID guid) {
+        var awb = awbRepository.findAwbByGuidByQuery(guid);
+        return awb;
     }
 
     private void applyValidations(Awb awb) throws RunnerException {
@@ -403,10 +436,7 @@ public class AwbDao implements IAwbDao {
         }
     }
 
-    @Override
-    public Awb findAwbByGuidByQuery(UUID guid) {
-        return awbRepository.findAwbByGuidByQuery(guid);
-    }
+
 
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
@@ -546,15 +576,7 @@ public class AwbDao implements IAwbDao {
         return linkedHawb;
     }
 
-    @Override
-    public List<Awb> findByIds(List<Long> id) {
-        return awbRepository.findAwbByIds(id);
-    }
 
-    @Override
-    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
-        return awbRepository.findAwbByAwbNumbers(awbNumbers);
-    }
 
     @Override
     public void validateAirMessaging(Long id) throws RunnerException {

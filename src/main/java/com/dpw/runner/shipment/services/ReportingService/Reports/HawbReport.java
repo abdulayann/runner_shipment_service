@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -244,7 +245,7 @@ public class HawbReport extends IReport{
         dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  freightAmountText);
         dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, otherAmountText);
         Set<String> hsCodesSet = new HashSet<>();
-        Set<String> dgHsCodesSet = new HashSet<>();
+        Set<String> dgHsCodesSet = new LinkedHashSet<>();
         Set<String> slacCodeSet = new HashSet<>();
         setHsCodesSet(awbPackingInfo, hsCodesSet);
         processGoodsDescription(dictionary, v1TenantSettingsResponse, awbGoodsDescriptionInfo, ntrQtyGoods, cargoInfoRows, dgHsCodesSet, hsCodesSet, slacCodeSet, freightAmountText, totalPieces, totalGrossWeight, sumOfTotalAmount, sumOfChargeableWt);
@@ -385,6 +386,7 @@ public class HawbReport extends IReport{
             String commaHsCode = HSCODE + ": ";
             commaHsCode += String.join(", ", dgHsCodesSet);
             dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED, commaHsCode);
+            dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED1, commaHsCode);
         }
 
         if (!hsCodesSet.isEmpty()) {
@@ -800,7 +802,7 @@ public class HawbReport extends IReport{
                     value.put(ReportConstants.GROSS_WT, convertToWeightNumberFormat(value.get(ReportConstants.GROSS_WT).toString(), v1TenantSettingsResponse));
                 }
                 value.computeIfPresent(ReportConstants.CHARGEABLE_WT, (key, oldValue) ->
-                        convertToWeightNumberFormat(oldValue.toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse)
+                        roundUpToNextHalf(oldValue.toString())
                 );
                 addRateChargeTag(v1TenantSettingsResponse, cargoInfoRows, value);
                 addTotalAmountTag(v1TenantSettingsResponse, cargoInfoRows, value);
@@ -839,10 +841,13 @@ public class HawbReport extends IReport{
 
     private void addCodeSets(Set<String> dgHsCodesSet, Set<String> hsCodesSet, Set<String> slacCodeSet, Map<String, Object> value) {
         if (value.get(HS_CODE1) != null) {
-            String hsCode = value.get(HS_CODE1).toString();
-            if (!hsCode.isEmpty()) {
-                dgHsCodesSet.add(hsCode);
-                hsCodesSet.add(hsCode);
+            String hsCodeStr = value.get(HS_CODE1).toString();
+            if (hsCodeStr!=null && !hsCodeStr.isEmpty()) {
+                String[] hsCodes = hsCodeStr.split(",");
+                for (String hsCode : hsCodes) {
+                    dgHsCodesSet.add(hsCode);
+                    hsCodesSet.add(hsCode);
+                }
             }
         }
         if (value.get(SLAC_CODE) != null) {
@@ -922,7 +927,7 @@ public class HawbReport extends IReport{
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
+            dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
             dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
         }
