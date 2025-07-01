@@ -2413,6 +2413,24 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processIsNewConsolAttached(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isCreate, MutableBoolean isNewConsolAttached, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
+        Set<ConsolidationDetails> oldConsolidation = oldShipmentDetails != null ? oldShipmentDetails.getConsolidationList() : null;
+        Set<ConsolidationDetails> newConsolidation = shipmentDetails != null ? shipmentDetails.getConsolidationList() : null;
+
+        boolean isConsolDetached = (oldConsolidation != null && !oldConsolidation.isEmpty()) && (newConsolidation == null || newConsolidation.isEmpty());
+        boolean isConsolUpdated = false;
+
+        if (!isConsolDetached && oldConsolidation != null && newConsolidation != null && !oldConsolidation.isEmpty() && !newConsolidation.isEmpty()) {
+            Long oldId = oldConsolidation.iterator().next().getId();
+            Long newId = newConsolidation.iterator().next().getId();
+            isConsolUpdated = !Objects.equals(oldId, newId);
+        }
+
+        if (isConsolDetached || (isConsolUpdated && oldConsolidation != null && !oldConsolidation.isEmpty())) {
+            ConsolidationDetails oldConsole = oldConsolidation.iterator().next();
+            if (oldConsole != null && oldConsole.getId() != null) {
+                awbDao.validateAirMessaging(oldConsole.getId());
+            }
+        }
         if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             handleNewConsoleAttachment(shipmentDetails, isCreate);
         } else {
@@ -2452,12 +2470,6 @@ public class ShipmentService implements IShipmentService {
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
             shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
             shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
-        }
-        if (oldShipmentDetails != null && oldShipmentDetails.getConsolidationList() != null && !oldShipmentDetails.getConsolidationList().isEmpty()) {
-            ConsolidationDetails oldConsole = oldShipmentDetails.getConsolidationList().iterator().next();
-            if (oldConsole != null && oldConsole.getId() != null) {
-                awbDao.validateAirMessaging(oldConsole.getId());
-            }
         }
     }
 
@@ -2923,7 +2935,8 @@ public class ShipmentService implements IShipmentService {
         Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
         if (addressMap.containsKey(parties.getOrgCode() + "#" + parties.getAddressCode())) {
             Map<String, Object> addressConsignorAgent = addressMap.get(parties.getOrgCode() + "#" + parties.getAddressCode());
-            if (addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
+
+            if (Objects.nonNull(addressConsignorAgent) && addressConsignorAgent.containsKey(Constants.REGULATED_AGENT)) {
                 var rakcType = addressConsignorAgent.get(Constants.REGULATED_AGENT);
                 if (rakcType != null && Boolean.TRUE.equals(rakcType)){
                     if(shipmentDetails.getAdditionalDetails().getScreeningStatus() == null ||
