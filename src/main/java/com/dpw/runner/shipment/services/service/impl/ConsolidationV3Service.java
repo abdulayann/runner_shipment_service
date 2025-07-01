@@ -2071,7 +2071,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<EventsRequest> events) throws RunnerException {
 
         // Update basic references in the shipment from the console
-        shipmentDetails.setConsolRef(console.getReferenceNumber());
+        shipmentDetails.setConsolRef(console.getConsolidationNumber());
         shipmentDetails.setMasterBill(console.getBol());
         shipmentDetails.setDirection(console.getShipmentType());
         shipmentDetails.setTransportMode(console.getTransportMode());
