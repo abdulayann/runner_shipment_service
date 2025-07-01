@@ -69,6 +69,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -1265,8 +1266,8 @@ public abstract class IReport {
 
                 dict.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(awb));
                 dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(awb));
-                dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
-                dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
+                dict.put(USER_INITIALS, AwbUtility.getScreenersName(awb));
+                dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(awb));
             }
             populateAwbPartiesInfo(dict, awb);
             if(!listIsNullOrEmpty(awb.getAwbGoodsDescriptionInfo())) {
@@ -4287,7 +4288,7 @@ public abstract class IReport {
 
         eCsdInfoList.add(getPrintOriginalDate(awb));
 
-        eCsdInfoList.add(awb.getAwbCargoInfo().getUserInitials());
+        eCsdInfoList.add(AwbUtility.getScreenersName(awb));
 
         return String.join("/", eCsdInfoList.stream().filter(StringUtility::isNotEmpty).toList());
     }

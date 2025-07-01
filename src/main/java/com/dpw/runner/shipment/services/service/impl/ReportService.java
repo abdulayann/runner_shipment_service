@@ -63,6 +63,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -143,6 +144,10 @@ public class ReportService implements IReportService {
     private MasterDataUtils masterDataUtils;
     @Autowired
     ExecutorService executorService;
+
+    @Qualifier("executorServiceReport")
+    @Autowired
+    ExecutorService executorServiceReport;
     @Autowired
     private IAwbDao awbDao;
     @Autowired
@@ -1112,7 +1117,7 @@ public class ReportService implements IReportService {
                 }
 
                 populateMap(threadSafeData, packsCount, packsOfTotal, packs);
-                futures.add(executorService.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, isCombi, packsCount, hawbPacksCountForCombi)));
+                futures.add(executorServiceReport.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, isCombi, packsCount, hawbPacksCountForCombi)));
             }
 
             populatePdfBytes(futures, pdfBytes);

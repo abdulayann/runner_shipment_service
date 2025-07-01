@@ -1,0 +1,1 @@
+update public.shipment_details set master_bill ='BCSA2506132' where tenant_id ='520' and shipment_id ='BCNA25062324';
