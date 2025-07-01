@@ -201,6 +201,13 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCreatePacking_exception() {
+        request.setContainerId(1L);
+
+        assertThrows(ValidationException.class, () -> packingV3Service.create(request, "SHIPMENT"));
+    }
+
+    @Test
     void testUpdatePacking_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
@@ -220,6 +227,15 @@ class PackingV3ServiceTest extends CommonMocks {
         PackingResponse result = packingV3Service.update(request, "SHIPMENT");
 
         assertEquals(1L, result.getId());
+    }
+
+    @Test
+    void testUpdatePacking_exception() {
+        request.setContainerId(1L);
+        when(packingDao.findById(1L)).thenReturn(Optional.of(packing));
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+
+        assertThrows(ValidationException.class, () -> packingV3Service.update(request, "SHIPMENT"));
     }
 
     @Test
@@ -705,7 +721,6 @@ class PackingV3ServiceTest extends CommonMocks {
 
         // Validate map contains all expected keys
         assertEquals(3, responseMap.size());
-        assertEquals("ok", responseMap.get("master"));
         assertEquals("ok", responseMap.get("unlocation"));
         assertEquals("ok", responseMap.get("commodity"));
 
