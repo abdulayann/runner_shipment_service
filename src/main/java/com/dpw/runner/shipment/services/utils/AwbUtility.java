@@ -1205,7 +1205,8 @@ public class AwbUtility {
                 || Objects.isNull(UserContext.getUser())) {
             return false;
         }
-        return true;
+        else
+            return true;
     }
 
     public static String getScreenersName(Awb awb) {

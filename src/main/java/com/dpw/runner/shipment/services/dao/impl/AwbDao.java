@@ -114,69 +114,58 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Optional<Awb> findById(Long id) {
-        var awb = awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
-        return awb;
+        return awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
     }
 
     @Override
     public Optional<Awb> findByGuid(UUID guid) {
-        var awb = awbRepository.findByGuid(guid);
-        return awb;
+        return awbRepository.findByGuid(guid);
     }
 
     @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
-        var awb = awbRepository.findByShipmentId(shipmentId);
-        return awb;
+        return awbRepository.findByShipmentId(shipmentId);
     }
 
     @Override
     public List<Awb> findByConsolidationId(Long consolidationId) {
-        var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
-        return awb;
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     @Override
     public List<Awb> findByShipmentIdList(List<Long> shipmentIds) {
-        var awb = awbRepository.findByShipmentIdList(shipmentIds);
-        return awb;
+        return awbRepository.findByShipmentIdList(shipmentIds);
     }
 
     @Override
     public List<Awb> findByShipmentIdByQuery(Long shipmentId) {
-        var awb = awbRepository.findByShipmentIdByQuery(shipmentId);
-        return awb;
+        return awbRepository.findByShipmentIdByQuery(shipmentId);
     }
 
     @Override
     public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
-        var awb = awbRepository.findByShipmentIdsByQuery(shipmentIds);
-        return awb;
+        return awbRepository.findByShipmentIdsByQuery(shipmentIds);
     }
     
     @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
-        var awb = awbRepository.findByConsolidationIdByQuery(consolidationId);
-        return awb;
+        return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     @Override
     public List<Awb> findByIssuingAgent(String issuingAgent) {
-        var awb = awbRepository.findByIssuingAgent(issuingAgent);
-        return awb;
+        return awbRepository.findByIssuingAgent(issuingAgent);
 
     }
 
     @Override
     public List<Awb> findByAwbNumber(List<String> awbNumber) {
-        var awb = awbRepository.findByAwbNumber(awbNumber);
-        return awb;
+        return awbRepository.findByAwbNumber(awbNumber);
     }
 
     @Override
     public List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent) {
-        var awb = awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
-        return awb;
+        return awbRepository.findByAwbNumberAndIssuingAgent(awbNumber, issuingAgent);
     }
 
     @Override
@@ -191,20 +180,17 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> findByIds(List<Long> id) {
-        var awbList = awbRepository.findAwbByIds(id);
-        return awbList;
+        return awbRepository.findAwbByIds(id);
     }
 
     @Override
     public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
-        var awbList = awbRepository.findAwbByAwbNumbers(awbNumbers);
-        return awbList;
+        return awbRepository.findAwbByAwbNumbers(awbNumbers);
     }
 
     @Override
     public Awb findAwbByGuidByQuery(UUID guid) {
-        var awb = awbRepository.findAwbByGuidByQuery(guid);
-        return awb;
+        return awbRepository.findAwbByGuidByQuery(guid);
     }
 
     private void applyValidations(Awb awb) throws RunnerException {
