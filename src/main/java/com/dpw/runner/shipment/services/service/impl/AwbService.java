@@ -2067,6 +2067,7 @@ public class AwbService implements IAwbService {
         awb.setAwbOtherChargesInfo(resetAwb.getAwbOtherChargesInfo());
         awb.setAwbPaymentInfo(resetAwb.getAwbPaymentInfo());
         awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());
+        awb.setAirMessagingAdditionalFields(resetAwb.getAirMessagingAdditionalFields());
         // Link
         linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
         getMawnLinkPacks(awb, true, awbList);
