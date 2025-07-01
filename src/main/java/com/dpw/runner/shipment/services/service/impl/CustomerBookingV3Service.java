@@ -2330,7 +2330,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         List<Containers> containers = new ArrayList<>();
         List<Packing> packings = new ArrayList<>();
         if(booking.getId() != null) {
-            containers = containerDao.findByBookingIdIn(List.of(booking.getId()));;
+            containers = containerDao.findByBookingIdIn(List.of(booking.getId()));
             packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
         }
         if (!packings.isEmpty()) {
