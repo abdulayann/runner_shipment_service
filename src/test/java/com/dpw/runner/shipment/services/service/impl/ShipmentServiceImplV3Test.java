@@ -472,7 +472,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
         shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
         shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
-        shipmentDetails1.setConsolidationId(123L);
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());

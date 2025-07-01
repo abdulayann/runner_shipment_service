@@ -220,6 +220,5 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
     private Long originBranch;
-    private Long consolidationId;
 
 }
