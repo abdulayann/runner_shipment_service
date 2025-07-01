@@ -142,6 +142,9 @@ public class PackingV3Service implements IPackingV3Service {
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
+        if (packingRequest.getContainerId() != null) {
+            throw new ValidationException("Package can be assigned to a container only after creation.");
+        }
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -206,6 +209,9 @@ public class PackingV3Service implements IPackingV3Service {
         }
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
+        if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
+            throw new ValidationException("Changes are available for Package section, Please refresh for latest updates.");
+        }
         Packing oldConvertedPacking = jsonHelper.convertValue(oldPacking, Packing.class);
         Packing newPacking = jsonHelper.convertValue(packingRequest, Packing.class);
 
@@ -291,6 +297,8 @@ public class PackingV3Service implements IPackingV3Service {
                 createRequests.add(request);
             }
         }
+
+        packingValidationV3Util.validateContainerIds(createRequests, updateRequests, existingPackings);
 
         // Convert and process updates
         List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(existingPackings, Packing.class);
