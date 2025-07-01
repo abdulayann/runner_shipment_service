@@ -524,9 +524,41 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
         var organizationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllOrganizationDataInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
 
-        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, tenantDataFuture, containerDataFuture, chargeTypeDataFuture, salesAgentFuture, vesselsFuture, organizationFuture).join();
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(customerBookingV3Response, masterDataResponse)), executorServiceMasterData);
+
+        CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, tenantDataFuture, containerDataFuture, chargeTypeDataFuture, salesAgentFuture, vesselsFuture, organizationFuture, commodityTypesFuture).join();
 
         return masterDataResponse;
+    }
+
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> commodityTypes = new HashSet<>();
+            if (!Objects.isNull(customerBookingV3Response.getContainersList()))
+                customerBookingV3Response.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
+
+            if(masterDataResponse != null && !Objects.isNull(customerBookingV3Response.getPackingList())) {
+                customerBookingV3Response.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
+            }
+
+            Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
+
+            if(masterDataResponse == null) {
+                if (!Objects.isNull(customerBookingV3Response.getContainersList()))
+                    customerBookingV3Response.getContainersList().forEach(r -> r.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.COMMODITY, cacheMap)));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataHelper.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
     }
 
     public CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleMDMCall(CustomerBookingV3Response customerBookingV3Response, Map<String, Object> masterDataResponse) {
