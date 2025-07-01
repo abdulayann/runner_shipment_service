@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import com.dpw.runner.shipment.services.utils.OrganizationData;
+import com.dpw.runner.shipment.services.utils.OrganizationMasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
@@ -38,6 +40,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "customer_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties customer;
 
     @Column(name = "is_customer_free_text")
@@ -45,6 +48,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignor_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties consignor;
 
     @Column(name = "is_consignor_free_text")
@@ -52,6 +56,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "consignee_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties consignee;
 
     @Column(name = "is_consignee_free_text")
@@ -59,6 +64,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
+    @OrganizationData
     private Parties notifyParty;
 
     @Column(name = "is_notify_party_free_text")
@@ -296,9 +302,11 @@ public class CustomerBooking extends MultiTenancy {
     private String controlledReferenceNumber;
 
     @Column(name = "partner")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String partner;
 
     @Column(name = "booking_agent")
+    @OrganizationMasterData
     private Long bookingAgent;
 
     @Column(name = "partner_bkg_number")
@@ -314,15 +322,19 @@ public class CustomerBooking extends MultiTenancy {
     private String carrierBookingNumber;
 
     @Column(name = "pickup_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String pickupAtOriginType;
 
     @Column(name = "delivery_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String deliveryAtDestinationType;
 
     @Column(name = "brokerage_at_origin_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String brokerageAtOriginType;
 
     @Column(name = "brokerage_at_destination_type")
+    @MasterData(type = MasterDataType.ORDER_DPW)
     private String brokerageAtDestinationType;
 
     @Column(name = "pickup_at_origin_date")
@@ -332,15 +344,19 @@ public class CustomerBooking extends MultiTenancy {
     private LocalDateTime deliveryAtDestinationDate;
 
     @Column(name = "pickup_at_origin")
+    @OrganizationMasterData
     private Long pickupAtOrigin;
 
     @Column(name = "delivery_at_destination")
+    @OrganizationMasterData
     private Long deliveryAtDestination;
 
     @Column(name = "brokerage_at_origin")
+    @OrganizationMasterData
     private Long brokerageAtOrigin;
 
     @Column(name = "brokerage_at_destination")
+    @OrganizationMasterData
     private Long brokerageAtDestination;
 
     @Column(name = "brokerage_at_origin_date")
@@ -383,6 +399,7 @@ public class CustomerBooking extends MultiTenancy {
     private Long containers;
 
     @Column(name = "package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packageType;
 
     @Column(name = "packages")
