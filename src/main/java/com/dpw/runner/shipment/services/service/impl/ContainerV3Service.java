@@ -149,12 +149,12 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional
     public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
-        if (containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
-            throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
+        if (containerRequest.getBookingId() == null && containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
+            throw new ValidationException("Either BookingId or ConsolidationId or ShipmentsId must be provided in the request.");
         }
 
-        if(containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
-            throw new ValidationException("Only one of ConsolidationId or ShipmentsId should be provided, not both.");
+        if(containerRequest.getBookingId() != null && containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
+            throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
         }
 
         List<Containers> containersList = getSiblingContainers(containerRequest);

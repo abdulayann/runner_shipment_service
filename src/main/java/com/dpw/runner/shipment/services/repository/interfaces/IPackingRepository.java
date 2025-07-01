@@ -116,6 +116,7 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     }
 
     List<Packing> findByShipmentIdIn(List<Long> shipmentIds);
+    List<Packing> findByBookingIdIn(List<Long> bookingIds);
 
     @Modifying
     @Query("UPDATE Packing p SET p.containerId = :containerId WHERE p.id IN :packingIds")
