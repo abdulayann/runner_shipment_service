@@ -27,4 +27,5 @@ public interface ICustomerBookingV3Service {
     V1ShipmentCreationResponse retryForBilling(CommonGetRequest commonGetRequest) throws RunnerException;
     Map<String, Object> getAllMasterData(Long bookingId);
     CustomerBookingV3Response findByBookingNumber(String bookingNumber);
+    CustomerBookingV3Response getDefaultBooking();
 }

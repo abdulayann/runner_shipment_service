@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 public class ApiConstants {
 
+    public static final String API_DEFAULT_BOOKING = "/getDefaultBooking";
+
     private ApiConstants(){}
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
     public static final String BOOKING_API_UPDATE_CONTAINERS = "/update/booking/containers";
