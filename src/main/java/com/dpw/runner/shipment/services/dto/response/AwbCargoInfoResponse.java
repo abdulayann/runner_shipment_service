@@ -44,4 +44,5 @@ public class AwbCargoInfoResponse implements IRunnerResponse {
     private BigDecimal insuranceAmount;
     private LocalDateTime screeningTime;
     private String securityStatus;
+    private Boolean isUserInitialsManuallyAdded = false;
 }
