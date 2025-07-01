@@ -118,6 +118,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for shipment_id")
     private String shipmentId;
 
+    @Transient
+    private Long consolidationId;
+
     @Column(name = "is_domestic")
     private Boolean isDomestic;
 
