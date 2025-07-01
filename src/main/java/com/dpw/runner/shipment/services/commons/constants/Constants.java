@@ -159,7 +159,6 @@ public class Constants {
     public static final String CARGO_TYPE_FTL = "FTL";
     public static final String CARGO_TYPE_LTL = "LTL";
     public static final String DIRECTION_EXP = "EXP";
-    public static final String DIRECTION_DOM = "DOM";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
     public static final String DIRECTION_CTS = "CTS";

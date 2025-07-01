@@ -14,9 +14,7 @@ import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClien
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerEntityFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
@@ -24,6 +22,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentR
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
+import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -45,16 +44,21 @@ import java.util.stream.Collectors;
 public class ShipmentJobExecutorService implements QuartzJobExecutorService {
 
     private final IEntityTransferService entityTransferService;
+    private final IEntityTransferV3Service entityTransferV3Service;
     private final IQuartzJobInfoDao quartzJobInfoDao;
     private final IV1Service v1Service;
     private final ShipmentDao shipmentDao;
     private final ConsolidationDao consolidationDao;
     private final ICommonErrorLogsDao commonErrorLogsDao;
     private final DocumentManagerRestClient documentManagerRestClient;
+    private final CommonUtils commonUtils;
 
     @Autowired
-    ShipmentJobExecutorService (IEntityTransferService entityTransferService, IQuartzJobInfoDao quartzJobInfoDao, IV1Service v1Service, ShipmentDao shipmentDao, ConsolidationDao consolidationDao, ICommonErrorLogsDao commonErrorLogsDao, DocumentManagerRestClient documentManagerRestClient) {
+    ShipmentJobExecutorService (IEntityTransferService entityTransferService, IQuartzJobInfoDao quartzJobInfoDao, IV1Service v1Service, ShipmentDao shipmentDao, ConsolidationDao consolidationDao, ICommonErrorLogsDao commonErrorLogsDao,
+                                DocumentManagerRestClient documentManagerRestClient, IEntityTransferV3Service entityTransferV3Service, CommonUtils commonUtils) {
         this.entityTransferService = entityTransferService;
+        this.entityTransferV3Service = entityTransferV3Service;
+        this.commonUtils = commonUtils;
         this.quartzJobInfoDao = quartzJobInfoDao;
         this.v1Service = v1Service;
         this.shipmentDao = shipmentDao;
@@ -125,13 +129,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 var validationResponse = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
                 log.info("Completed Shipment Validation check.");
                 if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
-                    var etResponse = entityTransferService.sendShipment(CommonRequestModel.buildRequest(sendShipmentRequest));
-                    log.info("Completed Shipment transfer");
-                    if(Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
-                        quartzJobInfo.setJobStatus(JobState.COMPLETED);
-                        quartzJobInfo.setErrorMessage("");
-                        commonErrorLogsDao.deleteShipmentErrorsLogs(shipment.get().getId());
-                    }
+                    sendShipment(quartzJobInfo, sendShipmentRequest, shipment.get());
                 } else {
                     quartzJobInfo.setJobStatus(JobState.ERROR);
                     quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + validationResponse.getShipmentErrorMessage());
@@ -145,6 +143,29 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 quartzJobInfoDao.save(quartzJobInfo);
             }
         }
+    }
+
+    private void sendShipment(QuartzJobInfo quartzJobInfo, SendShipmentRequest sendShipmentRequest, ShipmentDetails shipment) {
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+            var etResponse = entityTransferV3Service.sendShipment(CommonRequestModel.buildRequest(sendShipmentRequest));
+            log.info("Completed Shipment transfer");
+            if (etResponse!=null) {
+                updateShipmentQuartzJob(quartzJobInfo, shipment);
+            }
+        }else {
+            var etResponse = entityTransferService.sendShipment(CommonRequestModel.buildRequest(sendShipmentRequest));
+            log.info("Completed Shipment transfer");
+            if (Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
+                updateShipmentQuartzJob(quartzJobInfo, shipment);
+            }
+        }
+    }
+
+    private void updateShipmentQuartzJob(QuartzJobInfo quartzJobInfo, ShipmentDetails shipment) {
+        quartzJobInfo.setJobStatus(JobState.COMPLETED);
+        quartzJobInfo.setErrorMessage("");
+        commonErrorLogsDao.deleteShipmentErrorsLogs(shipment.getId());
     }
 
     private List<String> fetchDocs(UUID entityGuid, int tenantId, String entityType) {
@@ -211,13 +232,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
                 log.info("Completed Console Validation check.");
                 if(!Boolean.TRUE.equals(response.getIsError())) {
-                    var etResponse = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
-                    log.info("Completed Console transfer");
-                    if(Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
-                        quartzJobInfo.setJobStatus(JobState.COMPLETED);
-                        quartzJobInfo.setErrorMessage("");
-                        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidation.get().getId(), shipmentIds);
-                    }
+                    sendConsolidation(quartzJobInfo, sendConsolidationRequest, consolidation.get(), shipmentIds);
                 }
                 else{
                     quartzJobInfo.setJobStatus(JobState.ERROR);
@@ -232,5 +247,29 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 quartzJobInfoDao.save(quartzJobInfo);
             }
         }
+    }
+
+    private void sendConsolidation(QuartzJobInfo quartzJobInfo, SendConsolidationRequest sendConsolidationRequest, ConsolidationDetails consolidation, List<Long> shipmentIds) {
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+            var etResponse = entityTransferV3Service.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
+            log.info("Completed Console transfer");
+            if (etResponse!=null) {
+                updateConsoleQuartzJob(quartzJobInfo, consolidation, shipmentIds);
+            }
+        }
+        else {
+            var etResponse = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
+            log.info("Completed Console transfer");
+            if (Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
+                updateConsoleQuartzJob(quartzJobInfo, consolidation, shipmentIds);
+            }
+        }
+    }
+
+    private void updateConsoleQuartzJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails consolidation, List<Long> shipmentIds) {
+        quartzJobInfo.setJobStatus(JobState.COMPLETED);
+        quartzJobInfo.setErrorMessage("");
+        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidation.getId(), shipmentIds);
     }
 }
