@@ -69,6 +69,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.nimbusds.jose.util.Pair;
@@ -122,6 +123,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private MasterDataKeyUtils masterDataKeyUtils;
     @Autowired
     private NpmContractV3Util npmContractV3Util;
+    @Autowired
+    private V1ServiceUtil v1ServiceUtil;
 
     private final JsonHelper jsonHelper;
     private final IQuoteContractsService quoteContractsService;
@@ -1546,6 +1549,42 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 .orElseThrow(() -> new IllegalArgumentException("No booking found with booking number: "+bookingNumber));
 
         return jsonHelper.convertValue(byBookingNumber, CustomerBookingV3Response.class);
+    }
+
+    @Override
+    public CustomerBookingV3Response getDefaultBooking() {
+        var tenantSettings = commonUtils.getShipmentSettingFromContext();
+        CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
+        customerBookingV3Response.setTransportType(tenantSettings.getDefaultTransportMode());
+        customerBookingV3Response.setDirection(tenantSettings.getDefaultShipmentType());
+        customerBookingV3Response.setCargoType(tenantSettings.getDefaultContainerType());
+        customerBookingV3Response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
+        customerBookingV3Response.setGrossWeightUnit(tenantSettings.getWeightChargeableUnit());
+        customerBookingV3Response.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
+        customerBookingV3Response.setSource(BookingSource.Runner);
+        customerBookingV3Response.setCreatedAt(LocalDateTime.now());
+        customerBookingV3Response.setCreatedBy(UserContext.getUser().getUsername());
+        customerBookingV3Response.setCarrierDetails(new CarrierDetailResponse());
+        customerBookingV3Response.setTenantId(UserContext.getUser().TenantId);
+        customerBookingV3Response.setIsAutoWeightVolumeUpdate(Boolean.TRUE);
+        setTenantAndDefaultAgent(customerBookingV3Response);
+        createCustomerBookingResponse(null, customerBookingV3Response);
+        return customerBookingV3Response;
+    }
+
+    private void setTenantAndDefaultAgent(CustomerBookingV3Response response) {
+        try {
+            log.info("Fetching Tenant Model");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+            if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
+                response.setConsignor(partiesResponse);
+            } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
+                response.setConsignee(partiesResponse);
+            }
+        } catch (Exception e){
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
+        }
     }
 
     private Optional<CustomerBooking> getValidatedCustomerBooking(Long id) {
