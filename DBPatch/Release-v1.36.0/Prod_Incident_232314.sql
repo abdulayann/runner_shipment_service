@@ -48,3 +48,7 @@ update parties set
                   "OrgPayables": false
               }'
  where id IN ('1016033');
+
+ update shipment_details
+ set client_dps_address_id = 89180
+ where id = 67033;
