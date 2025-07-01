@@ -80,10 +80,10 @@ public class CustomerBookingValidations {
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
 
-        if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && !Objects.equals(entity.getDirection(),Constants.DIRECTION_EXP))
+        if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && (!Objects.equals(entity.getDirection(),Constants.DIRECTION_EXP) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_DOM)))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignee detail"));
 
-        if ((Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode())) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_IMP))
+        if ((Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode())) && (!Objects.equals(entity.getDirection(), Constants.DIRECTION_IMP) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_DOM)))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignor detail"));
 
         if (Objects.isNull(entity.getServiceMode()))
