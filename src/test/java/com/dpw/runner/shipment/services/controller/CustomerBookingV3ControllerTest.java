@@ -264,6 +264,13 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
+    void getDefaultBooking() {
+        when(customerBookingV3Service.getDefaultBooking()).thenReturn(new CustomerBookingV3Response());
+        var responseEntity = customerBookingV3Controller.getDefaultBooking();
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void getAllMasterDataTest() {
         Map<String, Object> masterData = new HashMap<>();
         when(customerBookingV3Service.getAllMasterData(anyLong())).thenReturn(masterData);
