@@ -98,6 +98,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -221,6 +222,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     @Override
+    @Transactional
     public CustomerBookingV3Response create(CustomerBookingV3Request customerBookingV3Request) throws RunnerException {
         if (customerBookingV3Request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -240,7 +242,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 populateCustomerBookingFromContract(npmContractResponse, customerBooking);
             }
             createEntities(customerBooking, customerBookingV3Request);
-            if(npmContractResponse != null) {
+            if(npmContractResponse != null && !npmContractResponse.getContracts().isEmpty()) {
                 updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
             }
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
@@ -404,6 +406,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     @Override
+    @Transactional
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
         validateBookingUpdateRequest(request);
         Long id = request.getId();
@@ -464,6 +467,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     @Override
+    @Transactional
     public CustomerBookingV3DeleteResponse delete(Long bookingId) throws RunnerException {
         String responseMsg;
         try {
@@ -2323,10 +2327,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     public void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
-        List<Containers> containers = Optional.ofNullable(booking.getContainersList())
-                .orElse(Collections.emptyList());
-        List<Packing> packings = Optional.ofNullable(booking.getPackingList())
-                .orElse(Collections.emptyList());
+        List<Containers> containers = new ArrayList<>();
+        List<Packing> packings = new ArrayList<>();
+        if(booking.getId() != null) {
+            containers = containerDao.findByBookingIdIn(List.of(booking.getId()));;
+            packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
+        }
         if (!packings.isEmpty()) {
             calculateCargoDetails(packings, booking);
         }

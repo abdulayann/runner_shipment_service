@@ -72,14 +72,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -371,6 +368,10 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingV3Response = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(listContractResponse);
+        Containers containers = new Containers();
+        containers.setContainerCount(1L);
+        containers.setContainerNumber("CNT1235");
+        containers.setCommodityCode("20GP");
         when(npmService.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
 
         // Mock
@@ -380,6 +381,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
         when(packingV3Service.deleteBulk(any(), anyString())).thenReturn(new BulkPackingResponse());
         when(packingV3Service.updateBulk(any(), any())).thenReturn(new BulkPackingResponse());
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
@@ -1634,6 +1637,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         when(packingDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(packing));
         when(packingV3Service.deleteBulk(any(),anyString())).thenReturn(new BulkPackingResponse());
         when(packingV3Service.updateBulk(any(), anyString())).thenReturn(new BulkPackingResponse());
@@ -1671,6 +1676,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setPacksType("BAG");
         packing.setVolume(BigDecimal.TEN);
         packing.setVolumeUnit("M3");
+        packing.setWeight(BigDecimal.TEN);
+        packing.setWeightUnit("kg");
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1719,6 +1726,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(CustomerBooking.class), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(container));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
         when(packingDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(packing));
         when(containerV3Service.deleteBulk(any(),anyString())).thenReturn(new BulkContainerResponse());
