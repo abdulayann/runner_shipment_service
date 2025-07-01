@@ -217,7 +217,6 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private UUID customerBookingGuid;
     private Boolean isFrob;
     private String consolidationNumber;
-    private Long consolidationId;
     private Boolean isReefer;
     private String incotermsLocation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
