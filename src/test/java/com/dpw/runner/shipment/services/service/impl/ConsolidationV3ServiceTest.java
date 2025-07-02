@@ -4395,7 +4395,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
     // Mock static method convertUnit to simply return the input BigDecimal value (simulate successful conversion)
     unitConversionUtilityMockedStatic.when(() ->
-                    UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
+                    UnitConversionUtility.convertUnit(any(), any(), any(), any()))
             .thenAnswer(invocation -> {
               BigDecimal val = invocation.getArgument(1);
               return val == null ? BigDecimal.ZERO : val;

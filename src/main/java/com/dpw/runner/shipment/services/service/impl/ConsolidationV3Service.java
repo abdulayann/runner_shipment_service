@@ -927,6 +927,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         new BigDecimal(convertUnit(Constants.VOLUME, sd.getVolume(), sd.getVolumeUnit(), volumeUnit).toString()));
                 result.packs += (sd.getNoOfPacks() != null ? sd.getNoOfPacks() : 0);
                 result.packsType = determinePackType(result.packsType, sd.getPacksUnit());
+
+                // chargeable and weight volume sum
                 if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode) || TRANSPORT_MODE_ROA.equalsIgnoreCase(transportMode)) {
                     result.chargeable = result.chargeable.add(
                             new BigDecimal(convertUnit(Constants.MASS, sd.getChargable(), sd.getChargeableUnit(), WEIGHT_UNIT_KG).toString()));
