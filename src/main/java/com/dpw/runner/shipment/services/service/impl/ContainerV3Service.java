@@ -669,7 +669,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return responseList;
     }
 
-    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException { // NOSONAR - Ignoring for now
+    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException { //NOSONAR
         double totalWeight = 0;
         double tareWeight = 0;
         double totalVolume = 0;
