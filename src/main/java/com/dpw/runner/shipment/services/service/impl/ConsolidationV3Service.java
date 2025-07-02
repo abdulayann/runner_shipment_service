@@ -2145,8 +2145,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void setBookingNumberInShipment(ConsolidationDetails console, ShipmentDetails sd) {
-        if(!isStringNullOrEmpty(console.getCarrierBookingRef()))
-            sd.setBookingNumber(console.getCarrierBookingRef());
+        if(!isStringNullOrEmpty(console.getBookingNumber()))
+            sd.setBookingNumber(console.getBookingNumber());
     }
 
     /**
