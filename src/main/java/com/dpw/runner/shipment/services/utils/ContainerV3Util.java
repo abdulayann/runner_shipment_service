@@ -187,6 +187,7 @@ public class ContainerV3Util {
                 .format(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT));
         String filename = "Containers_" + timestamp + Constants.XLSX;
 
+        response.reset();
         response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
         response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filename);
 
