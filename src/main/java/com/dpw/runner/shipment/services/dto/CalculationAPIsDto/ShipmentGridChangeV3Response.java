@@ -12,6 +12,8 @@ public class ShipmentGridChangeV3Response extends ShipmentGridChangeResponse {
     private String summaryDgPacks;
     private Integer totalPacks;
     private String packType;
+    private String shipmentSummaryChargeableSum; // chargeable sum of shipment values
+    private String shipmentSummaryWeightVolumeSum; // weight volume sum of shipment values
 
 
 
