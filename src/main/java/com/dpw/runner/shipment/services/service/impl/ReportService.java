@@ -456,6 +456,7 @@ public class ReportService implements IReportService {
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
         triggerAutomaticTransfer(report, reportRequest);
 
         // Push document to document master
