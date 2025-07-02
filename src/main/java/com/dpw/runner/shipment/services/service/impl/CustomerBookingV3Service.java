@@ -2357,13 +2357,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             containers = containerDao.findByBookingIdIn(List.of(booking.getId()));
             packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
         }
-        if (!packings.isEmpty()) {
-            calculateCargoDetails(packings, booking);
-        }
-        if (!containers.isEmpty()) {
-            booking.setContainers(getTotalContainerCount(containers));
-            booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
-        }
+        calculateCargoDetails(packings, booking);
+        booking.setContainers(getTotalContainerCount(containers));
+        booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
         customerBookingDao.save(booking);
     }
 
