@@ -4395,7 +4395,73 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
     // Mock static method convertUnit to simply return the input BigDecimal value (simulate successful conversion)
     unitConversionUtilityMockedStatic.when(() ->
-                    UnitConversionUtility.convertUnit(anyString(), any(BigDecimal.class), anyString(), anyString()))
+                    UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenAnswer(invocation -> {
+              BigDecimal val = invocation.getArgument(1);
+              return val == null ? BigDecimal.ZERO : val;
+            });
+
+    // Act
+    ShipmentGridChangeV3Response response = consolidationV3Service.calculateAchievedValues(request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals(2, response.getSummaryShipmentsCount(), "Should have 2 shipments in summary");
+    assertEquals(10, response.getTotalPacks(), "Total packs should be 10");
+    assertEquals("PKG", response.getPackType(), "Pack type should be BOX");
+    assertTrue(response.getSummaryWeight().contains("KG"), "Summary weight should contain KG");
+    assertTrue(response.getSummaryVolume().contains("M3"), "Summary volume should contain M3");
+  }
+
+  @Test
+  void calculateAchievedValues_NoShipmentIds_ShouldCalculateForAllShipments_SEA() throws Exception {
+
+    Long consolidationId = 101L;
+    CalculateAchievedValueRequest request = new CalculateAchievedValueRequest();
+    request.setConsolidationId(consolidationId);
+    request.setShipmentIds(null); // all shipments
+
+    ShipmentDetails shipment1 = new ShipmentDetails();
+    shipment1.setId(1L);
+    shipment1.setWeight(BigDecimal.valueOf(10));
+    shipment1.setWeightUnit("KG");
+    shipment1.setVolume(BigDecimal.valueOf(2));
+    shipment1.setVolumeUnit("M3");
+    shipment1.setNoOfPacks(5);
+    shipment1.setPacksUnit("BOX");
+
+    ShipmentDetails shipment2 = new ShipmentDetails();
+    shipment1.setId(2L);
+    shipment2.setWeight(BigDecimal.valueOf(11));
+    shipment2.setWeightUnit("KG");
+    shipment2.setVolume(BigDecimal.valueOf(3));
+    shipment2.setVolumeUnit("M3");
+    shipment2.setNoOfPacks(5);
+    shipment2.setPacksUnit("Parcel");
+
+    consolidationDetails = new ConsolidationDetails();
+    consolidationDetails.setShipmentsList(Set.of(shipment1,shipment2));
+    consolidationDetails.setOverride(false);
+    consolidationDetails.setTransportMode(TRANSPORT_MODE_SEA);
+    consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+    consolidationDetails.setAllocations(new Allocations());
+
+    shipmentSettingsDetails = new ShipmentSettingsDetails();
+    shipmentSettingsDetails.setWeightChargeableUnit("KG");
+    shipmentSettingsDetails.setVolumeChargeableUnit("M3");
+
+    V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+
+    // Mock dependent methods
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+    when(containerV3Service.findContainerIdsAttachedToEitherPackingOrShipment(anyList())).thenReturn(List.of());
+    when(jsonHelper.convertValue(any(), eq(AllocationsResponse.class))).thenReturn(new AllocationsResponse());
+    when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(new AchievedQuantitiesResponse());
+    when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+    // Mock static method convertUnit to simply return the input BigDecimal value (simulate successful conversion)
+    unitConversionUtilityMockedStatic.when(() ->
+                    UnitConversionUtility.convertUnit(any(), any(), any(), any()))
             .thenAnswer(invocation -> {
               BigDecimal val = invocation.getArgument(1);
               return val == null ? BigDecimal.ZERO : val;

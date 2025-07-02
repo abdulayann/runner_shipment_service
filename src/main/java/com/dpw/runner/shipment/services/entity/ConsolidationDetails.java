@@ -162,7 +162,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private String shipmentType;
 
     @Column(name = "bol")
-    @Size(max=20, message = "max size is 20 for bol")
+    @Size(max=50, message = "max size is 50 for bol")
     private String bol;
 
     @Column(name = "is_cargo_only")
