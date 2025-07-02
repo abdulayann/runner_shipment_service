@@ -2018,7 +2018,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void setBookingNumberInShipment(ConsolidationDetails console, ShipmentDetails sd) {
-        sd.setBookingNumber(console.getCarrierBookingRef());
+        if(!isStringNullOrEmpty(console.getCarrierBookingRef()))
+            sd.setBookingNumber(console.getCarrierBookingRef());
     }
 
     /**
@@ -2072,7 +2073,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Update basic references in the shipment from the console
         shipmentDetails.setConsolRef(console.getConsolidationNumber());
-        shipmentDetails.setMasterBill(console.getBol());
+        if(!isStringNullOrEmpty(console.getBol()))
+            shipmentDetails.setMasterBill(console.getBol());
         shipmentDetails.setDirection(console.getShipmentType());
         shipmentDetails.setTransportMode(console.getTransportMode());
         shipmentDetails.setCoLoadCarrierName(console.getCoLoadCarrierName());
