@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
@@ -276,4 +279,114 @@ class MDMServiceAdapterTest {
         var response = mdmServiceAdapter.getDepartmentList(transportMode, shipmentType, module);
         assertEquals(0, response.size());
     }
+
+    @Test
+    void testCreateTask_Success() throws RunnerException {
+        MdmTaskCreateRequest request = new MdmTaskCreateRequest();
+        MdmTaskCreateResponse expectedResponse = new MdmTaskCreateResponse();
+        DependentServiceResponse mockServiceResponse = new DependentServiceResponse();
+        mockServiceResponse.setData(expectedResponse);
+
+        String expectedUrl = "http://your-mdm-url/create-task"; // Adjust if needed
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenReturn(ResponseEntity.ok(mockServiceResponse));
+        when(jsonHelper.convertValue(mockServiceResponse.getData(), MdmTaskCreateResponse.class)).thenReturn(expectedResponse);
+
+        MdmTaskCreateResponse actualResponse = mdmServiceAdapter.createTask(request);
+
+        assertEquals(expectedResponse, actualResponse);
+    }
+
+    @Test
+    void testCreateTask_ExceptionThrown() {
+        MdmTaskCreateRequest request = new MdmTaskCreateRequest();
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenThrow(new RuntimeException("MDM service down"));
+
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            mdmServiceAdapter.createTask(request);
+        });
+
+        assertTrue(exception.getMessage().contains("MDM service down"));
+    }
+
+    @Test
+    void testApproveOrRejectTask_Success() throws RunnerException {
+        MdmTaskApproveOrRejectRequest request = new MdmTaskApproveOrRejectRequest();
+        DependentServiceResponse mockServiceResponse = new DependentServiceResponse();
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenReturn(ResponseEntity.ok(mockServiceResponse));
+
+        assertDoesNotThrow(() -> mdmServiceAdapter.approveOrRejectTask(request));
+    }
+
+    @Test
+    void testApproveOrRejectTask_ExceptionThrown() {
+        MdmTaskApproveOrRejectRequest request = new MdmTaskApproveOrRejectRequest();
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+                .thenThrow(new RuntimeException("Approve failed"));
+
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            mdmServiceAdapter.approveOrRejectTask(request);
+        });
+
+        assertTrue(exception.getMessage().contains("Approve failed"));
+    }
+
+    @Test
+    void testGetTaskList_Success() {
+        String entityUuid = "uuid-123";
+        String entityType = "SHIPMENT";
+        String status = "PENDING";
+        String taskType = "DG_OCEAN_APPROVAL";
+
+        // Prepare mock response
+        List<Map<String, Object>> mockData = new ArrayList<>();
+        Map<String, Object> task = new HashMap<>();
+        task.put("uuid", "task-001");
+        task.put("userEmail", "test@example.com");
+        mockData.add(task);
+
+        DependentServiceResponse response = new DependentServiceResponse();
+        response.setData(mockData);
+
+        ResponseEntity<DependentServiceResponse> responseEntity = ResponseEntity.ok(response);
+
+        // Mocks
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.postForEntity(anyString(), any(), eq(DependentServiceResponse.class)))
+                .thenReturn(responseEntity);
+        when(jsonHelper.convertValue(eq(mockData), any(TypeReference.class))).thenReturn(mockData);
+
+        // Call method
+        List<Map<String, Object>> result = mdmServiceAdapter.getTaskList(entityUuid, entityType, status, taskType);
+
+        // Assertions
+        assertEquals(1, result.size());
+        assertEquals("task-001", result.get(0).get("uuid"));
+        assertEquals("test@example.com", result.get(0).get("userEmail"));
+    }
+
+    @Test
+    void testGetTaskList_ExceptionThrown_ReturnsEmptyList() {
+        String entityUuid = "uuid-123";
+        String entityType = "SHIPMENT";
+        String status = "PENDING";
+        String taskType = "DG_OCEAN_APPROVAL";
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.postForEntity(anyString(), any(), eq(DependentServiceResponse.class)))
+                .thenThrow(new RuntimeException("MDM error"));
+
+        List<Map<String, Object>> result = mdmServiceAdapter.getTaskList(entityUuid, entityType, status, taskType);
+
+        assertTrue(result.isEmpty());
+    }
+
 }
