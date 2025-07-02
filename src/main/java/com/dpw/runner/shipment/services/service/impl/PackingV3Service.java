@@ -1031,20 +1031,11 @@ public class PackingV3Service implements IPackingV3Service {
         // If the pack type is not empty, update the packs unit and initialize map entry if absent
         if (!isStringNullOrEmpty(packing.getPacksType())) {
             // Call to determine packs unit based on packing type
-            packsUnit = getPacksUnit(packing, packsUnit);
+            packsUnit = commonUtils.getPacksUnit(packsUnit, packing.getPacksType());
 
             // If this packing type is not already in the map, initialize its count to 0
             map.putIfAbsent(packing.getPacksType(), 0L);
         }
-        return packsUnit;
-    }
-
-    private String getPacksUnit(Packing packing, String packsUnit) {
-
-        if(isStringNullOrEmpty(packsUnit))
-            packsUnit = packing.getPacksType();
-        else if(!isStringNullOrEmpty(packing.getPacksType()) && !Objects.equals(packsUnit, packing.getPacksType()))
-            packsUnit = PackingConstants.PKG;
         return packsUnit;
     }
 

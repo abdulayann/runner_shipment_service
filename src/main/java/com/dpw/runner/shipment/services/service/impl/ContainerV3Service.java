@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
@@ -670,7 +669,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return responseList;
     }
 
-    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException {
+    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException { // NOSONAR - Ignoring for now
         double totalWeight = 0;
         double tareWeight = 0;
         double totalVolume = 0;
@@ -704,10 +703,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 totalVolume = totalVolume + volume;
                 totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
                 totalPacks = getTotalPacks(containers, totalPacks);
-                if(isStringNullOrEmpty(packsType))
-                    packsType = containers.getPacksType();
-                else if(!isStringNullOrEmpty(containers.getPacksType()) && !Objects.equals(packsType, containers.getPacksType()))
-                    packsType = PackingConstants.PKG;
+                packsType = commonUtils.getPacksUnit(packsType, containers.getPacksType());
 
                 ContainerSummaryResponse.GroupedContainerSummary summary = summaryMap.computeIfAbsent(containers.getContainerCode(), k -> {
                     ContainerSummaryResponse.GroupedContainerSummary s = new ContainerSummaryResponse.GroupedContainerSummary();

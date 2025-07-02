@@ -40,7 +40,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
@@ -72,7 +71,10 @@ import org.springframework.transaction.TransactionSystemException;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -4374,6 +4376,30 @@ class CommonUtilsTest {
         commonUtils.sendExcelFileViaEmail(workbook, filename);
         assertEquals("him@gmail.com", UserContext.getUser().getEmail());
 
+    }
+
+    @Test
+    void testGetPacksUnit() {
+        String packsUnit = commonUtils.getPacksUnit(null, "PKG");
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetPacksUnit1() {
+        String packsUnit = commonUtils.getPacksUnit("BAG", "PKG");
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetPacksUnit2() {
+        String packsUnit = commonUtils.getPacksUnit("BAG", null);
+        assertEquals("BAG", packsUnit);
+    }
+
+    @Test
+    void testGetPacksUnit3() {
+        String packsUnit = commonUtils.getPacksUnit("BAG", "BAG");
+        assertEquals("BAG", packsUnit);
     }
 
     private ShipmentDetails getMockShipmentDetails() {
