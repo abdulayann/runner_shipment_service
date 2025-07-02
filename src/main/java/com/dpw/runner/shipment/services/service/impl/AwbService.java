@@ -197,7 +197,6 @@ public class AwbService implements IAwbService {
         Awb awb = new Awb();
         try {
             awb = awbDao.save(generateAwb(request));
-            syncAwb(awb, SaveStatus.CREATE);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -220,13 +219,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    private void syncAwb(Awb awb, SaveStatus saveStatus) {
-        try {
-            awbSync.sync(awb, saveStatus);
-        } catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-        }
-    }
+
 
     public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -266,7 +259,6 @@ public class AwbService implements IAwbService {
             setOciInfoInAwb(awb);
             awb = awbDao.save(awb);
 
-            syncAwb(awb, SaveStatus.UPDATE);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -597,7 +589,6 @@ public class AwbService implements IAwbService {
                 getMawnLinkPacks(awb, true, awbList);
             }
             awb = awbDao.save(awb);
-            syncAwb(awb, SaveStatus.CREATE);
 
             // map mawb and hawb affter suuccessful save
             linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
@@ -2020,7 +2011,6 @@ public class AwbService implements IAwbService {
         awb.setAirMessageResubmitted(false);
         awb.setOriginalPrintedAt(originalPrintedAt);
         awb = awbDao.save(awb);
-        syncAwb(awb, SaveStatus.RESET);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
