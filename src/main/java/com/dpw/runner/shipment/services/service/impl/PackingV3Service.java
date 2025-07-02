@@ -850,7 +850,7 @@ public class PackingV3Service implements IPackingV3Service {
 
             // Fill response
             response.setDgPacks(dgPacks);
-            response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null ? packsUnit : ""));
+            response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null ? packsUnit : PackingConstants.PKG));
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(
                     String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), tenantSettings), toWeightUnit));
@@ -1040,13 +1040,11 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     private String getPacksUnit(Packing packing, String packsUnit) {
-        // If packsUnit is null, initialize it with the packing type
-        if (packsUnit == null) {
+
+        if(isStringNullOrEmpty(packsUnit))
             packsUnit = packing.getPacksType();
-        } else if (!packsUnit.equals(packing.getPacksType())) {
-            // If the pack unit differs from the current one, default to "MPK"
-            packsUnit = MPK;
-        }
+        else if(!isStringNullOrEmpty(packing.getPacksType()) && !Objects.equals(packsUnit, packing.getPacksType()))
+            packsUnit = PackingConstants.PKG;
         return packsUnit;
     }
 
