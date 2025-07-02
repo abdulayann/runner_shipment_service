@@ -84,6 +84,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -228,7 +229,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_INVALID_REQUEST_MSG);
         }
-        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(this::getCodeTeuMapping, executorServiceMasterData);
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(customerBookingV3Request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
         // Update NPM for contract utilization
@@ -410,7 +411,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
         validateBookingUpdateRequest(request);
         Long id = request.getId();
-        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(this::getCodeTeuMapping, executorServiceMasterData);
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         Optional<CustomerBooking> oldEntity = customerBookingDao.findById(id);
         if (!oldEntity.isPresent()) {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -2167,6 +2168,29 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 RequestAuthContext.setAuthToken(token);
                 UserContext.setUser(userContext1);
                 runnable.run();
+            } finally {
+                RequestAuthContext.removeToken();
+                MDC.clear();
+                UserContext.removeUser();
+            }
+        };
+    }
+
+    public <T> Supplier<T> withMdcSupplier(Supplier<T> supplier) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var userContext1 = UserContext.getUser();
+
+        return () -> {
+            try {
+                if (mdc != null) {
+                    MDC.setContextMap(mdc);
+                } else {
+                    MDC.clear();
+                }
+                RequestAuthContext.setAuthToken(token);
+                UserContext.setUser(userContext1);
+                return supplier.get();
             } finally {
                 RequestAuthContext.removeToken();
                 MDC.clear();
