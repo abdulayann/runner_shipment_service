@@ -2442,7 +2442,6 @@ public class ReportService implements IReportService {
                 case HAWB, MAWB:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = reportRequest.getPrintType();
-                    docType = DocumentConstants.AWB;
                     break;
                 default:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
