@@ -100,16 +100,16 @@ public class AsyncConfig implements AsyncConfigurer {
 
     @Bean
     public ExecutorService executorServiceReport() {
-        int corePoolSize = 5; // Min threads
-        int maximumPoolSize = 30; // Adjusted max pool size
-        long keepAliveTime = 1800; // Keep alive time for idle threads
+        int corePool = 5; // Min threads
+        int maxPool = 30; // Adjusted max pool size
+        long aliveTime = 1800; // Keep alive time for idle threads
         TimeUnit unit = TimeUnit.SECONDS;
         int queueCapacity = 100; // Define queue capacity
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>(queueCapacity);
-        RejectedExecutionHandler handler = (r, executor) -> {
+        BlockingQueue<Runnable> workingQueue = new LinkedBlockingQueue<>(queueCapacity);
+        RejectedExecutionHandler executionHandler = (r, executor) -> {
             try {
                 // Set maximum wait time for the queue
-                if (!workQueue.offer(r, 5, TimeUnit.SECONDS)) {
+                if (!workingQueue.offer(r, 5, TimeUnit.SECONDS)) {
                     log.warn("executorServiceRouting- Task rejected, thread pool is full and queue is also full");
                 }
             } catch (InterruptedException e) {
@@ -117,6 +117,6 @@ public class AsyncConfig implements AsyncConfigurer {
                 log.error("executorServiceRouting- Task interrupted while waiting for queue space", e);
             }
         };
-        return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
+        return new ThreadPoolExecutor(corePool, maxPool, aliveTime, unit, workingQueue, executionHandler);
     }
 }
