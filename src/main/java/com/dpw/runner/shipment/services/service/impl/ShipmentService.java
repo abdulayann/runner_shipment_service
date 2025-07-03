@@ -2439,6 +2439,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void handleNewConsoleAttachment(ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
+        if (Objects.isNull(shipmentDetails))
+            return;
+
         ConsolidationDetails consolidation = CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList()) ? ConsolidationDetails.builder().build() : shipmentDetails.getConsolidationList().iterator().next();
         List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidation.getId());
         consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false, false);
