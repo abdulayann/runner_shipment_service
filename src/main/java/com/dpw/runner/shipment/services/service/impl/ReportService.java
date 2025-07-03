@@ -63,6 +63,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
@@ -143,6 +144,10 @@ public class ReportService implements IReportService {
     private MasterDataUtils masterDataUtils;
     @Autowired
     ExecutorService executorService;
+
+    @Qualifier("executorServiceReport")
+    @Autowired
+    ExecutorService executorServiceReport;
     @Autowired
     private IAwbDao awbDao;
     @Autowired
@@ -205,9 +210,6 @@ public class ReportService implements IReportService {
 
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
-
-        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
-
 
         Map<String, Object> dataRetrived;
 
@@ -457,6 +459,7 @@ public class ReportService implements IReportService {
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
         triggerAutomaticTransfer(report, reportRequest);
 
         // Push document to document master
@@ -588,6 +591,7 @@ public class ReportService implements IReportService {
         }
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
 
         triggerAutomaticTransfer(report, reportRequest);
         pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
@@ -1110,9 +1114,20 @@ public class ReportService implements IReportService {
                 } else {
                   hawbPacksCountForCombi = "";
                 }
-
                 populateMap(threadSafeData, packsCount, packsOfTotal, packs);
-                futures.add(executorService.submit(() -> addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, isCombi, packsCount, hawbPacksCountForCombi)));
+
+                int finalPacks = packs;
+                log.info("Submitting task for Pack: {} on Thread: {}", finalPacks, Thread.currentThread().getName());
+                futures.add(executorServiceReport.submit(() -> {
+                    log.info("Started processing Pack: {} on Thread: {}", finalPacks, Thread.currentThread().getName());
+                    long start = System.currentTimeMillis();
+
+                    byte[] result = addDocBytesInPdfBytes(reportRequest, pages, threadSafeData, isCombi, packsCount, hawbPacksCountForCombi);
+
+                    long end = System.currentTimeMillis();
+                    log.info("Completed Pack: {} on Thread: {} in {} ms", finalPacks, Thread.currentThread().getName(), (end - start));
+                    return result;
+                }));
             }
 
             populatePdfBytes(futures, pdfBytes);
@@ -2427,7 +2442,6 @@ public class ReportService implements IReportService {
                 case HAWB, MAWB:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = reportRequest.getPrintType();
-                    docType = DocumentConstants.AWB;
                     break;
                 default:
                     filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
