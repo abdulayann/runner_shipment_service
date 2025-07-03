@@ -1552,12 +1552,12 @@ public class ContainerV3Service implements IContainerV3Service {
         List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
 
         for (Containers container : containersList) {
-            if (StringUtility.isEmpty(container.getContainerNumber())) {
-                continue;
-            }
-
             Set<ShipmentDetails> shipments = container.getShipmentsList();
-            if (shipments == null || shipments.isEmpty()) {
+
+            boolean isValidContainer = StringUtility.isNotEmpty(container.getContainerNumber())
+                    && ObjectUtils.isNotEmpty(shipments);
+
+            if (!isValidContainer) {
                 continue;
             }
 
