@@ -149,12 +149,12 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional
     public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
-        if (containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
-            throw new ValidationException("Either ConsolidationId or ShipmentsId must be provided in the request.");
+        if (containerRequest.getBookingId() == null && containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
+            throw new ValidationException("Either BookingId or ConsolidationId or ShipmentsId must be provided in the request.");
         }
 
-        if(containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
-            throw new ValidationException("Only one of ConsolidationId or ShipmentsId should be provided, not both.");
+        if(containerRequest.getBookingId() != null && containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
+            throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
         }
 
         List<Containers> containersList = getSiblingContainers(containerRequest);
@@ -307,15 +307,15 @@ public class ContainerV3Service implements IContainerV3Service {
         List<ContainerDeleteInfoProjection> packingOnly = containerDao.filterContainerIdsAttachedToPacking(containerIds);
 
         // Fetch containers that are assigned to shipment cargo
-        List<ContainerDeleteInfoProjection> shipmentOnly = containerDao.filterContainerIdsAttachedToShipmentCargo(containerIds);
+        List<ContainerDeleteInfoProjection> shipmentCargoOnly = containerDao.filterContainerIdsAttachedToShipmentCargo(containerIds);
 
         boolean hasPacking = ObjectUtils.isNotEmpty(packingOnly);
-        boolean hasShipment = ObjectUtils.isNotEmpty(shipmentOnly);
+        boolean hasShipment = ObjectUtils.isNotEmpty(shipmentCargoOnly);
 
         // If containers are assigned to both packing and shipment cargo
         if (hasPacking && hasShipment) {
             // Merge both lists while removing duplicates based on containerId
-            List<ContainerDeleteInfoProjection> merged = Stream.concat(packingOnly.stream(), shipmentOnly.stream())
+            List<ContainerDeleteInfoProjection> merged = Stream.concat(packingOnly.stream(), shipmentCargoOnly.stream())
                     .collect(Collectors.toMap(
                             ContainerDeleteInfoProjection::getContainerId, // Use containerId as the unique key
                             p -> p, // Keep the projection object as-is
@@ -333,7 +333,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if (hasPacking) {
             throw new IllegalArgumentException(
                     "Selected containers are assigned to Packages. Please unassign them before deletion:\n" +
-                            formatAssignedContainersInfo(packingOnly)
+                            formatAssignedContainersInfo(ObjectUtils.isNotEmpty(packingOnly) ? List.of(packingOnly.get(0)) : List.of())
             );
         }
 
@@ -341,7 +341,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if (hasShipment) {
             throw new IllegalArgumentException(
                     "Selected containers are assigned to Shipment Cargo. Please unassign them before deletion:\n" +
-                            formatAssignedContainersInfo(shipmentOnly)
+                            formatAssignedContainersInfo(shipmentCargoOnly)
             );
         }
     }
@@ -349,12 +349,18 @@ public class ContainerV3Service implements IContainerV3Service {
     // Formats the display information for containers with optional package details
     private String formatAssignedContainersInfo(List<ContainerDeleteInfoProjection> projections) {
         return projections.stream()
-                .map(p -> String.format("Container Number: %s - Shipment Number: %s - Packages: %s %s",
-                        p.getContainerNumber(),
-                        p.getShipmentId(),
-                        Optional.ofNullable(p.getPacks()).orElse(""),
-                        Optional.ofNullable(p.getPacksType()).orElse("")))
-                .collect(Collectors.joining("\n"));
+                .map(p -> {
+                    String containerNumber = Optional.ofNullable(p.getContainerNumber()).orElse(p.getContainerCode());
+                    String shipmentId = p.getShipmentId();
+
+                    // Only include packages info if packs is not null/empty
+                    String packagesInfo = Optional.ofNullable(p.getPacks())
+                            .filter(packs -> !packs.trim().isEmpty())
+                            .map(packs -> String.format(" - Packages: %s %s", packs, Optional.ofNullable(p.getPacksType()).orElse("")))
+                            .orElse("");
+
+                    return String.format("Container Number: %s - Shipment Number: %s%s", containerNumber, shipmentId, packagesInfo);
+                }).collect(Collectors.joining("\n"));
     }
 
     // Method to handle the deletion of containers and their associated entities
@@ -663,13 +669,13 @@ public class ContainerV3Service implements IContainerV3Service {
         return responseList;
     }
 
-    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException {
+    public ContainerSummaryResponse getContainerSummaryResponse(List<Containers> containersList, boolean isShipment, String xSource) throws RunnerException { //NOSONAR
         double totalWeight = 0;
-        double packageCount = 0;
         double tareWeight = 0;
         double totalVolume = 0;
         double totalContainerCount = 0;
         double totalPacks = 0;
+        String packsType = null;
         int dgContainers = 0;
         double netWeight = 0;
         long assignedContainers = 0;
@@ -694,10 +700,10 @@ public class ContainerV3Service implements IContainerV3Service {
                 totalWeight = totalWeight + wInDef;
                 tareWeight = tareWeight + tarDef;
                 netWeight = netWeight + netWtDef;
-                packageCount = getTotalPacks(containers, packageCount);
                 totalVolume = totalVolume + volume;
                 totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
                 totalPacks = getTotalPacks(containers, totalPacks);
+                packsType = commonUtils.getPacksUnit(packsType, containers.getPacksType());
 
                 ContainerSummaryResponse.GroupedContainerSummary summary = summaryMap.computeIfAbsent(containers.getContainerCode(), k -> {
                     ContainerSummaryResponse.GroupedContainerSummary s = new ContainerSummaryResponse.GroupedContainerSummary();
@@ -726,7 +732,7 @@ public class ContainerV3Service implements IContainerV3Service {
             groupedContainerSummaryList = new ArrayList<>(summaryMap.values());
         }
         ContainerSummaryResponse response = new ContainerSummaryResponse();
-        setTotalPackages(isShipment, totalPacks, v1TenantSettingsResponse, response);
+        response.setTotalPackages(String.format(Constants.STRING_FORMAT, IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse), packsType));
         response.setTotalContainers(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
         response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
         response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
@@ -739,14 +745,6 @@ public class ContainerV3Service implements IContainerV3Service {
         setAssignedContainerCount(containersList, isShipment, assignedContainers, v1TenantSettingsResponse, response);
         response.setGroupedContainersSummary(groupedContainerSummaryList);
         return response;
-    }
-
-    private static void setTotalPackages(boolean isShipment, double totalPacks, V1TenantSettingsResponse v1TenantSettingsResponse, ContainerSummaryResponse response) {
-        if (isShipment) {
-            response.setTotalPackages(String.format(Constants.STRING_FORMAT, IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse), Constants.PACKAGES));
-        } else {
-            response.setTotalPackages(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
-        }
     }
 
     private void setAssignedContainerCount(List<Containers> containersList, boolean isShipment, long assignedContainers, V1TenantSettingsResponse v1TenantSettingsResponse, ContainerSummaryResponse response) {

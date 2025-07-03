@@ -4,6 +4,8 @@ public interface ContainerDeleteInfoProjection {
 
     Long getContainerId();
 
+    String getContainerCode();
+
     String getContainerNumber();
 
     String getShipmentId();
@@ -16,6 +18,11 @@ public interface ContainerDeleteInfoProjection {
 
         @Override
         public Long getContainerId() {
+            return null;
+        }
+
+        @Override
+        public String getContainerCode() {
             return null;
         }
 

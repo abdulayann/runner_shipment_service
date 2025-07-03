@@ -893,6 +893,19 @@ class PackingDaoTest {
     }
 
     @Test
+    void findByBookingIdIn() {
+        List<Long> bookingIds = List.of(100L, 200L);
+        List<Packing> expectedPackings = List.of(testPacking);
+
+        when(packingRepository.findByBookingIdIn(bookingIds)).thenReturn(expectedPackings);
+
+        List<Packing> result = packingDao.findByBookingIdIn(bookingIds);
+
+        assertEquals(expectedPackings, result);
+        verify(packingRepository).findByBookingIdIn(bookingIds);
+    }
+
+    @Test
     void setPackingIdsToContainer() {
         List<Long> packingIds = List.of(10L, 20L);
         Long containerId = 123L;

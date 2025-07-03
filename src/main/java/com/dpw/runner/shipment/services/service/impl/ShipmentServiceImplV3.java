@@ -1509,7 +1509,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void validateBeforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
-            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+            throw new ValidationException("Shipper & Consignee parties can't be selected as same.");
 
         if (!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
@@ -2094,6 +2094,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
 
         ShipmentV3Request shipmentRequest = getShipmentRequestFromBookingV3(customerBookingRequest, consolidationDetails);
+        Long consolidationId = !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getId() : null;
         // Set Department in case single department is available
         shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
@@ -2133,10 +2134,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
-        return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList);
+        return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList, consolidationId);
     }
 
-    public ShipmentDetailsV3Response createFromBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList) {
+    public ShipmentDetailsV3Response createFromBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId) {
         ShipmentV3Request request = (ShipmentV3Request) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Shipment Create From Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -2168,6 +2169,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             autoGenerateEvents(shipmentDetails);
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
+            if(consolidationId != null) {
+                consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
+            }
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
@@ -2358,7 +2362,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 source("API").
                 bookingType("ONLINE").
                 consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getConsolidationNumber() : "").
-                consolidationId(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getId() : null).
                 masterBill(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getBol() : null).
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).

@@ -19,7 +19,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -59,6 +61,33 @@ public class PackingValidationV3Util {
 
         if (!missingIds.isEmpty()) {
             throw new DataRetrievalFailureException("No packing found for the ids: " + missingIds);
+        }
+    }
+
+    public void validateContainerIds(List<PackingV3Request> createRequests, List<PackingV3Request> updateRequests, List<Packing> existingPackings) {
+        // Validate create requests
+        for (PackingV3Request packingRequest : createRequests) {
+            if (packingRequest.getContainerId() != null) {
+                throw new ValidationException("Package can be assigned to a container only after creation.");
+            }
+        }
+
+        // Validate update requests
+        if (updateRequests != null && !updateRequests.isEmpty()) {
+            Map<Long, Long> existingContainerMap = new HashMap<>();
+            for (Packing packing: existingPackings) {
+                if (packing.getId() != null)
+                    existingContainerMap.put(packing.getId(), packing.getContainerId());
+            }
+
+            for (PackingV3Request packingRequest : updateRequests) {
+                Long requestContainerId = packingRequest.getContainerId();
+                Long existingContainerId = existingContainerMap.get(packingRequest.getId());
+
+                if (!Objects.equals(requestContainerId, existingContainerId)) {
+                    throw new ValidationException("Changes are available for Package section, Please refresh for latest updates.");
+                }
+            }
         }
     }
 

@@ -443,5 +443,79 @@ class PackingValidationV3UtilTest {
         assertDoesNotThrow(() -> packingValidationV3Util.validateShipmentGateInDate(shipmentDetails));
     }
 
+    @Test
+    void shouldThrow_whenCreateRequestHasContainerId() {
+        PackingV3Request createReq = new PackingV3Request();
+        createReq.setContainerId(123L);
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.validateContainerIds(List.of(createReq), null, null)
+        );
+
+        assertEquals("Package can be assigned to a container only after creation.", ex.getMessage());
+    }
+
+    @Test
+    void shouldPass_whenCreateRequestHasNullContainerId() {
+        PackingV3Request createReq = new PackingV3Request();
+        createReq.setContainerId(null);
+
+        assertDoesNotThrow(() ->
+                packingValidationV3Util.validateContainerIds(List.of(createReq), null, null)
+        );
+    }
+
+    @Test
+    void shouldSkipUpdateValidation_whenUpdateRequestsIsNull() {
+        PackingV3Request createReq = new PackingV3Request();
+        createReq.setContainerId(null);
+
+        assertDoesNotThrow(() ->
+                packingValidationV3Util.validateContainerIds(List.of(createReq), null, List.of())
+        );
+    }
+
+    @Test
+    void shouldSkipUpdateValidation_whenUpdateRequestsIsEmpty() {
+        PackingV3Request createReq = new PackingV3Request();
+        createReq.setContainerId(null);
+
+        assertDoesNotThrow(() ->
+                packingValidationV3Util.validateContainerIds(List.of(createReq), List.of(), List.of())
+        );
+    }
+
+    @Test
+    void shouldThrow_whenUpdateRequestHasDifferentContainerId() {
+        PackingV3Request updateReq = new PackingV3Request();
+        updateReq.setId(1L);
+        updateReq.setContainerId(100L);
+
+        Packing existing = new Packing();
+        existing.setId(1L);
+        existing.setContainerId(200L);
+
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                packingValidationV3Util.validateContainerIds(List.of(), List.of(updateReq), List.of(existing))
+        );
+
+        assertEquals("Changes are available for Package section, Please refresh for latest updates.", ex.getMessage());
+    }
+
+    @Test
+    void shouldPass_whenUpdateRequestHasSameContainerId() {
+        PackingV3Request updateReq = new PackingV3Request();
+        updateReq.setId(1L);
+        updateReq.setContainerId(100L);
+
+        Packing existing = new Packing();
+        existing.setId(1L);
+        existing.setContainerId(100L);
+
+        assertDoesNotThrow(() ->
+                packingValidationV3Util.validateContainerIds(List.of(), List.of(updateReq), List.of(existing))
+        );
+    }
+
 
 }
