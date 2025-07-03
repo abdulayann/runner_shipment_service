@@ -4,3 +4,4 @@ POST Deployment
 ----------------
 1. RUN update_shipping_line.sql in PROD env
 2. Run Update_Screener_Name_AutoSync.sql on all env
+3. RUN update_shipping_line_part-2.sql in PROD env

@@ -603,7 +603,6 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setAutoEventCreate(true);
 
         Awb mockAwb = new Awb();
-        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
 
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
@@ -622,7 +621,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        when(awbDao.updateAirMessageStatusFromShipmentId(any(), any())).thenReturn(1);
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
@@ -666,13 +664,11 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintingFor_str("0");
         // Mock
         Awb mockAwb = new Awb();
-        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        when(awbDao.updateAirMessageStatusFromShipmentId(any(), any())).thenReturn(1);
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);

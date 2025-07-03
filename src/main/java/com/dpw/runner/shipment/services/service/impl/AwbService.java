@@ -91,6 +91,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrE
 public class AwbService implements IAwbService {
 
     private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
+    private static final String AIR_SECURITY_PERMISSION = "You don't have Air Security permission.";
+
     @Autowired
     IShipmentDao shipmentDao;
     @Autowired
@@ -195,7 +197,6 @@ public class AwbService implements IAwbService {
         Awb awb = new Awb();
         try {
             awb = awbDao.save(generateAwb(request));
-            syncAwb(awb, SaveStatus.CREATE);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -218,13 +219,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
-    private void syncAwb(Awb awb, SaveStatus saveStatus) {
-        try {
-            awbSync.sync(awb, saveStatus);
-        } catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-        }
-    }
+
 
     public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -246,6 +241,7 @@ public class AwbService implements IAwbService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             this.validateAwbBeforeUpdate(awb);
+            this.checkAirSecurityPermissionForAwb(awb);
 
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             updateAwbOtherChargesInfo(awb.getAwbOtherChargesInfo());
@@ -263,7 +259,6 @@ public class AwbService implements IAwbService {
             setOciInfoInAwb(awb);
             awb = awbDao.save(awb);
 
-            syncAwb(awb, SaveStatus.UPDATE);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -594,7 +589,6 @@ public class AwbService implements IAwbService {
                 getMawnLinkPacks(awb, true, awbList);
             }
             awb = awbDao.save(awb);
-            syncAwb(awb, SaveStatus.CREATE);
 
             // map mawb and hawb affter suuccessful save
             linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
@@ -1963,6 +1957,7 @@ public class AwbService implements IAwbService {
 
         if (shipmentDetails.isEmpty() && consolidationDetails.isEmpty())
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        this.checkAirSecurityPermissionForAwb(awb);
 
         CreateAwbRequest createAwbRequest = CreateAwbRequest.builder()
                 .ConsolidationId(resetAwbRequest.getConsolidationId())
@@ -2016,7 +2011,6 @@ public class AwbService implements IAwbService {
         awb.setAirMessageResubmitted(false);
         awb.setOriginalPrintedAt(originalPrintedAt);
         awb = awbDao.save(awb);
-        syncAwb(awb, SaveStatus.RESET);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
@@ -4437,6 +4431,23 @@ public class AwbService implements IAwbService {
 
             if (!errorShipments.isEmpty())
                 throw new ValidationException(String.format(ErrorConstants.HAWB_NOT_GENERATED_ERROR, String.join(", ", errorShipments)));
+        }
+    }
+
+    // Checks Air Security Permission For AWB if Country Air Cargo Security Flag is enabled..
+    private void checkAirSecurityPermissionForAwb(Awb awb) {
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+        if (Objects.nonNull(shipmentSettings) && Boolean.TRUE.equals(shipmentSettings.getCountryAirCargoSecurity())) {
+            if (Objects.nonNull(awb.getShipmentId())) {
+                var shipment = shipmentDao.findById(awb.getShipmentId()).orElse(ShipmentDetails.builder().build());
+                if (!CommonUtils.checkAirSecurityForShipment(shipment))
+                    throw new ValidationException(AIR_SECURITY_PERMISSION);
+            }
+            else if (Objects.nonNull(awb.getConsolidationId())) {
+                var console = consolidationDetailsDao.findById(awb.getConsolidationId()).orElse(ConsolidationDetails.builder().build());
+                if (!CommonUtils.checkAirSecurityForConsolidation(console))
+                    throw new ValidationException(AIR_SECURITY_PERMISSION);
+            }
         }
     }
 }
