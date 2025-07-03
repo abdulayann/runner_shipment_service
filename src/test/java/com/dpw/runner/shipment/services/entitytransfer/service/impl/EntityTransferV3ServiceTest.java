@@ -1277,6 +1277,192 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testSendConsolidationEmailNotification_Success2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        UsersDto mockUser = new UsersDto();
+        mockUser.setEmail("test@dpworld.com");
+        UserContext.setUser(mockUser);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
+        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
+        when(consoleDetails.getTransportMode()).thenReturn("SEA");
+        when(consoleDetails.getBol()).thenReturn("bol");
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("FullName", "22323");
+        Parties parties = Parties.builder().orgData(orgData).build();
+
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
+        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
+
+
+
+    @Test
+    void testSendConsolidationEmailNotification_Success3() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        UsersDto mockUser = new UsersDto();
+        mockUser.setEmail("test@dpworld.com");
+        UserContext.setUser(mockUser);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
+        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
+        when(consoleDetails.getTransportMode()).thenReturn("SEA");
+        when(consoleDetails.getBol()).thenReturn("bol");
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("id", "22323");
+        Parties parties = Parties.builder().orgData(orgData).build();
+
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
+        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
+
+    @Test
+    void testSendConsolidationEmailNotification_Success4() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        UsersDto mockUser = new UsersDto();
+        mockUser.setEmail("test@dpworld.com");
+        UserContext.setUser(mockUser);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
+        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
+        when(consoleDetails.getTransportMode()).thenReturn("SEA");
+        when(consoleDetails.getBol()).thenReturn("bol");
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
+        Parties parties = Parties.builder().build();
+
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
+        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
+
+    @Test
+    void testSendConsolidationEmailNotification_Success5() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        mockV1Map.put(0, new Object());
+        mockV1Map.put(2, new Object());
+        mockV1Map.put(3, new Object());
+        mockV1Map.put(4, new Object());
+        UsersDto mockUser = new UsersDto();
+        mockUser.setEmail("test@dpworld.com");
+        UserContext.setUser(mockUser);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
+        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
+        when(consoleDetails.getTransportMode()).thenReturn("SEA");
+        when(consoleDetails.getBol()).thenReturn("bol");
+        when(consoleDetails.getReceivingBranch()).thenReturn(1L);
+        when(consoleDetails.getInterBranchConsole()).thenReturn(true);
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
+        Parties parties = Parties.builder().build();
+
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
+        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
+
+    @Test
+    void testSendConsolidationEmailNotification_Success6() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        mockV1Map.put(0, new Object());
+        mockV1Map.put(2, new Object());
+        mockV1Map.put(3, new Object());
+        mockV1Map.put(4, new Object());
+        UsersDto mockUser = new UsersDto();
+        mockUser.setEmail("test@dpworld.com");
+        UserContext.setUser(mockUser);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
+        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
+        when(consoleDetails.getTransportMode()).thenReturn("SEA");
+        when(consoleDetails.getBol()).thenReturn("bol");
+        when(consoleDetails.getReceivingBranch()).thenReturn(1L);
+        when(consoleDetails.getInterBranchConsole()).thenReturn(true);
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
+        Parties parties = Parties.builder().build();
+
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+        when(shipmentData.getReceivingBranch()).thenReturn(null);
+
+        Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
+        shipmentGuidSendToBranch.put("1", List.of(1,2,3));
+        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+
+        verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
+
+    }
+
+    @Test
     void testSendShipmentEmailNotification_Success() {
         List<Integer> destinationBranches = List.of(1,2,3);
 
@@ -1315,6 +1501,85 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentData.getShipmentId()).thenReturn("1");
         when(shipmentData.getHouseBill()).thenReturn("hbn");
         when(shipmentData.getMasterBill()).thenReturn("mbn");
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
+        entityTransferService.sendShipmentEmailNotification(shipmentData, destinationBranches, false);
+
+        verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
+
+    }
+
+    @Test
+    void testSendShipment3EmailNotification_Success() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("FullName", "22323");
+        Parties parties = Parties.builder().orgData(orgData).build();
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(shipmentData.getShipmentId()).thenReturn("1");
+        when(shipmentData.getHouseBill()).thenReturn("hbn");
+        when(shipmentData.getMasterBill()).thenReturn("mbn");
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
+        entityTransferService.sendShipmentEmailNotification(shipmentData, destinationBranches, false);
+
+        verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
+
+    }
+
+    @Test
+    void testSendShipment4EmailNotification_Success() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("id", "22323");
+        Parties parties = Parties.builder().orgData(orgData).build();
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(shipmentData.getShipmentId()).thenReturn("1");
+        when(shipmentData.getHouseBill()).thenReturn("hbn");
+        when(shipmentData.getMasterBill()).thenReturn("mbn");
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
+        entityTransferService.sendShipmentEmailNotification(shipmentData, destinationBranches, false);
+
+        verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
+
+    }
+
+    @Test
+    void testSendShipment5EmailNotification_Success() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        List<Integer> destinationBranches = List.of(1,2,3);
+
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        Map<Integer, Object> mockV1Map = new HashMap<>();
+        TenantContext.setCurrentTenant(1);
+        mockV1Map.put(1, new Object());
+        Parties parties = Parties.builder().build();
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
+        when(shipmentData.getShipmentId()).thenReturn("1");
+        when(shipmentData.getHouseBill()).thenReturn("hbn");
+        when(shipmentData.getMasterBill()).thenReturn("mbn");
+        when(shipmentData.getClient()).thenReturn(parties);
+        when(shipmentData.getConsigner()).thenReturn(parties);
+        when(shipmentData.getConsignee()).thenReturn(parties);
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
         entityTransferService.sendShipmentEmailNotification(shipmentData, destinationBranches, false);
 
