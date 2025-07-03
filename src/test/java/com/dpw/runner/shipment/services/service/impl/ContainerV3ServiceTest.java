@@ -40,6 +40,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -57,6 +59,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -86,6 +89,10 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Mock
     private IV1Service v1Service;
+    @Mock
+    private ModelMapper modelMapper;
+    @Mock
+    private ISBUtils sbUtils;
 
     @Mock
     private JsonHelper jsonHelper;
@@ -808,5 +815,223 @@ class ContainerV3ServiceTest extends CommonMocks {
         request.setConsolidationId(1L);
         request.setBookingId(1L);
         assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
+    }
+
+    @Test
+    void testPushContainersToDependentServices_Success() {
+        // Arrange
+        List<Containers> containersList = createValidContainersList();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(true);
+        tenantSettings.setTransportOrchestratorEnabled(true);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+        lenient().when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("jsonBody");
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+    }
+
+    @Test
+    void testPushContainersToDependentServices_NullContainersList() {
+        // Arrange
+        List<Containers> containersList = null;
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(true);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+        verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testPushContainersToDependentServices_EmptyContainersList() {
+        // Arrange
+        List<Containers> containersList = new ArrayList<>();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(true);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+        verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
+
+    }
+
+    @Test
+    void testPushContainersToDependentServices_LogicAppIntegrationDisabled() {
+        // Arrange
+        List<Containers> containersList = createValidContainersList();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(false);
+        tenantSettings.setTransportOrchestratorEnabled(false);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+        verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testPushContainersToDependentServices_TransportOrchestratorEnabled() {
+        // Arrange
+        List<Containers> containersList = createValidContainersList();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(false);
+        tenantSettings.setTransportOrchestratorEnabled(true);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+        lenient().when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("jsonBody");
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+
+    }
+
+    @Test
+    void testPushContainersToDependentServices_TransportOrchestratorDisabled() {
+        // Arrange
+        List<Containers> containersList = createValidContainersList();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(true);
+        tenantSettings.setTransportOrchestratorEnabled(false);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+        when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+        when(jsonHelper.convertToJson(any())).thenReturn("jsonBody");
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+        verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
+
+    }
+
+    @Test
+    void testPushContainersToDependentServices_EmptyPayloadDetails() {
+        // Arrange
+        List<Containers> containersList = createContainersListWithoutValidShipments();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(true);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+        lenient().when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+        lenient().when(jsonHelper.convertToJson(any())).thenReturn("jsonBody");
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+        verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void testPushContainersToDependentServices_HazardousContainer() {
+        // Arrange
+        List<Containers> containersList = createHazardousContainersList();
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setLogicAppIntegrationEnabled(true);
+        tenantSettings.setTransportOrchestratorEnabled(true);
+
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+        when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+        when(jsonHelper.convertToJson(any())).thenReturn("jsonBody");
+
+        // Act
+        containerV3Service.pushContainersToDependentServices(containersList);
+
+        // Assert
+        verify(commonUtils, times(1)).getCurrentTenantSettings();
+
+    }
+
+    // Helper methods for test data creation
+    private List<Containers> createValidContainersList() {
+        List<Containers> containersList = new ArrayList<>();
+        Containers container = new Containers();
+        container.setId(1L);
+        container.setContainerNumber("ABCD123456");
+        container.setHazardous(false);
+
+        Set<ShipmentDetails> shipmentsList = new HashSet<>();
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setBookingReference("BK123456");
+        shipmentsList.add(shipment);
+
+        container.setShipmentsList(shipmentsList);
+        containersList.add(container);
+
+        return containersList;
+    }
+
+    private List<Containers> createContainersListWithoutValidShipments() {
+        List<Containers> containersList = new ArrayList<>();
+        Containers container = new Containers();
+        container.setId(1L);
+        container.setContainerNumber("ABCD123456");
+        container.setShipmentsList(new HashSet<>());
+
+        containersList.add(container);
+
+        return containersList;
+    }
+
+    private List<Containers> createHazardousContainersList() {
+        List<Containers> containersList = new ArrayList<>();
+        Containers container = new Containers();
+        container.setId(1L);
+        container.setContainerNumber("ABCD123456");
+        container.setHazardous(true);
+        container.setDgClass("Class 1");
+
+        Set<ShipmentDetails> shipmentsList = new HashSet<>();
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setBookingReference("BK123456");
+        shipmentsList.add(shipment);
+
+        container.setShipmentsList(shipmentsList);
+        containersList.add(container);
+
+        return containersList;
     }
 }

@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -42,11 +44,18 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerPayloadDetails;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerUpdateRequest;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,6 +91,25 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IContainerRepository containerRepository;
+
+    @Autowired
+    private ModelMapper modelMapper;
+
+    @Autowired
+    private ISBUtils sbUtils;
+
+    @Autowired
+    private ISBProperties isbProperties;
+
+    @Value("${boomi-message-topic}")
+    private String messageTopic;
+
+
+    @Value("${containersKafka.queue}")
+    private String senderQueue;
+
+    @Value("${containerTransportOrchestrator.queue}")
+    private String transportOrchestratorQueue;
 
     @Autowired
     private IContainerDao containerDao;
@@ -1437,4 +1465,69 @@ public class ContainerV3Service implements IContainerV3Service {
         containerDao.saveAll(containers.stream().toList());
     }
 
+    public void pushContainersToDependentServices(List<Containers> containersList) {
+        log.info("Starting pushContainersToDependentServices with containersList size: {}", containersList != null ? containersList.size() : 0);
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
+                v1TenantSettingsResponse.getLogicAppIntegrationEnabled(),
+                v1TenantSettingsResponse.getTransportOrchestratorEnabled());
+        if(canProcessContainers(containersList, v1TenantSettingsResponse)) {
+            EventMessage eventMessage = new EventMessage();
+            eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
+            List<ContainerPayloadDetails> oldContainerPayloadDetails = getContainerPayloadDetailsForExistingContainers(containersList);
+            List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
+            payloadDetails.addAll(oldContainerPayloadDetails);
+            if(CommonUtils.listIsNullOrEmpty(payloadDetails))
+                return;
+            ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
+            updateRequest.setContainers(payloadDetails);
+            updateRequest.setTenantCode(UserContext.getUser().getCode());
+            eventMessage.setContainerUpdateRequest(updateRequest);
+            String jsonBody = jsonHelper.convertToJson(eventMessage);
+            log.debug("JSON body created for event message: {}", jsonBody);
+            if (Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled())) {
+                log.info("Producing message to Kafka for transport orchestrator.");
+                producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
+            }
+            sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
+            log.info("Container pushed to kafka dependent services with data {}", jsonBody);
+        }
+    }
+
+    private boolean canProcessContainers(List<Containers> containersList, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        return containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
+                || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()));
+    }
+
+    private List<ContainerPayloadDetails> getContainerPayloadDetailsForExistingContainers(List<Containers> containersList) {
+        List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
+        for (Containers containers : containersList) {
+            if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
+                Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
+                for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
+                    String platformBookingRef = shipmentDetail.getBookingReference();
+                    if (StringUtility.isNotEmpty(platformBookingRef)) {
+                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
+                        log.info("Preparing platform payload for container ID: {} with container number: {}",
+                                containers.getId(), containers.getContainerNumber());
+                        payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                    }
+                }
+            }
+        }
+        return payloadDetails;
+    }
+
+    private ContainerPayloadDetails prepareQueuePayload(Containers containers, String bookingRef) {
+        ContainerPayloadDetails details = new ContainerPayloadDetails();
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = modelMapper.map(containers, ContainerBoomiUniversalJson.class);
+        if(Boolean.TRUE.equals(containerBoomiUniversalJson.getHazardous())) {
+            containerBoomiUniversalJson.setCargoType(ContainerConstants.HAZ);
+            containerBoomiUniversalJson.setHazardousGoodType(containers.getDgClass());
+        }
+        details.setBookingRef(bookingRef);
+        containerBoomiUniversalJson.setAllocationDate(commonUtils.getUserZoneTime(containerBoomiUniversalJson.getAllocationDate()));
+        details.setContainer(containerBoomiUniversalJson);
+        return details;
+    }
 }
