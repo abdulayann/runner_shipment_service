@@ -1198,15 +1198,12 @@ public class AwbUtility {
     }
 
     private static boolean isScreenersNameNeeded(Awb awb) {
-        if (Objects.isNull(awb)
+        return !(Objects.isNull(awb)
                 || Objects.isNull(awb.getAwbCargoInfo())
                 || StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber())
                 || Boolean.TRUE.equals(awb.getAwbCargoInfo().getIsUserInitialsManuallyAdded())
-                || Objects.isNull(UserContext.getUser())) {
-            return false;
-        }
-        else
-            return true;
+                || Objects.isNull(UserContext.getUser()));
+
     }
 
     public static String getScreenersName(Awb awb) {
