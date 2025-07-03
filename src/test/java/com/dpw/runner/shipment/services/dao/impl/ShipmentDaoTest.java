@@ -152,7 +152,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
 
-        assertThrows(RunnerException.class, () -> {
+        assertThrows(ValidationException.class, () -> {
             shipmentDao.save(shipmentDetails, false);
         });
     }
