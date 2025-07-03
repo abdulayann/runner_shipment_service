@@ -51,6 +51,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListReques
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
@@ -293,9 +294,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (customerBooking.getPackingList() != null && !customerBooking.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
             List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(customerBooking.getPackingList(), PackingV3Request.class);
             packingV3Service.deleteBulk(existingRequests, BOOKING);
+            customerBooking.setPackingList(new ArrayList<>());
         }
         if (!quotePackingRequests.isEmpty()) {
-            packingV3Service.updateBulk(quotePackingRequests, BOOKING);
+            BulkPackingResponse packingResponse = packingV3Service.updateBulk(quotePackingRequests, BOOKING);
+            customerBooking.setPackingList(jsonHelper.convertValueToList(packingResponse.getPackingResponseList(), Packing.class));
         }
     }
 
@@ -306,9 +309,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (customerBooking.getContainersList() != null && !customerBooking.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
             List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(customerBooking.getContainersList(), ContainerV3Request.class);
             containerV3Service.deleteBulk(existingContainerRequests, BOOKING);
+            customerBooking.setContainersList(new ArrayList<>());
         }
         if (!quoteContainerRequests.isEmpty()) {
-            containerV3Service.createBulk(quoteContainerRequests, BOOKING);
+            BulkContainerResponse containerResponse = containerV3Service.createBulk(quoteContainerRequests, BOOKING);
+            customerBooking.setContainersList(jsonHelper.convertValueToList(containerResponse.getContainerResponseList(), Containers.class));
         }
     }
 
@@ -2387,9 +2392,14 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             containers = containerDao.findByBookingIdIn(List.of(booking.getId()));
             packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
         }
-        calculateCargoDetails(packings, booking);
-        booking.setContainers(getTotalContainerCount(containers));
-        booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
+        if(!packings.isEmpty()) {
+            calculateCargoDetails(packings, booking);
+        }
+        if(!containers.isEmpty()) {
+            booking.setContainers(getTotalContainerCount(containers));
+            booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
+        }
+        log.info("CustomerBooking before save is {}", jsonHelper.convertToJson(booking));
         customerBookingDao.save(booking);
     }
 

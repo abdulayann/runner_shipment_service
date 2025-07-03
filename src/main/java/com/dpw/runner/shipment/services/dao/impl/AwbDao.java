@@ -24,9 +24,7 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -154,10 +152,15 @@ public class AwbDao implements IAwbDao {
     }
 
     @Override
-    public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
+    public List<Awb> findByIssuingAgent(String issuingAgent) {
+        return awbRepository.findByIssuingAgent(issuingAgent);
+
+    }
 
     @Override
-    public List<Awb> findByAwbNumber(List<String> awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
+    public List<Awb> findByAwbNumber(List<String> awbNumber) {
+        return awbRepository.findByAwbNumber(awbNumber);
+    }
 
     @Override
     public List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent) {
@@ -172,6 +175,21 @@ public class AwbDao implements IAwbDao {
             CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, false)), executorService);
         }
         return entities;
+    }
+
+    @Override
+    public List<Awb> findByIds(List<Long> id) {
+        return awbRepository.findAwbByIds(id);
+    }
+
+    @Override
+    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
+        return awbRepository.findAwbByAwbNumbers(awbNumbers);
+    }
+
+    @Override
+    public Awb findAwbByGuidByQuery(UUID guid) {
+        return awbRepository.findAwbByGuidByQuery(guid);
     }
 
     private void applyValidations(Awb awb) throws RunnerException {
@@ -403,10 +421,7 @@ public class AwbDao implements IAwbDao {
         }
     }
 
-    @Override
-    public Awb findAwbByGuidByQuery(UUID guid) {
-        return awbRepository.findAwbByGuidByQuery(guid);
-    }
+
 
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
@@ -546,15 +561,7 @@ public class AwbDao implements IAwbDao {
         return linkedHawb;
     }
 
-    @Override
-    public List<Awb> findByIds(List<Long> id) {
-        return awbRepository.findAwbByIds(id);
-    }
 
-    @Override
-    public List<Awb> findAwbByAwbNumbers(List<String> awbNumbers) {
-        return awbRepository.findAwbByAwbNumbers(awbNumbers);
-    }
 
     @Override
     public void validateAirMessaging(Long id) throws RunnerException {
