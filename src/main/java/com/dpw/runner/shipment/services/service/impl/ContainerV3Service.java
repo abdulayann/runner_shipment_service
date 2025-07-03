@@ -1496,32 +1496,48 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     public void pushContainersToDependentServices(List<Containers> containersList) {
-        log.info("Starting pushContainersToDependentServices with containersList size: {}", containersList != null ? containersList.size() : 0);
-        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
-                v1TenantSettingsResponse.getLogicAppIntegrationEnabled(),
-                v1TenantSettingsResponse.getTransportOrchestratorEnabled());
-        if(canProcessContainers(containersList, v1TenantSettingsResponse)) {
-            EventMessage eventMessage = new EventMessage();
-            eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
-            List<ContainerPayloadDetails> oldContainerPayloadDetails = getContainerPayloadDetailsForExistingContainers(containersList);
-            List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
-            payloadDetails.addAll(oldContainerPayloadDetails);
-            if(CommonUtils.listIsNullOrEmpty(payloadDetails))
-                return;
-            ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
-            updateRequest.setContainers(payloadDetails);
-            updateRequest.setTenantCode(UserContext.getUser().getCode());
-            eventMessage.setContainerUpdateRequest(updateRequest);
-            String jsonBody = jsonHelper.convertToJson(eventMessage);
-            log.debug("JSON body created for event message: {}", jsonBody);
-            if (Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled())) {
-                log.info("Producing message to Kafka for transport orchestrator.");
-                producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
-            }
-            sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
-            log.info("Container pushed to kafka dependent services with data {}", jsonBody);
+        int size = containersList != null ? containersList.size() : 0;
+        log.info("Starting pushContainersToDependentServices with containersList size: {}", size);
+
+        if (CommonUtils.listIsNullOrEmpty(containersList)) {
+            log.warn("Container list is null or empty. Exiting.");
+            return;
         }
+
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
+        log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
+                tenantSettings.getLogicAppIntegrationEnabled(),
+                tenantSettings.getTransportOrchestratorEnabled());
+
+        if (!canProcessContainers(containersList, tenantSettings)) {
+            log.warn("Containers cannot be processed based on tenant settings. Exiting.");
+            return;
+        }
+
+        List<ContainerPayloadDetails> payloadDetails = getContainerPayloadDetailsForExistingContainers(containersList);
+        if (CommonUtils.listIsNullOrEmpty(payloadDetails)) {
+            log.warn("No payload details found for containers. Exiting.");
+            return;
+        }
+
+        EventMessage eventMessage = new EventMessage();
+        eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
+
+        ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
+        updateRequest.setContainers(payloadDetails);
+        updateRequest.setTenantCode(UserContext.getUser().getCode());
+        eventMessage.setContainerUpdateRequest(updateRequest);
+
+        String jsonBody = jsonHelper.convertToJson(eventMessage);
+        log.debug("JSON body created for event message: {}", jsonBody);
+
+        if (Boolean.TRUE.equals(tenantSettings.getTransportOrchestratorEnabled())) {
+            log.info("Producing message to Kafka for transport orchestrator.");
+            producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
+        }
+
+        sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
+        log.info("Container pushed to Kafka and dependent services with data: {}", jsonBody);
     }
 
     private boolean canProcessContainers(List<Containers> containersList, V1TenantSettingsResponse v1TenantSettingsResponse) {
