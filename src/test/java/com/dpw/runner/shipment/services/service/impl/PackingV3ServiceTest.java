@@ -186,6 +186,13 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testCreatePacking_exception() {
+        request.setContainerId(1L);
+
+        assertThrows(ValidationException.class, () -> packingV3Service.create(request, "SHIPMENT"));
+    }
+
+    @Test
     void testUpdatePacking_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
         volumeWeightChargeable.setChargeable(BigDecimal.valueOf(150));
@@ -205,6 +212,15 @@ class PackingV3ServiceTest extends CommonMocks {
         PackingResponse result = packingV3Service.update(request, "SHIPMENT");
 
         assertEquals(1L, result.getId());
+    }
+
+    @Test
+    void testUpdatePacking_exception() {
+        request.setContainerId(1L);
+        when(packingDao.findById(1L)).thenReturn(Optional.of(packing));
+        when(packingValidationV3Util.validateModule(any(), anyString())).thenReturn(testShipment);
+
+        assertThrows(ValidationException.class, () -> packingV3Service.update(request, "SHIPMENT"));
     }
 
     @Test
@@ -689,6 +705,9 @@ class PackingV3ServiceTest extends CommonMocks {
         Map<String, Object> responseMap = packingV3Service.fetchAllMasterDataByKey(packingResponse);
 
         // Validate map contains all expected keys
+        assertEquals(3, responseMap.size());
+        assertEquals("ok", responseMap.get("unlocation"));
+        assertEquals("ok", responseMap.get("commodity"));
 
         verify(packingV3Util).addAllMasterDataInSingleCall(any(), any());
         verify(packingV3Util).addAllUnlocationDataInSingleCall(any(), any());
@@ -819,7 +838,7 @@ class PackingV3ServiceTest extends CommonMocks {
         when(consolidationService.retrieveForNte(any())).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
     }
-    
+
     @Test
     void testUnAssignPackageContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();

@@ -127,6 +127,11 @@ public class PackingDao implements IPackingDao {
     }
 
     @Override
+    public List<Packing> findByBookingIdIn(List<Long> bookingIds) {
+        return packingRepository.findByBookingIdIn(bookingIds);
+    }
+
+    @Override
     public void setPackingIdsToContainer(List<Long> packingIds, Long containerId) {
         packingRepository.setPackingIdsToContainer(packingIds, containerId);
     }

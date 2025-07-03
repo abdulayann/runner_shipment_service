@@ -86,7 +86,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -2818,5 +2817,13 @@ public class CommonUtils {
 
     public boolean isLCLorLTL(String cargoType) {
         return (Constants.SHIPMENT_TYPE_LCL.equals(cargoType) || CARGO_TYPE_LTL.equals(cargoType));
+    }
+
+    public String getPacksUnit(String curUnit, String entityPacksUnit) {
+        if(isStringNullOrEmpty(curUnit))
+            curUnit = entityPacksUnit;
+        else if(!isStringNullOrEmpty(entityPacksUnit) && !Objects.equals(curUnit, entityPacksUnit))
+            curUnit = PackingConstants.PKG;
+        return curUnit;
     }
 }

@@ -824,6 +824,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request request = new ContainerV3Request();
         request.setShipmentsId(1L);
         request.setConsolidationId(1L);
+        request.setBookingId(1L);
         assertThrows(ValidationException.class, () -> containerV3Service.create(request, "SHIPMENT"));
     }
 }

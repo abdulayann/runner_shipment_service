@@ -148,6 +148,9 @@ public class PackingV3Service implements IPackingV3Service {
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
+        if (packingRequest.getContainerId() != null) {
+            throw new ValidationException("Package can be assigned to a container only after creation.");
+        }
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -229,6 +232,9 @@ public class PackingV3Service implements IPackingV3Service {
         }
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
+        if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
+            throw new ValidationException("Changes are available for Package section, Please refresh for latest updates.");
+        }
         Packing oldConvertedPacking = jsonHelper.convertValue(oldPacking, Packing.class);
         Packing newPacking = jsonHelper.convertValue(packingRequest, Packing.class);
 
@@ -339,6 +345,8 @@ public class PackingV3Service implements IPackingV3Service {
                 createRequests.add(request);
             }
         }
+
+        packingValidationV3Util.validateContainerIds(createRequests, updateRequests, existingPackings);
 
         // Convert and process updates
         List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(existingPackings, Packing.class);
@@ -928,7 +936,7 @@ public class PackingV3Service implements IPackingV3Service {
 
             // Fill response
             response.setDgPacks(dgPacks);
-            response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null ? packsUnit : ""));
+            response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null ? packsUnit : PackingConstants.PKG));
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(
                     String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), tenantSettings), toWeightUnit));
@@ -1109,21 +1117,10 @@ public class PackingV3Service implements IPackingV3Service {
         // If the pack type is not empty, update the packs unit and initialize map entry if absent
         if (!isStringNullOrEmpty(packing.getPacksType())) {
             // Call to determine packs unit based on packing type
-            packsUnit = getPacksUnit(packing, packsUnit);
+            packsUnit = commonUtils.getPacksUnit(packsUnit, packing.getPacksType());
 
             // If this packing type is not already in the map, initialize its count to 0
             map.putIfAbsent(packing.getPacksType(), 0L);
-        }
-        return packsUnit;
-    }
-
-    private String getPacksUnit(Packing packing, String packsUnit) {
-        // If packsUnit is null, initialize it with the packing type
-        if (packsUnit == null) {
-            packsUnit = packing.getPacksType();
-        } else if (!packsUnit.equals(packing.getPacksType())) {
-            // If the pack unit differs from the current one, default to "MPK"
-            packsUnit = MPK;
         }
         return packsUnit;
     }
