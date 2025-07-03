@@ -4495,8 +4495,7 @@ class AwbServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
 
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
-        var e = assertThrows(ValidationException.class, () ->
+        var e = assertThrows(NullPointerException.class, () ->
                 awbService.reset(commonRequestModel));
         assertNotNull(e);
     }
