@@ -1540,40 +1540,59 @@ public class ContainerV3Service implements IContainerV3Service {
         log.info("Container pushed to Kafka and dependent services with data: {}", jsonBody);
     }
 
-    private boolean canProcessContainers(List<Containers> containersList, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        return containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
-                || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()));
+    private boolean canProcessContainers(List<Containers> containersList, V1TenantSettingsResponse tenantSettings) {
+        boolean hasContainers = containersList != null && !containersList.isEmpty();
+        boolean integrationEnabled = Boolean.TRUE.equals(tenantSettings.getLogicAppIntegrationEnabled());
+        boolean orchestratorEnabled = Boolean.TRUE.equals(tenantSettings.getTransportOrchestratorEnabled());
+
+        return hasContainers && (integrationEnabled || orchestratorEnabled);
     }
 
     private List<ContainerPayloadDetails> getContainerPayloadDetailsForExistingContainers(List<Containers> containersList) {
         List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
-        for (Containers containers : containersList) {
-            if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
-                Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
-                for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
-                    String platformBookingRef = shipmentDetail.getBookingReference();
-                    if (StringUtility.isNotEmpty(platformBookingRef)) {
-                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
-                        log.info("Preparing platform payload for container ID: {} with container number: {}",
-                                containers.getId(), containers.getContainerNumber());
-                        payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
-                    }
+
+        for (Containers container : containersList) {
+            if (StringUtility.isEmpty(container.getContainerNumber())) {
+                continue;
+            }
+
+            Set<ShipmentDetails> shipments = container.getShipmentsList();
+            if (shipments == null || shipments.isEmpty()) {
+                continue;
+            }
+
+            for (ShipmentDetails shipment : shipments) {
+                String bookingRef = shipment.getBookingReference();
+                if (StringUtility.isNotEmpty(bookingRef)) {
+                    log.info("Platform Booking reference obtained: {}", bookingRef);
+                    log.info("Preparing platform payload for container ID: {} with container number: {}",
+                            container.getId(), container.getContainerNumber());
+
+                    ContainerPayloadDetails detail = prepareQueuePayload(container, bookingRef);
+                    payloadDetails.add(detail);
                 }
             }
         }
+
         return payloadDetails;
     }
 
-    private ContainerPayloadDetails prepareQueuePayload(Containers containers, String bookingRef) {
-        ContainerPayloadDetails details = new ContainerPayloadDetails();
-        ContainerBoomiUniversalJson containerBoomiUniversalJson = modelMapper.map(containers, ContainerBoomiUniversalJson.class);
-        if(Boolean.TRUE.equals(containerBoomiUniversalJson.getHazardous())) {
-            containerBoomiUniversalJson.setCargoType(ContainerConstants.HAZ);
-            containerBoomiUniversalJson.setHazardousGoodType(containers.getDgClass());
+    private ContainerPayloadDetails prepareQueuePayload(Containers container, String bookingRef) {
+        ContainerBoomiUniversalJson jsonPayload = modelMapper.map(container, ContainerBoomiUniversalJson.class);
+
+        if (Boolean.TRUE.equals(jsonPayload.getHazardous())) {
+            jsonPayload.setCargoType(ContainerConstants.HAZ);
+            jsonPayload.setHazardousGoodType(container.getDgClass());
         }
-        details.setBookingRef(bookingRef);
-        containerBoomiUniversalJson.setAllocationDate(commonUtils.getUserZoneTime(containerBoomiUniversalJson.getAllocationDate()));
-        details.setContainer(containerBoomiUniversalJson);
-        return details;
+
+        jsonPayload.setAllocationDate(
+                commonUtils.getUserZoneTime(jsonPayload.getAllocationDate())
+        );
+
+        ContainerPayloadDetails payloadDetail = new ContainerPayloadDetails();
+        payloadDetail.setBookingRef(bookingRef);
+        payloadDetail.setContainer(jsonPayload);
+
+        return payloadDetail;
     }
 }
