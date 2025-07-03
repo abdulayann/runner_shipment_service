@@ -108,8 +108,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Page<Awb> findAll(Specification<Awb> spec, Pageable pageable) {
-        var page = awbRepository.findAll(spec, pageable);
-        return page;
+        return awbRepository.findAll(spec, pageable);
     }
 
     @Override
