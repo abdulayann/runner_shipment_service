@@ -206,3 +206,15 @@ update parties set
        "OrgOrganizationCode": "FRC00027824"
    }'
   where id IN ('600922');
+
+  update shipment_details
+  set client_dps_address_id = 20814
+  where id = 11111;
+
+  update shipment_details
+  set client_dps_address_id = 91096
+  where id = 38846;
+
+  update shipment_details
+  set client_dps_address_id = 91098
+  where id = 43770;
