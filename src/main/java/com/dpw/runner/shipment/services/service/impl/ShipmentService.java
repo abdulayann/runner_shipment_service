@@ -2425,7 +2425,7 @@ public class ShipmentService implements IShipmentService {
             isConsolUpdated = !Objects.equals(oldId, newId);
         }
 
-        if (isConsolDetached || (isConsolUpdated && oldConsolidation != null && !oldConsolidation.isEmpty())) {
+        if (isConsolDetached || (isConsolUpdated && !CommonUtils.setIsNullOrEmpty(oldConsolidation))) {
             ConsolidationDetails oldConsole = oldConsolidation.iterator().next();
             if (oldConsole != null && oldConsole.getId() != null) {
                 awbDao.validateAirMessaging(oldConsole.getId());
@@ -2439,7 +2439,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void handleNewConsoleAttachment(ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
-        ConsolidationDetails consolidation = shipmentDetails.getConsolidationList().iterator().next();
+        ConsolidationDetails consolidation = CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList()) ? ConsolidationDetails.builder().build() : shipmentDetails.getConsolidationList().iterator().next();
         List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidation.getId());
         consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false, false);
         dgValidations(shipmentDetails, consolidation, 1);
