@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +20,9 @@ import org.flywaydb.core.api.callback.Context;
 import org.flywaydb.core.api.callback.Event;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -176,5 +180,21 @@ public class FlywaySQLLogger implements Callback {
     @Override
     public String getCallbackName() {
         return "FlywaySQLLogger";
+    }
+
+    // Configure Installed By for Flyway
+    @Bean
+    public FlywayConfigurationCustomizer flywayConfigurationCustomizer() {
+        return configuration -> {
+            try {
+                String user = System.getProperty(Constants.MACHINE_USER_NAME);
+                String machine = InetAddress.getLocalHost().getHostName();
+                String installedBy = user + "@" + machine;
+                configuration.installedBy(installedBy);
+            } catch (Exception e) {
+                // Fallback in case of error -- Default to APPLICATION
+                configuration.installedBy(Constants.APPLICATION);
+            }
+        };
     }
 }
