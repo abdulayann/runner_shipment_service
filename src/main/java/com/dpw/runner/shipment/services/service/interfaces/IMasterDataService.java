@@ -128,4 +128,5 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request);
+    ResponseEntity<IRunnerResponse> getDefaultOrgAddressByTenantId(CommonRequestModel commonRequestModel);
 }
