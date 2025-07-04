@@ -446,4 +446,11 @@ public class ContainerV3Util {
         container.setPacks(String.valueOf(Integer.parseInt(isStringNullOrEmpty(container.getPacks()) ? "0" : container.getPacks()) + packs));
     }
 
+    public void setWtVolUnits(Containers containers) {
+        if(isStringNullOrEmpty(containers.getGrossWeightUnit()))
+            containers.setGrossWeightUnit(commonUtils.getDefaultWeightUnit());
+        if(isStringNullOrEmpty(containers.getGrossVolumeUnit()))
+            containers.setGrossVolumeUnit(commonUtils.getDefaultVolumeUnit());
+    }
+
 }

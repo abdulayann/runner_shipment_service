@@ -2712,4 +2712,16 @@ public class CommonUtils {
             curUnit = PackingConstants.PKG;
         return curUnit;
     }
+
+    public String getDefaultWeightUnit() {
+        if(isStringNullOrEmpty(getShipmentSettingFromContext().getWeightChargeableUnit()))
+            return Constants.WEIGHT_UNIT_KG;
+        return getShipmentSettingFromContext().getWeightChargeableUnit();
+    }
+
+    public String getDefaultVolumeUnit() {
+        if(isStringNullOrEmpty(getShipmentSettingFromContext().getVolumeChargeableUnit()))
+            return VOLUME_UNIT_M3;
+        return getShipmentSettingFromContext().getVolumeChargeableUnit();
+    }
 }
