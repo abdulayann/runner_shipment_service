@@ -452,5 +452,13 @@ public class ContainerV3Util {
         if(isStringNullOrEmpty(containers.getGrossVolumeUnit()))
             containers.setGrossVolumeUnit(commonUtils.getDefaultVolumeUnit());
     }
+    
+    public String getContainerNumberOrType(Long containerId) {
+        return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
+    }
+    
+    public String getContainerNumberOrType(Containers container) {
+        return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
+    }
 
 }

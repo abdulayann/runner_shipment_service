@@ -36,12 +36,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerBefor
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -1303,7 +1298,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException {
-        // make sure pack ids is empty (never null)
+        // make sure pack ids is empty if not available (i.e. never null)
         request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -1446,6 +1441,13 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void assignContainerOnlyToShipment(ShipmentDetails shipmentDetails, Containers container,
                                                List<Long> shipmentIdsToSetContainerCargo) throws RunnerException {
+        if(shipmentDetails.getContainerAssignedToShipmentCargo() != null) { // if shipment cargo summary already assigned to container
+            throw new ValidationException(String.format(Constants.STRING_FORMAT, "Shipment already Assigned to Container - ",
+                                                        containerV3Util.getContainerNumberOrType(shipmentDetails.getContainerAssignedToShipmentCargo())));
+        }
+        if(checkIfAnyPackIsAssignedToContainer(shipmentDetails)) { // if any pack is already assigned to any container
+            throw new ValidationException("");
+        }
         if (shipmentDetails.getContainerAssignedToShipmentCargo() == null &&
                 !checkIfAnyPackIsAssignedToContainer(shipmentDetails)) { // if both cargo summary and package not attached to any container
             shipmentIdsToSetContainerCargo.add(shipmentDetails.getId()); // assign container to shipment cargo
