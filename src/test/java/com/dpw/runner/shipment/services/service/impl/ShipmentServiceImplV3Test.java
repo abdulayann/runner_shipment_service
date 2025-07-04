@@ -5001,7 +5001,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CarrierDetails carrierDetails = CarrierDetails.builder().build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
-        String errorMessage = "Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.";
+        String errorMessage = "Not able to create consolidation, before adding 'New Containers', please provide ‘Origin’ and ‘Destination’ values.";
         mockShipmentSettings();
         Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, containers));
         assertEquals(errorMessage, e.getMessage());
@@ -5013,7 +5013,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("OriginPort").build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
-        String errorMessage = "‘Origin’ and ‘Destination’ can't be same";
+        String errorMessage = "‘Origin’ and ‘Destination’ can't be same.";
         mockShipmentSettings();
         Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, containers));
         assertEquals(errorMessage, e.getMessage());

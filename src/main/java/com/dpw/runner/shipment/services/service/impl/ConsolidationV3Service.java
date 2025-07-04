@@ -1500,28 +1500,28 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
     }
 
-    public void generateV3Events(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getEventsList() == null) {
-            consolidationDetails.setEventsList(new ArrayList<>());
+    public void generateV3Events(ConsolidationDetails consolidationDetailsV3) {
+        if (consolidationDetailsV3.getEventsList() == null) {
+            consolidationDetailsV3.setEventsList(new ArrayList<>());
         }
-        consolidationDetails.getEventsList().add(createV3Event(consolidationDetails, EventConstants.COCR));
+        consolidationDetailsV3.getEventsList().add(createV3Event(consolidationDetailsV3, EventConstants.COCR));
     }
 
     private Events createV3Event(ConsolidationDetails consolidationDetails, String eventCode) {
-        Events events = new Events();
+        Events eventsV3 = new Events();
         // Set event fields from consolidation
-        events.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
-        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-        events.setIsPublicTrackingEvent(true);
-        events.setEntityType(Constants.CONSOLIDATION);
-        events.setEntityId(consolidationDetails.getId());
-        events.setTenantId(TenantContext.getCurrentTenant());
-        events.setEventCode(eventCode);
-        events.setConsolidationId(consolidationDetails.getId());
-        events.setDirection(consolidationDetails.getShipmentType());
+        eventsV3.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+        eventsV3.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        eventsV3.setIsPublicTrackingEvent(true);
+        eventsV3.setEntityType(Constants.CONSOLIDATION);
+        eventsV3.setEntityId(consolidationDetails.getId());
+        eventsV3.setTenantId(TenantContext.getCurrentTenant());
+        eventsV3.setEventCode(eventCode);
+        eventsV3.setConsolidationId(consolidationDetails.getId());
+        eventsV3.setDirection(consolidationDetails.getShipmentType());
         // Persist the event
-        eventDao.save(events);
-        return events;
+        eventDao.save(eventsV3);
+        return eventsV3;
     }
 
     @Override

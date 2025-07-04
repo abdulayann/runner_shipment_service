@@ -37,7 +37,7 @@ public interface IConsolidationV3Service {
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
     String attachShipments(ShipmentConsoleAttachDetachV3Request shipmentAttachDetachRequest) throws RunnerException;
 
-    void generateV3Events(ConsolidationDetails consolidationDetails);
+    void generateV3Events(ConsolidationDetails consolidationDetailsV3);
     void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity);

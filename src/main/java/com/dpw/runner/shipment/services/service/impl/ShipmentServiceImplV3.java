@@ -211,7 +211,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private IDateTimeChangeLogService dateTimeChangeLogService;
     private IConsolidationDetailsDao consolidationDetailsDao;
     private IPartiesDao partiesDao;
-    private IRoutingsDao routingsDao;
+    private IRoutingsDao routingsV3Dao;
     private IPackingDao packingDao;
     private IContainerDao containerDao;
     private INotesDao notesDao;
@@ -304,7 +304,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.dateTimeChangeLogService = dateTimeChangeLogService;
         this.consolidationDetailsDao = consolidationDetailsDao;
         this.partiesDao = partiesDao;
-        this.routingsDao = routingsDao;
+        this.routingsV3Dao = routingsDao;
         this.notesDao = notesDao;
         this.orderManagementAdapter = orderManagementAdapter;
         this.v1ServiceUtil = v1ServiceUtil;
@@ -813,10 +813,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 consolidationDetailsV3.setHazardous(shipmentDetailsV3.getContainsHazardous());
             consolidationV3Service.generateConsolidationNumber(consolidationDetailsV3);
             addAgentDetailsForV3Console(shipmentDetailsV3, consolidationDetailsV3);
-            List<Routings> createRoutes = getV3RoutingsList(shipmentDetailsV3, consolidationDetailsV3);
+            List<Routings> createRoutesV3 = getV3RoutingsList(shipmentDetailsV3, consolidationDetailsV3);
             consolidationDetailsV3 = consolidationDetailsDao.save(consolidationDetailsV3, false, Boolean.TRUE.equals(shipmentDetailsV3.getContainsHazardous()));
-            if(!CommonUtils.listIsNullOrEmpty(createRoutes)) {
-                routingsDao.saveEntityFromConsole(createRoutes, consolidationDetailsV3.getId());
+            if(!CommonUtils.listIsNullOrEmpty(createRoutesV3)) {
+                routingsV3Dao.saveEntityFromConsole(createRoutesV3, consolidationDetailsV3.getId());
             }
             Long id = consolidationDetailsV3.getId();
             setContainersInV3Console(containersV3, id, consolidationDetailsV3);
@@ -831,10 +831,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if((shipmentSettingsV3.getConsolidationLite() == null || !shipmentSettingsV3.getConsolidationLite())
                 && !Objects.equals(shipmentDetailsV3.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
                 && (StringUtility.isEmpty(shipmentDetailsV3.getCarrierDetails().getOriginPort()) || StringUtility.isEmpty(shipmentDetailsV3.getCarrierDetails().getDestinationPort()))) {
-            throw new ValidationException("Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.");
+            throw new ValidationException("Not able to create consolidation, before adding 'New Containers', please provide ‘Origin’ and ‘Destination’ values.");
         }
         if(StringUtility.isNotEmpty(shipmentDetailsV3.getCarrierDetails().getOriginPort()) && Objects.equals(shipmentDetailsV3.getCarrierDetails().getOriginPort(), shipmentDetailsV3.getCarrierDetails().getDestinationPort())) {
-            throw new ValidationException("‘Origin’ and ‘Destination’ can't be same");
+            throw new ValidationException("‘Origin’ and ‘Destination’ can't be same.");
         }
     }
 
@@ -844,8 +844,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             consolidationDetailsV3.setReceivingAgent(commonUtils.removeIdFromParty(shipmentDetailsV3.getAdditionalDetails().getImportBroker()));
         }
         if (Objects.equals(consolidationDetailsV3.getShipmentType(), DIRECTION_EXP) && CommonUtils.checkAddressNotNull(consolidationDetailsV3.getReceivingAgent())) {
-            Long receivingBranchId = commonUtils.getReceivingBranch(consolidationDetailsV3.getReceivingAgent().getOrgId(), consolidationDetailsV3.getReceivingAgent().getAddressId());
-            consolidationDetailsV3.setReceivingBranch(receivingBranchId);
+            Long receivingV3BranchId = commonUtils.getReceivingBranch(consolidationDetailsV3.getReceivingAgent().getOrgId(), consolidationDetailsV3.getReceivingAgent().getAddressId());
+            consolidationDetailsV3.setReceivingBranch(receivingV3BranchId);
         }
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
             if(!commonUtils.checkIfPartyExists(consolidationDetailsV3.getSendingAgent())) {
@@ -861,16 +861,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<Routings> v3routings = new ArrayList<>();
         if(shipmentDetailsV3.getRoutingsList() != null && !shipmentDetailsV3.getRoutingsList().isEmpty())
             v3routings = shipmentDetailsV3.getRoutingsList().stream().sorted(Comparator.comparingLong(Routings::getLeg)).toList();
-        var routeRequest = v3routings.stream().filter(x -> x.getMode().equals(shipmentDetailsV3.getTransportMode())).findFirst();
+        var routeRequestV3 = v3routings.stream().filter(x -> x.getMode().equals(shipmentDetailsV3.getTransportMode())).findFirst();
         List<Routings> createV3Routes = new ArrayList<>();
         // Generate default Routes if Route Master is enabled
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
-            createV3Routes.addAll(routingsDao.generateDefaultRouting(consolidationDetailsV3.getCarrierDetails(), shipmentDetailsV3.getTransportMode()));
+            createV3Routes.addAll(routingsV3Dao.generateDefaultRouting(consolidationDetailsV3.getCarrierDetails(), shipmentDetailsV3.getTransportMode()));
             consolidationDetailsV3.setRoutingsList(createV3Routes);
         }
         else {
-            if(routeRequest.isPresent()) {
-                createV3Routes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
+            if(routeRequestV3.isPresent()) {
+                createV3Routes.add(jsonHelper.convertValue(routeRequestV3.get(), Routings.class));
                 createV3Routes = createV3ConsoleRoutePayload(createV3Routes);
                 consolidationDetailsV3.setRoutingsList(createV3Routes);
             }
@@ -879,38 +879,38 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private List<Routings> createV3ConsoleRoutePayload(List<Routings> v3Routes){
-        List<Routings> responseList = new ArrayList<>();
+        List<Routings> responseListV3 = new ArrayList<>();
         for (var route : v3Routes){
-            Routings routings = new Routings();
-            routings.setLeg(1L);
-            routings.setPol(route.getPol());
-            routings.setPod(route.getPod());
-            routings.setMode(route.getMode());
-            routings.setEta(route.getEta());
-            routings.setEtd(route.getEtd());
-            routings.setTransitDays(route.getTransitDays());
-            routings.setAta(route.getAta());
-            routings.setAtd(route.getAtd());
-            routings.setVesselName(route.getVesselName());
-            routings.setVoyage(route.getVoyage());
-            routings.setCarrier(route.getCarrier());
-            routings.setFlightNumber(route.getFlightNumber());
-            responseList.add(routings);
+            Routings routingsV3 = new Routings();
+            routingsV3.setLeg(1L);
+            routingsV3.setPol(route.getPol());
+            routingsV3.setPod(route.getPod());
+            routingsV3.setMode(route.getMode());
+            routingsV3.setEta(route.getEta());
+            routingsV3.setEtd(route.getEtd());
+            routingsV3.setTransitDays(route.getTransitDays());
+            routingsV3.setAta(route.getAta());
+            routingsV3.setAtd(route.getAtd());
+            routingsV3.setVesselName(route.getVesselName());
+            routingsV3.setVoyage(route.getVoyage());
+            routingsV3.setCarrier(route.getCarrier());
+            routingsV3.setFlightNumber(route.getFlightNumber());
+            responseListV3.add(routingsV3);
         }
-        return responseList;
+        return responseListV3;
     }
 
-    private void setContainersInV3Console(List<Containers> containers, Long id, ConsolidationDetails consolidationDetails) {
-        if(containers != null && !containers.isEmpty()) {
-            containers = containers.stream().map(e -> e.setConsolidationId(id)).toList();
-            containers = containerDao.saveAll(containers);
+    private void setContainersInV3Console(List<Containers> containersV3, Long id, ConsolidationDetails consolidationDetailsV3) {
+        if(containersV3 != null && !containersV3.isEmpty()) {
+            containersV3 = containersV3.stream().map(e -> e.setConsolidationId(id)).toList();
+            containersV3 = containerDao.saveAll(containersV3);
         }
-        consolidationDetails.setContainersList(containers);
+        consolidationDetailsV3.setContainersList(containersV3);
     }
 
-    private void createAutoV3EventCreate(ShipmentSettingsDetails shipmentSettings, ConsolidationDetails consolidationDetails) {
-        if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
-            consolidationV3Service.generateV3Events(consolidationDetails);
+    private void createAutoV3EventCreate(ShipmentSettingsDetails shipmentSettingsV3, ConsolidationDetails consolidationDetailsV3) {
+        if(shipmentSettingsV3.getAutoEventCreate() != null && shipmentSettingsV3.getAutoEventCreate()) {
+            consolidationV3Service.generateV3Events(consolidationDetailsV3);
         }
     }
 
@@ -2442,7 +2442,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CarrierDetailRequest carrierDetails = Optional.ofNullable(carrierDetailRequest)
                 .orElse(new CarrierDetailRequest());
 
-        List<Routings> routingsList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(carrierDetails, CarrierDetails.class), transportMode);
+        List<Routings> routingsList = routingsV3Dao.generateDefaultRouting(jsonHelper.convertValue(carrierDetails, CarrierDetails.class), transportMode);
 
         return commonUtils.convertToList(routingsList, RoutingsRequest.class);
 
