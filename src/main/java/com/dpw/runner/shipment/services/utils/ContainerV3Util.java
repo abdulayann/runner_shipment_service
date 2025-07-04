@@ -446,4 +446,11 @@ public class ContainerV3Util {
         container.setPacks(String.valueOf(Integer.parseInt(isStringNullOrEmpty(container.getPacks()) ? "0" : container.getPacks()) + packs));
     }
 
+    public String getContainerNumberOrType(Long containerId) {
+        return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
+    }
+    public String getContainerNumberOrType(Containers container) {
+        return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
+    }
+
 }
