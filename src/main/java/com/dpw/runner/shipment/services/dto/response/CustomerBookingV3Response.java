@@ -100,7 +100,7 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String rejectionRemarks;
     private String shipmentReferenceNumber;
     private String integrationSource;
-    private List<Parties> additionalParties;
+    private List<PartiesResponse> additionalParties;
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
