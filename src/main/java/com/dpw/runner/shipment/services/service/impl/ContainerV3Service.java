@@ -753,7 +753,7 @@ public class ContainerV3Service implements IContainerV3Service {
             groupedContainerSummaryList = new ArrayList<>(summaryMap.values());
         }
         ContainerSummaryResponse response = new ContainerSummaryResponse();
-        response.setTotalPackages(String.format(Constants.STRING_FORMAT, IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse), isStringNullOrEmpty(packsType) ? PackingConstants.PKG : packsType));
+        response.setTotalPackages(String.format(Constants.STRING_FORMAT, IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse), commonUtils.getPacksUnit(packsType)));
         response.setTotalContainers(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
         response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
         response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));

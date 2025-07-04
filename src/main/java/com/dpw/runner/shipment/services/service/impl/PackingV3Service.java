@@ -850,7 +850,7 @@ public class PackingV3Service implements IPackingV3Service {
 
             // Fill response
             response.setDgPacks(dgPacks);
-            response.setTotalPacksWithUnit(totalPacks + " " + (!isStringNullOrEmpty(packsUnit) ? packsUnit : PackingConstants.PKG));
+            response.setTotalPacksWithUnit(totalPacks + " " + commonUtils.getPacksUnit(packsUnit));
             response.setTotalPacks(packsCount.toString());
             response.setTotalPacksWeight(
                     String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), tenantSettings), toWeightUnit));

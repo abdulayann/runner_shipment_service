@@ -4403,6 +4403,18 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testGetPacksUnit4() {
+        String packsUnit = commonUtils.getPacksUnit(null);
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetPacksUnit5() {
+        String packsUnit = commonUtils.getPacksUnit("PKG");
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
     void testGetDefaultWeightUnit() {
         String weightUnit = commonUtils.getDefaultWeightUnit();
         assertEquals("KG", weightUnit);
