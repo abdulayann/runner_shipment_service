@@ -174,7 +174,7 @@ public class ReportService implements IReportService {
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
-
+    private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
     @Autowired
     private ReportService self;
 
@@ -209,6 +209,10 @@ public class ReportService implements IReportService {
         }
 
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+
+        if (Objects.isNull(report))
+            throw new ValidationException(INVALID_REPORT_KEY);
+
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
 
         Map<String, Object> dataRetrived;
