@@ -181,6 +181,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
                     .transportMode(uploadRequest.getTransportMode())
                     .shipmentType(uploadRequest.getShipmentType())
                     .consolidationType(uploadRequest.getConsolidationType())
+                    .overrideRuleDocName(true)
                 .build());
             log.info("Time take to pushSystemGeneratedDocumentToDocMaster: {}ms", System.currentTimeMillis() - start);
         } catch (Exception ex) {
