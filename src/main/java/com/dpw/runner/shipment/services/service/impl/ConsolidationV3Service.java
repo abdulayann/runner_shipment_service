@@ -1500,14 +1500,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
     }
 
-    public void generateEvents(ConsolidationDetails consolidationDetails) {
+    public void generateV3Events(ConsolidationDetails consolidationDetails) {
         if (consolidationDetails.getEventsList() == null) {
             consolidationDetails.setEventsList(new ArrayList<>());
         }
-        consolidationDetails.getEventsList().add(createEvent(consolidationDetails, EventConstants.COCR));
+        consolidationDetails.getEventsList().add(createV3Event(consolidationDetails, EventConstants.COCR));
     }
 
-    private Events createEvent(ConsolidationDetails consolidationDetails, String eventCode) {
+    private Events createV3Event(ConsolidationDetails consolidationDetails, String eventCode) {
         Events events = new Events();
         // Set event fields from consolidation
         events.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));

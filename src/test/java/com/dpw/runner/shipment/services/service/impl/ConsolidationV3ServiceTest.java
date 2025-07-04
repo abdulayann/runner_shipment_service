@@ -4653,10 +4653,10 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
-  void testGenerateEvents() {
+  void testGenerateV3Events() {
     ConsolidationDetails consolidationDetails1 = testConsol;
     consolidationDetails1.setEventsList(null);
-    consolidationV3Service.generateEvents(consolidationDetails1);
+    consolidationV3Service.generateV3Events(consolidationDetails1);
     verify(eventDao, times(1)).save(any());
   }
 }

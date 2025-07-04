@@ -910,7 +910,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void createAutoV3EventCreate(ShipmentSettingsDetails shipmentSettings, ConsolidationDetails consolidationDetails) {
         if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
-            consolidationV3Service.generateEvents(consolidationDetails);
+            consolidationV3Service.generateV3Events(consolidationDetails);
         }
     }
 
