@@ -4987,40 +4987,40 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
 
     @Test
-    void testCreateConsolidationNullCheck() throws RunnerException {
+    void testCreateConsolidationInV3NullCheck() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(false).build());
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         List<Containers> containers = new ArrayList<>();
         mockShipmentSettings();
-        assertEquals(null, shipmentServiceImplV3.createConsolidation(shipmentDetails, containers));
+        assertEquals(null, shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, containers));
     }
 
     @Test
-    void testCreateConsolidationConsolidationLite(){
+    void testCreateConsolidationConsolidationInV3Lite(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
         CarrierDetails carrierDetails = CarrierDetails.builder().build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
         String errorMessage = "Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.";
         mockShipmentSettings();
-        Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidation(shipmentDetails, containers));
+        Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, containers));
         assertEquals(errorMessage, e.getMessage());
     }
 
     @Test
-    void testCreateConsolidationConsolidationLiteSameOriginDestination(){
+    void testCreateConsolidationConsolidationInV3LiteSameOriginDestination(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
         CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("OriginPort").build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
         String errorMessage = "‘Origin’ and ‘Destination’ can't be same";
         mockShipmentSettings();
-        Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidation(shipmentDetails, containers));
+        Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, containers));
         assertEquals(errorMessage, e.getMessage());
     }
 
     @Test
-    void testCreateConsolidation() throws RunnerException {
+    void testCreateConsolidationInV3() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
 
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
@@ -5047,14 +5047,14 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
-        ConsolidationDetails result = shipmentServiceImplV3.createConsolidation(shipmentDetails, new ArrayList<>());
+        ConsolidationDetails result = shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
         assertEquals(carrierDetails, result.getCarrierDetails());
     }
 
     @Test
-    void testCreateConsolidationDefaultDirectionExp() throws RunnerException {
+    void testCreateConsolidationInV3DefaultDirectionExp() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
 
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
@@ -5082,14 +5082,14 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
-        ConsolidationDetails result = shipmentServiceImplV3.createConsolidation(shipmentDetails, new ArrayList<>());
+        ConsolidationDetails result = shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
         assertEquals(carrierDetails, result.getCarrierDetails());
     }
 
     @Test
-    void testCreateConsolidationRoutes() throws RunnerException {
+    void testCreateConsolidationInV3Routes() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
 
         PartyRequestV2 partyRequestV2 = new PartyRequestV2();
@@ -5117,7 +5117,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
-        ConsolidationDetails result = shipmentServiceImplV3.createConsolidation(shipmentDetails, new ArrayList<>());
+        ConsolidationDetails result = shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, new ArrayList<>());
 
         assertNotNull(result);
         assertEquals(carrierDetails, result.getCarrierDetails());
