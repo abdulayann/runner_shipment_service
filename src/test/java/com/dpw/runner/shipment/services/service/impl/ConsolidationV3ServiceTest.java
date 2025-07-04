@@ -4651,4 +4651,12 @@ if (unitConversionUtilityMockedStatic != null) {
 
     assertThat(shipment.getLatestArrivalTime()).isEqualTo(LocalDateTime.of(2025, 1, 3, 10, 0));
   }
+
+  @Test
+  void testGenerateEvents() {
+    ConsolidationDetails consolidationDetails1 = testConsol;
+    consolidationDetails1.setEventsList(null);
+    consolidationV3Service.generateEvents(consolidationDetails1);
+    verify(eventDao, times(1)).save(any());
+  }
 }

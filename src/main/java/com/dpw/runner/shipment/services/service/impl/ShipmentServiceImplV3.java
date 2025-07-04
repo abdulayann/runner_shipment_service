@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
@@ -46,6 +47,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Req
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
@@ -146,6 +148,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -210,6 +213,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private IPartiesDao partiesDao;
     private IRoutingsDao routingsDao;
     private IPackingDao packingDao;
+    private IContainerDao containerDao;
     private INotesDao notesDao;
     private DependentServiceHelper dependentServiceHelper;
     private IEventDao eventDao;
@@ -262,6 +266,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IPartiesDao partiesDao,
             IRoutingsDao routingsDao,
             INotesDao notesDao,
+            IContainerDao containerDao,
             IOrderManagementAdapter orderManagementAdapter,
             V1ServiceUtil v1ServiceUtil,
             DependentServiceHelper dependentServiceHelper,
@@ -292,6 +297,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.jsonHelper = jsonHelper;
         this.hblDao = hblDao;
         this.packingDao = packingDao;
+        this.containerDao = containerDao;
         this.masterDataUtils = masterDataUtils;
         this.auditLogService = auditLogService;
         this.logsHistoryService = logsHistoryService;
@@ -761,32 +767,182 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             handlePackingUpdate(contractUsages, shipmentDetails);
         } else {
             handleContainerUpdate(contractUsages, shipmentDetails);
+            ConsolidationDetails consolidationDetails = createConsolidation(shipmentDetails, new ArrayList<>(shipmentDetails.getContainersList()));
+            if (!Objects.isNull(consolidationDetails)) {
+                shipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails)));
+                if (isStringNullOrEmpty(shipmentDetails.getMasterBill()))
+                    shipmentDetails.setMasterBill(consolidationDetails.getBol());
+            }
+        }
+        shipmentDao.save(shipmentDetails, false);
+    }
+
+    public ConsolidationDetails createConsolidation(ShipmentDetails shipmentDetails, List<Containers> containers) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
+        if(Boolean.TRUE.equals(shipmentSettings.getShipConsolidationContainerEnabled())) {
+            ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+            consolidationDetails.setConsolidationType(shipmentDetails.getJobType());
+            consolidationDetails.setTransportMode(shipmentDetails.getTransportMode());
+            validateCreateConsolidations(shipmentDetails, shipmentSettings);
+            consolidationDetails.setCarrierDetails(jsonHelper.convertValue(shipmentDetails.getCarrierDetails(), CarrierDetails.class));
+            consolidationDetails.getCarrierDetails().setId(null);
+            consolidationDetails.getCarrierDetails().setGuid(null);
+            if(shipmentSettings.getShipmentLite() != null && shipmentSettings.getShipmentLite() && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)) {
+                consolidationDetails.setPayment(shipmentDetails.getPaymentTerms());
+            }
+            if(consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                consolidationDetails.getCarrierDetails().setOrigin(consolidationDetails.getCarrierDetails().getOriginPort());
+                consolidationDetails.getCarrierDetails().setOriginLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode());
+                consolidationDetails.getCarrierDetails().setDestination(consolidationDetails.getCarrierDetails().getDestinationPort());
+                consolidationDetails.getCarrierDetails().setDestinationLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode());
+            }
+            consolidationDetails.setShipmentType(shipmentDetails.getDirection());
+            consolidationDetails.setContainerCategory(shipmentDetails.getShipmentType());
+            consolidationDetails.setIsReceivingAgentFreeTextAddress(false);
+            consolidationDetails.setIsSendingAgentFreeTextAddress(false);
+            consolidationDetails.setIsInland(false);
+            consolidationDetails.setCarrierBookingRef(shipmentDetails.getBookingNumber());
+            consolidationDetails.setSourceTenantId(TenantContext.getCurrentTenant().longValue());
+            consolidationDetails.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    shipmentDetails.getTransportMode(), shipmentDetails.getDirection(), MdmConstants.CONSOLIDATION_MODULE
+            ));
+            if(StringUtility.isNotEmpty(shipmentDetails.getMasterBill())) {
+                consolidationDetails.setBol(shipmentDetails.getMasterBill());
+            }
+            if(Objects.equals(TRANSPORT_MODE_SEA, shipmentDetails.getTransportMode()) || Objects.equals(TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))
+                consolidationDetails.setHazardous(shipmentDetails.getContainsHazardous());
+            consolidationV3Service.generateConsolidationNumber(consolidationDetails);
+            addAgentDetailsForConsole(shipmentDetails, consolidationDetails);
+            List<Routings> createRoutes = getRoutingsList(shipmentDetails, consolidationDetails);
+            consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()));
+            if(!CommonUtils.listIsNullOrEmpty(createRoutes)) {
+                routingsDao.saveEntityFromConsole(createRoutes, consolidationDetails.getId());
+            }
+            Long id = consolidationDetails.getId();
+            setContainersInConsole(containers, id, consolidationDetails);
+            createAutoEventCreate(shipmentSettings, consolidationDetails);
+            consolidationV3Service.pushShipmentDataToDependentService(consolidationDetails, true, null);
+            return consolidationDetails;
+        }
+        return null;
+    }
+
+    private void validateCreateConsolidations(ShipmentDetails shipmentDetails, ShipmentSettingsDetails shipmentSettings) {
+        if((shipmentSettings.getConsolidationLite() == null || !shipmentSettings.getConsolidationLite())
+                && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
+                && (StringUtility.isEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) || StringUtility.isEmpty(shipmentDetails.getCarrierDetails().getDestinationPort()))) {
+            throw new ValidationException("Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.");
+        }
+        if(StringUtility.isNotEmpty(shipmentDetails.getCarrierDetails().getOriginPort()) && Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getDestinationPort())) {
+            throw new ValidationException("‘Origin’ and ‘Destination’ can't be same");
+        }
+    }
+
+    private void addAgentDetailsForConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        if(shipmentDetails.getAdditionalDetails() != null) {
+            consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getExportBroker()));
+            consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getImportBroker()));
+        }
+        if (Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP) && CommonUtils.checkAddressNotNull(consolidationDetails.getReceivingAgent())) {
+            Long receivingBranchId = commonUtils.getReceivingBranch(consolidationDetails.getReceivingAgent().getOrgId(), consolidationDetails.getReceivingAgent().getAddressId());
+            consolidationDetails.setReceivingBranch(receivingBranchId);
+        }
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
+            if(!commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
+                consolidationDetails.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
+            }
+            if(!commonUtils.checkIfPartyExists(consolidationDetails.getReceivingAgent())) {
+                consolidationDetails.setReceivingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getDestinationPortLocCode()));
+            }
+        }
+    }
+
+    private List<Routings> getRoutingsList(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        List<Routings> routings = new ArrayList<>();
+        if(shipmentDetails.getRoutingsList() != null && !shipmentDetails.getRoutingsList().isEmpty())
+            routings = shipmentDetails.getRoutingsList().stream().sorted(Comparator.comparingLong(Routings::getLeg)).toList();
+        var routeRequest = routings.stream().filter(x -> x.getMode().equals(shipmentDetails.getTransportMode())).findFirst();
+        List<Routings> createRoutes = new ArrayList<>();
+        // Generate default Routes if Route Master is enabled
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+            createRoutes.addAll(routingsDao.generateDefaultRouting(consolidationDetails.getCarrierDetails(), shipmentDetails.getTransportMode()));
+            consolidationDetails.setRoutingsList(createRoutes);
+        }
+        else {
+            if(routeRequest.isPresent()) {
+                createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
+                createRoutes = createConsoleRoutePayload(createRoutes);
+                consolidationDetails.setRoutingsList(createRoutes);
+            }
+        }
+        return createRoutes;
+    }
+
+    private List<Routings> createConsoleRoutePayload(List<Routings> routes){
+        List<Routings> responseList = new ArrayList<>();
+        for (var route : routes){
+            Routings routings = new Routings();
+            routings.setLeg(1L);
+            routings.setPol(route.getPol());
+            routings.setPod(route.getPod());
+            routings.setMode(route.getMode());
+            routings.setEta(route.getEta());
+            routings.setEtd(route.getEtd());
+            routings.setTransitDays(route.getTransitDays());
+            routings.setAta(route.getAta());
+            routings.setAtd(route.getAtd());
+            routings.setVesselName(route.getVesselName());
+            routings.setVoyage(route.getVoyage());
+            routings.setCarrier(route.getCarrier());
+            routings.setFlightNumber(route.getFlightNumber());
+            responseList.add(routings);
+        }
+        return responseList;
+    }
+
+    private void setContainersInConsole(List<Containers> containers, Long id, ConsolidationDetails consolidationDetails) {
+        if(containers != null && !containers.isEmpty()) {
+            containers = containers.stream().map(e -> e.setConsolidationId(id)).toList();
+            containers = containerDao.saveAll(containers);
+        }
+        consolidationDetails.setContainersList(containers);
+    }
+
+    private void createAutoEventCreate(ShipmentSettingsDetails shipmentSettings, ConsolidationDetails consolidationDetails) {
+        if(shipmentSettings.getAutoEventCreate() != null && shipmentSettings.getAutoEventCreate()) {
+            consolidationV3Service.generateEvents(consolidationDetails);
         }
     }
 
     private void handlePackingUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
+        BulkPackingResponse bulkPackingResponse;
         List<PackingV3Request> quotePackingRequests = contractUsages.stream()
                 .map(usage -> getPackingRequest(usage, shipmentDetails))
                 .collect(Collectors.toList());
         if (shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
             List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(shipmentDetails.getPackingList(), PackingV3Request.class);
             packingV3Service.deleteBulk(existingRequests, SHIPMENT);
+            shipmentDetails.setPackingList(new ArrayList<>());
         }
         if (!quotePackingRequests.isEmpty()) {
-            packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
+            bulkPackingResponse = packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
+            shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
         }
     }
 
     private void handleContainerUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
+        BulkContainerResponse bulkContainerResponse;
         List<ContainerV3Request> quoteContainerRequests = contractUsages.stream()
                 .map(usage -> getContainerRequest(usage, shipmentDetails))
                 .collect(Collectors.toList());
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
             List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class);
             containerV3Service.deleteBulk(existingContainerRequests, SHIPMENT);
+            shipmentDetails.setContainersList(new HashSet<>());
         }
         if (!quoteContainerRequests.isEmpty()) {
-            containerV3Service.createBulk(quoteContainerRequests, SHIPMENT);
+            bulkContainerResponse = containerV3Service.createBulk(quoteContainerRequests, SHIPMENT);
+            shipmentDetails.setContainersList(jsonHelper.convertValueToSet(bulkContainerResponse.getContainerResponseList(), Containers.class));
         }
     }
 

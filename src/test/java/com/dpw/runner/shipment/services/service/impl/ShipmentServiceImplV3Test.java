@@ -59,6 +59,7 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -4982,5 +4983,143 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         shipmentServiceImplV3.updateContainerFromCargo(newShipment, oldShipment);
         verify(containerV3Service, times(0)).updateAttachedContainersData(List.of(1L));
+    }
+
+
+    @Test
+    void testCreateConsolidationNullCheck() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(false).build());
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        List<Containers> containers = new ArrayList<>();
+        mockShipmentSettings();
+        assertEquals(null, shipmentServiceImplV3.createConsolidation(shipmentDetails, containers));
+    }
+
+    @Test
+    void testCreateConsolidationConsolidationLite(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+        CarrierDetails carrierDetails = CarrierDetails.builder().build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
+        List<Containers> containers = new ArrayList<>();
+        String errorMessage = "Not able to create consolidation, before adding 'New Containers' , please provide ‘Origin’ and ‘Destination’ values.";
+        mockShipmentSettings();
+        Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidation(shipmentDetails, containers));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreateConsolidationConsolidationLiteSameOriginDestination(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("OriginPort").build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
+        List<Containers> containers = new ArrayList<>();
+        String errorMessage = "‘Origin’ and ‘Destination’ can't be same";
+        mockShipmentSettings();
+        Exception e = assertThrows(ValidationException.class, () -> shipmentServiceImplV3.createConsolidation(shipmentDetails, containers));
+        assertEquals(errorMessage, e.getMessage());
+    }
+
+    @Test
+    void testCreateConsolidation() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        Parties parties = Parties.builder().orgCode("1").build();
+
+        doNothing().when(consolidationV3Service).generateConsolidationNumber(any(ConsolidationDetails.class));
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+        routings.setMode("mode");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .carrierDetails(carrierDetails)
+                .direction(Constants.DIRECTION_IMP)
+                .masterBill("1234")
+                .routingsList(Arrays.asList(routings))
+                .build();
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
+        mockShipmentSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
+        ConsolidationDetails result = shipmentServiceImplV3.createConsolidation(shipmentDetails, new ArrayList<>());
+
+        assertNotNull(result);
+        assertEquals(carrierDetails, result.getCarrierDetails());
+    }
+
+    @Test
+    void testCreateConsolidationDefaultDirectionExp() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        Parties parties = Parties.builder().orgCode("1").build();
+
+        doNothing().when(consolidationV3Service).generateConsolidationNumber(any(ConsolidationDetails.class));
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
+
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+        routings.setMode("mode");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .carrierDetails(carrierDetails)
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("1234")
+                .routingsList(Arrays.asList(routings))
+                .build();
+
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
+        mockShipmentSettings();
+        ConsolidationDetails result = shipmentServiceImplV3.createConsolidation(shipmentDetails, new ArrayList<>());
+
+        assertNotNull(result);
+        assertEquals(carrierDetails, result.getCarrierDetails());
+    }
+
+    @Test
+    void testCreateConsolidationRoutes() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
+
+        PartyRequestV2 partyRequestV2 = new PartyRequestV2();
+        partyRequestV2.setTenantId(1);
+
+        Parties parties = Parties.builder().orgCode("1").build();
+
+        doNothing().when(consolidationV3Service).generateConsolidationNumber(any(ConsolidationDetails.class));
+        CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
+        Routings routings = new Routings();
+        routings.setTenantId(1);
+        routings.setMode(Constants.TRANSPORT_MODE_SEA);
+        routings.setLeg(1L);
+        when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .carrierDetails(carrierDetails)
+                .direction(Constants.DIRECTION_IMP)
+                .masterBill("1234")
+                .routingsList(Arrays.asList(routings))
+                .build();
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
+        mockShipmentSettings();
+        ConsolidationDetails result = shipmentServiceImplV3.createConsolidation(shipmentDetails, new ArrayList<>());
+
+        assertNotNull(result);
+        assertEquals(carrierDetails, result.getCarrierDetails());
     }
 }

@@ -1500,6 +1500,30 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
     }
 
+    public void generateEvents(ConsolidationDetails consolidationDetails) {
+        if (consolidationDetails.getEventsList() == null) {
+            consolidationDetails.setEventsList(new ArrayList<>());
+        }
+        consolidationDetails.getEventsList().add(createEvent(consolidationDetails, EventConstants.COCR));
+    }
+
+    private Events createEvent(ConsolidationDetails consolidationDetails, String eventCode) {
+        Events events = new Events();
+        // Set event fields from consolidation
+        events.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.CONSOLIDATION);
+        events.setEntityId(consolidationDetails.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+        events.setConsolidationId(consolidationDetails.getId());
+        events.setDirection(consolidationDetails.getShipmentType());
+        // Persist the event
+        eventDao.save(events);
+        return events;
+    }
+
     @Override
     @Transactional
     public String attachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
