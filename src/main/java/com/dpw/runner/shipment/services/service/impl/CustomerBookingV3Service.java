@@ -148,7 +148,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final IFusionServiceAdapter fusionServiceAdapter;
     private final IPackingV3Service packingV3Service;
     private final IContainerV3Service containerV3Service;
-    private final IConsolidationService consolidationService;
+    private final IConsolidationV3Service consolidationService;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -194,7 +194,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     IFusionServiceAdapter fusionServiceAdapter,
                                     IContainerV3Service containerV3Service,
                                     IPackingV3Service packingV3Service,
-                                    IConsolidationService consolidationService){
+                                    IConsolidationV3Service consolidationService){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
         this.npmService = npmService;
@@ -2400,6 +2400,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
+        Set<String> distinctPackTypes = new HashSet<>();
         for (Packing p : packings) {
             if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
                 totalWeight = totalWeight.add(new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()));
@@ -2410,14 +2411,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             if (!isStringNullOrEmpty(p.getPacks())) {
                 totalPacks += Integer.parseInt(p.getPacks());
             }
+            addDistinctPackType(distinctPackTypes, p);
         }
         customerBooking.setGrossWeight(totalWeight);
         customerBooking.setVolume(totalVolume);
         customerBooking.setPackages((long) totalPacks);
         customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
         customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-        customerBooking.setPackageType(Constants.PACKAGES);
+        customerBooking.setPackageType(getPackUnit(distinctPackTypes));
         calculateVW(customerBooking);
+    }
+
+    private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
+        if (!isStringNullOrEmpty(packing.getPacksType())) {
+            distinctPackTypes.add(packing.getPacksType());
+        }
+    }
+
+    private String getPackUnit(Set<String> packTypes) {
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
     }
 
     private void calculateVW(CustomerBooking customerBooking) throws RunnerException {

@@ -2256,7 +2256,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
         shipmentRequest.setContainerAssignedToShipmentCargo(containerAssignedToShipmentCargo);
-        AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
+        AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(getAutoUpdateWtVolRequest(customerBookingRequest));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
         shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
@@ -2291,6 +2291,33 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList, consolidationId);
+    }
+
+    private AutoUpdateWtVolRequest getAutoUpdateWtVolRequest(CustomerBookingV3Request customerBookingV3Request) {
+        AutoUpdateWtVolRequest autoUpdateWtVolRequest = new AutoUpdateWtVolRequest();
+        autoUpdateWtVolRequest.setShipmentType(customerBookingV3Request.getCargoType());
+        autoUpdateWtVolRequest.setTransportMode(customerBookingV3Request.getTransportType());
+        autoUpdateWtVolRequest.setVolume(customerBookingV3Request.getVolume());
+        autoUpdateWtVolRequest.setVolumeUnit(customerBookingV3Request.getVolumeUnit());
+        autoUpdateWtVolRequest.setChargable(customerBookingV3Request.getChargeable());
+        autoUpdateWtVolRequest.setChargeableUnit(customerBookingV3Request.getChargeableUnit());
+        autoUpdateWtVolRequest.setWeight(customerBookingV3Request.getGrossWeight());
+        autoUpdateWtVolRequest.setWeightUnit(customerBookingV3Request.getGrossWeightUnit());
+        autoUpdateWtVolRequest.setVolumetricWeight(customerBookingV3Request.getWeightVolume());
+        autoUpdateWtVolRequest.setVolumetricWeightUnit(customerBookingV3Request.getWeightVolumeUnit());
+        List<ContainerRequest> containerRequests = new ArrayList<>();
+        List<PackingRequest> packingRequests = new ArrayList<>();
+        if(customerBookingV3Request.getContainersList() != null) {
+            containerRequests = jsonHelper.convertValueToList(customerBookingV3Request.getContainersList(), ContainerRequest.class);
+        }
+        if(customerBookingV3Request.getPackingList() != null) {
+            packingRequests = jsonHelper.convertValueToList(customerBookingV3Request.getPackingList(), PackingRequest.class);
+        }
+        autoUpdateWtVolRequest.setContainersList(containerRequests);
+        autoUpdateWtVolRequest.setPackingList(packingRequests);
+        autoUpdateWtVolRequest.setNoOfPacks(String.valueOf(customerBookingV3Request.getPackages()));
+        autoUpdateWtVolRequest.setPacksUnit(customerBookingV3Request.getPackageType());
+        return autoUpdateWtVolRequest;
     }
 
     public ShipmentDetailsV3Response createFromBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId) {
@@ -2507,8 +2534,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
                 secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
                 //TODO: check with shipment team
-                //containersList(consolidationDetails != null && !consolidationDetails.isEmpty() ? containerList : null).
-                //packingList(getPackingListRequestV3(customerBookingRequest)).
+//                containersList(consolidationDetails != null && !consolidationDetails.isEmpty() ? containerList : null).
+//                packingList(getPackingListRequestV3(customerBookingRequest)).
                 //fileRepoList(customerBookingRequest.getFileRepoList()).
                 //routingsList(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) ? null : customerBookingRequestRoutingList).
                 //consolidationList(isConsoleCreationNeededV3(customerBookingRequest) ? consolidationDetails : null).
@@ -2522,6 +2549,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 freightLocalCurrency(UserContext.getUser().CompanyCurrency).
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
                 autoUpdateWtVol(true).
+                paymentTerms(customerBookingRequest.getPaymentTerms()).
                 isReefer(customerBookingRequest.getIsReefer()).
                 incotermsLocation(customerBookingRequest.getIncotermsLocation()).
                 cargoReadinessDate(customerBookingRequest.getCargoReadinessDate()).
@@ -2530,7 +2558,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 partner(customerBookingRequest.getPartner()).
                 bookingAgent(customerBookingRequest.getBookingAgent()).
                 coLoadBkgNumber(customerBookingRequest.getPartnerBkgNumber()).
+                pickupAtOrigin(customerBookingRequest.getPickupAtOrigin()).
                 pickupAtOriginType(customerBookingRequest.getPickupAtOriginType()).
+                deliveryAtDestination(customerBookingRequest.getDeliveryAtDestination()).
                 deliveryAtDestinationType(customerBookingRequest.getDeliveryAtDestinationType()).
                 brokerageAtOriginType(customerBookingRequest.getBrokerageAtOriginType()).
                 brokerageAtDestinationType(customerBookingRequest.getBrokerageAtDestinationType()).

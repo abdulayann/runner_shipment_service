@@ -99,6 +99,7 @@ public class CargoService implements ICargoService {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
+        Set<String> distinctPackTypes = new HashSet<>();
         for (Packing p : packings) {
             if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
                 totalWeight = totalWeight.add(new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), response.getWeightUnit()).toString()));
@@ -109,14 +110,25 @@ public class CargoService implements ICargoService {
             if (!isStringNullOrEmpty(p.getPacks())) {
                 totalPacks += Integer.parseInt(p.getPacks());
             }
+            addDistinctPackType(distinctPackTypes, p);
         }
         response.setWeight(totalWeight);
         response.setVolume(totalVolume);
         response.setNoOfPacks(totalPacks);
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-        response.setPacksUnit(Constants.PACKAGES);
+        response.setPacksUnit(getPackUnit(distinctPackTypes));
         calculateVW(response);
+    }
+
+    private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
+        if (!isStringNullOrEmpty(packing.getPacksType())) {
+            distinctPackTypes.add(packing.getPacksType());
+        }
+    }
+
+    private String getPackUnit(Set<String> packTypes) {
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
     }
 
     private CargoDetailsResponse calculateVW(CargoDetailsResponse response) throws RunnerException {
