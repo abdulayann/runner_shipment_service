@@ -4062,6 +4062,13 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
         assertThrows(GenericException.class,() -> reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages));
     }
+
+    @Test
+    void testReportPrintWithInvalidReportKey() {
+        reportRequest.setReportInfo("TEST");
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(reportRequest).build();
+        assertThrows(ValidationException.class,() -> reportService.getDocumentData(requestModel));
+    }
     private Runnable mockRunnable() {
         return null;
     }
