@@ -1656,14 +1656,14 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> missingField = this.airConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
         if(Objects.equals(consolidationDetails.getConsolidationType(), Constants.SHIPMENT_TYPE_STD)) {
             List<Awb> mawbs = awbDao.findByConsolidationId(consolidationDetails.getId());
-            if (Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP) && (mawbs.isEmpty() || !Objects.equals(mawbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)))
+            if (Objects.equals(consolidationDetails.getShipmentType(), Constants.DIRECTION_EXP) && mawbs.isEmpty())
                 isPrintMawbError = true;
         }
 
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
                 List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
-                if (Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP) && (awbs.isEmpty() || !Objects.equals(awbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))) {
+                if (Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP) && awbs.isEmpty()) {
                     isPrintHawbError = true;
                     errorShipments.add(shipment.getShipmentId());
                     errorShipIds.add(shipment.getId());
@@ -2040,7 +2040,7 @@ public class EntityTransferService implements IEntityTransferService {
             // Shipment Fields Validations
             List<String> missingField = this.airShipmentFieldValidations(shipmentDetails, isAutomaticTransfer);
 
-            if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) && (awbs.isEmpty() || !Objects.equals(awbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))) {
+            if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) && awbs.isEmpty()) {
                 isAwbPrintError = true;
             }
 
