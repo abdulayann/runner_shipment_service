@@ -150,7 +150,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
     @Mock
-    private IConsolidationService consolidationService;
+    private IConsolidationV3Service consolidationService;
     @Mock
     private NpmContractV3Util npmContractV3Util;
     @Mock
