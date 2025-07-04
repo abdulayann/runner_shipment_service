@@ -85,7 +85,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String rejectionRemarks;
     private String shipmentReferenceNumber;
     private String integrationSource;
-    private List<Parties> additionalParties;
+    private List<PartiesRequest> additionalParties;
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
