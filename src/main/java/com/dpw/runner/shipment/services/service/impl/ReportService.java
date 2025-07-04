@@ -209,9 +209,7 @@ public class ReportService implements IReportService {
         }
 
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
-
-        if (Objects.isNull(report))
-            throw new ValidationException(INVALID_REPORT_KEY);
+        validateForInvalidReport(report);
 
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
 
@@ -308,6 +306,11 @@ public class ReportService implements IReportService {
         // Push document to document master
         pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return pdfByteContent;
+    }
+
+    private void validateForInvalidReport(IReport report) {
+        if (Objects.isNull(report))
+            throw new ValidationException(INVALID_REPORT_KEY);
     }
 
     private void processPreAlert(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived) {
