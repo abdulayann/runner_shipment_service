@@ -340,6 +340,10 @@ public class PackingV3Service implements IPackingV3Service {
             }
         }
 
+        if(!module.equals(BOOKING)) {
+            packingValidationV3Util.validateContainerIds(createRequests, updateRequests, existingPackings);
+        }
+
         // Convert and process updates
         List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(existingPackings, Packing.class);
         List<Packing> updatedPackings = jsonHelper.convertValueToList(updateRequests, Packing.class);

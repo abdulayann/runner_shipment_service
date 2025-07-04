@@ -2164,6 +2164,19 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 }
             }
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
+            List<PackingV3Request> packingV3RequestList = containerList.stream()
+                    .map(container -> {
+                        PackingV3Request packingV3Request = new PackingV3Request();
+                        packingV3Request.setPacks(container.getContainerCount().toString());
+                        packingV3Request.setPacksType(PackingConstants.PKG);
+                        packingV3Request.setCommodity(container.getCommodityCode());
+                        packingV3Request.setContainerId(container.getId());
+                        return packingV3Request;
+                    })
+                    .toList();
+
+            BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING);
+            shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
             shipmentDetails = getShipment(shipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
