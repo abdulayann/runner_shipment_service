@@ -674,6 +674,9 @@ public class Constants {
     public static final String CONSIGNEE_PARTY = "CONSIGNEE";
     public static final String CONSIGNOR_PARTY = "CONSIGNOR";
 
+
+    public static final String MACHINE_USER_NAME = "user.name";
+    public static final String APPLICATION = "Application";
     private Constants() {
     }
 
