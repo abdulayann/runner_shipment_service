@@ -2436,7 +2436,7 @@ public class ReportService implements IReportService {
                     break;
                 case SEAWAY_BILL:
                     filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
-                    childType = SEAWAY_BILL;
+                    childType = SEA_WAYBILL;
                     docType = DocumentConstants.HBL;
                     break;
                 case HAWB, MAWB:

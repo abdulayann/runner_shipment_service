@@ -702,6 +702,7 @@ public class ReportConstants {
     public static final String COMMERCIAL_INVOICE = "CommercialInvoice";
     public static final String CUSTOMS_INSTRUCTION = "CustomsInstructions";
     public static final String SEAWAY_BILL = "SeawayBill";
+    public static final String SEA_WAYBILL = "Sea Waybill";
     public static final String SHIP_TRUCKWAY_BILL = "ShipTruckwayBill";
     public static final String CONS_TRUCKWAY_BILL = "ConsTruckwayBill";
     public static final String SHIP_TRUCK_DRIVER_PROOF = "ShipTruckDriverProof";
