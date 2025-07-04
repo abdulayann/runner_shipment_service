@@ -1,12 +1,18 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -14,8 +20,11 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -31,15 +40,19 @@ public class MasterDataImpl implements IMasterDataService {
     private final MasterDataUtils masterDataUtils;
     private final CommonUtils commonUtils;
     private final IMDMServiceAdapter mdmServiceAdapter;
+    private final ModelMapper modelMapper;
+    private final V1ServiceUtil v1ServiceUtil;
 
     @Autowired
     public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
-    ,IMDMServiceAdapter mdmServiceAdapter) {
+    ,IMDMServiceAdapter mdmServiceAdapter, ModelMapper modelMapper, V1ServiceUtil v1ServiceUtil) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
         this.commonUtils = commonUtils;
         this.mdmServiceAdapter = mdmServiceAdapter;
+        this.modelMapper = modelMapper;
+        this.v1ServiceUtil = v1ServiceUtil;
     }
 
     @Override
@@ -444,5 +457,14 @@ public class MasterDataImpl implements IMasterDataService {
             }
         }
         return new ArrayList<>(Arrays.asList(itemType, "not in", Collections.singletonList(param)));
+    }
+
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getDefaultOrgAddressByTenantId(CommonRequestModel commonRequestModel) {
+        V1RetrieveResponse v1DataResponse = v1Service.retrieveTenantByTenantId(commonRequestModel.getDependentData());
+        TenantModel tenantModel = modelMapper.map(v1DataResponse.getEntity(), TenantModel.class);
+        PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true).data(partiesResponse).build());
     }
 }
