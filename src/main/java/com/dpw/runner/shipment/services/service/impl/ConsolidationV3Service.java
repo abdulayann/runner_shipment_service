@@ -945,7 +945,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Ensure packsType is assigned a defualt value
-        if (result.packsType == null) {
+        if (isStringNullOrEmpty(result.packsType)) {
             result.packsType = PackingConstants.PKG;
         }
 
