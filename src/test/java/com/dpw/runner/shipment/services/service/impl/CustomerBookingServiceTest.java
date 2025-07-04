@@ -1028,7 +1028,6 @@ class CustomerBookingServiceTest extends CommonMocks {
         inputBooking.setShipmentGuid(guid);
         when(customerBookingDao.findById(anyLong())).thenReturn(Optional.of(inputBooking));
          when(v1Service.fetchShipmentBillingData(any())).thenReturn(mockV1Response);
-         when(partiesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(List.of(testParties));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(objectMapper.convertValue(inputBooking, CustomerBookingResponse.class));
         mockTenantSettings();
         var responseEntity = customerBookingService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
