@@ -2713,6 +2713,12 @@ public class CommonUtils {
         return curUnit;
     }
 
+    public String getPacksUnit(String curUnit) {
+        if(isStringNullOrEmpty(curUnit))
+            return PackingConstants.PKG;
+        return curUnit;
+    }
+
     public String getDefaultWeightUnit() {
         if(isStringNullOrEmpty(getShipmentSettingFromContext().getWeightChargeableUnit()))
             return Constants.WEIGHT_UNIT_KG;
