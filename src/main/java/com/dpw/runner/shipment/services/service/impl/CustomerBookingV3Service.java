@@ -801,7 +801,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.info("Booking list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             long totalPages = customerBookingPage.getSize() == 0 ? 0 : (long) Math.ceil((double) customerBookingPage.getTotalElements() / customerBookingPage.getSize());
             return CustomerBookingV3ListResponse.builder()
-                    .customerBookingV3Responses(jsonHelper.convertValueToList(customerBookingPage.getContent(),CustomerBookingV3Response.class))
+                    .customerBookingV3Responses(convertEntityListToDtoList(customerBookingPage.getContent()))
                     .totalPages((int) totalPages)
                     .totalCount(customerBookingPage.getTotalElements())
                     .build();
@@ -811,6 +811,16 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
         }
+    }
+
+    private <T extends IRunnerResponse> List<T> convertEntityListToDtoList(List<CustomerBooking> lst) {
+        List<T> responseList = new ArrayList<>();
+        lst.forEach(customerBooking -> {
+            T response = modelMapper.map(customerBooking, (Class<T>) CustomerBookingV3Response.class);
+            responseList.add(response);
+        });
+        masterDataUtils.setLocationData((List<IRunnerResponse>) responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        return responseList;
     }
 
     @Override
@@ -1873,6 +1883,11 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (containerRequest != null) {
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
+        }
+        List<PartiesRequest> additionalParties = request.getAdditionalParties();
+        if (additionalParties != null) {
+            List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(additionalParties, Parties.class, false), bookingId, BOOKING_ADDITIONAL_PARTY);
+            customerBooking.setAdditionalParties(updatedParties);
         }
     }
 

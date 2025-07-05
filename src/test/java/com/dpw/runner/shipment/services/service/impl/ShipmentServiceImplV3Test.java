@@ -461,6 +461,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
         customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
         customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
+        customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
 
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();

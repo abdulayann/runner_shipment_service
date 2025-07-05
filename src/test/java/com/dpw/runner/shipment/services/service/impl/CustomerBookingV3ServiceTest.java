@@ -1239,7 +1239,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
         customerBookingV3Response.setId(2L);
         when(customerBookingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(customerBooking)));
-        when(jsonHelper.convertValueToList(any(), eq(CustomerBookingV3Response.class))).thenReturn(List.of(customerBookingV3Response));
         // Test
         CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest());
         // Assert
@@ -1419,6 +1418,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+        when(partiesDao.updateEntityFromOtherEntity(anyList(), anyLong(), anyString())).thenReturn(inputCustomerBooking.getAdditionalParties());
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
