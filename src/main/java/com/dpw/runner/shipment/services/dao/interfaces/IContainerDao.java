@@ -4,11 +4,10 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -53,6 +52,8 @@ public interface IContainerDao {
     void deleteByIdIn(List<Long> deleteContainerIds);
 
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds);
+
+    List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipment(List<Long> containerIds);
 
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
