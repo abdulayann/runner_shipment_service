@@ -2029,32 +2029,36 @@ public class ReportService implements IReportService {
 
 
             if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
-                addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
+                addCSDDocumentToDocumentMaster(reportRequest, docUploadRequest, guid);
             }
         }catch(Exception ex){
             log.error(ex.getMessage());
         }
     }
 
-    public void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid) {
+    public void addCSDDocumentToDocumentMaster(ReportRequest parentRequest, DocUploadRequest docUploadRequest, String guid) {
         ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId(reportId);
+        reportRequest.setReportId(parentRequest.getReportId());
         reportRequest.setReportInfo(CSD_REPORT);
+        reportRequest.setEntityName(parentRequest.getEntityName());
         if(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(docUploadRequest.getEntityType())){
             reportRequest.setFromConsolidation(true);
         }
         try{
-        CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
-        DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
-        csdDocumentUploadRequest.setDocType(CSD_REPORT);
-        String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
+            CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
+            DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
+            csdDocumentUploadRequest.setDocType(CSD_REPORT);
+            String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
 
-        byte[] pdfByteContent = self.getDocumentData(commonRequestModel);
-      CompletableFuture.runAsync(masterDataUtils.withMdc(
-            () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), filename,
-                csdDocumentUploadRequest, guid)), executorService);
+            byte[] pdfByteContent = self.getDocumentData(commonRequestModel);
+            var shipmentSettings = commonUtils.getShipmentSettingFromContext();
+            if (shipmentSettings == null || !Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+                CompletableFuture.runAsync(masterDataUtils.withMdc(
+                        () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), filename,
+                                csdDocumentUploadRequest, guid)), executorService);
+            }
             MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
-      } catch (Exception e) {
+        } catch (Exception e) {
             MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "false");
             log.error(e.getMessage());
         }
