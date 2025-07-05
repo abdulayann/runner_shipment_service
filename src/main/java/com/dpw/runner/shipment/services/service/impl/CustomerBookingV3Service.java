@@ -1886,7 +1886,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         List<PartiesRequest> additionalParties = request.getAdditionalParties();
         if (additionalParties != null) {
-            List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(additionalParties, Parties.class, false), bookingId, BOOKING_ADDITIONAL_PARTY);
+            List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(additionalParties, Parties.class, false), bookingId, BOOKING_ADDITIONAL_PARTY);
             customerBooking.setAdditionalParties(updatedParties);
         }
     }

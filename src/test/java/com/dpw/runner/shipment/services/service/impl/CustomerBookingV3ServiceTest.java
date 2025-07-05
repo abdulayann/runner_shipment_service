@@ -1418,7 +1418,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-        when(partiesDao.updateEntityFromOtherEntity(anyList(), anyLong(), anyString())).thenReturn(inputCustomerBooking.getAdditionalParties());
+        when(partiesDao.saveEntityFromOtherEntity(anyList(), anyLong(), anyString())).thenReturn(inputCustomerBooking.getAdditionalParties());
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
