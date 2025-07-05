@@ -4368,6 +4368,7 @@ public class ShipmentService implements IShipmentService {
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
             } else {
                 // Download it
+                response.reset();
                 response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
                 response.setHeader("Content-Disposition",
                     "attachment; filename=" + filenameWithTimestamp);
