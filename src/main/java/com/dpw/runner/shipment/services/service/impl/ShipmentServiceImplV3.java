@@ -2478,6 +2478,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ShipmentV3Request getShipmentRequestFromBookingV3(CustomerBookingV3Request customerBookingRequest, Set<ConsolidationDetailsRequest> consolidationDetails) {
         return ShipmentV3Request.builder().
                 carrierDetails(CarrierDetailRequest.builder()
+                        .eta(customerBookingRequest.getCarrierDetails().getEta())
+                        .ata(customerBookingRequest.getCarrierDetails().getAta())
+                        .etd(customerBookingRequest.getCarrierDetails().getEtd())
+                        .atd(customerBookingRequest.getCarrierDetails().getAtd())
                         .origin(customerBookingRequest.getCarrierDetails().getOrigin())
                         .destination(customerBookingRequest.getCarrierDetails().getDestination())
                         .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
@@ -2492,14 +2496,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .carrierAddedFromNpm(customerBookingRequest.getCarrierDetails().getCarrierAddedFromNpm())
                         .build()
                 ).
-                additionalDetails(AdditionalDetailV3Request.builder().
-                        pickupDate(customerBookingRequest.getPickupAtOriginDate()).
-                        cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestinationDate()).
-                        build()).
                 contractId(customerBookingRequest.getContractId()).
                 parentContractId(customerBookingRequest.getParentContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
                 noOfPacks(customerBookingRequest.getQuantity()).
+                goodsDescription(customerBookingRequest.getDescription()).
+                marksNum(customerBookingRequest.getMarksnNumbers()).
                 packsUnit(customerBookingRequest.getQuantityUnit()).
                 weight(customerBookingRequest.getGrossWeight()).
                 weightUnit(customerBookingRequest.getGrossWeightUnit()).
@@ -2518,9 +2520,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         createPartiesRequest(additionalParty, additionalParty.getCountryCode())).toList()).
                 additionalDetails(AdditionalDetailV3Request.builder().
                         notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry())).
+                        pickupDate(customerBookingRequest.getPickupAtOriginDate()).
+                        cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestinationDate()).
                         build()
                 ).
                 shipmentType(customerBookingRequest.getCargoType()).
+                additionalTerms(customerBookingRequest.getAdditionalTerms()).
                 transportMode(customerBookingRequest.getTransportType()).
                 direction(customerBookingRequest.getDirection()).
                 jobType("STD").
