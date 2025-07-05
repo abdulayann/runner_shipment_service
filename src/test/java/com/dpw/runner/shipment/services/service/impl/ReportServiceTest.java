@@ -3287,7 +3287,7 @@ class ReportServiceTest extends CommonMocks {
         newReportRequest.setReportInfo("HAWB");
 
         DocUploadRequest docUploadRequest = new DocUploadRequest();
-        reportService.addCSDDocumentToDocumentMaster("1", docUploadRequest, "123");
+        reportService.addCSDDocumentToDocumentMaster(newReportRequest, docUploadRequest, "123");
         assertNotNull(newReportRequest);
     }
 
