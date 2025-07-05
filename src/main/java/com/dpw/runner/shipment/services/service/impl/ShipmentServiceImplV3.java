@@ -2571,6 +2571,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 partner(customerBookingRequest.getPartner()).
                 bookingAgent(customerBookingRequest.getBookingAgent()).
                 coLoadBkgNumber(customerBookingRequest.getPartnerBkgNumber()).
+                coLoadBlNumber(customerBookingRequest.getPartnerBLOrAWBNumber()).
                 pickupAtOrigin(customerBookingRequest.getPickupAtOrigin()).
                 pickupAtOriginType(customerBookingRequest.getPickupAtOriginType()).
                 deliveryAtDestination(customerBookingRequest.getDeliveryAtDestination()).
