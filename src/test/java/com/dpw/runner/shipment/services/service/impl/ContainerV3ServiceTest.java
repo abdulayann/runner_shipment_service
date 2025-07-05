@@ -481,6 +481,19 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testDeleteBulk5_1() {
+        when(containerDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+        List<ContainerV3Request> containerV3Requests = List.of(
+                ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build());
+        ContainerDeleteInfoProjection containerDeleteInfoProjection = mock(ContainerDeleteInfoProjection.class);
+        when(containerDeleteInfoProjection.getContainerNumber()).thenReturn("CONT123");
+        when(containerDeleteInfoProjection.getShipmentId()).thenReturn("SHIP456");
+        List<ContainerDeleteInfoProjection> containerDeleteInfoProjections = List.of(containerDeleteInfoProjection);
+        when(containerDao.filterContainerIdsAttachedToShipment(any())).thenReturn(containerDeleteInfoProjections);
+        assertThrows(IllegalArgumentException.class, () -> containerV3Service.deleteBulk(containerV3Requests, "CONSOLIDATION"));
+    }
+
+    @Test
     void calculateContainerSummaryTest() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
         mockShipmentSettings();
