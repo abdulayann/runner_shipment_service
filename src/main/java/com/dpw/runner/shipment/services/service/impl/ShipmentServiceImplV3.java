@@ -2358,9 +2358,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
-            if (ObjectUtils.isNotEmpty(referenceNumbersRequest))
+            if (ObjectUtils.isNotEmpty(referenceNumbersRequest)) {
                 shipmentDetails.setReferenceNumbersList(referenceNumbersDao.saveEntityFromShipment(jsonHelper.convertValueToList(referenceNumbersRequest, ReferenceNumbers.class), shipmentId));
+            }
 
+            List<PartiesRequest> shipmentAddressList = request.getShipmentAddresses();
+            if (shipmentAddressList != null) {
+                List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(shipmentAddressList, Parties.class, false), shipmentId, Constants.SHIPMENT_ADDRESSES);
+                shipmentDetails.setShipmentAddresses(updatedParties);
+            }
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
