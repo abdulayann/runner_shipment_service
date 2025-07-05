@@ -143,6 +143,8 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse) {
             setUnlocationMasterDataInCarrierDetails(consolidationDetailsResponse.getCarrierDetails(), fieldNameKeyMap, cacheMap);
+        } else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
+            setUnlocationMasterDataInCarrierDetails(customerBookingV3Response.getCarrierDetails(), fieldNameKeyMap, cacheMap);
         }
     }
 
@@ -165,6 +167,9 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse) {
             addLocCodesFromCarrierDetailsResponse(consolidationDetailsResponse.getCarrierDetails(), locCodes, fieldNameKeyMap, cacheMap);
+        }
+        else if(response instanceof CustomerBookingV3Response customerBookingV3Response) {
+            addLocCodesFromCarrierDetailsResponse(customerBookingV3Response.getCarrierDetails(), locCodes, fieldNameKeyMap, cacheMap);
         }
     }
 

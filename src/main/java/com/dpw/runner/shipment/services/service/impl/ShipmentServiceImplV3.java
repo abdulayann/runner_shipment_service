@@ -2514,6 +2514,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry())).
                 consignee(createPartiesRequest(customerBookingRequest.getConsignee(), customerBookingRequest.getConsigneeCountry())).
                 consigner(createPartiesRequest(customerBookingRequest.getConsignor(), customerBookingRequest.getConsignorCountry())).
+                shipmentAddresses(customerBookingRequest.getAdditionalParties().stream().map(additionalParty ->
+                        createPartiesRequest(additionalParty, additionalParty.getCountryCode())).toList()).
                 additionalDetails(AdditionalDetailV3Request.builder().
                         notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry())).
                         build()
