@@ -793,7 +793,7 @@ public class ReportService implements IReportService {
                 throw new ValidationException("HBl Original generation is disabled");
             }
             if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal()))
-                throw new ValidationException("HBl Draft can't be generated once Original is printed");
+                throw new ValidationException("HBL Draft cannot be printed once Original is printed");
             pdfByteContent = getPdfByteContent(reportRequest, waterMarkRequired, pdfByteContent, font, shipmentDetails);
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()))
             {
