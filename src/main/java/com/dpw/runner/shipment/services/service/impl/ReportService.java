@@ -184,6 +184,9 @@ public class ReportService implements IReportService {
         throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
 
+        // set fromConsole or fromShipment flag true from entity Name
+        setFromConsoleOrShipment(reportRequest);
+
         // Generate combined shipment report via consolidation
         byte[] dataForCombinedReport = getDataForCombinedReport(reportRequest);
         if (dataForCombinedReport != null) return dataForCombinedReport;
@@ -306,6 +309,13 @@ public class ReportService implements IReportService {
         // Push document to document master
         pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return pdfByteContent;
+    }
+
+    private void setFromConsoleOrShipment(ReportRequest reportRequest) {
+        if(reportRequest.getEntityName() != null) {
+            reportRequest.setFromConsolidation(Objects.equals(reportRequest.getEntityName(), Constants.CONSOLIDATION));
+            reportRequest.setFromShipment(Objects.equals(reportRequest.getEntityName(), Constants.SHIPMENT));
+        }
     }
 
     private void validateForInvalidReport(IReport report) {
