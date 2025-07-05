@@ -4368,6 +4368,7 @@ public class ShipmentService implements IShipmentService {
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
             } else {
                 // Download it
+                response.reset();
                 response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
                 response.setHeader("Content-Disposition",
                     "attachment; filename=" + filenameWithTimestamp);
@@ -4441,7 +4442,7 @@ public class ShipmentService implements IShipmentService {
         addPartyNamesItemRow(headerMap, itemRow, shipment);
         itemRow.createCell(headerMap.get("HBL Number")).setCellValue(shipment.getHouseBill());
         itemRow.createCell(headerMap.get("BOE Number")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBOENumber() : "");
-        itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getScreeningStatus() : "");
+        itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? String.join(",",  shipment.getAdditionalDetails().getScreeningStatus()): "");
         addDateTimeDeliveryItemRows(headerMap, itemRow, shipment);
         itemRow.createCell(headerMap.get("Goods Description")).setCellValue(shipment.getGoodsDescription());
         itemRow.createCell(headerMap.get("Gross Weight")).setCellValue(String.valueOf(shipment.getWeight()));
