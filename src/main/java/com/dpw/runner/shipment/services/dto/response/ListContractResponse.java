@@ -94,9 +94,9 @@ public class ListContractResponse implements IRunnerResponse {
         @JsonProperty("origin_name")
         private String origin_name;
         @JsonProperty("dg_class")
-        private String dg_class;
+        private List<String> dg_class;
         @JsonProperty("dg_un_num")
-        private String dg_un_num;
+        private List<String> dg_un_num;
     }
 
     @Data
