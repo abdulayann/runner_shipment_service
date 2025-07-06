@@ -189,7 +189,7 @@ public class EventsV3Util {
             Map<String, List<Events>> cargoesRunnerDbEvents) {
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
-                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment) && Constants.DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())) {
+                        oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment) && Constants.DIRECTION_IMP.equalsIgnoreCase(shipmentDetails.getDirection())) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                 for (Events event : dbEvents) {
