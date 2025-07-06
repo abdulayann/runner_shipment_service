@@ -1,5 +1,18 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -13,21 +26,20 @@ import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
-
-import java.lang.reflect.Method;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -379,7 +391,13 @@ class EventsV3UtilTest extends CommonMocks {
         List<Events> events = new ArrayList<>();
         Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
 
-        processCUREEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        AdditionalDetails additionalDetails1 = new AdditionalDetails();
+        additionalDetails1.setCustomReleaseDate(now);
+        ShipmentDetails details = new ShipmentDetails();
+        details.setDirection("IMP");
+        details.setAdditionalDetails(additionalDetails1);
+
+        processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
 
         assertEquals(1, events.size());
         assertEquals(EventConstants.CURE, events.get(0).getEventCode());
@@ -390,7 +408,7 @@ class EventsV3UtilTest extends CommonMocks {
         dbEvents.add(dbEvent);
         cargoesRunnerDbEvents.put(EventConstants.CURE, dbEvents);
 
-        processCUREEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
 
         verify(eventDao).updateUserFieldsInEvent(dbEvent, true);
         assertEquals(0, events.size());
