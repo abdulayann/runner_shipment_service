@@ -391,9 +391,15 @@ class EventsV3UtilTest extends CommonMocks {
         List<Events> events = new ArrayList<>();
         Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
 
-        processCUREEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        AdditionalDetails additionalDetails1 = new AdditionalDetails();
+        additionalDetails1.setCustomReleaseDate(now);
+        ShipmentDetails details = new ShipmentDetails();
+        details.setDirection("IMP");
+        details.setAdditionalDetails(additionalDetails1);
 
-        assertEquals(0, events.size());
+        processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
+
+        assertEquals(1, events.size());
         assertEquals(EventConstants.CURE, events.get(0).getEventCode());
 
         events.clear();
@@ -402,7 +408,7 @@ class EventsV3UtilTest extends CommonMocks {
         dbEvents.add(dbEvent);
         cargoesRunnerDbEvents.put(EventConstants.CURE, dbEvents);
 
-        processCUREEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
 
         verify(eventDao).updateUserFieldsInEvent(dbEvent, true);
         assertEquals(0, events.size());
