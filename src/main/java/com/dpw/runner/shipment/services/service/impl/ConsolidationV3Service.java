@@ -54,9 +54,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
@@ -123,8 +120,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     private IPartiesDao partiesDao;
-    @Autowired
-    private IPackingsSync packingsADSync;
 
     @Autowired
     private ConsolidationValidationV3Util consolidationValidationV3Util;
@@ -189,12 +184,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Autowired
     private INotificationDao notificationDao;
-
-    @Autowired
-    private IShipmentSync shipmentSync;
-
-    @Autowired
-    private IConsolidationSync consolidationSync;
 
     @Autowired
     private MasterDataUtils masterDataUtils;
@@ -627,13 +616,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, consolidationAddressRequest);
 
-
-        try {
-            if (Boolean.FALSE.equals(isFromBooking))
-                consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
-        } catch (Exception e){
-            log.error("Error performing sync on consolidation entity, {}", e);
-        }
         if (consolidationDetails.getShipmentsList() != null) {
             consolidationDetails.getShipmentsList().forEach(shipment -> {
                 if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
@@ -1664,11 +1646,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
 
-        try {
-            consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), false);
-        } catch (Exception e) {
-            log.error("Error Syncing Consol");
-        }
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
             warning = "Template not found, please inform the region users manually";
@@ -2056,11 +2033,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Persist updated shipment details and event logs
             shipmentV3Service.saveAll(shipments);
             eventV3Service.saveAllEvent(events);
-
-            // Sync to external systems if triggered via attach UI
-            if (Boolean.TRUE.equals(fromAttachShipment)) {
-                shipmentV3Service.syncShipmentsList(shipments, StringUtility.convertToString(console.getGuid()));
-            }
         }
 
         return shipments;
