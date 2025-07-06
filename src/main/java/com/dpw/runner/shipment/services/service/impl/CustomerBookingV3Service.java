@@ -423,6 +423,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         CustomerBooking oldCustomerBooking = jsonHelper.convertValue(oldEntity.get(), CustomerBooking.class);
+        BookingStatus oldStatus = oldCustomerBooking.getBookingStatus();
+        BookingStatus newStatus = request.getBookingStatus();
+        boolean isSaveAsDraft = Objects.equals(oldStatus, newStatus);
         boolean eventPersisted = false;
         Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), Constants.BOOKING);
         if(persistedEvent.isPresent())
@@ -459,11 +462,14 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         try {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-            if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
-                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
+            if (!isSaveAsDraft || BookingStatus.PENDING_FOR_CREDIT_LIMIT.equals(customerBooking.getBookingStatus())) {
+                if (!BookingStatus.PENDING_FOR_KYC.equals(customerBooking.getBookingStatus())
+                        && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate())
+                        || (customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()))) {
 
-                // Triggering Event for customer booking for DependentServices update
-                triggerPushToDownStreamForCustomerBooking(customerBooking);
+                    // Triggering Event for customer booking for DependentServices update
+                    triggerPushToDownStreamForCustomerBooking(customerBooking);
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage());
