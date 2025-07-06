@@ -10,5 +10,5 @@ UPDATE consolidation_details
 SET mawb = '020-06182256',
     updated_at = NOW()
 WHERE id = 53418
-  AND consolidation_id = 'BSLA25060316'
+  AND consolidation_number = 'BSLA25060316'
   AND tenant_id = 685;
