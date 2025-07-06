@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -51,7 +50,6 @@ import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListReques
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
-import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
@@ -146,8 +144,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     private final ModelMapper modelMapper;
     private final DependentServiceHelper dependentServiceHelper;
     private final IFusionServiceAdapter fusionServiceAdapter;
-    private final IPackingV3Service packingV3Service;
-    private final IContainerV3Service containerV3Service;
     private final IConsolidationV3Service consolidationService;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
@@ -192,8 +188,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                                     ModelMapper modelMapper,
                                     DependentServiceHelper dependentServiceHelper,
                                     IFusionServiceAdapter fusionServiceAdapter,
-                                    IContainerV3Service containerV3Service,
-                                    IPackingV3Service packingV3Service,
                                     IConsolidationV3Service consolidationService){
         this.jsonHelper = jsonHelper;
         this.quoteContractsService = quoteContractsService;
@@ -218,8 +212,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         this.modelMapper = modelMapper;
         this.dependentServiceHelper = dependentServiceHelper;
         this.fusionServiceAdapter = fusionServiceAdapter;
-        this.packingV3Service = packingV3Service;
-        this.containerV3Service = containerV3Service;
         this.consolidationService = consolidationService;
     }
 
@@ -238,15 +230,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }
         try {
-            ListContractResponse npmContractResponse = null;
-            if(customerBooking.getContractId() !=null) {
-                npmContractResponse = getNpmContract(customerBooking);
-                populateCustomerBookingFromContract(npmContractResponse, customerBooking);
-            }
             createEntities(customerBooking, customerBookingV3Request);
-            if(npmContractResponse != null && !npmContractResponse.getContracts().isEmpty()) {
-                updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
-            }
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
             updateCargoInformation(customerBooking, containerTeuMap);
             /**
@@ -265,130 +249,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             throw new RunnerException(e.getMessage());
         }
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
-    }
-
-    private void updatePackingAndContainerFromContract(ListContractResponse.ContractResponse contractResponse, CustomerBooking customerBooking) throws RunnerException {
-        List<ListContractResponse.ContractUsage> contractUsages = Optional.ofNullable(contractResponse.getContract_usage()).orElse(List.of());
-        String transportMode = customerBooking.getTransportType();
-        String cargoType = customerBooking.getCargoType();
-        if ((TRANSPORT_MODE_SEA.equals(transportMode) && CARGO_TYPE_LCL.equals(cargoType)) || TRANSPORT_MODE_AIR.equals(transportMode)) {
-            handlePackingUpdate(contractUsages, customerBooking);
-        } else {
-            handleContainerUpdate(contractUsages, customerBooking);
-        }
-    }
-
-    private void handlePackingUpdate(List<ListContractResponse.ContractUsage> contractUsages, CustomerBooking customerBooking) throws RunnerException {
-        List<PackingV3Request> quotePackingRequests = contractUsages.stream()
-                .map(usage -> getPackingRequest(usage, customerBooking))
-                .collect(Collectors.toList());
-        if (customerBooking.getPackingList() != null && !customerBooking.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
-            List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(customerBooking.getPackingList(), PackingV3Request.class);
-            packingV3Service.deleteBulk(existingRequests, BOOKING);
-            customerBooking.setPackingList(new ArrayList<>());
-        }
-        if (!quotePackingRequests.isEmpty()) {
-            BulkPackingResponse packingResponse = packingV3Service.updateBulk(quotePackingRequests, BOOKING);
-            customerBooking.setPackingList(jsonHelper.convertValueToList(packingResponse.getPackingResponseList(), Packing.class));
-        }
-    }
-
-    private void handleContainerUpdate(List<ListContractResponse.ContractUsage> contractUsages, CustomerBooking customerBooking) throws RunnerException {
-        List<ContainerV3Request> quoteContainerRequests = contractUsages.stream()
-                .map(usage -> getContainerRequest(usage, customerBooking))
-                .collect(Collectors.toList());
-        if (customerBooking.getContainersList() != null && !customerBooking.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
-            List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(customerBooking.getContainersList(), ContainerV3Request.class);
-            containerV3Service.deleteBulk(existingContainerRequests, BOOKING);
-            customerBooking.setContainersList(new ArrayList<>());
-        }
-        if (!quoteContainerRequests.isEmpty()) {
-            BulkContainerResponse containerResponse = containerV3Service.createBulk(quoteContainerRequests, BOOKING);
-            customerBooking.setContainersList(jsonHelper.convertValueToList(containerResponse.getContainerResponseList(), Containers.class));
-        }
-    }
-
-    private ContainerV3Request getContainerRequest(ListContractResponse.ContractUsage usage, CustomerBooking customerBooking) {
-        var request = new ContainerV3Request();
-        request.setContainerCount(usage.getMeta() != null ? usage.getMeta().getOriginal_usage() : usage.getUsage());
-        var filters = usage.getFilter_params();
-        if (filters != null) {
-            if (filters.getCargo_type() != null && !filters.getCargo_type().isEmpty())
-                request.setContainerCode(filters.getCargo_type().get(0));
-            if (filters.getCommodity() != null && !filters.getCommodity().isEmpty())
-                request.setCommodityGroup(filters.getCommodity().get(0));
-        }
-        if (customerBooking.getId() != null)
-            request.setBookingId(customerBooking.getId());
-        return request;
-    }
-
-    private PackingV3Request getPackingRequest(ListContractResponse.ContractUsage usage, CustomerBooking customerBooking) {
-        PackingV3Request request = new PackingV3Request();
-        npmContractV3Util.setFilterParams(usage.getFilter_params(), request);
-        npmContractV3Util.setMetaData(usage, request);
-        if (customerBooking.getId() != null) {
-            request.setBookingId(customerBooking.getId());
-        }
-        return request;
-    }
-
-    private void populateCustomerBookingFromContract(ListContractResponse listContractResponse, CustomerBooking customerBooking) {
-        if (listContractResponse == null || listContractResponse.getContracts() == null || listContractResponse.getContracts().isEmpty()) return;
-        List<ListContractResponse.ContractResponse> contracts = listContractResponse.getContracts();
-        ListContractResponse.ContractResponse contract = contracts.get(0);
-        customerBooking.setContractId(contract.getContract_id());
-        customerBooking.setCarrierDetails(npmContractV3Util.createCarrierDetails(contract));
-        customerBooking.setCargoType(!contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
-        if (contract.getMeta() != null) {
-            var meta = contract.getMeta();
-            customerBooking.setTransportType(meta.getMode_of_transport());
-            customerBooking.setDirection(meta.getShipment_movement());
-            customerBooking.setIncoTerms(meta.getIncoterm());
-            customerBooking.setServiceMode(meta.getService_mode());
-            if (meta.getBranch_info() != null) {
-                var branchInfo = meta.getBranch_info();
-                customerBooking.setPrimarySalesAgentEmail(branchInfo.getSales_agent_primary_email());
-                customerBooking.setSecondarySalesAgentEmail(branchInfo.getSales_agent_secondary_email());
-                customerBooking.setSalesBranch(branchInfo.getId());
-            }
-        }
-    }
-
-    private ListContractResponse getNpmContract(CustomerBooking customerBooking) throws RunnerException {
-        String partyForQuote = customerBooking.getCurrentPartyForQuote();
-        String contractId = customerBooking.getContractId();
-        String orgCode = extractOrgCode(customerBooking, partyForQuote);
-        if(contractId == null || orgCode == null) {
-            return null;
-        }
-        ListContractRequest listContractRequest = new ListContractRequest();
-        listContractRequest.setCustomer_org_id(orgCode);
-        listContractRequest.setOrg_role("DPW");
-        listContractRequest.setFilter_contract_states(List.of("ENABLED"));
-        listContractRequest.setFilter_contract_id(contractId);
-
-        ResponseEntity<IRunnerResponse> response = npmService.fetchContract(CommonRequestModel.buildRequest(listContractRequest));
-        IRunnerResponse body = response.getBody();
-        if (!(body instanceof DependentServiceResponse npmResponse)) {
-            throw new ValidationException("Invalid response received from NPM: null or incompatible type");
-        }
-        return jsonHelper.convertValue(npmResponse.getData(), ListContractResponse.class);
-    }
-
-    private String extractOrgCode(CustomerBooking customerBooking, String party) {
-        if (customerBooking == null || party == null) return null;
-        return switch (party.toUpperCase()) {
-            case CLIENT_PARTY -> customerBooking.getCustomer() !=null ? customerBooking.getCustomer().getOrgCode() : null;
-            case CONSIGNEE_PARTY -> customerBooking.getConsignee() != null ? customerBooking.getConsignee().getOrgCode() : null;
-            case CONSIGNOR_PARTY -> customerBooking.getConsignor() != null ? customerBooking.getConsignor().getOrgCode() : null;
-            default -> {
-                var notifyParty = customerBooking.getNotifyParty() != null
-                        ? customerBooking.getNotifyParty()
-                        : null;
-                yield notifyParty != null ? notifyParty.getOrgCode() : null;
-            }
-        };
     }
 
     private void triggerPushToDownStreamForCustomerBooking(CustomerBooking customerBooking) {
@@ -445,15 +305,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(checkNPMContractUtilization(customerBooking)) {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
-        ListContractResponse npmContractResponse = null;
-        if (Boolean.TRUE.equals(isContractUpdated(customerBooking, oldCustomerBooking))) {
-            npmContractResponse = getNpmContract(customerBooking);
-            populateCustomerBookingFromContract(npmContractResponse, customerBooking);
-        }
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
-        if(npmContractResponse != null) {
-            updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), customerBooking);
-        }
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
         updateCargoInformation(customerBooking, containerTeuMap);
         try {
