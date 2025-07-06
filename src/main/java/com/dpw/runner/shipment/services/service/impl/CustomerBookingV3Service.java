@@ -1572,20 +1572,10 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     public CustomerBookingV3Response getDefaultBooking() {
         var tenantSettings = commonUtils.getShipmentSettingFromContext();
         CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
-        customerBookingV3Response.setTransportType(tenantSettings.getDefaultTransportMode());
-        customerBookingV3Response.setDirection(tenantSettings.getDefaultShipmentType());
-        customerBookingV3Response.setCargoType(tenantSettings.getDefaultContainerType());
         customerBookingV3Response.setVolumeUnit(tenantSettings.getVolumeChargeableUnit());
         customerBookingV3Response.setGrossWeightUnit(tenantSettings.getWeightChargeableUnit());
-        customerBookingV3Response.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
         customerBookingV3Response.setSource(BookingSource.Runner);
-        customerBookingV3Response.setCreatedAt(LocalDateTime.now());
-        customerBookingV3Response.setCreatedBy(UserContext.getUser().getUsername());
-        customerBookingV3Response.setCarrierDetails(new CarrierDetailResponse());
         customerBookingV3Response.setTenantId(UserContext.getUser().TenantId);
-        customerBookingV3Response.setIsAutoWeightVolumeUpdate(Boolean.TRUE);
-        setTenantAndDefaultAgent(customerBookingV3Response);
-        createCustomerBookingResponse(null, customerBookingV3Response);
         return customerBookingV3Response;
     }
 
