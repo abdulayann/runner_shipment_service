@@ -494,7 +494,7 @@ public class NetworkTransferService implements INetworkTransferService {
             networkTransferDao.saveAll(networkTransferList);
         }
         for(NetworkTransfer nte: networkTransferList) {
-            triggerReassignmentEmail(nte, reassignRequest.getRemarks());
+            triggerReassignmentEmail(nte, reassignRequest);
         }
         return ResponseHelper.buildSuccessResponse();
     }
@@ -652,8 +652,9 @@ public class NetworkTransferService implements INetworkTransferService {
         return response;
     }
 
-    private void triggerReassignmentEmail(NetworkTransfer networkTransfer, String reason) {
+    private void triggerReassignmentEmail(NetworkTransfer networkTransfer, ReassignRequest reassignRequest) {
         try {
+            String reason = reassignRequest.getRemarks();
             String entityType = networkTransfer.getEntityType();
             Long entityId = networkTransfer.getEntityId();
             String createdBy = networkTransfer.getCreatedBy();
@@ -671,6 +672,8 @@ public class NetworkTransferService implements INetworkTransferService {
             if (!CommonUtils.isStringNullOrEmpty(createdBy))
                 emailsList.add(createdBy);
 
+            Integer reAssignedBranch = getReAssignedBranch(networkTransfer, reassignRequest);
+
             List<String> emailList = new ArrayList<>();
             Map<String, String> usernameEmailsMap = new HashMap<>();
             commonUtils.getUserDetails(new HashSet<>(emailsList), usernameEmailsMap);
@@ -680,7 +683,7 @@ public class NetworkTransferService implements INetworkTransferService {
             if (assignedTo!=null && usernameEmailsMap.containsKey(assignedTo))
                 emailList.add(usernameEmailsMap.get(assignedTo));
 
-            EmailTemplatesRequest template = createRequestReassignEmailBody(networkTransfer, reason);
+            EmailTemplatesRequest template = createRequestReassignEmailBody(networkTransfer, reason, reAssignedBranch);
             if(!emailList.isEmpty() && template.getBody() != null) {
                 commonUtils.sendEmailNotification(template, emailList, Collections.singletonList(UserContext.getUser().getEmail()));
             }
@@ -689,9 +692,21 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
-    private EmailTemplatesRequest createRequestReassignEmailBody(NetworkTransfer networkTransfer, String reason){
+    private Integer getReAssignedBranch(NetworkTransfer networkTransfer, ReassignRequest reassignRequest) {
+        var shipmentGuidReassignBranch = reassignRequest.getShipmentGuidReassignBranch();
+        Integer reAssignedBranch;
+
+        if(reassignRequest.getShipmentGuidReassignBranch() != null && !reassignRequest.getShipmentGuidReassignBranch().isEmpty() && shipmentGuidReassignBranch.containsKey(networkTransfer.getEntityGuid().toString()) && shipmentGuidReassignBranch.get(networkTransfer.getEntityGuid().toString()) != null){
+                reAssignedBranch = shipmentGuidReassignBranch.get(networkTransfer.getEntityGuid().toString());
+        }else{
+            reAssignedBranch = reassignRequest.getBranchId();
+        }
+        return reAssignedBranch;
+    }
+
+    private EmailTemplatesRequest createRequestReassignEmailBody(NetworkTransfer networkTransfer, String reason, Integer reAssignedBranch){
         UsersDto user = UserContext.getUser();
-        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant(), networkTransfer.getTenantId())));
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant(), networkTransfer.getTenantId(), reAssignedBranch)));
         String body = "";
         String subject = "";
         if(SHIPMENT.equals(networkTransfer.getEntityType())) {
@@ -716,9 +731,11 @@ public class NetworkTransferService implements INetworkTransferService {
             body = body.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, networkTransfer.getEntityNumber());
         }
         body = body.replace(EntityTransferConstants.USER_NAME_PLACEHOLDER, user.getDisplayName());
-        body = body.replace(NotificationConstants.ASSIGN_TO_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(networkTransfer.getTenantId()).tenantName));
+        body = body.replace(NotificationConstants.ASSIGN_TO_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(reAssignedBranch).tenantName));
         body = body.replace(EntityTransferConstants.TRANSFER_REASON_PLACEHOLDER, reason);
         body = body.replace(EntityTransferConstants.REQUESTED_USER_EMAIL_PLACEHOLDER, user.getEmail());
+        body = body.replace(EntityTransferConstants.REASSIGNED_USER_EMAIL_ID, branchIdVsTenantModelMap.get(reAssignedBranch).getEmail());
+        body = body.replace(EntityTransferConstants.ORIGINAL_DESTINATION_BRANCH, StringUtility.convertToString(branchIdVsTenantModelMap.get(networkTransfer.getTenantId()).tenantName));
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
     }
 }
