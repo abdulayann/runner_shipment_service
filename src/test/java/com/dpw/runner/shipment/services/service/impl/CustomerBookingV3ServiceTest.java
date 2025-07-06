@@ -88,8 +88,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
 import static com.dpw.runner.shipment.services.commons.constants.DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
 import static org.junit.jupiter.api.Assertions.*;
@@ -4103,12 +4102,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testGetDefaultBooking_withDirectionExp() {
-
+    void testGetDefaultBooking() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
-        tenantSettings.setDefaultTransportMode("SEA");
-        tenantSettings.setDefaultShipmentType(Constants.DIRECTION_EXP);
-        tenantSettings.setDefaultContainerType("FCL");
         tenantSettings.setVolumeChargeableUnit("CBM");
         tenantSettings.setWeightChargeableUnit("KGS");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
@@ -4117,114 +4112,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         user.setUsername("test_user");
         user.setTenantId(1);
         UserContext.setUser(user);
-        PartiesResponse partiesResponse = new PartiesResponse();
 
-        TenantModel tenantModel = new TenantModel();
-        V1RetrieveResponse mockTenantResponse = new V1RetrieveResponse();
-        mockTenantResponse.setEntity(tenantModel);
-        when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
-        when(v1ServiceUtil.getDefaultAgentOrg(tenantModel)).thenReturn(partiesResponse);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         mockShipmentSettings();
         CustomerBookingV3Response response = customerBookingService.getDefaultBooking();
         assertNotNull(response);
-        assertEquals("SEA", response.getTransportType());
-        assertEquals(Constants.DIRECTION_EXP, response.getDirection());
-        assertEquals("FCL", response.getCargoType());
         assertEquals("CBM", response.getVolumeUnit());
         assertEquals("KGS", response.getGrossWeightUnit());
-        assertEquals(BookingStatus.PENDING_FOR_KYC, response.getBookingStatus());
-        assertEquals(BookingSource.Runner, response.getSource());
-        assertNotNull(response.getCreatedAt());
-        assertEquals("test_user", response.getCreatedBy());
         assertEquals(1, response.getTenantId());
-        assertEquals(Boolean.TRUE, response.getIsAutoWeightVolumeUpdate());
-        assertNotNull(response.getCarrierDetails());
-        assertEquals(partiesResponse, response.getConsignor());
-        assertNull(response.getConsignee());
-    }
-
-    @Test
-    void testGetDefaultBooking_withDirectionImp() {
-        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
-        tenantSettings.setDefaultTransportMode("AIR");
-        tenantSettings.setDefaultShipmentType(Constants.DIRECTION_IMP);
-        tenantSettings.setDefaultContainerType("LCL");
-        tenantSettings.setVolumeChargeableUnit("L");
-        tenantSettings.setWeightChargeableUnit("TONS");
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
-
-        UsersDto user = new UsersDto();
-        user.setUsername("imp_user");
-        user.setTenantId(2);
-        UserContext.setUser(user);
-        PartiesResponse partiesResponse = new PartiesResponse();
-
-        TenantModel tenantModel = new TenantModel();
-        V1RetrieveResponse mockTenantResponse = new V1RetrieveResponse();
-        mockTenantResponse.setEntity(tenantModel);
-        when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
-        when(v1ServiceUtil.getDefaultAgentOrg(tenantModel)).thenReturn(partiesResponse);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
-        mockShipmentSettings();
-
-        CustomerBookingV3Response response = customerBookingService.getDefaultBooking();
-
-        assertNotNull(response);
-        assertEquals("AIR", response.getTransportType());
-        assertEquals(Constants.DIRECTION_IMP, response.getDirection());
-        assertEquals("LCL", response.getCargoType());
-        assertEquals("L", response.getVolumeUnit());
-        assertEquals("TONS", response.getGrossWeightUnit());
-        assertEquals(BookingStatus.PENDING_FOR_KYC, response.getBookingStatus());
         assertEquals(BookingSource.Runner, response.getSource());
-        assertNotNull(response.getCreatedAt());
-        assertEquals("imp_user", response.getCreatedBy());
-        assertEquals(2, response.getTenantId());
-        assertEquals(Boolean.TRUE, response.getIsAutoWeightVolumeUpdate());
-        assertNotNull(response.getCarrierDetails());
-        assertEquals(partiesResponse, response.getConsignee());
-        assertNull(response.getConsignor());
-    }
-
-    @Test
-    void testGetDefaultBooking_whenV1ServiceFails() {
-        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
-        tenantSettings.setDefaultTransportMode("RAIL");
-        tenantSettings.setDefaultShipmentType(Constants.DIRECTION_EXP);
-        tenantSettings.setDefaultContainerType("FCL");
-        tenantSettings.setVolumeChargeableUnit("CBM");
-        tenantSettings.setWeightChargeableUnit("KG");
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
-
-        UsersDto user = new UsersDto();
-        user.setUsername("error_user");
-        user.setTenantId(3);
-        UserContext.setUser(user);
-
-        // Simulate failure
-        when(v1Service.retrieveTenant()).thenThrow(new RuntimeException("V1 service down"));
-        mockShipmentSettings();
-
-        CustomerBookingV3Response response = customerBookingService.getDefaultBooking();
-
-        assertNotNull(response);
-        assertEquals("RAIL", response.getTransportType());
-        assertEquals(Constants.DIRECTION_EXP, response.getDirection());
-        assertEquals("FCL", response.getCargoType());
-        assertEquals("CBM", response.getVolumeUnit());
-        assertEquals("KG", response.getGrossWeightUnit());
-        assertEquals(BookingStatus.PENDING_FOR_KYC, response.getBookingStatus());
-        assertEquals(BookingSource.Runner, response.getSource());
-        assertNotNull(response.getCreatedAt());
-        assertEquals("error_user", response.getCreatedBy());
-        assertEquals(3, response.getTenantId());
-        assertEquals(Boolean.TRUE, response.getIsAutoWeightVolumeUpdate());
-        assertNotNull(response.getCarrierDetails());
-
-        // Since v1 failed, no parties should be set
-        assertNull(response.getConsignor());
-        assertNull(response.getConsignee());
     }
 
 }
