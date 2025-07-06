@@ -312,7 +312,7 @@ public class ReportService implements IReportService {
     }
 
     private void setFromConsoleOrShipment(ReportRequest reportRequest) {
-        if(reportRequest.getEntityName() != null) {
+        if(reportRequest.getEntityName() != null && Boolean.TRUE.equals(reportRequest.isSetParentEntityFlag())) {
             reportRequest.setFromConsolidation(Objects.equals(reportRequest.getEntityName(), Constants.CONSOLIDATION));
             reportRequest.setFromShipment(Objects.equals(reportRequest.getEntityName(), Constants.SHIPMENT));
         }
@@ -993,6 +993,7 @@ public class ReportService implements IReportService {
             if(!groupedShipments.isEmpty()) {
                 for (Map.Entry<String, List<Long>> entry: groupedShipments.entrySet()) {
                     reportRequest.setFromConsolidation(false);
+                    reportRequest.setSetParentEntityFlag(false);
                     reportRequest.setShipmentIds(entry.getValue());
                     dataByte = self.getDocumentData(CommonRequestModel.buildRequest(reportRequest));
                     if(dataByte != null) {
@@ -1029,6 +1030,7 @@ public class ReportService implements IReportService {
                 List<byte[]> dataByteList = new ArrayList<>();
                 for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                     reportRequest.setFromConsolidation(false);
+                    reportRequest.setSetParentEntityFlag(false);
                     reportRequest.setReportId(shipmentDetails.getId().toString());
                     dataByte = self.getDocumentData(CommonRequestModel.buildRequest(reportRequest));
                     if(dataByte != null) {
