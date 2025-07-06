@@ -2446,13 +2446,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
         }
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails().getPickupDate())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.CACO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+            createAutomatedEvents(shipmentDetails, EventConstants.CACO, commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null);
         }
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.CADE, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+            createAutomatedEvents(shipmentDetails, EventConstants.CADE, commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null);
         }
         if (Objects.nonNull(shipmentDetails.getBrokerageAtOriginDate())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.ECCC, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+            createAutomatedEvents(shipmentDetails, EventConstants.ECCC, commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()), null);
         }
         if (Objects.nonNull(shipmentDetails.getBookingNumber())) {
             createAutomatedEvents(shipmentDetails, EventConstants.BOCO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
