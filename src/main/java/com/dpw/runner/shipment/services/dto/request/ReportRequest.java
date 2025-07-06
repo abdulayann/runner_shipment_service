@@ -33,6 +33,7 @@ public class ReportRequest implements IRunnerRequest {
     String noOfCopies = null;
     boolean fromShipment;
     boolean fromConsolidation;
+    boolean setParentEntityFlag = true;
     Boolean pushAwbEvent;
     Boolean printWithoutTranslation;
     List<Long> shipmentIds;
