@@ -3090,14 +3090,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void closeOceanDgTask(OceanDGRequestV3 request){
         MdmTaskApproveOrRejectRequest taskUpdateRequest = MdmTaskApproveOrRejectRequest.builder()
-            .status(request.getStatus().getName())
+            .status(request.getStatus().getName().toUpperCase())
             .approvedOrRejectedBy(UserContext.getUser().getUsername())
             .build();
 
         if(TaskStatus.APPROVED.equals(request.getStatus())){
-            taskUpdateRequest.setApprovalComments(request.getRemarks());
+            taskUpdateRequest.setApprovalComments(request.getStatus().getName().toUpperCase());
+        }else if(TaskStatus.REJECTED.equals(request.getStatus())){
+            taskUpdateRequest.setRejectedComments(request.getStatus().getName().toUpperCase());
         }else{
-            taskUpdateRequest.setRejectedComments(request.getRemarks());
+            throw new ValidationException("Invalid approval status in request : " + request.getStatus().getName());
         }
 
         try {
