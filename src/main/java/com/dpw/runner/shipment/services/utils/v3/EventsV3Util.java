@@ -145,9 +145,6 @@ public class EventsV3Util {
                 bocoEvent.setContainerNumber(shipmentDetails.getBookingNumber());
             events.add(bocoEvent);
         }
-        if(Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP)) {
-            commonUtils.updateEventWithMasterData(events);
-        }
     }
 
     private void processCADEEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
@@ -161,15 +158,9 @@ public class EventsV3Util {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
                 LocalDateTime deliveredDate = shipmentDetails.getAdditionalDetails().getCargoDeliveredDate();
                 updateExistingCADEEvents(dbEvents, deliveredDate);
-                if(Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP)) {
-                    commonUtils.updateEventWithMasterData(dbEvents);
-                }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
                         commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null));
-                if(Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP)) {
-                    commonUtils.updateEventWithMasterData(events);
-                }
             }
         }
     }
@@ -205,15 +196,9 @@ public class EventsV3Util {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
                 LocalDateTime pickupDate = shipmentDetails.getAdditionalDetails().getPickupDate();
                 updateExistingCACOEvents(dbEvents, pickupDate);
-                if(Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP)) {
-                    commonUtils.updateEventWithMasterData(dbEvents);
-                }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
                         commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null));
-                if(Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP)) {
-                    commonUtils.updateEventWithMasterData(events);
-                }
             }
         }
     }
