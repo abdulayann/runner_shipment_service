@@ -53,4 +53,5 @@ public interface IContainerV3Service {
     void addShipmentCargoToContainerInCreateFromBooking(Containers container, CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
 
     List<ContainerInfoProjection> getContainers(List<Long> containerIds);
+    ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
 }
