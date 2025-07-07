@@ -57,6 +57,7 @@ public class ContainerConstants {
     public static final String KEY_SHIPMENT_TYPE = "shipmentType";
     public static final String KEY_CONSOLIDATION_ID = "consolidationId";
     public static final String KEY_UPDATED_AT = "updatedAt";
+    public static final String CONTAINER_ALREADY_ASSIGNED_MSG = "Shipment already Assigned to Container - ";
 
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(KEY_CONTAINER_NUMBER,
