@@ -734,7 +734,7 @@ public class NetworkTransferService implements INetworkTransferService {
         body = body.replace(NotificationConstants.ASSIGN_TO_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(reAssignedBranch).tenantName));
         body = body.replace(EntityTransferConstants.TRANSFER_REASON_PLACEHOLDER, reason);
         body = body.replace(EntityTransferConstants.REQUESTED_USER_EMAIL_PLACEHOLDER, user.getEmail());
-        body = body.replace(EntityTransferConstants.REASSIGNED_USER_EMAIL_ID, branchIdVsTenantModelMap.get(reAssignedBranch).getEmail());
+        body = body.replace(EntityTransferConstants.REASSIGNED_USER_EMAIL_ID, user.getEmail());
         body = body.replace(EntityTransferConstants.ORIGINAL_DESTINATION_BRANCH, StringUtility.convertToString(branchIdVsTenantModelMap.get(networkTransfer.getTenantId()).tenantName));
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
     }
