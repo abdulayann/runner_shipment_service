@@ -8,17 +8,12 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
-
-import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -108,15 +103,13 @@ public class ContainerValidationUtil {
 
 
     public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails, String module) {
-        if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
-            if(Constants.PACKING.equals(module)) {
-                String msg = getErrorMessage(shipmentDetails.getContainersList());
-                throw new ValidationException(msg);
-            }
-            throw new ValidationException(String.format(
-                    "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
-                    shipmentDetails.getShipmentId()));
+        if(Constants.PACKING.equals(module)) {
+            String msg = getErrorMessage(shipmentDetails.getContainersList());
+            throw new ValidationException(msg);
         }
+        throw new ValidationException(String.format(
+                "Shipment cargo summary of Shipment - %s already assigned, please detach to assign packages",
+                shipmentDetails.getShipmentId()));
     }
 
     private String getErrorMessage(Set<Containers> containersList) {
