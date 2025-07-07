@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesListRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesListResponse;
