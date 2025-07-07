@@ -115,7 +115,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private CarrierDetailResponse carrierDetails;
     private PickupDeliveryDetailsResponse deliveryDetails;
     private List<ReferenceNumbersResponse> referenceNumbersList;
-    private List<TruckDriverDetailsLiteResponse> truckDriverDetails;
+    private List<TruckDriverDetailsResponse> truckDriverDetails;
     private String jobStatus;
     private BigDecimal goodsValue;
     private String goodsValueCurrency;
