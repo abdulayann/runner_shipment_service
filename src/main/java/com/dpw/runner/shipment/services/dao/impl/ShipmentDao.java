@@ -903,7 +903,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private boolean checkContainsDGPackage(ShipmentDetails request) {
         List<Packing> packingList = request.getPackingList();
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && request.getId()!=null)
             packingList = packingDao.findByShipmentId(request.getId());
         if (CommonUtils.listIsNullOrEmpty(packingList))
             return false;

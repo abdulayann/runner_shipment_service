@@ -937,7 +937,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private boolean checkContainsDGPackageV3(ConsolidationDetails request) {
         List<Packing> packings = request.getPackingList();
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && request.getId()!=null)
             packings = packingDao.findByConsolidationId(request.getId());
         for (Packing packing: packings) {
             if(Boolean.TRUE.equals(packing.getHazardous())) {
