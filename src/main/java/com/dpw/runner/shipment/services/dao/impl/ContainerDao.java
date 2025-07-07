@@ -508,6 +508,12 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
+    public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipment(List<Long> containerIds) {
+        return containerRepository.filterContainerIdsAttachedToShipment(containerIds);
+    }
+
+
+    @Override
     public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds) {
         return containerRepository.filterContainerIdsAttachedToPacking(containerIds);
     }

@@ -156,17 +156,21 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         List<Routings> mainCarriageList = routingList.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
                 .toList();
-        if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
-            updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList);
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            Long shipmentId = entityId;
+            if (entityId == null) {
+                shipmentId = mainCarriageList.get(0).getShipmentId();
+            }
+            updateShipmentCarrierDetails(mainCarriageList, shipmentId);
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
             //updates routings to attached shipments
             Long consolidationId = entityId;
             if (entityId == null) {
                 consolidationId = mainCarriageList.get(0).getConsolidationId();
             }
-            updateConsolCarrierDetails(mainCarriageList);
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
             commonUtils.validateAirSecurityAndDGConsolidationPermissions(consolidationDetails);
+            updateConsolCarrierDetails(mainCarriageList, consolidationDetails);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
 
             if (isInterBranchContextNeeded(consolidationDetails))
@@ -202,6 +206,32 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
                 }
             }
+        }
+    }
+
+    private void updateShipmentCarrierDetails(List<Routings> mainCarriageList, Long  shipmentId) {
+        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(shipmentId);
+        if (shipmentDetailsOptional.isEmpty())
+            return;
+        ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+        if (!CollectionUtils.isEmpty(mainCarriageList)) {
+            updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList, shipmentDetails);
+        } else {
+            shipmentDetails.getCarrierDetails().setAtd(null);
+            shipmentDetails.getCarrierDetails().setAta(null);
+            shipmentDetails.getCarrierDetails().setEta(null);
+            shipmentDetails.getCarrierDetails().setEtd(null);
+        }
+    }
+
+    private void updateConsolCarrierDetails(List<Routings> mainCarriageList, ConsolidationDetails consolidationDetails) {
+        if (!CollectionUtils.isEmpty(mainCarriageList)) {
+            updateConsolCarrierDetails(mainCarriageList);
+        } else {
+            consolidationDetails.getCarrierDetails().setAtd(null);
+            consolidationDetails.getCarrierDetails().setAta(null);
+            consolidationDetails.getCarrierDetails().setEta(null);
+            consolidationDetails.getCarrierDetails().setEtd(null);
         }
     }
 
@@ -262,11 +292,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     /**
      * Updates shipment's carrier details from main carriage routing legs based on tenantSettings
      */
-    private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
-        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(mainCarriageRoutings.get(0).getShipmentId());
-        if (shipmentDetailsOptional.isEmpty())
-            return;
-        ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+    private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings, ShipmentDetails shipmentDetails) {
         commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails.getCarrierDetails());
         updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails);

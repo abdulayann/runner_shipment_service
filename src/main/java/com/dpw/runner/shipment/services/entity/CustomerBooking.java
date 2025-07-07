@@ -70,7 +70,9 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "is_notify_party_free_text")
     private Boolean isNotifyPartyFreeText;
 
-    @Transient
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
+    @Where(clause = "entity_type = 'BOOKING_ADDITIONAL_PARTY'")
+    @BatchSize(size = 50)
     private List<Parties> additionalParties;
 
     @Column(name = "customer_email")

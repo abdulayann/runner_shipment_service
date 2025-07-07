@@ -1003,7 +1003,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Ensure packsType is assigned a defualt value
-        if (result.packsType == null) {
+        if (isStringNullOrEmpty(result.packsType)) {
             result.packsType = PackingConstants.PKG;
         }
 
@@ -1560,6 +1560,30 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
     }
 
+    public void generateV3Events(ConsolidationDetails consolidationDetailsV3) {
+        if (consolidationDetailsV3.getEventsList() == null) {
+            consolidationDetailsV3.setEventsList(new ArrayList<>());
+        }
+        consolidationDetailsV3.getEventsList().add(createV3Event(consolidationDetailsV3, EventConstants.COCR));
+    }
+
+    private Events createV3Event(ConsolidationDetails consolidationDetails, String eventCode) {
+        Events eventsV3 = new Events();
+        // Set event fields from consolidation
+        eventsV3.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+        eventsV3.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        eventsV3.setIsPublicTrackingEvent(true);
+        eventsV3.setEntityType(Constants.CONSOLIDATION);
+        eventsV3.setEntityId(consolidationDetails.getId());
+        eventsV3.setTenantId(TenantContext.getCurrentTenant());
+        eventsV3.setEventCode(eventCode);
+        eventsV3.setConsolidationId(consolidationDetails.getId());
+        eventsV3.setDirection(consolidationDetails.getShipmentType());
+        // Persist the event
+        eventDao.save(eventsV3);
+        return eventsV3;
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public String attachShipments(ShipmentConsoleAttachDetachV3Request request) throws RunnerException {
@@ -1696,7 +1720,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         // Send email notifications for accepted and rejected shipment mappings
         sendAcceptedAndRejectionEmails(interBranchRequestedShipIds, consolidationDetails,
                 shipmentRequestedTypes, consoleShipmentMappingsForEmails, shipmentDetailsList);
-
 
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
@@ -2261,10 +2284,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if(StringUtility.isNotEmpty(console.getCarrierDetails().getShippingLine())) {
                 shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
             }
-            shipmentDetails.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
-            shipmentDetails.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
-            shipmentDetails.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
-            shipmentDetails.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
 
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {

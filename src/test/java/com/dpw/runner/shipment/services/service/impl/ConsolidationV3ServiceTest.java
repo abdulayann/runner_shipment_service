@@ -5275,4 +5275,12 @@ if (unitConversionUtilityMockedStatic != null) {
     verify(consoleShipmentMappingDao).findByConsolidationId(any());
   }
 
+  @Test
+  void testGenerateV3Events() {
+    ConsolidationDetails consolidationDetails1 = testConsol;
+    consolidationDetails1.setEventsList(null);
+    consolidationV3Service.generateV3Events(consolidationDetails1);
+    verify(eventDao, times(1)).save(any());
+  }
+
 }

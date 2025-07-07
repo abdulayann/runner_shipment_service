@@ -42,8 +42,6 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.syncing.Entity.SaveStatus;
-import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IAwbSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
@@ -370,6 +368,9 @@ public class AwbService implements IAwbService {
             if (request == null) {
                 log.error("Request is empty for AWB list for Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
+            if(Boolean.TRUE.equals(request.getFromGenerateAwbButton())) {
+                validateBeforeGenerateAWB();
+            }
             // construct specifications for filter request
             Pair<Specification<Awb>, Pageable> tuple = fetchData(request, Awb.class);
             Page<Awb> awbPage = awbDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -410,6 +411,16 @@ public class AwbService implements IAwbService {
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void validateBeforeGenerateAWB() {
+        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsAmrAirFreightEnabled())) {
+            V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
+            TenantModel tenantModel = modelMapper.map(tenantResponse.getEntity(), TenantModel.class);
+            if(!Boolean.TRUE.equals(tenantModel.IATAAgent)) {
+                throw new ValidationException("Only IATA branches can generate AWB");
+            }
         }
     }
 

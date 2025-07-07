@@ -4318,14 +4318,23 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+        log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
         }
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
+        log.info("Fetching data with tables included: {}", request.getIncludeTbls());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        if (shipmentDetailsPage == null || shipmentDetailsPage.isEmpty()) {
+            log.warn("No shipment data found for export. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+        } else {
+            log.info("Shipment data fetched. Total records: {}", shipmentDetailsPage.getTotalElements());
+        }
+
         log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
@@ -4335,12 +4344,15 @@ public class ShipmentService implements IShipmentService {
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ShipmentList");
             makeHeadersInSheet(sheet, workbook);
+            log.info("Excel headers created successfully.");
 
             //Filling the data
             List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
+            log.info("Converted entity list to DTOs for export. Total DTO records: {}", shipmentListResponseData.size());
             for (int i = 0; i < shipmentListResponseData.size(); i++) {
                 processShipmentListResponseData(sheet, i, shipmentListResponseData, headerMap);
             }
+            log.info("Filled data into Excel sheet. Total rows written (excluding header): {}", shipmentListResponseData.size());
 
             LocalDateTime currentTime = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
@@ -4348,11 +4360,16 @@ public class ShipmentService implements IShipmentService {
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
             String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
             Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+
+            log.info("Export Excel limit is: {}. Records to export: {}", exportExcelLimit, shipmentListResponseData.size());
+
             if (shipmentListResponseData.size() > exportExcelLimit) {
                 // Send the file via email
+                log.info("Record count exceeds export limit. Sending Excel via email.");
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
             } else {
                 // Download it
+                response.reset();
                 response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
                 response.setHeader("Content-Disposition",
                     "attachment; filename=" + filenameWithTimestamp);
@@ -4360,12 +4377,14 @@ public class ShipmentService implements IShipmentService {
                 try (OutputStream outputStream = new BufferedOutputStream(
                     response.getOutputStream(), 8192 * 10)) {
                     workbook.write(outputStream);
+                    log.info("Excel file written to response successfully.");
                 } catch (IOException e) {
-                    log.error("Time out " + e.getMessage());
+                    log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
                 }
             }
         }
 
+        log.info("Export Excel process completed. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
     }
 
     private void processShipmentListResponseData(Sheet sheet, int i, List<IRunnerResponse> shipmentListResponseData, Map<String, Integer> headerMap) throws IllegalAccessException {
@@ -4424,7 +4443,7 @@ public class ShipmentService implements IShipmentService {
         addPartyNamesItemRow(headerMap, itemRow, shipment);
         itemRow.createCell(headerMap.get("HBL Number")).setCellValue(shipment.getHouseBill());
         itemRow.createCell(headerMap.get("BOE Number")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBOENumber() : "");
-        itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getScreeningStatus() : "");
+        itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? String.join(",",  shipment.getAdditionalDetails().getScreeningStatus()): "");
         addDateTimeDeliveryItemRows(headerMap, itemRow, shipment);
         itemRow.createCell(headerMap.get("Goods Description")).setCellValue(shipment.getGoodsDescription());
         itemRow.createCell(headerMap.get("Gross Weight")).setCellValue(String.valueOf(shipment.getWeight()));

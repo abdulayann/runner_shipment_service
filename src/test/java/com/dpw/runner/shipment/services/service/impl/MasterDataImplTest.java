@@ -1,11 +1,14 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -13,6 +16,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.Assertions;
@@ -24,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -47,6 +52,12 @@ class MasterDataImplTest {
 
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
+
+    @Mock
+    private ModelMapper modelMapper;
 
     @Mock
     private V1MasterDataImpl v1MasterData;
@@ -816,5 +827,18 @@ class MasterDataImplTest {
         Mockito.when(mdmServiceAdapter.createNonBillableCustomer(commonRequestModel)).thenReturn(responseEntity);
         ResponseEntity<IRunnerResponse> response = masterData.createNonBillableCustomer(commonRequestModel);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
+    @Test
+    void getDefaultOrgAddressByTenantIdTest() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
+        Mockito.when(v1Service.retrieveTenantByTenantId(Mockito.any())).thenReturn(V1RetrieveResponse.builder().build());
+        TenantModel tenantModel = new TenantModel();
+        Mockito.when(modelMapper.map(Mockito.any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        Mockito.when(v1ServiceUtil.getDefaultAgentOrg(Mockito.any())).thenReturn(PartiesResponse.builder().build());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.getDefaultOrgAddressByTenantId(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 }

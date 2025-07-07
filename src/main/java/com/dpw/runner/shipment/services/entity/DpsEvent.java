@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
 import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -168,6 +169,7 @@ public class DpsEvent {
     @AllArgsConstructor
     @Builder
     @Embeddable
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class DpsFieldData {
         private String key;
         private String id;

@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -157,12 +158,10 @@ class RoutingsV3ServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
                 .build();
-        //mockShipmentSettings();
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        //when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
         var resp = routingsService.create(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
@@ -196,16 +195,12 @@ class RoutingsV3ServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
                 .build();
-        //mockShipmentSettings();
-        shipmentDetails.getCarrierDetails().setIsSameAsDestinationPort(true);
-        shipmentDetails.getCarrierDetails().setIsSameAsOriginPort(true);
         when(routingsDao.findById(anyLong())).thenReturn(Optional.of(oldEntity));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(oldEntity);
         when(jsonHelper.convertValue(routingsRequest, Routings.class)).thenReturn(routings);
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        // when(routingsDao.findByShipmentIdAndCarriage(any(), any())).thenReturn(List.of(new Routings()));
         var resp = routingsService.update(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
@@ -320,6 +315,28 @@ class RoutingsV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testUpdateBulk_success_deleteMain() throws RunnerException {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .build();
+        shipmentDetails.setId(1l);
+        List<RoutingsRequest> requestList = Collections.emptyList();
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setEntityId(1l);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(Collections.emptyList());
+        when(routingsDao.saveAll(anyList())).thenReturn(Collections.emptyList());
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+    }
+    @Test
     void testConsolidationUpdateBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         routingsRequest.setId(2L);
         routings.setId(2L);
@@ -412,7 +429,6 @@ class RoutingsV3ServiceTest extends CommonMocks {
 
         verify(auditLogService, atLeastOnce()).addAuditLog(any());
     }
-
     @Test
     void testDeleteBulk_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         routingsRequest.setId(2L);
@@ -426,11 +442,52 @@ class RoutingsV3ServiceTest extends CommonMocks {
         verify(routingsDao).deleteByIdIn(anyList());
         verify(auditLogService).addAuditLog(any());
     }
+    @Test
+    void testConsolidationUpdateBulk_success_deleteMain() throws RunnerException {
+        routingsRequest.setId(2L);
+        routingsRequest.setEntityId(1l);
+        Routings routings1 = new Routings();
+        routings1.setId(3l);
+        routings1.setConsolidationId(1L);
+        routings1.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+
+        Routings routings2 = new Routings();
+        routings2.setId(3l);
+        routings2.setConsolidationId(1L);
+        routings2.setCarriage(RoutingCarriage.ON_CARRIAGE);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .routingsList(List.of(routings1, routings2))
+                .build();
+        shipmentDetails.setId(1l);
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .shipmentsList(Set.of(shipmentDetails))
+                .routingsList(List.of(routings1, routings2))
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setEntityId(1l);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings1, routings2));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(consolidationV3Service.getConsolidationById(anyLong())).thenReturn(consolidationDetails);
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.CONSOLIDATION);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+    }
 
     @Test
     void testList_Success() throws RunnerException {
         ListCommonRequest request = ListCommonRequest.builder().build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         RoutingsResponse routingsResponse = RoutingsResponse.builder().id(2L).build();
 
         Page<Routings> page = new PageImpl<>(List.of(routings));
@@ -445,7 +502,6 @@ class RoutingsV3ServiceTest extends CommonMocks {
 
     @Test
     void testList_RequestNull() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         assertThrows(RunnerException.class, () -> routingsService.list(null, Constants.SHIPMENT));
     }
 

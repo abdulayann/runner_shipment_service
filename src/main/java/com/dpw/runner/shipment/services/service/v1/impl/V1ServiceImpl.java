@@ -299,6 +299,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.tenantNameByTenantId}")
     private String TENANT_NAME_BY_ID;
 
+    @Value("${v1service.url.base}${v1service.url.tenantDataByTenantId}")
+    private String TENANT_DATA_BY_TENANT_ID;
+
     @Value("${v1service.url.base}${v1service.url.chargeType}")
     private String CHARGE_TYPE_URL;
     @Value("${v1service.url.base}${v1service.url.retrieveChargeType}")
@@ -2699,6 +2702,22 @@ public class V1ServiceImpl implements IV1Service {
                 return jsonHelper.convertValueToList(body.getEntities(), UsersDto.class);
             }
             return new ArrayList<>();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1RetrieveResponse retrieveTenantByTenantId(Object request) {
+        ResponseEntity<V1RetrieveResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.TENANT_DATA_BY_TENANT_ID, entity, V1RetrieveResponse.class);
+            log.info("Token time taken in tenantDataByTenantId() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
