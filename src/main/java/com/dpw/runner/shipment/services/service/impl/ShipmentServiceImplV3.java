@@ -1874,8 +1874,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     .map(ShipmentPacksAssignContainerTrayDto.Shipments.Packages::getContainerId)
                     .filter(Objects::nonNull)
                     .forEach(containerIds::add);
-            if(shipments.getContainerAssignedToShipmentCargo() != null)
-                containerIds.add(shipments.getContainerAssignedToShipmentCargo());
         }
         setContainerNumberAndMasterData(response, containerIds);
 
@@ -1941,10 +1939,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         packages.setContainerCode(containerIdNumberMap.get(packages.getContainerId()).getContainerCode());
                     }
                 }
-            }
-            if(Objects.nonNull(shipments.getContainerAssignedToShipmentCargo()) && containerIdNumberMap.containsKey(shipments.getContainerAssignedToShipmentCargo())) {
-                shipments.setContainerNumberAssignedToShipmentCargo(containerIdNumberMap.get(shipments.getContainerAssignedToShipmentCargo()).getContainerNumber());
-                shipments.setContainerCodeAssignedToShipmentCargo(containerIdNumberMap.get(shipments.getContainerAssignedToShipmentCargo()).getContainerCode());
             }
         }
         addCommodityMasterData(response);

@@ -74,9 +74,6 @@ public class PackingResponse implements IRunnerResponse {
     private String chargeableUnit;
     private String customsReleaseCode;
     private String shipmentNumber;
-    private Long shipmentContainerAssignedToShipmentCargo;
-    private String shipmentContainerNumberAssignedToShipmentCargo;
-    private String shipmentContainerCodeAssignedToShipmentCargo;
     private Boolean shipmentHazardous;
     private Long innerPacksId;
     private Long innerPacksCount;

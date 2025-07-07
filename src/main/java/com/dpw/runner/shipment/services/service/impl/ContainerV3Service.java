@@ -23,6 +23,12 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -46,6 +52,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -73,7 +80,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -1240,7 +1246,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException {
-        // make sure pack ids is empty if not available (i.e. never null)
+        // make sure pack ids is empty (never null)
         request.setShipmentPackIds(request.getShipmentPackIds().entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
@@ -1258,19 +1264,16 @@ public class ContainerV3Service implements IContainerV3Service {
                                         packingListMap, assignedPacks, shipmentsContainersMappings, assignedShipIds);
 
         List<Long> shipmentIdsToSetContainerCargo = new ArrayList<>();
-        List<Long> shipmentIdsToRemoveContainerCargo = new ArrayList<>();
 
         // validate before assign container
-        containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, module);
+        containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap);
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, request,
-                                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks,
-                                                                shipmentIdsToRemoveContainerCargo, module);
+                                                                shipmentIdsToSetContainerCargo, container, packingListMap, assignedPacks, module);
 
         // Save the data
-        container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container,
-                                                shipmentIdsForAttachment, shipmentIdsToRemoveContainerCargo);
+        container = saveAssignContainerResults(shipmentIdsToSetContainerCargo, packingListMap, container, shipmentIdsForAttachment);
 
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
@@ -1357,7 +1360,7 @@ public class ContainerV3Service implements IContainerV3Service {
     protected List<Long> assignContainerCalculationsAndLogic(Map<Long, ShipmentDetails> shipmentDetailsMap, Set<Long> assignedShipIds,
                                                            AssignContainerRequest request, List<Long> shipmentIdsToSetContainerCargo,
                                                            Containers container, Map<Long, Packing> packingListMap,
-                                                           List<Packing> assignedPacks, List<Long> shipmentIdsToRemoveContainerCargo, String module) throws RunnerException {
+                                                           List<Packing> assignedPacks, String module) throws RunnerException {
         List<Long> shipmentIdsForAttachment = new ArrayList<>();
         for (Long id : request.getShipmentPackIds().keySet()) {
             ShipmentDetails shipmentDetails = shipmentDetailsMap.get(id);
@@ -1367,7 +1370,7 @@ public class ContainerV3Service implements IContainerV3Service {
             if (listIsNullOrEmpty(request.getShipmentPackIds().get(id))) { // zero packages came for this shipment
                 assignContainerOnlyToShipment(shipmentDetails, container, shipmentIdsToSetContainerCargo);
             } else { // assigning some packages
-                assignContainerToShipmentAndPackages(shipmentDetails, request, container, packingListMap, shipmentIdsToRemoveContainerCargo, module);
+                assignContainerToShipmentAndPackages(shipmentDetails, request, container, packingListMap, module);
             }
         }
         if (!listIsNullOrEmpty(assignedPacks)) { // adding weight/volume of already assigned packs
@@ -1386,22 +1389,11 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void assignContainerOnlyToShipment(ShipmentDetails shipmentDetails, Containers container,
                                                List<Long> shipmentIdsToSetContainerCargo) throws RunnerException {
-        // throw error if shipment cargo summary already assigned to any container
-        if(shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
-            throw new ValidationException(String.format(Constants.STRING_FORMAT, CONTAINER_ALREADY_ASSIGNED_MSG,
-                    containerV3Util.getContainerNumberOrType(shipmentDetails.getContainerAssignedToShipmentCargo())));
+        if (shipmentDetails.getContainerAssignedToShipmentCargo() == null &&
+                !checkIfAnyPackIsAssignedToContainer(shipmentDetails)) { // if both cargo summary and package not attached to any container
+            shipmentIdsToSetContainerCargo.add(shipmentDetails.getId()); // assign container to shipment cargo
+            addShipmentCargoToContainer(container, shipmentDetails);
         }
-
-        // throw error if any pack is already assigned to any container
-        Long assignedCont = checkIfAnyPackIsAssignedToContainer(shipmentDetails);
-        if(!Objects.equals(assignedCont, 0L)) {
-            throw new ValidationException(String.format(Constants.STRING_FORMAT, CONTAINER_ALREADY_ASSIGNED_MSG,
-                    containerV3Util.getContainerNumberOrType(assignedCont)));
-        }
-
-        shipmentIdsToSetContainerCargo.add(shipmentDetails.getId()); // assign container to shipment cargo
-        shipmentDetails.setContainerAssignedToShipmentCargo(container.getId());
-        addShipmentCargoToContainer(container, shipmentDetails);
     }
 
     @Override
@@ -1419,40 +1411,12 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void assignContainerToShipmentAndPackages(ShipmentDetails shipmentDetails, AssignContainerRequest request, Containers container,
-                                                      Map<Long, Packing> packingListMap,
-                                                      List<Long> shipmentIdsToRemoveContainerCargo, String module) throws RunnerException {
-        handleValidationOrDetachmentIfCargoSummaryAlreadyAttached(shipmentDetails, request, container, shipmentIdsToRemoveContainerCargo, module);
+                                                      Map<Long, Packing> packingListMap, String module) throws RunnerException {
+        containerValidationUtil.validateCanAssignPackageToContainer(shipmentDetails, module);
         for (Long packingId : request.getShipmentPackIds().get(shipmentDetails.getId())) { // assigning new packs and adding its weight/volume
             Packing packing = packingListMap.get(packingId);
             packing.setContainerId(container.getId());
             addPackageDataToContainer(container, packing);
-        }
-    }
-
-    private void handleValidationOrDetachmentIfCargoSummaryAlreadyAttached(ShipmentDetails shipmentDetails, AssignContainerRequest request,
-                                                                           Containers container, List<Long> shipmentIdsToRemoveContainerCargo,
-                                                                           String module) throws RunnerException {
-        // shipment cargo summary already assigned with container
-        if (shipmentDetails.getContainerAssignedToShipmentCargo() != null) {
-
-            // throw error if detach of cargo not allowed
-            if(!Boolean.TRUE.equals(request.getAllowCargoDetachIfRequired())) {
-                containerValidationUtil.validateCanAssignPackageToContainer(shipmentDetails, module);
-
-            } else { // if detach of cargo summary allowed then first un-assign the existing container from Cargo Summary
-
-                // if same container is being assigned, just remove cargo summary
-                if(shipmentDetails.getContainerAssignedToShipmentCargo().equals(container.getId())) {
-                    shipmentIdsToRemoveContainerCargo.add(shipmentDetails.getId());
-                    shipmentDetails.setContainerAssignedToShipmentCargo(null);
-                }
-                else { // call un-assign action if different container is assigned to shipment cargo summary
-                    UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
-                    unAssignContainerRequest.setContainerId(shipmentDetails.getContainerAssignedToShipmentCargo());
-                    unAssignContainerRequest.setShipmentPackIds(Map.of(shipmentDetails.getId(), new ArrayList<>()));
-                    unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL);
-                }
-            }
         }
     }
 
@@ -1463,12 +1427,9 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
-                                                  Containers container, List<Long> shipmentIdsForAttachment,
-                                                  List<Long> shipmentIdsToRemoveContainerCargo) throws RunnerException {
+                                                  Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
         if (!listIsNullOrEmpty(shipmentIdsToSetContainerCargo))
             shipmentDao.setShipmentIdsToContainer(shipmentIdsToSetContainerCargo, container.getId());
-        if(!listIsNullOrEmpty(shipmentIdsToRemoveContainerCargo))
-            shipmentDao.setShipmentIdsToContainer(shipmentIdsToRemoveContainerCargo, null);
         if (!packingListMap.isEmpty() && !listIsNullOrEmpty(packingListMap.values().stream().toList()))
             packingDao.saveAll(packingListMap.values().stream().toList());
         container = containerDao.save(container);
@@ -1488,12 +1449,23 @@ public class ContainerV3Service implements IContainerV3Service {
         return container;
     }
 
-    private Long checkIfAnyPackIsAssignedToContainer(ShipmentDetails shipmentDetails) {
+    private boolean checkIfAnyPackIsAssignedToContainer(ShipmentDetails shipmentDetails) {
         for (Packing packing : shipmentDetails.getPackingList()) {
             if (packing.getContainerId() != null)
-                return packing.getContainerId();
+                return true;
         }
-        return 0L;
+        return false;
+    }
+
+    private boolean checkIfAnyPackOrCargoSummaryIsAssignedToAnotherContainer(ShipmentDetails shipmentDetails, Long containerId) {
+        if(shipmentDetails.getContainerAssignedToShipmentCargo() != null &&
+                !Objects.equals(containerId, shipmentDetails.getContainerAssignedToShipmentCargo()))
+            return true;
+        for (Packing packing : shipmentDetails.getPackingList()) {
+            if (packing.getContainerId() != null && !Objects.equals(containerId, packing.getContainerId()))
+                return true;
+        }
+        return false;
     }
 
     @Override
@@ -1525,14 +1497,16 @@ public class ContainerV3Service implements IContainerV3Service {
 
         List<Long> shipmentIdsForCargoDetachment = new ArrayList<>();
         List<Long> removeAllPackingIds = new ArrayList<>();
+        Map<Containers, List<Long>> containerShipmentCargoAttachmentMap = new HashMap<>();
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForDetachment = unAssignContainerCalculationsAndLogic(request, container, shipmentDetailsMap, shipmentPackingMap,
-                                                                                    shipmentIdsForCargoDetachment, removeAllPackingIds);
+                                                                                    shipmentIdsForCargoDetachment, removeAllPackingIds,
+                                                                                    containerShipmentCargoAttachmentMap);
 
         // Save the data
         container = saveUnAssignContainerResults(shipmentIdsForDetachment, removeAllPackingIds, shipmentIdsForCargoDetachment,
-                                                    container, shipmentsContainersMappings);
+                                                    container, shipmentsContainersMappings, containerShipmentCargoAttachmentMap);
 
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
@@ -1572,7 +1546,8 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private List<Long> unAssignContainerCalculationsAndLogic(UnAssignContainerRequest request, Containers container, Map<Long,ShipmentDetails> shipmentDetailsMap,
                                                              Map<Long, List<Packing>> shipmentPackingMap, List<Long> shipmentIdsForCargoDetachment,
-                                                             List<Long> removeAllPackingIds) throws RunnerException {
+                                                             List<Long> removeAllPackingIds,
+                                                             Map<Containers, List<Long>> containerShipmentCargoAttachmentMap) throws RunnerException {
         List<Long> shipmentIdsForDetachment = new ArrayList<>();
 
         for (Map.Entry<Long, ShipmentDetails> entry : shipmentDetailsMap.entrySet()) {
@@ -1582,7 +1557,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
             if (request.getShipmentPackIds().containsKey(shipmentId)) { // Shipment came for some/all packs detachment
                 detachPacksAndShipmentFromContainer(request, container, packingList, shipmentIdsForCargoDetachment,
-                        shipmentIdsForDetachment, removeAllPackingIds, shipmentDetails);
+                        shipmentIdsForDetachment, removeAllPackingIds, shipmentDetails, containerShipmentCargoAttachmentMap);
             } else { // Shipment and its packages remains intact i.e. not being detached
                 addExistingShipmentAndPackagesToContainer(shipmentDetails, container, packingList);
             }
@@ -1595,7 +1570,8 @@ public class ContainerV3Service implements IContainerV3Service {
     private void detachPacksAndShipmentFromContainer(UnAssignContainerRequest request, Containers container,
                                                      List<Packing> packingList, List<Long> shipmentIdsForCargoDetachment,
                                                      List<Long> shipmentIdsForDetachment, List<Long> removeAllPackingIds,
-                                                     ShipmentDetails shipmentDetails) throws RunnerException {
+                                                     ShipmentDetails shipmentDetails,
+                                                     Map<Containers, List<Long>> containerShipmentCargoAttachmentMap) throws RunnerException {
         Long shipmentId = shipmentDetails.getId();
         Set<Long> removePackIds = new HashSet<>(request.getShipmentPackIds().get(shipmentId));
 
@@ -1607,10 +1583,13 @@ public class ContainerV3Service implements IContainerV3Service {
             if (Objects.equals(shipmentDetails.getContainerAssignedToShipmentCargo(),
                     container.getId())) { // shipment cargo was linked to this container
                 shipmentIdsForCargoDetachment.add(shipmentId);
-                shipmentDetails.setContainerAssignedToShipmentCargo(null); // check if required
             }
             // remove containerId from packages
             packingList.forEach(e -> e.setContainerId(null));
+            // if any other container not linked with any pack or cargo summary, link any first container to cargo summary
+            if(!checkIfAnyPackOrCargoSummaryIsAssignedToAnotherContainer(shipmentDetails, container.getId())) {
+                addAnyFirstContainerToCargoSummary(shipmentDetails, container, containerShipmentCargoAttachmentMap);
+            }
         } else { // only some packages are being removed from container
             removeAllPackingIds.addAll(removePackIds);
             // add data of remaining packages to container
@@ -1619,6 +1598,20 @@ public class ContainerV3Service implements IContainerV3Service {
                     addPackageDataToContainer(container, packing);
                 } else { // this pack is being detached
                     packing.setContainerId(null);
+                }
+            }
+        }
+    }
+
+    private void addAnyFirstContainerToCargoSummary(ShipmentDetails shipmentDetails, Containers container,
+                                                    Map<Containers, List<Long>> containerShipmentCargoAttachmentMap) throws RunnerException {
+        if(!setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+            for(Containers shipmentContainers: shipmentDetails.getContainersList()) {
+                if(!Objects.equals(container.getId(), shipmentContainers.getId())) {
+                    addShipmentCargoToContainer(shipmentContainers, shipmentDetails);
+                    containerShipmentCargoAttachmentMap.computeIfAbsent(shipmentContainers, k -> new ArrayList<>());
+                    containerShipmentCargoAttachmentMap.get(shipmentContainers).add(shipmentDetails.getId());
+                    break;
                 }
             }
         }
@@ -1637,12 +1630,24 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private Containers saveUnAssignContainerResults(List<Long> shipmentIdsForDetachment, List<Long> removeAllPackingIds,
                                                     List<Long> shipmentIdsForCargoDetachment, Containers container,
-                                                    List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+                                                    List<ShipmentsContainersMapping> shipmentsContainersMappings,
+                                                    Map<Containers, List<Long>> containerShipmentCargoAttachmentMap) {
         if (!listIsNullOrEmpty(shipmentIdsForCargoDetachment))
             shipmentDao.setShipmentIdsToContainer(shipmentIdsForCargoDetachment, null);
         if (!listIsNullOrEmpty(removeAllPackingIds))
             packingDao.setPackingIdsToContainer(removeAllPackingIds, null);
         container = containerDao.save(container);
+
+        // attach shipment cargo to another container
+        if(!containerShipmentCargoAttachmentMap.isEmpty()) {
+            List<Containers> containersToSave = new ArrayList<>();
+            for(Map.Entry<Containers, List<Long>> entry: containerShipmentCargoAttachmentMap.entrySet()) {
+                containersToSave.add(entry.getKey());
+                shipmentDao.setShipmentIdsToContainer(entry.getValue(), entry.getKey().getId());
+            }
+            if(!listIsNullOrEmpty(containersToSave))
+                containerDao.saveAll(containersToSave);
+        }
 
         // detach shipment from containers
         List<ShipmentsContainersMapping> shipmentsContainersMappingList = new ArrayList<>();
@@ -1686,82 +1691,6 @@ public class ContainerV3Service implements IContainerV3Service {
             containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight
         }
         containerDao.saveAll(containers.stream().toList());
-    }
-
-    @Override
-    public ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException {
-        ListCommonRequest enrichedRequest;
-
-        if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
-            enrichedRequest = CommonUtils.constructListCommonRequest(
-                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
-        } else {
-            enrichedRequest = CommonUtils.andCriteria(
-                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
-        }
-
-        // Carry forward pagination, sorting, and search text
-        enrichedRequest.setSortRequest(request.getSortRequest());
-        enrichedRequest.setPageNo(request.getPageNo());
-        enrichedRequest.setPageSize(request.getPageSize());
-        enrichedRequest.setContainsText(request.getContainsText());
-
-        ContainerListResponse containerListResponse;
-        try {
-            Pair<Specification<Containers>, Pageable> tuple;
-            if(ObjectUtils.isEmpty(enrichedRequest.getContainsText())){
-                tuple = fetchData(enrichedRequest, Containers.class);
-            } else {
-                tuple = fetchData(enrichedRequest, Containers.class, ContainerConstants.TABLES_NAMES);
-            }
-
-            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
-            log.info("Containers list for get containers retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            List<String> includeColumns = List.of("id", "guid", "tenantId", "containerNumber", "containerCode");
-
-            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
-            containerListResponse = ContainerListResponse.builder()
-                    .containers(responseList)
-                    .numberOfRecords(containersPage.getTotalElements())
-                    .totalPages(containersPage.getTotalPages())
-                    .build();
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
-        }
-
-        List<ContainerBaseResponse> containers = containerListResponse.getContainers();
-        if (CollectionUtils.isEmpty(containers)) {
-            log.info("No containers found for consolidation.");
-            return containerListResponse;
-        }
-
-        List<Long> containerIds = containers.stream().map(ContainerBaseResponse::getId)
-                .filter(Objects::nonNull).distinct().toList();
-
-        List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
-
-        Map<Long, List<ShipmentDetailsProjection>> containerIdToShipmentDetailsMap =
-                attachedShipmentDetails.stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.groupingBy(ShipmentDetailsProjection::getContainerId));
-
-        containers.forEach(container -> {
-            List<ShipmentDetailsProjection> details = containerIdToShipmentDetailsMap.get(container.getId());
-
-            if (ObjectUtils.isNotEmpty(details)) {
-                List<AttachedShipmentResponse> attachedShipmentResponseList = details.stream()
-                        .map(detail -> AttachedShipmentResponse.builder()
-                                .attachedShipmentId(detail.getId())
-                                .attachedShipmentNumber(detail.getShipmentNumber())
-                                .attachedShipmentType(detail.getShipmentType())
-                                .build())
-                        .toList();
-
-                container.setAttachedShipmentResponses(attachedShipmentResponseList);
-            }
-        });
-
-        return containerListResponse;
     }
 
 }

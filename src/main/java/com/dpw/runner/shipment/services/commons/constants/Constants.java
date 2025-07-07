@@ -67,7 +67,6 @@ public class Constants {
     public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
-    public static final String CONTAINER_INTERNAL_CALL = "CONTAINER_INTERNAL_CALL";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
     public static final String PRE_CARRIAGE = "PreCarriage";

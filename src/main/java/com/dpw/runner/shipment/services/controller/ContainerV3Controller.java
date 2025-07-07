@@ -141,11 +141,4 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONTAINER));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
-    @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
-    public ResponseEntity<IRunnerResponse> fetchConsolidationContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
-        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest);
-        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
-    }
-
 }

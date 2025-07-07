@@ -41,8 +41,6 @@ public class ShipmentPacksAssignContainerTrayDto implements IRunnerResponse {
         private boolean selectedContainerAssigned;
         private String shipmentType;
         private Long containerAssignedToShipmentCargo;
-        private String containerNumberAssignedToShipmentCargo;
-        private String containerCodeAssignedToShipmentCargo;
 
         @Data
         @Builder
