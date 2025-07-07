@@ -235,11 +235,15 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + createTaskUrl;
         try {
             log.info("Calling MDM createTask api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-            ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
-                RequestEntity.post(URI.create(url)).body(request),
-                DependentServiceResponse.class
-            );
+            ResponseEntity<DependentServiceResponse> response =  restTemplate.postForEntity(url, jsonHelper.convertToJson(request), DependentServiceResponse.class);
             log.info("MDM createTask api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            Object data = Objects.requireNonNull(response.getBody()).getData();
+
+            if (data instanceof List<?> dataList && !dataList.isEmpty()) {
+                Object firstElement = dataList.get(0);
+                MdmTaskCreateResponse responseObj = jsonHelper.convertValue(firstElement, MdmTaskCreateResponse.class);
+                return responseObj;
+            }
             return jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), MdmTaskCreateResponse.class);
         } catch (Exception ex) {
             String errorMessage = ex.getMessage();
