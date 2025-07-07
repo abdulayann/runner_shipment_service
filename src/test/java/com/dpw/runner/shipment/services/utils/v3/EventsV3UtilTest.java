@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -293,6 +295,36 @@ class EventsV3UtilTest extends CommonMocks {
     }
 
     @Test
+    void testProcessBOCOEventWithImpShipment() throws Exception {
+        Method processBOCOEventMethod = EventsV3Util.class.getDeclaredMethod(
+                "processBOCOEvent",
+                ShipmentDetails.class,
+                ShipmentDetails.class,
+                List.class,
+                Boolean.class,
+                Map.class);
+        processBOCOEventMethod.setAccessible(true);
+
+        List<Events> events = new ArrayList<>();
+        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
+
+        shipmentDetails.setBookingNumber("BOOK-123");
+        shipmentDetails.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+        oldEntity.setBookingNumber(null);
+        processBOCOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+
+        events.clear();
+        List<Events> dbEvents = new ArrayList<>();
+        Events dbEvent = createEvent(EventConstants.BOCO);
+        dbEvent.setContainerNumber("OLD-BOOKING");
+        dbEvents.add(dbEvent);
+        cargoesRunnerDbEvents.put(EventConstants.BOCO, dbEvents);
+
+        processBOCOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+    }
+
+    @Test
     void testCreateBOCOEvent() throws Exception {
         Method createBOCOEventMethod = EventsV3Util.class.getDeclaredMethod(
                 "createBOCOEvent",
@@ -347,6 +379,34 @@ class EventsV3UtilTest extends CommonMocks {
     }
 
     @Test
+    void testProcessCADEEventWithImpShipment() throws Exception {
+        Method processCADEEventMethod = EventsV3Util.class.getDeclaredMethod(
+                "processCADEEvent",
+                ShipmentDetails.class,
+                ShipmentDetails.class,
+                List.class,
+                Boolean.class,
+                Map.class);
+        processCADEEventMethod.setAccessible(true);
+
+        shipmentDetails.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+        List<Events> events = new ArrayList<>();
+        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
+
+        processCADEEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        events.clear();
+        List<Events> dbEvents = new ArrayList<>();
+        Events dbEvent = createEvent(EventConstants.CADE);
+        dbEvents.add(dbEvent);
+        cargoesRunnerDbEvents.put(EventConstants.CADE, dbEvents);
+
+        processCADEEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+
+        assertEquals(0, events.size());
+    }
+
+    @Test
     void testProcessCACOEvent() throws Exception {
         Method processCACOEventMethod = EventsV3Util.class.getDeclaredMethod(
                 "processCACOEvent",
@@ -374,6 +434,35 @@ class EventsV3UtilTest extends CommonMocks {
         processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
 
         verify(eventDao).updateUserFieldsInEvent(dbEvent, true);
+        assertEquals(0, events.size());
+    }
+
+    @Test
+    void testProcessCACOEventWithImpShipment() throws Exception {
+        Method processCACOEventMethod = EventsV3Util.class.getDeclaredMethod(
+                "processCACOEvent",
+                ShipmentDetails.class,
+                ShipmentDetails.class,
+                List.class,
+                Boolean.class,
+                Map.class);
+        processCACOEventMethod.setAccessible(true);
+
+        List<Events> events = new ArrayList<>();
+        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
+        shipmentDetails.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetails.setSourceGuid(UUID.randomUUID());
+
+        processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+
+        events.clear();
+        List<Events> dbEvents = new ArrayList<>();
+        Events dbEvent = createEvent(EventConstants.CACO);
+        dbEvents.add(dbEvent);
+        cargoesRunnerDbEvents.put(EventConstants.CACO, dbEvents);
+
+        processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+
         assertEquals(0, events.size());
     }
 

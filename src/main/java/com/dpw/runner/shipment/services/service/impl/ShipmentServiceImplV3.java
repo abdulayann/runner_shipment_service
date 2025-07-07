@@ -2399,7 +2399,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails);
-            generateAfterSaveEvents(shipmentDetails);
+            generateAfterSaveEvents(shipmentDetails, shipmentSettingsDetails);
             Long shipmentId = shipmentDetails.getId();
             if(consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
@@ -2440,22 +2440,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return shipmentDetailsResponse;
     }
 
-    private void generateAfterSaveEvents(ShipmentDetails shipmentDetails) {
-
+    private void generateAfterSaveEvents(ShipmentDetails shipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
         if(ObjectUtils.isNotEmpty(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getId())){
             createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
         }
-        if (Objects.nonNull(shipmentDetails.getAdditionalDetails().getPickupDate())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.CACO, commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null);
-        }
-        if (Objects.nonNull(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.CADE, commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null);
-        }
-        if (Objects.nonNull(shipmentDetails.getBrokerageAtOriginDate())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.ECCC, commonUtils.getUserZoneTime(shipmentDetails.getBrokerageAtOriginDate()), null);
-        }
-        if (Objects.nonNull(shipmentDetails.getBookingNumber())) {
-            createAutomatedEvents(shipmentDetails, EventConstants.BOCO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+        List<Events> eventsList = new ArrayList<>();
+        eventsList = setEventDetails(eventsList, shipmentDetails);
+        eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, null, eventsList, true);
+        if (eventsList != null) {
+            commonUtils.updateEventWithMasterData(eventsList);
+            List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), Constants.SHIPMENT);
+            shipmentDetails.setEventsList(updatedEvents);
+            eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
         }
     }
 
