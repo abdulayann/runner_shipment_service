@@ -60,6 +60,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -166,6 +167,10 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private ContainerV3Util containerV3Util;
+
+    @Autowired
+    @Lazy
+    private ContainerV3Service self;
 
     @Autowired
     private IPackingV3Service packingService;
@@ -1488,7 +1493,7 @@ public class ContainerV3Service implements IContainerV3Service {
                     UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
                     unAssignContainerRequest.setContainerId(shipmentDetails.getContainerAssignedToShipmentCargo());
                     unAssignContainerRequest.setShipmentPackIds(Map.of(shipmentDetails.getId(), new ArrayList<>()));
-                    unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL);
+                    self.unAssignContainers(unAssignContainerRequest, CONTAINER_INTERNAL_CALL);
                 }
             }
         }
