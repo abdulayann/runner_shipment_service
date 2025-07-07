@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -177,7 +178,7 @@ class ContainerValidationUtilTest extends CommonMocks {
     void testValidateCanAssignPackageToContainer2() {
         testShipment.setId(2L);
         testShipment.setContainerAssignedToShipmentCargo(null);
-        assertDoesNotThrow(() -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment, Constants.CONTAINER));
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment, Constants.CONTAINER));
     }
 
     @Test
@@ -185,7 +186,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         testShipment.setId(1L);
         testShipment.setContainerAssignedToShipmentCargo(1L);
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        AssignContainerRequest request = new AssignContainerRequest();
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
     }
 
     @Test
@@ -196,7 +198,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
-        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        AssignContainerRequest request = new AssignContainerRequest();
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
     }
 
     @Test
@@ -207,7 +210,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        AssignContainerRequest request = new AssignContainerRequest();
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
     }
 
     @Test
