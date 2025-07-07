@@ -768,21 +768,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public ContainerListResponse fetchConsolidationContainers(ListCommonRequest request, String xSource) throws RunnerException {
-        ListCommonRequest enrichedRequest;
-
-        if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
-            enrichedRequest = CommonUtils.constructListCommonRequest(
-                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
-        } else {
-            enrichedRequest = CommonUtils.andCriteria(
-                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
-        }
-
-        // Carry forward pagination, sorting, and search text
-        enrichedRequest.setSortRequest(request.getSortRequest());
-        enrichedRequest.setPageNo(request.getPageNo());
-        enrichedRequest.setPageSize(request.getPageSize());
-        enrichedRequest.setContainsText(request.getContainsText());
+        ListCommonRequest enrichedRequest = getEnrichedRequest(request);
 
         ContainerListResponse containerListResponse;
         try {
@@ -1800,9 +1786,8 @@ public class ContainerV3Service implements IContainerV3Service {
 
         return payloadDetail;
     }
-    
-    @Override
-    public ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException {
+
+    private ListCommonRequest getEnrichedRequest(ListCommonRequest request) {
         ListCommonRequest enrichedRequest;
 
         if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
@@ -1818,6 +1803,12 @@ public class ContainerV3Service implements IContainerV3Service {
         enrichedRequest.setPageNo(request.getPageNo());
         enrichedRequest.setPageSize(request.getPageSize());
         enrichedRequest.setContainsText(request.getContainsText());
+        return enrichedRequest;
+    }
+    
+    @Override
+    public ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException {
+        ListCommonRequest enrichedRequest = getEnrichedRequest(request);
 
         ContainerListResponse containerListResponse;
         try {

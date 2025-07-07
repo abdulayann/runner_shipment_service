@@ -708,16 +708,7 @@ public class PackingV3Service implements IPackingV3Service {
                     packingResponse.setShipmentContainerAssignedToShipmentCargo(shipmentDetails.getContainerAssignedToShipmentCargo());
             });
         }
-        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
-            Set<Long> containerIds = packingListResponse.getPackings().stream()
-                    .flatMap(packing -> Stream.of(packing.getContainerId(), packing.getShipmentContainerAssignedToShipmentCargo()))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-            if (!CollectionUtils.isEmpty(containerIds)) {
-                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
-                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
-            }
-        }
+        processAfterList(packingListResponse);
         return packingListResponse;
     }
 
@@ -780,6 +771,12 @@ public class PackingV3Service implements IPackingV3Service {
                    packingResponse.setShipmentContainerAssignedToShipmentCargo(shipmentDetails.getContainerAssignedToShipmentCargo());
             });
         }
+        processAfterList(packingListResponse);
+        return packingListResponse;
+
+    }
+
+    private void processAfterList(PackingListResponse packingListResponse) {
         if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
             Set<Long> containerIds = packingListResponse.getPackings().stream()
                     .flatMap(packing -> Stream.of(packing.getContainerId(), packing.getShipmentContainerAssignedToShipmentCargo()))
@@ -790,8 +787,6 @@ public class PackingV3Service implements IPackingV3Service {
                 processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
             }
         }
-        return packingListResponse;
-
     }
 
     @Data
