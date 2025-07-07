@@ -3062,7 +3062,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Map<String, Object>> mapList;
         try {
-            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENT, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
+            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENTS_WITH_SQ_BRACKETS, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
         }
         catch (Exception ex) {
             log.error("Failed to fetch pending tasks from MDM with RequestId - {} : {}: ", LoggerHelper.getRequestIdFromMDC(), ex);
@@ -3081,7 +3081,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             taskGuids.add(map.get("uuid").toString());
         }
         request.setTaskGuids(taskGuids);
-        request.setUserEmail(mapList.get(0).get("userEmail").toString());
+        //TODO: MDM team will provide this
+        if(mapList.get(0).containsKey("userEmail")){
+            request.setUserEmail(mapList.get(0).get("userEmail").toString());
+        }
+
     }
 
     private void closeOceanDgTask(OceanDGRequestV3 request){
