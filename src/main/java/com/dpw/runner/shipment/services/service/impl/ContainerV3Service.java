@@ -1261,7 +1261,7 @@ public class ContainerV3Service implements IContainerV3Service {
         List<Long> shipmentIdsToRemoveContainerCargo = new ArrayList<>();
 
         // validate before assign container
-        containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap);
+        containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, module);
 
         // Do calculations/logic implementation
         List<Long> shipmentIdsForAttachment = assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, request,
@@ -1686,6 +1686,82 @@ public class ContainerV3Service implements IContainerV3Service {
             containerV3Util.setContainerNetWeight(containers1); // set container net weight from gross weight and tare weight
         }
         containerDao.saveAll(containers.stream().toList());
+    }
+
+    @Override
+    public ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException {
+        ListCommonRequest enrichedRequest;
+
+        if (CollectionUtils.isEmpty(request.getFilterCriteria())) {
+            enrichedRequest = CommonUtils.constructListCommonRequest(
+                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ);
+        } else {
+            enrichedRequest = CommonUtils.andCriteria(
+                    CONSOLIDATION_ID, Long.valueOf(request.getEntityId()), Constants.EQ, request);
+        }
+
+        // Carry forward pagination, sorting, and search text
+        enrichedRequest.setSortRequest(request.getSortRequest());
+        enrichedRequest.setPageNo(request.getPageNo());
+        enrichedRequest.setPageSize(request.getPageSize());
+        enrichedRequest.setContainsText(request.getContainsText());
+
+        ContainerListResponse containerListResponse;
+        try {
+            Pair<Specification<Containers>, Pageable> tuple;
+            if(ObjectUtils.isEmpty(enrichedRequest.getContainsText())){
+                tuple = fetchData(enrichedRequest, Containers.class);
+            } else {
+                tuple = fetchData(enrichedRequest, Containers.class, ContainerConstants.TABLES_NAMES);
+            }
+
+            Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
+            log.info("Containers list for get containers retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            List<String> includeColumns = List.of("id", "guid", "tenantId", "containerNumber", "containerCode");
+
+            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+            containerListResponse = ContainerListResponse.builder()
+                    .containers(responseList)
+                    .numberOfRecords(containersPage.getTotalElements())
+                    .totalPages(containersPage.getTotalPages())
+                    .build();
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
+        }
+
+        List<ContainerBaseResponse> containers = containerListResponse.getContainers();
+        if (CollectionUtils.isEmpty(containers)) {
+            log.info("No containers found for consolidation.");
+            return containerListResponse;
+        }
+
+        List<Long> containerIds = containers.stream().map(ContainerBaseResponse::getId)
+                .filter(Objects::nonNull).distinct().toList();
+
+        List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
+
+        Map<Long, List<ShipmentDetailsProjection>> containerIdToShipmentDetailsMap =
+                attachedShipmentDetails.stream()
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.groupingBy(ShipmentDetailsProjection::getContainerId));
+
+        containers.forEach(container -> {
+            List<ShipmentDetailsProjection> details = containerIdToShipmentDetailsMap.get(container.getId());
+
+            if (ObjectUtils.isNotEmpty(details)) {
+                List<AttachedShipmentResponse> attachedShipmentResponseList = details.stream()
+                        .map(detail -> AttachedShipmentResponse.builder()
+                                .attachedShipmentId(detail.getId())
+                                .attachedShipmentNumber(detail.getShipmentNumber())
+                                .attachedShipmentType(detail.getShipmentType())
+                                .build())
+                        .toList();
+
+                container.setAttachedShipmentResponses(attachedShipmentResponseList);
+            }
+        });
+
+        return containerListResponse;
     }
 
 }
