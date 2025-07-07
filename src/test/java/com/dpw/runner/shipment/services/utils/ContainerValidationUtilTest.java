@@ -344,4 +344,52 @@ class ContainerValidationUtilTest extends CommonMocks {
         assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
     }
 
+    @Test
+    void testFclAndLclThrowErrorMessage() {
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, testShipment);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setId(2L);
+        shipmentDetailsMap.put(2L, shipmentDetails);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, List.of(1L));
+        request.setShipmentPackIds(shipmentPackIds);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
+    @Test
+    void testFclAndLclThrowErrorMessage2() {
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, testShipment);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setId(2L);
+        shipmentDetailsMap.put(2L, shipmentDetails);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, List.of(1L));
+        request.setShipmentPackIds(shipmentPackIds);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
+    @Test
+    void testFclAndLclThrowErrorMessage3() {
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, testShipment);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setId(2L);
+        shipmentDetailsMap.put(2L, shipmentDetails);
+        testShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, List.of(1L));
+        request.setShipmentPackIds(shipmentPackIds);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
 }

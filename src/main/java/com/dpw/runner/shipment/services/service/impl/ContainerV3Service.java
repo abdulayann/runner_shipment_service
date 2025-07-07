@@ -791,39 +791,7 @@ public class ContainerV3Service implements IContainerV3Service {
             throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
         }
 
-        List<ContainerBaseResponse> containers = containerListResponse.getContainers();
-        if (CollectionUtils.isEmpty(containers)) {
-            log.info("No containers found for consolidation.");
-            return containerListResponse;
-        }
-
-        List<Long> containerIds = containers.stream().map(ContainerBaseResponse::getId)
-                .filter(Objects::nonNull).distinct().toList();
-
-        List<ShipmentDetailsProjection> attachedShipmentDetails = shipmentService.findShipmentDetailsByAttachedContainerIds(containerIds);
-
-        Map<Long, List<ShipmentDetailsProjection>> containerIdToShipmentDetailsMap =
-                attachedShipmentDetails.stream()
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.groupingBy(ShipmentDetailsProjection::getContainerId));
-
-        containers.forEach(container -> {
-            List<ShipmentDetailsProjection> details = containerIdToShipmentDetailsMap.get(container.getId());
-
-            if (ObjectUtils.isNotEmpty(details)) {
-                List<AttachedShipmentResponse> attachedShipmentResponseList = details.stream()
-                        .map(detail -> AttachedShipmentResponse.builder()
-                                .attachedShipmentId(detail.getId())
-                                .attachedShipmentNumber(detail.getShipmentNumber())
-                                .attachedShipmentType(detail.getShipmentType())
-                                .build())
-                        .toList();
-
-                container.setAttachedShipmentResponses(attachedShipmentResponseList);
-            }
-        });
-
-        return containerListResponse;
+        return processAfterList(containerListResponse);
     }
 
     private void setAssignedContainer(ContainerListResponse containerListResponse, String xSource) {
@@ -1874,6 +1842,10 @@ public class ContainerV3Service implements IContainerV3Service {
             throw new IllegalArgumentException("Failed to fetch consolidation containers", ex);
         }
 
+        return processAfterList(containerListResponse);
+    }
+
+    private ContainerListResponse processAfterList(ContainerListResponse containerListResponse) {
         List<ContainerBaseResponse> containers = containerListResponse.getContainers();
         if (CollectionUtils.isEmpty(containers)) {
             log.info("No containers found for consolidation.");
