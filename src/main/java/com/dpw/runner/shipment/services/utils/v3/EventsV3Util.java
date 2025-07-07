@@ -121,8 +121,7 @@ public class EventsV3Util {
     }
 
     private void processBOCOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if(Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_IMP) && !Objects.equals(shipmentDetails.getGuid(), shipmentDetails.getSourceGuid()))
-            return;
+        if (isImportTransferredScenario(shipmentDetails)) return;
         if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP))) {
             boolean shouldCreateBOCO = true;
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
@@ -192,7 +191,7 @@ public class EventsV3Util {
     }
 
     private boolean isImportTransferredScenario(ShipmentDetails details) {
-        return Objects.equals(details.getDirection(), Constants.DIRECTION_IMP) &&
+        return Objects.equals(details.getDirection(), Constants.DIRECTION_IMP) && details.getSourceGuid() != null &&
                 !Objects.equals(details.getGuid(), details.getSourceGuid());
     }
 
