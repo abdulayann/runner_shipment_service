@@ -4403,6 +4403,56 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testIsRoadLCLorLTL_LCL() {
+        assertTrue(commonUtils.isRoadLCLorLTL("ROA", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_LTL() {
+        assertTrue(commonUtils.isRoadLCLorLTL("ROA", "LTL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadLCLorLTL("SEA", "LCL"));
+    }
+
+    @Test
+    void testIsRoadLCLorLTL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadLCLorLTL("ROA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaLCL_Valid() {
+        assertTrue(commonUtils.isSeaLCL("SEA", "LCL"));
+    }
+
+    @Test
+    void testIsSeaLCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaLCL("SEA", "FCL"));
+    }
+
+    @Test
+    void testIsSeaLCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaLCL("AIR", "LCL"));
+    }
+
+    @Test
+    void testIsLCLorLTL_LCL() {
+        assertTrue(commonUtils.isLCLorLTL("LCL"));
+    }
+
+    @Test
+    void testIsLCLorLTL_LTL() {
+        assertTrue(commonUtils.isLCLorLTL("LTL"));
+    }
+
+    @Test
+    void testIsLCLorLTL_Invalid() {
+        assertFalse(commonUtils.isLCLorLTL("FCL"));
+    }
+
+    @Test
     void testGetPacksUnit4() {
         String packsUnit = commonUtils.getPacksUnit(null);
         assertEquals("PKG", packsUnit);

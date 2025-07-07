@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACTUAL;
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 
@@ -123,7 +121,8 @@ public class EventsV3Util {
     }
 
     private void processBOCOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+        if (isImportTransferredScenario(shipmentDetails)) return;
+        if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS))) {
             boolean shouldCreateBOCO = true;
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
@@ -149,17 +148,16 @@ public class EventsV3Util {
     }
 
     private void processCADEEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (isImportTransferredScenario(shipmentDetails)) return;
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
                         oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
 
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CADE))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
-                for (Events event : dbEvents) {
-                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()));
-                    eventDao.updateUserFieldsInEvent(event, true);
-                }
+                LocalDateTime deliveredDate = shipmentDetails.getAdditionalDetails().getCargoDeliveredDate();
+                updateExistingCADEEvents(dbEvents, deliveredDate);
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
                         commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null));
@@ -167,17 +165,37 @@ public class EventsV3Util {
         }
     }
 
+    private void updateExistingCADEEvents(List<Events> dbEvents, LocalDateTime deliveredDate) {
+        LocalDateTime zoneTime = commonUtils.getUserZoneTime(deliveredDate);
+        for (Events event : dbEvents) {
+            event.setActual(zoneTime);
+            eventDao.updateUserFieldsInEvent(event, true);
+        }
+    }
+
+    private void updateExistingCACOEvents(List<Events> dbEvents, LocalDateTime pickupDate) {
+        LocalDateTime zoneTime = commonUtils.getUserZoneTime(pickupDate);
+        for (Events event : dbEvents) {
+            event.setActual(zoneTime);
+            eventDao.updateUserFieldsInEvent(event, true);
+        }
+    }
+
+    private boolean isImportTransferredScenario(ShipmentDetails details) {
+        return Objects.equals(details.getDirection(), Constants.DIRECTION_IMP) && details.getSourceGuid() != null &&
+                !Objects.equals(details.getGuid(), details.getSourceGuid());
+    }
+
     private void processCACOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (isImportTransferredScenario(shipmentDetails)) return;
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
-                Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), DIRECTION_IMP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                         oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
-                for (Events event : dbEvents) {
-                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()));
-                    eventDao.updateUserFieldsInEvent(event, true);
-                }
+                LocalDateTime pickupDate = shipmentDetails.getAdditionalDetails().getPickupDate();
+                updateExistingCACOEvents(dbEvents, pickupDate);
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
                         commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null));
@@ -325,7 +343,7 @@ public class EventsV3Util {
     }
 
     private void processECCCEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+        if ((Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS)) &&
                 isEventChanged(shipmentDetails.getBrokerageAtOriginDate(),
                         oldEntity.getBrokerageAtOriginDate(), isNewShipment)) {
 
@@ -438,15 +456,18 @@ public class EventsV3Util {
     private boolean isLclOrFclOrAir(ShipmentDetails shipmentDetails) {
         return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
     private boolean isLclOrAir(ShipmentDetails shipmentDetails) {
         return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType())
+                || Constants.CARGO_TYPE_LTL.equalsIgnoreCase(shipmentDetails.getShipmentType())
                 || TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode());
     }
 
     private boolean isFcl(ShipmentDetails shipmentDetails) {
-        return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
+        return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType());
     }
 }

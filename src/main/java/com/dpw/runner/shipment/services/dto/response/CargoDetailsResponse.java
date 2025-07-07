@@ -24,4 +24,6 @@ public class CargoDetailsResponse {
     private String weightUnit;
     private Integer containers;
     private BigDecimal teuCount;
+    private Integer dgPacks;
+    private String dgPacksUnit;
 }

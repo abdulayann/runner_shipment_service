@@ -169,8 +169,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 consolidationId = mainCarriageList.get(0).getConsolidationId();
             }
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
+            commonUtils.validateAirSecurityAndDGConsolidationPermissions(consolidationDetails);
             updateConsolCarrierDetails(mainCarriageList, consolidationDetails);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
+
+            if (isInterBranchContextNeeded(consolidationDetails))
+                commonUtils.setInterBranchContextForHub();
+
             if (!CollectionUtils.isEmpty(shipmentsList)) {
                 for (ShipmentDetails shipmentDetails : shipmentsList) {
                     List<Routings> originalRoutings = shipmentDetails.getRoutingsList();
@@ -288,6 +293,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
      * Updates shipment's carrier details from main carriage routing legs based on tenantSettings
      */
     private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings, ShipmentDetails shipmentDetails) {
+            commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails.getCarrierDetails());
         updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails);
         carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
@@ -355,11 +361,21 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setAtd(firstLeg.getAtd());
         carrierDetails.setOriginPort(firstLeg.getPol());
         carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
+        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsOriginPort())) {
+            carrierDetails.setOrigin(carrierDetails.getOriginPort());
+            carrierDetails.setOriginLocCode(carrierDetails.getOriginPortLocCode());
+            carrierDetails.setOriginCountry(carrierDetails.getOriginPortCountry());
+        }
 
         carrierDetails.setEta(lastLeg.getEta());
         carrierDetails.setAta(lastLeg.getAta());
         carrierDetails.setDestinationPort(lastLeg.getPod());
         carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
+        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())) {
+            carrierDetails.setDestination(carrierDetails.getDestinationPort());
+            carrierDetails.setDestinationLocCode(carrierDetails.getDestinationPortLocCode());
+            carrierDetails.setDestinationCountry(carrierDetails.getDestinationPortCountry());
+        }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));
@@ -1019,5 +1035,16 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         cloned.setDestinationPortLocCode(source.getDestinationPortLocCode());
         cloned.setInheritedFromConsolidation(true); // Mark as inherited
         return cloned;
+    }
+
+    private boolean isInterBranchContextNeeded(ConsolidationDetails consolidationDetails) {
+
+        if (Objects.isNull(consolidationDetails) || Objects.isNull(consolidationDetails.getShipmentsList()))
+            return false;
+
+        var interBranchShipments = consolidationDetails.getShipmentsList().stream()
+                .filter(s -> !Objects.equals(s.getTenantId(), consolidationDetails.getTenantId())).findFirst();
+
+        return interBranchShipments.isPresent() && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
     }
 }

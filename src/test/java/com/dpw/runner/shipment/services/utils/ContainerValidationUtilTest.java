@@ -1,11 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -15,21 +9,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +26,12 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -181,14 +170,14 @@ class ContainerValidationUtilTest extends CommonMocks {
     void testValidateCanAssignPackageToContainer() {
         testShipment.setId(1L);
         testShipment.setContainerAssignedToShipmentCargo(1L);
-        assertThrows(ValidationException.class, () -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment));
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment, Constants.CONTAINER));
     }
 
     @Test
     void testValidateCanAssignPackageToContainer2() {
         testShipment.setId(2L);
         testShipment.setContainerAssignedToShipmentCargo(null);
-        assertDoesNotThrow(() -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment));
+        assertDoesNotThrow(() -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment, Constants.CONTAINER));
     }
 
     @Test

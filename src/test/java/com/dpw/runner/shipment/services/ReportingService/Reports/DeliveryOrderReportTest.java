@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
@@ -111,6 +112,9 @@ class DeliveryOrderReportTest extends CommonMocks {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -423,6 +427,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
     }
 
@@ -446,6 +451,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         masterDataMock();
         mockCarrier();
@@ -495,6 +501,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(cacheManager.getCache(any())).thenReturn(cache);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));
@@ -534,6 +541,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
         when(cacheManager.getCache(any())).thenReturn(cache);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(deliveryOrderReport.populateDictionary(deliveryOrderModel));

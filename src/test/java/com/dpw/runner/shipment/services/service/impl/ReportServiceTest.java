@@ -1,21 +1,65 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
-import com.dpw.runner.shipment.services.ReportingService.Reports.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.BookingOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
+import com.dpw.runner.shipment.services.ReportingService.Reports.TransportInstructionReportHelper;
+import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.impl.*;
+import com.dpw.runner.shipment.services.dao.impl.AwbDao;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.EventDao;
+import com.dpw.runner.shipment.services.dao.impl.HblDao;
+import com.dpw.runner.shipment.services.dao.impl.HblReleaseTypeMappingDao;
+import com.dpw.runner.shipment.services.dao.impl.HblTermsConditionTemplateDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
@@ -28,8 +72,26 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.DocDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -38,12 +100,32 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
+import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
 import java.util.concurrent.CompletableFuture;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -65,20 +147,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -220,6 +288,14 @@ class ReportServiceTest extends CommonMocks {
 
     @Mock
     private ReportService self;
+
+    @Mock
+    private IPickupDeliveryDetailsService pickupDeliveryDetailsService;
+
+    @Mock
+    private ITransportInstructionLegsService transportInstructionLegsService;
+    @Mock
+    private TransportInstructionReportHelper transportInstructionReport;
 
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
@@ -1748,6 +1824,77 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        byte[] data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+    @Test
+    void getPickupOrderV3SeaDocumentData()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        when(transportInstructionLegsService.findByTransportInstructionId(anyLong())).thenReturn(List.of(new TiLegs()));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        mockShipmentSettings();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        byte[] data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+    @Test
+    void getPickupOrderV3SeaDocumentDataWithLegs()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPickupOrder("123456789");
+        shipmentSettingsDetails.setTransportInstructionPickupOrder("1234ab34");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPickupOrder("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        reportRequest.setTiLegs(Set.of(1l));
+        reportRequest.setTransportInstructionId("123");
+        reportRequest.setReportInfo(ReportConstants.PICKUP_ORDER_V3);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        TiLegs tiLegs = new TiLegs();
+        tiLegs.setPickupDeliveryDetailsId(123l);
+        when(transportInstructionLegsService.retrieveByIdIn(any())).thenReturn(List.of(tiLegs));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
@@ -4072,5 +4219,181 @@ class ReportServiceTest extends CommonMocks {
     private Runnable mockRunnable() {
         return null;
     }
+
+    @Test
+    void testPopulateConsolidationReportData_withValidData() {
+        // Given - prepare test data
+        Map<String, Object> dict = new HashMap<>();
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setOriginBranch(100L);
+        consolidationDetails.setReceivingBranch(200L);
+
+        TriangulationPartner triangulationPartner = new TriangulationPartner();
+        triangulationPartner.setTriangulationPartner(300L);
+        consolidationDetails.setTriangulationPartnerList(List.of(triangulationPartner));
+
+        // Mock tenant models with lowercase values
+        TenantModel origin = new TenantModel();
+        origin.setDisplayName("origin branch");
+        origin.setAddress1("origin addr1");
+        origin.setAddress2("origin addr2");
+        origin.setCity("origin city");
+        origin.setState("origin state");
+        origin.setZipPostCode("12345");
+        origin.setCountry("origin country");
+
+        TenantModel dest = new TenantModel();
+        dest.setDisplayName("dest branch");
+
+        TenantModel triang = new TenantModel();
+        triang.setDisplayName("triang branch");
+
+        // Prepare mocked tenant map
+        Map<String, TenantModel> mockedTenantMap = new HashMap<>();
+        mockedTenantMap.put("100", origin);
+        mockedTenantMap.put("200", dest);
+        mockedTenantMap.put("300", triang);
+
+        // Mocks
+        when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
+
+        // Call method
+        reportService.populateConsolidationReportData(dict, consolidationDetails);
+
+        // Then - validate results
+        List<Map<String, Object>> originBranch = (List<Map<String, Object>>) dict.get("C_OriginBranch");
+        assertNotNull(originBranch);
+        assertEquals("ORIGIN BRANCH", originBranch.get(0).get("C_FullName"));
+        assertEquals("ORIGIN ADDR1", originBranch.get(0).get("C_Address1"));
+        assertEquals("ORIGIN CITY", originBranch.get(0).get("C_City"));
+
+        List<Map<String, Object>> destinationBranch = (List<Map<String, Object>>) dict.get("C_DestinationBranch");
+        assertNotNull(destinationBranch);
+        assertEquals("DEST BRANCH", destinationBranch.get(0).get("C_FullName"));
+
+        List<Map<String, Object>> triangBranch = (List<Map<String, Object>>) dict.get("C_TriangulationBranch1");
+        assertNotNull(triangBranch);
+        assertEquals("TRIANG BRANCH", triangBranch.get(0).get("C_FullName"));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withBasicFields() {
+        Map<String, Object> dict = new HashMap<>();
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setReefer(true);
+        details.setHazardous(false);
+
+        Allocations allocations = new Allocations();
+        allocations.setDgContainerCount(3);
+        allocations.setDgPacks(7);
+        details.setAllocations(allocations);
+
+        AchievedQuantities aq = new AchievedQuantities();
+        aq.setDgPacksType("BOX");
+        aq.setDgContainerCount(2);
+        aq.setDgPacks(5);
+        aq.setSlacCount(9);
+        details.setAchievedQuantities(aq);
+
+        details.setAdditionalTerms("Handle with care");
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        assertEquals(true, dict.get(ReportConstants.C_D_Reefer));
+        assertEquals(false, dict.get(ReportConstants.C_D_DG));
+        assertEquals(3, dict.get(ReportConstants.C_CA_DGContainer));
+        assertEquals(7, dict.get(ReportConstants.C_CA_DGPackages));
+        assertEquals("BOX", dict.get(ReportConstants.C_C_DGPackagesType));
+        assertEquals(2, dict.get(ReportConstants.C_C_DGContainer));
+        assertEquals(5, dict.get(ReportConstants.C_C_DGPackages));
+        assertEquals(9, dict.get(ReportConstants.C_C_SLACCount));
+        assertEquals("Handle with care", dict.get(ReportConstants.C_C_AdditionalTerms));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withReferenceNumbers() {
+        Map<String, Object> dict = new HashMap<>();
+        ReferenceNumbers ref1 = new ReferenceNumbers();
+        ref1.setType("MAWB");
+        ref1.setReferenceNumber("123-456789");
+
+        ReferenceNumbers ref2 = new ReferenceNumbers();
+        ref2.setType("HAWB");
+        ref2.setReferenceNumber("789-123456");
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setReferenceNumbersList(List.of(ref1, ref2));
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        assertEquals("123-456789", dict.get("C_MAWB"));
+        assertEquals("789-123456", dict.get("C_HAWB"));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withRoutingDetails() {
+        Map<String, Object> dict = new HashMap<>();
+
+        Routings first = new Routings();
+        first.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        first.setVesselName("First Vessel");
+        first.setVoyage("FV001");
+        first.setCarrier("Carrier1");
+        first.setFlightNumber("FL123");
+
+        Routings last = new Routings();
+        last.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        last.setVesselName("Last Vessel");
+        last.setVoyage("LV001");
+        last.setCarrier("Carrier2");
+        last.setFlightNumber("FL999");
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setRoutingsList(List.of(first, last));
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        assertEquals("First Vessel", dict.get(ReportConstants.C_FirstVessel));
+        assertEquals("Carrier1", dict.get(ReportConstants.C_FirstCarrier));
+        assertEquals("FL123", dict.get(ReportConstants.C_FirstFlightNumber));
+
+        assertEquals("Last Vessel", dict.get(ReportConstants.C_LastVessel));
+        assertEquals("Carrier2", dict.get(ReportConstants.C_LastCarrier));
+        assertEquals("FL999", dict.get(ReportConstants.C_LastFlightNumber));
+    }
+
+    @Test
+    void testPopulateConsolidationReportData_withPartiesAndAgents() {
+        Map<String, Object> dict = new HashMap<>();
+
+        Parties shipper = new Parties();
+        shipper.setType("Shipper");
+        Map<String, Object> orgData = Map.of(PartiesConstants.FULLNAME, "Shipper Ltd.");
+        shipper.setOrgData(orgData);
+        Map<String, Object> addrData = Map.of(
+                PartiesConstants.ADDRESS1, "123 Street",
+                PartiesConstants.CITY, "Cityville",
+                PartiesConstants.COUNTRY, "India"
+        );
+        shipper.setAddressData(addrData);
+
+        ConsolidationDetails details = new ConsolidationDetails();
+        details.setConsolidationAddresses(List.of(shipper));
+        details.setSendingAgent(shipper); // reuse as agent for test
+
+        reportService.populateConsolidationReportData(dict, details);
+
+        List<Map<String, Object>> shipperMapped = (List<Map<String, Object>>) dict.get("C_Shipper");
+        assertNotNull(shipperMapped);
+        assertEquals("123 STREET", shipperMapped.get(0).get("C_Address1"));
+        assertEquals("CITYVILLE", shipperMapped.get(0).get("C_City"));
+        assertEquals("INDIA", shipperMapped.get(0).get("C_Country"));
+
+        List<Map<String, Object>> originAgent = (List<Map<String, Object>>) dict.get("C_OriginAgent");
+        assertNotNull(originAgent);
+        assertEquals("SHIPPER LTD.", originAgent.get(0).get("C_FullName"));
+    }
+
 
 }

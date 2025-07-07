@@ -11,9 +11,24 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
@@ -46,6 +61,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -220,5 +236,72 @@ class ShipmentControllerV3Test {
         // Test
         assertThrows(DpsException.class, () -> shipmentControllerV3.getMatchingRulesByGuid(guid));
     }
+
+    @Test
+    void testConsoleShipmentList_Exception() throws AuthenticationException {
+        // Mock
+        when(shipmentService.consoleShipmentList(any(), anyLong(), eq(null), anyBoolean(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        ListCommonRequest request = mock(ListCommonRequest.class);
+        // Test
+        var responseEntity = shipmentControllerV3.consoleShipmentList(request, 1L, null, true, true, false);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testOceanDGSendForApproval_Success() throws RunnerException {
+        // Given
+        OceanDGApprovalRequest request = new OceanDGApprovalRequest();
+        String warning = "Email sent successfully";
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(shipmentService.sendOceanDGApprovalEmail(request)).thenReturn(warning);
+
+        // When
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.oceanDGSendForApproval(request);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testOceanDGSendForApproval_Exception() throws RunnerException {
+        OceanDGApprovalRequest request = new OceanDGApprovalRequest();
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(shipmentService.sendOceanDGApprovalEmail(request))
+            .thenThrow(new RuntimeException("Test Exception"));
+
+        assertThrows(RuntimeException.class, () -> shipmentControllerV3.oceanDGSendForApproval(request));
+    }
+
+    @Test
+    void testOceanDGApprovalResponse_Success() throws RunnerException {
+        // Given
+        OceanDGRequestV3 request = new OceanDGRequestV3();
+        String warning = "DG approval successful";
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(shipmentService.dgApprovalResponse(request)).thenReturn(warning);
+
+        // When
+        ResponseEntity<IRunnerResponse> response = shipmentControllerV3.oceanDGApprovalResponse(request);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testOceanDGApprovalResponse_Exception() throws RunnerException {
+        OceanDGRequestV3 request = new OceanDGRequestV3();
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(shipmentService.dgApprovalResponse(request))
+            .thenThrow(new RuntimeException("Test Exception"));
+
+        assertThrows(RuntimeException.class, () -> shipmentControllerV3.oceanDGApprovalResponse(request));
+    }
+
+
 
 }

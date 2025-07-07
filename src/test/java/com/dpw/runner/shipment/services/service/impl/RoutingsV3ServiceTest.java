@@ -195,7 +195,6 @@ class RoutingsV3ServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
                 .build();
-
         when(routingsDao.findById(anyLong())).thenReturn(Optional.of(oldEntity));
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(oldEntity);
         when(jsonHelper.convertValue(routingsRequest, Routings.class)).thenReturn(routings);

@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -52,8 +53,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -90,6 +90,9 @@ class ManifestShipmentReportTest extends CommonMocks {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     @Mock
     private CacheManager cacheManager;
@@ -295,6 +298,7 @@ class ManifestShipmentReportTest extends CommonMocks {
         mockTenantSettings();
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(manifestShipmentReport.populateDictionary(manifestShipmentModel));
     }

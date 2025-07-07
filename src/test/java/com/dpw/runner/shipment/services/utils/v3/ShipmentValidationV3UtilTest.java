@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -308,7 +309,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cd.setTransportMode(TRANSPORT_MODE_AIR);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-001");
 
@@ -335,7 +336,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setId(1L);
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cd.setTransportMode(TRANSPORT_MODE_AIR);
         cd.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         cd.setConsolidationNumber("CON-001");
 
@@ -388,12 +389,12 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
 
     @Test
     void testProcessDGValidations_AirDG_UserHasPermission_NoException() {
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setContainsHazardous(false);
 
         ConsolidationDetails cd = new ConsolidationDetails();
         cd.setHazardous(true);
-        cd.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        cd.setTransportMode(TRANSPORT_MODE_AIR);
 
         Map<String, Boolean> permissions = new HashMap<>();
         permissions.put("AirDG", true);
@@ -404,21 +405,81 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, oldEntity, Set.of(cd)));
     }
 
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_withNullOrgCodes_shouldNotThrow() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setCoLoadBlNumber("coload");
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
+
+        Parties consignor = new Parties();
+        consignor.setOrgCode(null);
+        shipment.setConsigner(consignor);
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-CODE");
+        shipment.setConsignee(consignee);
+
+        when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.FALSE);
+
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity);
+        assertEquals(Constants.SHIPMENT_TYPE_STD, shipment.getJobType());
+    }
+
     @Test
     void testValidateShipmentCreateOrUpdate_withDpsImplication() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setId(1L);
-        ShipmentDetails oldEntity = new ShipmentDetails();
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
 
         when(dpsEventService.isImplicationPresent(List.of(1L), "CONCR")).thenReturn(Boolean.TRUE);
 
-        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity));
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1));
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_validatePartner() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setMasterBill("masterBill");
+        ShipmentDetails oldEntity1 = new ShipmentDetails();
+
+        Parties consignor = new Parties();
+        consignor.setOrgCode(null);
+        shipment.setConsigner(consignor);
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-CODE");
+        shipment.setConsignee(consignee);
+
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, oldEntity1);
+        assertEquals(TRANSPORT_MODE_AIR, shipment.getTransportMode());
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_withNullConsignor_shouldNotThrow() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
+        shipment.setJobType(Constants.SHIPMENT_TYPE_STD);
+        shipment.setCoLoadBkgNumber("bkgNumber");
+
+        Parties consignee = new Parties();
+        consignee.setOrgCode("ORG-1");
+        shipment.setConsignee(consignee);
+
+        shipment.setConsigner(null); // Null consignor
+
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null);
+        assertEquals(TRANSPORT_MODE_AIR, shipment.getTransportMode());
     }
 
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setControlled(true);
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
@@ -427,7 +488,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_AIR1() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setControlledReferenceNumber("TEST");
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
@@ -436,7 +497,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidateShipmentCreateOrUpdate_ForControlledFields_EmptyControlled_AIR1() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
 
         assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
@@ -453,17 +514,29 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @Test
     void testValidationForFmcTlcFields_ForFmcTlcField_AIR() {
         ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         shipment.setFmcTlcId("Test");
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForFmcTlcFields(shipment));
     }
-    @Test
-    void testValidateShipmentCreateOrUpdate_ForFmcTlcField_EmptyFmcTlcId_AIR() {
-        ShipmentDetails shipment = new ShipmentDetails();
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
 
-        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
+    @Test
+    void testValidateShipmentCreateOrUpdate_coLoadBLNumber_AIR() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
+        shipment.setCoLoadBlNumber("BlNumber");
+
+        shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null);
+        assertEquals(TRANSPORT_MODE_AIR, shipment.getTransportMode());
+    }
+
+    @Test
+    void testValidateShipmentCreateOrUpdate_CargoDeliveryDate_SEA() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipment.setCargoDeliveryDate(LocalDateTime.now());
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
     @Test
@@ -515,7 +588,7 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
     @ParameterizedTest
     @MethodSource("shipmentCutoffPayloads")
     void testValidationForCutOffFields(ShipmentDetails shipment) {
-        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipment.setTransportMode(TRANSPORT_MODE_AIR);
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipment, null));
     }
 
@@ -659,4 +732,59 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
     }
 
+    @Test
+    void testValidationFields_DOM_shouldPass() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().direction("DOM").build();
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationETAETDATAATDFields(newShipment, null));
+    }
+
+    @Test
+    void testValidationForCutOffFields_DOM_exception() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().direction("DOM").latestArrivalTime(LocalDateTime.now()).build();
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForCutOffFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Exception1() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("xyz");
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Exception2() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(true);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("xyz");
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Success() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(true);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("abc");
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(true);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("abc");
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
+
+    @Test
+    void testValidationForPolPodFields_Success1() {
+        ShipmentDetails newShipment = ShipmentDetails.builder().carrierDetails(new CarrierDetails()).build();
+        newShipment.getCarrierDetails().setIsSameAsOriginPort(false);
+        newShipment.getCarrierDetails().setOrigin("abc");
+        newShipment.getCarrierDetails().setOriginPort("abc");
+        newShipment.getCarrierDetails().setIsSameAsDestinationPort(false);
+        newShipment.getCarrierDetails().setDestination("abc");
+        newShipment.getCarrierDetails().setDestinationPort("abc");
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validationForPolPodFields(newShipment));
+    }
 }

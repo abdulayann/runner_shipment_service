@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -88,7 +89,7 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void testDeleteBulk() {
+  void testDeleteBulk() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
 
@@ -129,7 +130,7 @@ class ContainerV3ControllerTest {
     AssignContainerRequest request = new AssignContainerRequest();
     ContainerResponse response = new ContainerResponse();
 
-    Mockito.when(containerV3Service.assignContainers(request)).thenReturn(response);
+    Mockito.when(containerV3Service.assignContainers(request, Constants.CONTAINER)).thenReturn(response);
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.assignContainers(request);
 

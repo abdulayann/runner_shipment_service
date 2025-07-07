@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import java.util.List;
+import java.util.Map;
 
 public class AwbConstants {
     private AwbConstants(){}
     public static final String AWB_API_HANDLE = "/api/v2/awb";
+    public static final String AWB_V3_API_HANDLE = "/api/v3/awb";
     public static final String AWB_LIST_SUCCESSFUL = "Successful AWB Info List Retrieval";
     public static final String AWB_CREATE_SUCCESSFUL = "Successful AWB Creation";
     public static final String AWB_UPDATE_SUCCESSFUL = "Successful AWB update";
@@ -52,5 +54,24 @@ public class AwbConstants {
     public static final String EXEMPTION_CARGO_SECURITY_STATUS = "Exemption Cargo";
     public static final String SPX = "SPX";
     public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO", EXEMPTION_CARGO_SECURITY_STATUS);
+    public static final Map<String, String> incotermChargeCodeMap = Map.ofEntries(Map.entry("CFR", "PP"),
+            Map.entry("CIF", "PP"), Map.entry("CIP", "PP"), Map.entry("CPT", "PP"),
+            Map.entry("DAP", "PP"), Map.entry("DAT", "PP"), Map.entry("DDP", "PP"),
+            Map.entry("DPU", "PP"), Map.entry("EXW", "CC"), Map.entry("FAS", "PC"),
+            Map.entry("FCA", "PC"), Map.entry("FOB", "PC"));
 
+    public static final String PACKING_LOCK_GROUP = "PACKING_LOCK_GROUP";
+    public static final String SHIPPER_LOCK_GROUP = "SHIPPER_LOCK_GROUP";
+    public static final String CONSIGNEE_LOCK_GROUP = "CONSIGNEE_LOCK_GROUP";
+    public static final String NOTIFY_LOCK_GROUP = "NOTIFY_LOCK_GROUP";
+    public static final String ISSUING_AGENT_LOCK_GROUP = "ISSUING_AGENT_LOCK_GROUP";
+    public static final String AWB_NUMBER_LOCK_GROUP = "AWB_LOCK_GROUP";
+    public static final String ROUTING_DETAILS_LOCK_GROUP = "ROUTING_DETAILS_LOCK_GROUP";
+    public static final String NEW_ROUTING_INFO_LOCK_GROUP = "NEW_ROUTING_INFO_LOCK_GROUP";
+    public static final String CARGO_DETAILS_LOCK_GROUP = "CARGO_DETAILS_LOCK_GROUP";
+    public static final String ECSD_LOCK_GROUP = "ECSD_LOCK_GROUP";
+    public static final String GOODS_DESCRIPTION_LOCK_GROUP = "GOODS_DESCRIPTION_LOCK_GROUP";
+    public static final String CHARGE_DETAIL_LOCK_GROUP = "CHARGE_DETAILS_LOCK_GROUP";
+    public static final String OTHER_CHARGES_LOCK_GROUP = "OTHER_CHARGES_LOCK_GROUP";
+    public static final String OTHER_DETAILS_LOCK_GROUP = "OTHER_DETAILS_LOCK_GROUP";
 }

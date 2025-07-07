@@ -63,7 +63,9 @@ public class JsonTestUtility {
     public String readJson(String fileName) throws IOException {
         return FileUtils.readFileToString(new File(fileName), StandardCharsets.UTF_8);
     }
-
+    public <T> T convertJsonTClazz(String jsonContent,Class<T> clazz) throws IOException {
+        return objectMapper.readValue(jsonContent, clazz);
+    }
     public String getMDMResponseString() throws JsonProcessingException {
         return convertToJson(payload.get("MDM_RESPONSE"));
     }
@@ -475,6 +477,16 @@ public class JsonTestUtility {
     }
     public EntityTransferConsolidationDetails getImportConsolidationSea() {
         return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
+    }
+
+    public EntityTransferV3ShipmentDetails getV3ImportShipmentData() {
+        return objectMapper.convertValue(payload.get("ImportShipmentData"), EntityTransferV3ShipmentDetails.class);
+    }
+    public EntityTransferV3ConsolidationDetails getV3ImportConsolidationAir() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsAir"), EntityTransferV3ConsolidationDetails.class);
+    }
+    public EntityTransferV3ConsolidationDetails getV3ImportConsolidationSea() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferV3ConsolidationDetails.class);
     }
 
     public Notification getNotification() {

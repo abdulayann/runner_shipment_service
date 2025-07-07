@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -59,26 +60,10 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class})
 @Execution(CONCURRENT)
@@ -852,6 +837,25 @@ class PackingV3ServiceTest extends CommonMocks {
         request1.setConsolidationId(14388L);
         when(consolidationService.retrieveForNte(any())).thenReturn(Optional.empty());
         assertThrows(IllegalArgumentException.class, () -> packingV3Service.calculatePackSummary(request1, Constants.NETWORK_TRANSFER));
+    }
+
+    @Test
+    void testUnAssignPackageContainers() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        packingV3Service.unAssignPackageContainers(request);
+        verify(containerV3Service, never()).unAssignContainers(any(), any());
+    }
+
+    @Test
+    void testUnAssignPackageContainers1() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        packing.setShipmentId(1L);
+        packing.setContainerId(1L);
+        when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
+        packingV3Service.unAssignPackageContainers(request);
+        verify(containerV3Service).unAssignContainers(any(), any());
     }
 
 }

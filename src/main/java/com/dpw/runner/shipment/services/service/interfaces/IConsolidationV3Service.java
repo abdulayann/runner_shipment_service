@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -9,9 +10,13 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
@@ -19,8 +24,12 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
+import org.apache.http.auth.AuthenticationException;
+import org.springframework.http.ResponseEntity;
 
+import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -53,11 +62,24 @@ public interface IConsolidationV3Service {
     Optional<ConsolidationDetails> findById(Long consolidationId);
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     String getBookingNumberFromConsol(Long consolidationId);
+    void checkSciForDetachConsole(Long consoleId) throws RunnerException;
 
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolId);
+    VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
     ConsolidationSailingScheduleResponse updateSailingScheduleDataToShipment(
         ConsolidationSailingScheduleRequest request) throws RunnerException;
 
-    VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException;
+    ShipmentWtVolResponse calculateShipmentWtVol(ConsolidationDetails consolidationDetails) throws RunnerException;
+    void updateConsolidationCargoSummary(ConsolidationDetails consolidationDetails, ShipmentWtVolResponse oldShipmentWtVolResponse) throws RunnerException;
+    ResponseEntity<IRunnerResponse> aibAction(AibActionConsolidation request) throws RunnerException;
+    ResponseEntity<IRunnerResponse> aibPendingNotification(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);
+    AchievedQuantitiesResponse getConsoleSyncAchievedData(Long consolidationId) throws RunnerException, JsonMappingException;
+    ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationEtV3Request request);
+    ConsolidationDetailsResponse completeUpdateConsolidationFromEntityTransfer(ConsolidationEtV3Request request) throws RunnerException;
+    Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsV3Response consolidationDetailsV3Response);
+    void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
+                                 String sourceInfo);
     Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
 }

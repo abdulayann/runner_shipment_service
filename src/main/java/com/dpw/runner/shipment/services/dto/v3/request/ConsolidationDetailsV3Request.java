@@ -170,4 +170,5 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String bookingId;
     private String bookingStatus;
     private String bookingNumber;
+    private String incoterms;
 }

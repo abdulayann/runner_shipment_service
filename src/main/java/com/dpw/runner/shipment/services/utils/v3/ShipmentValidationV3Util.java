@@ -33,6 +33,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
 @Slf4j
 @Component
 public class ShipmentValidationV3Util {
@@ -117,6 +119,10 @@ public class ShipmentValidationV3Util {
     }
 
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
+            throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
+        }
+        // Validation for Partner fields
         // Validation for DPS Implication
         this.validateDPSImplication(shipmentDetails);
         // Validation for Controlled Value
@@ -125,6 +131,22 @@ public class ShipmentValidationV3Util {
         this.validationForCutOffFields(shipmentDetails);
         // Validation for ETA, ETD, ATA and ATD fields
         this.validationETAETDATAATDFields(shipmentDetails, oldEntity);
+        // Validation for Same as Pol Pod flag
+        this.validationForPolPodFields(shipmentDetails);
+    }
+
+    public void validationForPolPodFields(ShipmentDetails shipmentDetails){
+        if(Objects.isNull(shipmentDetails.getCarrierDetails())){
+            return;
+        }
+        if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsOriginPort())
+                && !Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), shipmentDetails.getCarrierDetails().getOrigin())) {
+            throw new ValidationException("If origin is selected as same as OriginPort then value in origin and originPort should pe same");
+        }
+        if (Boolean.TRUE.equals(shipmentDetails.getCarrierDetails().getIsSameAsDestinationPort())
+                && !Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), shipmentDetails.getCarrierDetails().getDestination())) {
+            throw new ValidationException("If destination is selected as same as DestinationPort then value in destination and destinationPort should pe same");
+        }
     }
 
     private void validateDPSImplication(ShipmentDetails shipmentDetails) {
@@ -144,7 +166,26 @@ public class ShipmentValidationV3Util {
         }
     }
 
+    public void validationForPartnerFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !isStringNullOrEmpty(shipmentDetails.getCoLoadBlNumber())) {
+            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent AWB No. for AIR shipments");
+        }
+        if(!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_STD)) return;
+        String coloadBlNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBlNumber).orElse(null);
+        String coloadBkgNumber = Optional.ofNullable(oldEntity).map(ShipmentDetails::getCoLoadBkgNumber).orElse(null);
+        String masterBill = Optional.ofNullable(oldEntity).map(ShipmentDetails::getMasterBill).orElse(null);
+        if(!Objects.equals(shipmentDetails.getCoLoadBlNumber(), coloadBlNumber) || !Objects.equals(shipmentDetails.getCoLoadBkgNumber(), coloadBkgNumber)) {
+            throw new ValidationException("Update not allowed for Co-Loader/Booking Agent BkgNumber, BL No/AWB No. for STD shipments");
+        }
+        if(TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && !Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection()) && !Objects.equals(shipmentDetails.getMasterBill(), masterBill)) {
+            throw new ValidationException("Update not allowed in Mawb Number for STD shipments");
+        }
+    }
+
     public void validationETAETDATAATDFields(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection())) {
+            return;
+        }
         CarrierDetails newCarrier = shipmentDetails.getCarrierDetails();
 
         if (newCarrier == null && (oldEntity == null || oldEntity.getCarrierDetails() == null)) return;
@@ -208,25 +249,49 @@ public class ShipmentValidationV3Util {
     }
 
     public void validationForCutOffFields(ShipmentDetails shipmentDetails) {
-        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) && shipmentDetails.getLatestArrivalTime() != null){
-            throw new ValidationException("LatestArrivalTime is not applicable for Sea");
+        if ((TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) || Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection())) && shipmentDetails.getLatestArrivalTime() != null){
+            throw new ValidationException("LatestArrivalTime is not applicable for Sea/Domestic Shipments");
         }
-        if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) return;
+
+        boolean isAirOrDomestic = Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) ||
+                Constants.DIRECTION_DOM.equals(shipmentDetails.getDirection());
+        if (!isAirOrDomestic) return;
+        // Apply these validations for AIR or Domestic Shipments
         if (shipmentDetails.getTerminalCutoff() != null)
-            throw new ValidationException("TerminalCutoff is not applicable for Air");
+            throw new ValidationException("TerminalCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getVerifiedGrossMassCutoff() != null)
-            throw new ValidationException("VerifiedGrossMassCutoff is not applicable for Air");
+            throw new ValidationException("VerifiedGrossMassCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getShippingInstructionCutoff() != null)
-            throw new ValidationException("ShippingInstructionCutoff is not applicable for Air");
+            throw new ValidationException("ShippingInstructionCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getDgCutoff() != null)
-            throw new ValidationException("DgCutoff is not applicable for Air");
+            throw new ValidationException("DgCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getReeferCutoff() != null)
-            throw new ValidationException("ReeferCutoff is not applicable for Air");
+            throw new ValidationException("ReeferCutoff is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getEarliestEmptyEquipmentPickUp() != null)
-            throw new ValidationException("EarliestEmptyEquipmentPickUp is not applicable for Air");
+            throw new ValidationException("EarliestEmptyEquipmentPickUp is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getLatestFullEquipmentDeliveredToCarrier() != null)
-            throw new ValidationException("LatestFullEquipmentDeliveredToCarrier is not applicable for Air");
+            throw new ValidationException("LatestFullEquipmentDeliveredToCarrier is not applicable for Air/Domestic Shipments");
         if (shipmentDetails.getEarliestDropOffFullEquipmentToCarrier() != null)
-            throw new ValidationException("LatestDropOffFullEquipmentToCarrier is not applicable for Air");
+            throw new ValidationException("LatestDropOffFullEquipmentToCarrier is not applicable for Air/Domestic Shipments");
+    }
+
+    public void validateBeforeSaveForEt(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
+            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+
+        if(!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
+            if(!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+                shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
+            }
+            else if(!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ||
+                    shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))) {
+                shipmentDetails.setHouseBill(null);
+            }
+        }
+
+        if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
+            shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().iterator().next().getReferenceNumber());
+        }
+
     }
 }

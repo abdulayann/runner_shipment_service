@@ -1,18 +1,30 @@
 package com.dpw.runner.shipment.services.utils.v3;
 
+import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
-import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
+import com.dpw.runner.shipment.services.utils.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,22 +38,25 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import java.util.concurrent.Executors;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class ShipmentsV3UtilTest {
+class ShipmentsV3UtilTest extends CommonMocks {
 
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
@@ -55,18 +70,67 @@ class ShipmentsV3UtilTest {
     private IShipmentDao shipmentDao;
     @Mock
     private JsonHelper jsonHelper;
+    @Mock
+    private IDateTimeChangeLogService dateTimeChangeLogService;
+    @InjectMocks
+    private CommonUtils commonUtils;
+    @Mock
+    private MasterDataUtils masterDataUtils;
+    @Mock
+    private ConsolidationDao consolidationDetailsDao;
+    @Mock
+    private IRoutingsDao routingsDao;
+    @Mock
+    private IAwbDao awbDao;
+    @Mock
+    private IEventDao eventDao;
+    @Mock
+    private IAuditLogService auditLogService;
+    @Mock
+    private IPackingDao packingDao;
+    @Mock
+    private ITruckDriverDetailsDao truckDriverDetailsDao;
+    @Mock
+    private IReferenceNumbersDao referenceNumbersDao;
+    @Mock
+    private INotesDao notesDao;
+    @Mock
+    private IPartiesDao partiesDao;
+    @Mock
+    private IServiceDetailsDao serviceDetailsDao;
+    @Mock
+    private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+    @Mock
+    private EventsV3Util eventsV3Util;
+    @Mock
+    private IEventsV3Service eventsV3Service;
+    @Mock
+    private BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @InjectMocks
     private ShipmentsV3Util shipmentsV3Util;
 
-    @BeforeEach
-    void setup() {
-        MockitoAnnotations.openMocks(this);
+    private static ShipmentDetails testShipment;
+    private static ObjectMapper objectMapper;
 
+    @BeforeEach
+    void setup() throws IOException {
+        MockitoAnnotations.openMocks(this);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(true).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
+        shipmentsV3Util.executorService = Executors.newFixedThreadPool(2);
+        JsonTestUtility jsonTestUtility = new JsonTestUtility();
+        testShipment = jsonTestUtility.getTestShipment();
+        objectMapper = JsonTestUtility.getMapper();
+    }
+
+    @AfterEach
+    void tearDown() {
+        shipmentsV3Util.executorService.shutdown();
     }
 
 
@@ -357,6 +421,57 @@ class ShipmentsV3UtilTest {
         String shipmentId = shipmentsV3Util.generateShipmentId(shipmentDetails);
 
         assertEquals("SHP000SERIAL-777", shipmentId); // Final fallback
+    }
+
+    @Test
+    void testAfterSaveforEt() {
+        ShipmentDetails shipmentDetails = testShipment;
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentEtV3Request.class);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        mockTenantSettings();
+        List<Long> removedConsolIds = new ArrayList<>();
+        MutableBoolean isNewConsolAttached = new MutableBoolean(false);
+        boolean includeGuid = true;
+        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid));
+
+    }
+
+    @Test
+    void testAfterSaveforEt2() {
+        ShipmentDetails shipmentDetails = testShipment;
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentEtV3Request.class);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(true).build());
+        mockTenantSettings();
+        List<Long> removedConsolIds = new ArrayList<>();
+        MutableBoolean isNewConsolAttached = new MutableBoolean(false);
+        boolean includeGuid = true;
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid));
+
+    }
+
+    @Test
+    void testAfterSaveforEt3() {
+        ShipmentDetails shipmentDetails = testShipment;
+        ShipmentEtV3Request mockShipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentEtV3Request.class);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().build());
+        mockTenantSettings();
+        List<Long> removedConsolIds = new ArrayList<>();
+        MutableBoolean isNewConsolAttached = new MutableBoolean(false);
+        boolean includeGuid = true;
+        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid));
+
     }
 
 }

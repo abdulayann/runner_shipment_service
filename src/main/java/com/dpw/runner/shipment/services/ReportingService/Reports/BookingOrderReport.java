@@ -1,21 +1,31 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMPTY_STRING;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLIGHT_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FLIGHT_NUMBER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_DANGEROUS_GOODS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACK_DETAILS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_TEMPERATURE_DETAILS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.BookingOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import org.apache.commons.lang.StringUtils;
-import org.springframework.stereotype.Component;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.stereotype.Component;
 
 @Component
 public class BookingOrderReport extends IReport {
@@ -80,6 +90,17 @@ public class BookingOrderReport extends IReport {
         processShipmentPackingList(bookingOrderModel, dictionary);
         if(bookingOrderModel.getShipmentModel().getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(bookingOrderModel.getShipmentModel().getAdditionalDetails().getNotifyParty()));
+        }
+
+        if (bookingOrderModel.getShipmentModel() != null) {
+            if (ObjectUtils.isNotEmpty(bookingOrderModel.getShipmentModel().getConsolidationList())) {
+                ConsolidationModel consolidationModel = bookingOrderModel.getShipmentModel().getConsolidationList().get(0);
+                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
+            }
+        }
+
+        if(bookingOrderModel.getShipmentModel() != null) {
+            this.populateShipmentReportData(dictionary, null, bookingOrderModel.getShipmentModel().getId());
         }
 
         return dictionary;

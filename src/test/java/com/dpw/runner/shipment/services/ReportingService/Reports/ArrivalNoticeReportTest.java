@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -22,12 +23,11 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -66,8 +66,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -104,6 +103,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -265,6 +267,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         packingModel.setWidth(BigDecimal.TEN);
         packingModel.setHeight(BigDecimal.TEN);
         packingModel.setPacks("10");
+        packingModel.setContainerNumber("CONT1234567");
         packingModels.add(packingModel);
 
         PackingModel packingModel2 = new PackingModel();
@@ -273,6 +276,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
         packingModel2.setHeight(BigDecimal.TEN);
         packingModel2.setPacks("20");
         packingModels.add(packingModel2);
+
+        PackingModel packingModel3 = new PackingModel();
+        packingModels.add(packingModel3);
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
@@ -374,6 +380,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -397,6 +404,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
@@ -443,6 +451,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
@@ -489,6 +498,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
@@ -536,6 +546,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(cacheManager.getCache(any())).thenReturn(cache);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         Map<String, EntityTransferMasterLists> dataMap = new HashMap<>();
         EntityTransferMasterLists entityTransferMasterLists = new EntityTransferMasterLists();
@@ -684,6 +695,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         shipmentModel.setOceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED);
         ContainerModel containerModel = new ContainerModel();
         containerModel.setHazardous(true);
+        containerModel.setContainerCode("Code");
         shipmentModel.setContainersList(Arrays.asList(containerModel));
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);

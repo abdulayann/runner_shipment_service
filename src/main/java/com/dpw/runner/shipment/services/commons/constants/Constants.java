@@ -157,10 +157,12 @@ public class Constants {
     public static final String CARGO_TYPE_LCL = "LCL";
     public static final String CARGO_TYPE_LSE = "LSE";
     public static final String CARGO_TYPE_FTL = "FTL";
+    public static final String CARGO_TYPE_LTL = "LTL";
     public static final String DIRECTION_EXP = "EXP";
     public static final String JOB_TYPE_CLB = "CLB";
     public static final String DIRECTION_IMP = "IMP";
     public static final String DIRECTION_CTS = "CTS";
+    public static final String DIRECTION_DOM = "DOM";
 
     //MasterDataFactory
     public static final String MAPPER_MASTER_DATA = "Mapper";
@@ -202,6 +204,8 @@ public class Constants {
     public static final String SERVICE = "Service";
     public static final String PENDING_ACTION = "Pending Action";
     public static final String OCEAN_DG_TASKTYPE = "DG Ocean Approval";
+    public static final String DG_OCEAN_APPROVAL = "DG_OCEAN_APPROVAL";
+    public static final String PENDING_ACTION_TASK = "PENDING_ACTION";
 
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
     public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
@@ -387,6 +391,7 @@ public class Constants {
     public static final String VOYAGE = "voyage";
     public static final String ORIGIN_PORT = "originPort";
     public static final String DESTINATION_PORT = "destinationPort";
+    public static final String IS_ATTACHMENT_DONE = "isAttachmentDone";
 
     public static final String OCEAN_DG_ROLE = "OCEAN_DG_ROLE";
     public static final String COMMERCIAL_OCEAN_DG_ROLE = "COMMERCIAL_OCEAN_DG_ROLE";
@@ -420,6 +425,7 @@ public class Constants {
     public static final String NAME = "_name";
     public static final String CODE = "_code";
     public static final String IATA_CODE = "_iataCode";
+    public static final String SCAC_CODE = "_scacCode";
     public static final String DISPLAY_NAME = "_displayName";
     public static final String FAILURE_EXECUTING = "failure executing :(";
     public static final String SYSTEM_GENERATED = "SYSTEM_GENERATED";
@@ -564,6 +570,20 @@ public class Constants {
     public static final String SHIPMENT_IMPORT_EMAIL_TYPE = "SHIPMENT_IMPORT";
     public static final String DEFAULT_SHIPMENT_RECEIVED_SUBJECT = "Received shipment {#SHIPMENT_NUMBER} from {#SOURCE_BRANCH}";
     public static final String DEFAULT_SHIPMENT_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a shipment with following details has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Shipment Details:</strong><strong>&nbsp;&nbsp;</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Shipment number:</strong>&nbsp;{#SHIPMENT_NUMBER}</p>  <p><strong>BL Number</strong>: {#BL_NUMBER}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p>  <p><strong>Sent date</strong>: {#SENT_DATE}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p>";
+
+    public static final String SHIPMENT_IMPORT_V3_EMAIL_TYPE = "SHIPMENT_IMPORT_V3";
+    public static final String DEFAULT_SHIPMENT_V3_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a shipment with following details has been sent from {#SOURCE_BRANCH} for you to import.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Shipment number:</strong>&nbsp;{#SHIPMENT_NUMBER}</p> <p><strong>BL Number</strong>: {#BL_NUMBER}</p>  <p><strong>MBL Number</strong>: {#MBL_NUMBER}</p> <p><strong>Client:</strong>&nbsp;{#CLIENT_NAME}</p> <p><strong>Consignor:</strong>&nbsp;{#CONSIGNOR_NAME}</p> <p><strong>Consignee:</strong>&nbsp;{#CONSIGNEE_NAME}</p> <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p>&nbsp;</p>  <p>This email contains confidential content, kindly treat with caution.</p> <p>Regards,&nbsp;<br /> CargoesRunner Team</p>";
+    public static final String CLIENT_NAME_PLACEHOLDER = "{#CLIENT_NAME}";
+    public static final String CONSIGNOR_NAME_PLACEHOLDER = "{#CONSIGNOR_NAME}";
+    public static final String CONSIGNEE_NAME_PLACEHOLDER = "{#CONSIGNEE_NAME}";
+
+    public static final String CONSOLIDATION_V3_IMPORT_EMAIL_TYPE = "CONSOLIDATION_IMPORT_V3";
+    public static final String DEFAULT_CONSOLIDATION_V3_RECEIVED_SUBJECT = "Received consolidation {#CONSOLIDATION_NUMBER} with {#NUMBER_OF_SHIPMENTS} shipments from {#SOURCE_BRANCH}";
+    public static final String GROUPED_SHIPMENT_BODY = "{#SD_ShipmentDetails}<p><strong>Shipment:</strong> {SD_ShipmentNumber}<br /><strong>HAWB/HBL Number:</strong> {SD_HAWB_HBL_Number}<br /><strong>Client:</strong> {SD_ClientName}<br /><strong>Consignor:</strong> {SD_ConsignorName}<br /><strong>Consignee:</strong> {SD_ConsigneeName}</p>{/SD_ShipmentDetails} <br /><strong>Consignor:</strong> {SD_ConsignorName}<br />  <br /><strong>From Branch:</strong> {SD_FromBranchName}<br /> <br /><strong>To Branch:</strong> {SD_ToBranchName}<br /> <p>&nbsp;</p>";
+    public static final String DEFAULT_CONSOLIDATION_V3_RECEIVED_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>This is to inform you that a consolidation with {#NUMBER_OF_SHIPMENTS} shipments has been sent from {#SOURCE_BRANCH} on {#TRANSFERRED_DATE} for you to accept.</p>  <p>Below are its details:</p>  <p>&nbsp;</p>  <p><strong>Consolidation Details:</strong></p>  <p><strong>Sender</strong>: {#SENDER_USER_NAME}&nbsp;from {#SOURCE_BRANCH}</p>  <p><strong>Consolidation number:</strong>&nbsp;{#CONSOLIDATION_NUMBER}</p>  <p><strong>MAWB/MBL Number</strong>: {#MBL_NUMBER}</p>  <p>&nbsp;</p> <p><strong>Shipment Details:</strong></p>  {#GROUPED_SHIPMENT_BODY} <p>This email contains confidential content, kindly treat with caution.</p> <p>Regards,&nbsp;<br /> CargoesRunner Team</p>";
+    public static final String TRANSFERRED_DATE_PLACEHOLDER = "{#TRANSFERRED_DATE}";
+
+
     public static final String GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE = "GROUPED_SHIPMENT_IMPORT";
     public static final String DEFAULT_GROUPED_SHIPMENT_RECEIVED_SUBJECT = "Shipment/s:  {#SD_ShipmentDetails}{SD_ShipmentNumber}{/SD_ShipmentDetails} created by consolidating branch – {GS_ConsolidationBranch}";
     public static final String DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY = "<p>Dear User,<br /> This is to inform you that the following shipments are created by the consolidating branch – {GS_ConsolidationBranch}<br /> Details as follows:</p> <p>━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</p> <table> <tbody> <tr> <td><strong>Shipment Number</strong></td> <td><strong>Sending Branch</strong></td> <td><strong>HBL/HAWB Number</strong></td> <td><strong>MBL/MAWB Number</strong></td> <td><strong>Created Date</strong></td> </tr> <tr> <td>{#SD_ShipmentDetails}{SD_ShipmentNumber}</td> <td>{SD_SendingBranch}</td> <td>{SD_HBL_HAWB_Number}</td> <td>{SD_MAWB_Number}</td> <td>{SD_CreatedDate}{/SD_ShipmentDetails}</td> </tr> </tbody> </table> <p>&nbsp;</p> <p>This email contains confidential content, kindly treat with caution.</p> <p>Regards,&nbsp;<br /> CargoesRunner Team</p>";
@@ -650,6 +670,7 @@ public class Constants {
     public static final String CONTAINER_AFTER_SAVE = "CONTAINER_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE = "CONSOLIDATION_AFTER_SAVE";
     public static final String CONSOLIDATION_AFTER_SAVE_TO_TRACKING = "CONSOLIDATION_AFTER_SAVE_TO_TRACKING";
+    public static final String TRANSPORT_INSTRUCTION = "TRANSPORT_INSTRUCTION";
     public static final String CLIENT_PARTY = "CLIENT";
     public static final String CONSIGNEE_PARTY = "CONSIGNEE";
     public static final String CONSIGNOR_PARTY = "CONSIGNOR";

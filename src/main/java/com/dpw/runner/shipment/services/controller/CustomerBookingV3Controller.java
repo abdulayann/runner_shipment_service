@@ -95,8 +95,8 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, response = CustomerBookingV3ListResponse.class, message = CustomerBookingConstants.LIST_SUCCESSFUL, responseContainer = CustomerBookingConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_VIEW + "')")
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
-        CustomerBookingV3ListResponse customerBookingV3ListResponse = customerBookingV3Service.list(listCommonRequest);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) throws RunnerException {
+        CustomerBookingV3ListResponse customerBookingV3ListResponse = customerBookingV3Service.list(listCommonRequest, getMasterData);
         return ResponseHelper.buildListSuccessBookingResponse(customerBookingV3ListResponse.getCustomerBookingV3Responses(), customerBookingV3ListResponse.getTotalPages(), customerBookingV3ListResponse.getTotalCount());
     }
 
@@ -201,7 +201,7 @@ public class CustomerBookingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @DeleteMapping(ApiConstants.BOOKING_API_DELETE_CONTAINERS)
-    public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<ContainerV3Request> containerV3Requests) {
+    public ResponseEntity<IRunnerResponse> deleteBookingContainers(@RequestBody @Valid List<ContainerV3Request> containerV3Requests) throws RunnerException {
         BulkContainerResponse bulkContainerResponse = containerV3Service.deleteBulk(containerV3Requests, BOOKING);
         return ResponseHelper.buildSuccessResponse(bulkContainerResponse);
     }

@@ -1,5 +1,17 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PHONE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COUNTRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVNO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
+
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
@@ -16,17 +28,12 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 @Component
 public class PackingListReport extends IReport {
@@ -117,6 +124,15 @@ public class PackingListReport extends IReport {
         if(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getGoodsCO() != null) {
             var masterData = getMasterListData(MasterDataType.COUNTRIES, shipment.getAdditionalDetails().getGoodsCO());
             dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, masterData != null ? masterData.getItemDescription() : null);
+        }
+
+        if (model.getConsolidation() != null) {
+            this.populateConsolidationReportData(dictionary, null, model.getConsolidation().getId());
+        }
+
+        if(model.getShipmentDetails() != null) {
+            this.populateShipmentReportData(dictionary, null, model.getShipmentDetails().getId());
+            this.getPackingDetails(model.getShipmentDetails(), dictionary);
         }
 
         return dictionary;

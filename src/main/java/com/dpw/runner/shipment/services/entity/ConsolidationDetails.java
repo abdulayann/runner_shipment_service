@@ -140,7 +140,7 @@ public class ConsolidationDetails extends MultiTenancy {
     private LocalDateTime shipInstructionCutoff;
 
     @Column(name = "hazardous_booking_cutoff")
-    private LocalDateTime hazardousBookingCutoff;
+    private LocalDateTime hazardousBookingCutoff; // DG Cutoff
 
     @Column(name = "latest_full_equ_delivered_to_carrier")
     private LocalDateTime latestFullEquDeliveredToCarrier;
@@ -500,6 +500,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.ORDER_DPW)
     @Size(max = 64, message = "max size is 64 for partner")
     private String partner;
+
+    @Column(name = "incoterms")
+    @MasterData(type = MasterDataType.INCOTERMS)
+    private String incoterms;
 
     @Override
     public boolean equals(Object o) {

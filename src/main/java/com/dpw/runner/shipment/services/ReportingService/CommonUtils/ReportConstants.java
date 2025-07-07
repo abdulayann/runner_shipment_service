@@ -8,6 +8,36 @@ public class ReportConstants {
     public static final String LEGAL_COMPANY_NAME = "LegalCompanyName";
     public static final String COMPANY_ADDRESS = "CompanyAddress";
     public static final String HAWB_PACKS_MAP = "hawbPacksMap";
+    public static final String C_D_DG = "C_D_DG";
+    public static final String C_D_Reefer = "C_D_Reefer";
+    public static final String C_CA_DGContainer = "C_CA_DGContainer";
+    public static final String C_CA_DGPackages = "C_CA_DGPackages";
+    public static final String C_C_DGPackagesType = "C_C_DGPackagesType";
+    public static final String C_C_DGContainer = "C_C_DGContainer";
+    public static final String C_C_DGPackages = "C_C_DGPackages";
+    public static final String C_C_AdditionalTerms = "C_C_AdditionalTerms";
+    public static final String C_C_SLACCount = "C_C_SLACCount";
+    public static final String C_LastVessel = "C_LastVessel";
+    public static final String C_LastVoyage = "C_LastVoyage";
+    public static final String C_FirstVessel = "C_FirstVessel";
+    public static final String C_LastFlightNumber = "C_LastFlightNumber";
+    public static final String C_LastCarrier = "C_LastCarrier";
+    public static final String C_FirstVoyage = "C_FirstVoyage";
+    public static final String C_FirstCarrier = "C_FirstCarrier";
+    public static final String C_FirstFlightNumber = "C_FirstFlightNumber";
+    public static final String HAS_LEGS = "HasLegs";
+    public static final String TI_LEGS = "TILegs";
+    public static final String HAS_CONTAINERS = "HasContainers";
+    public static final String TI_CONTAINERS = "TI_Containers";
+    public static final String TI_PACKAGES = "TI_Packages";
+    public static final String TI_REFERENCES = "TI_ReferenceDetails";
+    public static final String TI_TRUCK_DRIVERS = "TI_Drivers";
+    public static final String HAS_PACKAGE_DETAILS = "HasPackDetails";
+    public static final String HAS_REFERENCE_DETAILS = "HasReferenceDetails";
+    public static final String HAS_TRUCK_DRIVERS = "HasDrivers";
+    public static final String PICKUP_ORDER_V3 = "PickupOrderV3";
+    public static final String DELIVERY_ORDER_V3 = "DeliveryOrderV3";
+    public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
@@ -145,6 +175,7 @@ public class ReportConstants {
     public static final String DELIVERY_TIME = "DeliveryTime";
     public static final String DELIVERY_AGENT = "DeliveryAgent";
     public static final String MARKS_N_NUMS = "MarksnNums";
+    public static final String GOODS_DESCRIPTION = "GoodsDescription";
     public static final String MARKS_NO = "MarksNo";
     public static final String MARKS_AND_NUMBER = "Marks&Number";
     public static final String ORIGINALS = "Originals";
@@ -516,6 +547,15 @@ public class ReportConstants {
     public static final String DRIVER_NAME = "DriverName";
     public static final String DRIVER_MOBILE_NUMBER = "DriverMobileNumber";
     public static final String TRANSPORTER_NAME = "TransporterName";
+
+    public static final String S_TRUCK_NO = "S_TruckNo";
+    public static final String S_TRAILER_NO = "S_TrailerNo";
+    public static final String S_TRUCK_TRAILER_TYPE = "S_TruckTrailerType";
+    public static final String S_DRIVER_ID = "S_DriverID";
+    public static final String S_DRIVER_NAME = "S_DriverName";
+    public static final String S_DRIVER_MOBILE_NUMBER = "S_DriverMobileNumber";
+    public static final String S_TRANSPORTER_NAME = "S_TransporterName";
+    public static final String S_TRANSPORT_BY = "S_TransportBy";
 
     /*
         Report Constants
@@ -1390,4 +1430,48 @@ public class ReportConstants {
     public static final String DESTINATION_AGENT_NAME_IN_CAPS = "DestinationAgentNameInCaps";
     public static final String DESTINATION_AGENT_ADDRESS_IN_CAPS = "DestinationAgentAddressInCaps";
 
+    // Shipment 3.0 tags
+    public static final String S_CONTROLLED = "S_Controlled";
+    public static final String S_CONTROLLED_REF_NO = "S_ControlledRefNo";
+    public static final String S_INCOTERM_LOCATION = "S_IncotermLocation";
+    public static final String S_PARTNER_DROP_DOWN = "S_PartnerDrop-down";
+    public static final String S_CO_LOADER_NAME = "S_Co-LoaderName";
+    public static final String S_CO_LOADER_BKG_NO = "S_Co-LoaderBKGNo";
+    public static final String S_CO_LOADER_BL_NO = "S_Co-LoaderBLNo";
+    public static final String S_CO_LOADER_AWB_NO = "S_Co-LoaderAWBNo";
+    public static final String S_BOOKING_AGENT = "S_BookingAgent";
+    public static final String S_BOOKING_AGENT_BKG_NO = "S_BookingAgtBkgNo";
+    public static final String S_BOOKING_AGENT_BL_NO = "S_BookingAgtBLNo";
+    public static final String S_BOOKING_AGENT_AWB_NO = "S_BookingAgtAWBNo";
+    public static final String S_PICKUP_AT_ORIGIN = "S_PickupatOrigin";
+    public static final String S_DELIVERY_AT_DESTINATION = "S_DeliveryatDestination";
+    public static final String S_CUSTOM_BROKERAGE_AT_ORIGIN = "S_CustomBrokerageatOrigin";
+    public static final String S_CUSTOM_BROKERAGE_AT_DESTINATION = "S_CustomBrokerageatDestination";
+    public static final String S_TERMINAL = "S_Terminal";
+    public static final String S_VGM = "S_VGM";
+    public static final String S_SI = "S_SI";
+    public static final String S_EAR_EPY_EQ_PICK = "S_EarEpyEqPick";
+    public static final String S_LAT_FULL_EQ_DELI = "S_LatFullEQDeli";
+    public static final String S_EAR_DROP_OFF = "S_EarDropoff";
+    public static final String S_REEFER = "S_Reefer";
+    public static final String S_LAT = "S_LAT";
+    public static final String S_BOE_NUMBER = "S_BOENumber";
+    public static final String S_BOE_DATE = "S_Date";
+    public static final String S_OWNERSHIP = "S_Ownership";
+    public static final String S_OWNERSHIP_NAME = "S_Ownership Name";
+    public static final String S_PASSED_BY = "S_PassedBy";
+    public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
+
+    public static final String S_LAST_VESSEL = "S_LastVessel";
+    public static final String S_LAST_VOYAGE = "S_LastVoyage";
+    public static final String S_LAST_FLIGHT_NUMBER = "S_LastFlightNumber";
+    public static final String S_LAST_CARRIER = "S_LastCarrier";
+
+    public static final String S_FIRST_VESSEL = "S_FirstVessel";
+    public static final String S_FIRST_VOYAGE = "S_FirstVoyage";
+    public static final String S_FIRST_FLIGHT_NUMBER = "S_FirstFlightNumber";
+    public static final String S_FIRST_CARRIER = "S_FirstCarrier";
+
+    public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
+    public static final String HAS_PACKS = "HasPacks1";
 }

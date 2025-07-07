@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -58,6 +59,7 @@ public class TransportOrderReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipmentModel.getShipmentId());
         processTruckDriverDetailsTags(shipmentModel, dictionary);
+        populateV3TruckDriverDetailsTags(shipmentModel, dictionary);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipmentModel);
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         UnlocationsResponse origin = unlocationsMap.get(shipmentModel.getCarrierDetails().getOrigin());
@@ -96,6 +98,10 @@ public class TransportOrderReport extends IReport{
         addFreightLocalTags(shipmentModel, dictionary, v1TenantSettingsResponse);
         if(shipmentModel.getTransportInstructionId() != null)
             addTransportInstructionTags(dictionary, shipmentModel);
+        if(transportOrderModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, transportOrderModel.shipmentDetails.getId());
+            this.getPackingDetails(transportOrderModel.shipmentDetails, dictionary);
+        }
         return dictionary;
     }
 

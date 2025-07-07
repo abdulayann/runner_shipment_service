@@ -18,13 +18,20 @@ import java.util.Map;
 
 @Service
 public class EnumConstantService implements IEnumConstantService {
-    @Override
-    public ResponseEntity<IRunnerResponse> list() {
-        Map<String, List<EnumConstantResponse>> response = new HashMap<>();
 
+    private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
+
+    @Override
+    public ResponseEntity<IRunnerResponse> list(Boolean isFromV3) {
+        Map<String, List<EnumConstantResponse>> response = new HashMap<>();
         List<EnumConstantResponse> enumList = new ArrayList<>();
         for (ShipmentStatus shipmentStatus : ShipmentStatus.values()) {
-            enumList.add(EnumConstantResponse.builder().id(shipmentStatus.getValue()).description(shipmentStatus.getDescription()).name(shipmentStatus.name()).build());
+            if(Boolean.TRUE.equals(isFromV3)) {
+                if(!deprecatedShipmentStatusesForV3.contains(shipmentStatus))
+                    enumList.add(EnumConstantResponse.builder().id(shipmentStatus.getValue()).description(shipmentStatus.getDescription()).name(shipmentStatus.name()).build());
+            } else {
+                enumList.add(EnumConstantResponse.builder().id(shipmentStatus.getValue()).description(shipmentStatus.getDescription()).name(shipmentStatus.name()).build());
+            }
         }
         response.put(Constants.SHIPMENT_STATUS, enumList);
 

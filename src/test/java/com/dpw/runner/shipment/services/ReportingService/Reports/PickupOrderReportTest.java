@@ -13,6 +13,8 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -69,6 +71,12 @@ class PickupOrderReportTest extends CommonMocks {
 
     @Mock
     private HblReport hblReport;
+
+    @Mock
+    IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
 
     @BeforeAll
     static void init() throws IOException {
@@ -310,6 +318,8 @@ class PickupOrderReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        mockTenantSettings();
         assertNotNull(pickupOrderReport.populateDictionary(pickUpOrderReportModel));
     }
 

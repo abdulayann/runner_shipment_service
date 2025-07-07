@@ -88,8 +88,8 @@ class CustomerBookingV3ControllerTest {
         CustomerBookingV3ListResponse customerBookingV3ListResponse = new CustomerBookingV3ListResponse();
         customerBookingV3ListResponse.setTotalPages(10);
         customerBookingV3ListResponse.setTotalCount(247L);
-        when(customerBookingV3Service.list(any())).thenReturn(customerBookingV3ListResponse);
-        var response = customerBookingV3Controller.list(new ListCommonRequest());
+        when(customerBookingV3Service.list(any(), any())).thenReturn(customerBookingV3ListResponse);
+        var response = customerBookingV3Controller.list(new ListCommonRequest(), Boolean.TRUE);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -159,7 +159,7 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void deleteBookingContainers() {
+    void deleteBookingContainers() throws RunnerException {
         when(containerV3Service.deleteBulk(any(), any())).thenReturn(new BulkContainerResponse());
         var responseEntity = customerBookingV3Controller.deleteBookingContainers(List.of(new ContainerV3Request()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());

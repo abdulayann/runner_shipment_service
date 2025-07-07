@@ -9,8 +9,11 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -21,22 +24,16 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import java.util.List;
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import java.util.List;
+
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.*;
 
 @RestController
 @RequestMapping(PackingConstants.PACKING_V3_API_HANDLE)
@@ -44,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PackingV3Controller {
 
     private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
+    private static class ContainerResponseClass extends RunnerResponse<ContainerResponse>{}
 
     private JsonHelper jsonHelper;
     private IPackingV3Service packingV3Service;
@@ -159,8 +157,8 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam Long id,
-                                                        @ApiParam(value = Constants.GUID) @RequestParam String guid,
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = Constants.ID) @RequestParam(required = false) Long id,
+                                                        @ApiParam(value = Constants.GUID) @RequestParam(required = false) String guid,
                                                         @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.retrieveById(id, guid, xSource));
     }
@@ -194,6 +192,19 @@ public class PackingV3Controller {
     public ResponseEntity<IRunnerResponse> getAllMasterData(@ApiParam(value = Constants.ID, required = true) @RequestParam Long id,
                                                             @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(packingV3Service.getAllMasterData(id, xSource));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @PostMapping(ASSIGN_PACKAGES)
+    public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(packingV3Service.assignPackagesContainers(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @PostMapping(UN_ASSIGN_PACKAGES)
+    public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
+        packingV3Service.unAssignPackageContainers(request);
+        return ResponseHelper.buildSuccessResponse();
     }
 
 }

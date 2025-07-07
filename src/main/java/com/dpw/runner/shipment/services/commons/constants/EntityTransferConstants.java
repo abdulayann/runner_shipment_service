@@ -2,12 +2,16 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 
 public class EntityTransferConstants {
     private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
+    public static final String ENTITY_TRANSFER_V3_API_HANDLE = "/api/v3/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
     public static final String SEND_ENTITY_TO_EXTERNAL_SYSTEM = "/send-file-to-external";
     public static final String CHECK_RETRANSFER_ACCEPTED = "/check-retransfer-accepted";
@@ -95,4 +99,6 @@ public class EntityTransferConstants {
     public static final String EMAIL_TEMPLATE_REASSIGN_CONSOLIDATION_SUBJECT_TRIANGULATION_BRANCH = "{#CONSOLIDATION_NUMBER} Triangulation Branch Reassignment Request";
 
     public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
+
+    public static final Set<String> validDirectionForNetworkTransfer = new HashSet<>(Arrays.asList(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS));
 }

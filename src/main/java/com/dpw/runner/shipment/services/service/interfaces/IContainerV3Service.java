@@ -26,7 +26,7 @@ public interface IContainerV3Service {
 
     BulkContainerResponse updateBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
-    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module);
+    BulkContainerResponse deleteBulk(List<ContainerV3Request> request, String module) throws RunnerException;
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId, String xSource) throws RunnerException;
 
@@ -44,8 +44,8 @@ public interface IContainerV3Service {
             Set<Long> attachedShipmentIds,
             Set<Long> interBranchRequestedShipIds);
 
-    ContainerResponse assignContainers(AssignContainerRequest request) throws RunnerException;
-    ContainerResponse unAssignContainers(UnAssignContainerRequest request) throws RunnerException;
+    ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
+    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
     void updateAttachedContainersData(List<Long> containerIds) throws RunnerException;

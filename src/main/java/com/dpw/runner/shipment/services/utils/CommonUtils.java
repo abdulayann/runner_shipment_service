@@ -22,7 +22,10 @@ import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -781,6 +784,20 @@ public class CommonUtils {
 
         notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
                 template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
+    }
+
+    public void sendEmailResponseToDGRequesterV3(EmailTemplatesRequest template,
+        OceanDGRequestV3 request, ShipmentDetails shipmentDetails) {
+
+
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> recipientEmails = Collections.singletonList(request.getUserEmail());
+
+        populateDGReceiverDictionaryV3(dictionary, shipmentDetails, request);
+
+
+        notificationService.sendEmail(replaceTagsFromData(dictionary, template.getBody()),
+            template.getSubject(), new ArrayList<>(recipientEmails), new ArrayList<>());
     }
 
     public void sendEmailShipmentPullAccept(SendEmailDto sendEmailDto) {
@@ -1555,6 +1572,24 @@ public class CommonUtils {
         return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
     }
 
+    public boolean checkIfDGFieldsChangedInContainer(ContainerV3Request newContainer, Containers oldContainer) {
+        if (!oldContainer.getHazardous().equals(newContainer.getHazardous()))
+            return true;
+        if (!Objects.equals(newContainer.getDgClass(), oldContainer.getDgClass()))
+            return true;
+        if (!Objects.equals(newContainer.getUnNumber(), oldContainer.getUnNumber()))
+            return true;
+        if (!Objects.equals(newContainer.getProperShippingName(), oldContainer.getProperShippingName()))
+            return true;
+        if (!Objects.equals(newContainer.getPackingGroup(), oldContainer.getPackingGroup()))
+            return true;
+        if (!compareBigDecimals(newContainer.getMinimumFlashPoint(), oldContainer.getMinimumFlashPoint()))
+            return true;
+        if (!Objects.equals(newContainer.getMinimumFlashPointUnit(), oldContainer.getMinimumFlashPointUnit()))
+            return true;
+        return !oldContainer.getMarinePollutant().equals(newContainer.getMarinePollutant());
+    }
+
     public void updateUnLocData(CarrierDetails carrierDetails, CarrierDetails oldCarrierDetails) {
         try {
             if (!Objects.isNull(carrierDetails) && (Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
@@ -1793,6 +1828,31 @@ public class CommonUtils {
         }
     }
 
+    public TaskCreateResponse createTaskMDM(ShipmentDetails shipmentDetails, Integer roleId) throws RunnerException {
+        MdmTaskCreateRequest taskRequest = MdmTaskCreateRequest
+            .builder()
+            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+            .entityUuid(shipmentDetails.getGuid().toString())
+            .roleId(roleId)
+            .taskType(DG_OCEAN_APPROVAL)
+            .status(PENDING_ACTION_TASK)
+            .userId(UserContext.getUser().getUserId())
+            .isCreatedFromV2(true)
+            .sendEmail(false)
+            .build();
+
+        try {
+            MdmTaskCreateResponse mdmTaskCreateResponse =  mdmServiceAdapter.createTask(taskRequest);
+            return TaskCreateResponse
+                .builder()
+                .tasksId(mdmTaskCreateResponse.getId().toString())
+                .build();
+        } catch (Exception e) {
+            throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
+                shipmentDetails.getId(), e.getMessage()));
+        }
+    }
+
     public void getVesselsData(CarrierDetails carrierDetails, VesselsResponse vesselsResponse) {
         if (carrierDetails == null) return;
         String guid = carrierDetails.getVessel();
@@ -1879,6 +1939,16 @@ public class CommonUtils {
     }
 
     private void populateDGReceiverDictionary(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, OceanDGRequest request) {
+        dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
+        dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
+        dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
+        dictionary.put(APPROVER_NAME, UserContext.getUser().getUsername());
+        dictionary.put(APPROVED_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern(DATE_TIME_FORMAT)));
+        dictionary.put(REMARKS, request.getRemarks());
+        dictionary.put(STATUS, request.getStatus());
+    }
+
+    private void populateDGReceiverDictionaryV3(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, OceanDGRequestV3 request) {
         dictionary.put(USER_BRANCH, UserContext.getUser().getTenantDisplayName());
         dictionary.put(USER_COUNTRY, UserContext.getUser().getTenantCountryCode());
         dictionary.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
@@ -2397,6 +2467,38 @@ public class CommonUtils {
         return true;
     }
 
+    public void validateAirSecurityAndDGShipmentPermissions(ShipmentDetails shipmentDetails) {
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode())) {
+            // DG shipment can be updated only by DG users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
+                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    Boolean.TRUE.equals(shipmentDetails.getContainsHazardous()) && !UserContext.isAirDgUser()) {
+                throw new ValidationException("You don't have permission to update DG Shipment");
+            }
+            // Air EXP shipment can be updated only by Air Security users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    !CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+                throw new ValidationException("You don't have Air Security permission to create or update AIR EXP Shipment.");
+            }
+        }
+    }
+
+    public void validateAirSecurityAndDGConsolidationPermissions(ConsolidationDetails consolidationDetails) {
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            // DG shipment can be updated only by DG users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getAirDGFlag()) &&
+                    !Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    Boolean.TRUE.equals(consolidationDetails.getHazardous()) && !UserContext.isAirDgUser()) {
+                throw new ValidationException("You don't have permission to update DG Consolidation");
+            }
+            // Air EXP shipment can be updated only by Air Security users
+            if(Boolean.TRUE.equals(getShipmentSettingFromContext().getCountryAirCargoSecurity()) &&
+                    !CommonUtils.checkAirSecurityForConsolidation(consolidationDetails)) {
+                throw new ValidationException("You don't have Air Security permission to create or update AIR EXP Consolidation.");
+            }
+        }
+    }
+
     public EventsRequest prepareEventRequest(Long entityId, String eventCode, String entityType, String referenceNumber) {
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setActual(getUserZoneTime(LocalDateTime.now()));
@@ -2703,6 +2805,18 @@ public class CommonUtils {
         } catch (Exception e) {
             log.error("Error sending email: " + e.getMessage());
         }
+    }
+
+    public boolean isRoadLCLorLTL(String transportMode, String cargoType) {
+        return Constants.TRANSPORT_MODE_ROA.equals(transportMode) && isLCLorLTL(cargoType);
+    }
+
+    public boolean isSeaLCL(String transportMode, String cargoType) {
+        return Constants.TRANSPORT_MODE_SEA.equals(transportMode) && Constants.SHIPMENT_TYPE_LCL.equals(cargoType);
+    }
+
+    public boolean isLCLorLTL(String cargoType) {
+        return (Constants.SHIPMENT_TYPE_LCL.equals(cargoType) || CARGO_TYPE_LTL.equals(cargoType));
     }
 
     public String getPacksUnit(String curUnit, String entityPacksUnit) {

@@ -7,7 +7,9 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
+import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -58,14 +60,13 @@ public class CargoService implements ICargoService {
     @Override
     public CargoDetailsResponse getCargoDetails(CargoDetailsRequest request) throws RunnerException {
         CargoDetailsResponse response = new CargoDetailsResponse();
-
         String entityType = request.getEntityType();
         Long entityId = Long.valueOf(request.getEntityId());
-
         List<Containers> containers = fetchContainers(entityType, entityId);
         List<Packing> packings = fetchPackings(entityType, entityId);
         response.setTransportMode(fetchTransportType(entityType, entityId));
         response.setShipmentType(fetchShipmentType(entityType, entityId));
+
         if(!packings.isEmpty()) {
             calculateCargoDetails(packings, response);
         }
@@ -74,6 +75,31 @@ public class CargoService implements ICargoService {
             response.setContainers(getTotalContainerCount(containers));
             response.setTeuCount(getTotalTeu(containers, codeTeuMap));
         }
+        return response;
+    }
+
+    @Override
+    public CargoChargeableResponse calculateChargeable(CargoChargeableRequest request) throws RunnerException {
+        VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(
+                request.getTransportMode(),
+                request.getWeightUnit(),
+                request.getVolumeUnit(),
+                request.getWeight(),
+                request.getVolume()
+        );
+
+        BigDecimal chargeable = vwOb.getChargeable();
+        if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(request.getTransportMode())) {
+            chargeable = BigDecimal.valueOf(roundOffAirShipment(chargeable.doubleValue()));
+        }
+
+        CargoChargeableResponse response = new CargoChargeableResponse();
+        response.setWeight(request.getWeight());
+        response.setWeightUnit(request.getWeightUnit());
+        response.setChargeable(chargeable);
+        response.setChargeableUnit(vwOb.getChargeableUnit());
+        response.setVolumetricWeight(vwOb.getVolumeWeight());
+        response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         return response;
     }
 
@@ -99,8 +125,10 @@ public class CargoService implements ICargoService {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
+        boolean isWeightMissing = false;
         Set<String> distinctPackTypes = new HashSet<>();
         for (Packing p : packings) {
+            isWeightMissing |= isAirWeightMissing(p, response);
             if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
                 totalWeight = totalWeight.add(new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), response.getWeightUnit()).toString()));
             }
@@ -112,13 +140,24 @@ public class CargoService implements ICargoService {
             }
             addDistinctPackType(distinctPackTypes, p);
         }
-        response.setWeight(totalWeight);
-        response.setVolume(totalVolume);
-        response.setNoOfPacks(totalPacks);
+
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        response.setVolume(totalVolume);
+        response.setNoOfPacks(totalPacks);
         response.setPacksUnit(getPackUnit(distinctPackTypes));
-        calculateVW(response);
+
+        if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode()) && isWeightMissing) {
+            response.setWeight(null);
+            response.setChargable(null);
+        } else {
+            response.setWeight(totalWeight);
+        }
+        calculateVW(response, isWeightMissing);
+    }
+
+    private boolean isAirWeightMissing(Packing p, CargoDetailsResponse r) {
+        return p.getWeight() == null && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(r.getTransportMode());
     }
 
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
@@ -131,24 +170,38 @@ public class CargoService implements ICargoService {
         return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
     }
 
-    private CargoDetailsResponse calculateVW(CargoDetailsResponse response) throws RunnerException {
-        if (isStringNullOrEmpty(response.getTransportMode()))
+    private CargoDetailsResponse calculateVW(CargoDetailsResponse response, boolean isWeightMissing) throws RunnerException {
+        if (isStringNullOrEmpty(response.getTransportMode())) {
             return response;
+        }
         if (!isStringNullOrEmpty(response.getWeightUnit()) && !isStringNullOrEmpty(response.getVolumeUnit())) {
-            VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), response.getWeight(), response.getVolume());
-            response.setChargable(vwOb.getChargeable());
-            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
-                response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode()) && isWeightMissing) {
+                VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), BigDecimal.ZERO, response.getVolume());
+                response.setChargeableUnit(vwOb.getChargeableUnit());
+                response.setVolumetricWeight(vwOb.getVolumeWeight());
+                response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
+                return response;
             }
+
+            VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), response.getWeight(), response.getVolume());
+            BigDecimal chargeable = vwOb.getChargeable();
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+                chargeable = BigDecimal.valueOf(roundOffAirShipment(chargeable.doubleValue()));
+            }
+            response.setChargable(chargeable);
             response.setChargeableUnit(vwOb.getChargeableUnit());
-            if (Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && !isStringNullOrEmpty(response.getShipmentType()) && Constants.SHIPMENT_TYPE_LCL.equals(response.getShipmentType())) {
+
+            if (Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(response.getShipmentType())) {
                 double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
                 response.setChargable(BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3)));
                 response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-                vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
-            }
 
+                vwOb = consolidationService.calculateVolumeWeight(
+                        response.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3,
+                        BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3)
+                );
+            }
             response.setVolumetricWeight(vwOb.getVolumeWeight());
             response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         }

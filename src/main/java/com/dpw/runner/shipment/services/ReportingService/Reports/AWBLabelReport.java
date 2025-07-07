@@ -1,40 +1,13 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_WEIGHT_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_CHARGEABLE_WEIGHT_AND_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_FIRST_LEG_DESTINATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_ORIGIN_AIRPORT_CODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_ORIGIN_AIRPORT_CODE_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_SECOND_LEG_DESTIATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_THIRD_LEG_DESTINATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONSOL_TOTAL_WEIGHT_AND_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_PORT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DESTINATION_PORT_NAME_INCAPS_AIR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FIRST_LEG_DESTINATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WEIGHT_AND_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_NOS_PACKS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.IS_COMBI;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_PORT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_PORT_NAME_INCAPS_AIR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PACKS_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD_AIRPORT_CODE_IN_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL_AIRPORT_CODE_IN_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SECOND_LEG_DESTINATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.THIRD_LEG_DESTINATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_CONSOL_PACKS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAS_PACK_DETAILS;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.BookingOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
@@ -187,10 +160,13 @@ public class AWBLabelReport extends IReport{
 
         if (awbLabelModel.shipment != null) {
             processShipment(awbLabelModel, dictionary, unlocations);
+            this.populateShipmentReportData(dictionary, null, awbLabelModel.getShipment().getId());
+            this.getPackingDetails(awbLabelModel.getShipment(), dictionary);
         }
 
         if (awbLabelModel.getConsolidation() != null) {
             processConsolidation(awbLabelModel, dictionary, unlocations);
+            this.populateConsolidationReportData(dictionary, null, awbLabelModel.getConsolidation().getId());
         }
 
         if (!unlocations.isEmpty()) {

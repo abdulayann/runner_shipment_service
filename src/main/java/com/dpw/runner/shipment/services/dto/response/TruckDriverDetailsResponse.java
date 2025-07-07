@@ -34,4 +34,5 @@ public class TruckDriverDetailsResponse implements IRunnerResponse {
     private String shipmentNumber;
     private String containerNumber;
     private Parties thirdPartyTransporter;
+    private String driverId;
 }

@@ -18,11 +18,16 @@ import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import javax.persistence.Column;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Getter
+@Setter
 public class ShipmentModel implements IDocumentModel {
     @JsonProperty("Guid")
     private UUID guid;
@@ -235,5 +240,49 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("ShipmentOrders")
     private List<ShipmentOrderModel> shipmentOrders;
     private String document;
+
+    @JsonProperty("Controlled")
+    private Boolean controlled;
+    @JsonProperty("ControlledReferenceNumber")
+    private String controlledReferenceNumber;
+    @JsonProperty("IncotermsLocation;")
+    private String incotermsLocation;
+    @JsonProperty("Partner")
+    private String partner;
+    @JsonProperty("CoLoadCarrierName;")
+    private String coLoadCarrierName;
+    @JsonProperty("CoLoadBkgNumber")
+    private String coLoadBkgNumber;
+    @JsonProperty("CoLoadBlNumber")
+    private String coLoadBlNumber;
+    @JsonProperty("BookingAgent")
+    private Long bookingAgent;
+    @JsonProperty("PickupAtOrigin")
+    private Long pickupAtOrigin;
+    @JsonProperty("DeliveryAtDestination")
+    private Long deliveryAtDestination;
+    @JsonProperty("BrokerageAtOrigin")
+    private Long brokerageAtOrigin;
+    @JsonProperty("BrokerageAtDestination")
+    private Long brokerageAtDestination;
+    @JsonProperty("TerminalCutoff")
+    private LocalDateTime terminalCutoff;
+    @JsonProperty("VerifiedGrossMassCutoff")
+    private LocalDateTime verifiedGrossMassCutoff;
+    @JsonProperty("ShippingInstructionCutoff")
+    private LocalDateTime shippingInstructionCutoff;
+    @JsonProperty("EarliestEmptyEquipmentPickUp")
+    private LocalDateTime earliestEmptyEquipmentPickUp;
+    @JsonProperty("LatestFullEquipmentDeliveredToCarrier")
+    private LocalDateTime latestFullEquipmentDeliveredToCarrier;
+    @JsonProperty("EarliestDropOffFullEquipmentToCarrier")
+    private LocalDateTime earliestDropOffFullEquipmentToCarrier;
+    @JsonProperty("IsReefer")
+    private Boolean isReefer;
+    @JsonProperty("LatestArrivalTime")
+    private LocalDateTime latestArrivalTime;
+
+
+
 }
 

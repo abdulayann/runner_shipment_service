@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import io.swagger.annotations.ApiParam;
@@ -112,9 +111,9 @@ public class PickupDeliveryDetailsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_API_RETRIEVE_BY_ID_V2)
-    public ResponseEntity<IRunnerResponse> retrieveByIdV2(@ApiParam(value = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_ID, required = true) @RequestParam Long id) {
+    public ResponseEntity<IRunnerResponse> retrieveByIdV2(@ApiParam(value = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_ID, required = true) @RequestParam Long id, @ApiParam(value = "Populate RAKC", required = false) @RequestParam boolean populateRAKC) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return pickupDeliveryDetailsService.retrieveByIdV2(CommonRequestModel.buildRequest(request));
+        return pickupDeliveryDetailsService.retrieveByIdV2(CommonRequestModel.buildRequest(request), populateRAKC);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_UPDATE_SUCCESSFUL, response = RunnerResponse.class)})

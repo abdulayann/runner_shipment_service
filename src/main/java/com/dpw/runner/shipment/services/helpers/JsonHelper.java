@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
@@ -202,6 +203,10 @@ public class JsonHelper {
 
     public <T,F> F convertCreateValue(T object, Class<F> clazz) {
         return createMapper.convertValue(object, clazz);
+    }
+
+    public <T> T updateValue(T valueToUpdate, Object overrides) throws JsonMappingException {
+        return mapper.updateValue(valueToUpdate, overrides);
     }
 
 }

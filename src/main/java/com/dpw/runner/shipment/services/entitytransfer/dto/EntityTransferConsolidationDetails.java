@@ -106,9 +106,7 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private EntityTransferParties borrowedFrom;
     private EntityTransferParties creditor;
     private EntityTransferParties coLoadWith;
-    private EntityTransferParties bookingAgent;
-    private String bookingAgentNumber;
-    private String bookingAgentBlNumber;
+    private Long bookingAgent;
     private List<EntityTransferPacking> packingList;
     private List<EntityTransferReferenceNumbers> referenceNumbersList;
     private List<EntityTransferRoutings> routingsList;

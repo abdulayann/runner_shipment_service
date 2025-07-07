@@ -24,9 +24,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -58,6 +56,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -71,6 +70,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -120,10 +120,18 @@ class SeawayBillReportTest extends CommonMocks {
     private JsonHelper jsonHelper;
 
     @Mock
+    MasterDataUtils masterDataUtils;
+
+    @Mock
     private IShipmentDao shipmentDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private IHblDao hblDao;
+
+    Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
     @BeforeAll
     static void init() throws IOException {
@@ -145,6 +153,26 @@ class SeawayBillReportTest extends CommonMocks {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().isModuleValidationEnabled(Boolean.TRUE).P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd")
                         .GSTTaxAutoCalculation(true).build());
+
+        // Mock tenant models with lowercase values
+        TenantModel origin = new TenantModel();
+        origin.setDisplayName("origin branch");
+        origin.setAddress1("origin addr1");
+        origin.setAddress2("origin addr2");
+        origin.setCity("origin city");
+        origin.setState("origin state");
+        origin.setZipPostCode("12345");
+        origin.setCountry("origin country");
+
+        TenantModel dest = new TenantModel();
+        dest.setDisplayName("dest branch");
+
+        TenantModel triang = new TenantModel();
+        triang.setDisplayName("triang branch");
+        // Prepare mocked tenant map
+        mockedTenantMap.put("100", origin);
+        mockedTenantMap.put("200", dest);
+        mockedTenantMap.put("300", triang);
     }
 
     private void populateModel(SeawayBillModel seawayBillModel) {
@@ -419,6 +447,7 @@ class SeawayBillReportTest extends CommonMocks {
 
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, Object> chargeMap = new HashMap<>();
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
@@ -453,12 +482,14 @@ class SeawayBillReportTest extends CommonMocks {
 
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, Object> chargeMap = new HashMap<>();
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.getData(any())).thenReturn(dictionary);
         mockTenantSettings();
+        when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         assertNotNull(seawayBillReport.populateDictionary(seawayBillModel));
     }
 

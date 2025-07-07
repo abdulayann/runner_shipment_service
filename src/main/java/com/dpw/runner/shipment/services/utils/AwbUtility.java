@@ -34,17 +34,14 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
-import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +50,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.convertToDPWDateFormatWithTime;
+import static com.dpw.runner.shipment.services.commons.constants.AwbConstants.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings("rawtypes")
@@ -92,6 +90,91 @@ public class AwbUtility {
     private ShipmentSettingsDao shipmentSettingsDao;
     @Autowired
     public void setShipmentSettingsDao(ShipmentSettingsDao shipmentSettingsDao) { this.shipmentSettingsDao = shipmentSettingsDao; }
+
+    private static final Map<String, List<String>> AWB_LOCK_GROUPS = Map.ofEntries(
+            Map.entry(SHIPPER_LOCK_GROUP, List.of(
+                    "shipperNameLock", "shipperAddressLock", "shipperAddressLine2Lock", "shipperCityLock",
+                    "shipperStateCode", "shipperZipCode", "shipperCountyCodeLock", "shipperCountryNameLock",
+                    "shipperContactNameLock", "shipperPhoneNumberLock", "shipperTaxNumberLock"
+            )),
+            Map.entry(CONSIGNEE_LOCK_GROUP, List.of(
+                    "consigneeNameLock", "consigneeAddressLock", "consigneeAddressLine2Lock", "consigneeCityLock",
+                    "consigneeStateCode", "consigneeZipCode", "consigneeCountyCodeLock", "consigneeCountryNameLock",
+                    "consigneeContactNameLock", "consigneePhoneNumberLock", "consigneeTaxNumberLock"
+            )),
+            Map.entry(NOTIFY_LOCK_GROUP, List.of(
+                    "notifyOrganizationLock", "notifyOrganizationAddressLock", "notifyAddressLine2Lock", "notifyCityLock",
+                    "notifyStateCode", "notifyZipCode", "notifyCountyCodeLock", "notifyCountryNameLock",
+                    "notifyContactNameLock", "notifyPhoneNumberLock", "notifyTaxNumberLock"
+            )),
+            Map.entry(ISSUING_AGENT_LOCK_GROUP, List.of(
+                    "issuingAgentNameLock", "issuingAgentAddressLock", "issuingAgentAddressLine2Lock", "issuingAgentCityLock",
+                    "issuingAgentStateCode", "issuingAgentZipCode", "issuingAgentCountyCodeLock", "issuingAgentCountryNameLock",
+                    "issuingAgentContactNameLock", "issuingAgentPhoneNumberLock", "issuingAgentTaxNumberLock", "iataCodeLock", "cassCode"
+            )),
+            Map.entry(AWB_NUMBER, List.of("awbNumberLock")),
+            Map.entry(ROUTING_DETAILS_LOCK_GROUP, List.of(
+                    "airportOfDepartureLock", "airportOfDestinationLock", "firstCarrierLock"
+            )),
+            Map.entry(NEW_ROUTING_INFO_LOCK_GROUP, List.of(
+                    "originPortLock", "destinationPortLock", "byCarrierLock", "flightNumberLock", "flightDateLock"
+            )),
+            Map.entry(CARGO_DETAILS_LOCK_GROUP, List.of(
+                    "accountingInfoLock", "handlingInfoLock", "specialHandlingCodesLock", "currencyLock",
+                    "chargeCodeLock", "carriageValueLock", "customsValueLock", "insuranceAmountLock", "customOriginCodeLock"
+            )),
+            Map.entry(ECSD_LOCK_GROUP, List.of(
+                    "countryCodeLock", "raNumberLock", "raExpiryDateLock", "screeningStatusLock",
+                    "screeningTimeLock", "screenerNameLock"
+            )),
+            Map.entry(GOODS_DESCRIPTION_LOCK_GROUP, List.of(
+                    "piecesNoLock", "grossWtLock", "grossWtUnitLock", "grossVolumeLock", "grossVolumeUnitLock",
+                    "commodityItemNoLock", "chargeableWtLock", "ntrQtyGoodsLock", "totalAmountLock", "slacCodeLock",
+                    "hsCodeLock"
+            )),
+            Map.entry(PACKING_LOCK_GROUP, List.of(
+                    "awbGoodsDescIdLock", "packsLock", "packsTypeLock", "originLock", "packingOrderLock",
+                    "lengthLock", "lengthUnitLock", "widthLock", "widthUnitLock", "heightLock", "heightUnitLock",
+                    "volumeLock", "volumeUnitLock", "weightLock", "netWeightLock", "netWeightUnitLock",
+                    "volumeWeightLock", "volumeWeightUnitLock", "marksnNumsLock", "countryCodeLock", "goodsDescLock",
+                    "referenceNumberLock", "inspectionsLock", "dangerousGoodsLock", "dgClassLock", "dgSubstanceIdLock"
+                    ,"minTempLock", "minTempUnitLock", "maxTempLock", "maxTempUnitLock", "commodityLock", "otherCustomsLock"
+            )),
+            Map.entry(CHARGE_DETAIL_LOCK_GROUP, List.of("collectValuationChargeLock", "collectTaxLock")),
+            Map.entry(OTHER_CHARGES_LOCK_GROUP, List.of("chargeBasisLock", "chargeDescriptionLock", "rateLock", "chargesDueLock")),
+            Map.entry(OTHER_DETAILS_LOCK_GROUP, List.of("shipperLock", "carrierLock", "executedAtLock", "executedOnLock"))
+    );
+
+    public static Map<String, Boolean> getGroupLockStatus(Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+        Map<String, Boolean> groupLockStatus = new HashMap<>();
+        Object lockSettings;
+        String entityType = awb.getAwbShipmentInfo().getEntityType();
+        if (MAWB.equalsIgnoreCase(entityType) || DMAWB.equalsIgnoreCase(entityType)) {
+            lockSettings = mawbLockSettings != null ? mawbLockSettings : new MawbLockSettings();
+        } else {
+            lockSettings = hawbLockSettings != null ? hawbLockSettings : new HawbLockSettings();
+        }
+        for (Map.Entry<String, List<String>> groupEntry : AWB_LOCK_GROUPS.entrySet()) {
+            String groupName = groupEntry.getKey();
+            List<String> fields = groupEntry.getValue();
+            boolean isLocked = false;
+            for (String fieldName : fields) {
+                try {
+                    Field field = lockSettings.getClass().getDeclaredField(fieldName);
+                    field.setAccessible(true);
+                    Object value = field.get(lockSettings);
+                    if (Boolean.TRUE.equals(value)) {
+                        isLocked = true;
+                        break;
+                    }
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    log.warn("Could not access field '{}' in lock settings: {}", fieldName, e.getMessage());
+                }
+            }
+            groupLockStatus.put(groupName, isLocked);
+        }
+        return groupLockStatus;
+    }
 
     public static String getFormattedAddress(AwbAddressParam addressParam)
     {

@@ -112,6 +112,9 @@ class CargoManifestReportTest extends CommonMocks {
     private IAwbDao awbDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private CargoManifestModel cargoManifestModel;
 
     @Mock

@@ -17,6 +17,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
@@ -43,6 +44,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
@@ -70,6 +72,7 @@ import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -112,6 +115,9 @@ class FreightCertificationReportTest extends CommonMocks {
     private MasterDataFactory masterDataFactory;
 
     @Mock
+    MasterDataUtils masterDataUtils;
+
+    @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
 
     @Mock
@@ -124,7 +130,12 @@ class FreightCertificationReportTest extends CommonMocks {
     private IShipmentDao shipmentDao;
 
     @Mock
+    private IContainerDao containerDao;
+
+    @Mock
     private V1ServiceUtil v1ServiceUtil;
+
+    Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
     @Mock
     private BillingServiceAdapter billingServiceAdapter;
@@ -147,6 +158,25 @@ class FreightCertificationReportTest extends CommonMocks {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).DPWDateFormat("yyyy-MM-dd").GSTTaxAutoCalculation(true).EnableIGMDetails(true).build());
+        // Mock tenant models with lowercase values
+        TenantModel origin = new TenantModel();
+        origin.setDisplayName("origin branch");
+        origin.setAddress1("origin addr1");
+        origin.setAddress2("origin addr2");
+        origin.setCity("origin city");
+        origin.setState("origin state");
+        origin.setZipPostCode("12345");
+        origin.setCountry("origin country");
+
+        TenantModel dest = new TenantModel();
+        dest.setDisplayName("dest branch");
+
+        TenantModel triang = new TenantModel();
+        triang.setDisplayName("triang branch");
+        // Prepare mocked tenant map
+        mockedTenantMap.put("100", origin);
+        mockedTenantMap.put("200", dest);
+        mockedTenantMap.put("300", triang);
     }
 
     private void populateModel(FreightCertificationModel freightCertificationModel) {
@@ -345,6 +375,7 @@ class FreightCertificationReportTest extends CommonMocks {
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         mockTenantSettings();
         mockBill(true, false, false);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
         mockBill(false, false, false);
         assertNotNull(freightCertificationReport.populateDictionary(freightCertificationModel));
@@ -374,10 +405,12 @@ class FreightCertificationReportTest extends CommonMocks {
         billChargesBaseResponse.setChargeTypeDetails(ChargeTypeBaseResponse.builder()
                 .guId(randomUUID).build());
 
+        when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(billingServiceAdapter.fetchBill(any())).thenReturn(billFromBilling);
         when(billingServiceAdapter.fetchLastPostedInvoiceDate(any())).thenReturn(LocalDateTime.now());
         when(billingServiceAdapter.fetchBillCharges(any())).thenReturn(List.of(billChargesBaseResponse));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         mockTenantSettings();
         mockBill(true, false, true);

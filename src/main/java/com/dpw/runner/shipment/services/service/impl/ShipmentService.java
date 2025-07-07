@@ -3823,7 +3823,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processBOCOEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+        if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment)
+                && (Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) || Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_CTS) )) {
             boolean shouldCreateBOCO = true;
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);

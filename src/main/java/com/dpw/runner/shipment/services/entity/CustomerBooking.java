@@ -104,6 +104,9 @@ public class CustomerBooking extends MultiTenancy {
     @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String direction;
 
+    @Column(name = "cargo_delivery_date")
+    private LocalDateTime cargoDeliveryDate;
+
     @Column(name = "quantity")
     private Integer quantity;
 

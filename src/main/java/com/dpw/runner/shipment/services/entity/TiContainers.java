@@ -46,6 +46,10 @@ public class TiContainers extends MultiTenancy {
     @Size(max=5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
 
+    @Column(name = "package_type")
+    @MasterData(type = MasterDataType.PACKS_UNIT)
+    private String packageType;
+
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 
@@ -72,7 +76,7 @@ public class TiContainers extends MultiTenancy {
     private String substanceName;
 
     @Column(name = "un_number")
-    @Size(max=10, message = "max size is 10 for un_number")
+    @Size(max=10, message = "max size is 10 for unNumber")
     private String unNumber;
 
     @Column(name = "dg_class")
@@ -80,6 +84,6 @@ public class TiContainers extends MultiTenancy {
     private String dgClass;
 
     @Column(name = "tunnel_restriction_code")
-    @Size(max=10, message = "max size is 10 for tunnel_restriction_code")
+    @Size(max=10, message = "max size is 10 for tunnel restriction code")
     private String tunnelRestrictionCode;
 }

@@ -100,6 +100,11 @@ public class ManifestShipmentReport extends IReport{
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
         dictionary.put(ReportConstants.TOTAL_PACKS_VOLUME, addCommas(volumeAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
+
+        if (manifestShipmentModel.shipmentDetails != null) {
+            this.populateShipmentReportData(dictionary, null, manifestShipmentModel.getShipmentDetails().getId());
+            this.getPackingDetails(manifestShipmentModel.getShipmentDetails(), dictionary);
+        }
         return dictionary;
     }
 }

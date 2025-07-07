@@ -7,5 +7,6 @@ import org.springframework.http.ResponseEntity;
 
 public interface IMawbStocksService extends ICommonService {
     ResponseEntity<IRunnerResponse> createV1MawbStocks(CommonRequestModel commonRequestModel, Boolean checkForSync) throws RunnerException;
-    ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airlinePrefix, String borrowedFrom);
+    ResponseEntity<IRunnerResponse> getNextMawbNumberByCarrier(String airlinePrefix, String borrowedFrom,
+        boolean borrowed);
 }
