@@ -32,7 +32,6 @@ public class TransportInstructionLegsRequest implements IRunnerRequest {
     @NotNull(message = "Transport Instruction Id is required")
     private Long tiId;
     private UUID guid;
-    @NotNull(message = "Sequence is required")
     private Long sequence;
     @NotNull(message = "Leg type is required")
     private TILegType legType;
