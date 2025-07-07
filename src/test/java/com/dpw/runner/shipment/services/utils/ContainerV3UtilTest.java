@@ -488,4 +488,22 @@ class ContainerV3UtilTest extends CommonMocks {
         containerV3Util.addNoOfPackagesToContainer(testContainer, null, "BKG");
         assertNull(testContainer.getPacks());
     }
+
+    @Test
+    void testSetWtVolUnits() {
+        Containers containers = new Containers();
+        when(commonUtils.getDefaultWeightUnit()).thenReturn("KG");
+        when(commonUtils.getDefaultVolumeUnit()).thenReturn("M3");
+        containerV3Util.setWtVolUnits(containers);
+        assertEquals("KG", containers.getGrossWeightUnit());
+    }
+
+    @Test
+    void testSetWtVolUnits1() {
+        Containers containers = new Containers();
+        containers.setGrossWeightUnit("KG");
+        containers.setGrossVolumeUnit("M3");
+        containerV3Util.setWtVolUnits(containers);
+        assertEquals("KG", containers.getGrossWeightUnit());
+    }
 }

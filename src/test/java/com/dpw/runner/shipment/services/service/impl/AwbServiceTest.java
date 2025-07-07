@@ -61,6 +61,7 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -87,6 +88,8 @@ import static org.mockito.Mockito.*;
 @Execution(ExecutionMode.CONCURRENT)
 class AwbServiceTest extends CommonMocks {
 
+    @Mock
+    private ModelMapper modelMapper;
     @Mock
     private IConsolidationService consolidationService;
     @Mock
@@ -1519,6 +1522,8 @@ class AwbServiceTest extends CommonMocks {
         listCommonRequest.setFromGenerateAwbButton(true);
 
         Page<Awb> resultPage = new PageImpl<>(List.of(mockAwb));
+        mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAmrAirFreightEnabled(true);
         Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
@@ -1558,6 +1563,8 @@ class AwbServiceTest extends CommonMocks {
         listCommonRequest.setFromGenerateAwbButton(true);
 
         Page<Awb> resultPage = new PageImpl<>(List.of(mockAwb));
+        mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAmrAirFreightEnabled(true);
         Mockito.when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
@@ -1580,6 +1587,20 @@ class AwbServiceTest extends CommonMocks {
 
         assertNotNull(response);
         assertFalse(response.getStatusCode().is2xxSuccessful());
+    }
+
+    @Test
+    void testNonIATAValidation() {
+        FetchAwbListRequest listCommonRequest = contructFetchAwbListRequest("id", 1L, "=");
+        listCommonRequest.setFromGenerateAwbButton(true);
+        mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAmrAirFreightEnabled(false);
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setIATAAgent(false);
+        when(modelMapper.map(any(), any())).thenReturn(tenantModel);
+        ResponseEntity<IRunnerResponse> response = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test

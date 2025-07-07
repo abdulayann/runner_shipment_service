@@ -101,6 +101,24 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
     @Query(value = """
+                SELECT
+                    sd.shipment_id AS shipmentId,
+                c.container_number AS containerNumber,
+                c.container_code AS containerCode,
+                    scm.container_id AS containerId,
+                    p.packs AS packs,
+                    p.packs_type AS packsType
+                FROM shipments_containers_mapping scm
+                INNER JOIN containers c ON c.id = scm.container_id
+                INNER JOIN shipment_details sd ON scm.shipment_id = sd.id
+                LEFT JOIN packing p ON p.container_id = c.id AND p.is_deleted = false
+                WHERE c.id IN (?1)
+                  AND c.is_deleted = false
+                  AND sd.is_deleted = false
+            """, nativeQuery = true)
+    List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipment(List<Long> containerIds);
+
+    @Query(value = """
             SELECT DISTINCT c.id AS containerId,
                    c.container_number AS containerNumber,
                    c.container_code AS containerCode,

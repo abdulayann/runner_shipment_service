@@ -2173,6 +2173,28 @@ class MasterDataUtilsTest {
     }
 
     @Test
+    void setLocationData10() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(CustomerBookingV3Response.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData11() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(CustomerBookingV3Response.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
     void fetchVesselForList() {
         boolean isSuccess = true;
         Cache cache = mock(Cache.class);

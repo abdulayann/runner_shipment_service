@@ -576,12 +576,6 @@ public class CustomerBookingService implements ICustomerBookingService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
 
-            //Fetch all parties based on entity type and entity id and exclude certain parties and keep remaining ones as additional parties
-            List<Parties> allParties = partiesDao.findByEntityIdAndEntityType(customerBooking.get().getId(), "CUSTOMER_BOOKING");
-            List<String> excludedTypes = Arrays.asList("CLIENT", "CONSIGNOR", "CONSIGNEE", "NOTIFY PARTY");
-            List<Parties> additionalParties = allParties.stream().filter(party -> !excludedTypes.contains(party.getType())).toList();
-            customerBooking.get().setAdditionalParties(additionalParties);
-
             double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             log.info("Time taken to fetch booking details from db: {} Request Id {}", current - startTime, LoggerHelper.getRequestIdFromMDC());

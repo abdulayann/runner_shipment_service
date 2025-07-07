@@ -127,12 +127,17 @@ public class CargoService implements ICargoService {
         int totalPacks = 0;
         boolean isWeightMissing = false;
         Set<String> distinctPackTypes = new HashSet<>();
-
         for (Packing p : packings) {
             isWeightMissing |= isAirWeightMissing(p, response);
-            totalWeight = totalWeight.add(getConvertedWeight(p));
-            totalVolume = totalVolume.add(getConvertedVolume(p));
-            totalPacks += getPackCount(p);
+            if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
+                totalWeight = totalWeight.add(new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), response.getWeightUnit()).toString()));
+            }
+            if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
+                totalVolume = totalVolume.add(new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), response.getVolumeUnit()).toString()));
+            }
+            if (!isStringNullOrEmpty(p.getPacks())) {
+                totalPacks += Integer.parseInt(p.getPacks());
+            }
             addDistinctPackType(distinctPackTypes, p);
         }
 
@@ -153,22 +158,6 @@ public class CargoService implements ICargoService {
 
     private boolean isAirWeightMissing(Packing p, CargoDetailsResponse r) {
         return p.getWeight() == null && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(r.getTransportMode());
-    }
-
-    private BigDecimal getConvertedWeight(Packing p) throws RunnerException {
-        return (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit()))
-                ? new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString())
-                : BigDecimal.ZERO;
-    }
-
-    private BigDecimal getConvertedVolume(Packing p) throws RunnerException {
-        return (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit()))
-                ? new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString())
-                : BigDecimal.ZERO;
-    }
-
-    private int getPackCount(Packing p) {
-        return !isStringNullOrEmpty(p.getPacks()) ? Integer.parseInt(p.getPacks()) : 0;
     }
 
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {

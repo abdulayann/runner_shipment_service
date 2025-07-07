@@ -4452,6 +4452,46 @@ class CommonUtilsTest {
         assertFalse(commonUtils.isLCLorLTL("FCL"));
     }
 
+    @Test
+    void testGetPacksUnit4() {
+        String packsUnit = commonUtils.getPacksUnit(null);
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetPacksUnit5() {
+        String packsUnit = commonUtils.getPacksUnit("PKG");
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetDefaultWeightUnit() {
+        String weightUnit = commonUtils.getDefaultWeightUnit();
+        assertEquals("KG", weightUnit);
+    }
+
+    @Test
+    void testGetDefaultWeightUnit1() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit("KG");
+        when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(ShipmentSettingsDetailsContext.getCurrentTenantSettings()));
+        String weightUnit = commonUtils.getDefaultWeightUnit();
+        assertEquals("KG", weightUnit);
+    }
+
+    @Test
+    void testGetDefaultVolumeUnit() {
+        String volumeUnit = commonUtils.getDefaultVolumeUnit();
+        assertEquals("M3", volumeUnit);
+    }
+
+    @Test
+    void testGetDefaultVolumeUnit1() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit("M3");
+        when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(ShipmentSettingsDetailsContext.getCurrentTenantSettings()));
+        String volumeUnit = commonUtils.getDefaultVolumeUnit();
+        assertEquals("M3", volumeUnit);
+    }
+
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setShipmentId("SHIP123");

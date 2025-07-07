@@ -3434,7 +3434,7 @@ class ReportServiceTest extends CommonMocks {
         newReportRequest.setReportInfo("HAWB");
 
         DocUploadRequest docUploadRequest = new DocUploadRequest();
-        reportService.addCSDDocumentToDocumentMaster("1", docUploadRequest, "123");
+        reportService.addCSDDocumentToDocumentMaster(newReportRequest, docUploadRequest, "123");
         assertNotNull(newReportRequest);
     }
 
@@ -4208,6 +4208,13 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> data = new HashMap<>();
         List<byte[]> pdfBytes = new ArrayList<>();
         assertThrows(GenericException.class,() -> reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages));
+    }
+
+    @Test
+    void testReportPrintWithInvalidReportKey() {
+        reportRequest.setReportInfo("TEST");
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(reportRequest).build();
+        assertThrows(ValidationException.class,() -> reportService.getDocumentData(requestModel));
     }
     private Runnable mockRunnable() {
         return null;

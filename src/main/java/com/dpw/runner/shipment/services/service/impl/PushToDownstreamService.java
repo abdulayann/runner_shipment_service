@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
@@ -54,6 +55,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
 
     @Autowired
     private IShipmentDao shipmentDao;
+    @Autowired
+    private IContainerDao containerDao;
     @Autowired
     private ICustomerBookingDao customerBookingDao;
     @Autowired
@@ -212,6 +215,11 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         String message = jsonHelper.convertToJson(kafkaResponse);
         log.debug("[InternalKafkaConsume] Kafka payload: {} | transactionId={}",
                 message, transactionId);
+
+        if(container.getConsolidationId() != null) {
+            List<Containers> containersList1 = containerDao.findByConsolidationId(container.getConsolidationId());
+            containerV3Service.pushContainersToDependentServices(containersList1);
+        }
 
         // Send message to Kafka
         producer.produceToKafka(message, containerKafkaQueue, transactionId);
