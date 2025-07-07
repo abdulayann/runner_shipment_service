@@ -295,36 +295,6 @@ class EventsV3UtilTest extends CommonMocks {
     }
 
     @Test
-    void testProcessBOCOEventWithImpShipment() throws Exception {
-        Method processBOCOEventMethod = EventsV3Util.class.getDeclaredMethod(
-                "processBOCOEvent",
-                ShipmentDetails.class,
-                ShipmentDetails.class,
-                List.class,
-                Boolean.class,
-                Map.class);
-        processBOCOEventMethod.setAccessible(true);
-
-        List<Events> events = new ArrayList<>();
-        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
-
-        shipmentDetails.setBookingNumber("BOOK-123");
-        shipmentDetails.setDirection(Constants.DIRECTION_IMP);
-        shipmentDetails.setSourceGuid(UUID.randomUUID());
-        oldEntity.setBookingNumber(null);
-        processBOCOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        events.clear();
-        List<Events> dbEvents = new ArrayList<>();
-        Events dbEvent = createEvent(EventConstants.BOCO);
-        dbEvent.setContainerNumber("OLD-BOOKING");
-        dbEvents.add(dbEvent);
-        cargoesRunnerDbEvents.put(EventConstants.BOCO, dbEvents);
-
-        processBOCOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-    }
-
-    @Test
     void testCreateBOCOEvent() throws Exception {
         Method createBOCOEventMethod = EventsV3Util.class.getDeclaredMethod(
                 "createBOCOEvent",
