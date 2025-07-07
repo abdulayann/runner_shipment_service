@@ -5,12 +5,9 @@ import com.dpw.runner.shipment.services.validator.annotations.MaxTotalDigits;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
-import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -30,9 +27,9 @@ public class TransportInstructionLegsContainersRequest implements IRunnerRequest
     @NotBlank(message = "Container type is required")
     private String type;
     private String number;
-    @Size(max=1024, message = "max size is 1024 for description")
+    @Size(max = 1024, message = "max size is 1024 for description")
     private String description;
-    @Size(max=5, message = "max size is 5 for noOfPackages")
+    @Size(max = 5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
     @NotBlank(message = "Package Type is required")
     private String packageType;
@@ -46,11 +43,11 @@ public class TransportInstructionLegsContainersRequest implements IRunnerRequest
     private BigDecimal volume;
     private String volumeUnit;
     private Boolean dangerous;
-    @Size(max=1024, message = "max size is 1024 for SubstanceName")
+    @Size(max = 1024, message = "max size is 1024 for SubstanceName")
     private String substanceName;
-    @Size(max=10, message = "max size is 10 for unNumber")
+    @Size(max = 10, message = "max size is 10 for unNumber")
     private String unNumber;
     private String dgClass;
-    @Size(max=10, message = "max size is 10 for tunnel restriction code")
+    @Size(max = 10, message = "max size is 10 for tunnel restriction code")
     private String tunnelRestrictionCode;
 }
