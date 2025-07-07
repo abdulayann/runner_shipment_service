@@ -77,6 +77,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -690,14 +691,6 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setContainsText(request.getContainsText());
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for shipment with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
-            Set<Long> containerIds = packingListResponse.getPackings().stream().map(PackingResponse::getContainerId).filter(Objects::nonNull).collect(Collectors.toSet());
-            if (!CollectionUtils.isEmpty(containerIds)) {
-                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
-                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
-            }
-
-        }
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {
             assignedPackages = packingDao.getPackingAssignmentCountByShipmentAndTenant(Long.valueOf(request.getEntityId()), TenantContext.getCurrentTenant());
@@ -709,7 +702,21 @@ public class PackingV3Service implements IPackingV3Service {
         Optional<ShipmentDetails> shipmentDetailsEntity = shipmentService.findById(Long.valueOf(request.getEntityId()));
         if (shipmentDetailsEntity.isPresent()) {
             ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
-            packingListResponse.getPackings().stream().forEach(packingResponse -> packingResponse.setShipmentNumber(shipmentDetails.getShipmentId()));
+            packingListResponse.getPackings().forEach(packingResponse -> {
+                packingResponse.setShipmentNumber(shipmentDetails.getShipmentId());
+                if(Objects.nonNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
+                    packingResponse.setShipmentContainerAssignedToShipmentCargo(shipmentDetails.getContainerAssignedToShipmentCargo());
+            });
+        }
+        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
+            Set<Long> containerIds = packingListResponse.getPackings().stream()
+                    .flatMap(packing -> Stream.of(packing.getContainerId(), packing.getShipmentContainerAssignedToShipmentCargo()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            if (!CollectionUtils.isEmpty(containerIds)) {
+                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
+                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
+            }
         }
         return packingListResponse;
     }
@@ -719,6 +726,11 @@ public class PackingV3Service implements IPackingV3Service {
             Long containerId = item.getContainerId();
             if (containerId != null && containerIdContainerNumberMap.containsKey(containerId)) {
                 item.setContainerNumber(containerIdContainerNumberMap.get(containerId).getContainerNumber());
+            }
+            containerId = item.getShipmentContainerAssignedToShipmentCargo();
+            if (containerId != null && containerIdContainerNumberMap.containsKey(containerId)) {
+                item.setShipmentContainerNumberAssignedToShipmentCargo(containerIdContainerNumberMap.get(containerId).getContainerNumber());
+                item.setShipmentContainerCodeAssignedToShipmentCargo(containerIdContainerNumberMap.get(containerId).getContainerCode());
             }
         }
     }
@@ -745,14 +757,6 @@ public class PackingV3Service implements IPackingV3Service {
         listCommonRequest.setContainsText(request.getContainsText());
         PackingListResponse packingListResponse = list(listCommonRequest, true, xSource);
         log.info("Packing list retrieved successfully for consolidation with Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
-            Set<Long> containerIds = packingListResponse.getPackings().stream().map(PackingResponse::getContainerId).filter(Objects::nonNull).collect(Collectors.toSet());
-            if (!CollectionUtils.isEmpty(containerIds)) {
-                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
-                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
-            }
-
-        }
         PackingAssignmentProjection assignedPackages;
         if (StringUtility.isEmpty(xSource)) {
             assignedPackages = packingDao.getPackingAssignmentCountByShipmentInAndTenant(shipmentIds, TenantContext.getCurrentTenant());
@@ -763,14 +767,28 @@ public class PackingV3Service implements IPackingV3Service {
         packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
         //get shipment details and consolidation details
         List<ShipmentDetails> shipmentDetailsList = shipmentService.findByIdIn(shipmentIds);
-        Map<Long, String> shipmentIdToNumberMap = shipmentDetailsList.stream()
+        Map<Long, ShipmentDetails> shipmentIdMap = shipmentDetailsList.stream()
                 .collect(Collectors.toMap(
                         ShipmentDetails::getId,
-                        ShipmentDetails::getShipmentId,
-                        (existing, replacement) -> replacement // replace if duplicate ID
+                        Function.identity()
                 ));
         if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
-            packingListResponse.getPackings().stream().forEach(packingResponse -> packingResponse.setShipmentNumber(shipmentIdToNumberMap.get(packingResponse.getShipmentId())));
+            packingListResponse.getPackings().forEach(packingResponse -> {
+                ShipmentDetails shipmentDetails = shipmentIdMap.get(packingResponse.getShipmentId());
+                packingResponse.setShipmentNumber(shipmentDetails.getShipmentId());
+                if(Objects.nonNull(shipmentDetails.getContainerAssignedToShipmentCargo()))
+                   packingResponse.setShipmentContainerAssignedToShipmentCargo(shipmentDetails.getContainerAssignedToShipmentCargo());
+            });
+        }
+        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
+            Set<Long> containerIds = packingListResponse.getPackings().stream()
+                    .flatMap(packing -> Stream.of(packing.getContainerId(), packing.getShipmentContainerAssignedToShipmentCargo()))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            if (!CollectionUtils.isEmpty(containerIds)) {
+                Map<Long, ContainerInfoProjection> containerIdContainerNumberMap = getContainerIdNumberMap(containerIds);
+                processPackingListResponse(packingListResponse, containerIdContainerNumberMap);
+            }
         }
         return packingListResponse;
 
@@ -1380,6 +1398,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     public ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException {
+        if(request.getShipmentPackIds().size() > 1) {
+            throw new ValidationException("Please select Packages of single shipment only for assignment.");
+        }
         return containerV3Service.assignContainers(request, Constants.PACKING);
     }
 
@@ -1395,7 +1416,7 @@ public class PackingV3Service implements IPackingV3Service {
             shipmentIds.add(packing.getShipmentId());
         }
         if(shipmentIds.size() > 1)
-            throw new ValidationException("Please select Packages of only 1 shipment for unAssign action");
+            throw new ValidationException("Please select Packages of only one shipment for unAssign action");
         for(Map.Entry<Long, List<Packing>> entry: containerIdPacksIdMap.entrySet()) {
             UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
             unAssignContainerRequest.setContainerId(entry.getKey());

@@ -40,6 +40,7 @@ public class ContainerConstants {
     public static final String ERROR_SYNCING_CONTAINERS = "Error syncing containers";
     public static final String SHIPMENT_CONTAINERS = "/shipment-containers";
     public static final String CONSOLIDATION_CONTAINERS = "/consolidation-containers";
+    public static final String CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT = "/consolidation-containers-assign-package";
     // Table names
     public static final String TABLE_CONTAINERS = "containers";
     public static final String TABLE_SHIPMENTS_LIST = "shipmentsList";
