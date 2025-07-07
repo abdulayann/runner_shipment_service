@@ -2305,25 +2305,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
         shipmentRequest.setContainerAssignedToShipmentCargo(containerAssignedToShipmentCargo);
-        AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(getAutoUpdateWtVolRequest(customerBookingRequest));
-        shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
-        shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
-        shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
-        shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
-        shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
-        shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
-        shipmentRequest.setChargable(
-                autoUpdateWtVolResponse.getChargable() != null
-                        ? autoUpdateWtVolResponse.getChargable().setScale(10, RoundingMode.HALF_UP).stripTrailingZeros()
-                        : null
-        );
-        shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
-        shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
-        shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
-        shipmentRequest.setNetWeight(autoUpdateWtVolResponse.getNetWeight());
-        shipmentRequest.setNetWeightUnit(autoUpdateWtVolResponse.getNetWeightUnit());
-        shipmentRequest.setInnerPacks(autoUpdateWtVolResponse.getInnerPacks());
-        shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
         shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
         shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
 
@@ -2558,16 +2539,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 contractId(customerBookingRequest.getContractId()).
                 parentContractId(customerBookingRequest.getParentContractId()).
                 contractType(customerBookingRequest.getContractStatus()).
-                noOfPacks(customerBookingRequest.getQuantity()).
+                noOfPacks((int) customerBookingRequest.getPackages()).
                 goodsDescription(customerBookingRequest.getDescription()).
                 marksNum(customerBookingRequest.getMarksnNumbers()).
-                packsUnit(customerBookingRequest.getQuantityUnit()).
+                packsUnit(customerBookingRequest.getPackageType()).
                 weight(customerBookingRequest.getGrossWeight()).
                 weightUnit(customerBookingRequest.getGrossWeightUnit()).
                 volume(customerBookingRequest.getVolume()).
                 volumeUnit(customerBookingRequest.getVolumeUnit()).
                 volumetricWeight(customerBookingRequest.getWeightVolume()).
                 volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
+                chargable(customerBookingRequest.getChargeable()).
+                chargeableUnit(customerBookingRequest.getChargeableUnit()).
                 bookingNumber(customerBookingRequest.getCarrierBookingNumber()).
                 bookingReference(customerBookingRequest.getBookingNumber()).
                 bookingCreatedDate(customerBookingRequest.getBookingDate()).
