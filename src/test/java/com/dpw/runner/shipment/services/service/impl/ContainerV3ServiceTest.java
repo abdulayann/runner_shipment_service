@@ -56,6 +56,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -567,6 +568,51 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.assignContainers(request, Constants.CONTAINER);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAssignContainers1() throws RunnerException{
+        var spyService = Mockito.spy(containerV3Service);
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        request.setAllowCargoDetachIfRequired(true);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testShipment.setContainerAssignedToShipmentCargo(2L);
+        testShipment.setPackingList(new ArrayList<>());
+        testPacking.setId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
+        doReturn(new ContainerResponse()).when(spyService).unAssignContainers(any(), any());
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAssignContainers2() throws RunnerException{
+        var spyService = Mockito.spy(containerV3Service);
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        request.setAllowCargoDetachIfRequired(true);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        testShipment.setPackingList(new ArrayList<>());
+        testPacking.setId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
         assertNotNull(response);
     }
 
