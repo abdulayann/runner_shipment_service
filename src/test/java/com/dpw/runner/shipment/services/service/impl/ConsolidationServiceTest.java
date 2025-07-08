@@ -1284,6 +1284,30 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
+    void setOriginBranchMasterDataTest(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayName", "EGYPT Alexandria p10");
+        ConsolidationDetailsResponse response = ConsolidationDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->consolidationService.setOriginBranchMasterData(response));
+    }
+
+    @Test
+    void setOriginBranchMasterDataTest2(){
+        ConsolidationDetailsResponse response = ConsolidationDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        assertDoesNotThrow(()->consolidationService.setOriginBranchMasterData(response));
+    }
+    @Test
+    void setOriginBranchMasterDataTest3(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayNames", "EGYPT Alexandria p10");
+        ConsolidationDetailsResponse response = ConsolidationDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->consolidationService.setOriginBranchMasterData(response));
+    }
+
+    @Test
     void testCreate_Success() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
