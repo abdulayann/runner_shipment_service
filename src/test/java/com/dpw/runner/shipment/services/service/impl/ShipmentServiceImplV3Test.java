@@ -72,10 +72,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
-import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
@@ -116,8 +113,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -167,6 +163,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IAuditLogService auditLogService;
     @Mock
+    private HblService hblService;
+    @Mock
     private ModelMapper modelMapper;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
@@ -178,6 +176,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IDateTimeChangeLogService dateTimeChangeLogService;
     @Mock
     private EventsV3Util eventsV3Util;
+    @Mock
+    private PackingV3Util packingV3Util;
     @Mock
     private IEventDao eventDao;
     @Mock
@@ -492,7 +492,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
         shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
 
-        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
         doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
@@ -506,18 +506,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
         when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(Containers.builder().build()));
         when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
         when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
-
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().P100Branch(true).transportModeConfig(true).build());
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
-
+        when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
         assertNull(response);
     }

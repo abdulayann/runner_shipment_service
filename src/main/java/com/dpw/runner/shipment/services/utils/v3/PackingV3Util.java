@@ -403,6 +403,14 @@ public class PackingV3Util {
         return null;
     }
 
+    public Long getShipmentId(Long consolidationId) {
+        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
+        if (!CommonUtils.listIsNullOrEmpty(consoleShipmentMappings)) {
+            return consoleShipmentMappings.get(0).getShipmentId();
+        }
+        return null;
+    }
+
     public void processPackingRequests(List<Packing> packings, ShipmentDetails shipmentDetails) {
         boolean fullGated = true;
         boolean partialGated = false;
