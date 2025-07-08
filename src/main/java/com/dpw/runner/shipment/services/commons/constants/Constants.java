@@ -678,6 +678,8 @@ public class Constants {
 
     public static final String MACHINE_USER_NAME = "user.name";
     public static final String APPLICATION = "Application";
+    public static final String ERROR_MESSAGE = "Error occurred due to: ";
+
     private Constants() {
     }
 
