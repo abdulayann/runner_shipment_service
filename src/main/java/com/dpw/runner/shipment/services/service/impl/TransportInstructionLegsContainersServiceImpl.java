@@ -273,9 +273,11 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
 
     private void validateTransportInstructionLegsContainersDetails(TransportInstructionLegsContainersRequest transportInstructionLegsContainersRequest) {
 
-        ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(transportInstructionLegsContainersRequest.getNumber());
-        if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
-            throw new ValidationException("Invalid container number format");
+        if (StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getNumber())) {
+            ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(transportInstructionLegsContainersRequest.getNumber());
+            if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
+                throw new ValidationException("Invalid container number format");
+            }
         }
         if ((transportInstructionLegsContainersRequest.getGrossWeight() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit())) ||
                 (transportInstructionLegsContainersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit()))) {
