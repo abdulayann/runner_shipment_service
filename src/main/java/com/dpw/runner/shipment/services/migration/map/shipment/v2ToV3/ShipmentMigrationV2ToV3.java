@@ -24,4 +24,6 @@ public class ShipmentMigrationV2ToV3 extends AbstractShipmentMigration<ShipmentD
     protected IDTOMigrationMapper<ShipmentDetailsResponse, ShipmentDetailsV3Response> getShipmentDTOMapper() {
         return new ShipmentDTOV2ToV3Migration();
     }
+
+
 }

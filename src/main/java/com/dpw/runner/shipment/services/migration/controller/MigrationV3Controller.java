@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.migration.controller;
 import com.dpw.runner.shipment.services.migration.dtos.ConsolidationMigrationRequest;
 import com.dpw.runner.shipment.services.migration.map.console.v2ToV3.ConsolidationV2ToV3Migration;
 import com.dpw.runner.shipment.services.migration.map.console.v3ToV2.ConsolidationV3ToV2Migration;
+import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,21 +13,17 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/migration/consolidation")
-public class ConsolidationMigrationController {
-
+public class MigrationV3Controller {
     @Autowired
-    private ConsolidationV2ToV3Migration consolidationV2ToV3Migration;
-
-    @Autowired
-    private ConsolidationV3ToV2Migration consolidationV3ToV2Migration;
+    private IMigrationV3Service migrationV3Service;
 
     @RequestMapping("/v2/v3")
     public Map<String, Integer> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request) {
-        return consolidationV2ToV3Migration.migrate(request.getConsolidation(), request.getShipment());
+        return migrationV3Service.migrateV2ToV3(request.getConsolidation(), request.getShipment());
     }
 
-    @RequestMapping("/v3/v3")
+    @RequestMapping("/v3/2")
     public Map<String, Integer> migrationFromV3ToV2(@RequestBody ConsolidationMigrationRequest request) {
-        return consolidationV3ToV2Migration.migrate(request.getConsolidation(), request.getShipment());
+        return migrationV3Service.migrateV3ToV2(request.getConsolidation(), request.getShipment());
     }
 }
