@@ -1,28 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -30,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
@@ -55,6 +33,7 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
@@ -69,16 +48,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -89,6 +58,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -96,6 +66,17 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.concurrent.Executors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -108,6 +89,9 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Mock
     private ShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Mock
+    private ContainerV3Service self;
 
     @Mock
     private IV1Service v1Service;
@@ -593,6 +577,51 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testAssignContainers1() throws RunnerException{
+        var spyService = Mockito.spy(containerV3Service);
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        request.setAllowCargoDetachIfRequired(true);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testShipment.setContainerAssignedToShipmentCargo(2L);
+        testShipment.setPackingList(new ArrayList<>());
+        testPacking.setId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
+        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any());
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testAssignContainers2() throws RunnerException{
+        var spyService = Mockito.spy(containerV3Service);
+        AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        request.setContainerId(1L);
+        request.setAllowCargoDetachIfRequired(true);
+        testContainer.setId(1L);
+        testShipment.setId(1L);
+        testShipment.setContainerAssignedToShipmentCargo(1L);
+        testShipment.setPackingList(new ArrayList<>());
+        testPacking.setId(1L);
+        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
+        when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
+        when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
+        when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
+        assertNotNull(response);
+    }
+
+    @Test
     void testUnAssignContainers() throws RunnerException{
         UnAssignContainerRequest request = new UnAssignContainerRequest();
         request.setShipmentPackIds(Map.of(1L, List.of(1L)));
@@ -827,11 +856,38 @@ class ContainerV3ServiceTest extends CommonMocks {
         AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
         assignContainerRequest.setContainerId(1L);
         assignContainerRequest.setShipmentPackIds(Map.of(1L, new ArrayList<>()));
+
         List<Packing> assignedPacks = List.of(testPacking);
         Set<Long> assignedShipIds = Set.of(1L);
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
-        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks, Constants.CONTAINER));
+
+        assertThrows(ValidationException.class, () -> performAssignment(
+                shipmentDetailsMap,
+                assignedShipIds,
+                assignContainerRequest,
+                assignedPacks
+        ));
     }
+
+    private void performAssignment(
+            Map<Long, ShipmentDetails> shipmentDetailsMap,
+            Set<Long> assignedShipIds,
+            AssignContainerRequest assignContainerRequest,
+            List<Packing> assignedPacks
+    ) throws RunnerException {
+        containerV3Service.assignContainerCalculationsAndLogic(
+                shipmentDetailsMap,
+                assignedShipIds,
+                assignContainerRequest,
+                new ArrayList<>(),   // Assuming empty list for some param
+                testContainer,
+                new HashMap<>(),     // Assuming empty map for some param
+                assignedPacks,
+                new ArrayList<>(),   // Assuming empty list for some param
+                Constants.CONTAINER
+        );
+    }
+
 
     @Test
     void testAssignContainerCalculationsAndLogic1() {
@@ -843,7 +899,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         Set<Long> assignedShipIds = Set.of(1L);
         testShipment.setPackingList(new ArrayList<>(List.of(testPacking)));
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
-        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks, Constants.CONTAINER));
+        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks, new ArrayList<>(), Constants.CONTAINER));
     }
 
     @Test
@@ -1034,6 +1090,89 @@ class ContainerV3ServiceTest extends CommonMocks {
         // Assert
         verify(commonUtils, times(1)).getCurrentTenantSettings();
 
+    }
+
+    @Test
+    void testFetchConsolidationContainersForPackageAssignment() throws RunnerException {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("1");
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+    }
+
+    @Test
+    void testFetchConsolidationContainersForPackageAssignment1() throws RunnerException {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("1");
+        request.setContainsText("123");
+        FilterCriteria filterCriteria = new FilterCriteria();
+        filterCriteria.setInnerFilter(new ArrayList<>());
+        request.setFilterCriteria(new ArrayList<>(List.of(filterCriteria)));
+        testContainer.setId(1L);
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(testContainer))));
+        ContainerBaseResponse containerBaseResponse = new ContainerBaseResponse();
+        when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(containerBaseResponse);
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+    }
+
+    @Test
+    void testFetchConsolidationContainersForPackageAssignment2() throws RunnerException {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setEntityId("1");
+        request.setContainsText("123");
+        FilterCriteria filterCriteria = new FilterCriteria();
+        filterCriteria.setInnerFilter(new ArrayList<>());
+        request.setFilterCriteria(new ArrayList<>(List.of(filterCriteria)));
+        testContainer.setId(1L);
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(testContainer))));
+        ContainerBaseResponse containerBaseResponse = new ContainerBaseResponse();
+        when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(containerBaseResponse);
+        List<ShipmentDetailsProjection> projections = new ArrayList<>();
+        ShipmentDetailsProjection shipmentDetailsProjection = new ShipmentDetailsProjection() {
+            @Override
+            public Integer getTenantId() {
+                return null;
+            }
+
+            @Override
+            public String getHblNumber() {
+                return null;
+            }
+
+            @Override
+            public String getShipmentId() {
+                return null;
+            }
+
+            @Override
+            public String getShipmentType() {
+                return null;
+            }
+
+            @Override
+            public String getTransportMode() {
+                return null;
+            }
+
+            @Override
+            public Long getId() {
+                return null;
+            }
+
+            @Override
+            public String getShipmentNumber() {
+                return null;
+            }
+
+            @Override
+            public Long getContainerId() {
+                return 1L;
+            }
+        };
+
+        projections.add(shipmentDetailsProjection);
+        when(shipmentService.findShipmentDetailsByAttachedContainerIds(any())).thenReturn(projections);
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
     }
 
     // Helper methods for test data creation

@@ -54,4 +54,5 @@ public interface IContainerV3Service {
 
     List<ContainerInfoProjection> getContainers(List<Long> containerIds);
     void pushContainersToDependentServices(List<Containers> containersList);
+    ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
 }
