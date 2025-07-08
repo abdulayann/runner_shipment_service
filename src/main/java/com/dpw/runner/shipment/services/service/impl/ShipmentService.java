@@ -6652,12 +6652,28 @@ public class ShipmentService implements IShipmentService {
 
             this.createShipmentPayload(null, response);
 
+            setOriginBranchMasterData(response);
+
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public void setOriginBranchMasterData(ShipmentDetailsResponse response) {
+        if(response.getOriginBranch()!=null && response.getTenantIdsData()!=null){
+            Map<String, Object> masterDataMap = new HashMap<>();
+            Map<String, String> tenantMap = new HashMap<>();
+
+            String originDisplayName = response.getTenantIdsData().get("originBranch_displayName");
+            if (originDisplayName != null) {
+                tenantMap.put(String.valueOf(response.getOriginBranch()), originDisplayName);
+                masterDataMap.put("Tenants", tenantMap);
+                response.setMasterDataMap(masterDataMap);
+            }
         }
     }
 
