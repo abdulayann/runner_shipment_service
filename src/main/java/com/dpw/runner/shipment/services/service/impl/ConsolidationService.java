@@ -6478,6 +6478,8 @@ public class ConsolidationService implements IConsolidationService {
             PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
             if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
                 response.setSendingAgent(partiesResponse);
+                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get("TenantId")!=null)
+                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get("TenantId").toString()));
             } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
                 response.setReceivingAgent(partiesResponse);
             }

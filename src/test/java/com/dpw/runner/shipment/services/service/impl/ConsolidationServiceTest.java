@@ -1189,7 +1189,81 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
-        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantIds", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+
+        UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
+        LocalDateTime currentTime = LocalDateTime.now();
+        mockShipmentSettings();
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
+        assertNotNull(responseBody);
+        assertEquals("ContainerType", responseBody.getContainerCategory());
+        assertEquals("Username", responseBody.getCreatedBy());
+        assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
+        assertEquals(1, responseBody.getSourceTenantId());
+        assertEquals("AE", responseBody.getDepartment());
+    }
+
+    @Test
+    void testGetDefaultConsolidationPopulatesDefaultDepartment2() {
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("Sea");
+        tenantSettings.setDefaultContainerType("ContainerType");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        TenantModel tenantModel = new TenantModel();
+
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantId", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+
+        UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
+        LocalDateTime currentTime = LocalDateTime.now();
+        mockShipmentSettings();
+
+        ResponseEntity<IRunnerResponse> response = consolidationService.getDefaultConsolidation();
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
+        assertNotNull(responseBody);
+        assertEquals("ContainerType", responseBody.getContainerCategory());
+        assertEquals("Username", responseBody.getCreatedBy());
+        assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
+        assertEquals(1, responseBody.getSourceTenantId());
+        assertEquals("AE", responseBody.getDepartment());
+    }
+
+    @Test
+    void testGetDefaultConsolidationPopulatesDefaultDepartment3() {
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("Sea");
+        tenantSettings.setDefaultContainerType("ContainerType");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        TenantModel tenantModel = new TenantModel();
+
+        when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantIds", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().orgData(orgData).build());
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
