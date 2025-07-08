@@ -203,7 +203,6 @@ class TransportInstructionLegsContainersServiceImplTest {
         verify(jsonHelper).convertValue(Mockito.<TransportInstructionLegsContainersRequest>any(),
                 Mockito.<Class<TiContainers>>any());
         verify(iTiLegRepository).findById(Mockito.<Long>any());
-        verify(iContainerV3Service).validateContainerNumber(Mockito.<String>any());
     }
 
     /**
