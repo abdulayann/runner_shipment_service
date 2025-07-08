@@ -39,6 +39,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolR
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -68,10 +69,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
-import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
-import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.*;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -204,6 +202,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private KafkaProducer kafkaProducer;
     @Autowired
     private NpmContractV3Util npmContractV3Util;
+    @Autowired
+    private PackingV3Util packingV3Util;
 
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
 
@@ -2167,6 +2167,28 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if(consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
             }
+            if(customerBookingV3Request.getPackages() != 0L && (customerBookingV3Request.getPackages() < containerList.size())) {
+                throw new ValidationException("Booking packages should not be lesser than the container count. Please enter right amount.");
+            }
+            V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+            String packUnit = !isStringNullOrEmpty(v1TenantSettingsResponse.getDefaultPackUnit()) ? v1TenantSettingsResponse.getDefaultPackUnit() : PackingConstants.PKG;
+            List<PackingV3Request> packingV3RequestList = containerList.stream()
+                    .map(container -> {
+                        PackingV3Request packingV3Request = new PackingV3Request();
+                        packingV3Request.setPacks(container.getContainerCount().toString());
+                        packingV3Request.setPacksType(packUnit);
+                        packingV3Request.setCommodity(container.getCommodityGroup());
+                        packingV3Request.setContainerId(container.getId());
+                        packingV3Request.setBookingId(customerBookingV3Request.getId());
+                        return packingV3Request;
+                    })
+                    .toList();
+
+            distributeWeightVolumePackages(packingV3RequestList, customerBookingV3Request);
+            assignShipmentIdToPacks(packingV3RequestList, consolidationId);
+            BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING);
+            shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
+
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
@@ -2196,8 +2218,53 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return shipmentDetailsResponse;
     }
 
+    private void assignShipmentIdToPacks(List<PackingV3Request> packingList, Long consolidationId) {
+        Long shipmentId = packingV3Util.getShipmentId(consolidationId);
+        for(PackingV3Request packingV3Request: packingList) {
+            packingV3Request.setShipmentId(shipmentId);
+        }
+    }
+
+    private void distributeWeightVolumePackages(List<PackingV3Request> packingList, CustomerBookingV3Request customerBookingV3Request) {
+        BigDecimal grossWeight = customerBookingV3Request.getGrossWeight();
+        BigDecimal volume = customerBookingV3Request.getVolume();
+        Long totalPackages = customerBookingV3Request.getPackages();
+
+        int totalItems = packingList.size();
+        if (totalItems == 0 || grossWeight == null || volume == null || totalPackages == null) return;
+
+        // Convert gross weight and volume to long for whole number division
+        Long totalWeightLong = grossWeight.longValue();
+        Long totalVolumeLong = volume.longValue();
+
+        Long weightPerPack = totalWeightLong / totalItems;
+        Long weightRemainder = totalWeightLong % totalItems;
+
+        Long volumePerPack = totalVolumeLong / totalItems;
+        Long volumeRemainder = totalVolumeLong % totalItems;
+
+        Long packagesPerPack = totalPackages / totalItems;
+        Long packagesRemainder = totalPackages % totalItems;
+
+        for (int i = 0; i < totalItems; i++) {
+            PackingV3Request pack = packingList.get(i);
+            boolean isLast = (i == totalItems - 1);
+
+            Long finalWeight = weightPerPack + (isLast ? weightRemainder : 0);
+            Long finalVolume = volumePerPack + (isLast ? volumeRemainder : 0);
+            Long finalPackages = packagesPerPack + (isLast ? packagesRemainder : 0);
+
+            pack.setWeight(BigDecimal.valueOf(finalWeight));
+            pack.setWeightUnit(customerBookingV3Request.getGrossWeightUnit());
+            pack.setVolume(BigDecimal.valueOf(finalVolume));
+            pack.setVolumeUnit(customerBookingV3Request.getVolumeUnit());
+            pack.setPacks(String.valueOf(finalPackages));
+        }
+    }
+
     private void generateAfterSaveEvents(ShipmentDetails shipmentDetails) {
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails().getPickupDate())) {
+
             createAutomatedEvents(shipmentDetails, EventConstants.CACO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
         }
         if (Objects.nonNull(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate())) {
