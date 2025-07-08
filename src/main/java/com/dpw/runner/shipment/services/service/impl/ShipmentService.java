@@ -3165,9 +3165,6 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
-        if (bookingUpdateFuture != null) {
-            bookingUpdateFuture.join();
-        }
     }
 
     private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
