@@ -561,6 +561,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiContainers.setId(1l);
         tiContainers.setNumber("CONT1234567");
         TiLegs tiLegs = new TiLegs();
+        tiLegs.setId(1l);
         tiLegs.setActualDelivery(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setActualPickup(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
@@ -594,8 +595,8 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .grossWeight(new BigDecimal("2.3"))
                 .grossWeightUnit("KG");
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder idResult = grossWeightUnitResult
-                .guid(UUID.randomUUID())
-                .id(1L);
+                .guid(UUID.randomUUID());
+
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder unNumberResult = idResult
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
