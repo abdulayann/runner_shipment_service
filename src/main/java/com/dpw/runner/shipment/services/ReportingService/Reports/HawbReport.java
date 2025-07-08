@@ -95,20 +95,13 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -320,7 +313,7 @@ public class HawbReport extends IReport{
         dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  freightAmountText);
         dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, otherAmountText);
         Set<String> hsCodesSet = new HashSet<>();
-        Set<String> dgHsCodesSet = new HashSet<>();
+        Set<String> dgHsCodesSet = new LinkedHashSet<>();
         Set<String> slacCodeSet = new HashSet<>();
         setHsCodesSet(awbPackingInfo, hsCodesSet);
         processGoodsDescription(dictionary, v1TenantSettingsResponse, awbGoodsDescriptionInfo, ntrQtyGoods, cargoInfoRows, dgHsCodesSet, hsCodesSet, slacCodeSet, freightAmountText, totalPieces, totalGrossWeight, sumOfTotalAmount, sumOfChargeableWt);
@@ -461,12 +454,7 @@ public class HawbReport extends IReport{
             String commaHsCode = HSCODE + ": ";
             commaHsCode += String.join(", ", dgHsCodesSet);
             dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED, commaHsCode);
-
-            List<String> commaHsCodeList = new ArrayList<>();
-            for(String hscode: dgHsCodesSet) {
-                commaHsCodeList.add(HSCODE + ": " + hscode);
-            }
-            dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED1, commaHsCodeList);
+            dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED1, commaHsCode);
         }
 
         if (!hsCodesSet.isEmpty()) {
@@ -1007,7 +995,7 @@ public class HawbReport extends IReport{
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
+            dictionary.put(USER_INITIALS, AwbUtility.getScreenersName(hawbModel.awb));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
             dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
         }

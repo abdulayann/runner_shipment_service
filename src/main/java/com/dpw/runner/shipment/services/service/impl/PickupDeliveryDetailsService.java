@@ -190,7 +190,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         Long totalCount = pickupDeliveryDetailsDao.getTotalTransportInstructionCountIncludeDeleted(request.getShipmentId()) + 1;
         try {
-            pickupDeliveryDetails.setTiReferenceNumber(shipmentDetails.getShipmentId() + totalCount);
+            pickupDeliveryDetails.setTiReferenceNumber(shipmentDetails.getShipmentId() + "-" + String.format("%03d", totalCount));
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
             afterSave(pickupDeliveryDetails, true, request);
             // audit logs

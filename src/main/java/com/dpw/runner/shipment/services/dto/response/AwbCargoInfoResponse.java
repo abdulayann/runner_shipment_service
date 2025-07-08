@@ -30,6 +30,7 @@ public class AwbCargoInfoResponse implements IRunnerResponse {
     private String csdInfo;
     private String csdInfoDate;
     private String userInitials;
+    private Boolean isUserInitialsManuallyAdded = false;
     private Integer slac;
     private String countryCode;
     private String raNumber;

@@ -154,6 +154,7 @@ class AwbServiceTest extends CommonMocks {
         mockUser.setUsername("user");
         mockUser.setCompanyId(1);
         mockUser.setTenantDisplayName("test");
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).legalEntityCode("test").build());
@@ -2372,6 +2373,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.save(any())).thenReturn(testMawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
@@ -4478,6 +4480,45 @@ class AwbServiceTest extends CommonMocks {
         consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
 
         shipment.setConsolidationList(Set.of(consolidationDetails));
+    }
+
+    @Test
+    void testResetHawbWithAirSecurityPermission() throws RunnerException {
+        ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).shipmentId(1L).awbType("DMAWB").resetType(AwbReset.AWB_ROUTING).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
+        testShipment.setTransportMode("AIR");
+        testShipment.setDirection("EXP");
+        var settings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        settings.setCountryAirCargoSecurity(true);
+        when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+
+        var e = assertThrows(NullPointerException.class, () ->
+                awbService.reset(commonRequestModel));
+        assertNotNull(e);
+    }
+
+    @Test
+    void testResetMawbWithAirSecurityPermission() throws RunnerException {
+        ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).consolidationId(1L).awbType("MAWB").resetType(AwbReset.AWB_ROUTING).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
+        testDmawb.setShipmentId(null);
+        testDmawb.setConsolidationId(22L);
+        var settings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        settings.setCountryAirCargoSecurity(true);
+        when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
+        testConsol.setTransportMode("AIR");
+        testConsol.setShipmentType("EXP");
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(settings);
+
+        var e = assertThrows(ValidationException.class, () ->
+                awbService.reset(commonRequestModel));
+        assertNotNull(e);
     }
 
 }

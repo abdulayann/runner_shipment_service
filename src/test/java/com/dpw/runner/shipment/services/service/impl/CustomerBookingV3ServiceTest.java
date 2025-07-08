@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.*;
 import com.dpw.runner.shipment.services.dto.response.*;
@@ -47,10 +48,7 @@ import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
@@ -74,14 +72,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -89,6 +84,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
@@ -153,6 +149,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     private IBookingChargesDao bookingChargesDao;
     @Mock
     private IFusionServiceAdapter fusionServiceAdapter;
+    @Mock
+    private IConsolidationService consolidationService;
     @Mock
     private NpmContractV3Util npmContractV3Util;
     @Mock
@@ -228,6 +226,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
         doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -242,19 +248,35 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testCreateV3() throws RunnerException {
         CustomerBookingV3Request request = new CustomerBookingV3Request();
-
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.ONE);
+        packing.setWeightUnit("Kg");
+        Containers containers = new Containers();
+        containers.setContainerCode("20FR");
+        containers.setContainerCount(1L);
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .source(BookingSource.Runner)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBAR-random-string")
+                .transportType("SEA")
                 .build();
         mockCustomerBooking.setId(1L);
+        mockCustomerBooking.setPackingList(List.of(packing));
+        mockCustomerBooking.setContainersList(List.of(containers));
         CustomerBookingV3Response customerBookingV3Response = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
 
         // Mock
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -298,6 +320,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
         when(containerV3Service.deleteBulk(any(), anyString())).thenReturn(new BulkContainerResponse());
         when(containerV3Service.createBulk(any(), any())).thenReturn(new BulkContainerResponse());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -326,6 +356,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
                 .isPlatformBookingCreated(false)
                 .currentPartyForQuote("CLIENT")
                 .contractId("DPWQ-124")
+                .chargeable(BigDecimal.TEN)
+                .chargeableUnit("wg")
                 .packingList(List.of(packing))
                 .customer(parties)
                 .bookingNumber("DBAR-random-string")
@@ -336,6 +368,10 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingV3Response = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         mockResponse.setData(listContractResponse);
+        Containers containers = new Containers();
+        containers.setContainerCount(1L);
+        containers.setContainerNumber("CNT1235");
+        containers.setCommodityCode("20GP");
         when(npmService.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
 
         // Mock
@@ -345,6 +381,22 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
         when(packingV3Service.deleteBulk(any(), anyString())).thenReturn(new BulkPackingResponse());
         when(packingV3Service.updateBulk(any(), any())).thenReturn(new BulkPackingResponse());
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.TEN);
+        volumeWeightChargeable.setChargeableUnit("Kg");
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.TEN);
+        volumeWeightChargeable.setVolumeWeightUnit("m3");
+        when(consolidationService.calculateVolumeWeight(anyString(),anyString(), anyString(), any(), any())).thenReturn(volumeWeightChargeable);
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -370,6 +422,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingV3Response);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -404,6 +464,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -443,6 +511,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(QuoteContracts.builder().build());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -480,6 +556,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(null);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -503,13 +587,17 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
                 .contractId("contract 2")
                 .containersList(containers)
                 .build();
-
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.ONE);
+        packing.setWeightUnit("Kg");
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LCL")
                 .source(BookingSource.Runner)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
+                .containersList(containers)
+                .packingList(List.of(packing))
                 .build();
         mockCustomerBooking.setId(1L);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(mockCustomerBooking, CustomerBookingV3Response.class);
@@ -520,6 +608,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(quoteContracts);
         when(npmService.updateContracts(any())).thenReturn(new ResponseEntity<>(HttpStatus.OK));
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -559,6 +655,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(quoteContracts);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -593,6 +697,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -628,6 +740,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Test
@@ -978,7 +1098,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testV3CreateGeneratesBookingNumberForCreateCompleteRequest() throws RunnerException {
         CustomerBookingV3Request request = customerBookingRequest;
-
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(request, CustomerBookingV3Response.class);
         CustomerBooking customerBooking = objectMapper.convertValue(request, CustomerBooking.class);
         var bookingCharge = customerBooking.getBookingCharges().get(0);
@@ -987,6 +1112,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(customerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(bookingCharge);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -1272,6 +1405,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         inputCustomerBooking.setContainersList(
                 Arrays.asList(container)
         );
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .build();
+        mockCustomerBooking.setId(1L);
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         request.getBookingCharges().get(0).setContainersUUID(List.of(container.getGuid()));
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
@@ -1281,6 +1420,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         // Test
@@ -1361,6 +1508,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         // Act
@@ -1369,6 +1524,46 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(actualResponse);
         assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+    }
+
+    @Test
+    void testV3BookingUpdateWithMdmThrowsException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Arrange
+        CustomerBooking inputCustomerBooking = new CustomerBooking();
+        inputCustomerBooking.setId(1L);
+        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        inputCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        inputCustomerBooking.setCreatedBy("testUser");
+        inputCustomerBooking.setIsPlatformBookingCreated(false);
+        inputCustomerBooking.setSource(BookingSource.Runner);
+
+        var container = Containers.builder().build();
+        inputCustomerBooking.setContainersList(List.of(container));
+
+        CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
+        request.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
+
+        CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+
+        // Mocks
+        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(inputCustomerBooking));
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
+        when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
+        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenThrow(new RunnerException());
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        mockShipmentSettings();
+
+        // Act
+        assertThrows(CompletionException.class, () -> customerBookingService.update(request));
     }
 
     @Test
@@ -1407,6 +1602,19 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         oldCustomerBooking.setPackingList(List.of(packing));
         oldCustomerBooking.setCustomer(parties);
 
+        Containers containers = new Containers();
+        containers.setContainerCode("20FR");
+        containers.setContainerCount(1L);
+        CustomerBooking mockCustomerBooking = CustomerBooking.builder()
+                .source(BookingSource.Runner)
+                .isPlatformBookingCreated(false)
+                .bookingNumber("DBAR-random-string")
+                .transportType("SEA")
+                .build();
+        mockCustomerBooking.setId(1L);
+        mockCustomerBooking.setPackingList(List.of(packing));
+        mockCustomerBooking.setContainersList(List.of(containers));
+
         var container = Containers.builder().build();
         inputCustomerBooking.setContainersList(List.of(container));
 
@@ -1424,14 +1632,30 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Mock
         when(jsonHelper.convertValue(any(), eq(ListContractResponse.class))).thenReturn(listContractResponse);
         when(jsonHelper.convertValue(any(CustomerBookingV3Request.class), eq(CustomerBooking.class))).thenReturn(oldCustomerBooking);
-        when(customerBookingDao.findById(1L)).thenReturn(Optional.of(inputCustomerBooking));
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
         when(jsonHelper.convertValue(any(CustomerBooking.class), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         when(packingDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(packing));
         when(packingV3Service.deleteBulk(any(),anyString())).thenReturn(new BulkPackingResponse());
         when(packingV3Service.updateBulk(any(), anyString())).thenReturn(new BulkPackingResponse());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.TEN);
+        volumeWeightChargeable.setChargeableUnit("Kg");
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.TEN);
+        volumeWeightChargeable.setVolumeWeightUnit("m3");
+        when(consolidationService.calculateVolumeWeight(anyString(),anyString(), anyString(), any(), any())).thenReturn(volumeWeightChargeable);
         doNothing().when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
 
@@ -1452,6 +1676,8 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setPacksType("BAG");
         packing.setVolume(BigDecimal.TEN);
         packing.setVolumeUnit("M3");
+        packing.setWeight(BigDecimal.TEN);
+        packing.setWeightUnit("kg");
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1500,10 +1726,21 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(CustomerBooking.class), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(container));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing));
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
         when(packingDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(packing));
         when(containerV3Service.deleteBulk(any(),anyString())).thenReturn(new BulkContainerResponse());
         when(containerV3Service.createBulk(any(), anyString())).thenReturn(new BulkContainerResponse());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(consolidationService.calculateVolumeWeight(anyString(),anyString(), anyString(), any(), any())).thenReturn(new VolumeWeightChargeable());
         doNothing().when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
 
@@ -1543,6 +1780,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         mockTenantSettings();
@@ -1594,6 +1839,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         mockTenantSettings();
@@ -1695,6 +1948,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         mockTenantSettings();
@@ -1802,6 +2063,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
         when(bookingIntegrationsUtility.createShipmentInV3(any())).thenReturn(shipmentDetailsV3Response);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         mockTenantSettings();
@@ -1849,6 +2118,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
 
         mockTenantSettings();
@@ -1906,6 +2183,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockTenantSettings();
         mockShipmentSettings();
 
@@ -1915,7 +2200,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(response);
         assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
     }
 
@@ -1965,6 +2250,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
         doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockTenantSettings();
         mockShipmentSettings();
 
@@ -1974,7 +2267,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(response);
         assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
         verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
     }
@@ -1989,6 +2282,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.ONE);
+        packing.setWeightUnit("Kg");
+        Containers containers = new Containers();
+        containers.setContainerCode("CNT122");
+        containers.setContainerCount(1L);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(bookingId);
@@ -1998,11 +2297,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         existingBooking.setIsPlatformBookingCreated(false);
         existingBooking.setSource(BookingSource.Runner);
         existingBooking.setBookingStatus(BookingStatus.PENDING_FOR_REVIEW);
+        existingBooking.setPackingList(List.of(packing));
+        existingBooking.setContainersList(List.of(containers));
 
         CustomerBookingV3Request request = new CustomerBookingV3Request();
         request.setId(bookingId);
         request.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
-
         CustomerBooking updatedBooking = new CustomerBooking();
         updatedBooking.setId(bookingId);
         updatedBooking.setGuid(bookingGuid);
@@ -2017,12 +2317,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         expectedResponse.setGuid(bookingGuid);
 
         // Mocks
-        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(existingBooking));
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(updatedBooking));
         when(eventDao.findByEntityIdAndEntityType(bookingId, Constants.BOOKING)).thenReturn(Optional.empty());
-        when(jsonHelper.convertToJson(existingBooking)).thenReturn("{}");
+        when(jsonHelper.convertToJson(any(CustomerBooking.class))).thenReturn("{}");
         when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockTenantSettings();
         mockShipmentSettings();
 
@@ -2032,7 +2340,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(response);
         assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
     }
 
@@ -2083,13 +2391,21 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(V1ShipmentCreationResponse.class))).thenReturn(mockV1ShipmentCreationResponse);
         when(bookingIntegrationsUtility.createShipmentInV1(any(), anyBoolean(), anyBoolean(), any(), any())).thenReturn(ResponseEntity.ok(mockV1ShipmentCreationResponse));
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockTenantSettings();
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(3)).save(any());
     }
 
     @Test
@@ -2105,12 +2421,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
@@ -2127,12 +2451,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
@@ -2152,12 +2484,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
@@ -2176,12 +2516,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
@@ -2199,12 +2547,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(1)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
@@ -2479,6 +2835,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);
@@ -2506,6 +2870,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("40GP");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
         CustomerBookingV3Response actualResponse = customerBookingService.create(request);

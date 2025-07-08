@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -84,6 +85,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         String authToken = generateToken(bridgeServiceConfig.getOutBoundTransferUserName(), bridgeServiceConfig.getOutBoundTransferPassword(), null);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
 
         BridgeRequest request  = (BridgeRequest) commonRequestModel.getData();

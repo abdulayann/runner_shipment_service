@@ -71,7 +71,7 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String weightUtilization;
     @Size(max=3, message = "Max size is 3 for Shipment Type")
     private String shipmentType;
-    @Size(max=20, message = "max size is 20 for bol")
+    @Size(max=50, message = "max size is 50 for bol")
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String bol;
     private Boolean isCargoOnly;

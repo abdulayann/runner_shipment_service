@@ -1514,7 +1514,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void validateBeforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
-            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+            throw new ValidationException("Shipper & Consignee parties can't be selected as same.");
 
         if (!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
@@ -2089,7 +2089,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
 
         ShipmentV3Request shipmentRequest = getShipmentRequestFromBookingV3(customerBookingRequest, consolidationDetails);
-        Long consolidationId = consolidationDetails.iterator().next().getId();
+        Long consolidationId = !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getId() : null;
         // Set Department in case single department is available
         shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
@@ -2164,8 +2164,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             autoGenerateEvents(shipmentDetails);
             generateAfterSaveEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
-            consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
-
+            if(consolidationId != null) {
+                consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
+            }
             if(customerBookingV3Request.getPackages() != 0L && (customerBookingV3Request.getPackages() < containerList.size())) {
                 throw new ValidationException("Booking packages should not be lesser than the container count. Please enter right amount.");
             }
@@ -3122,13 +3123,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return warning;
     }
 
-    private void fetchDgUserTask(OceanDGRequestV3 request) throws RunnerException {
+    protected void fetchDgUserTask(OceanDGRequestV3 request) throws RunnerException {
         CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), SHIPMENTS_WITH_SQ_BRACKETS);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
 
         List<Map<String, Object>> mapList;
         try {
-            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENT, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
+            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENTS_WITH_SQ_BRACKETS, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
         }
         catch (Exception ex) {
             log.error("Failed to fetch pending tasks from MDM with RequestId - {} : {}: ", LoggerHelper.getRequestIdFromMDC(), ex);
@@ -3147,19 +3148,25 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             taskGuids.add(map.get("uuid").toString());
         }
         request.setTaskGuids(taskGuids);
-        request.setUserEmail(mapList.get(0).get("userEmail").toString());
+        //TODO: MDM team will provide this
+        if(mapList.get(0).containsKey("userEmail")){
+            request.setUserEmail(mapList.get(0).get("userEmail").toString());
+        }
+
     }
 
     private void closeOceanDgTask(OceanDGRequestV3 request){
         MdmTaskApproveOrRejectRequest taskUpdateRequest = MdmTaskApproveOrRejectRequest.builder()
-            .status(request.getStatus().getName())
+            .status(request.getStatus().getName().toUpperCase())
             .approvedOrRejectedBy(UserContext.getUser().getUsername())
             .build();
 
         if(TaskStatus.APPROVED.equals(request.getStatus())){
-            taskUpdateRequest.setApprovalComments(request.getRemarks());
+            taskUpdateRequest.setApprovalComments(request.getStatus().getName().toUpperCase());
+        }else if(TaskStatus.REJECTED.equals(request.getStatus())){
+            taskUpdateRequest.setRejectedComments(request.getStatus().getName().toUpperCase());
         }else{
-            taskUpdateRequest.setRejectedComments(request.getRemarks());
+            throw new ValidationException("Invalid approval status in request : " + request.getStatus().getName());
         }
 
         try {
@@ -3313,7 +3320,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private void sendEmailForDGApproval(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap, List<String> toEmailIds,
+    protected void sendEmailForDGApproval(Map<OceanDGStatus, EmailTemplatesRequest> emailTemplatesRequestMap, List<String> toEmailIds,
         VesselsResponse vesselsResponse, OceanDGStatus templateStatus, ShipmentDetails shipmentDetails, String remarks,
         TaskCreateResponse taskCreateResponse) throws RunnerException {
         EmailTemplatesRequest emailTemplate = Optional.ofNullable(emailTemplatesRequestMap.get(templateStatus))
@@ -3340,7 +3347,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private String generateEmailBody(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, String htmlTemplate) {
+    protected String generateEmailBody(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, String htmlTemplate) {
         String tableTemplate = extractTableTemplate(htmlTemplate);
 
         String populatedTable = populateTableWithData(tableTemplate, shipmentDetails);
@@ -3433,6 +3440,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void processTableWithContainerList(ShipmentDetails shipmentDetails, Element rowTemplate, Element table) {
+        if(shipmentDetails.getContainersList() == null) return;
         for (Containers containers : shipmentDetails.getContainersList()) {
             if(!Boolean.TRUE.equals(containers.getHazardous())) continue;
 
