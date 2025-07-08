@@ -6676,6 +6676,8 @@ public class ShipmentService implements IShipmentService {
             PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
             if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
                 response.getAdditionalDetails().setExportBroker(partiesResponse);
+                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get("TenantId")!=null)
+                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get("TenantId").toString()));
             } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
                 response.getAdditionalDetails().setImportBroker(partiesResponse);
             }
