@@ -25,19 +25,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
@@ -127,7 +124,6 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -141,19 +137,15 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
-import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
-import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -162,7 +154,6 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.AfterEach;
@@ -258,21 +249,15 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IShipmentDao shipmentDao;
     @Mock
-    private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
-    @Mock
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     @Mock
     private JsonHelper jsonHelper;
     @Mock
     private ConsolidationV3Service consolidationV3Service;
     @Mock
-    private INotesDao notesDao;
-    @Mock
     private IPackingDao packingDao;
     @Mock
     private IReferenceNumbersDao referenceNumbersDao;
-    @Mock
-    private IShipmentOrderDao shipmentOrderDao;
     @Mock
     private MasterDataUtils masterDataUtils;
     @Mock
@@ -280,11 +265,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IOrderManagementAdapter orderManagementAdapter;
     @Mock
-    private IPackingService packingService;
-    @Mock
     private DependentServiceHelper dependentServiceHelper;
-    @Mock
-    private IShipmentSync shipmentSync;
     @Mock
     private IAuditLogService auditLogService;
     @Mock
@@ -332,18 +313,12 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private CustomKeyGenerator keyGenerator;
     @Mock
-    private IDpsEventService dpsEventService;
-    @Mock
-    private ICarrierDetailsDao carrierDetailsDao;
-    @Mock
     private ObjectMapper objectMapperMocked;
 
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
     @Mock
     private INPMServiceAdapter npmServiceAdapter;
-    @Mock
-    private NpmContractV3Util npmContractV3Util;
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
     @Mock
@@ -936,7 +911,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         var shipId = 1L;
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-        shipmentDetails = ShipmentDetails.builder().build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(shipId);
         shipmentDetails.setGuid(UUID.randomUUID());
 
@@ -5173,7 +5148,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testAibPushRequest_InterBranchImportShipment() throws RunnerException {
         ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
-        shipmentDetails = ShipmentDetails.builder()
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .direction(Constants.DIRECTION_IMP)
                 .build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
@@ -5193,7 +5168,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .build();
         shipmentDetails1.setCreatedBy("abc");
         shipmentDetails1.setAssignedTo("def");
-        consolidationDetails = ConsolidationDetails.builder().build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
@@ -5207,10 +5182,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testAibPushRequest_InterBranchImportShipment2() throws RunnerException {
         ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
-        shipmentDetails = ShipmentDetails.builder()
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .direction(Constants.DIRECTION_IMP)
                 .build();
-        consolidationDetails = ConsolidationDetails.builder().build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
@@ -5226,7 +5201,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder()
                 .direction(Constants.DIRECTION_IMP)
                 .build();
-        consolidationDetails = ConsolidationDetails.builder().build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails1));
         when(consolidationDetailsDao.findById(2L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
@@ -5240,7 +5215,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testAibPushRequest_NonInterBranchShipment_EmailSent() throws RunnerException {
         ShipmentServiceImplV3 spyService = spy(shipmentServiceImplV3);
-        shipmentDetails = ShipmentDetails.builder()
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .direction("EXP")
                 .build();
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
@@ -5387,7 +5362,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
@@ -5429,9 +5404,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentId"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        shipmentDetails = new ShipmentDetails();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
         consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
@@ -5476,9 +5451,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentId"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        shipmentDetails = new ShipmentDetails();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
@@ -5523,7 +5498,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentId"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().originPort(Constants.ORIGIN_PORT).destinationPort(Constants.DESTINATION_PORT).eta(LocalDateTime.now()).etd(LocalDateTime.now()).vessel(Constants.VESSEL).voyage(Constants.VOYAGE).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -5567,7 +5542,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentId"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -5612,7 +5587,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentID"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
@@ -5659,7 +5634,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentId"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -5705,7 +5680,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         attachListShipmentRequest.setIncludeColumns(List.of("shipmentId"));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setHazardous(true);
@@ -5753,7 +5728,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(attachListShipmentRequest);
 
-        consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setCarrierDetails(CarrierDetails.builder().eta(LocalDateTime.now()).etd(LocalDateTime.now()).shippingLine(Constants.SHIPPING_LINE).flightNumber(Constants.FLIGHT_NUMBER).build());
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -6250,7 +6225,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
             Packing packing = new Packing();
             packing.setHazardous(true);
             packing.setDGClass("1.2");
-            shipmentDetails = ShipmentDetails
+            ShipmentDetails shipmentDetails = ShipmentDetails
                     .builder()
                     .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
                     .packingList(List.of(packing))
@@ -6287,7 +6262,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                     .remarks("Non_DG_USER")
                     .build();
 
-            shipmentDetails = ShipmentDetails
+            ShipmentDetails shipmentDetails = ShipmentDetails
                     .builder()
                     .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
                     .containersList(Set.of(Containers.builder().hazardous(true).dgClass("1.2").build()))
@@ -6329,7 +6304,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
             packing.setHazardous(true);
             packing.setDGClass("1.23");
 
-            shipmentDetails = ShipmentDetails
+            ShipmentDetails shipmentDetails = ShipmentDetails
                     .builder()
                     .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
                     .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
@@ -6355,7 +6330,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .shipmentId(1l)
                 .remarks("")
                 .build();
-        shipmentDetails = ShipmentDetails
+        ShipmentDetails shipmentDetails = ShipmentDetails
                 .builder()
                 .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
                 .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
@@ -6375,7 +6350,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .shipmentId(1l)
                 .remarks("")
                 .build();
-        shipmentDetails = ShipmentDetails
+        ShipmentDetails shipmentDetails = ShipmentDetails
                 .builder()
                 .oceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED)
                 .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
@@ -6408,7 +6383,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void testDgApprovalResponse_InvalidDGStatus(){
         OceanDGRequestV3 request = OceanDGRequestV3.builder().shipmentId(1l).build();
 
-        shipmentDetails = ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.APPROVE).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().oceanDGStatus(OceanDGStatus.APPROVE).build();
         when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                 Optional.ofNullable(shipmentDetails));
 
@@ -6426,7 +6401,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         packing.setHazardous(true);
         packing.setDGClass("1.23");
 
-        shipmentDetails = ShipmentDetails
+        ShipmentDetails shipmentDetails = ShipmentDetails
                 .builder()
                 .oceanDGStatus(OceanDGStatus.OCEAN_DG_REQUESTED)
                 .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
@@ -6625,7 +6600,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Test
     void testCreateConsolidationInV3NullCheck() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(false).build());
-        shipmentDetails = new ShipmentDetails();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
         List<Containers> containers = new ArrayList<>();
         mockShipmentSettings();
         assertEquals(null, shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, containers));
@@ -6635,7 +6610,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void testCreateConsolidationConsolidationInV3Lite(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
         CarrierDetails carrierDetails = CarrierDetails.builder().build();
-        shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
         String errorMessage = "Not able to create consolidation, before adding 'New Containers', please provide ‘Origin’ and ‘Destination’ values.";
         mockShipmentSettings();
@@ -6647,7 +6622,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void testCreateConsolidationConsolidationInV3LiteSameOriginDestination(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().shipConsolidationContainerEnabled(true).consolidationLite(false).build());
         CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("OriginPort").build();
-        shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).carrierDetails(carrierDetails).build();
         List<Containers> containers = new ArrayList<>();
         String errorMessage = "‘Origin’ and ‘Destination’ can't be same.";
         mockShipmentSettings();
@@ -6670,7 +6645,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         routings.setTenantId(1);
         routings.setMode("mode");
 
-        shipmentDetails = ShipmentDetails.builder()
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .carrierDetails(carrierDetails)
                 .direction(Constants.DIRECTION_IMP)
@@ -6679,7 +6654,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .build();
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
-        consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(true);
@@ -6705,7 +6680,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         routings.setTenantId(1);
         routings.setMode("mode");
 
-        shipmentDetails = ShipmentDetails.builder()
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .carrierDetails(carrierDetails)
                 .direction(Constants.DIRECTION_EXP)
@@ -6715,7 +6690,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
-        consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).shipmentType(Constants.DIRECTION_EXP).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, new ArrayList<>());
@@ -6741,7 +6716,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         routings.setLeg(1L);
         when(jsonHelper.convertValue(any(), eq(Routings.class))).thenReturn(routings);
 
-        shipmentDetails = ShipmentDetails.builder()
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .carrierDetails(carrierDetails)
                 .direction(Constants.DIRECTION_IMP)
@@ -6750,7 +6725,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .build();
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(carrierDetails);
 
-        consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().carrierDetails(carrierDetails).sendingAgent(parties).receivingAgent(parties).build();
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), eq(false), anyBoolean())).thenReturn(consolidationDetails);
         mockShipmentSettings();
         ConsolidationDetails result = shipmentServiceImplV3.createConsolidationInV3(shipmentDetails, new ArrayList<>());
