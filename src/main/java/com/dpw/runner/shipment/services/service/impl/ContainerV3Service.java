@@ -379,54 +379,64 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void processContainerDG(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
-            if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            validateAndSaveDGShipment(containerRequestList);
+        } else {
+            for (ContainerV3Request containerV3Request : containerRequestList) {
+                Long consolidationId = containerV3Request.getConsolidationId();
+                if (containerV3Request.getHazardous() != null && !containerV3Request.getHazardous()) continue;
+                ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
+                validateAndProcessDGConsolidation(containerV3Request, consolidationDetails);
+            }
+        }
+    }
 
-            if(SHIPMENT.equalsIgnoreCase(module)){
-                for(ContainerV3Request containerV3Request : containerRequestList){
-                    Long shipmentId = containerV3Request.getShipmentsId();
-                    if(!Boolean.FALSE.equals(containerV3Request.getHazardous())) continue;
+    private void validateAndProcessDGConsolidation(ContainerV3Request containerV3Request, ConsolidationDetails consolidationDetails) throws RunnerException {
+        if (TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            consolidationDetails.setHazardous(true);
+            if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
+                throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+            }
+            consolidationDetailsDao.update(consolidationDetails, false, false);
+            processDGShipmentDetailsFromContainer(containerV3Request);
+        }
+    }
 
-                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
-                    if (optionalShipmentDetails.isPresent()) {
-                        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                        shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
-                            callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                            shipmentDao.save(shipmentDetails, false);
-                        }
-                    }
-                }
-            }else{
-                for(ContainerV3Request containerV3Request : containerRequestList){
-                    Long consolidationId = containerV3Request.getConsolidationId();
-                    if(containerV3Request.getHazardous()!= null && !containerV3Request.getHazardous()) continue;
-
-                    ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-                    if(TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
-                        consolidationDetails.setHazardous(true);
-                        if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
-                            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
-                        }
-                        consolidationDetailsDao.update(consolidationDetails, false, false);
-                        if (containerV3Request.getId() != null) {
-                            List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
-                                    containerV3Request.getId());
-                            for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
-                                Long shipmentId = shipmentsContainersMapping.getId();
-                                Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
-                                        shipmentId);
-                                if (optionalShipmentDetails.isPresent()) {
-                                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                                    shipmentDetails.setContainsHazardous(true);
-                                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                                    shipmentDao.save(shipmentDetails, false);
-                                }
-                            }
-                        }
-                    }
+    private void processDGShipmentDetailsFromContainer(ContainerV3Request containerV3Request) throws RunnerException {
+        if (containerV3Request.getId() != null) {
+            List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
+                    containerV3Request.getId());
+            for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+                Long shipmentId = shipmentsContainersMapping.getId();
+                Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
+                        shipmentId);
+                if (optionalShipmentDetails.isPresent()) {
+                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                    shipmentDetails.setContainsHazardous(true);
+                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                    shipmentDao.save(shipmentDetails, false);
                 }
             }
+        }
+    }
+
+    private void validateAndSaveDGShipment(List<ContainerV3Request> containerRequestList) throws RunnerException {
+        for(ContainerV3Request containerV3Request : containerRequestList){
+            Long shipmentId = containerV3Request.getShipmentsId();
+            if(!Boolean.FALSE.equals(containerV3Request.getHazardous())) continue;
+
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
+            if (optionalShipmentDetails.isPresent()) {
+                ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                    shipmentDao.save(shipmentDetails, false);
+                }
+            }
+        }
     }
 
     private void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ContainerV3Request container) {
