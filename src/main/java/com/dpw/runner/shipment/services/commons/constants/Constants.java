@@ -679,6 +679,14 @@ public class Constants {
 
     public static final String MACHINE_USER_NAME = "user.name";
     public static final String APPLICATION = "Application";
+    public static final String ERROR_MESSAGE = "Error occurred due to: ";
+    public static final String TRANSPORT_DETAIL = "transporterDetail";
+    public static final String TRANSPORT_DETAIL_ORG_CODE = "transporterDetailOrgCode";
+    public static final String PICKUP_DELIVERY_DETAILS = "PickupDeliveryDetails";
+    public static final String TRANSPORT_DETAIL_INSTRUCTION_TYPE = "type";
+    public static final String TRANSPORT_DETAIL_TI_REFERENCE = "tiReferenceNumber";
+    public static final String TRANSPORT_DETAIL_SHIPMENT_ID = "shipmentId";
+
     public static final String NOTIFICATION_PART_1 = "Notify Part 1";
     public static final String NOTIFICATION_PART_2 = "Notify Part 2";
     public static final String NOTIFICATION_PART_3 = "Notify Part 3";

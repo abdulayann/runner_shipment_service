@@ -9,7 +9,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSI
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNOR_PARTY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
@@ -19,9 +18,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -49,7 +45,6 @@ import com.dpw.runner.shipment.services.document.response.DocumentManagerRespons
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -69,8 +64,6 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.NotesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
@@ -126,8 +119,6 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
-import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
-import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
 import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
@@ -293,7 +284,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IConsolidationDetailsDao consolidationDetailsDao,
             IPartiesDao partiesDao,
             IRoutingsDao routingsDao,
-            INotesDao notesDao,
             IContainerDao containerDao,
             IOrderManagementAdapter orderManagementAdapter,
             V1ServiceUtil v1ServiceUtil,
@@ -303,8 +293,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IAwbDao awbDao,
             IDocumentManagerService documentManagerService,
             IHblService hblService,
-            IShipmentSync shipmentSync,
-            IConsolidationSync consolidationSync,
             NetworkTransferV3Util networkTransferV3Util,
             ITruckDriverDetailsDao truckDriverDetailsDao,
             IReferenceNumbersDao referenceNumbersDao,
@@ -314,7 +302,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             IShipmentsContainersMappingDao shipmentsContainersMappingDao,
             IDpsEventService dpsEventService, ModelMapper modelMapper,
             @Lazy ConsolidationV3Service consolidationV3Service,
-            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service, IPackingService packingService,
+            MasterDataHelper masterDataHelper, @Lazy IRoutingsV3Service routingsV3Service,
             IPackingV3Service packingV3Service, INPMServiceAdapter npmServiceAdapater,
             INetworkTransferDao networkTransferDao,
             INotificationService notificationService, IMDMServiceAdapter mdmServiceAdapter) {
@@ -726,7 +714,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             // Trigger Kafka event for PushToDownStreamServices
             this.triggerPushToDownStream(shipmentDetails, null, true);
         } catch (Exception e) {
-            log.error("Error occurred due to: " + e.getStackTrace());
+            log.error(Constants.ERROR_MESSAGE + e.getStackTrace());
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
@@ -815,7 +803,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error("Error occurred due to: " + e.getStackTrace());
+            log.error(ERROR_MESSAGE + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
@@ -995,7 +983,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         BulkPackingResponse bulkPackingResponse;
         List<PackingV3Request> quotePackingRequests = contractUsages.stream()
                 .map(usage -> getPackingRequest(usage, shipmentDetails))
-                .collect(Collectors.toList());
+                .toList();
         if (shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
             List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(shipmentDetails.getPackingList(), PackingV3Request.class);
             packingV3Service.deleteBulk(existingRequests, SHIPMENT);
@@ -1011,7 +999,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         BulkContainerResponse bulkContainerResponse;
         List<ContainerV3Request> quoteContainerRequests = contractUsages.stream()
                 .map(usage -> getContainerRequest(usage, shipmentDetails))
-                .collect(Collectors.toList());
+                .toList();
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
             List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class);
             containerV3Service.deleteBulk(existingContainerRequests, SHIPMENT);
@@ -1046,7 +1034,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .stream()
                 .map(Packing::getPacksType)
                 .filter(type -> type != null && !contractCargoTypes.contains(type.trim()))
-                .collect(Collectors.toList());
+                .toList();
 
         if (!missingContainerCodes.isEmpty() || !missingPackTypes.isEmpty()) {
             throw new RunnerException("The quote selected doesn’t have the same package/container information");
@@ -2394,7 +2382,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setShipmentAddresses(updatedParties);
             }
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
-
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
 
             auditLogService.addAuditLog(
@@ -2521,15 +2508,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 salesBranch(customerBookingRequest.getSalesBranch()).
                 primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
                 secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
-                //TODO: check with shipment team
-//                containersList(consolidationDetails != null && !consolidationDetails.isEmpty() ? containerList : null).
-//                packingList(getPackingListRequestV3(customerBookingRequest)).
-                //fileRepoList(customerBookingRequest.getFileRepoList()).
-                //routingsList(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) ? null : customerBookingRequestRoutingList).
-                //consolidationList(isConsoleCreationNeededV3(customerBookingRequest) ? consolidationDetails : null).
-                        referenceNumbersList(createReferenceNumbersList(customerBookingRequest.getReferenceNumbersList())).
-                //notesList(createNotes(notes)).
-                        sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
+                referenceNumbersList(createReferenceNumbersList(customerBookingRequest.getReferenceNumbersList())).
+                sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
                 bookingType("ONLINE").
                 consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getConsolidationNumber() : "").
@@ -2727,7 +2707,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private List<Packing> getAndSetPackings(CustomerBookingV3Request request, Long shipmentId, ShipmentDetails shipmentDetails) {
         List<Packing> updatedPackings = new ArrayList<>();
-        //TODO: check with shipment team
         if (request.getPackingList() != null) {
             updatedPackings = packingDao.saveEntityFromShipment(jsonHelper.convertValueToList(request.getPackingList(), Packing.class), shipmentId);
             shipmentDetails.setPackingList(updatedPackings);
@@ -2766,7 +2745,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private List<ReferenceNumbersRequest> createReferenceNumbersList(List<ReferenceNumbersRequest> referenceNumbers) {
-        if (referenceNumbers == null) return null;
+        if (referenceNumbers == null) return Collections.emptyList();
         return referenceNumbers.stream().filter(Objects::nonNull).map(refNumber ->
                 ReferenceNumbersRequest.builder()
                         .consolidationId(refNumber.getConsolidationId())
@@ -2776,6 +2755,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .shipmentId(refNumber.getShipmentId())
                         .isPortalEnable(refNumber.getIsPortalEnable())
                         .build()).toList();
+    }
+    private boolean isMPKUnitCase(Packing packing, String tempPackingUnit) {
+        return !isStringNullOrEmpty(packing.getPacksType()) && tempPackingUnit.equals(packing.getPacksType());
+    }
+
+    private <T> void getResponseForPacks(T response, Integer totalPacks, String packingUnit) {
+        if (response instanceof AutoUpdateWtVolResponse autoUpdateWtVolResponse) {
+            autoUpdateWtVolResponse.setNoOfPacks(totalPacks.toString());
+            autoUpdateWtVolResponse.setPacksUnit(packingUnit);
+        } else if (response instanceof MeasurementBasisResponse measurementBasisResponseas) {
+            measurementBasisResponseas.setPackCount(totalPacks);
+        }
     }
 
     protected AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
@@ -4373,7 +4364,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error("Error occurred due to: " + e.getStackTrace());
+            log.error(ERROR_MESSAGE + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
         }
@@ -4410,7 +4401,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
         } catch (Exception e) {
-            log.error("Error occurred due to: " + e.getStackTrace());
+            log.error(ERROR_MESSAGE + e.getStackTrace());
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
