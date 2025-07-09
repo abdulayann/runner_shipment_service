@@ -283,6 +283,10 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
                 (transportInstructionLegsContainersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Containers: Gross weight and gross weight unit must both be provided or both be null.");
         }
+        if ((transportInstructionLegsContainersRequest.getNoOfPackages() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getPackageType())) ||
+                (transportInstructionLegsContainersRequest.getNoOfPackages() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getPackageType()))) {
+            throw new ValidationException("Containers: No of packages and package type must both be provided or both be null.");
+        }
 
         validateNetWeight(transportInstructionLegsContainersRequest);
 
