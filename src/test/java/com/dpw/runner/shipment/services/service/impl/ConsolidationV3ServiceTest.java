@@ -415,6 +415,28 @@ if (unitConversionUtilityMockedStatic != null) {
   }
 
   @Test
+  void testCreateFromBooking_Success2() throws RunnerException {
+    // Setup
+    CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
+    ConsolidationDetails consoleDetails = testConsol;
+    ContainerV3Request containerV3Request = objectMapperTest.convertValue(testContainer, ContainerV3Request.class);
+    customerBookingV3Request.setContainersList(List.of(containerV3Request));
+    customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
+
+    when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
+    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
+    when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(new ArrayList<>(List.of(testContainer)));
+    when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
+    ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
+    mockShipmentSettings();
+    var response = consolidationV3Service.createConsolidationForBooking(commonRequestModel, customerBookingV3Request);
+
+    assertNotNull(response);
+  }
+
+  @Test
   void testCreateFromBooking_AuditLogException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
     // Setup
     CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(consolidationDetailsV3Request).build();
