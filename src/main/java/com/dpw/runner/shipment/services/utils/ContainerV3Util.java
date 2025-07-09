@@ -428,7 +428,7 @@ public class ContainerV3Util {
         container.setPacksType(null);
     }
 
-    public void addNoOfPackagesToContainerFromPacks(Containers container, String packs, String packsType) {
+    public void addNoOfPackagesValueToContainer(Containers container, String packs, String packsType) {
         if(isStringNullOrEmpty(packs))
             return;
         addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
