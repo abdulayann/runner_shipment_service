@@ -22,7 +22,12 @@ public class TransportInstructionLegsPackagesResponse implements IRunnerResponse
     private String noOfPackages;
     private String packageType;
     private String description;
-    private String dimensions;
+    private BigDecimal length;
+    private String lengthUnit;
+    private BigDecimal width;
+    private String widthUnit;
+    private BigDecimal height;
+    private String heightUnit;
     private BigDecimal grossWeight;
     private String grossWeightUnit;
     private BigDecimal netWeight;
