@@ -327,10 +327,7 @@ public class PackingV3Service implements IPackingV3Service {
 
         Object entity = packingValidationV3Util.validateModule(packingRequestList.get(0), module);
 
-        List<Packing> existingPackings = new ArrayList<>();
-        if (!CommonUtils.listIsNullOrEmpty(incomingIds)) {
-            existingPackings = packingDao.findByIdIn(incomingIds);
-        }
+        List<Packing> existingPackings = fetchExistingPackings(incomingIds);
 
         // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
@@ -376,8 +373,8 @@ public class PackingV3Service implements IPackingV3Service {
             oldShipmentWtVolResponse = consolidationV3Service.calculateShipmentWtVol(consolidationDetails);
         }
 
-        List<Packing> savedUpdatedPackings = CommonUtils.listIsNullOrEmpty(updatedPackings) ? Collections.emptyList() : packingDao.saveAll(updatedPackings);
-        List<Packing> savedNewPackings = CommonUtils.listIsNullOrEmpty(newPackings) ? Collections.emptyList() : packingDao.saveAll(newPackings);
+        List<Packing> savedUpdatedPackings = saveIfNotEmpty(updatedPackings);
+        List<Packing> savedNewPackings = saveIfNotEmpty(newPackings);
 
         // Combine results for parent calculation and auditing
         List<Packing> allSavedPackings = new ArrayList<>();
@@ -387,8 +384,7 @@ public class PackingV3Service implements IPackingV3Service {
         ParentResult parentResult = getParentDetails(allSavedPackings, module);
 
         // Audit logs
-        recordAuditLogs(oldConvertedPackings, savedUpdatedPackings, DBOperationType.UPDATE, parentResult);
-        recordAuditLogs(null, savedNewPackings, DBOperationType.CREATE, parentResult);
+        auditLogsChanges(oldConvertedPackings, savedUpdatedPackings, savedNewPackings, parentResult);
 
         boolean isAutoSell = false;
         Map<UUID, Packing> oldPackings = oldConvertedPackings.stream().collect(Collectors.toMap(Packing::getGuid, packing -> packing, (packing1, packing2) -> packing1));
@@ -412,6 +408,20 @@ public class PackingV3Service implements IPackingV3Service {
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
                 .build();
+    }
+
+    private List<Packing> saveIfNotEmpty(List<Packing> packings) {
+        return CommonUtils.listIsNullOrEmpty(packings) ? Collections.emptyList() : packingDao.saveAll(packings);
+    }
+
+    private List<Packing> fetchExistingPackings(List<Long> ids) {
+        return CommonUtils.listIsNullOrEmpty(ids) ? new ArrayList<>() : packingDao.findByIdIn(ids);
+    }
+
+    private void auditLogsChanges(List<Packing> oldPackings, List<Packing> updatedPackings,
+                                  List<Packing> newPackings, ParentResult parentResult) {
+        recordAuditLogs(oldPackings, updatedPackings, DBOperationType.UPDATE, parentResult);
+        recordAuditLogs(null, newPackings, DBOperationType.CREATE, parentResult);
     }
 
     private void pushToDependentServices(List<Packing> packings, boolean isAutoSell, String module) {
