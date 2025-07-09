@@ -1821,6 +1821,30 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals("AE", shipmentDetailsResponse.getDepartment());
     }
 
+    @Test
+    void setOriginBranchMasterDataTest(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayName", "EGYPT Alexandria p10");
+        ShipmentDetailsResponse response = ShipmentDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->shipmentService.setOriginBranchMasterData(response));
+    }
+
+    @Test
+    void setOriginBranchMasterDataTest2(){
+        ShipmentDetailsResponse response = ShipmentDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        assertDoesNotThrow(()->shipmentService.setOriginBranchMasterData(response));
+    }
+    @Test
+    void setOriginBranchMasterDataTest3(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayNames", "EGYPT Alexandria p10");
+        ShipmentDetailsResponse response = ShipmentDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->shipmentService.setOriginBranchMasterData(response));
+    }
+
 
     @Test
     void calculateContainerSummary_throws_exception() throws RunnerException {

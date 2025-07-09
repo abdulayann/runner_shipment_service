@@ -204,5 +204,9 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Boolean isBorrowed;
     private Integer dgPacksCount;
     private String dgPacksUnit;
+    private String primarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
 
 }
