@@ -303,25 +303,7 @@ public class ReportService implements IReportService {
 
         Map<String, Object> dataRetrived;
 
-        if (report instanceof AWBLabelReport awbLabelReport1) {
-            awbLabelReport1.setMawb(reportRequest.isFromConsolidation());
-            awbLabelReport1.setRemarks(reportRequest.getRemarks());
-            awbLabelReport1.setCombi(reportRequest.isCombiLabel());
-            awbLabelReport1.setCustomLabel(reportRequest.getPrintCustomLabel() != null && reportRequest.getPrintCustomLabel());
-        }
-        if (report instanceof FCRDocumentReport fcrDocumentReport) {
-            fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
-            fcrDocumentReport.setPackIds(reportRequest.getPackIds());
-            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
-            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
-        }
-        // user story 135668
-        setPrintWithoutTranslation(report, reportRequest);
-        updateCustomDataCargoManifestAirReport(report, reportRequest);
-
-        if (report instanceof CSDReport csdReport) {
-            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
-        }
+        setReportParametersFromRequest(report, reportRequest);
         //LATER - Need to handle for new flow
         dataRetrived = getDocumentDataForReports(report, reportRequest);
 
@@ -391,11 +373,36 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
+    private void setReportParametersFromRequest(IReport report, ReportRequest reportRequest) {
+        if (report instanceof AWBLabelReport awbLabelReport1) {
+            awbLabelReport1.setMawb(reportRequest.isFromConsolidation());
+            awbLabelReport1.setRemarks(reportRequest.getRemarks());
+            awbLabelReport1.setCombi(reportRequest.isCombiLabel());
+            awbLabelReport1.setCustomLabel(reportRequest.getPrintCustomLabel() != null && reportRequest.getPrintCustomLabel());
+        }
+        if (report instanceof FCRDocumentReport fcrDocumentReport) {
+            fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
+            fcrDocumentReport.setPackIds(reportRequest.getPackIds());
+            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
+            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
+        }
+        // user story 135668
+        setPrintWithoutTranslation(report, reportRequest);
+        updateCustomDataCargoManifestAirReport(report, reportRequest);
+
+        if (report instanceof CSDReport csdReport) {
+            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
+        }
+    }
+
     @Nullable
     private byte[] getBytesForTransportInstructions(ReportRequest reportRequest, ShipmentSettingsDetails tenantSettingsRow, Map<String, Object> dataRetrived, String objectType) throws DocumentException, IOException {
-        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER_V3) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER_V3) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.TRANSPORT_ORDER_V3)) {
+        if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER_V3)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER_V3)
+                || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.TRANSPORT_ORDER_V3)) {
             byte[] transportInstructionPdf = getBytesForTransportInstruction(dataRetrived, reportRequest, objectType);
-            if (transportInstructionPdf != null && transportInstructionPdf.length > 1 && ReportConstants.PICKUP_ORDER_V3.equalsIgnoreCase(reportRequest.getReportInfo())) {
+            if (transportInstructionPdf.length > 1
+                    && ReportConstants.PICKUP_ORDER_V3.equalsIgnoreCase(reportRequest.getReportInfo())) {
                 createAutoEvent(reportRequest.getReportId(), ReportConstants.PICKUP_ORDER_GEN, tenantSettingsRow);
             }
             return transportInstructionPdf;
@@ -655,37 +662,7 @@ public class ReportService implements IReportService {
         if (!reportRequest.isPrintIATAChargeCode()) {
             dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
         }
-        if (!reportRequest.isPrintCSD()) {
-            dataRetrived.remove(RA_CSD);
-        }
-        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount()) {
-            dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
-            dataRetrived.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, Constants.EMPTY_STRING);
-            dataRetrived.put(ReportConstants.WT_CHARGE_P, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.WT_CHARGE_C, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_OTHERS_C));
-            dataRetrived.put(ReportConstants.VALUATION_CHARGES_C, ReportConstants.AS_AGREED_DISPLAY);
-            dataRetrived.put(ReportConstants.VALUATION_CHARGES_P, ReportConstants.AS_AGREED_DISPLAY);
-            dataRetrived.put(ReportConstants.TAX_C, ReportConstants.AS_AGREED_DISPLAY);
-            dataRetrived.put(ReportConstants.TAX_P, ReportConstants.AS_AGREED_DISPLAY);
-        }
-        if (reportRequest.getDisplayOtherAmount() != null && !reportRequest.getDisplayOtherAmount()) {
-            List<String> otherCharges = new ArrayList<>();
-            otherCharges.add(dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT).toString());
-            dataRetrived.put(ReportConstants.OTHER_CHARGES, otherCharges);
-            dataRetrived.put(ReportConstants.NEW_OTHER_CHARGES, otherCharges);
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_FREIGHT_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_FREIGHT_C));
-            dataRetrived.put(ReportConstants.AGENT_DUE_P, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.CARRIER_DUE_P, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.AGENT_DUE_C, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_C));
-            dataRetrived.put(ReportConstants.CARRIER_DUE_C, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_C));
-        }
-        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(reportRequest.getDisplayOtherAmount())) {
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_OTHERS_C));
-        }
+        handleReportDisplayPreferences(reportRequest, dataRetrived);
         if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && !Boolean.TRUE.equals(reportRequest.getDisplayOtherAmount())) {
             dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
             dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
@@ -786,6 +763,14 @@ public class ReportService implements IReportService {
         } else {
             dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
         }
+        handleReportDisplayPreferences(reportRequest, dataRetrived);
+        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(!reportRequest.getDisplayOtherAmount())) {
+            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
+            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
+        }
+    }
+
+    private static void handleReportDisplayPreferences(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
 
         if (!reportRequest.isPrintCSD()) {
             dataRetrived.remove(RA_CSD);
@@ -818,10 +803,6 @@ public class ReportService implements IReportService {
         if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(reportRequest.getDisplayOtherAmount())) {
             dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
             dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_OTHERS_C));
-        }
-        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(!reportRequest.getDisplayOtherAmount())) {
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
         }
     }
 

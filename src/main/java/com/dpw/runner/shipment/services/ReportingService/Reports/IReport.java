@@ -4508,31 +4508,35 @@ public abstract class IReport {
     }
 
     private void processRaKcAdditionalDetails(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        if (shipmentModel.getAdditionalDetails() != null) {
-            AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
-            if(additionalDetailModel.getExemptionCodes() != null) {
-                dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
-            }
-            if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
-                Set<String> screeningCodes = new HashSet<>(additionalDetailModel.getScreeningStatus());
-                if(screeningCodes.contains(Constants.AOM)){
-                    screeningCodes.remove(Constants.AOM);
-                    String aomString = Constants.AOM;
-                    if(additionalDetailModel.getAomFreeText() != null) {
-                        aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
-                    }
-                    screeningCodes.add(aomString);
-                    dictionary.put(SCREENING_CODES, screeningCodes);
-                    dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
-                } else {
-                    dictionary.put(SCREENING_CODES, screeningCodes);
-                }
-
-            }
-
+        AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
+        if (additionalDetailModel != null) {
+            populateScreeningAndExemptionCodes(dictionary, additionalDetailModel, true);
             dictionary.put(RA_NUMBER, additionalDetailModel.getRegulatedEntityCategory());
             dictionary.put(SECURITY_STATUS_RECEIVED_FROM, additionalDetailModel.getSecurityStatusReceivedFrom());
             dictionary.put(ADDITIONAL_SECURITY_INFORMATION, StringUtility.getNullIfEmpty(additionalDetailModel.getAdditionalSecurityInformation()));
+        }
+    }
+
+    private void populateScreeningAndExemptionCodes(Map<String, Object> dictionary, AdditionalDetailModel additionalDetailModel, boolean includeAomFreeText) {
+        if(additionalDetailModel.getExemptionCodes() != null) {
+            dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
+        }
+        if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
+            Set<String> screeningCodes = new HashSet<>(additionalDetailModel.getScreeningStatus());
+            if(screeningCodes.contains(Constants.AOM)){
+                screeningCodes.remove(Constants.AOM);
+                String aomString = Constants.AOM;
+                if(additionalDetailModel.getAomFreeText() != null) {
+                    aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
+                }
+                screeningCodes.add(aomString);
+                dictionary.put(SCREENING_CODES, screeningCodes);
+                if(includeAomFreeText) {
+                    dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
+                }
+            } else {
+                dictionary.put(SCREENING_CODES, screeningCodes);
+            }
         }
     }
 
@@ -4796,26 +4800,9 @@ public abstract class IReport {
     }
 
     private void addScreeningCodeAndExemptionCargoTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        if (shipmentModel.getAdditionalDetails() != null) {
-            AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
-            if (additionalDetailModel.getExemptionCodes() != null) {
-                dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
-            }
-            if (additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
-                Set<String> screeningCodes = new HashSet<>(additionalDetailModel.getScreeningStatus());
-                if (screeningCodes.contains(Constants.AOM)) {
-                    screeningCodes.remove(Constants.AOM);
-                    String aomString = Constants.AOM;
-                    if (additionalDetailModel.getAomFreeText() != null) {
-                        aomString = aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
-                    }
-                    screeningCodes.add(aomString);
-                    dictionary.put(SCREENING_CODES, screeningCodes);
-                } else {
-                    dictionary.put(SCREENING_CODES, screeningCodes);
-                }
-
-            }
+        AdditionalDetailModel details = shipmentModel.getAdditionalDetails();
+        if (details != null) {
+            populateScreeningAndExemptionCodes(dictionary, details, false);
         }
     }
 
@@ -5138,48 +5125,11 @@ public abstract class IReport {
     }
 
     // Adds origin/receiving branches and triangulated partner branch info
-    private void addBranchAndTriangulationDetails(Map<String, Object> dict, ConsolidationDetails details) {
-        Long origin = details.getOriginBranch();
-        Long receiving = details.getReceivingBranch();
-        List<TriangulationPartner> triangulations = details.getTriangulationPartnerList();
-
-        if (origin == null || receiving == null) {
-            return; // cannot proceed if key branches are missing
-        }
-
-        Set<String> tenantIds = new HashSet<>();
-        tenantIds.add(origin.toString());
-        tenantIds.add(receiving.toString());
-
-        // Add triangulation partner tenant IDs if present
-        if (triangulations != null) {
-            tenantIds.addAll(triangulations.stream()
-                    .filter(Objects::nonNull)
-                    .map(tp -> tp.getTriangulationPartner().toString())
-                    .collect(Collectors.toSet()));
-        }
-
-        // Fetch full tenant data in bulk
-        Map<String, TenantModel> tenantData = masterDataUtils.fetchInTenantsList(tenantIds);
-        masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
-
-        // Add origin & destination branches
-        dict.put("C_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
-        dict.put("C_OriginBranchContact", buildTenantContact(tenantData.get(origin.toString())));
-        dict.put("C_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
-        dict.put("C_DestinationBranchContact", buildTenantContact(tenantData.get(receiving.toString())));
-
-        // Add triangulation partner branches with indexed keys
-        if (triangulations != null) {
-            for (int i = 0; i < triangulations.size(); i++) {
-                TriangulationPartner tp = triangulations.get(i);
-                if (tp != null && tp.getTriangulationPartner() != null) {
-                    TenantModel model = tenantData.get(tp.getTriangulationPartner().toString());
-                    dict.put("C_TriangulationBranch" + (i + 1), buildTenantMap(model));
-                    dict.put("C_TriangulationBranch" + (i + 1) + CONTACT, buildTenantContact(model));
-                }
-            }
-        }
+    private void addBranchAndTriangulationDetails(Map<String, Object> dict, ConsolidationDetails consolidationDetails) {
+        Long origin = consolidationDetails.getOriginBranch();
+        Long receiving = consolidationDetails.getReceivingBranch();
+        List<TriangulationPartner> triangulations = consolidationDetails.getTriangulationPartnerList();
+        populateBranchAndTriangulationInfo(dict, origin, receiving, triangulations, "C" );
     }
 
     // Builds a map from a tenant's address and name info
@@ -5346,8 +5296,13 @@ public abstract class IReport {
         Long receiving = details.getReceivingBranch();
         List<TriangulationPartner> triangulations = details.getTriangulationPartnerList();
 
+        populateBranchAndTriangulationInfo(dict, origin, receiving, triangulations, "S" );
+    }
+
+    private void populateBranchAndTriangulationInfo(Map<String, Object> dict, Long origin, Long receiving, List<TriangulationPartner> triangulations, String prefix) {
+
         if (origin == null || receiving == null) {
-            return; // cannot proceed if key branches are missing
+            return;
         }
 
         Set<String> tenantIds = new HashSet<>();
@@ -5367,10 +5322,10 @@ public abstract class IReport {
         masterDataUtils.pushToCache(tenantData, CacheConstants.TENANTS, tenantIds, new TenantModel(), null);
 
         // Add origin & destination branches
-        dict.put("S_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
-        dict.put("S_OriginBranchContact", buildTenantContact(tenantData.get(origin.toString())));
-        dict.put("S_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
-        dict.put("S_DestinationBranchContact", buildTenantContact(tenantData.get(receiving.toString())));
+        dict.put(prefix +"_OriginBranch", buildTenantMap(tenantData.get(origin.toString())));
+        dict.put(prefix +"_OriginBranchContact", buildTenantContact(tenantData.get(origin.toString())));
+        dict.put(prefix +"_DestinationBranch", buildTenantMap(tenantData.get(receiving.toString())));
+        dict.put(prefix +"_DestinationBranchContact", buildTenantContact(tenantData.get(receiving.toString())));
 
         // Add triangulation partner branches with indexed keys
         if (triangulations != null) {
@@ -5378,8 +5333,8 @@ public abstract class IReport {
                 TriangulationPartner tp = triangulations.get(i);
                 if (tp != null && tp.getTriangulationPartner() != null) {
                     TenantModel model = tenantData.get(tp.getTriangulationPartner().toString());
-                    dict.put("S_TriangulationBranch" + (i + 1), buildTenantMap(model));
-                    dict.put("S_TriangulationBranch" + (i + 1) + CONTACT, buildTenantContact(model));
+                    dict.put(prefix +"_TriangulationBranch" + (i + 1), buildTenantMap(model));
+                    dict.put(prefix +"_TriangulationBranch" + (i + 1) + CONTACT, buildTenantContact(model));
                 }
             }
         }
