@@ -22,7 +22,7 @@ public class MigrationV3Controller {
         return migrationV3Service.migrateV2ToV3(request.getConsolidation(), request.getShipment());
     }
 
-    @RequestMapping("/v3/2")
+    @RequestMapping("/v3/v2")
     public Map<String, Integer> migrationFromV3ToV2(@RequestBody ConsolidationMigrationRequest request) {
         return migrationV3Service.migrateV3ToV2(request.getConsolidation(), request.getShipment());
     }
