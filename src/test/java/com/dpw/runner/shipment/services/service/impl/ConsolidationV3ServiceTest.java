@@ -426,7 +426,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
     when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
     when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
-    when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), any())).thenReturn(new ArrayList<>(List.of(testContainer)));
+    when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(new ArrayList<>(List.of(testContainer)));
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
     ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(false);
