@@ -25,16 +25,19 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
@@ -124,6 +127,7 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -137,15 +141,19 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.ILogsHistoryService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -249,15 +257,21 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IShipmentDao shipmentDao;
     @Mock
+    private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
+    @Mock
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     @Mock
     private JsonHelper jsonHelper;
     @Mock
     private ConsolidationV3Service consolidationV3Service;
     @Mock
+    private INotesDao notesDao;
+    @Mock
     private IPackingDao packingDao;
     @Mock
     private IReferenceNumbersDao referenceNumbersDao;
+    @Mock
+    private IShipmentOrderDao shipmentOrderDao;
     @Mock
     private MasterDataUtils masterDataUtils;
     @Mock
@@ -265,7 +279,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private IOrderManagementAdapter orderManagementAdapter;
     @Mock
+    private IPackingService packingService;
+    @Mock
     private DependentServiceHelper dependentServiceHelper;
+    @Mock
+    private IShipmentSync shipmentSync;
     @Mock
     private IAuditLogService auditLogService;
     @Mock
@@ -313,12 +331,18 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     @Mock
     private CustomKeyGenerator keyGenerator;
     @Mock
+    private IDpsEventService dpsEventService;
+    @Mock
+    private ICarrierDetailsDao carrierDetailsDao;
+    @Mock
     private ObjectMapper objectMapperMocked;
 
     @Mock
     private ShipmentDetailsMapper shipmentDetailsMapper;
     @Mock
     private INPMServiceAdapter npmServiceAdapter;
+    @Mock
+    private NpmContractV3Util npmContractV3Util;
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
     @Mock
@@ -347,8 +371,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @AfterEach
     void tearDown() {
-       shipmentServiceImplV3.executorService.shutdown();
-       shipmentServiceImplV3.executorServiceMasterData.shutdown();
+        shipmentServiceImplV3.executorService.shutdown();
+        shipmentServiceImplV3.executorServiceMasterData.shutdown();
     }
 
     @BeforeEach
@@ -1784,7 +1808,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .destination_name("Felixstowe Port")
                 .build();
 
-       return ListContractResponse.builder()
+        return ListContractResponse.builder()
                 .contracts(List.of(contract))
                 .count(1L)
                 .unlocMasterData(unlocMasterData)
@@ -4904,7 +4928,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .packsList(List.of(ShipmentPacksAssignContainerTrayDto.Shipments.Packages.builder()
                         .containerNumber("")
                         .containerId(2L)
-                                .commodity("123")
+                        .commodity("123")
                         .build()))
                 .build()));
         Set<Long> containerIds = new HashSet<>();
@@ -6086,7 +6110,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockResponse), httpResponse);
     }
-
     @Test
     void testUpdateContainerFromCargo() throws RunnerException {
         ShipmentDetails newShipment = new ShipmentDetails();
@@ -6454,30 +6477,32 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
     @Test
     void generateEmailBody_test2(){
-        String htmlTemplate = "<table border=\"1\" cellpadding=\"1\" cellspacing=\"1\" style=\"width:500px\">\n"
-                + "    <tbody>\n"
-                + "        <tr>\n"
-                + "            <td>&nbsp;No &amp; Type of Package&nbsp;</td>\n"
-                + "            <td>Container Number</td>\n"
-                + "            <td>&nbsp;DG Class</td>\n"
-                + "            <td>UN Number</td>\n"
-                + "            <td>Proper Shipping Name</td>\n"
-                + "            <td>Packing Group&nbsp;</td>\n"
-                + "            <td>Minimum Flash Point</td>\n"
-                + "            <td>Marine Pollutant</td>\n"
-                + "        </tr>\n"
-                + "        <tr>\n"
-                + "            <td>#PACKAGE_DETAILS}</td>\n"
-                + "            <td>{#CONTAINER_NUMBER}&nbsp;</td>\n"
-                + "            <td>{#DG_CLASS}</td>\n"
-                + "            <td>{#UN_NUMBER}</td>\n"
-                + "            <td>{#SHIPPING_NAME}</td>\n"
-                + "            <td>{#PACKING_GROUP}</td>\n"
-                + "            <td>{#FLASH_POINT}&nbsp;</td>\n"
-                + "            <td>{#MARINE_POLLUTANT}</td>\n"
-                + "        </tr>\n"
-                + "    </tbody>\n"
-                + "</table>";
+        String htmlTemplate = """
+                    <table border="1" cellpadding="1" cellspacing="1" style="width:500px">
+                    <tbody>
+                        <tr>
+                            <td>&nbsp;No &amp; Type of Package&nbsp;</td>
+                            <td>Container Number</td>
+                            <td>&nbsp;DG Class</td>
+                            <td>UN Number</td>
+                            <td>Proper Shipping Name</td>
+                            <td>Packing Group&nbsp;</td>
+                            <td>Minimum Flash Point</td>
+                            <td>Marine Pollutant</td>
+                        </tr>
+                        <tr>
+                            <td>#PACKAGE_DETAILS}</td>
+                            <td>{#CONTAINER_NUMBER}&nbsp;</td>
+                            <td>{#DG_CLASS}</td>
+                            <td>{#UN_NUMBER}</td>
+                            <td>{#SHIPPING_NAME}</td>
+                            <td>{#PACKING_GROUP}</td>
+                            <td>{#FLASH_POINT}&nbsp;</td>
+                            <td>{#MARINE_POLLUTANT}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                """;
 
         String emailBody = "EmailBody";
         when(commonUtils.replaceTagsFromData(anyMap(), anyString())).thenReturn(emailBody);
