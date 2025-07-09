@@ -204,7 +204,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
     }
 
-    private void updateShipmentCarrierDetails(List<Routings> mainCarriageList, Long  shipmentId) {
+    private void updateShipmentCarrierDetails(List<Routings> mainCarriageList, Long shipmentId) {
         Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(shipmentId);
         if (shipmentDetailsOptional.isEmpty())
             return;
@@ -502,6 +502,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     public BulkRoutingResponse updateBulk(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         routingValidationUtil.validateBulkUpdateRoutingRequest(request, module);
         List<RoutingsRequest> incomingRoutings = request.getRoutings();
+        setFlightNumberInCaseAir(incomingRoutings);
         // Separate IDs and determine existing routing
         List<Long> incomingIds = getIncomingRoutingsIds(incomingRoutings);
         List<Routings> existingRoutings = new ArrayList<>();
@@ -553,6 +554,16 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 .routingsResponseList(routingResponses)
                 .message(prepareBulkUpdateMessage(routingResponses))
                 .build();
+    }
+
+    private void setFlightNumberInCaseAir(List<RoutingsRequest> incomingRoutings) {
+        if (!CollectionUtils.isEmpty(incomingRoutings)) {
+            for (RoutingsRequest routingsRequest : incomingRoutings) {
+                if (routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode())) {
+                    routingsRequest.setFlightNumber(routingsRequest.getVoyage());
+                }
+            }
+        }
     }
 
     private void pushToDependentServices(BulkUpdateRoutingsRequest request, String module, List<Routings> routingsList) {
