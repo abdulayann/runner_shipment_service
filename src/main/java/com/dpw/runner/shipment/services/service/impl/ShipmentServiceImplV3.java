@@ -2552,13 +2552,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 bookingReference(customerBookingRequest.getBookingNumber()).
                 bookingCreatedDate(customerBookingRequest.getBookingDate()).
                 shipmentCreatedOn(LocalDateTime.now()).
-                client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry())).
-                consignee(createPartiesRequest(customerBookingRequest.getConsignee(), customerBookingRequest.getConsigneeCountry())).
-                consigner(createPartiesRequest(customerBookingRequest.getConsignor(), customerBookingRequest.getConsignorCountry())).
+                client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry(), null)).
+                consignee(createPartiesRequest(customerBookingRequest.getConsignee(), customerBookingRequest.getConsigneeCountry(), null)).
+                consigner(createPartiesRequest(customerBookingRequest.getConsignor(), customerBookingRequest.getConsignorCountry(), null)).
                 shipmentAddresses(customerBookingRequest.getAdditionalParties().stream().map(additionalParty ->
-                        createPartiesRequest(additionalParty, additionalParty.getCountryCode())).toList()).
+                        createPartiesRequest(additionalParty, additionalParty.getCountryCode(), additionalParty.getType())).toList()).
                 additionalDetails(AdditionalDetailV3Request.builder().
-                        notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry())).
+                        notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry(), null)).
                         pickupDate(customerBookingRequest.getPickupAtOriginDate()).
                         cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestinationDate()).
                         build()
@@ -2656,10 +2656,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private PartiesRequest createPartiesRequest(PartiesRequest party, String countryCode) {
+    private PartiesRequest createPartiesRequest(PartiesRequest party, String countryCode, String partyType) {
         if (party == null)
             return null;
         return PartiesRequest.builder()
+                .type(partyType)
                 .addressCode(party.getAddressCode())
                 .addressData(party.getAddressData())
                 .orgCode(party.getOrgCode())
