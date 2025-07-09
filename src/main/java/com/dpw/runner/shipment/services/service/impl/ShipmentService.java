@@ -3046,8 +3046,7 @@ public class ShipmentService implements IShipmentService {
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled
         deletePendingStateAfterCancellation(shipmentDetails, oldEntity);
         log.info("shipment afterSave consoleShipmentMappingDao.deletePendingStateByShipmentId..... ");
-        processSyncV1AndAsyncFunctions(shipmentDetails, oldEntity, shipmentSettingsDetails, syncConsole, hbl, deletedContGuids, packsForSync, consolidationDetails);
-        pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET);
+        processSyncV1AndAsyncFunctions(shipmentDetails, oldEntity, shipmentSettingsDetails, syncConsole, hbl, deletedContGuids, packsForSync, consolidationDetails, isCreate, shipmentRequest, isFromET, null, false);
         log.info("shipment afterSave end..... ");
     }
 
@@ -3151,7 +3150,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
+    private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails, boolean isCreate, ShipmentRequest shipmentRequest, boolean isFromET, Set<Containers> oldContainers, boolean isFromContainerUpdate) {
         // Syncing shipment to V1
         CompletableFuture<Void> bookingUpdateFuture = null;
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
@@ -3165,6 +3164,16 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
+        if (bookingUpdateFuture != null) {
+            if (isFromContainerUpdate) {
+                log.info("calling pushShipmentDataToDependentService for container update {}", oldContainers);
+                bookingUpdateFuture.thenAcceptAsync(data -> dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers));
+            } else {
+                log.info("calling pushShipmentDataToDependentService for shipment create/update {}", shipmentDetails);
+                bookingUpdateFuture.thenAcceptAsync(data -> pushShipmentDataToDependentService(shipmentDetails, oldEntity, isCreate, shipmentRequest, isFromET));
+            }
+        }
+
     }
 
     private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
@@ -4860,8 +4869,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
         }
 
-        processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails);
-        dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
+        processSyncV1AndAsyncFunctions(shipmentDetails, oldShipmentDetails, shipmentSettingsDetails, false, hbl, new ArrayList<>(), null, consolidationDetails, false, null, false, oldContainers, true);
     }
 
     private List<Long> getContainerIds(boolean lclAndSeaOrRoadFlag, Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean isConsolidatorFlag, ShipmentDetails shipmentDetails) throws RunnerException {
