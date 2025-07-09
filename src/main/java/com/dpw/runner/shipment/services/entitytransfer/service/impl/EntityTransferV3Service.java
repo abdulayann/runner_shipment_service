@@ -806,17 +806,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
 
         if(consolidationDetailsResponse != null) {
             // Attach consolidation and shipment
-            Set<Long> shipmentIdSet = new HashSet<>(shipmentIds);
-            if(!interBranchShipment.isEmpty()) {
-                commonUtils.setInterBranchContextForHub();
-                createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
-                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().shipmentRequestedType(ShipmentRequestedType.APPROVE).consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
-                consolidationService.attachShipments(request);
-            } else {
-                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
-                consolidationService.attachShipments(request);
-            }
-            log.info("Shipment and console got attached with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+            attachConsolidationToShipment(shipmentIds, interBranchShipment, consolidationDetailsResponse);
 
             // Attach consolidation containers to Shipments
             if (!CommonUtils.listIsNullOrEmpty(consolidationDetailsResponse.getContainersList())) {
@@ -852,6 +842,22 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         }
 
         return consolidationDetailsResponse;
+    }
+
+    private void attachConsolidationToShipment(List<Long> shipmentIds, List<Long> interBranchShipment, ConsolidationDetailsResponse consolidationDetailsResponse) throws RunnerException {
+        Set<Long> shipmentIdSet = new HashSet<>(shipmentIds);
+        if(!shipmentIdSet.isEmpty()) {
+            if (!interBranchShipment.isEmpty()) {
+                commonUtils.setInterBranchContextForHub();
+                createShipmentPullRequest(interBranchShipment, consolidationDetailsResponse.getId());
+                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().shipmentRequestedType(ShipmentRequestedType.APPROVE).consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
+                consolidationService.attachShipments(request);
+            } else {
+                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationDetailsResponse.getId()).shipmentIds(shipmentIdSet).isFromConsolidation(true).build();
+                consolidationService.attachShipments(request);
+            }
+        }
+        log.info("Shipment and console got attached with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
     }
 
     private void pushImportConsoleDataToDependantService(Long consoleId, List<Long> shipmentIds,  boolean isCreateConsole, Map<Long, Boolean> isCreateShipMap, List<ConsolidationDetails> oldConsolidationDetailsList) {
