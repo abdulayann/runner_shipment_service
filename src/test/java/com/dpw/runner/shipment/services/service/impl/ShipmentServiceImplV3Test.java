@@ -608,6 +608,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
         customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
         customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
+        customerBookingV3Request.setGrossWeight(BigDecimal.valueOf(13222211));
+        customerBookingV3Request.setVolume(BigDecimal.valueOf(6565576));
         customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
 
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
@@ -622,7 +624,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
         shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
 
-        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().id(123L).containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
         doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
