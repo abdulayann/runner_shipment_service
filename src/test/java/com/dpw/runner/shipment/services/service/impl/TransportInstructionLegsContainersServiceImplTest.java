@@ -284,7 +284,6 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiLegs.setTiTruckDriverDetails(new ArrayList<>());
         tiLegs.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setUpdatedBy("2020-03-01");
-        Optional<TiLegs> ofResult = Optional.of(tiLegs);
         when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(Optional.empty());
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder dgClassResult = TransportInstructionLegsContainersRequest
                 .builder()
@@ -529,6 +528,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -703,6 +703,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -822,6 +823,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
