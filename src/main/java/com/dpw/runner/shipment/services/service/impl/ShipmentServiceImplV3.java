@@ -2392,6 +2392,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             assignShipmentIdToPacks(packingV3RequestList, consolidationId);
             BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING);
             shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
+
+            List<Containers> containersArrayList = jsonHelper.convertValueToList(containerList, Containers.class);
+            for(Containers container: containersArrayList) {
+                containerV3Util.resetContainerDataForRecalculation(container);
+            }
+            List<Packing> packingArrayList = jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class);
+            for(int i = 0; i < containersArrayList.size(); i++) {
+                containerV3Service.addPackageDataToContainer(containersArrayList.get(i), packingArrayList.get(i));
+            }
+            containerDao.saveAll(containersArrayList);
+            shipmentDetails.setContainersList(new HashSet<>(containersArrayList));
             shipmentDetails = getShipment(shipmentDetails);
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);

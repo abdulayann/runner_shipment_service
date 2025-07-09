@@ -28,6 +28,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
@@ -51,6 +52,7 @@ import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
@@ -253,6 +255,8 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     private IShipmentRepository shipmentRepository;
     @Mock
     private IShipmentDao shipmentDao;
+    @Mock
+    private IContainerDao containerDao;
     @Mock
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
     @Mock
@@ -642,6 +646,11 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setDefaultPackUnit("BAG");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+
         when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
         when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
         ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
