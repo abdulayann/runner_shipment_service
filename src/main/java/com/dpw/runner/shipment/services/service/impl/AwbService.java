@@ -1045,11 +1045,6 @@ public class AwbService implements IAwbService {
                 : awbShipmentInfo.getAgentCASSCode());
     }
 
-    private void setAwbIssuingAgentTaxRegistrationNumber(Parties orgRow, Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap, AwbShipmentInfo awbShipmentInfo) {
-        if (orgRow.getAddressId() != null && !orgRow.getAddressId().isEmpty() && issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))) {
-            awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
-        }
-    }
 
     private void setAwbCustomOriginCode(AwbCargoInfo awbCargoInfo, Parties orgRow) {
         String country = orgRow.getOrgData() != null ?
@@ -1552,17 +1547,6 @@ public class AwbService implements IAwbService {
                 : awbShipmentInfo.getAgentCASSCode());
     }
 
-    private Map<Long, AddressDataV1> getAddressDataV1Map(ArrayList<String> issuingAgentAddressList) {
-        Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
-        if (!CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
-            CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
-            V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
-            List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
-            issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-        }
-        return issuingAgentAddressIdToEntityMap;
-    }
 
     private void processShipmentConsignerConsginee(ShipmentDetails shipmentDetails, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry, Map<Long, AddressDataV1> addressDataV1Map) {
         AddressDataV1 shipperAddressData = null;
@@ -2695,7 +2679,7 @@ public class AwbService implements IAwbService {
         generateMawbNotifyPartyinfo(consolidationDetails, request, awb, mawbLockSettings, awbGroupLocks);
         updateMawbRoutingInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings, awbGroupLocks);
         updateMawbCargoInfoFromShipment(consolidationDetails, awb, mawbLockSettings, awbGroupLocks);
-        generateMawbOtherInfo(consolidationDetails, awb, mawbLockSettings, awbGroupLocks);
+        generateMawbOtherInfo(consolidationDetails, awb, awbGroupLocks);
     }
 
     private List<AwbPackingInfo> updateMawbPackingInfoFromShipment(ConsolidationDetails consolidationDetails, Map<String, Boolean> awbGroupLocks) {
@@ -2939,7 +2923,7 @@ public class AwbService implements IAwbService {
             awbCargoInfo.setChargeCode(null);
     }
 
-    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings, Map<String, Boolean> awbGroupLocks) {
+    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, Awb awb, Map<String, Boolean> awbGroupLocks) {
         if(!Boolean.TRUE.equals(awbGroupLocks.get(OTHER_DETAILS_LOCK_GROUP))) {
             return;
         }

@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -141,11 +141,9 @@ public class ShipmentCANReport extends IReport {
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
-        if (shipmentCANModel.shipmentDetails != null) {
-            if (ObjectUtils.isNotEmpty(shipmentCANModel.shipmentDetails.getConsolidationList())) {
-                ConsolidationModel consolidationModel = shipmentCANModel.shipmentDetails.getConsolidationList().get(0);
-                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
-            }
+        if (shipmentCANModel.shipmentDetails != null && ObjectUtils.isNotEmpty(shipmentCANModel.shipmentDetails.getConsolidationList())) {
+            ConsolidationModel consolidationModel = shipmentCANModel.shipmentDetails.getConsolidationList().get(0);
+            this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
         }
 
         if(shipmentCANModel.shipmentDetails != null) {

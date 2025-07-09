@@ -2674,26 +2674,26 @@ public class ReportService implements IReportService {
 
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicConsolidationFields(Map<String, Object> dict, ConsolidationDetails details) {
-        dict.put(ReportConstants.C_D_Reefer, details.getReefer());
+        dict.put(ReportConstants.C_D_REEFER, details.getReefer());
         dict.put(ReportConstants.C_D_DG, details.getHazardous());
 
         // Add container and package counts from allocation section if available
         Allocations al = details.getAllocations();
         if (al != null) {
-            dict.put(ReportConstants.C_CA_DGContainer, al.getDgContainerCount());
-            dict.put(ReportConstants.C_CA_DGPackages, al.getDgPacks());
+            dict.put(ReportConstants.C_CA_DGCONTAINER, al.getDgContainerCount());
+            dict.put(ReportConstants.C_CA_DGPACKAGES, al.getDgPacks());
         }
 
         // Add achieved quantities section if available
         AchievedQuantities aq = details.getAchievedQuantities();
         if (aq != null) {
-            dict.put(ReportConstants.C_C_DGPackagesType, aq.getDgPacksType());
-            dict.put(ReportConstants.C_C_DGContainer, aq.getDgContainerCount());
-            dict.put(ReportConstants.C_C_DGPackages, aq.getDgPacks());
-            dict.put(ReportConstants.C_C_SLACCount, aq.getSlacCount());
+            dict.put(ReportConstants.C_C_DGPACKAGESTYPE, aq.getDgPacksType());
+            dict.put(ReportConstants.C_C_DGCONTAINER, aq.getDgContainerCount());
+            dict.put(ReportConstants.C_C_DGPACKAGES, aq.getDgPacks());
+            dict.put(ReportConstants.C_C_SLACCOUNT, aq.getSlacCount());
         }
 
-        dict.put(ReportConstants.C_C_AdditionalTerms, details.getAdditionalTerms()); // terms
+        dict.put(ReportConstants.C_C_ADDITIONAL_TERMS, details.getAdditionalTerms()); // terms
     }
 
     // Adds reference numbers into the map using their type as a key suffix
@@ -2729,18 +2729,18 @@ public class ReportService implements IReportService {
 
         // Add last routing info
         if (last != null) {
-            dict.put(ReportConstants.C_LastVessel, last.getVesselName());
-            dict.put(ReportConstants.C_LastVoyage, last.getVoyage());
-            dict.put(ReportConstants.C_LastCarrier, last.getCarrier());
-            dict.put(ReportConstants.C_LastFlightNumber, last.getFlightNumber());
+            dict.put(ReportConstants.C_LASTVESSEL, last.getVesselName());
+            dict.put(ReportConstants.C_LASTVOYAGE, last.getVoyage());
+            dict.put(ReportConstants.C_LASTCARRIER, last.getCarrier());
+            dict.put(ReportConstants.C_LASTFLIGHTNUMBER, last.getFlightNumber());
         }
 
         // Add first routing info
         if (first != null) {
-            dict.put(ReportConstants.C_FirstVessel, first.getVesselName());
-            dict.put(ReportConstants.C_FirstVoyage, first.getVoyage());
-            dict.put(ReportConstants.C_FirstCarrier, first.getCarrier());
-            dict.put(ReportConstants.C_FirstFlightNumber, first.getFlightNumber());
+            dict.put(ReportConstants.C_FIRSTVESSEL, first.getVesselName());
+            dict.put(ReportConstants.C_FIRSTVOYAGE, first.getVoyage());
+            dict.put(ReportConstants.C_FIRSTCARRIER, first.getCarrier());
+            dict.put(ReportConstants.C_FIRSTFLIGHTNUMBER, first.getFlightNumber());
         }
     }
 

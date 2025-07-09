@@ -2,15 +2,10 @@ package com.dpw.runner.shipment.services.dto.v3.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.TiContainersResponse;
-import com.dpw.runner.shipment.services.dto.response.TiPackagesResponse;
-import com.dpw.runner.shipment.services.dto.response.TiReferencesResponse;
-import com.dpw.runner.shipment.services.dto.response.TiTruckDriverDetailsResponse;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 @Getter

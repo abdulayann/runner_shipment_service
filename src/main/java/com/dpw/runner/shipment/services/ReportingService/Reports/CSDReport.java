@@ -69,23 +69,7 @@ public class CSDReport extends IReport{
 
         populateUserFields(csdModel.getUsersDto(), dictionary);
         if(isConsolidation){
-            populateConsolidationFields(csdModel.getConsolidationModel(), dictionary);
-            populateRaKcDataConsolidation(dictionary, csdModel.getConsolidationModel());
-            dictionary.put(ReportConstants.IS_CONSOLIDATION, true);
-            // CarrierDetails
-            if(csdModel.getConsolidationModel().getCarrierDetails() != null) {
-                carrierModel = csdModel.getConsolidationModel().getCarrierDetails();
-                dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
-                        csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
-                ));
-            }
-            if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
-                dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
-
-            if (csdModel.getConsolidationModel() != null) {
-                this.populateConsolidationReportData(dictionary, null, csdModel.getConsolidationModel().getId());
-            }
-
+            handleConsolidationData(csdModel, dictionary);
         }
         else {
             populateShipmentFields(csdModel.getShipmentModel(), dictionary);
@@ -127,6 +111,28 @@ public class CSDReport extends IReport{
         }
         return dictionary;
     }
+
+    private void handleConsolidationData(CSDModel csdModel, Map<String, Object> dictionary) {
+
+        CarrierDetailModel carrierModel;
+        populateConsolidationFields(csdModel.getConsolidationModel(), dictionary);
+        populateRaKcDataConsolidation(dictionary, csdModel.getConsolidationModel());
+        dictionary.put(ReportConstants.IS_CONSOLIDATION, true);
+        // CarrierDetails
+        if(csdModel.getConsolidationModel().getCarrierDetails() != null) {
+            carrierModel = csdModel.getConsolidationModel().getCarrierDetails();
+            dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
+                    csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
+            ));
+        }
+        if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
+            dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
+
+        if (csdModel.getConsolidationModel() != null) {
+            this.populateConsolidationReportData(dictionary, null, csdModel.getConsolidationModel().getId());
+        }
+    }
+
 
     private String getMainCarriageAirPorts(List<RoutingsModel> routingsModelList, String pol, String pod) {
         if (CollectionUtils.isEmpty(routingsModelList))
