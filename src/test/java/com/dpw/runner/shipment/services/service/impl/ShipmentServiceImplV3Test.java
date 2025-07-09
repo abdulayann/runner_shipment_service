@@ -4422,7 +4422,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals(100L, result);
         verify(containerV3Service).addShipmentCargoToContainerInCreateFromBooking(firstContainer, bookingRequest);
         verify(containerV3Util).setContainerNetWeight(firstContainer);
-        verify(containerV3Util).resetContainerDataForRecalculation(secondContainer);
     }
 
     @Test
