@@ -2276,6 +2276,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     deliveryMode(customerBookingRequest.getServiceMode()).
                     partner(customerBookingRequest.getPartner()).
+                    coLoadCarrierName(customerBookingRequest.getCoLoadCarrierName()).
                     coLoadBookingReference(customerBookingRequest.getPartnerBkgNumber()).
                     coLoadMBL(customerBookingRequest.getPartnerBLOrAWBNumber()).
                     carrierBookingRef(customerBookingRequest.getCarrierBookingNumber()).
@@ -2602,6 +2603,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 controlledReferenceNumber(customerBookingRequest.getControlledReferenceNumber()).
                 partner(customerBookingRequest.getPartner()).
                 bookingAgent(customerBookingRequest.getBookingAgent()).
+                coLoadCarrierName(customerBookingRequest.getCoLoadCarrierName()).
                 coLoadBkgNumber(customerBookingRequest.getPartnerBkgNumber()).
                 coLoadBlNumber(customerBookingRequest.getPartnerBLOrAWBNumber()).
                 pickupAtOrigin(customerBookingRequest.getPickupAtOrigin()).
