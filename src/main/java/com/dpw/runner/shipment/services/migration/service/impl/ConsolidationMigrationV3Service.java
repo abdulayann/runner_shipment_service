@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -93,6 +92,15 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Override
     public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) {
-        return null;
+        Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
+        if(consolidationDetails1.isEmpty()) {
+            throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
+        }
+        List<ShipmentDetails> shipmentDetailsList = consolidationDetails1.get().getShipmentsList().stream().toList();
+        if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
+            shipmentDetailsList.forEach(ship -> shipmentMigrationV3Service.migrateShipmentV3ToV2(ship));
+        }
+
+        return consolidationDetails1.get();
     }
 }
