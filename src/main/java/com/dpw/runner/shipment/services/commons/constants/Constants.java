@@ -679,6 +679,14 @@ public class Constants {
 
     public static final String MACHINE_USER_NAME = "user.name";
     public static final String APPLICATION = "Application";
+    public static final String ERROR_MESSAGE = "Error occurred due to: ";
+    public static final String TRANSPORT_DETAIL = "transporterDetail";
+    public static final String TRANSPORT_DETAIL_ORG_CODE = "transporterDetailOrgCode";
+    public static final String PICKUP_DELIVERY_DETAILS = "PickupDeliveryDetails";
+    public static final String TRANSPORT_DETAIL_INSTRUCTION_TYPE = "type";
+    public static final String TRANSPORT_DETAIL_TI_REFERENCE = "tiReferenceNumber";
+    public static final String TRANSPORT_DETAIL_SHIPMENT_ID = "shipmentId";
+
     public static final String CONSOLIDATION_NON_DG_MARKING_ERROR_MSG = "The consolidation contains DG package. Marking the consolidation as non DG is not allowed";
     public static final String  CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG =  "Consolidation cannot be marked as DG. Please attach at least one DG Shipment.";
     private Constants() {

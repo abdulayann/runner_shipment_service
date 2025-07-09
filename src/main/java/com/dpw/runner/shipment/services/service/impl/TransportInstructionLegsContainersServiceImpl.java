@@ -37,6 +37,7 @@ import org.springframework.util.CollectionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -68,7 +69,7 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
             throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
         }
         TiLegs tiLegsEntity = tiLegs.get();
-        validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber());
+        validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber(), request.getId());
         validateTransportInstructionLegsContainersDetails(request);
         // Convert DTO to Entity
         TiContainers tiContainers = jsonHelper.convertValue(request, TiContainers.class);
@@ -105,7 +106,7 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
             throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
         }
         TiLegs tiLegsEntity = tiLegs.get();
-        validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber());
+        validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber(), request.getId());
         validateTransportInstructionLegsContainersDetails(request);
         // Convert DTO to Entity
         TiContainers tiContainers = jsonHelper.convertValue(request, TiContainers.class);
@@ -126,10 +127,10 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         return response;
     }
 
-    private void validateDuplicateContainerNumberInLeg(List<TiContainers> tiContainers, String number) {
+    private void validateDuplicateContainerNumberInLeg(List<TiContainers> tiContainers, String number, Long id) {
         if (!CollectionUtils.isEmpty(tiContainers)) {
             for (TiContainers containers : tiContainers) {
-                if (StringUtility.isNotEmpty(containers.getNumber()) && containers.getNumber().equals(number)) {
+                if (!Objects.equals(containers.getId(), id) && StringUtility.isNotEmpty(containers.getNumber()) && containers.getNumber().equals(number)) {
                     throw new ValidationException("Container Number cannot be same for two different containers in same legs");
                 }
             }
@@ -203,7 +204,7 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         }
         TiLegs tiLegsEntity = tiLegs.get();
         request.getContainersRequests().forEach(containersRequest -> {
-            validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), containersRequest.getNumber());
+            validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), containersRequest.getNumber(), containersRequest.getId());
             validateTransportInstructionLegsContainersDetails(containersRequest);
         });
         // Convert DTO to Entity
@@ -272,13 +273,19 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
 
     private void validateTransportInstructionLegsContainersDetails(TransportInstructionLegsContainersRequest transportInstructionLegsContainersRequest) {
 
-        ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(transportInstructionLegsContainersRequest.getNumber());
-        if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
-            throw new ValidationException("Invalid container number format");
+        if (StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getNumber())) {
+            ContainerNumberCheckResponse containerNumberCheckResponse = containerV3Service.validateContainerNumber(transportInstructionLegsContainersRequest.getNumber());
+            if (containerNumberCheckResponse == null || !containerNumberCheckResponse.isSuccess()) {
+                throw new ValidationException("Invalid container number format");
+            }
         }
         if ((transportInstructionLegsContainersRequest.getGrossWeight() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit())) ||
                 (transportInstructionLegsContainersRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Containers: Gross weight and gross weight unit must both be provided or both be null.");
+        }
+        if ((transportInstructionLegsContainersRequest.getNoOfPackages() != null && StringUtility.isEmpty(transportInstructionLegsContainersRequest.getPackageType())) ||
+                (transportInstructionLegsContainersRequest.getNoOfPackages() == null && StringUtility.isNotEmpty(transportInstructionLegsContainersRequest.getPackageType()))) {
+            throw new ValidationException("Containers: No of packages and package type must both be provided or both be null.");
         }
 
         validateNetWeight(transportInstructionLegsContainersRequest);

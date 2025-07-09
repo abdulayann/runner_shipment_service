@@ -265,5 +265,5 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "s.dgPacksCount = :dgPacks, " +
             "s.dgPacksUnit = :dgPacksUnit " +
             "WHERE s.id = :shipmentId")
-    void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+    void updateDgPacksDetailsInShipment(@Param("dgPacks") Integer dgPacks, @Param("dgPacksUnit") String dgPacksUnit, @Param("shipmentId") Long shipmentId);
 }

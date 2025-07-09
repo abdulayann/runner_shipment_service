@@ -203,7 +203,6 @@ class TransportInstructionLegsContainersServiceImplTest {
         verify(jsonHelper).convertValue(Mockito.<TransportInstructionLegsContainersRequest>any(),
                 Mockito.<Class<TiContainers>>any());
         verify(iTiLegRepository).findById(Mockito.<Long>any());
-        verify(iContainerV3Service).validateContainerNumber(Mockito.<String>any());
     }
 
     /**
@@ -285,7 +284,6 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiLegs.setTiTruckDriverDetails(new ArrayList<>());
         tiLegs.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setUpdatedBy("2020-03-01");
-        Optional<TiLegs> ofResult = Optional.of(tiLegs);
         when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(Optional.empty());
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder dgClassResult = TransportInstructionLegsContainersRequest
                 .builder()
@@ -530,6 +528,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -561,6 +560,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiContainers.setId(1l);
         tiContainers.setNumber("CONT1234567");
         TiLegs tiLegs = new TiLegs();
+        tiLegs.setId(1l);
         tiLegs.setActualDelivery(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setActualPickup(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
@@ -594,8 +594,8 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .grossWeight(new BigDecimal("2.3"))
                 .grossWeightUnit("KG");
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder idResult = grossWeightUnitResult
-                .guid(UUID.randomUUID())
-                .id(1L);
+                .guid(UUID.randomUUID());
+
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder unNumberResult = idResult
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
@@ -703,6 +703,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -822,6 +823,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
