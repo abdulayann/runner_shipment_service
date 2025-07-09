@@ -215,7 +215,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(new ArrayList<>(List.of(container)), containerRequest.getConsolidationId(), containerBeforeSaveRequest, new ArrayList<>(List.of(containerRequest)), module);
+        containerBeforeSave(containerRequest.getConsolidationId(), containerBeforeSaveRequest, new ArrayList<>(List.of(containerRequest)), module);
 
         // Save to DB
         Containers savedContainer = containerDao.save(container);
@@ -290,7 +290,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(originalContainers, containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
+        containerBeforeSave(containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
 
         for(ContainerV3Request containerRequest : containerRequestList){
             List<Containers> containers = new ArrayList<>(getSiblingContainers(containerRequest));
@@ -372,7 +372,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .build();
     }
 
-    private void containerBeforeSave(List<Containers> containers, Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
+    private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
         List<ContainerV3Request> containerV3Requests, String module) throws RunnerException {
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
         processContainerDG(containerV3Requests, module);
@@ -384,14 +384,16 @@ public class ContainerV3Service implements IContainerV3Service {
             if(SHIPMENT.equalsIgnoreCase(module)){
                 for(ContainerV3Request containerV3Request : containerRequestList){
                     Long shipmentId = containerV3Request.getShipmentsId();
-                    if(!containerV3Request.getHazardous()) continue;
+                    if(!Boolean.FALSE.equals(containerV3Request.getHazardous())) continue;
 
                     Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
-                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                    if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())){
-                        callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                        shipmentDao.save(shipmentDetails, false);
+                    if (optionalShipmentDetails.isPresent()) {
+                        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                        shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                        if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+                            callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                            shipmentDao.save(shipmentDetails, false);
+                        }
                     }
                 }
             }else{
@@ -400,26 +402,28 @@ public class ContainerV3Service implements IContainerV3Service {
                     if(containerV3Request.getHazardous()!= null && !containerV3Request.getHazardous()) continue;
 
                     ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-                    if(TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())){
-                    consolidationDetails.setHazardous(true);
-                    if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
-                        throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
-                    }
-                    consolidationDetailsDao.update(consolidationDetails, false, false);
-                    if(containerV3Request.getId() != null) {
-                        List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
-                            containerV3Request.getId());
-                        for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
-                            Long shipmentId = shipmentsContainersMapping.getId();
-                            Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
-                                shipmentId);
-                            ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                            shipmentDetails.setContainsHazardous(true);
-                            shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                            callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                            shipmentDao.save(shipmentDetails, false);
+                    if(TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+                        consolidationDetails.setHazardous(true);
+                        if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
+                            throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
                         }
-                    }
+                        consolidationDetailsDao.update(consolidationDetails, false, false);
+                        if (containerV3Request.getId() != null) {
+                            List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
+                                    containerV3Request.getId());
+                            for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+                                Long shipmentId = shipmentsContainersMapping.getId();
+                                Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
+                                        shipmentId);
+                                if (optionalShipmentDetails.isPresent()) {
+                                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                                    shipmentDetails.setContainsHazardous(true);
+                                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                                    shipmentDao.save(shipmentDetails, false);
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -433,7 +437,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         if(container.getId() != null) {
                oldContainer = containerRepository.getById(container.getId());
-            if(oldContainer != null && commonUtils.checkIfDGFieldsChangedInContainer(container, oldContainer)) {
+            if(commonUtils.checkIfDGFieldsChangedInContainer(container, oldContainer)) {
                 commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1);
             }
         }
@@ -1272,9 +1276,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
         boolean isDG = false;
-        boolean isDGClass1Added = false;
+        boolean isDGClass1Added = false;  // need to discuss for this logic
         if(Boolean.TRUE.equals(container.getHazardous())) {
-            isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(container.getDgClass());
+            isDGClass1Added = commonUtils.checkIfDGClass1(container.getDgClass());
             isDG = true;
         }
 

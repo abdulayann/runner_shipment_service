@@ -1354,19 +1354,6 @@ public class PackingV3Service implements IPackingV3Service {
         );
     }
 
-    private void updatePackUtilisationInConsole(ShipmentDetails shipmentDetails, Long consolidationId, List<Packing> packings) {
-        if (shipmentDetails == null || !TRANSPORT_MODE_AIR.equalsIgnoreCase(shipmentDetails.getTransportMode()))
-            return;
-        if (consolidationId == null) {
-            consolidationId = packingV3Util.getConsolidationId(shipmentDetails.getId());
-        }
-        CalculatePackUtilizationV3Request request = CalculatePackUtilizationV3Request.builder().
-                shipmentPackingList(packings).
-                consolidationId(consolidationId).
-                saveConsol(true).build();
-        packingV3Util.savePackUtilisationCalculationInConsole(request);
-    }
-
     private void updateAttachedContainersData(List<Packing> packings, ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
             return;

@@ -255,7 +255,7 @@ public class ShipmentsV3Util {
 
 
 
-    public void afterSaveforEt(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentEtV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean includeGuid) throws RunnerException {
+    public void afterSaveforEt(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentEtV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean includeGuid) throws RunnerException {
         log.info("shipment afterSave start.... ");
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingV3Request> packingRequestList = shipmentRequest.getPackingList();

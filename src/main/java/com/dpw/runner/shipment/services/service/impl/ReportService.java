@@ -319,9 +319,7 @@ public class ReportService implements IReportService {
         setPrintWithoutTranslation(report, reportRequest);
         updateCustomDataCargoManifestAirReport(report, reportRequest);
 
-        if (report instanceof CSDReport csdReport) {
-            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
-        }
+        setConsolidationForCSDReport(report, reportRequest);
         //LATER - Need to handle for new flow
         dataRetrived = getDocumentDataForReports(report, reportRequest);
 
@@ -391,11 +389,17 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
+    private static void setConsolidationForCSDReport(IReport report, ReportRequest reportRequest) {
+        if (report instanceof CSDReport csdReport) {
+            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
+        }
+    }
+
     @Nullable
     private byte[] getBytesForTransportInstructions(ReportRequest reportRequest, ShipmentSettingsDetails tenantSettingsRow, Map<String, Object> dataRetrived, String objectType) throws DocumentException, IOException {
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER_V3) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER_V3) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.TRANSPORT_ORDER_V3)) {
             byte[] transportInstructionPdf = getBytesForTransportInstruction(dataRetrived, reportRequest, objectType);
-            if (transportInstructionPdf != null && transportInstructionPdf.length > 1 && ReportConstants.PICKUP_ORDER_V3.equalsIgnoreCase(reportRequest.getReportInfo())) {
+            if (transportInstructionPdf.length > 1 && ReportConstants.PICKUP_ORDER_V3.equalsIgnoreCase(reportRequest.getReportInfo())) {
                 createAutoEvent(reportRequest.getReportId(), ReportConstants.PICKUP_ORDER_GEN, tenantSettingsRow);
             }
             return transportInstructionPdf;

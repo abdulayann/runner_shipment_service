@@ -6,11 +6,12 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NUMBER_LIST;
 
 public class ShipmentConstants {
     public static final String HBL_NUMBER = "HBL Number";
@@ -35,8 +36,8 @@ public class ShipmentConstants {
             "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "CreatedBy", "POL",
             "POD", "Waybill Number", "Additional Terms", "Reference Number", "POL Code", "POD Code", "Origin Code", "Destination Code"
     );
-    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", "referenceNumbersList","servicesList", "containersList", "eventsList","triangulationPartnerList");
-    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", "referenceNumbersList", "triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", REFERENCE_NUMBER_LIST,"servicesList", "containersList", "eventsList","triangulationPartnerList");
+    public static final List<String> LIST_INCLUDE_COLUMNS_V3 = List.of( "carrierDetails", REFERENCE_NUMBER_LIST, "triangulationPartnerList");
     public static final String ORIGIN_PORT_LOC_CODE = "originPortLocCode";
     public static final String PLACE_OF_ISSUE = "placeOfIssue";
     public static final String PAID_PLACE = "paidPlace";
@@ -127,7 +128,7 @@ public class ShipmentConstants {
             Map.entry(CONSOLIDATION_NUMBER, RunnerEntityMapping.builder().tableName(Constants.CONSOLIDATION_LIST).dataType(String.class).fieldName(CONSOLIDATION_NUMBER).build()),
             Map.entry(Constants.ORDER_NUMBER, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_NUMBER).build()),
             Map.entry(Constants.ORDER_MANAGEMENT_NUMBER, RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName(Constants.ORDER_MANAGEMENT_NUMBER).build()),
-            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName("referenceNumbersList").dataType(String.class).fieldName("referenceNumber").build()),
+            Map.entry("referenceNumber", RunnerEntityMapping.builder().tableName(REFERENCE_NUMBER_LIST).dataType(String.class).fieldName("referenceNumber").build()),
             Map.entry("activityType", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("activityType").build()),
             Map.entry("goodsCO", RunnerEntityMapping.builder().tableName(Constants.ADDITIONAL_DETAILS).dataType(String.class).fieldName("goodsCO").build()),
             Map.entry("route", RunnerEntityMapping.builder().tableName(Constants.SHIPMENT_DETAILS).dataType(String.class).fieldName("route").build()),

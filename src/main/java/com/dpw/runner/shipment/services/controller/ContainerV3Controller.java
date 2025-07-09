@@ -90,7 +90,7 @@ public class ContainerV3Controller {
     }
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
-    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
+    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
         containerV3Util.downloadContainers(response, request);
     }
 

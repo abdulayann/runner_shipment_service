@@ -679,6 +679,9 @@ public class Constants {
 
     public static final String MACHINE_USER_NAME = "user.name";
     public static final String APPLICATION = "Application";
+    public static final String NOTIFICATION_PART_1 = "Notify Part 1";
+    public static final String NOTIFICATION_PART_2 = "Notify Part 2";
+    public static final String NOTIFICATION_PART_3 = "Notify Part 3";
     private Constants() {
     }
 

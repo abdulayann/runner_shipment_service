@@ -241,19 +241,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private IRoutingsDao routingsV3Dao;
     private IPackingDao packingDao;
     private IContainerDao containerDao;
-    private INotesDao notesDao;
     private DependentServiceHelper dependentServiceHelper;
     private IEventDao eventDao;
     private IEventsV3Service eventsV3Service;
-    private IPackingService packingService;
     private IOrderManagementAdapter orderManagementAdapter;
     private V1ServiceUtil v1ServiceUtil;
     private IAwbDao awbDao;
     private IDocumentManagerService documentManagerService;
     private IHblService hblService;
     private IPackingV3Service packingV3Service;
-    private IShipmentSync shipmentSync;
-    private IConsolidationSync consolidationSync;
     private NetworkTransferV3Util networkTransferV3Util;
     private ITruckDriverDetailsDao truckDriverDetailsDao;
     private IReferenceNumbersDao referenceNumbersDao;
@@ -339,7 +335,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.consolidationDetailsDao = consolidationDetailsDao;
         this.partiesDao = partiesDao;
         this.routingsV3Dao = routingsDao;
-        this.notesDao = notesDao;
         this.orderManagementAdapter = orderManagementAdapter;
         this.v1ServiceUtil = v1ServiceUtil;
         this.dependentServiceHelper = dependentServiceHelper;
@@ -349,9 +344,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.documentManagerService = documentManagerService;
         this.hblService = hblService;
         this.routingsV3Service = routingsV3Service;
-        this.packingService = packingService;
-        this.shipmentSync = shipmentSync;
-        this.consolidationSync = consolidationSync;
         this.networkTransferV3Util = networkTransferV3Util;
         this.truckDriverDetailsDao = truckDriverDetailsDao;
         this.referenceNumbersDao = referenceNumbersDao;
@@ -1273,7 +1265,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     public void afterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, ConsoleShipmentData consoleShipmentData) throws RunnerException {
         boolean isCreate = consoleShipmentData.isCreate();
         boolean syncConsole = consoleShipmentData.isSyncConsole();
-        boolean isFromET = consoleShipmentData.isFromET();
         log.info("shipment afterSave start.... ");
         List<Events> eventsList = oldEntity != null ? oldEntity.getEventsList() : new ArrayList<>();
         List<PartiesRequest> shipmentAddressList = shipmentRequest.getShipmentAddresses();
@@ -2355,33 +2346,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList, consolidationId);
     }
 
-    private AutoUpdateWtVolRequest getAutoUpdateWtVolRequest(CustomerBookingV3Request customerBookingV3Request) {
-        AutoUpdateWtVolRequest autoUpdateWtVolRequest = new AutoUpdateWtVolRequest();
-        autoUpdateWtVolRequest.setShipmentType(customerBookingV3Request.getCargoType());
-        autoUpdateWtVolRequest.setTransportMode(customerBookingV3Request.getTransportType());
-        autoUpdateWtVolRequest.setVolume(customerBookingV3Request.getVolume());
-        autoUpdateWtVolRequest.setVolumeUnit(customerBookingV3Request.getVolumeUnit());
-        autoUpdateWtVolRequest.setChargable(customerBookingV3Request.getChargeable());
-        autoUpdateWtVolRequest.setChargeableUnit(customerBookingV3Request.getChargeableUnit());
-        autoUpdateWtVolRequest.setWeight(customerBookingV3Request.getGrossWeight());
-        autoUpdateWtVolRequest.setWeightUnit(customerBookingV3Request.getGrossWeightUnit());
-        autoUpdateWtVolRequest.setVolumetricWeight(customerBookingV3Request.getWeightVolume());
-        autoUpdateWtVolRequest.setVolumetricWeightUnit(customerBookingV3Request.getWeightVolumeUnit());
-        List<ContainerRequest> containerRequests = new ArrayList<>();
-        List<PackingRequest> packingRequests = new ArrayList<>();
-        if(customerBookingV3Request.getContainersList() != null) {
-            containerRequests = jsonHelper.convertValueToList(customerBookingV3Request.getContainersList(), ContainerRequest.class);
-        }
-        if(customerBookingV3Request.getPackingList() != null) {
-            packingRequests = jsonHelper.convertValueToList(customerBookingV3Request.getPackingList(), PackingRequest.class);
-        }
-        autoUpdateWtVolRequest.setContainersList(containerRequests);
-        autoUpdateWtVolRequest.setPackingList(packingRequests);
-        autoUpdateWtVolRequest.setNoOfPacks(String.valueOf(customerBookingV3Request.getPackages()));
-        autoUpdateWtVolRequest.setPacksUnit(customerBookingV3Request.getPackageType());
-        return autoUpdateWtVolRequest;
-    }
-
     public ShipmentDetailsV3Response createFromBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId) {
         ShipmentV3Request request = (ShipmentV3Request) commonRequestModel.getData();
         if (request == null) {
@@ -2431,7 +2395,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
-            List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
 
             auditLogService.addAuditLog(
@@ -2464,57 +2427,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), Constants.SHIPMENT);
             shipmentDetails.setEventsList(updatedEvents);
             eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
-        }
-    }
-
-    private List<PackingV3Request> getPackingListRequest(CustomerBookingV3Request customerBookingRequest) {
-        return customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
-            setHeightWidthUnit(obj);
-            if (obj.getWeight() != null)
-                obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
-            if (obj.getVolume() != null)
-                obj.setVolume(obj.getVolume().multiply(new BigDecimal(obj.getPacks())));
-            if (TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBookingRequest.getTransportType())) {
-                calculateWeightVolumeForPacks(obj);
-            }
-
-            return obj;
-        }).collect(Collectors.toList()) : null;
-    }
-
-    private void setHeightWidthUnit(PackingV3Request obj) {
-        if (!StringUtility.isEmpty(obj.getLengthUnit())) {
-            obj.setWidthUnit(obj.getLengthUnit());
-            obj.setHeightUnit(obj.getLengthUnit());
-        }
-    }
-
-    private void calculateWeightVolumeForPacks(PackingV3Request obj) {
-        try {
-            // Convert Weight to KGs
-            if (Objects.nonNull(obj.getWeight())) {
-                obj.setWeight(new BigDecimal(convertUnit(MASS, obj.getWeight(), obj.getWeightUnit(), WEIGHT_UNIT_KG).toString()));
-                obj.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-            }
-
-            // Convert Volume to M3
-            if (Objects.nonNull(obj.getVolume())) {
-                obj.setVolume(new BigDecimal(convertUnit(VOLUME, obj.getVolume(), obj.getVolumeUnit(), VOLUME_UNIT_M3).toString()));
-                obj.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-
-                double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
-                BigDecimal wvInKG = obj.getVolume().multiply(BigDecimal.valueOf(factor));
-                obj.setVolumeWeight(wvInKG);
-                obj.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
-            }
-
-            // Calculate chargeable
-            if (Objects.nonNull(obj.getWeight()) && Objects.nonNull(obj.getVolumeWeight())) {
-                obj.setChargeable(obj.getVolumeWeight().max(obj.getWeight()));
-                obj.setChargeableUnit(WEIGHT_UNIT_KG);
-            }
-        } catch (Exception e) {
-            log.error("Error while unit conversion for AIR transport mode in shipment packs from booking", e);
         }
     }
 
@@ -2655,34 +2567,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 earliestDropOffFullEquipmentToCarrier(customerBookingRequest.getEarliestDropOffFullEquipmentToCarrier()).
                 latestArrivalTime(customerBookingRequest.getLatestArrivalTime()).
                 build();
-    }
-
-    private AutoUpdateWtVolResponse calculateShipmentWV(AutoUpdateWtVolRequest request) throws RunnerException {
-        AutoUpdateWtVolResponse response = jsonHelper.convertValue(request, AutoUpdateWtVolResponse.class);
-        List<Packing> packingList = new ArrayList<>();
-        if (request.getPackingList() != null)
-            packingList = jsonHelper.convertValueToList(request.getPackingList(), Packing.class);
-        List<Containers> containersList = new ArrayList<>();
-        if (request.getContainersList() != null)
-            containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
-        calculatePacksAndPacksUnit(packingList, response);
-        response = calculateWeightAndVolumeUnit(request, packingList, response);
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        boolean isPacksPresent = packingList != null && !packingList.isEmpty();
-        if (!isPacksPresent)
-            response = updateShipmentDetails(response, containersList);
-        calculateVW(request, response, true);
-        if (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer().booleanValue()
-                || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
-            ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
-            response.setPackSummary(packingService.calculatePackSummary(packingList, request.getTransportMode(), request.getShipmentType(), dto));
-            updateResponseFromDto(request, response, dto, shipmentSettingsDetails);
-        }
-        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        if (Boolean.TRUE.equals(v1TenantSettingsResponse.getP100Branch()) && Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA)) {
-            calculatePacksAndPacksUnitFromContainer(response, containersList);
-        }
-        return response;
     }
 
     private PartiesRequest createPartiesRequest(PartiesRequest party, String countryCode) {
@@ -2857,22 +2741,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    private List<NotesRequest> getNotesRequests(ShipmentV3Request request, Long shipmentId) {
-        List<NotesRequest> notesRequest = null;
-        //request.getNotesList();
-        if (notesRequest != null) {
-            for (NotesRequest req : notesRequest) {
-                req.setEntityId(shipmentId);
-            }
-        }
-        if (notesRequest != null) {
-            for (NotesRequest req : notesRequest) {
-                notesDao.save(jsonHelper.convertValue(req, Notes.class));
-            }
-        }
-        return notesRequest;
-    }
-
     public DocumentManagerResponse<T> addFilesFromBookingToShipment(String shipmentGuid, String bookingGuid) {
         try {
             List<DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest> updateFileRequests = new ArrayList<>();
@@ -2908,55 +2776,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .shipmentId(refNumber.getShipmentId())
                         .isPortalEnable(refNumber.getIsPortalEnable())
                         .build()).toList();
-    }
-
-    private List<NotesRequest> createNotes(List<Notes> notes) {
-        if (notes == null) return null;
-        return notes.stream().filter(Objects::nonNull).map(note ->
-                NotesRequest.builder()
-                        .assignedTo(note.getAssignedTo())
-                        .label(note.getLabel())
-                        .text(note.getText())
-                        .insertUserDisplayName(note.getCreatedBy())
-                        .isPublic(note.getIsPublic())
-                        .insertDate(note.getCreatedAt())
-                        .entityType(Constants.CUSTOMER_BOOKING)
-                        .build()).toList();
-    }
-
-    private <T> T calculatePacksAndPacksUnit(List<Packing> packings, T response) {
-        Integer totalPacks = 0;
-        String tempPackingUnit = null;
-        String packingUnit = null;
-        if (packings != null && !packings.isEmpty()) {
-            for (Packing packing : packings) {
-                if (!isStringNullOrEmpty(packing.getPacks()))
-                    totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
-                if (tempPackingUnit == null) {
-                    tempPackingUnit = packing.getPacksType();
-                    packingUnit = packing.getPacksType();
-                } else {
-                    if (isMPKUnitCase(packing, tempPackingUnit)) {
-                        packingUnit = Constants.MPK;
-                    }
-                }
-            }
-        }
-        getResponseForPacks(response, totalPacks, packingUnit);
-        return response;
-    }
-
-    private boolean isMPKUnitCase(Packing packing, String tempPackingUnit) {
-        return !isStringNullOrEmpty(packing.getPacksType()) && tempPackingUnit.equals(packing.getPacksType());
-    }
-
-    private <T> void getResponseForPacks(T response, Integer totalPacks, String packingUnit) {
-        if (response instanceof AutoUpdateWtVolResponse autoUpdateWtVolResponse) {
-            autoUpdateWtVolResponse.setNoOfPacks(totalPacks.toString());
-            autoUpdateWtVolResponse.setPacksUnit(packingUnit);
-        } else if (response instanceof MeasurementBasisResponse measurementBasisResponseas) {
-            measurementBasisResponseas.setPackCount(totalPacks);
-        }
     }
 
     protected AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
@@ -3084,51 +2903,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return firstPacksType;
         } else {
             return Constants.MPK;
-        }
-    }
-
-    private void updateResponseFromDto(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, ShipmentMeasurementDetailsDto dto, ShipmentSettingsDetails shipmentSettingsDetails) {
-        String transportMode = request.getTransportMode();
-        String cargoType = request.getShipmentType();
-
-        boolean isSeaLCL = commonUtils.isSeaLCL(transportMode, cargoType);
-        boolean isAir = TRANSPORT_MODE_AIR.equals(transportMode);
-        boolean isRoadLCLorLTL = commonUtils.isRoadLCLorLTL(transportMode, cargoType);
-
-        if (isSeaLCL || isAir || isRoadLCLorLTL) {
-            response.setInnerPacks(dto.getInnerPacks());
-            response.setInnerPackUnit(dto.getInnerPackUnit());
-        }
-        if (shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer()
-                && request.getPackingList() != null && !request.getPackingList().isEmpty()) {
-            response.setWeight(dto.getWeight());
-            response.setWeightUnit(dto.getWeightUnit());
-            response.setVolume(dto.getVolume());
-            response.setVolumeUnit(dto.getVolumeUnit());
-            response.setNetWeight(dto.getNetWeight());
-            response.setNetWeightUnit(dto.getNetWeightUnit());
-            response.setNoOfPacks(dto.getNoOfPacks());
-            response.setPacksUnit(dto.getPacksUnit());
-        } else if (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer()) {
-            response.setNoOfPacks(dto.getNoOfPacks());
-            response.setPacksUnit(dto.getPacksUnit());
-        }
-    }
-
-    private void calculatePacksAndPacksUnitFromContainer(AutoUpdateWtVolResponse response, List<Containers> containersList) {
-        if (containersList != null && !containersList.isEmpty()) {
-            String packsUnit = "";
-            long packageCount = 0;
-            long totalPacks = 0;
-            for (Containers container : containersList) {
-                if (!isStringNullOrEmpty(container.getPacks())) {
-                    packageCount = packageCount + Integer.parseInt(container.getPacks());
-                    totalPacks = totalPacks + Integer.parseInt(container.getPacks());
-                }
-            }
-            packsUnit = setPacksUnit(containersList);
-            response.setNoOfPacks(totalPacks == 0 ? null : String.valueOf(totalPacks));
-            response.setPacksUnit(packsUnit);
         }
     }
 
@@ -4462,8 +4236,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             Pair<Specification<ConsolidationDetails>, Pageable> pair = fetchData(listRequest, ConsolidationDetails.class, ConsolidationService.tableNames);
             Page<ConsolidationDetails> consolPage = consolidationDetailsDao.findAll(pair.getLeft(), pair.getRight());
 
-            Set tenantIds = new HashSet<String>();
-            Set locations =  new HashSet<String>();
+            Set<String> tenantIds = new HashSet<>();
+            Set<String> locations =  new HashSet<>();
             final CarrierDetails nullCarrierDetails = new CarrierDetails();
             consolPage.getContent().stream().forEach(i -> {
                 tenantIds.add(StringUtility.convertToString(i.getTenantId()));
@@ -4589,7 +4363,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
-            shipmentsV3Util.afterSaveforEt(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, false);
+            shipmentsV3Util.afterSaveforEt(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, false);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             ShipmentDetails finalEntity1 = entity;
             String entityPayload = jsonHelper.convertToJson(finalEntity1);
@@ -4627,7 +4401,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 }
             }
 
-            shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid);
+            shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid);
 
             // audit logs
             createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
