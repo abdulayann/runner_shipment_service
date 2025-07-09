@@ -12,13 +12,13 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
-
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Set;
+import javax.servlet.http.HttpServletResponse;
 
 public interface IContainerV3Service {
     ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException;
@@ -46,6 +46,8 @@ public interface IContainerV3Service {
 
     ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
     ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module) throws RunnerException;
+
+    void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
     void updateAttachedContainersData(List<Long> containerIds) throws RunnerException;
