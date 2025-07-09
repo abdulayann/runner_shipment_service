@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
@@ -55,4 +56,5 @@ public interface IContainerV3Service {
     List<ContainerInfoProjection> getContainers(List<Long> containerIds);
     void pushContainersToDependentServices(List<Containers> containersList);
     ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
+    void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
 }

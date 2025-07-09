@@ -1453,7 +1453,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
+    public void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
         containerV3Util.setWtVolUnits(container);
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), packing.getVolume(), packing.getVolumeUnit()));
