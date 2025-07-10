@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
@@ -111,12 +112,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) {
         ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
+        Map<String, EntityTransferContainerType> containerTypeMap = shipmentMigrationV3Service.fetchContainerTypeDetails(console.getContainersList());
+
         List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
-        Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
-                    shipmentMigrationV3Service.migrateShipmentV2ToV3(ship, packingVsContainerGuid);
+                    shipmentMigrationV3Service.migrateShipmentV3ToV2(ship, containerTypeMap);
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
