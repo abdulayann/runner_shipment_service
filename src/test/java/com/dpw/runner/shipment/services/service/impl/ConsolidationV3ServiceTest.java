@@ -5287,9 +5287,8 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void testAibAttachedPendingShipmentCount() {
     when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
-    assertThrows(DataRetrievalFailureException.class , () -> {
-      consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build());
-    });
+    Exception e = assertThrows(DataRetrievalFailureException.class , () -> consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build()));
+    assertNotNull(e.getMessage());
   }
 
   @Test
