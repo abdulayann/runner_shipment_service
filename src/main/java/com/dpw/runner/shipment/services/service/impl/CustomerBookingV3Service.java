@@ -274,8 +274,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     @Override
     @Transactional
     public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
-        int threadCount = Thread.getAllStackTraces().keySet().size();
-        System.out.println("Total active threads before update: " + threadCount);
         validateBookingUpdateRequest(request);
         Long id = request.getId();
         CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
@@ -321,8 +319,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-        int threadCount2 = Thread.getAllStackTraces().keySet().size();
-        System.out.println("Total active threads after update: " + threadCount2);
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
