@@ -157,23 +157,20 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     @Override
-    public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) {
+    public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
         mapShipmentV3ToV2(shipmentDetails);
 
-        // update Shipment
         return shipmentDetails;
     }
 
-    public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails) {
+    public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
         // Business Logic for transformation
         // need to add shipment details transformation logic
+        shipmentDetails.setAutoUpdateWtVol(false);
+        shipmentDetails.setContainerAutoWeightVolumeUpdate(false);
 
         // update container utilisation
-        try {
-            setContainerUtilisation(shipmentDetails);
-        } catch (RunnerException ex) {
-            log.error(ex.getMessage());
-        }
+        setContainerUtilisation(shipmentDetails);
 
         return shipmentDetails;
     }
@@ -239,9 +236,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         if(v1DataResponse != null && v1DataResponse.entities != null) {
             List<EntityTransferContainerType> containerTypesList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferContainerType.class);
             if(!containerTypesList.isEmpty()) {
-                containerTypesList.forEach(entityTransferContainerType -> {
-                    containerTypeMap.put(entityTransferContainerType.Code, entityTransferContainerType);
-                });
+                containerTypesList.forEach(entityTransferContainerType -> containerTypeMap.put(entityTransferContainerType.Code, entityTransferContainerType));
             }
         }
         return containerTypeMap;

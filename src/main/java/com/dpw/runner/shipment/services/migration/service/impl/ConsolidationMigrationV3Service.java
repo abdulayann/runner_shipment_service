@@ -91,16 +91,40 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     @Override
-    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) {
+    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
         Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
         if(consolidationDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
         }
-        List<ShipmentDetails> shipmentDetailsList = consolidationDetails1.get().getShipmentsList().stream().toList();
+
+        // Convert V3 Console and Attached shipment to V2
+        ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
+
+        // ContainerSave
+        // PackingSave
+        // ShipmentSave
+        // ConsoleSave
+
+        return console;
+    }
+
+    public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) {
+        ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
+
+        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
+        Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
-            shipmentDetailsList.forEach(ship -> shipmentMigrationV3Service.migrateShipmentV3ToV2(ship));
+            shipmentDetailsList.forEach(ship -> {
+                try {
+                    shipmentMigrationV3Service.migrateShipmentV2ToV3(ship, packingVsContainerGuid);
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
-        return consolidationDetails1.get();
+        // Console utilisation update
+
+        return console;
     }
 }
