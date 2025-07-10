@@ -2254,10 +2254,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            generateAfterSaveEvents(shipmentDetails, shipmentSettingsDetails);
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails);
-            generateAfterSaveEvents(shipmentDetails, shipmentSettingsDetails);
+            Events events = createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+            shipmentDetails.getEventsList().add(events);
             Long shipmentId = shipmentDetails.getId();
             if(consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
@@ -2299,19 +2301,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void generateAfterSaveEvents(ShipmentDetails shipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
-        if(ObjectUtils.isNotEmpty(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getId())){
-            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
-        }
         List<Events> eventsList = new ArrayList<>();
         eventsList = setEventDetails(eventsList, shipmentDetails);
         eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, null, eventsList, true);
         if (eventsList != null) {
             commonUtils.updateEventWithMasterData(eventsList);
             List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), Constants.SHIPMENT);
-            if (shipmentDetails.getEventsList() == null) {
-                shipmentDetails.setEventsList(new ArrayList<>());
-            }
-            shipmentDetails.getEventsList().addAll(updatedEvents);
+            shipmentDetails.setEventsList(updatedEvents);
             eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
         }
     }

@@ -282,7 +282,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        CustomerBooking oldCustomerBooking = jsonHelper.convertValue(oldEntity.get(), CustomerBooking.class);
         boolean eventPersisted = false;
         Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), Constants.BOOKING);
         if(persistedEvent.isPresent())
@@ -320,7 +319,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
