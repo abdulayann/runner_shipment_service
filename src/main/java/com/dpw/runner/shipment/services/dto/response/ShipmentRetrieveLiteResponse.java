@@ -249,5 +249,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String dgPacksUnit;
     private Boolean isEmptyWeightPackAvailable = Boolean.FALSE;
     private Boolean isInterBranchConsoleAttached;
+    private Boolean isMigratedToV3;
 
 }
