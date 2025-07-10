@@ -2303,7 +2303,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void generateAfterSaveEvents(ShipmentDetails shipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
-        List<Events> eventsList = shipmentDetails.getEventsList();
+        List<Events> eventsList = new ArrayList<>();
         eventsList = setEventDetails(eventsList, shipmentDetails);
         eventsList = eventsV3Util.createOrUpdateEvents(shipmentDetails, null, eventsList, true);
         if (eventsList != null) {
