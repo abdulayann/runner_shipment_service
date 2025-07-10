@@ -1524,9 +1524,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
         BulkPackingResponse bulkPackingResponse = new BulkPackingResponse();
         bulkPackingResponse.setPackingResponseList(List.of(new PackingResponse()));
-        when(packingV3Service.deleteBulk(any(), any())).thenReturn(bulkPackingResponse);
         when(packingV3Service.updateBulk(any(), any())).thenReturn(bulkPackingResponse);
-        when(jsonHelper.convertValueToList(any(), eq(PackingV3Request.class))).thenReturn(List.of(new PackingV3Request()));
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
