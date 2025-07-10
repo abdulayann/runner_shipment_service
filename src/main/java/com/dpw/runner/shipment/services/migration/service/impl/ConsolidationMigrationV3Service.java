@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
@@ -98,7 +99,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
-                    shipmentMigrationV3Service.migrateShipmentV2ToV3(ship, packingVsContainerGuid);
+                    shipmentMigrationV3Service.mapShipmentV2ToV3(ship, packingVsContainerGuid);
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
@@ -162,17 +163,42 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     @Override
-    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) {
+    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
         Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
         if(consolidationDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
         }
-        List<ShipmentDetails> shipmentDetailsList = consolidationDetails1.get().getShipmentsList().stream().toList();
+
+        // Convert V3 Console and Attached shipment to V2
+        ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
+
+        // ContainerSave
+        // PackingSave
+        // ShipmentSave
+        // ConsoleSave
+
+        return console;
+    }
+
+    public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) {
+        ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
+
+        Map<String, EntityTransferContainerType> containerTypeMap = shipmentMigrationV3Service.fetchContainerTypeDetails(console.getContainersList());
+
+        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
         if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
-            shipmentDetailsList.forEach(ship -> shipmentMigrationV3Service.migrateShipmentV3ToV2(ship));
+            shipmentDetailsList.forEach(ship -> {
+                try {
+                    shipmentMigrationV3Service.migrateShipmentV3ToV2(ship, containerTypeMap);
+                } catch (RunnerException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
-        return consolidationDetails1.get();
+        // Console utilisation update
+
+        return console;
     }
 
     public List<Containers> distributeContainers(List<Containers> inputContainers) {

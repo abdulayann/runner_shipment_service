@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.migration.controller;
 
 import com.dpw.runner.shipment.services.migration.dtos.ConsolidationMigrationRequest;
-import com.dpw.runner.shipment.services.migration.map.console.v2ToV3.ConsolidationV2ToV3Migration;
-import com.dpw.runner.shipment.services.migration.map.console.v3ToV2.ConsolidationV3ToV2Migration;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
