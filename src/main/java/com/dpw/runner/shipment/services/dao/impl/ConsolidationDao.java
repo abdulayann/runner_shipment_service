@@ -109,7 +109,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             long id = consolidationDetails.getId();
             Optional<ConsolidationDetails> oldEntity = findById(id);
             if (oldEntity.isEmpty()) {
-                log.debug("Container is null for Id {}", consolidationDetails.getId());
+                log.debug("Consolidation is null for Id {}", consolidationDetails.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if(consolidationDetails.getShipmentsList() == null) {

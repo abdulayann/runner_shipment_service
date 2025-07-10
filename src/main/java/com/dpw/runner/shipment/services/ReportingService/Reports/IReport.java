@@ -5302,7 +5302,7 @@ public abstract class IReport {
     private void populateBranchAndTriangulationInfo(Map<String, Object> dict, Long origin, Long receiving, List<TriangulationPartner> triangulations, String prefix) {
 
         if (origin == null || receiving == null) {
-            return;
+            return; // cannot proceed if key branches are missing
         }
 
         Set<String> tenantIds = new HashSet<>();
