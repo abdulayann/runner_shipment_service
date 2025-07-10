@@ -211,6 +211,29 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testDGPacks1(){
+        Containers containers1 = new Containers();
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        containers1.setPacksList(List.of(packing));
+
+        int packCount = 0;
+        int result = containerV3Service.getTotalDGPacks(containers1, packCount);
+        assertEquals(1, result);
+    }
+
+    @Test
+    void testDGPacks2(){
+        Containers containers2 = new Containers();
+        Packing packing2 = new Packing();
+        packing2.setHazardous(false);
+        containers2.setPacksList(List.of(packing2));
+
+        int packCount = 0;
+        int result = containerV3Service.getTotalDGPacks(containers2, packCount);
+        assertEquals(packCount, result);
+    }
+    @Test
     void calculateContainerSummary_Branches() throws RunnerException{
         testContainer.setPacks(null);
         testContainer.setContainerCount(null);

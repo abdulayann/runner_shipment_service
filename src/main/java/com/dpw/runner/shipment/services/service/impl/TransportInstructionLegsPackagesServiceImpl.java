@@ -10,11 +10,8 @@ import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsP
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesResponse;
-import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
-import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiPackages;
-import com.dpw.runner.shipment.services.entity.TiReferences;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -36,10 +33,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -57,10 +54,6 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     private IAuditLogService auditLogService;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
-    private static final Pattern DIMENSION_PATTERN = Pattern.compile(
-            "^\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*$"
-    );
-
 
     @Override
     public TransportInstructionLegsPackagesResponse create(TransportInstructionLegsPackagesRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -257,8 +250,15 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     }
 
     private void validateTransportInstructionLegsPackagesDetails(TransportInstructionLegsPackagesRequest transportInstructionLegsPackagesRequest) {
+        boolean allPresent = transportInstructionLegsPackagesRequest.getLength() != null && transportInstructionLegsPackagesRequest.getWidth() != null && transportInstructionLegsPackagesRequest.getHeight() != null;
+        boolean allNull = transportInstructionLegsPackagesRequest.getLength() == null && transportInstructionLegsPackagesRequest.getWidth() == null && transportInstructionLegsPackagesRequest.getHeight() == null;
 
-        validateDimensions(transportInstructionLegsPackagesRequest.getDimensions());
+        if (!(allPresent || allNull)) {
+            throw new ValidationException("Either all of length, width, and height must be provided, or none of them.");
+        }
+        validateValueAndUnit(transportInstructionLegsPackagesRequest.getLength(), transportInstructionLegsPackagesRequest.getLengthUnit(), "length");
+        validateValueAndUnit(transportInstructionLegsPackagesRequest.getWidth(), transportInstructionLegsPackagesRequest.getWidthUnit(), "width");
+        validateValueAndUnit(transportInstructionLegsPackagesRequest.getHeight(), transportInstructionLegsPackagesRequest.getHeightUnit(), "height");
         if ((transportInstructionLegsPackagesRequest.getGrossWeight() != null && StringUtility.isEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit())) ||
                 (transportInstructionLegsPackagesRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Packages: Gross weight and gross weight unit must both be provided or both be null.");
@@ -291,21 +291,12 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         }
     }
 
-    public void validateDimensions(String dimensions) {
-        if (StringUtility.isNotEmpty(dimensions)) {
-            Matcher matcher = DIMENSION_PATTERN.matcher(dimensions);
-            if (!matcher.matches()) {
-                throw new ValidationException("Dimensions must be in the format LxWxH (e.g., 10x20x30).");
-            }
+    private void validateValueAndUnit(BigDecimal value, String unit, String fieldName) {
+        boolean valuePresent = value != null;
+        boolean unitPresent = unit != null && !unit.isBlank();
 
-            // Optional: parse values and validate further (e.g., non-zero, max size)
-            double length = Double.parseDouble(matcher.group(1));
-            double width = Double.parseDouble(matcher.group(3));
-            double height = Double.parseDouble(matcher.group(5));
-
-            if (length <= 0 || width <= 0 || height <= 0) {
-                throw new ValidationException("Length, width, and height must be positive numbers.");
-            }
+        if (valuePresent ^ unitPresent) {
+            throw new ValidationException(fieldName + " and " + fieldName + "Unit must both be present or both null");
         }
     }
 }

@@ -841,6 +841,7 @@ public class ContainerV3Service implements IContainerV3Service {
         int dgContainers = 0;
         double netWeight = 0;
         long assignedContainers = 0;
+        int totalDgPackages = 0;
         List<ContainerSummaryResponse.GroupedContainerSummary> groupedContainerSummaryList = new ArrayList<>();
         String toWeightUnit = Constants.WEIGHT_UNIT_KG;
         String toVolumeUnit = Constants.VOLUME_UNIT_M3;
@@ -866,7 +867,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
                 totalPacks = getTotalPacks(containers, totalPacks);
                 packsType = commonUtils.getPacksUnit(packsType, containers.getPacksType());
-
+                totalDgPackages = getTotalDGPacks(containers, totalDgPackages);
                 ContainerSummaryResponse.GroupedContainerSummary summary = summaryMap.computeIfAbsent(containers.getContainerCode(), k -> {
                     ContainerSummaryResponse.GroupedContainerSummary s = new ContainerSummaryResponse.GroupedContainerSummary();
                     s.setContainerCode(k);
@@ -904,9 +905,20 @@ public class ContainerV3Service implements IContainerV3Service {
             response.setSummary("");
         setContainerSummary(containersList, response);
         response.setDgContainers(dgContainers);
+        response.setTotalDgPackages(totalDgPackages);
         setAssignedContainerCount(containersList, isShipment, assignedContainers, v1TenantSettingsResponse, response);
         response.setGroupedContainersSummary(groupedContainerSummaryList);
         return response;
+    }
+
+    int getTotalDGPacks(Containers containers, int totalDgPackages) {
+        if(containers.getPacksList() != null) {
+            for (Packing packing : containers.getPacksList()) {
+                if (Boolean.TRUE.equals(packing.getHazardous())) totalDgPackages++;
+            }
+        }
+
+        return totalDgPackages;
     }
 
     private void setAssignedContainerCount(List<Containers> containersList, boolean isShipment, long assignedContainers, V1TenantSettingsResponse v1TenantSettingsResponse, ContainerSummaryResponse response) {
@@ -1418,7 +1430,7 @@ public class ContainerV3Service implements IContainerV3Service {
         containerV3Util.setWtVolUnits(container);
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), customerBookingV3Request.getGrossWeight(), customerBookingV3Request.getGrossWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), customerBookingV3Request.getVolume(), customerBookingV3Request.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainer(container, customerBookingV3Request.getQuantity(), customerBookingV3Request.getQuantityUnit());
+        containerV3Util.addNoOfPackagesValueToContainer(container, String.valueOf(customerBookingV3Request.getPackages()), customerBookingV3Request.getPackageType());
     }
 
     @Override
@@ -1467,11 +1479,11 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
+    public void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
         containerV3Util.setWtVolUnits(container);
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), packing.getVolume(), packing.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainerFromPacks(container, packing.getPacks(), packing.getPacksType());
+        containerV3Util.addNoOfPackagesValueToContainer(container, packing.getPacks(), packing.getPacksType());
     }
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
