@@ -6539,8 +6539,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 .shipmentGuid(shipmentGuid)
                 .build();
 
-        CommonV1ListRequest mockListRequest = new CommonV1ListRequest(); // Customize if needed
-
         // Mocking the JSON helper
         when(jsonHelper.convertToJson(any(CommonV1ListRequest.class))).thenReturn("{}");
 
@@ -6550,7 +6548,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         taskMap.put("userEmail", userEmail);
 
         List<Map<String, Object>> mockTaskList = Collections.singletonList(taskMap);
-        when(mdmServiceAdapter.getTaskList(eq(shipmentGuid), eq(SHIPMENT), eq(PENDING_ACTION_TASK), eq(DG_OCEAN_APPROVAL)))
+        when(mdmServiceAdapter.getTaskList(eq(shipmentGuid), eq(SHIPMENTS_WITH_SQ_BRACKETS), eq(PENDING_ACTION_TASK), eq(DG_OCEAN_APPROVAL)))
                 .thenReturn(mockTaskList);
 
         // When
