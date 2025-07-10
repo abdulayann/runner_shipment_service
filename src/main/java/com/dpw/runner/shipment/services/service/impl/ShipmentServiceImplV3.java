@@ -559,7 +559,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
             afterSave(shipmentDetails, null, true, request, shipmentSettingsDetails, syncConsole, isFromET);
 
-            if(npmContractResponse != null) {
+            if (npmContractResponse != null && npmContractResponse.getContracts() != null && !npmContractResponse.getContracts().isEmpty()) {
                 updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), shipmentDetails, hasDestinationContract);
             }
 
@@ -628,9 +628,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             mid = System.currentTimeMillis();
             boolean syncConsole = false;
             ListContractResponse npmContractResponse = null;
+            Boolean hasDestinationContract = entity.getDestinationContractId() != null && !entity.getDestinationContractId().isEmpty();
             if (Boolean.TRUE.equals(isContractUpdated(entity, oldConvertedShipment))) {
                 npmContractResponse = getNpmContract(entity);
-                populateShipmentDetailsFromContract(npmContractResponse, entity, entity.getContractId() != null);
+                populateShipmentDetailsFromContract(npmContractResponse, entity, hasDestinationContract);
             }
 
             beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, false);
@@ -649,7 +650,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             mid = System.currentTimeMillis();
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, isFromET);
             if(npmContractResponse != null) {
-                updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), entity, entity.getContractId()!=null);
+                updatePackingAndContainerFromContract(npmContractResponse.getContracts().get(0), entity, hasDestinationContract);
             }
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             // Trigger Kafka event for PushToDownStreamServices
@@ -1596,7 +1597,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setHouseBill(null);
             }
         }
-        // Validate all shipment fields before creation or updation
+        // all shipment fields before creation or updation
         shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipmentDetails, oldEntity);
     }
 
@@ -2305,7 +2306,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (eventsList != null) {
             commonUtils.updateEventWithMasterData(eventsList);
             List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), Constants.SHIPMENT);
-            shipmentDetails.setEventsList(updatedEvents);
+            if (shipmentDetails.getEventsList() == null) {
+                shipmentDetails.setEventsList(new ArrayList<>());
+            }
+            shipmentDetails.getEventsList().addAll(updatedEvents);
             eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
         }
     }
