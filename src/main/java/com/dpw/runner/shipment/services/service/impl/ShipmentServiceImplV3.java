@@ -2258,10 +2258,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails);
-            if(ObjectUtils.isNotEmpty(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getId())) {
-                Events events = createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
-                shipmentDetails.getEventsList().add(events);
-            }
+            Events events = createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+            shipmentDetails.getEventsList().add(events);
             Long shipmentId = shipmentDetails.getId();
             if(consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
