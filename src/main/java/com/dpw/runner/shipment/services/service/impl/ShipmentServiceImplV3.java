@@ -847,9 +847,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<PackingV3Request> quotePackingRequests = contractUsages.stream()
                 .map(usage -> getPackingRequest(usage, shipmentDetails))
                 .toList();
-        if (shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
-            shipmentDetails.setPackingList(new ArrayList<>());
-            shipmentDao.save(shipmentDetails, false);
+        List<Packing> shipmentPackingList = packingDao.findByShipmentId(shipmentDetails.getId());
+        if (shipmentPackingList != null && !CollectionUtils.isEmpty(shipmentPackingList) && !quotePackingRequests.isEmpty()) {
+            packingV3Service.deleteBulk(jsonHelper.convertValueToList(shipmentPackingList, PackingV3Request.class), SHIPMENT);
         }
         if (!quotePackingRequests.isEmpty()) {
             packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
@@ -862,8 +862,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .map(usage -> getContainerRequest(usage, shipmentDetails))
                 .toList();
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
-            shipmentDetails.setContainersList(new HashSet<>());
-            shipmentDao.save(shipmentDetails, false);
+            containerV3Service.deleteBulk(jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class), SHIPMENT);
         }
         if (!quoteContainerRequests.isEmpty()) {
             bulkContainerResponse = containerV3Service.createBulk(quoteContainerRequests, SHIPMENT);
