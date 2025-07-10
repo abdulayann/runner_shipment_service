@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -13,20 +15,17 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
 import com.nimbusds.jose.util.Pair;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
 @Slf4j
@@ -48,10 +47,15 @@ public class MigrationV3Service implements IMigrationV3Service {
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Override
-    public Map<String, Integer> migrateV2ToV3(ListCommonRequest consoleRequest, ListCommonRequest shipmentRequest) {
+    public Map<String, Integer> migrateV2ToV3(ListCommonRequest consoleRequest, ListCommonRequest shipmentRequest, Long consolId) {
 
         Map<String, Integer> map = new HashMap<>();
-        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(consoleRequest);
+//        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(consoleRequest);
+
+        ConsolidationDetails consolidationss = consolidationDetailsDao.findConsolidationsById(consolId);
+
+        List<ConsolidationDetails> consolidationDetails = List.of(consolidationss);
+
         map.put("Total Consolidation", consolidationDetails.size());
         List<Future<Long>> queue = new ArrayList<>();
         log.info("fetched {} consolidation for Migrations", consolidationDetails.size());

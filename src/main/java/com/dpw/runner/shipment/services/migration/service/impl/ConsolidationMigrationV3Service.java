@@ -12,12 +12,16 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,6 +31,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
@@ -50,37 +55,97 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     private IShipmentDao shipmentDao;
 
     @Autowired
+    private IShipmentRepository shipmentRepository;
+
+    @Autowired
     private IContainerV3Service containerV3Service;
 
     @Autowired
     private IConsolidationV3Service consolidationV3Service;
 
+    @Autowired
+    private IContainerRepository containerRepository;
+
+    @Autowired
+    private IPackingRepository packingRepository;
+
     @Override
     @Transactional
     public ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails) {
-        Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
-        if(consolidationDetails1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
-        }
+        ConsolidationDetails consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId())
+                .orElseThrow(() -> new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId()));
 
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Convert V2 Console and Attached shipment to V3
-        ConsolidationDetails console = mapConsoleV2ToV3(consolidationDetails1.get(), packingVsContainerGuid);
+        ConsolidationDetails console = mapConsoleV2ToV3(consolidationDetails1, packingVsContainerGuid);
 
         // ContainerSave
+        List<Containers> updatedContainersList = console.getContainersList();
+        List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
+        Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+
+
+
+
+
+
         //TODO guid to container -> shipment's container store
-
-
         // Attach Container to shipment
+        Set<ShipmentDetails> consolShipmentsList = consolidationDetails1.getShipmentsList();
+        for (ShipmentDetails shp : consolShipmentsList) {
+            Set<Containers> originalContainers = shp.getContainersList();
+            Set<Containers> updatedContainers = new HashSet<>();
+
+            for (Containers container : originalContainers) {
+                Containers updatedContainer = uuidVsUpdatedContainers.get(container.getGuid());
+                if (updatedContainer != null) {
+                    updatedContainers.add(updatedContainer);
+                } else {
+                    updatedContainers.add(container);
+                }
+            }
+            shp.setContainersList(updatedContainers);
+        }
+
+
+
+
+
 
         // PackingSave
         // TODO: replace conatiner id in packs
+        for (ShipmentDetails consolShipment : consolShipmentsList) {
+            List<Packing> packingList = consolShipment.getPackingList();
+            for (Packing packing : packingList) {
+                UUID containerGuid = packingVsContainerGuid.get(packing.getGuid());
+                Containers containers = uuidVsUpdatedContainers.get(containerGuid);
+                if (containers != null) {
+                    packing.setContainerId(containers.getId());
+                }
+            }
+            packingRepository.saveAll(packingList);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // ShipmentSave
         // TODO: replace existing container with matching Guid of new container , same for Packs
-
+        shipmentRepository.saveAll(consolShipmentsList);
 
         // ConsoleSave
+
+
 
 
         return console;
@@ -92,16 +157,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // Container splitting and creation (With new Guids)
         // Container Attachment to shipment (add containers in shipment)
         List<Containers> splitContainers = distributeContainers(console.getContainersList());
+        console.setContainersList(splitContainers);
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
 
-        if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
+        if(ObjectUtils.isNotEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
                     shipmentMigrationV3Service.mapShipmentV2ToV3(ship, packingVsContainerGuid);
                 } catch (RunnerException e) {
-                    throw new RuntimeException(e);
+                    throw new IllegalArgumentException(e);
                 }
             });
         }
@@ -113,10 +179,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         try {
             consolidationV3Service.getConsoleSyncAchievedData(consolidationDetails.getId());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new IllegalArgumentException(e);
         }
 
-        // Console to shipment cutoff fields update, Agents, etc (Refer excel)
+        // TODO Console to shipment cutoff fields update, Agents, etc (Refer excel)
 
         return console;
     }
@@ -142,28 +208,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 if (container == null) {
                     continue; // skip if container is not mapped
                 }
-
-                // TODO update container data from Packs
-
-//                container.setPacksList(
-//                        Optional.ofNullable(container.getPacksList())
-//                                .orElseGet(ArrayList::new)
-//                );
-//
-//                container.getPacksList().add(packing);
-
-
                 try {
-                    containerV3Service.addPackageDataToContainer(container, packing);// TODO check for PACK LIST
+                    containerV3Service.addPackageDataToContainer(container, packing);
                 } catch (RunnerException e) {
-                    throw new RuntimeException(e);
+                    throw new IllegalArgumentException(e);
                 }
             }
         }
     }
 
     @Override
-    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
+    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) {
         Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
         if(consolidationDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
@@ -252,7 +307,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         newContainer.setGrossVolume(baseVolume.add(volumeRemainder));
 
         // TODO: SUBHAM handle FCL / LCL
-        Set<ShipmentDetails> shipmentsList = sourceContainer.getShipmentsList();
+        Set<ShipmentDetails> shipmentsList = sourceContainer.getShipmentsList(); // not gonna work
         newContainer.setShipmentsList(shipmentsList);
 //
 //        for (ShipmentDetails details : shipmentsList) {

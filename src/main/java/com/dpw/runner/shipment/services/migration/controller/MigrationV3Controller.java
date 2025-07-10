@@ -17,7 +17,7 @@ public class MigrationV3Controller {
 
     @RequestMapping("/v2/v3")
     public Map<String, Integer> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request) {
-        return migrationV3Service.migrateV2ToV3(request.getConsolidation(), request.getShipment());
+        return migrationV3Service.migrateV2ToV3(request.getConsolidation(), request.getShipment(), request.getConsolId());
     }
 
     @RequestMapping("/v3/v2")

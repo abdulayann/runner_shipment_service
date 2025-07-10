@@ -12,4 +12,6 @@ public class ConsolidationMigrationRequest {
 
     private ListCommonRequest shipment;
 
+    private Long consolId;
+
 }
