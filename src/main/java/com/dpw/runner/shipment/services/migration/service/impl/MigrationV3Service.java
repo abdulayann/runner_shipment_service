@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
@@ -72,17 +73,21 @@ public class MigrationV3Service implements IMigrationV3Service {
         map.put("Total Consolidation", consolidationDetails.size());
         List<Future<Long>> queue = new ArrayList<>();
         log.info("fetched {} consolidation for Migrations", consolidationDetails.size());
-        consolidationDetails.forEach(cos -> {
-            // execute async
+        for (ConsolidationDetails cos : consolidationDetails) {// execute async
             Future<Long> future = trxExecutor.runInAsync(() ->
                     // execute in trx
                     trxExecutor.runInTrx(() -> {
-                        ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV3ToV2(cos);
+                        ConsolidationDetails response = null;
+                        try {
+                            response = consolidationMigrationV3Service.migrateConsolidationV3ToV2(cos);
+                        } catch (RunnerException e) {
+                            throw new RuntimeException(e);
+                        }
                         return response.getId();
                     })
             );
             queue.add(future);
-        });
+        }
         List<Long> processed = collectAllConsolidation(queue);
         map.put("Total Migrated", processed.size());
         return map;

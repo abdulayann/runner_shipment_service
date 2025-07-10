@@ -9,5 +9,5 @@ import java.util.UUID;
 public interface IShipmentMigrationV3Service {
     ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException;
 
-    ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails);
+    ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException;
 }
