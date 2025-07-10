@@ -1286,7 +1286,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
         boolean isDG = false;
-        boolean isDGClass1Added = false;  // need to discuss for this logic
+        boolean isDGClass1Added = false;
         if(Boolean.TRUE.equals(container.getHazardous())) {
             isDGClass1Added = commonUtils.checkIfDGClass1(container.getDgClass());
             isDG = true;
