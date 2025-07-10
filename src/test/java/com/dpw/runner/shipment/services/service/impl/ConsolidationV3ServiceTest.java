@@ -5283,4 +5283,30 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationV3Service.generateV3Events(consolidationDetails1);
     verify(eventDao, times(1)).save(any());
   }
+
+  @Test
+  void testAibAttachedPendingShipmentCount() {
+    when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+    assertThrows(DataRetrievalFailureException.class , () -> consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build()));
+  }
+
+  @Test
+  void testAibAttachedPendingShipmentCount1() {
+    List<ConsoleShipmentMapping> mockConsoleShipMappings = Arrays.asList(
+            ConsoleShipmentMapping.builder().build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.APPROVE).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.REJECT).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build()
+            );
+
+    when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
+    when(consoleShipmentMappingDao.findByConsolidationIdAll(anyLong())).thenReturn(mockConsoleShipMappings);
+
+    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build());
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+  }
 }
