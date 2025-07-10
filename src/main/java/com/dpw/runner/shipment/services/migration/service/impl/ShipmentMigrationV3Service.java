@@ -2,23 +2,27 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,10 +31,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -44,6 +51,13 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     JsonHelper jsonHelper;
     @Autowired
     IContainerService containerService;
+    @Autowired
+    IShipmentDao shipmentDao;
+    @Autowired
+    IShipmentRepository shipmentRepository;
+
+    @Autowired
+    IPackingDao packingDao;
 
     @Autowired
     private CommonUtils commonUtils;
@@ -51,37 +65,50 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPackingV3Service packingV3Service;
 
     @Override
-    public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
+    public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
+        // Handle migration of all the shipments where there is no console attached.
+        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+        if(shipmentDetails1.isEmpty()) {
+            throw new DataRetrievalFailureException("No Console found with given id: " + shipmentDetails.getId());
+        }
+        ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
+        mapShipmentV2ToV3(shipment, new HashMap<>());
 
-        mapShipmentV2ToV3(shipmentDetails, packingVsContainerGuid);
-
-        return null;
+        // Save packing details
+        packingDao.saveAll(shipment.getPackingList());
+        // save shipment
+        shipmentRepository.save(shipment);
+        return shipment;
     }
 
+    @Override
     public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
         // Business Logic for transformation
 
         // Update Packs based on Auto Update Weight Volume flag;
-        transformContainerAndPacks(shipmentDetails);
+        transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
         // Update Shipment Summary
         updateShipmentCargoSummary(shipmentDetails);
 
-
         return shipmentDetails;
     }
 
-    private void transformContainerAndPacks(ShipmentDetails shipmentDetails) {
+    private void transformContainerAndPacks(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
         if(Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol())) {
-
+            if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+                createPacksWithContainerSummary(shipmentDetails, packingVsContainerGuid);
+            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+                createPacksForUnassignedContainers(shipmentDetails, packingVsContainerGuid);
+            }
 
         } else {
             if(!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
                 redistributeSummaryToPacks(shipmentDetails);
             } else if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                createPacksForContainerLineItems(shipmentDetails);
+                createPacksForContainerLineItems(shipmentDetails, packingVsContainerGuid);
             } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                removeExistingPacksAndCreateNewPacks(shipmentDetails);
+                removeExistingPacksAndCreateNewPacks(shipmentDetails, packingVsContainerGuid);
             }
         }
     }
@@ -94,9 +121,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         if(noOfPacks == 0) {
             noOfPacks = 1;
         }
-        String volumeUnit = shipmentDetails.getVolumeUnit() != null? shipmentDetails.getVolumeUnit() : commonUtils.getDefaultVolumeUnit(); // Default Pending
-        String weightUnit = shipmentDetails.getWeightUnit() != null? shipmentDetails.getWeightUnit() : commonUtils.getDefaultWeightUnit();  // Default Pending
-        String packsType = shipmentDetails.getPacksUnit() != null? shipmentDetails.getPacksUnit() : PackingConstants.PKG;  // Default Pending
+        String volumeUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getVolumeUnit())? shipmentDetails.getVolumeUnit() : commonUtils.getDefaultVolumeUnit();
+        String weightUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getWeightUnit())? shipmentDetails.getWeightUnit() : commonUtils.getDefaultWeightUnit();
+        String packsType = commonUtils.getPacksUnit(shipmentDetails.getPacksUnit());
 
         for (int i = 0; i < packLineItems; i++) {
             if(i == packLineItems-1) {
@@ -114,23 +141,64 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
     }
 
-    private void createPacksForContainerLineItems(ShipmentDetails shipmentDetails) {
-        int totalContainerCount = shipmentDetails.getContainersList().stream().filter(x->x.getContainerCount() != null)
-                .mapToInt(x->x.getContainerCount().intValue()).sum();
-        shipmentDetails.setPackingList(new ArrayList<>());
-        for (int i = 0; i < totalContainerCount; i++) {
+    private void createPacksForContainerLineItems(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
+        if(shipmentDetails.getPackingList() == null)
+            shipmentDetails.setPackingList(new ArrayList<>());
+        shipmentDetails.getContainersList().forEach(container -> {
             Packing packing = new Packing();
             packing.setGuid(UUID.randomUUID());
+            packing.setShipmentId(shipmentDetails.getId());
+            packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
             shipmentDetails.getPackingList().add(packing);
-        }
-        shipmentDetails.setNoOfPacks(totalContainerCount);
+        });
+
+        // Distribute summary to packs equally
         redistributeSummaryToPacks(shipmentDetails);
     }
 
-    private void removeExistingPacksAndCreateNewPacks(ShipmentDetails shipmentDetails) {
-        // Remove Existing Packs
+    private void removeExistingPacksAndCreateNewPacks(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
+        // Delete Existing Packs
+        shipmentDetails.getPackingList().forEach(packing -> packing.setIsDeleted(true));
+        createPacksForContainerLineItems(shipmentDetails, packingVsContainerGuid);
+    }
+
+    private void createPacksWithContainerSummary(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
         shipmentDetails.setPackingList(new ArrayList<>());
-        createPacksForContainerLineItems(shipmentDetails);
+        shipmentDetails.getContainersList().forEach(container -> {
+            Packing packing = new Packing();
+            packing.setGuid(UUID.randomUUID());
+            packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
+            // populate Container info to pack
+            createPackWithContainerInfo(packing, container);
+            shipmentDetails.getPackingList().add(packing);
+        });
+    }
+
+    private void createPackWithContainerInfo(Packing packing, Containers container) {
+        String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
+        packing.setPacks(count);
+        packing.setPacks(commonUtils.getPacksUnit(container.getPacksType()));
+        packing.setWeight(container.getGrossWeight());
+        packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
+        packing.setVolume(container.getGrossVolume());
+        packing.setVolumeUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossVolumeUnit()) ? container.getGrossVolumeUnit() : commonUtils.getDefaultVolumeUnit());
+        packing.setCommodity(container.getCommodityCode());
+    }
+
+    private void createPacksForUnassignedContainers(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
+        Map<Long, Containers> containerMap = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        shipmentDetails.getPackingList().forEach(packing -> containerMap.remove(packing.getContainerId()));
+        if(!containerMap.isEmpty()) {
+            for (var cont: containerMap.values()) {
+                Packing packing = new Packing();
+                packing.setGuid(UUID.randomUUID());
+                packing.setShipmentId(shipmentDetails.getId());
+                packingVsContainerGuid.putIfAbsent(packing.getGuid(), cont.getGuid());
+                // populate Container info to pack
+                createPackWithContainerInfo(packing, cont);
+                shipmentDetails.getPackingList().add(packing);
+            }
+        }
     }
 
     private void updateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException {
