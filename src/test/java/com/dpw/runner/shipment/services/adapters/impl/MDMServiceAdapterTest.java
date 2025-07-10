@@ -297,6 +297,22 @@ class MDMServiceAdapterTest {
     }
 
     @Test
+    void testCreateTask_Success1() throws RunnerException {
+        MdmTaskCreateRequest request = new MdmTaskCreateRequest();
+        MdmTaskCreateResponse expectedResponse = new MdmTaskCreateResponse();
+        DependentServiceResponse mockServiceResponse = new DependentServiceResponse();
+        mockServiceResponse.setData(expectedResponse);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("{}");
+        when(restTemplate.postForEntity(anyString(), any(), any()))
+                .thenReturn(ResponseEntity.ok(mockServiceResponse));
+        when(jsonHelper.convertValue(mockServiceResponse.getData(), MdmTaskCreateResponse.class)).thenReturn(expectedResponse);
+        MdmTaskCreateResponse actualResponse = mdmServiceAdapter.createTask(request);
+
+        assertNotNull(actualResponse);
+    }
+
+    @Test
     void testCreateTask_ExceptionThrown() {
         MdmTaskCreateRequest request = new MdmTaskCreateRequest();
         when(jsonHelper.convertToJson(any())).thenReturn("{}");

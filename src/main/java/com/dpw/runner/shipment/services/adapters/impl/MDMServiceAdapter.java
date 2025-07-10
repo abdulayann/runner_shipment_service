@@ -241,8 +241,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
             if (data instanceof List<?> dataList && !dataList.isEmpty()) {
                 Object firstElement = dataList.get(0);
-                MdmTaskCreateResponse responseObj = jsonHelper.convertValue(firstElement, MdmTaskCreateResponse.class);
-                return responseObj;
+                return jsonHelper.convertValue(firstElement, MdmTaskCreateResponse.class);
             }
             return jsonHelper.convertValue(Objects.requireNonNull(response.getBody()).getData(), MdmTaskCreateResponse.class);
         } catch (Exception ex) {

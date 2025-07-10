@@ -3081,7 +3081,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             taskGuids.add(map.get("uuid").toString());
         }
         request.setTaskGuids(taskGuids);
-        //TODO: MDM team will provide this
+
         if(mapList.get(0).containsKey("userEmail")){
             request.setUserEmail(mapList.get(0).get("userEmail").toString());
         }

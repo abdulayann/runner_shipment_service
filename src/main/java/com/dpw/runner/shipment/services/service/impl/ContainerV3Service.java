@@ -908,7 +908,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return response;
     }
 
-    private int getTotalDGPacks(Containers containers, int totalDgPackages) {
+    int getTotalDGPacks(Containers containers, int totalDgPackages) {
         if(containers.getPacksList() != null) {
             for (Packing packing : containers.getPacksList()) {
                 if (Boolean.TRUE.equals(packing.getHazardous())) totalDgPackages++;
