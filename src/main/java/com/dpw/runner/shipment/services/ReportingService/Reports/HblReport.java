@@ -675,8 +675,6 @@ public class HblReport extends IReport {
         dictionary.put(ReportConstants.PPCC, hblModel.paymentTerms);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(hblModel.getCommonContainers()));
 
-//        CommonUtils.stringValueOf()
-
         dictionary.put(ReportConstants.PRE_CARRIAGE, hblModel.preCarriageVessel != null ? hblModel.preCarriageVessel.getName() : null);
         addPickUpAndDeliveryDetailsTag(hblModel, dictionary);
 
