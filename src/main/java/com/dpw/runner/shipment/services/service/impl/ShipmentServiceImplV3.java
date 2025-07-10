@@ -2945,7 +2945,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return response;
     }
 
-    private static void validateRequiredParams(Long consoleId, String consoleGuid) {
+    public static void validateRequiredParams(Long consoleId, String consoleGuid) {
         if (consoleId == null && consoleGuid == null) {
             throw new ValidationException("Required parameters missing: consoleId and consoleGuid");
         }

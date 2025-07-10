@@ -403,7 +403,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void processDGShipmentDetailsFromContainer(ContainerV3Request containerV3Request) throws RunnerException {
+    public void processDGShipmentDetailsFromContainer(ContainerV3Request containerV3Request) throws RunnerException {
         if (containerV3Request.getId() != null) {
             List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
                     containerV3Request.getId());
@@ -422,7 +422,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void validateAndSaveDGShipment(List<ContainerV3Request> containerRequestList) throws RunnerException {
+    public void validateAndSaveDGShipment(List<ContainerV3Request> containerRequestList) throws RunnerException {
         for(ContainerV3Request containerV3Request : containerRequestList){
             Long shipmentId = containerV3Request.getShipmentsId();
             if(!Boolean.FALSE.equals(containerV3Request.getHazardous())) continue;
@@ -439,7 +439,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ContainerV3Request container) {
+    public void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ContainerV3Request container) {
         Containers oldContainer = null;
         boolean isDGClass1 = commonUtils.checkIfDGClass1(container.getDgClass());
         if(container.getId() == null) {
@@ -1284,7 +1284,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
 
-    private void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
+    public void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
         boolean isDG = false;
         boolean isDGClass1Added = false;
         if(Boolean.TRUE.equals(container.getHazardous())) {
