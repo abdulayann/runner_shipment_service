@@ -62,20 +62,30 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
         }
 
+        Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Convert V2 Console and Attached shipment to V3
-        ConsolidationDetails console = mapConsoleV2ToV3(consolidationDetails1.get());
+        ConsolidationDetails console = mapConsoleV2ToV3(consolidationDetails1.get(), packingVsContainerGuid);
 
         // ContainerSave
+        //TODO guid to container -> shipment's container store
+
+
         // Attach Container to shipment
+
         // PackingSave
+        // TODO: replace conatiner id in packs
+
         // ShipmentSave
+        // TODO: replace existing container with matching Guid of new container , same for Packs
+
+
         // ConsoleSave
 
 
         return console;
     }
 
-    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails) {
+    public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid) {
         ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
         // Container splitting and creation (With new Guids)
@@ -84,7 +94,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
-        Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
+
         if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
@@ -132,14 +142,18 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     continue; // skip if container is not mapped
                 }
 
-                container.setPacksList(
-                        Optional.ofNullable(container.getPacksList())
-                                .orElseGet(ArrayList::new)
-                );
+                // TODO update container data from Packs
 
-                container.getPacksList().add(packing);
+//                container.setPacksList(
+//                        Optional.ofNullable(container.getPacksList())
+//                                .orElseGet(ArrayList::new)
+//                );
+//
+//                container.getPacksList().add(packing);
+
+
                 try {
-                    containerV3Service.addPackageDataToContainer(container, packing);
+                    containerV3Service.addPackageDataToContainer(container, packing);// TODO check for PACK LIST
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
@@ -202,9 +216,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
     }
 
-    // TODO: SUBHAM check if any more fields should be corrected
-    private Containers createDistributedCopy(Containers source, BigDecimal baseWeight, BigDecimal baseVolume, BigDecimal weightRemainder, BigDecimal volumeRemainder) {
-        Containers newContainer = jsonHelper.convertValue(source, Containers.class);
+    // TODO: SUBHAM check if any more fields should be corrected - DEVA
+    private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume, BigDecimal weightRemainder, BigDecimal volumeRemainder) {
+        Containers newContainer = jsonHelper.convertValue(sourceContainer, Containers.class);
         newContainer.setId(null);
         newContainer.setGuid(UUID.randomUUID());
         newContainer.setContainerCount(1L);
@@ -212,8 +226,15 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         newContainer.setGrossVolume(baseVolume.add(volumeRemainder));
 
         // TODO: SUBHAM handle FCL / LCL
-        Set<ShipmentDetails> shipmentsList = source.getShipmentsList();
+        Set<ShipmentDetails> shipmentsList = sourceContainer.getShipmentsList();
         newContainer.setShipmentsList(shipmentsList);
+//
+//        for (ShipmentDetails details : shipmentsList) {
+//            details.getContainersList().add(newContainer);
+//            details.getContainersList().add(sourceContainer);
+//        }
+
+
 
         return newContainer;
     }
