@@ -158,30 +158,41 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
-        mapShipmentV3ToV2(shipmentDetails);
+        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipmentDetails.getContainersList());
+        mapShipmentV3ToV2(shipmentDetails, containerTypeMap);
 
         return shipmentDetails;
     }
 
-    public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
+    @Override
+    public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
+        mapShipmentV3ToV2(shipmentDetails, containerTypeMap);
+
+        return shipmentDetails;
+    }
+
+    public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         // Business Logic for transformation
         // need to add shipment details transformation logic
         shipmentDetails.setAutoUpdateWtVol(false);
         shipmentDetails.setContainerAutoWeightVolumeUpdate(false);
 
         // update container utilisation
-        setContainerUtilisation(shipmentDetails);
+        setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
 
         return shipmentDetails;
     }
 
-    public void setContainerUtilisation(ShipmentDetails shipmentDetails) throws RunnerException {
+    public void setContainerUtilisationForShipment(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         if (CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
             return;
         }
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
-        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipmentDetails);
-        for (Containers container: shipmentDetails.getContainersList()) {
+        setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL);
+    }
+
+    private void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
+        for (Containers container: containers) {
             container.setIsAttached(true);
             if (containerTypeMap.containsKey(container.getContainerCode())) {
                 EntityTransferContainerType containerType = containerTypeMap.get(container.getContainerCode());
@@ -221,9 +232,17 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
     }
 
-    public Map<String, EntityTransferContainerType> fetchContainerTypeDetails(ShipmentDetails shipmentDetails) {
+    private Map<String, EntityTransferContainerType> fetchContainerTypeDetails(Set<Containers> containers) {
+        if (CommonUtils.setIsNullOrEmpty(containers))
+            return new HashMap<>();
+        return fetchContainerTypeDetails(containers.stream().toList());
+    }
+
+    public Map<String, EntityTransferContainerType> fetchContainerTypeDetails(List<Containers> containers) {
+        if (CommonUtils.listIsNullOrEmpty(containers))
+            return new HashMap<>();
         Set<String> containerTypeCodes = new HashSet<>();
-        shipmentDetails.getContainersList().forEach(containers -> containerTypeCodes.add(containers.getContainerCode()));
+        containers.forEach(container -> containerTypeCodes.add(container.getContainerCode()));
         CommonV1ListRequest listRequest = new CommonV1ListRequest();
         List<Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.CODE),
