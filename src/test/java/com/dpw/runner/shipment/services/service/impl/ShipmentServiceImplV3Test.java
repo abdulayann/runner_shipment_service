@@ -471,6 +471,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         additionalDetails.setExportBroker(importBroker);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
         shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setId(1L);
         shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
         shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
         shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
