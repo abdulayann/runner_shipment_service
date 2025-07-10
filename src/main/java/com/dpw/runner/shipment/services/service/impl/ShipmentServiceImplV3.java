@@ -1600,7 +1600,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 shipmentDetails.setHouseBill(null);
             }
         }
-        // Validate all shipment fields before creation or updation
+        // all shipment fields before creation or updation
         shipmentValidationV3Util.validateShipmentCreateOrUpdate(shipmentDetails, oldEntity);
     }
 
@@ -2309,7 +2309,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (eventsList != null) {
             commonUtils.updateEventWithMasterData(eventsList);
             List<Events> updatedEvents = eventDao.updateEntityFromOtherEntity(eventsList, shipmentDetails.getId(), Constants.SHIPMENT);
-            shipmentDetails.setEventsList(updatedEvents);
+            if (shipmentDetails.getEventsList() == null) {
+                shipmentDetails.setEventsList(new ArrayList<>());
+            }
+            shipmentDetails.getEventsList().addAll(updatedEvents);
             eventsV3Service.updateAtaAtdInShipment(updatedEvents, shipmentDetails, shipmentSettingsDetails);
         }
     }
