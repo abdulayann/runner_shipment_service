@@ -631,8 +631,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ListContractResponse npmContractResponse = null;
             Boolean hasDestinationContract = entity.getDestinationContractId() != null && !entity.getDestinationContractId().isEmpty();
             if (Boolean.TRUE.equals(isContractUpdated(entity, oldConvertedShipment))) {
-                //todo: updated containerAssignedToShipmentCargo
-                entity.setContainerAssignedToShipmentCargo(null);
                 npmContractResponse = getNpmContract(entity);
                 populateShipmentDetailsFromContract(npmContractResponse, entity, hasDestinationContract);
             }
@@ -693,9 +691,16 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         } else {
             BulkContainerResponse bulkContainerResponse = handleContainerUpdate(contractUsages, shipmentDetails);
             List<Containers> containersList = new ArrayList<>(jsonHelper.convertValueToSet(bulkContainerResponse.getContainerResponseList(), Containers.class));
-            ConsolidationDetails consolidationDetailsV3 = createConsolidationInV3(shipmentDetails, containersList);
-            if (!Objects.isNull(consolidationDetailsV3) && CollectionUtils.isEmpty(shipmentDetails.getConsolidationList())) {
-                consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationDetailsV3.getId()).shipmentIds(Collections.singleton(shipmentDetails.getId())).build());
+            if(CollectionUtils.isEmpty(shipmentDetails.getConsolidationList())) {
+                ConsolidationDetails consolidationDetailsV3 = createConsolidationInV3(shipmentDetails, containersList);
+                if (!Objects.isNull(consolidationDetailsV3)) {
+                    consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationDetailsV3.getId()).shipmentIds(Collections.singleton(shipmentDetails.getId())).build());
+                }
+            } else {
+                ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().stream().iterator().next();
+                containerV3Service.deleteBulk(jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerV3Request.class), SHIPMENT);
+                setContainersInV3Console(containersList, consolidationDetails.getId(), consolidationDetails);
+                consolidationDetailsDao.save(consolidationDetails, false);
             }
         }
     }
@@ -743,7 +748,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 routingsV3Dao.saveEntityFromConsole(createRoutesV3, consolidationDetailsV3.getId());
             }
             Long id = consolidationDetailsV3.getId();
-           // consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().build());
             setContainersInV3Console(containersV3, id, consolidationDetailsV3);
             createAutoV3EventCreate(shipmentSettingsV3, consolidationDetailsV3);
             consolidationV3Service.pushShipmentDataToDependentService(consolidationDetailsV3, true, null);
@@ -840,18 +844,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void handlePackingUpdate(List<ListContractResponse.ContractUsage> contractUsages, ShipmentDetails shipmentDetails) throws RunnerException {
-        BulkPackingResponse bulkPackingResponse;
         List<PackingV3Request> quotePackingRequests = contractUsages.stream()
                 .map(usage -> getPackingRequest(usage, shipmentDetails))
-                .collect(Collectors.toList());
+                .toList();
         if (shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty() && !quotePackingRequests.isEmpty()) {
-            List<PackingV3Request> existingRequests = jsonHelper.convertValueToList(shipmentDetails.getPackingList(), PackingV3Request.class);
-            packingV3Service.deleteBulk(existingRequests, SHIPMENT);
             shipmentDetails.setPackingList(new ArrayList<>());
+            shipmentDao.save(shipmentDetails, false);
         }
         if (!quotePackingRequests.isEmpty()) {
-            bulkPackingResponse = packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
-            shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
+            packingV3Service.updateBulk(quotePackingRequests, SHIPMENT);
         }
     }
 
@@ -861,19 +862,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .map(usage -> getContainerRequest(usage, shipmentDetails))
                 .toList();
         if (shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty() && !quoteContainerRequests.isEmpty()) {
-            List<ContainerV3Request> existingContainerRequests = jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerV3Request.class);
             shipmentDetails.setContainersList(new HashSet<>());
             shipmentDao.save(shipmentDetails, false);
-
-//            for(Containers container: shipmentDetails.getContainersList()) {
-//                UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
-//                unAssignContainerRequest.setContainerId(container.getId());
-//                Map<Long, List<Long>> shipmentPacksMap = new HashMap<>();
-//                shipmentPacksMap.put(container.getId(), container.getPacksList().stream().map(Packing::getId).toList());
-//                unAssignContainerRequest.setShipmentPackIds(shipmentPacksMap);
-//                containerV3Service.unAssignContainers(unAssignContainerRequest);
-//            }
-            containerV3Service.deleteBulk(existingContainerRequests, SHIPMENT);
         }
         if (!quoteContainerRequests.isEmpty()) {
             bulkContainerResponse = containerV3Service.createBulk(quoteContainerRequests, SHIPMENT);
