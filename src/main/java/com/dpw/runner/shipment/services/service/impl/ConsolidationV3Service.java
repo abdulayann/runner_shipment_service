@@ -2961,7 +2961,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .build();
     }
 
-    private static String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
+    public String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
         if(isStringNullOrEmpty(packsType))
             packsType = shipmentDetails.getPacksUnit();
         else if(!isStringNullOrEmpty(shipmentDetails.getPacksUnit()) && !Objects.equals(packsType, shipmentDetails.getPacksUnit()))

@@ -1074,7 +1074,7 @@ public class AwbService implements IAwbService {
         constructConsigneeAddress(awbShipmentInfo, consolidationDetails.getReceivingAgent() != null ? consolidationDetails.getReceivingAgent().getAddressData() : null, alpha2DigitToCountry, consigneeAddressData);
     }
 
-    private void constructShipperAddress(AwbShipmentInfo awbShipmentInfo, Map<String, Object> address, Map<String, String> alpha2ToCountryMap, AddressDataV1 shipperAddressData) {
+    public void constructShipperAddress(AwbShipmentInfo awbShipmentInfo, Map<String, Object> address, Map<String, String> alpha2ToCountryMap, AddressDataV1 shipperAddressData) {
         if (shipperAddressData!=null && address!=null) {
             awbShipmentInfo.setShipperAddress(StringUtility.convertToString(shipperAddressData.getAddress1()).toUpperCase());
             awbShipmentInfo.setShipperAddress2(StringUtility.convertToString(shipperAddressData.getAddress2()).toUpperCase());
@@ -2381,7 +2381,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private boolean isCreateNotifyParty(Awb awb, Map<Long, AddressDataV1> addressDataV1Map, boolean createNotifyParty, AwbNotifyPartyInfo deleteParty, Parties party, Map<String, String> alpha2DigitToCountry) {
+    public boolean isCreateNotifyParty(Awb awb, Map<Long, AddressDataV1> addressDataV1Map, boolean createNotifyParty, AwbNotifyPartyInfo deleteParty, Parties party, Map<String, String> alpha2DigitToCountry) {
         if (awb.getAwbNotifyPartyInfo() != null && !awb.getAwbNotifyPartyInfo().isEmpty()) {
             for (var awbParty : awb.getAwbNotifyPartyInfo()) {
                 if (awbParty.getIsShipmentCreated() != null && awbParty.getIsShipmentCreated()) {
@@ -2398,7 +2398,7 @@ public class AwbService implements IAwbService {
         return party != null && party.getAddressData() != null && party.getAddressData().containsKey(PartiesConstants.COUNTRY);
     }
 
-    private AwbNotifyPartyInfo getDeleteParty(AwbNotifyPartyInfo awbParty, Parties party, Map<String, String> alpha2DigitToCountry, AwbNotifyPartyInfo deleteParty, Map<Long, AddressDataV1> addressDataV1Map) {
+    public AwbNotifyPartyInfo getDeleteParty(AwbNotifyPartyInfo awbParty, Parties party, Map<String, String> alpha2DigitToCountry, AwbNotifyPartyInfo deleteParty, Map<Long, AddressDataV1> addressDataV1Map) {
         if (party != null) {
             var name = StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME));
             awbParty.setName(name == null ? name : name.toUpperCase());
