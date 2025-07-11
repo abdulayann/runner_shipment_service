@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
@@ -16,6 +15,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -58,7 +58,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     IShipmentRepository shipmentRepository;
     @Autowired
-    IContainerDao containerDao;
+    IContainerRepository containerRepository;
 
     @Autowired
     private CommonUtils commonUtils;
@@ -240,7 +240,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         mapShipmentV3ToV2(shipment, containerTypeMap);
 
         if (!CommonUtils.setIsNullOrEmpty(shipment.getContainersList())) {
-            containerDao.saveAll(shipment.getContainersList().stream().toList());
+            containerRepository.saveAll(shipment.getContainersList().stream().toList());
         }
         shipment.setIsMigratedToV3(false);
         // save shipment

@@ -99,7 +99,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
     @Override
     public Map<String, Integer> migrateV3ToV2(Integer tenantId) {
-
+        TenantContext.setCurrentTenant(tenantId);
         Map<String, Integer> map = new HashMap<>();
         List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(true, tenantId);
         map.put("Total Consolidation", consolidationDetails.size());
@@ -144,6 +144,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         }
         List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
         map.put("Total Shipment Migrated", shipmentProcessed.size());
+        TenantContext.removeTenant();
         return map;
     }
 
