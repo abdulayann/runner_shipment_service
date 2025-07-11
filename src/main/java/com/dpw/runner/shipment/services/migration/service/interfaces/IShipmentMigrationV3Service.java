@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public interface IShipmentMigrationV3Service {
@@ -15,6 +16,7 @@ public interface IShipmentMigrationV3Service {
 
     ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException;
     ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException;
+    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException;
 
     Map<String, EntityTransferContainerType> fetchContainerTypeDetails(List<Containers> containers);
 }

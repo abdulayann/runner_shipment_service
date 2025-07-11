@@ -259,7 +259,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL);
     }
 
-    private void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
+    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
         for (Containers container: containers) {
             container.setIsAttached(true);
             if (containerTypeMap.containsKey(container.getContainerCode())) {
