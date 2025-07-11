@@ -29,11 +29,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
 
@@ -81,8 +84,8 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
-    public ResponseEntity<IRunnerResponse> updateBooking(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> updateBooking(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
+        return customerBookingV3Service.update(request).thenApply(ResponseHelper::buildSuccessResponse);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.DELETE_SUCCESSFUL, response = CustomerBookingV3DeleteResponse.class)})
@@ -120,8 +123,8 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_CANCEL_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_CANCEL + "')")
-    public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> cancel(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
+        return customerBookingV3Service.update(request).thenApply(ResponseHelper::buildSuccessResponse);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})

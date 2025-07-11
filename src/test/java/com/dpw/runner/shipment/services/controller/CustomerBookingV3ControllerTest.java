@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationRespon
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
@@ -28,8 +29,10 @@ import org.springframework.test.context.ContextConfiguration;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,10 +66,17 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void updateBooking_Success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        when(customerBookingV3Service.update(any())).thenReturn(new CustomerBookingV3Response());
-        var response = customerBookingV3Controller.updateBooking(new CustomerBookingV3Request());
+    void updateBooking_Success() throws Exception {
+        CustomerBookingV3Response mockResponse = new CustomerBookingV3Response();
+        CompletableFuture<CustomerBookingV3Response> future = CompletableFuture.completedFuture(mockResponse);
+
+        when(customerBookingV3Service.update(any())).thenReturn(future);
+        CompletableFuture<ResponseEntity<IRunnerResponse>> resultFuture = customerBookingV3Controller.updateBooking(new CustomerBookingV3Request());
+        ResponseEntity<IRunnerResponse> response = resultFuture.get(2, TimeUnit.SECONDS);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(responseBody);
+        assertTrue(responseBody.getData() instanceof CustomerBookingV3Response);
     }
 
     @Test
@@ -95,10 +105,20 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void cancelBooking_Success() throws Exception {
-        when(customerBookingV3Service.update(any())).thenReturn(new CustomerBookingV3Response());
-        var response = customerBookingV3Controller.cancel(new CustomerBookingV3Request());
+        // Arrange
+        CustomerBookingV3Response mockResponse = new CustomerBookingV3Response();
+        CompletableFuture<CustomerBookingV3Response> future = CompletableFuture.completedFuture(mockResponse);
+        when(customerBookingV3Service.update(any())).thenReturn(future);
+        // Act
+        CompletableFuture<ResponseEntity<IRunnerResponse>> resultFuture = customerBookingV3Controller.cancel(new CustomerBookingV3Request());
+        ResponseEntity<IRunnerResponse> response = resultFuture.get(2, TimeUnit.SECONDS);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+        // Assert
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(responseBody);
+        assertTrue(responseBody.getData() instanceof CustomerBookingV3Response);
     }
+
 
     @Test
     void cloneById_Success() throws RunnerException {

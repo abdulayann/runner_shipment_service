@@ -99,6 +99,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @Slf4j
@@ -273,7 +275,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Override
     @Transactional
-    public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
+    public CompletableFuture<CustomerBookingV3Response> update(CustomerBookingV3Request request) throws RunnerException {
         validateBookingUpdateRequest(request);
         Long id = request.getId();
         CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
@@ -319,7 +321,15 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-        return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
+        CustomerBookingV3Response customerBookingV3Response = jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
+        CompletableFuture<CustomerBookingV3Response> future = new CompletableFuture<>();
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                future.complete(customerBookingV3Response);
+            }
+        });
+        return future;
     }
 
     @Override

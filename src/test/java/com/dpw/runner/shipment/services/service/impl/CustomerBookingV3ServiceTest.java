@@ -61,19 +61,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import javax.transaction.Transactional;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -1353,7 +1354,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithSuccess() throws Exception {
         // Arrange
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
@@ -1371,7 +1372,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
 
         // Mocks
         when(customerBookingDao.findById(1L)).thenReturn(Optional.of(inputCustomerBooking));
@@ -1379,23 +1382,33 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         mockShipmentSettings();
+        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
+            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response actualResponse = futureResponse.get();
 
-        // Act
-        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
-
-        // Assert
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+            // Assert
+            assertNotNull(actualResponse);
+            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+        }
     }
 
     @Test
@@ -1439,7 +1452,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithPendingWithKycStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithPendingWithKycStatusSuccess() throws Exception {
         // Arrange
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
@@ -1457,7 +1470,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
 
         // Mocks
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
@@ -1466,28 +1481,39 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
         when(customerBookingDao.save(any())).thenReturn(inputCustomerBooking);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+
         mockShipmentSettings();
         mockTenantSettings();
+        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
+            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
 
-        // Act
-        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response actualResponse = futureResponse.get();
 
-        // Assert
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+            // Assert
+            assertNotNull(actualResponse);
+            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+        }
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccess() throws Exception {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1501,18 +1527,16 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
         inputCustomerBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        inputCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
-        inputCustomerBooking.setCreatedBy("testUser");
+        inputCustomerBooking.setCreatedAt(existingBooking.getCreatedAt());
+        inputCustomerBooking.setCreatedBy(existingBooking.getCreatedBy());
         inputCustomerBooking.setTransportType("SEA");
         inputCustomerBooking.setIsPlatformBookingCreated(false);
         inputCustomerBooking.setSource(BookingSource.Runner);
-
         var container = Containers.builder().build();
         inputCustomerBooking.setContainersList(List.of(container));
 
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-
         CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
@@ -1530,19 +1554,28 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         mockTenantSettings();
 
-        // Act
-        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
 
-        // Assert
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response actualResponse = futureResponse.get();
+
+            // Assert
+            assertNotNull(actualResponse);
+            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+        }
     }
 
 
@@ -1595,7 +1628,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirCargoSecurity() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirCargoSecurity() throws Exception {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1609,7 +1642,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
         inputCustomerBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        inputCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        inputCustomerBooking.setCreatedAt(existingBooking.getCreatedAt());
         inputCustomerBooking.setCreatedBy("testUser");
         inputCustomerBooking.setTransportType("SEA");
         inputCustomerBooking.setIsPlatformBookingCreated(false);
@@ -1623,9 +1656,16 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
+        // Contexts
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).FetchRatesMandate(Boolean.FALSE).ShipmentServiceV2Enabled(Boolean.TRUE).countryAirCargoSecurity(Boolean.FALSE).build());
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, Boolean.TRUE));
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .P100Branch(false)
+                .FetchRatesMandate(false)
+                .ShipmentServiceV2Enabled(true)
+                .countryAirCargoSecurity(false)
+                .build());
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
+
         // Mocks
         when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Approved");
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
@@ -1636,22 +1676,32 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(List.of(container));
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
+
         mockShipmentSettings();
         mockTenantSettings();
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
 
-        // Act
-        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response actualResponse = futureResponse.get();
 
-        // Assert
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+            // Assert
+            assertNotNull(actualResponse);
+            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+        }
     }
 
     @Test
@@ -1702,7 +1752,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirSecurityPermissions() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirSecurityPermissions() throws Exception {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1717,7 +1767,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
         inputCustomerBooking.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        inputCustomerBooking.setCreatedAt(LocalDateTime.now().minusDays(1));
+        inputCustomerBooking.setCreatedAt(existingBooking.getCreatedAt());
         inputCustomerBooking.setCreatedBy("testUser");
         inputCustomerBooking.setTransportType("SEA");
         inputCustomerBooking.setIsPlatformBookingCreated(false);
@@ -1737,9 +1787,20 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
 
         CustomerBookingV3Response expectedResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
 
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).FetchRatesMandate(Boolean.FALSE).ShipmentServiceV2Enabled(Boolean.TRUE).countryAirCargoSecurity(Boolean.FALSE).build());
+        // Set contexts
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder()
+                        .P100Branch(false)
+                        .FetchRatesMandate(Boolean.FALSE)
+                        .ShipmentServiceV2Enabled(Boolean.TRUE)
+                        .countryAirCargoSecurity(Boolean.FALSE)
+                        .build()
+        );
         UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, Boolean.TRUE));
+
         // Mocks
         when(mdmServiceAdapter.getApprovalStausForParties(any())).thenReturn("Approved");
         lenient().doNothing().when(bookingIntegrationsUtility).createBookingInPlatform(any());
@@ -1754,28 +1815,33 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
         doThrow(new RuntimeException("Audit Log Exception")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         mockTenantSettings();
+        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
+            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response actualResponse = futureResponse.get();
 
-        // Act
-        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
-
-        // Assert
-        assertNotNull(actualResponse);
-        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+            // Assert
+            assertNotNull(actualResponse);
+            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
+        }
     }
 
     @Test
-    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled() throws RunnerException {
+    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled() throws Exception {
         // Arrange
         UUID bookingGuid = UUID.randomUUID();
-        UUID shipmentGuid = UUID.randomUUID();
 
-        // Set up tenant settings with V2 shipment enabled
         V1TenantSettingsResponse tenantSettings = V1TenantSettingsResponse.builder()
                 .ShipmentServiceV2Enabled(true)
                 .build();
@@ -1784,7 +1850,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
                 .setIsAlwaysUtilization(true)
                 .setHasNoUtilization(false);
 
-        // Mock booking data
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
         inputCustomerBooking.setGuid(bookingGuid);
@@ -1793,7 +1858,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         inputCustomerBooking.setIsPlatformBookingCreated(false);
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
 
-        // Convert to request and update status
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         request.setBookingStatus(BookingStatus.PENDING_FOR_REVIEW);
 
@@ -1804,25 +1868,35 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(expectedResponse);
+        when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
-        when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
 
         mockTenantSettings();
         mockShipmentSettings();
+        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
+            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
 
-        // Act
-        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response actualResponse = futureResponse.get();
 
-        // Assert
-        assertNotNull(actualResponse);
-        assertEquals(BookingStatus.PENDING_FOR_REVIEW, actualResponse.getBookingStatus());
+            // Assert
+            assertNotNull(actualResponse);
+            assertEquals(BookingStatus.PENDING_FOR_REVIEW, actualResponse.getBookingStatus());
+        }
     }
 
     @Test
@@ -1830,12 +1904,17 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Arrange
         UUID bookingGuid = UUID.randomUUID();
         long bookingId = 123L;
+
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(bookingId);
         existingBooking.setGuid(bookingGuid);
@@ -1869,25 +1948,37 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+
+        // Mock MDM container types
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         mockTenantSettings();
         mockShipmentSettings();
+        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
+            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
 
-        // Act
-        CustomerBookingV3Response response = customerBookingService.update(request);
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
 
-        // Assert
-        assertNotNull(response);
-        assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(2)).save(any());
-        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+            // Assert
+            assertNotNull(response);
+            assertEquals(bookingId, response.getId());
+
+            verify(customerBookingDao, times(2)).save(any());
+            verify(eventDao).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+        }
     }
 
     @Test
@@ -1895,13 +1986,17 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Arrange
         UUID bookingGuid = UUID.randomUUID();
         long bookingId = 123L;
+
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
                         .ShipmentServiceV2Enabled(true)
                         .FetchRatesMandate(Boolean.FALSE)
                         .build()
         );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(bookingId);
         existingBooking.setGuid(bookingGuid);
@@ -1936,26 +2031,41 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
         doNothing().when(dependentServiceHelper).pushToKafkaForDownStream(any(), any());
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any()))
+                .thenReturn(List.of(mdmContainerTypeResponse));
+
         mockTenantSettings();
         mockShipmentSettings();
 
-        // Act
-        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Mock transaction behavior
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
 
-        // Assert
-        assertNotNull(response);
-        assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(2)).save(any());
-        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
-        verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(bookingId, response.getId());
+            verify(customerBookingDao, times(2)).save(any());
+            verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+            verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
+        }
     }
 
     @Test
@@ -1963,18 +2073,23 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Arrange
         UUID bookingGuid = UUID.randomUUID();
         long bookingId = 123L;
+
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
+
         Packing packing = new Packing();
         packing.setWeight(BigDecimal.ONE);
         packing.setWeightUnit("Kg");
+
         Containers containers = new Containers();
         containers.setContainerCode("CNT122");
         containers.setContainerCount(1L);
+
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(bookingId);
         existingBooking.setGuid(bookingGuid);
@@ -1989,6 +2104,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Request request = new CustomerBookingV3Request();
         request.setId(bookingId);
         request.setBookingStatus(BookingStatus.PENDING_FOR_KYC);
+
         CustomerBooking updatedBooking = new CustomerBooking();
         updatedBooking.setId(bookingId);
         updatedBooking.setGuid(bookingGuid);
@@ -2003,31 +2119,41 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         expectedResponse.setGuid(bookingGuid);
 
         // Mocks
-        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(updatedBooking));
+        when(customerBookingDao.findById(bookingId)).thenReturn(Optional.of(existingBooking));
         when(eventDao.findByEntityIdAndEntityType(bookingId, Constants.BOOKING)).thenReturn(Optional.empty());
         when(jsonHelper.convertToJson(any(CustomerBooking.class))).thenReturn("{}");
-        when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(updatedBooking);
         when(customerBookingDao.save(any())).thenReturn(updatedBooking);
+        when(jsonHelper.convertValue(updatedBooking, CustomerBookingV3Response.class)).thenReturn(expectedResponse);
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         mockTenantSettings();
         mockShipmentSettings();
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
 
-        // Act
-        CustomerBookingV3Response response = customerBookingService.update(request);
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
 
-        // Assert
-        assertNotNull(response);
-        assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(2)).save(any());
-        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+            // Assert
+            assertNotNull(response);
+            assertEquals(bookingId, response.getId());
+            verify(customerBookingDao, times(2)).save(any());
+            verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+        }
     }
 
     @Test
@@ -2056,13 +2182,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentDisabled() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentDisabled() throws Exception {
         // Arrange
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
                         .ShipmentServiceV2Enabled(false)
                         .build()
         );
+
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
@@ -2070,68 +2197,97 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
         var mockV1ShipmentCreationResponse = new V1ShipmentCreationResponse();
         mockV1ShipmentCreationResponse.setShipmentId("123");
-        // Mock
+
+        // Mocks
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(V1ShipmentCreationResponse.class))).thenReturn(mockV1ShipmentCreationResponse);
-        when(bookingIntegrationsUtility.createShipmentInV1(any(), anyBoolean(), anyBoolean(), any(), any())).thenReturn(ResponseEntity.ok(mockV1ShipmentCreationResponse));
+        when(bookingIntegrationsUtility.createShipmentInV1(any(), anyBoolean(), anyBoolean(), any(), any()))
+                .thenReturn(ResponseEntity.ok(mockV1ShipmentCreationResponse));
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         mockTenantSettings();
         mockShipmentSettings();
-        // Test
-        CustomerBookingV3Response response = customerBookingService.update(request);
-        // Assert
-        assertNotNull(response);
-        verify(customerBookingDao, times(3)).save(any());
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            verify(customerBookingDao, times(3)).save(any()); // assuming initial + after updates
+        }
     }
 
     @Test
-    void testV3BookingUpdateWithSuccessCreateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithSuccessCreateInPlatform() throws Exception {
         // Arrange
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
+
         // Mock
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
-        when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong()))
+                .thenReturn(inputCustomerBooking.getBookingCharges());
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         mockShipmentSettings();
-        // Test
-        CustomerBookingV3Response response = customerBookingService.update(request);
-        // Assert
-        assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            verify(customerBookingDao, times(2)).save(any());
+        }
     }
 
     @Test
-    void testBookingUpdateWithSuccessUpdateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testBookingUpdateWithSuccessUpdateInPlatform() throws Exception {
         // Arrange
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setIsPlatformBookingCreated(true);
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
         CustomerBookingV3Request request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Request.class);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingV3Response.class);
-        // Mock
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
@@ -2142,111 +2298,174 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any()))
+                .thenReturn(List.of(mdmContainerTypeResponse));
+
         mockShipmentSettings();
-        // Test
-        CustomerBookingV3Response response = customerBookingService.update(request);
-        // Assert
-        assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+
+        // Mock TransactionSynchronizationManager behavior
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(customerBookingResponse, response);
+            verify(customerBookingDao, times(2)).save(any());
+        }
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithUtilization() throws RunnerException, ExecutionException, InterruptedException {
         // Arrange
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
-        ;
         oldCustomerBooking.setContractId("old");
         newCustomerBooking.setContractId("new");
         newCustomerBooking.setBookingStatus(BookingStatus.CANCELLED);
+
         CustomerBookingV3Request request = objectMapper.convertValue(newCustomerBooking, CustomerBookingV3Request.class);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(newCustomerBooking, CustomerBookingV3Response.class);
-        // Mock
+
+        // Mocks
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(newCustomerBooking);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
-        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(mdmContainerTypeResponse));
+
         mockShipmentSettings();
-        // Test
-        CustomerBookingV3Response response = customerBookingService.update(request);
-        // Assert
-        assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
+            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            assertEquals(BookingStatus.CANCELLED, response.getBookingStatus());
+            verify(customerBookingDao, times(2)).save(any());
+        }
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithUtilization2() throws RunnerException, ExecutionException, InterruptedException {
         // Arrange
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
-        ;
         oldCustomerBooking.setContractId(null);
         newCustomerBooking.setContractId("new");
+
         CustomerBookingV3Request request = objectMapper.convertValue(newCustomerBooking, CustomerBookingV3Request.class);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(newCustomerBooking, CustomerBookingV3Response.class);
-        // Mock
+
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(newCustomerBooking);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
-        // Test
-        CustomerBookingV3Response response = customerBookingService.update(request);
-        // Assert
-        assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            verify(customerBookingDao, times(2)).save(any());
+        }
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testV3BookingUpdateWithUtilization3() throws Exception {
         // Arrange
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         oldCustomerBooking.setContractId("old");
         newCustomerBooking.setContractId(null);
+
         CustomerBookingV3Request request = objectMapper.convertValue(newCustomerBooking, CustomerBookingV3Request.class);
         CustomerBookingV3Response customerBookingResponse = objectMapper.convertValue(newCustomerBooking, CustomerBookingV3Response.class);
-        // Mock
+
+        // Mocks
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(newCustomerBooking);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingV3Response.class))).thenReturn(customerBookingResponse);
+
         DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("40GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
-        Map<String, Object> mdmMap = new HashMap<>();
-        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
-        // Test
-        CustomerBookingV3Response response = customerBookingService.update(request);
-        // Assert
-        assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+                    .thenAnswer(invocation -> {
+                        TransactionSynchronization sync = invocation.getArgument(0);
+                        sync.afterCommit();
+                        return null;
+                    });
+
+            // Act
+            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
+            CustomerBookingV3Response response = futureResponse.get();
+
+            // Assert
+            assertNotNull(response);
+            verify(customerBookingDao, times(2)).save(any());
+        }
     }
 
     @Test
