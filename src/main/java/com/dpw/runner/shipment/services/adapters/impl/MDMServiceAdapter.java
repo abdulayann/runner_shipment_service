@@ -222,8 +222,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         try{
             MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).build();
             ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
-            DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
-            return dependentServiceResponse;
+            return Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
         } catch (Exception ex){
             log.error("MDM Service - error while fetching container type list", ex.getMessage());
             throw new RunnerException("Error while fetching container type list: " + ex.getMessage());

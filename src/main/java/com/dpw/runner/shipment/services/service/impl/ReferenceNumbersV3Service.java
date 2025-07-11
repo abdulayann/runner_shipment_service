@@ -129,8 +129,6 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         // Save the updated ref nums to the database
         List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.saveAll(originalReferenceNumbers);
 
-        //runAsyncPostSaveOperations(updatedReferenceNumbers, module);
-
         // Add audit logs for all updated containers
         recordAuditLogs(originalReferenceNumbers, updatedReferenceNumbers, DBOperationType.UPDATE);
 

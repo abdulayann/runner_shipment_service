@@ -2273,26 +2273,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst, Boolean getMasterData) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(customerBooking -> {
-            CustomerBookingV3Response response = modelMapper.map(customerBooking, CustomerBookingV3Response.class);
-            responseList.add(response);
-        });
-        try{
-            if(Boolean.TRUE.equals(getMasterData)) {
-                double startTime = System.currentTimeMillis();
-                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
-                CompletableFuture.allOf(locationDataFuture, carrierDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.BOOKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
-            }
-        } catch (Exception ex){
-            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_BOOKING_LIST, ex.getLocalizedMessage());
-        }
-        return responseList;
-    }
-
     private void validateBookingUpdateRequest(CustomerBookingV3Request request) {
         if (request == null || request.getId() == null) {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());

@@ -398,22 +398,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             beforeSave(entity, oldEntity.get(), false);
 
             entity = consolidationDetailsDao.updateV3(entity);
-            try {
-                // audit logs
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                .newData(entity)
-                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
-                                .parent(ConsolidationDetails.class.getSimpleName())
-                                .parentId(entity.getId())
-                                .operation(DBOperationType.UPDATE.name()).build()
-                );
-            }
-            catch (Exception e) {
-                log.error("Error writing audit service log", e);
-            }
-
+            processAuditServiceLogs(entity, oldEntityJsonString);
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false);
             ConsolidationDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
@@ -430,6 +415,24 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new GenericException(e.getMessage());
+        }
+    }
+
+    private void processAuditServiceLogs(ConsolidationDetails entity, String oldEntityJsonString) {
+        try {
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(entity)
+                            .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
+                            .parent(ConsolidationDetails.class.getSimpleName())
+                            .parentId(entity.getId())
+                            .operation(DBOperationType.UPDATE.name()).build()
+            );
+        }
+        catch (Exception e) {
+            log.error("Error writing audit service log", e);
         }
     }
 
@@ -1726,7 +1729,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         String warning = null;
         if (!shipmentRequestedTypes.isEmpty()) {
-            warning = "Template not found, please inform the region users manually";
+            warning = TEMPLATE_NOT_FOUND_MESSAGE;
         }
         return warning;
     }
@@ -2324,7 +2327,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
-            setCoload_BookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             setBookingNumberInShipment(console, shipmentDetails);
             serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
@@ -2338,7 +2341,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             //Editable Fields
             setBookingNumberInShipment(console, shipmentDetails);
             serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
-            setCoload_BookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
+            setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             if(shipmentDetails.getAdditionalDetails() != null){
                 shipmentDetails.getAdditionalDetails().setEfreightStatus(console.getEfreightStatus());
@@ -2350,8 +2353,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setOceanDGStatus(dgStatusChangeInShipments.get(shipmentDetails.getId()).getOceanDGStatus());
         }
         // Update basic references in the shipment from the console
-       // shipmentDetails.setConsolRef(console.getReferenceNumber());
-
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();
 
@@ -2408,7 +2409,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void setCoload_BookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
+    private void setColoadBookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
         if(fromAttachShipment != null && fromAttachShipment) {
                 if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
@@ -4052,30 +4053,28 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
     }
 
-    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails){
-        if(oldEntity == null){
+    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails) {
+        if (oldEntity == null) {
             String deliveryMode = consolidationDetails.getDeliveryMode();
             String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
-            if(isServiceTypeValid(serviceType)){
+            if (isServiceTypeValid(serviceType)) {
                 //autoFlow
                 shipmentDetails.setServiceType(serviceType);
             }
-        }else{
-           String oldDeliveryMode = oldEntity.getDeliveryMode();
-           String oldServiceType = getIdentifierFromHBLDeliveryModeMasterData(oldDeliveryMode);
+        } else {
+            String oldDeliveryMode = oldEntity.getDeliveryMode();
+            String oldServiceType = getIdentifierFromHBLDeliveryModeMasterData(oldDeliveryMode);
 
-           //Different serviceType no need to flow
-           if(shipmentDetails.getServiceType() != null && oldServiceType != null && !shipmentDetails.getServiceType().equals(oldServiceType)){
-
-           }else{
-               //Validate new deliveryCode
-               String deliveryMode = consolidationDetails.getDeliveryMode();
-               String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
-               if(isServiceTypeValid(serviceType)){
-                   //autoFlow
-                   shipmentDetails.setServiceType(serviceType);
-               }
-           }
+            //Different serviceType no need to flow
+            if (shipmentDetails.getServiceType() == null || Objects.equals(oldServiceType, shipmentDetails.getServiceType())) {
+                //Validate new deliveryCode
+                String deliveryMode = consolidationDetails.getDeliveryMode();
+                String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
+                if (isServiceTypeValid(serviceType)) {
+                    //autoFlow
+                    shipmentDetails.setServiceType(serviceType);
+                }
+            }
         }
     }
     protected String getIdentifierFromHBLDeliveryModeMasterData(String deliveryMode) {

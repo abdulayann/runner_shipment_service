@@ -126,8 +126,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     @Override
     public ResponseEntity<DocumentDownloadResponse> downloadDocument(CommonRequestModel commonRequestModel) {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-        var response = restClient.downloadDocument(request.getId());
-        return response;
+        return restClient.downloadDocument(request.getId());
     }
 
     @Override
