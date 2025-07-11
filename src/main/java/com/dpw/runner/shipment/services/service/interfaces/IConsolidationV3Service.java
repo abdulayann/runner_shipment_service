@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.nimbusds.jose.util.Pair;
 import org.apache.http.auth.AuthenticationException;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 
 import javax.validation.Valid;
@@ -79,4 +80,5 @@ public interface IConsolidationV3Service {
     void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
                                  String sourceInfo);
     Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
+    ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request);
 }
