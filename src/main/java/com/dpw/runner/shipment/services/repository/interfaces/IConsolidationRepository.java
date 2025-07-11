@@ -63,6 +63,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "SELECT * FROM consolidation_details WHERE id IN ?1", nativeQuery = true)
     List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids);
 
+    @Query(value = "SELECT * FROM consolidation_details WHERE is_migrated_to_v3 = ?1 and tenant_id = ?2 and is_deleted = false", nativeQuery = true)
+    List<ConsolidationDetails> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId);
+
     @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     ConsolidationDetails getConsolidationFromId(Long id);
 

@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -55,14 +56,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IShipmentDao shipmentDao;
     @Autowired
     IShipmentRepository shipmentRepository;
-
-    @Autowired
-    IPackingDao packingDao;
-
     @Autowired
     private CommonUtils commonUtils;
     @Autowired
     private IPackingV3Service packingV3Service;
+    @Autowired
+    private IPackingRepository packingRepository;
 
     @Override
     public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
@@ -75,7 +74,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         mapShipmentV2ToV3(shipment, new HashMap<>());
 
         // Save packing details
-        packingDao.saveAll(shipment.getPackingList());
+        if(!CommonUtils.listIsNullOrEmpty(shipment.getPackingList())) {
+            packingRepository.saveAll(shipment.getPackingList());
+        }
         // save shipment
         shipmentRepository.save(shipment);
         return shipment;

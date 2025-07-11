@@ -18,7 +18,7 @@ public class HelperExecutor {
         return runnable.run();
     }
 
-    @Async
+    @Async("asyncExecutorForMigration3")
     public <V> CompletableFuture<V> runInAsync(IRun<V> runnable) {
         return CompletableFuture.completedFuture(runnable.run());
     }
