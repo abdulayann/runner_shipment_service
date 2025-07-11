@@ -2214,7 +2214,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     public ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
         Set<ConsolidationDetailsRequest> consolidationDetails = new HashSet<>();
         Set<ContainerRequest> containerList = new HashSet<>();
-        Long containerAssignedToShipmentCargo = null;
         if (isConsoleCreationNeededV3(customerBookingRequest)) {
             ConsolidationDetailsV3Request consolidationDetailsV3Request = ConsolidationDetailsV3Request.builder().
                     carrierDetails(CarrierDetailRequest.builder()
@@ -2248,10 +2247,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                     consolidationDetailsV3Request.getTransportMode(), consolidationDetailsV3Request.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
             ));
 
-            //
             Pair<ConsolidationDetails, Long> createConsoleResponse = consolidationV3Service.createConsolidationForBooking(CommonRequestModel.buildRequest(consolidationDetailsV3Request), customerBookingRequest);
             ConsolidationDetails consolDetailsResponse = createConsoleResponse.getLeft();
-            containerAssignedToShipmentCargo = createConsoleResponse.getRight();
 
             if (consolDetailsResponse != null) {
                 ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class);

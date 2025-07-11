@@ -1283,10 +1283,10 @@ public class PackingV3Service implements IPackingV3Service {
 
     private static void setPacksUnits(CargoDetailsResponse response, Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet) {
         if (uniquePacksUnits.size() == 1) {
-            response.setPacksUnit(uniquePacksUnits.stream().findFirst().get());
+            response.setPacksUnit(uniquePacksUnits.iterator().next());
         }
         if (dgPacksUnitSet.size() == 1) {
-            response.setDgPacksUnit(dgPacksUnitSet.stream().findFirst().get());
+            response.setDgPacksUnit(dgPacksUnitSet.iterator().next());
         }
     }
 

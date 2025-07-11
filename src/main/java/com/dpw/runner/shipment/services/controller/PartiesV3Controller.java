@@ -49,7 +49,6 @@ public class PartiesV3Controller {
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
         log.info("Received Party Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(partiesRequest));
         return ResponseHelper.buildSuccessResponse(partiesService.create(partiesRequest));
-        //TODO: UI has to send partyType, entityId, entityType as "CUSTOMER_BOOKING", country
     }
 
     @ApiResponses(value = {
