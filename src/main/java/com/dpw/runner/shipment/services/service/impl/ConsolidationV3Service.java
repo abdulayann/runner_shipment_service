@@ -714,6 +714,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<Containers> containers = commonUtils.convertToEntityList(splittedContainers, Containers.class, (!isFromBooking && !includeGuid) && isCreate);
             containerAssignedToShipmentCargo = shipmentV3Service.assignFirstBookingContainerToShipmentCargo(containers, customerBookingV3Request);
             List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(containers, id, (Long) null, true);
+            if(!listIsNullOrEmpty(updatedContainers))
+                containerAssignedToShipmentCargo = updatedContainers.get(0).getId();
             consolidationDetails.setContainersList(updatedContainers);
         }
         if (packingRequestList != null) {
