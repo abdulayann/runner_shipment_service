@@ -337,7 +337,7 @@ public class ReportService implements IReportService {
             var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
             pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
             return byteContent;
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
+        } else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
             return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
             return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report, awb);

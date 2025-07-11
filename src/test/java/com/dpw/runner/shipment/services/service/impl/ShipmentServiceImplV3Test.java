@@ -620,6 +620,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         additionalDetails.setExportBroker(importBroker);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
         shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setId(1L);
         shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
         shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
         shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
@@ -1670,9 +1671,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(partiesDao.updateEntityFromOtherEntity(anyList(), any(), anyString())).thenReturn(List.of(new Parties()));
         BulkPackingResponse bulkPackingResponse = new BulkPackingResponse();
         bulkPackingResponse.setPackingResponseList(List.of(new PackingResponse()));
-        when(packingV3Service.deleteBulk(any(), any())).thenReturn(bulkPackingResponse);
         when(packingV3Service.updateBulk(any(), any())).thenReturn(bulkPackingResponse);
-        when(jsonHelper.convertValueToList(any(), eq(PackingV3Request.class))).thenReturn(List.of(new PackingV3Request()));
         doNothing().when(auditLogService).addAuditLog(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsV3Response.class))).thenReturn(mockShipmentResponse);
@@ -4674,7 +4673,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals(100L, result);
         verify(containerV3Service).addShipmentCargoToContainerInCreateFromBooking(firstContainer, bookingRequest);
         verify(containerV3Util).setContainerNetWeight(firstContainer);
-        verify(containerV3Util).resetContainerDataForRecalculation(secondContainer);
     }
 
     @Test

@@ -402,7 +402,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
