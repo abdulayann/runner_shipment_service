@@ -117,7 +117,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if(!CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
-                    shipmentMigrationV3Service.migrateShipmentV3ToV2(ship, containerTypeMap);
+                    shipmentMigrationV3Service.mapShipmentV3ToV2(ship, containerTypeMap);
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
