@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -22,23 +23,24 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -238,16 +240,16 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
-    public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) {
+    public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
         ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
         Map<String, EntityTransferContainerType> containerTypeMap = shipmentMigrationV3Service.fetchContainerTypeDetails(console.getContainersList());
 
         List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
-        if(CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
+        if(!CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
-                    shipmentMigrationV3Service.migrateShipmentV3ToV2(ship, containerTypeMap);
+                    shipmentMigrationV3Service.mapShipmentV3ToV2(ship, containerTypeMap);
                 } catch (RunnerException e) {
                     throw new RuntimeException(e);
                 }
@@ -255,6 +257,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
 
         // Console utilisation update
+        setContainerUtilisationForConsolidation(console, shipmentDetailsList, containerTypeMap);
+
+        //TODO : Packs utilisation Update : V3 --> V2
 
         return console;
     }
@@ -314,6 +319,32 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     private BigDecimal safeBigDecimal(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+
+    private void setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
+                                                         Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
+        //Identify container associated only with consolidation and and call setContainerUtilisationForShipment
+        Set<Containers> consolContainers = getOnlyConsolidationContainers(console, shipmentDetailsList);
+        boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(console.getShipmentType());
+        shipmentMigrationV3Service.setContainerUtilisation(consolContainers, containerTypeMap, isFCL);
+    }
+
+    private Set<Containers> getOnlyConsolidationContainers(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
+        if (consolidationDetails == null || consolidationDetails.getContainersList() == null) {
+            return Collections.emptySet();
+        }
+
+        Set<Long> shipmentContainerIds = shipmentDetailsList.stream()
+                .filter(Objects::nonNull)
+                .flatMap(shipment -> Optional.ofNullable(shipment.getContainersList())
+                        .orElse(Collections.emptySet()).stream())
+                .map(Containers::getId)
+                .collect(Collectors.toSet());
+
+        return consolidationDetails.getContainersList().stream()
+                .filter(container -> !shipmentContainerIds.contains(container.getId()))
+                .collect(Collectors.toSet());
     }
 
 }

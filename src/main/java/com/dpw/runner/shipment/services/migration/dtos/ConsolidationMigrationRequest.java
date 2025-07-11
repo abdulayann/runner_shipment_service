@@ -7,10 +7,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class ConsolidationMigrationRequest {
-
-    private ListCommonRequest consolidation;
-
-    private ListCommonRequest shipment;
+    private Integer tenantId;
 
     private Long consolId;
 

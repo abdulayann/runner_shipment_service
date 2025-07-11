@@ -5,7 +5,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -18,6 +18,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
@@ -54,27 +56,30 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IShipmentDao shipmentDao;
     @Autowired
     IShipmentRepository shipmentRepository;
-
     @Autowired
-    IPackingDao packingDao;
+    IContainerRepository containerRepository;
 
     @Autowired
     private CommonUtils commonUtils;
     @Autowired
     private IPackingV3Service packingV3Service;
+    @Autowired
+    private IPackingRepository packingRepository;
 
     @Override
     public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
         if(shipmentDetails1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Console found with given id: " + shipmentDetails.getId());
+            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         mapShipmentV2ToV3(shipment, new HashMap<>());
 
         // Save packing details
-        packingDao.saveAll(shipment.getPackingList());
+        if(!CommonUtils.listIsNullOrEmpty(shipment.getPackingList())) {
+            packingRepository.saveAll(shipment.getPackingList());
+        }
         // save shipment
         shipmentRepository.save(shipment);
         return shipment;
@@ -84,7 +89,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
         // Business Logic for transformation
 
-        // Update Packs based on Auto Update Weight Volume flag;
+        // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
         // Update Shipment Summary
@@ -238,24 +243,30 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
-        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipmentDetails.getContainersList());
-        mapShipmentV3ToV2(shipmentDetails, containerTypeMap);
+        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+        if(shipmentDetails1.isEmpty()) {
+            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
+        }
+        ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
+        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipment.getContainersList());
+        mapShipmentV3ToV2(shipment, containerTypeMap);
 
-        return shipmentDetails;
+        if (!CommonUtils.setIsNullOrEmpty(shipment.getContainersList())) {
+            containerRepository.saveAll(shipment.getContainersList().stream().toList());
+        }
+        shipment.setIsMigratedToV3(false);
+        // save shipment
+        shipmentRepository.save(shipment);
+        return shipment;
     }
 
     @Override
-    public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
-        mapShipmentV3ToV2(shipmentDetails, containerTypeMap);
-
-        return shipmentDetails;
-    }
-
     public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         // Business Logic for transformation
         // need to add shipment details transformation logic
         shipmentDetails.setAutoUpdateWtVol(false);
         shipmentDetails.setContainerAutoWeightVolumeUpdate(false);
+        shipmentDetails.setCargoReadyDate(shipmentDetails.getCargoReadinessDate());
 
         // update container utilisation
         setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
@@ -271,7 +282,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL);
     }
 
-    private void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
+    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
         for (Containers container: containers) {
             container.setIsAttached(true);
             if (containerTypeMap.containsKey(container.getContainerCode())) {
@@ -327,7 +338,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         List<Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.CODE),
                 "In",
-                containerTypeCodes.stream().toList()
+                List.of(containerTypeCodes.stream().toList())
         );
         listRequest.setCriteriaRequests(criteria);
         V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(listRequest);

@@ -5,6 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import java.util.Map;
 
 public interface IMigrationV3Service {
-    Map<String, Integer> migrateV2ToV3(ListCommonRequest consoleRequest, ListCommonRequest shipmentRequest, Long consolId);
-    Map<String, Integer> migrateV3ToV2(ListCommonRequest consoleRequest, ListCommonRequest shipmentRequest);
+    Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId);
+    Map<String, Integer> migrateV3ToV2(Integer tenantId);
 }

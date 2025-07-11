@@ -17,11 +17,11 @@ public class MigrationV3Controller {
 
     @RequestMapping("/v2/v3")
     public Map<String, Integer> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request) {
-        return migrationV3Service.migrateV2ToV3(request.getConsolidation(), request.getShipment(), request.getConsolId());
+        return migrationV3Service.migrateV2ToV3(request.getTenantId(), request.getConsolId());
     }
 
     @RequestMapping("/v3/v2")
     public Map<String, Integer> migrationFromV3ToV2(@RequestBody ConsolidationMigrationRequest request) {
-        return migrationV3Service.migrateV3ToV2(request.getConsolidation(), request.getShipment());
+        return migrationV3Service.migrateV3ToV2(request.getTenantId());
     }
 }
