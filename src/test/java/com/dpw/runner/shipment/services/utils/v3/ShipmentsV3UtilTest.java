@@ -434,7 +434,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
         List<Long> removedConsolIds = new ArrayList<>();
         MutableBoolean isNewConsolAttached = new MutableBoolean(false);
         boolean includeGuid = true;
-        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid));
+        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, includeGuid));
 
     }
 
@@ -455,7 +455,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
             argument.run();
             return mockRunnable;
         });
-        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid));
+        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, includeGuid));
 
     }
 
@@ -470,7 +470,7 @@ class ShipmentsV3UtilTest extends CommonMocks {
         List<Long> removedConsolIds = new ArrayList<>();
         MutableBoolean isNewConsolAttached = new MutableBoolean(false);
         boolean includeGuid = true;
-        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid));
+        assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, includeGuid));
 
     }
 

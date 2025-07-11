@@ -686,7 +686,6 @@ public class Constants {
     public static final String TRANSPORT_DETAIL_INSTRUCTION_TYPE = "type";
     public static final String TRANSPORT_DETAIL_TI_REFERENCE = "tiReferenceNumber";
     public static final String TRANSPORT_DETAIL_SHIPMENT_ID = "shipmentId";
-
     private Constants() {
     }
 

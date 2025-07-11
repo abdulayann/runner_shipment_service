@@ -522,8 +522,8 @@ class CargoServiceTest {
         vwMock.setVolumeWeightUnit("KG");
 
         Mockito.when(consolidationService.calculateVolumeWeight(
-                eq("AIR"), eq("KG"), eq("M3"),
-                eq(new BigDecimal("120.4")), eq(new BigDecimal("2.5"))
+                ("AIR"), ("KG"), ("M3"),
+                (new BigDecimal("120.4")), (new BigDecimal("2.5"))
         )).thenReturn(vwMock);
 
         CargoChargeableResponse response = cargoService.calculateChargeable(request);
@@ -553,8 +553,8 @@ class CargoServiceTest {
         vwMock.setVolumeWeightUnit("KG");
 
         Mockito.when(consolidationService.calculateVolumeWeight(
-                eq("SEA"), eq("KG"), eq("M3"),
-                eq(new BigDecimal("500.0")), eq(new BigDecimal("10.0"))
+                ("SEA"), ("KG"), ("M3"),
+                (new BigDecimal("500.0")), (new BigDecimal("10.0"))
         )).thenReturn(vwMock);
 
         CargoChargeableResponse response = cargoService.calculateChargeable(request);
