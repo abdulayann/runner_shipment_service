@@ -264,6 +264,10 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
         return shipmentRepository.findByShipmentId(shipmentNumber);
     }
+    @Override
+    public List<ShipmentDetails> findShipmentByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId) {
+        return shipmentRepository.findShipmentByIsMigratedToV3(isMigratedToV3, tenantId);
+    }
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
