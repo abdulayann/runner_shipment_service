@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -12,6 +14,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
@@ -24,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -69,6 +73,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IPackingRepository packingRepository;
 
+    @Autowired
+    private IConsolidationRepository consolidationRepository;
+
     @Override
     @Transactional
     public ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails) {
@@ -85,10 +92,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
 
-
-
-
-
         //TODO guid to container -> shipment's container store
         // Attach Container to shipment
         Set<ShipmentDetails> consolShipmentsList = consolidationDetails1.getShipmentsList();
@@ -96,13 +99,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             Set<Containers> originalContainers = shp.getContainersList();
             Set<Containers> updatedContainers = new HashSet<>();
 
-            for (Containers container : originalContainers) {
-                Containers updatedContainer = uuidVsUpdatedContainers.get(container.getGuid());
-                if (updatedContainer != null) {
-                    updatedContainers.add(updatedContainer);
-                } else {
-                    updatedContainers.add(container);
-                }
+            for (Containers originalContainer : originalContainers) {
+                Containers updatedContainer = uuidVsUpdatedContainers.get(originalContainer.getGuid());
+                updatedContainers.add(Objects.requireNonNullElse(updatedContainer, originalContainer));
             }
             shp.setContainersList(updatedContainers);
         }
@@ -143,8 +142,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // TODO: replace existing container with matching Guid of new container , same for Packs
         shipmentRepository.saveAll(consolShipmentsList);
 
-        // ConsoleSave
 
+
+        // ConsoleSave
+        consolidationRepository.save(consolidationDetails1);
 
 
 
@@ -177,7 +178,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Console summary update
         try {
-            consolidationV3Service.getConsoleSyncAchievedData(consolidationDetails.getId());
+            AchievedQuantitiesResponse achievedQuantitiesResponse = consolidationV3Service.calculateAchievedQuantities(consolidationDetails);
+            AchievedQuantities achievedQuantities = jsonHelper.convertValue(achievedQuantitiesResponse, AchievedQuantities.class);
+            consolidationDetails.setAchievedQuantities(achievedQuantities);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
@@ -305,17 +308,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         newContainer.setContainerCount(1L);
         newContainer.setGrossWeight(baseWeight.add(weightRemainder));
         newContainer.setGrossVolume(baseVolume.add(volumeRemainder));
-
-        // TODO: SUBHAM handle FCL / LCL
-        Set<ShipmentDetails> shipmentsList = sourceContainer.getShipmentsList(); // not gonna work
-        newContainer.setShipmentsList(shipmentsList);
-//
-//        for (ShipmentDetails details : shipmentsList) {
-//            details.getContainersList().add(newContainer);
-//            details.getContainersList().add(sourceContainer);
-//        }
-
-
 
         return newContainer;
     }

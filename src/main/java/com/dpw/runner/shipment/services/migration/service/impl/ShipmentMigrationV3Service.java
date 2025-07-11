@@ -1,12 +1,15 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -17,15 +20,12 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,14 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -115,6 +114,19 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     private void redistributeSummaryToPacks(ShipmentDetails shipmentDetails) {
         int packLineItems = shipmentDetails.getPackingList().size();
+
+        if(shipmentDetails.getWeight() == null) {
+            shipmentDetails.setWeight(BigDecimal.ZERO);
+        }
+
+        if(shipmentDetails.getVolume() == null) {
+            shipmentDetails.setVolume(BigDecimal.ZERO);
+        }
+
+        if(shipmentDetails.getNoOfPacks() == null) {
+            shipmentDetails.setNoOfPacks(0);
+        }
+
         int weight = shipmentDetails.getWeight().divide(BigDecimal.valueOf(packLineItems),10, RoundingMode.DOWN).intValue();
         int volume = shipmentDetails.getVolume().divide(BigDecimal.valueOf(packLineItems),10, RoundingMode.DOWN).intValue();
         Integer noOfPacks = shipmentDetails.getNoOfPacks()/packLineItems;
