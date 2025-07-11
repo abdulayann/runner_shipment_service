@@ -235,12 +235,13 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
-        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipmentDetails.getContainersList());
+        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipment.getContainersList());
         mapShipmentV3ToV2(shipment, containerTypeMap);
 
-        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-            containerDao.saveAll(shipmentDetails.getContainersList().stream().toList());
+        if (!CommonUtils.setIsNullOrEmpty(shipment.getContainersList())) {
+            containerDao.saveAll(shipment.getContainersList().stream().toList());
         }
+        shipment.setIsMigratedToV3(false);
         // save shipment
         shipmentRepository.save(shipment);
         return shipment;
@@ -324,7 +325,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         List<Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.CODE),
                 "In",
-                containerTypeCodes.stream().toList()
+                List.of(containerTypeCodes.stream().toList())
         );
         listRequest.setCriteriaRequests(criteria);
         V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(listRequest);
