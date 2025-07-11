@@ -729,6 +729,7 @@ public class PackingV3Service implements IPackingV3Service {
             Long containerId = item.getContainerId();
             if (containerId != null && containerIdContainerNumberMap.containsKey(containerId)) {
                 item.setContainerNumber(containerIdContainerNumberMap.get(containerId).getContainerNumber());
+                item.setContainerCode(containerIdContainerNumberMap.get(containerId).getContainerCode());
             }
             containerId = item.getShipmentContainerAssignedToShipmentCargo();
             if (containerId != null && containerIdContainerNumberMap.containsKey(containerId)) {
