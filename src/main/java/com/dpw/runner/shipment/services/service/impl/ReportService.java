@@ -322,6 +322,8 @@ public class ReportService implements IReportService {
         if (report instanceof CSDReport csdReport) {
             csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
         }
+        // Update Original Printed Date in AWB
+        Awb awb = this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
         //LATER - Need to handle for new flow
         dataRetrived = getDocumentDataForReports(report, reportRequest);
 
@@ -336,9 +338,9 @@ public class ReportService implements IReportService {
             pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
             return byteContent;
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
-            return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report);
+            return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
-            return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report);
+            return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report, awb);
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
             return getBytesForBookingOrderReport(dataRetrived, reportRequest);
         }
@@ -538,8 +540,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void processPushAwbEventForMawb(ReportRequest reportRequest, Boolean isOriginalPrint) {
-        Optional<Awb> awb = Optional.ofNullable(this.setPrintTypeForAwb(reportRequest, isOriginalPrint));
+    private void processPushAwbEventForMawb(ReportRequest reportRequest, Boolean isOriginalPrint, Awb awb) {
 
         if (Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
             awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
@@ -549,7 +550,8 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
 
-            awb.ifPresent(value -> value.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED));
+            if (Objects.nonNull(awb))
+                awb.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED);
         }
     }
 
@@ -594,7 +596,7 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
-    private byte[] getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, ShipmentSettingsDetails tenantSettingsRow, IReport report) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
+    private byte[] getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, ShipmentSettingsDetails tenantSettingsRow, IReport report, Awb awb) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
         updateCustomDataInDataRetrivedForHawb(reportRequest, dataRetrived);
 
         updateDateAndStatusForHawbPrint(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
@@ -641,7 +643,7 @@ public class ReportService implements IReportService {
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
-        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint, awb);
         triggerAutomaticTransfer(report, reportRequest);
 
         // Push document to document master
@@ -732,7 +734,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private byte[] getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report) throws DocumentException, IOException, RunnerException {
+    private byte[] getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report, Awb awb) throws DocumentException, IOException, RunnerException {
         updateCustomDataInDataRetrivedForMawb(reportRequest, dataRetrived);
         List<byte[]> pdfBytes = new ArrayList<>();
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
@@ -760,7 +762,7 @@ public class ReportService implements IReportService {
         }
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
-        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint, awb);
 
         triggerAutomaticTransfer(report, reportRequest);
         pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
