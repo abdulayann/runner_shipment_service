@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -60,6 +61,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IPackingDao packingDao;
 
     @Autowired
+    IContainerDao containerDao;
+
+    @Autowired
     private CommonUtils commonUtils;
     @Autowired
     private IPackingV3Service packingV3Service;
@@ -69,7 +73,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
         if(shipmentDetails1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Console found with given id: " + shipmentDetails.getId());
+            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         mapShipmentV2ToV3(shipment, new HashMap<>());
@@ -85,7 +89,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     public ShipmentDetails mapShipmentV2ToV3(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) throws RunnerException {
         // Business Logic for transformation
 
-        // Update Packs based on Auto Update Weight Volume flag;
+        // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
         // Update Shipment Summary
@@ -226,24 +230,29 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
+        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+        if(shipmentDetails1.isEmpty()) {
+            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
+        }
+        ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipmentDetails.getContainersList());
-        mapShipmentV3ToV2(shipmentDetails, containerTypeMap);
+        mapShipmentV3ToV2(shipment, containerTypeMap);
 
-        return shipmentDetails;
+        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+            containerDao.saveAll(shipmentDetails.getContainersList().stream().toList());
+        }
+        // save shipment
+        shipmentRepository.save(shipment);
+        return shipment;
     }
 
     @Override
-    public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
-        mapShipmentV3ToV2(shipmentDetails, containerTypeMap);
-
-        return shipmentDetails;
-    }
-
     public ShipmentDetails mapShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         // Business Logic for transformation
         // need to add shipment details transformation logic
         shipmentDetails.setAutoUpdateWtVol(false);
         shipmentDetails.setContainerAutoWeightVolumeUpdate(false);
+        shipmentDetails.setCargoReadyDate(shipmentDetails.getCargoReadinessDate());
 
         // update container utilisation
         setContainerUtilisationForShipment(shipmentDetails, containerTypeMap);
