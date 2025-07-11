@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -44,6 +45,8 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NON_DG_MARKING_ERROR_MSG;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -94,12 +97,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        ConsolidationDetails oldConsole = getConsolidationDetails(consolidationDetails);
+        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
+        return consolidationDetails;
+    }
+
+    @Nullable
+    private ConsolidationDetails getConsolidationDetails(ConsolidationDetails consolidationDetails) {
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
             Optional<ConsolidationDetails> oldEntity = findById(id);
-            if (!oldEntity.isPresent()) {
-                log.debug("Container is null for Id {}", consolidationDetails.getId());
+            if (oldEntity.isEmpty()) {
+                log.debug("Consolidation is null for Id {}", consolidationDetails.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             if(consolidationDetails.getShipmentsList() == null) {
@@ -107,8 +117,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
             oldConsole = oldEntity.get();
         }
-        onSave(consolidationDetails, errors, oldConsole, fromV1Sync, creatingFromDgShipment);
-        return consolidationDetails;
+        return oldConsole;
     }
 
     @Override
@@ -397,12 +406,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
             if (isDGShipmentAttached) {
-                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
 
             // Non dg Consolidations can not have dg packs
             if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
-                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
         }
         // Dg consolidation validations
@@ -428,19 +437,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             // Non dg Consolidations can not have dg shipments
             boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
             if (isDGShipmentAttached) {
-                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
 
             // Non dg Consolidations can not have dg packs
             if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
-                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+                errors.add(CONSOLIDATION_NON_DG_MARKING_ERROR_MSG);
             }
         }
         if (!fromV1Sync && Boolean.TRUE.equals(request.getHazardous())) {
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = checkContainsDGShipment(request, creatingFromDgShipment);
             if (!containsDgShipment && !creatingFromDgShipment)
-                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+                errors.add(CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG);
         }
     }
 
@@ -758,15 +767,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails);
-        ConsolidationDetails oldConsole = null;
-        if(consolidationDetails.getId() != null) {
-            long id = consolidationDetails.getId();
-            ConsolidationDetails oldEntity = findById(id).get();
-            if(consolidationDetails.getShipmentsList() == null) {
-                consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
-            }
-            oldConsole = oldEntity;
-        }
+        ConsolidationDetails oldConsole = getConsolidationDetails(consolidationDetails);
         onSaveV3(consolidationDetails, errors, oldConsole, allowDGValueChange);
         return consolidationDetails;
     }
@@ -919,7 +920,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             if(!allowDGValueChange) {
                 boolean containsDgShipment = checkContainsDGShipmentV3(request);
                 if (!containsDgShipment)
-                    errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+                    errors.add(CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG);
             }
         }
     }

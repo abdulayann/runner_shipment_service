@@ -686,6 +686,9 @@ public class Constants {
     public static final String TRANSPORT_DETAIL_INSTRUCTION_TYPE = "type";
     public static final String TRANSPORT_DETAIL_TI_REFERENCE = "tiReferenceNumber";
     public static final String TRANSPORT_DETAIL_SHIPMENT_ID = "shipmentId";
+
+    public static final String CONSOLIDATION_NON_DG_MARKING_ERROR_MSG = "The consolidation contains DG package. Marking the consolidation as non DG is not allowed";
+    public static final String  CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG =  "Consolidation cannot be marked as DG. Please attach at least one DG Shipment.";
     private Constants() {
     }
 
