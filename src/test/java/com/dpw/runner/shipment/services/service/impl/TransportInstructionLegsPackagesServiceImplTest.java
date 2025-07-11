@@ -1089,4 +1089,85 @@ class TransportInstructionLegsPackagesServiceImplTest {
         verify(jsonHelper).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
     }
+
+    @Test
+    void testCreate_shouldThrowException_whenTiLegsNotFound() {
+        Long invalidTiLegId = 999L;
+        TransportInstructionLegsPackagesRequest request = new TransportInstructionLegsPackagesRequest();
+        request.setTiLegId(invalidTiLegId);
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.create(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowException_whenPackageNotFound() {
+        Long invalidPackageId = 888L;
+        Long validTiLegId = 100L;
+        TransportInstructionLegsPackagesRequest request = new TransportInstructionLegsPackagesRequest();
+        request.setId(invalidPackageId);
+        request.setTiLegId(validTiLegId);
+        when(iTiPackageDao.findById(invalidPackageId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.update(request)
+        );
+        assertEquals("Invalid Transport Instruction Legs packages id" + invalidPackageId, ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowException_whenTiLegsNotFound() {
+        Long packageId = 111L;
+        Long invalidTiLegId = 999L;
+        TransportInstructionLegsPackagesRequest request = new TransportInstructionLegsPackagesRequest();
+        request.setId(packageId);
+        request.setTiLegId(invalidTiLegId);
+        TiPackages existingPackage = new TiPackages();
+        when(iTiPackageDao.findById(packageId)).thenReturn(Optional.of(existingPackage));
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.update(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
+    }
+
+    @Test
+    void testRetrieveById_shouldThrowException_whenPackageNotFound() {
+        Long invalidPackageId = 123L;
+        when(iTiPackageDao.findById(invalidPackageId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.retrieveById(invalidPackageId)
+        );
+        assertEquals("Invalid Ti legs package Id: " + invalidPackageId, ex.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowException_whenTiLegIdMismatch() {
+        Long legId1 = 100L, legId2 = 200L;
+        TransportInstructionLegsPackagesRequest req1 = new TransportInstructionLegsPackagesRequest();
+        req1.setTiLegId(legId1);
+        TransportInstructionLegsPackagesRequest req2 = new TransportInstructionLegsPackagesRequest();
+        req2.setTiLegId(legId2);
+        TransportInstructionLegsPackagesListRequest request = new TransportInstructionLegsPackagesListRequest();
+        request.setPackagesRequests(List.of(req1, req2));
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.bulkCreate(request)
+        );
+        assertEquals("All tiLegId values must be the same", ex.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowException_whenTiLegNotFound() {
+        Long invalidTiLegId = 555L;
+        TransportInstructionLegsPackagesRequest req = new TransportInstructionLegsPackagesRequest();
+        req.setTiLegId(invalidTiLegId);
+        TransportInstructionLegsPackagesListRequest request = new TransportInstructionLegsPackagesListRequest();
+        request.setPackagesRequests(List.of(req));
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.bulkCreate(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
+    }
 }
