@@ -241,10 +241,8 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
-        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response){
-            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
-                carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
-            }
+        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+            carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
         }
     }
 
@@ -260,10 +258,8 @@ public class MasterDataUtils{
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
         }
-        else if (response instanceof CustomerBookingV3Response customerBookingV3Response) {
-            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
-                customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
-            }
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+            customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
         }
     }
 

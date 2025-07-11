@@ -2779,18 +2779,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         .isPortalEnable(refNumber.getIsPortalEnable())
                         .build()).toList();
     }
-    private boolean isMPKUnitCase(Packing packing, String tempPackingUnit) {
-        return !isStringNullOrEmpty(packing.getPacksType()) && tempPackingUnit.equals(packing.getPacksType());
-    }
-
-    private <T> void getResponseForPacks(T response, Integer totalPacks, String packingUnit) {
-        if (response instanceof AutoUpdateWtVolResponse autoUpdateWtVolResponse) {
-            autoUpdateWtVolResponse.setNoOfPacks(totalPacks.toString());
-            autoUpdateWtVolResponse.setPacksUnit(packingUnit);
-        } else if (response instanceof MeasurementBasisResponse measurementBasisResponseas) {
-            measurementBasisResponseas.setPackCount(totalPacks);
-        }
-    }
 
     protected AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
@@ -2919,6 +2907,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             return Constants.MPK;
         }
     }
+
     public void updateContainerFromCargo(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) throws RunnerException {
         if (!TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()) ||
                 Objects.isNull(shipmentDetails.getContainerAssignedToShipmentCargo()) ||
@@ -2930,9 +2919,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData,
             boolean fromNte) throws AuthenticationException {
-        if (consoleId == null && consoleGuid == null) {
-            throw new ValidationException("Required parameters missing: consoleId and consoleGuid");
-        }
+        validateRequiredParams(consoleId, consoleGuid);
 
         Optional<ConsolidationDetails> consolidationDetails = getOptionalConsolidationDetails(consoleId, consoleGuid, fromNte);
 
@@ -2979,6 +2966,12 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             TenantContext.removeTenant();
         }
         return response;
+    }
+
+    public static void validateRequiredParams(Long consoleId, String consoleGuid) {
+        if (consoleId == null && consoleGuid == null) {
+            throw new ValidationException("Required parameters missing: consoleId and consoleGuid");
+        }
     }
 
     @Override
@@ -4361,8 +4354,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper request.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setId(oldEntity.get().getId());
-            List<Long> removedConsolIds = new ArrayList<>();
-            MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
             mid = System.currentTimeMillis();
             ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
@@ -4382,7 +4373,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
-            shipmentsV3Util.afterSaveforEt(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, false);
+            shipmentsV3Util.afterSaveforEt(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, false);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             ShipmentDetails finalEntity1 = entity;
             String entityPayload = jsonHelper.convertToJson(finalEntity1);
@@ -4407,8 +4398,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            List<Long> removedConsolIds = new ArrayList<>();
-            MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
             shipmentDetails = getShipment(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
@@ -4420,7 +4409,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 }
             }
 
-            shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, request, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, includeGuid);
+            shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, request, shipmentSettingsDetails, includeGuid);
 
             // audit logs
             createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
