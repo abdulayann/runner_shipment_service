@@ -4557,6 +4557,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     public AchievedQuantitiesResponse getConsoleSyncAchievedData(Long consolidationId) throws RunnerException, JsonMappingException {
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
+        if(Objects.isNull(consolidationDetails.getAchievedQuantities()))
+            consolidationDetails.setAchievedQuantities(new AchievedQuantities());
         AchievedQuantitiesResponse achievedQuantitiesResponse = jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class);
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
         jsonHelper.updateValue(achievedQuantitiesResponse, shipmentWtVolResponse);
@@ -4649,6 +4651,44 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         catch (Exception e) {
             log.error("Error writing audit service log", e);
         }
+    }
+
+    /**
+     * This method is used to get the count of attached self branch shipments | cross branch shipments | pending requests for any given console.
+     * This is used for validation whether we can turn off the Open For Attachment Flag any console.
+     * @param request
+     * @return AllShipmentCountResponse containing attached self/inter branch shipments & pending for attachment shipments.
+     */
+    @Override
+    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request) {
+        Long attachedShipSelfBranch = 0L;
+        Long attachedShipInterBranch = 0L;
+        Long pendingForAttachment = 0L;
+        var consoleDetails = consolidationDetailsDao.findById(request.getId());
+
+        if (consoleDetails.isEmpty()) {
+            log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        var consoleShipMappings = consoleShipmentMappingDao.findByConsolidationIdAll(request.getId());
+
+        for(var mapping: consoleShipMappings) {
+            if(Objects.isNull(mapping.getRequestedType()))
+                attachedShipSelfBranch++;
+            else if(Objects.equals(mapping.getRequestedType(), ShipmentRequestedType.APPROVE))
+                attachedShipInterBranch++;
+            else if(Objects.equals(mapping.getRequestedType(), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED) || Objects.equals(mapping.getRequestedType(), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED))
+                pendingForAttachment++;
+        }
+
+        return ResponseHelper.buildSuccessResponse(
+                AllShipmentCountResponse.builder()
+                        .attachedShipmentCurrentBranchCount(attachedShipSelfBranch)
+                        .attachedShipmentInterBranchCount(attachedShipInterBranch)
+                        .pendingAttachmentCount(pendingForAttachment)
+                        .build()
+        );
     }
 
 }

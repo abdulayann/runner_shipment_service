@@ -190,6 +190,17 @@ public class ConsolidationV3Controller {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ALL_SHIPMENT_COUNT, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.AIB_SHIPMENT_COUNT)
+    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@RequestParam() Long id) {
+        log.info("{} Request received for aibAttachedPendingShipmentCount for consolidation: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        try {
+            return consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(id).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
     
     @ApiResponses(value = {
             @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)

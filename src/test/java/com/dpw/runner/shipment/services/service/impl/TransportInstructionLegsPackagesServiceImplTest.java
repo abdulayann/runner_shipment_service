@@ -285,6 +285,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         verify(iTiLegRepository).findById(Mockito.<Long>any());
     }
 
+
     @Test
     void testCreate4() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
             NoSuchMethodException, InvocationTargetException {
@@ -375,7 +376,12 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .tiLegId(1L)
                 .tunnelRestrictionCode("Tunnel Restriction Code")
                 .packageType("BBL")
-                .dimensions("10x20x30")
+                .length(BigDecimal.TEN)
+                .width(BigDecimal.TEN)
+                .height(BigDecimal.TEN)
+                .widthUnit("FT")
+                .heightUnit("FT")
+                .lengthUnit("FT")
                 .unNumber("42");
         TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
                 .volumeUnit("M3")
@@ -390,6 +396,72 @@ class TransportInstructionLegsPackagesServiceImplTest {
         TransportInstructionLegsPackagesResponse response = transportInstructionLegsPackagesService.create(request);
         assertNotNull(response);
         verify(iTiLegRepository).findById(Mockito.<Long>any());
+    }
+    @Test
+    void testCreateWithValidationException() {
+
+        Optional<TiLegs> ofResult = Optional.of(new TiLegs());
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder dgClassResult = TransportInstructionLegsPackagesRequest
+                .builder()
+                .dangerous(true)
+                .description("The characteristics of someone or something");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder grossWeightUnitResult = dgClassResult
+                .grossWeight(new BigDecimal("2.3"))
+                .grossWeightUnit("KG");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder idResult = grossWeightUnitResult
+                .guid(UUID.randomUUID())
+                .id(1L);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder unNumberResult = idResult
+                .netWeight(new BigDecimal("2.3"))
+                .netWeightUnit("KG")
+                .noOfPackages("20")
+                .substanceName("Substance Name")
+                .tiLegId(1L)
+                .tunnelRestrictionCode("Tunnel Restriction Code")
+                .packageType("BBL")
+                .length(BigDecimal.TEN)
+                .lengthUnit("FT")
+                .unNumber("42");
+        TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
+                .volumeUnit("M3")
+                .build();
+
+       assertThrows(ValidationException.class,() -> transportInstructionLegsPackagesService.create(request));
+    }
+    @Test
+    void testCreateWithValidationException1() {
+
+        Optional<TiLegs> ofResult = Optional.of(new TiLegs());
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder dgClassResult = TransportInstructionLegsPackagesRequest
+                .builder()
+                .dangerous(true)
+                .description("The characteristics of someone or something");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder grossWeightUnitResult = dgClassResult
+                .grossWeight(new BigDecimal("2.3"))
+                .grossWeightUnit("KG");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder idResult = grossWeightUnitResult
+                .guid(UUID.randomUUID())
+                .id(1L);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder unNumberResult = idResult
+                .netWeight(new BigDecimal("2.3"))
+                .netWeightUnit("KG")
+                .noOfPackages("20")
+                .substanceName("Substance Name")
+                .tiLegId(1L)
+                .tunnelRestrictionCode("Tunnel Restriction Code")
+                .packageType("BBL")
+                .length(BigDecimal.TEN)
+                .width(BigDecimal.TEN)
+                .height(BigDecimal.TEN)
+                .lengthUnit("FT")
+                .unNumber("42");
+        TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
+                .volumeUnit("M3")
+                .build();
+
+        assertThrows(ValidationException.class,() -> transportInstructionLegsPackagesService.create(request));
     }
     @Test
     void testCreateBulk() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
@@ -481,7 +553,12 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .tiLegId(1L)
                 .tunnelRestrictionCode("Tunnel Restriction Code")
                 .packageType("BBL")
-                .dimensions("10x20x30")
+                .length(BigDecimal.TEN)
+                .width(BigDecimal.TEN)
+                .height(BigDecimal.TEN)
+                .widthUnit("FT")
+                .heightUnit("FT")
+                .lengthUnit("FT")
                 .unNumber("42");
         TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
                 .volumeUnit("M3")

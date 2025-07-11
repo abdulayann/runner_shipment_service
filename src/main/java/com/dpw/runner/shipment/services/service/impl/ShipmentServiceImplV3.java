@@ -1,31 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CLIENT_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNEE_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNOR_PARTY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
@@ -56,43 +31,18 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationCount;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.*;
+import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.AdditionalDetailV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
-import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -120,10 +70,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.*;
-import com.dpw.runner.shipment.services.utils.v3.EventsV3Util;
-import com.dpw.runner.shipment.services.utils.v3.NpmContractV3Util;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
-import com.dpw.runner.shipment.services.utils.v3.ShipmentsV3Util;
+import com.dpw.runner.shipment.services.utils.v3.*;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -131,27 +78,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -180,15 +106,28 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings({"ALL", "java:S1172"})
 @Service
@@ -261,6 +200,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private KafkaProducer kafkaProducer;
     @Autowired
     private NpmContractV3Util npmContractV3Util;
+    @Autowired
+    private PackingV3Util packingV3Util;
 
     private static final Set<String> DIRECTION_EXM_CTS = new HashSet<>(Arrays.asList(DIRECTION_EXP, DIRECTION_CTS));
 
@@ -2315,7 +2256,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
                 shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
         ));
-        shipmentRequest.setContainerAssignedToShipmentCargo(containerAssignedToShipmentCargo);
         shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
         shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
 
@@ -2360,15 +2300,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
+            Long shipmentId = shipmentDetails.getId();
+            if(consolidationId != null) {
+                consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
+            }
+            processPacksAndContainers(customerBookingV3Request, containerList, consolidationId, shipmentDetails);
+            shipmentDao.save(shipmentDetails, false);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if (shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails);
             generateAfterSaveEvents(shipmentDetails, shipmentSettingsDetails);
-            Long shipmentId = shipmentDetails.getId();
-            if(consolidationId != null) {
-                consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
-            }
             List<Packing> updatedPackings = getAndSetPackings(customerBookingV3Request, shipmentId, shipmentDetails);
 
             List<ReferenceNumbersRequest> referenceNumbersRequest = request.getReferenceNumbersList();
@@ -2402,8 +2344,89 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return shipmentDetailsResponse;
     }
 
+    private void processPacksAndContainers(CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId, ShipmentDetails shipmentDetails) throws RunnerException {
+
+        if(customerBookingV3Request.getPackages() != 0L && (customerBookingV3Request.getPackages() < containerList.size())) {
+            throw new ValidationException("Booking packages should not be lesser than the container count. Please enter right amount.");
+        }
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        String packUnit = !isStringNullOrEmpty(v1TenantSettingsResponse.getDefaultPackUnit()) ? v1TenantSettingsResponse.getDefaultPackUnit() : PackingConstants.PKG;
+        List<PackingV3Request> packingV3RequestList = containerList.stream()
+                .map(container -> {
+                    PackingV3Request packingV3Request = new PackingV3Request();
+                    packingV3Request.setPacks(container.getContainerCount().toString());
+                    packingV3Request.setPacksType(packUnit);
+                    packingV3Request.setCommodity(container.getCommodityGroup());
+                    packingV3Request.setContainerId(container.getId());
+                    packingV3Request.setBookingId(customerBookingV3Request.getId());
+                    return packingV3Request;
+                })
+                .toList();
+
+        distributeWeightVolumePackages(packingV3RequestList, customerBookingV3Request);
+        assignShipmentIdToPacks(packingV3RequestList, consolidationId);
+        BulkPackingResponse bulkPackingResponse = packingV3Service.updateBulk(packingV3RequestList, BOOKING);
+        shipmentDetails.setPackingList(jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class));
+
+        List<Containers> containersArrayList = jsonHelper.convertValueToList(containerList, Containers.class);
+        for(Containers container: containersArrayList) {
+            containerV3Util.resetContainerDataForRecalculation(container);
+        }
+        List<Packing> packingArrayList = jsonHelper.convertValueToList(bulkPackingResponse.getPackingResponseList(), Packing.class);
+        for(int i = 0; i < containersArrayList.size(); i++) {
+            containerV3Service.addPackageDataToContainer(containersArrayList.get(i), packingArrayList.get(i));
+        }
+        containerDao.saveAll(containersArrayList);
+        shipmentDetails.setContainersList(new HashSet<>(containersArrayList));
+    }
+
+    private void assignShipmentIdToPacks(List<PackingV3Request> packingList, Long consolidationId) {
+        Long shipmentId = packingV3Util.getShipmentId(consolidationId);
+        for(PackingV3Request packingV3Request: packingList) {
+            packingV3Request.setShipmentId(shipmentId);
+        }
+    }
+
+    private void distributeWeightVolumePackages(List<PackingV3Request> packingList, CustomerBookingV3Request customerBookingV3Request) {
+        BigDecimal grossWeight = customerBookingV3Request.getGrossWeight();
+        BigDecimal volume = customerBookingV3Request.getVolume();
+        Long totalPackages = customerBookingV3Request.getPackages();
+
+        int totalItems = packingList.size();
+        if (totalItems == 0 || grossWeight == null || volume == null || totalPackages == null) return;
+
+        // Convert gross weight and volume to long for whole number division
+        Long totalWeightLong = grossWeight.longValue();
+        Long totalVolumeLong = volume.longValue();
+
+        Long weightPerPack = totalWeightLong / totalItems;
+        Long weightRemainder = totalWeightLong % totalItems;
+
+        Long volumePerPack = totalVolumeLong / totalItems;
+        Long volumeRemainder = totalVolumeLong % totalItems;
+
+        Long packagesPerPack = totalPackages / totalItems;
+        Long packagesRemainder = totalPackages % totalItems;
+
+        for (int i = 0; i < totalItems; i++) {
+            PackingV3Request pack = packingList.get(i);
+            boolean isLast = (i == totalItems - 1);
+
+            Long finalWeight = weightPerPack + (isLast ? weightRemainder : 0);
+            Long finalVolume = volumePerPack + (isLast ? volumeRemainder : 0);
+            Long finalPackages = packagesPerPack + (isLast ? packagesRemainder : 0);
+
+            pack.setWeight(BigDecimal.valueOf(finalWeight));
+            pack.setWeightUnit(customerBookingV3Request.getGrossWeightUnit());
+            pack.setVolume(BigDecimal.valueOf(finalVolume));
+            pack.setVolumeUnit(customerBookingV3Request.getVolumeUnit());
+            pack.setPacks(String.valueOf(finalPackages));
+        }
+    }
+
     private void generateAfterSaveEvents(ShipmentDetails shipmentDetails, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
         if(ObjectUtils.isNotEmpty(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getId())){
+
             createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
         }
         List<Events> eventsList = new ArrayList<>();
@@ -3095,7 +3118,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         List<Map<String, Object>> mapList;
         try {
-            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENT, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
+            mapList = mdmServiceAdapter.getTaskList(request.getShipmentGuid(), SHIPMENTS_WITH_SQ_BRACKETS, PENDING_ACTION_TASK, DG_OCEAN_APPROVAL);
         }
         catch (Exception ex) {
             log.error("Failed to fetch pending tasks from MDM with RequestId - {} : {}: ", LoggerHelper.getRequestIdFromMDC(), ex);
@@ -3114,19 +3137,25 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             taskGuids.add(map.get("uuid").toString());
         }
         request.setTaskGuids(taskGuids);
-        request.setUserEmail(mapList.get(0).get("userEmail").toString());
+
+        if(mapList.get(0).containsKey("userEmail")){
+            request.setUserEmail(mapList.get(0).get("userEmail").toString());
+        }
+
     }
 
     private void closeOceanDgTask(OceanDGRequestV3 request){
         MdmTaskApproveOrRejectRequest taskUpdateRequest = MdmTaskApproveOrRejectRequest.builder()
-            .status(request.getStatus().getName())
+            .status(request.getStatus().getName().toUpperCase())
             .approvedOrRejectedBy(UserContext.getUser().getUsername())
             .build();
 
         if(TaskStatus.APPROVED.equals(request.getStatus())){
-            taskUpdateRequest.setApprovalComments(request.getRemarks());
+            taskUpdateRequest.setApprovalComments(request.getStatus().getName().toUpperCase());
+        }else if(TaskStatus.REJECTED.equals(request.getStatus())){
+            taskUpdateRequest.setRejectedComments(request.getStatus().getName().toUpperCase());
         }else{
-            taskUpdateRequest.setRejectedComments(request.getRemarks());
+            throw new ValidationException("Invalid approval status in request : " + request.getStatus().getName());
         }
 
         try {
