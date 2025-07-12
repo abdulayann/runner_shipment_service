@@ -2231,15 +2231,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             booking.setTeuCount(null);
         }
         if (!packings.isEmpty()) {
-            populatePackingDetails(packings, booking);
+            calculateCargoDetails(packings, booking);
         }
         customerBookingDao.save(booking);
-    }
-
-    private void populatePackingDetails(List<Packing> packings, CustomerBooking booking) throws RunnerException {
-        calculateCargoDetails(packings, booking);
-        booking.setContainers(null);
-        booking.setTeuCount(null);
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {
