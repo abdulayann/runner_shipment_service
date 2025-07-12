@@ -66,17 +66,17 @@ public class CargoService implements ICargoService {
         List<Packing> packings = fetchPackings(entityType, entityId);
         response.setTransportMode(fetchTransportType(entityType, entityId));
         response.setShipmentType(fetchShipmentType(entityType, entityId));
+        response.setContainers(null);
+        response.setTeuCount(null);
         if (!containers.isEmpty()) {
             Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
             response.setContainers(getTotalContainerCount(containers));
             response.setTeuCount(getTotalTeu(containers, codeTeuMap));
-        } else {
-            response.setContainers(null);
-            response.setTeuCount(null);
         }
         if (!packings.isEmpty()) {
             calculateCargoDetails(packings, response);
         }
+        calculateVW(response);
         return response;
     }
 
@@ -121,7 +121,6 @@ public class CargoService implements ICargoService {
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         response.setPacksUnit(getPackUnit(distinctPackTypes));
-        calculateVW(response);
     }
 
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
@@ -151,7 +150,6 @@ public class CargoService implements ICargoService {
                 response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
                 vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
             }
-
             response.setVolumetricWeight(vwOb.getVolumeWeight());
             response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         }
