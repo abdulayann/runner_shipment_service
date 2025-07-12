@@ -305,7 +305,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
-        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()), containerTeuMap);
+        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         updateCargoInformation(customerBooking, containerTeuMap);
         try {
             //Check 2
@@ -1159,7 +1159,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setSource(BookingSource.Platform);
         try {
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
-            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity), containerTeuMap);
+            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
             updateCargoInformation(customerBooking, containerTeuMap);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -1793,7 +1793,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, String oldEntity, Map<String, BigDecimal> containerTeuMap) throws RunnerException {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, String oldEntity) throws RunnerException {
         populateTotalRevenueDetails(customerBooking, request);
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
