@@ -16,7 +16,7 @@ public interface ITransportInstructionLegsTruckDriverService {
 
     TransportInstructionLegsTruckDriverResponse update(TransportInstructionLegsTruckDriverRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 
-    TransportInstructionLegsTruckDriverListResponse list(ListCommonRequest request);
+    TransportInstructionLegsTruckDriverListResponse list(ListCommonRequest request, boolean getMasterData);
 
     TransportInstructionLegsTruckDriverResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 

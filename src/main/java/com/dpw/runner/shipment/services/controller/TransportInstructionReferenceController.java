@@ -48,6 +48,7 @@ public class TransportInstructionReferenceController {
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid TransportInstructionLegsReferenceRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsReferenceService.create(request));
     }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -65,8 +66,8 @@ public class TransportInstructionReferenceController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_REFERENCE_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        TransportInstructionLegsReferenceListResponse legsListResponse = transportInstructionLegsReferenceService.list(listCommonRequest);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        TransportInstructionLegsReferenceListResponse legsListResponse = transportInstructionLegsReferenceService.list(listCommonRequest, getMasterData);
         return ResponseHelper.buildSuccessResponse(legsListResponse, legsListResponse.getTotalPages(), legsListResponse.getTotalCount());
     }
 
