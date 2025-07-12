@@ -230,8 +230,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }
         try {
-            createEntities(customerBooking, customerBookingV3Request);
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            createEntities(customerBooking, customerBookingV3Request);
             updateCargoInformation(customerBooking, containerTeuMap);
             /**
              * Platform service integration
@@ -304,8 +304,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(checkNPMContractUtilization(customerBooking)) {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
-        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()), containerTeuMap);
         updateCargoInformation(customerBooking, containerTeuMap);
         try {
             //Check 2
@@ -1152,12 +1152,15 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private CustomerBookingV3Response updatePlatformBooking(CustomerBookingV3Request request, CustomerBooking oldEntity) throws RunnerException {
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         if(request.getSource()==null)
             customerBooking.setSource(BookingSource.Platform);
         try {
-            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
+            Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity), containerTeuMap);
+            updateCargoInformation(customerBooking, containerTeuMap);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -1169,6 +1172,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsConsigneeAddressFreeText(customerBooking.getIsConsigneeFreeText() != null && customerBooking.getIsConsigneeFreeText());
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
@@ -1178,7 +1182,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setSource(BookingSource.Platform);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
+            Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
             createEntities(customerBooking, request);
+            updateCargoInformation(customerBooking, containerTeuMap);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -1787,7 +1793,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, String oldEntity) throws RunnerException {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, String oldEntity, Map<String, BigDecimal> containerTeuMap) throws RunnerException {
         populateTotalRevenueDetails(customerBooking, request);
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
@@ -2217,15 +2223,38 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             containers = containerDao.findByBookingIdIn(List.of(booking.getId()));
             packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
         }
-        if(!packings.isEmpty()) {
-            calculateCargoDetails(packings, booking);
-        }
-        if(!containers.isEmpty()) {
+        if (!containers.isEmpty()) {
             booking.setContainers(getTotalContainerCount(containers));
             booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
+        } else if (!packings.isEmpty()) {
+            populatePackingDetails(packings, booking);
+        } else {
+            resetAllCargoFields(booking);
         }
-        log.info("CustomerBooking before save is {}", jsonHelper.convertToJson(booking));
         customerBookingDao.save(booking);
+    }
+
+    private void populatePackingDetails(List<Packing> packings, CustomerBooking booking) throws RunnerException {
+        calculateCargoDetails(packings, booking);
+        booking.setContainers(null);
+        booking.setTeuCount(null);
+    }
+
+    private void resetAllCargoFields(CustomerBooking booking) {
+        booking.setGrossWeight(null);
+        booking.setGrossWeightUnit(null);
+        booking.setVolume(null);
+        booking.setVolumeUnit(null);
+        booking.setChargeable(null);
+        booking.setChargeableUnit(null);
+        booking.setWeightVolume(null);
+        booking.setWeightVolumeUnit(null);
+        booking.setPackingList(Collections.emptyList());
+        booking.setPackages(null);
+        booking.setPackageType(null);
+        booking.setContainersList(Collections.emptyList());
+        booking.setContainers(null);
+        booking.setTeuCount(null);
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {

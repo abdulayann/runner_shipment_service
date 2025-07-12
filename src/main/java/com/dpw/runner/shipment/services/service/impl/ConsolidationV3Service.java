@@ -2628,11 +2628,20 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 updateContainerMap(shipmentDetails, containersMap);
             }
         }
-
-        for(Containers containers: containersMap.values()) {
+        Map<String, Object> cacheMap = new HashMap<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Set<String> containerTypes = new HashSet<>();
+        processCacheAndContainerResponseList(consolidationDetails, containerTypes, fieldNameKeyMap, cacheMap);
+        for (Containers containers : containersMap.values()) {
             noOfCont++;
-            if(Objects.nonNull(containers.getTeu()))
-                teus = teus.add(containers.getTeu());
+            Object cache = getEntityTransferObjectCache(containers, cacheMap);
+            EntityTransferContainerType entityTransferContainerType = (EntityTransferContainerType) cache;
+            if (containers.getContainerCount() != null && isEntityTransferContainerTypeTeu(entityTransferContainerType)) {
+                teus = teus.add(
+                        BigDecimal.valueOf(Optional.ofNullable(containers.getContainerCount()).orElse(0L))
+                                .multiply(BigDecimal.valueOf(entityTransferContainerType.getTeu()))
+                );
+            }
         }
 
         String transportMode = consolidationDetails.getTransportMode();
