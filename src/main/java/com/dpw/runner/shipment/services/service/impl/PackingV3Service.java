@@ -1281,7 +1281,7 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    private static void setPacksUnits(CargoDetailsResponse response, Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet) {
+    public void setPacksUnits(CargoDetailsResponse response, Set<String> uniquePacksUnits, Set<String> dgPacksUnitSet) {
         if (uniquePacksUnits.size() == 1) {
             response.setPacksUnit(uniquePacksUnits.iterator().next());
         }

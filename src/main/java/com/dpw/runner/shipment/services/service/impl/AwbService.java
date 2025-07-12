@@ -1147,7 +1147,7 @@ public class AwbService implements IAwbService {
         awbShipmentInfo.setIssuingAgentCountry(country);
     }
 
-    private void constructNotifyPartyAddress(AwbNotifyPartyInfo notifyPartyInfo, Map<String, Object> address, Map<String, String> alpha2ToCountryMap, AddressDataV1 addressData) {
+    public void constructNotifyPartyAddress(AwbNotifyPartyInfo notifyPartyInfo, Map<String, Object> address, Map<String, String> alpha2ToCountryMap, AddressDataV1 addressData) {
         if (address != null && addressData != null) {
             notifyPartyInfo.setAddress(StringUtility.convertToString(addressData.getAddress1()).toUpperCase());
             notifyPartyInfo.setAddress2(StringUtility.convertToString(addressData.getAddress2()).toUpperCase());
@@ -2789,7 +2789,7 @@ public class AwbService implements IAwbService {
 
     }
 
-    private void upadteConsolidationAddressMap(AwbNotifyPartyInfo awbParty, Map<UUID, Parties> consolidationAddressMap, Map<String, String> alpha2DigitToCountry) {
+    public void upadteConsolidationAddressMap(AwbNotifyPartyInfo awbParty, Map<UUID, Parties> consolidationAddressMap, Map<String, String> alpha2DigitToCountry) {
         Parties party = consolidationAddressMap.get(awbParty.getGuid());
         ArrayList<String> notifyPartyIdList = new ArrayList<>();
         if(party.getAddressId() != null)
@@ -2847,7 +2847,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void validateAndConstructNotifyPartyAddress(Map<String, String> alpha2DigitToCountry, Parties party, AwbNotifyPartyInfo notifyPartyInfo, Map<Long, AddressDataV1> addressDataV1Map) {
+    public void validateAndConstructNotifyPartyAddress(Map<String, String> alpha2DigitToCountry, Parties party, AwbNotifyPartyInfo notifyPartyInfo, Map<Long, AddressDataV1> addressDataV1Map) {
         if(party != null && party.getAddressId() != null) {
             String partyAddressId = party.getAddressId();
             constructNotifyPartyAddress(notifyPartyInfo, party.getAddressData(), alpha2DigitToCountry, addressDataV1Map.get(Long.valueOf(partyAddressId)));
@@ -3724,7 +3724,7 @@ public class AwbService implements IAwbService {
     /**
      * Fetches address data for the given address IDs.
      */
-    private Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
+    public Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
         if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
             CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
             V1DataResponse addressResponse = v1Service.addressList(addressRequest);

@@ -4541,7 +4541,7 @@ class AwbServiceTest extends CommonMocks {
         shipperAddressData.setContactPhone("1234567890");
         shipperAddressData.setTaxRegNumber("TAX123");
         Map<String, Object> addressMap = new HashMap<>();
-        addressMap.put(PartiesConstants.COUNTRY, "US"); // required for constructShipperCountry()
+        addressMap.put(PartiesConstants.COUNTRY, "US");
         Map<String, String> countryMap = new HashMap<>();
         countryMap.put("US", "United States");
         awbService.constructShipperAddress(awbShipmentInfo, addressMap, countryMap, shipperAddressData);
@@ -4566,12 +4566,34 @@ class AwbServiceTest extends CommonMocks {
         Map<Long, AddressDataV1> addressMap = new HashMap<>();
         Map<String, String> countryMap = new HashMap<>();
         Parties party = new Parties();
-        AwbNotifyPartyInfo deleteParty = new AwbNotifyPartyInfo(); // placeholder
+        AwbNotifyPartyInfo deleteParty = new AwbNotifyPartyInfo();
         AwbService serviceSpy = Mockito.spy(new AwbService());
         Mockito.doReturn(partyInfo).when(serviceSpy)
                 .getDeleteParty(any(), any(), any(), any(), any());
         boolean result = serviceSpy.isCreateNotifyParty(awb, addressMap, true, deleteParty, party, countryMap);
         assertFalse(result);
         assertTrue(awb.getAwbNotifyPartyInfo().isEmpty());
+    }
+
+    @Test
+    void testValidateAndConstructNotifyPartyAddress_shouldInvokeConstructNotifyPartyAddress_whenPartyAndAddressIdAreNotNull() {
+        Map<String, String> alpha2DigitToCountry = Map.of("US", "United States");
+        AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
+        Parties party = new Parties();
+        party.setAddressId("123");
+        party.setAddressData(Map.of("line1", "123 Main St"));
+        AddressDataV1 addressData = new AddressDataV1();
+        Map<Long, AddressDataV1> addressDataV1Map = Map.of(123L, addressData);
+        AwbService spyService = Mockito.spy(new AwbService());
+        doNothing().when(spyService).constructNotifyPartyAddress(
+                any(), any(), anyMap(), any()
+        );
+        spyService.validateAndConstructNotifyPartyAddress(alpha2DigitToCountry, party, notifyPartyInfo, addressDataV1Map);
+        verify(spyService, times(1)).constructNotifyPartyAddress(
+                notifyPartyInfo,
+                party.getAddressData(),
+                alpha2DigitToCountry,
+                addressData
+        );
     }
 }

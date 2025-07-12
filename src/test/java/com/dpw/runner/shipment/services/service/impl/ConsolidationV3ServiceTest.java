@@ -5357,7 +5357,7 @@ if (unitConversionUtilityMockedStatic != null) {
     container1.setTeu(BigDecimal.valueOf(1.0));
     container1.setHazardous(true);
     Containers container2 = new Containers();
-    container2.setTeu(null);  // test null TEU
+    container2.setTeu(null);
     container2.setHazardous(false);
     Containers container3 = new Containers();
     container3.setTeu(BigDecimal.valueOf(2.5));
@@ -5370,9 +5370,9 @@ if (unitConversionUtilityMockedStatic != null) {
     Method getNoOfCont = result.getClass().getMethod("consoleNoOfCont");
     Method getTeus = result.getClass().getMethod("consoleTeus");
     Method getDgContCount = result.getClass().getMethod("consoleDgContCount");
-    assertEquals(3, getNoOfCont.invoke(result)); // 3 containers total
-    assertEquals(new BigDecimal("3.5"), getTeus.invoke(result)); // 1.0 + 2.5
-    assertEquals(2, getDgContCount.invoke(result)); // 2 hazardous containers
+    assertEquals(3, getNoOfCont.invoke(result));
+    assertEquals(new BigDecimal("3.5"), getTeus.invoke(result));
+    assertEquals(2, getDgContCount.invoke(result));
   }
 
   @Test
