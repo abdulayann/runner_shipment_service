@@ -3724,7 +3724,7 @@ public class AwbService implements IAwbService {
     /**
      * Fetches address data for the given address IDs.
      */
-    public Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
+    private Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
         if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
             CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
             V1DataResponse addressResponse = v1Service.addressList(addressRequest);
