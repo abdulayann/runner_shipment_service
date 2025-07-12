@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegs
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsTruckDriverResponse;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiTruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -20,11 +22,14 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsTruckDriverService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -32,8 +37,12 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -50,6 +59,13 @@ public class TransportInstructionLegsTruckDriverServiceImpl implements ITranspor
     private IAuditLogService auditLogService;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+    @Autowired
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
     @Override
     public TransportInstructionLegsTruckDriverResponse create(TransportInstructionLegsTruckDriverRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -117,7 +133,7 @@ public class TransportInstructionLegsTruckDriverServiceImpl implements ITranspor
     }
 
     @Override
-    public TransportInstructionLegsTruckDriverListResponse list(ListCommonRequest request) {
+    public TransportInstructionLegsTruckDriverListResponse list(ListCommonRequest request, boolean getMasterData) {
         // construct specifications for filter request
         Pair<Specification<TiTruckDriverDetails>, Pageable> tuple = fetchData(request, TiTruckDriverDetails.class);
         Page<TiTruckDriverDetails> tiLegsTruckDriverPage = tiTruckDriverDetailDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -125,6 +141,10 @@ public class TransportInstructionLegsTruckDriverServiceImpl implements ITranspor
         TransportInstructionLegsTruckDriverListResponse transportInstructionLegsTruckDriverListResponse = new TransportInstructionLegsTruckDriverListResponse();
         if (tiLegsTruckDriverPage != null) {
             List<TransportInstructionLegsTruckDriverResponse> responseList = convertEntityListToDtoList(tiLegsTruckDriverPage.getContent());
+            if (getMasterData) {
+                Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+                transportInstructionLegsTruckDriverListResponse.setMasterData(masterDataResponse);
+            }
             transportInstructionLegsTruckDriverListResponse.setTiLegsTruckDriverResponses(responseList);
             transportInstructionLegsTruckDriverListResponse.setTotalPages(tiLegsTruckDriverPage.getTotalPages());
             transportInstructionLegsTruckDriverListResponse.setTotalCount(tiLegsTruckDriverPage.getTotalElements());
@@ -207,4 +227,18 @@ public class TransportInstructionLegsTruckDriverServiceImpl implements ITranspor
         }
     }
 
+    private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsTruckDriverResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var dropModeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> transportInstructionValidationUtil.addAllTiTruckDriverMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(dropModeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.TI_LEGS_TRUCK_DRIVER_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_MESSAGE, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_TI_LEGS_TRUCK_DRIVER_LIST, ex.getMessage());
+            }
+        }
+        return masterDataResponse;
+    }
 }

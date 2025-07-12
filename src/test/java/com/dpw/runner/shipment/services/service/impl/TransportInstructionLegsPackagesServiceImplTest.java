@@ -19,18 +19,20 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.lang.reflect.InvocationTargetException;
@@ -41,21 +43,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {TransportInstructionLegsPackagesServiceImpl.class})
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
-@EnableConfigurationProperties
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@Execution(CONCURRENT)
 class TransportInstructionLegsPackagesServiceImplTest {
     @MockBean
     private DependentServiceHelper dependentServiceHelper;
@@ -76,9 +80,19 @@ class TransportInstructionLegsPackagesServiceImplTest {
     @MockBean
     private UserContext userContext;
 
-    @Autowired
+    @InjectMocks
     private TransportInstructionLegsPackagesServiceImpl transportInstructionLegsPackagesService;
+    @MockBean
+    private MasterDataUtils masterDataUtils;
+    @MockBean
+    ExecutorService executorServiceMasterData;
+    @MockBean
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
+    @BeforeEach
+    void setup() {
+        transportInstructionLegsPackagesService.executorServiceMasterData = Executors.newFixedThreadPool(2);
+    }
 
     @Test
     void testCreate() {
@@ -397,6 +411,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         assertNotNull(response);
         verify(iTiLegRepository).findById(Mockito.<Long>any());
     }
+
     @Test
     void testCreateWithValidationException() {
 
@@ -427,8 +442,9 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .volumeUnit("M3")
                 .build();
 
-       assertThrows(ValidationException.class,() -> transportInstructionLegsPackagesService.create(request));
+        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.create(request));
     }
+
     @Test
     void testCreateWithValidationException1() {
 
@@ -461,8 +477,9 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .volumeUnit("M3")
                 .build();
 
-        assertThrows(ValidationException.class,() -> transportInstructionLegsPackagesService.create(request));
+        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.create(request));
     }
+
     @Test
     void testCreateBulk() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
             NoSuchMethodException, InvocationTargetException {
@@ -576,6 +593,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         assertNotNull(response);
         verify(iTiLegRepository).findById(Mockito.<Long>any());
     }
+
     @Test
     void testUpdate() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
             NoSuchMethodException, InvocationTargetException {
@@ -693,7 +711,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         when(iTiPackageDao.findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any()))
                 .thenReturn(new PageImpl<>(content));
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -761,7 +779,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         when(iTiPackageDao.findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
@@ -858,7 +876,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         when(iTiPackageDao.findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         verify(jsonHelper, atLeast(1)).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
@@ -881,8 +899,14 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .populateRAKC(true);
         SortRequest sortRequest = SortRequest.builder().fieldName("Field Name").order("Order").build();
         ListCommonRequest request = populateRAKCResult.sortRequest(sortRequest).build();
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(request);
+                .list(request, true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -932,7 +956,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .populateRAKC(true);
         SortRequest sortRequest = SortRequest.builder().fieldName("Field Name").order("Order").build();
         ListCommonRequest request = populateRAKCResult.sortRequest(sortRequest).build();
-        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.list(request));
+        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.list(request, true));
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());

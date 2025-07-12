@@ -12,6 +12,8 @@ import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegs
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -21,11 +23,14 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,10 +40,14 @@ import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -55,6 +64,13 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     private IAuditLogService auditLogService;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+    @Autowired
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
     @Override
     @Transactional
@@ -131,7 +147,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     }
 
     @Override
-    public TransportInstructionLegsListResponse list(ListCommonRequest request) {
+    public TransportInstructionLegsListResponse list(ListCommonRequest request, boolean getMasterData) {
         // construct specifications for filter request
         Pair<Specification<TiLegs>, Pageable> tuple = fetchData(request, TiLegs.class);
         Page<TiLegs> tiLegsPage = tiLegsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -139,6 +155,10 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         TransportInstructionLegsListResponse transportInstructionLegsListResponse = new TransportInstructionLegsListResponse();
         if (tiLegsPage != null) {
             List<TransportInstructionLegsResponse> responseList = convertEntityListToDtoList(tiLegsPage.getContent());
+            if (getMasterData) {
+                Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+                transportInstructionLegsListResponse.setMasterData(masterDataResponse);
+            }
             transportInstructionLegsListResponse.setTiLegsResponses(responseList);
             transportInstructionLegsListResponse.setTotalPages(tiLegsPage.getTotalPages());
             transportInstructionLegsListResponse.setTotalCount(tiLegsPage.getTotalElements());
@@ -273,5 +293,20 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
                 throw new ValidationException("Actual Delivery cannot be earlier than Actual Pickup.");
             }
         }
+    }
+
+    private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var dropModeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> transportInstructionValidationUtil.addAllTiLegsMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(dropModeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.TI_LEGS_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_MESSAGE, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_TI_LEGS_LIST, ex.getMessage());
+            }
+        }
+        return masterDataResponse;
     }
 }

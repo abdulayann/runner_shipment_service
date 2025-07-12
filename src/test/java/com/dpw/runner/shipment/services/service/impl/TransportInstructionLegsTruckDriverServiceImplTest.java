@@ -18,18 +18,21 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsContainersService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.lang.reflect.InvocationTargetException;
@@ -38,20 +41,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {TransportInstructionLegsTruckDriverServiceImpl.class})
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
-@EnableConfigurationProperties
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@Execution(CONCURRENT)
 class TransportInstructionLegsTruckDriverServiceImplTest {
     @MockBean
     private DependentServiceHelper dependentServiceHelper;
@@ -71,8 +76,19 @@ class TransportInstructionLegsTruckDriverServiceImplTest {
     @MockBean
     private UserContext userContext;
 
-    @Autowired
+    @InjectMocks
     private TransportInstructionLegsTruckDriverServiceImpl transportInstructionLegsTruckDriverService;
+    @MockBean
+    private MasterDataUtils masterDataUtils;
+    @MockBean
+    ExecutorService executorServiceMasterData;
+    @MockBean
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
+
+    @BeforeEach
+    void setup() {
+        transportInstructionLegsTruckDriverService.executorServiceMasterData = Executors.newFixedThreadPool(2);
+    }
 
     @Test
     void testCreate() {
@@ -358,7 +374,7 @@ class TransportInstructionLegsTruckDriverServiceImplTest {
         when(iTiTruckDriverDetailDao.findAll(Mockito.<Specification<TiTruckDriverDetails>>any(), Mockito.<Pageable>any()))
                 .thenReturn(new PageImpl<>(content));
         TransportInstructionLegsTruckDriverListResponse actualListResult = transportInstructionLegsTruckDriverService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiTruckDriverDetailDao).findAll(Mockito.<Specification<TiTruckDriverDetails>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -367,7 +383,7 @@ class TransportInstructionLegsTruckDriverServiceImplTest {
 
     /**
      * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#list(ListCommonRequest)}
+     * {@link ITransportInstructionLegsContainersService#list(ListCommonRequest, boolean)}
      */
     @Test
     void testList2() {
@@ -393,8 +409,14 @@ class TransportInstructionLegsTruckDriverServiceImplTest {
         PageImpl<TiTruckDriverDetails> pageImpl = new PageImpl<>(content);
         when(iTiTruckDriverDetailDao.findAll(Mockito.<Specification<TiTruckDriverDetails>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         TransportInstructionLegsTruckDriverListResponse actualListResult = transportInstructionLegsTruckDriverService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiTruckDriverDetailDao).findAll(Mockito.<Specification<TiTruckDriverDetails>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiTruckDriverDetails>any(),
                 Mockito.<Class<TransportInstructionLegsTruckDriverResponse>>any());

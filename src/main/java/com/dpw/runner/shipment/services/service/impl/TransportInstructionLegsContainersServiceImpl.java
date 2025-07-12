@@ -13,6 +13,8 @@ import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegs
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsContainersResponse;
 import com.dpw.runner.shipment.services.entity.TiContainers;
 import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -23,11 +25,14 @@ import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsContainersService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,9 +41,13 @@ import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -57,6 +66,13 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
     private DependentServiceHelper dependentServiceHelper;
     @Autowired
     private IContainerV3Service containerV3Service;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+    @Autowired
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
     @Override
     public TransportInstructionLegsContainersResponse create(TransportInstructionLegsContainersRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -138,7 +154,7 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
     }
 
     @Override
-    public TransportInstructionLegsContainersListResponse list(ListCommonRequest request) {
+    public TransportInstructionLegsContainersListResponse list(ListCommonRequest request, boolean getMasterData) {
 
         // construct specifications for filter request
         Pair<Specification<TiContainers>, Pageable> tuple = fetchData(request, TiContainers.class);
@@ -147,6 +163,10 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         TransportInstructionLegsContainersListResponse transportInstructionLegsContainersListResponse = new TransportInstructionLegsContainersListResponse();
         if (tiLegsPage != null) {
             List<TransportInstructionLegsContainersResponse> responseList = convertEntityListToDtoList(tiLegsPage.getContent());
+            if (getMasterData) {
+                Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+                transportInstructionLegsContainersListResponse.setMasterData(masterDataResponse);
+            }
             transportInstructionLegsContainersListResponse.setTiLegsContainersResponses(responseList);
             transportInstructionLegsContainersListResponse.setTotalPages(tiLegsPage.getTotalPages());
             transportInstructionLegsContainersListResponse.setTotalCount(tiLegsPage.getTotalElements());
@@ -308,4 +328,20 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
             throw new ValidationException("Containers: Net weight and net weight unit must both be provided or both be null.");
         }
     }
+
+    private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsContainersResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var dropModeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> transportInstructionValidationUtil.addAllTiContainerMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(dropModeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.TI_LEGS_CONTAINER_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_MESSAGE, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_TI_LEGS_CONTAINER_LIST, ex.getMessage());
+            }
+        }
+        return masterDataResponse;
+    }
 }
+
