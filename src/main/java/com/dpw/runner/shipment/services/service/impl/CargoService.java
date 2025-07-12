@@ -70,29 +70,14 @@ public class CargoService implements ICargoService {
             Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
             response.setContainers(getTotalContainerCount(containers));
             response.setTeuCount(getTotalTeu(containers, codeTeuMap));
-        } else if (!packings.isEmpty()) {
-            calculateCargoDetails(packings, response);
+        } else {
             response.setContainers(null);
             response.setTeuCount(null);
-        } else {
-            resetAllCargoFields(response);
+        }
+        if (!packings.isEmpty()) {
+            calculateCargoDetails(packings, response);
         }
         return response;
-    }
-
-    private void resetAllCargoFields(CargoDetailsResponse response) {
-        response.setWeight(null);
-        response.setWeightUnit(null);
-        response.setVolume(null);
-        response.setVolumeUnit(null);
-        response.setChargable(null);
-        response.setChargeableUnit(null);
-        response.setVolumetricWeight(null);
-        response.setVolumetricWeightUnit(null);
-        response.setNoOfPacks(null);
-        response.setPacksUnit(null);
-        response.setContainers(null);
-        response.setTeuCount(null);
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() throws RunnerException {

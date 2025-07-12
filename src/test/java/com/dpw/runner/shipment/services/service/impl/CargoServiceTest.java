@@ -234,14 +234,6 @@ class CargoServiceTest {
         container.setContainerCode("20GP");
         container.setContainerCount(2L);
         booking.setContainersList(List.of(container));
-
-        Packing packing = new Packing();
-        packing.setWeight(BigDecimal.valueOf(100));
-        packing.setWeightUnit("KG");
-        packing.setVolume(BigDecimal.valueOf(2));
-        packing.setVolumeUnit("M3");
-        packing.setPacks("10");
-        booking.setPackingList(List.of(packing));
         MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
         mdmContainerTypeResponse.setCode("20GP");
         mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));

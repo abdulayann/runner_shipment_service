@@ -2226,33 +2226,18 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (!containers.isEmpty()) {
             booking.setContainers(getTotalContainerCount(containers));
             booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
-        } else if (!packings.isEmpty()) {
-            populatePackingDetails(packings, booking);
         } else {
-            resetAllCargoFields(booking);
+            booking.setContainers(null);
+            booking.setTeuCount(null);
+        }
+        if (!packings.isEmpty()) {
+            populatePackingDetails(packings, booking);
         }
         customerBookingDao.save(booking);
     }
 
     private void populatePackingDetails(List<Packing> packings, CustomerBooking booking) throws RunnerException {
         calculateCargoDetails(packings, booking);
-        booking.setContainers(null);
-        booking.setTeuCount(null);
-    }
-
-    private void resetAllCargoFields(CustomerBooking booking) {
-        booking.setGrossWeight(null);
-        booking.setGrossWeightUnit(null);
-        booking.setVolume(null);
-        booking.setVolumeUnit(null);
-        booking.setChargeable(null);
-        booking.setChargeableUnit(null);
-        booking.setWeightVolume(null);
-        booking.setWeightVolumeUnit(null);
-        booking.setPackingList(Collections.emptyList());
-        booking.setPackages(null);
-        booking.setPackageType(null);
-        booking.setContainersList(Collections.emptyList());
         booking.setContainers(null);
         booking.setTeuCount(null);
     }
