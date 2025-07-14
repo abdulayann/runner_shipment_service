@@ -15,7 +15,7 @@ public interface IShipmentMigrationV3Service {
 
     ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException;
     ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails, Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException;
-    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException;
+    void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException;
 
     Map<String, EntityTransferContainerType> fetchContainerTypeDetails(List<Containers> containers);
 }
