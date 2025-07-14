@@ -23,4 +23,5 @@ public class TransportInstructionLegsTruckDriverResponse implements IRunnerRespo
     private String truckNumberPlate;
     private String trailerNumberPlate;
     private String truckOrTrailerType;
+    private String driverId;
 }
