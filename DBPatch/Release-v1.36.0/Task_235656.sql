@@ -3,6 +3,7 @@ update parties set
  address_code = 'FRO00025780',
  org_id = '141120',
  address_id = '220809',
+ updated_at = NOW(),
  org_data =
  '{
       "Id": 141120,
@@ -79,5 +80,5 @@ update parties set
   }'
  where id IN (1169910);
 
-update shipment_details set client_dps_address_id = 93319
+update shipment_details set client_dps_address_id = 93319, updated_at = NOW()
 where id IN (75646);
