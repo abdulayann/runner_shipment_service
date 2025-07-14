@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Req
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipment;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
@@ -230,6 +231,15 @@ class ConsolidationV3ControllerTest {
     var response = controller.aibAttachedPendingShipmentCount(1L);
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());
+  }
+
+  @Test
+  void testDGShipments(){
+    Long id = 1L;
+    when(consolidationV3Service.getDGShipment(id)).thenReturn(new CheckDGShipment());
+    var response = controller.getDGShipment(id);
+
+    assertNotNull(response);
   }
 }
 
