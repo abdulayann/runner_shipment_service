@@ -2389,7 +2389,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                     stopWeightCalculation = true;
                     continue;
                 }
-                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()) : BigDecimal.ZERO;
+                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()) : BigDecimal.ZERO;
                 totalWeight = totalWeight.add(weight);
             }
         }
