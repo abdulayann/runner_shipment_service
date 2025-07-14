@@ -2314,6 +2314,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             List<EventsRequest> events) throws RunnerException {
 
         String transportMode = console.getTransportMode();
+        shipmentDetails.setConsolRef(console.getConsolidationNumber());
 
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
