@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationV3Request;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -121,6 +120,9 @@ public class PackingV3Service implements IPackingV3Service {
     private IShipmentServiceV3 shipmentService;
 
     @Autowired
+    private ICustomerBookingV3Service customerBookingV3Service;
+
+    @Autowired
     private DependentServiceHelper dependentServiceHelper;
 
     @Autowired
@@ -179,6 +181,9 @@ public class PackingV3Service implements IPackingV3Service {
         log.info("Saved packing entity to DB | Packing ID: {} | Request ID: {}", savedPacking.getId(), requestId);
 
         ParentResult parentResult = getParentDetails(List.of(savedPacking), module);
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packingRequest.getBookingId());
+        }
         // Audit logging
         recordAuditLogs(null, List.of(savedPacking), DBOperationType.CREATE, parentResult);
         log.info("Audit log recorded for packing creation | Packing ID: {}", savedPacking.getId());
@@ -259,6 +264,9 @@ public class PackingV3Service implements IPackingV3Service {
         Packing updatedPacking = packingDao.save(newPacking);
 
         ParentResult parentResult = getParentDetails(List.of(updatedPacking), module);
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packingRequest.getBookingId());
+        }
 
         recordAuditLogs(List.of(oldConvertedPacking), List.of(updatedPacking), DBOperationType.UPDATE, parentResult);
         afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse);
@@ -300,6 +308,9 @@ public class PackingV3Service implements IPackingV3Service {
         packingDao.delete(packing);
 
         ParentResult parentResult = getParentDetails(List.of(packing), module);
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packing.getBookingId());
+        }
 
         recordAuditLogs(List.of(packing), null, DBOperationType.DELETE, parentResult);
 
@@ -395,6 +406,9 @@ public class PackingV3Service implements IPackingV3Service {
                 isAutoSell = true;
                 break;
             }
+        }
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packingRequestList.iterator().next().getBookingId());
         }
 
         // Convert to response
