@@ -256,7 +256,6 @@ public class AwbService implements IAwbService {
                 setAwbNumberFromPackingInfo(awb);
                 awbDao.updateSciFieldFromHawb(awb, oldEntity.get(), false, id);
             }
-            setOciInfoInAwb(awb);
             awb = awbDao.save(awb);
 
 
@@ -279,23 +278,6 @@ public class AwbService implements IAwbService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
-    }
-
-    private void setOciInfoInAwb(Awb awb) {
-        if (awb.getOciInfo() != null) {
-            if (awb.getOciInfo().getOtherIdentityInfo() != null) {
-                if (awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress() != null &&  awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress().isEmpty()) {
-                    awb.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
-                }
-                if (awb.getOciInfo().getOtherIdentityInfo().getIaIpAddress() != null &&  awb.getOciInfo().getOtherIdentityInfo().getIaIpAddress().isEmpty()) {
-                    awb.getOciInfo().getOtherIdentityInfo().setIaIpAddress(convertIpFormat(getClientIp()));
-                }
-            } else {
-                OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
-                otherIdentityInfo.setIrIpAddress(convertIpFormat(getClientIp()));
-                awb.getOciInfo().setOtherIdentityInfo(otherIdentityInfo);
-            }
-        }
     }
 
     private String getClientIp() {
@@ -1456,6 +1438,7 @@ public class AwbService implements IAwbService {
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
         awb.setAwbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel));
+        awb.setOciInfo(OCIInfo.builder().otherIdentityInfo(OtherIdentityInfo.builder().irIpAddress(convertIpFormat(getClientIp())).iaIpAddress(convertIpFormat(getClientIp())).build()).build());
         awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
         return awb;
     }

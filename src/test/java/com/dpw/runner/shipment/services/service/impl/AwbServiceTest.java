@@ -708,9 +708,6 @@ class AwbServiceTest extends CommonMocks {
             // Setup request with expected IP
             mockedContextHolder.when(RequestContextHolder::getRequestAttributes)
                     .thenReturn(mockAttributes);
-            when(mockAttributes.getRequest()).thenReturn(mockRequest);
-            when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("123.45.67.89");
-
             // Test
             ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
             // Assert
@@ -793,9 +790,6 @@ class AwbServiceTest extends CommonMocks {
             // Setup request with expected IP
             mockedContextHolder.when(RequestContextHolder::getRequestAttributes)
                     .thenReturn(mockAttributes);
-            when(mockAttributes.getRequest()).thenReturn(mockRequest);
-            when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("123.45.67.89");
-
             // Test
             ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
             // Assert
