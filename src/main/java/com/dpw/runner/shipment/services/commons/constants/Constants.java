@@ -689,6 +689,11 @@ public class Constants {
 
     public static final String CONSOLIDATION_NON_DG_MARKING_ERROR_MSG = "The consolidation contains DG package. Marking the consolidation as non DG is not allowed";
     public static final String  CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG =  "Consolidation cannot be marked as DG. Please attach at least one DG Shipment.";
+    public static final String REFERENCE_TYPE_FIELD = "type";
+    public static final String REFERENCE_NUMBERS_FIELD = "referenceNumber";
+    public static final String REFERENCE_NUMBERS_TABLE = "ReferenceNumbers";
+    public static final String REFERENCE_NUMBERS_SHIPMENT_ID_FIELD = "shipmentId";
+
     private Constants() {
     }
 
