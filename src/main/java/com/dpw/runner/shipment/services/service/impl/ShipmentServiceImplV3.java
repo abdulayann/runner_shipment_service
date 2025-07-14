@@ -593,9 +593,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private void setPendingCount(Long shipmentId, AtomicInteger pendingCount) {
-        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentId), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        var count = consoleShipmentMappingDao.countAllStateMappings(shipmentId);
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(shipmentId), SHIPMENT);
-        int value = map.getOrDefault(shipmentId, 0) + notificationMap.getOrDefault(shipmentId, 0);
+        int value = (Objects.nonNull(count) ? count : 0)  + notificationMap.getOrDefault(shipmentId, 0);
         pendingCount.set(value);
     }
 
