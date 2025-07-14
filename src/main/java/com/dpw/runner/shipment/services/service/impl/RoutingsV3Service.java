@@ -615,6 +615,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             for (RoutingsRequest routingsRequest : incomingRoutings) {
                 if (routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode())) {
                     routingsRequest.setFlightNumber(routingsRequest.getVoyage());
+                    routingsRequest.setVoyage(null);
                 }
             }
         }
