@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -12,6 +13,11 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +45,18 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Autowired
     private IShipmentDao shipmentDao;
+
+    @Autowired
+    IContainerRepository containerRepository;
+    @Autowired
+    IPackingRepository packingRepository;
+    @Autowired
+    IShipmentRepository shipmentRepository;
+    @Autowired
+    IConsolidationRepository consolidationRepository;
+
+    @Autowired
+    private IPackingService packingService;
 
     @Override
     @Transactional
@@ -101,9 +119,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
 
         // ContainerSave
+        containerRepository.saveAll(console.getContainersList());
         // PackingSave
+        packingRepository.saveAll(console.getPackingList());
         // ShipmentSave
+        shipmentRepository.saveAll(console.getShipmentsList());
         // ConsoleSave
+        consolidationRepository.save(console);
 
         return console;
     }
@@ -127,9 +149,19 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // Console utilisation update
         setContainerUtilisationForConsolidation(console, shipmentDetailsList, containerTypeMap);
 
-        //TODO : Packs utilisation Update : V3 --> V2
+        //consol Packs Utilisation
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(console.getTransportMode())){
+            setPacksUtilisationForConsolidation(console);
+        }
 
         return console;
+    }
+
+    private void setPacksUtilisationForConsolidation(ConsolidationDetails consol) throws RunnerException {
+        CalculatePackUtilizationRequest calculatePackUtilizationRequest = CalculatePackUtilizationRequest.builder()
+                .consolidationId(consol.getId())
+                .build();
+        packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
     }
 
     private void setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
