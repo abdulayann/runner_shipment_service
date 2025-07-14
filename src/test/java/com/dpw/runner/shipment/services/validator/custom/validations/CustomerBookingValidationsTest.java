@@ -131,7 +131,7 @@ class CustomerBookingValidationsTest extends CommonMocks {
                 .consignee(Parties.builder().orgCode("code").build())
                 .consignor(Parties.builder().orgCode("code2").build())
                 .build();
-        customerBookingValidations.onSave(oldEntity , newEntity);
+        assertDoesNotThrow(() -> customerBookingValidations.onSave(oldEntity, newEntity));
     }
 
     @Test

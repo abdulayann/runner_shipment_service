@@ -2,7 +2,9 @@ package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -12,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -67,12 +70,8 @@ public class CustomerBookingValidations {
                 || (!Boolean.TRUE.equals(entity.getIsCustomerAddressFreeText()) && Objects.isNull(entity.getCustomer().getAddressCode())))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
 
-        if (Objects.isNull(entity.getTransportType()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Transport Mode"));
-
-        if (Objects.isNull(entity.getCargoType()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));
-
+        validateMandatory(entity.getTransportType(), "Transport Mode");
+        validateMandatory(entity.getCargoType(), "Cargo Type");
     }
 
     private void validateConsigneeConsignor(CustomerBooking newEntity) {
@@ -99,54 +98,48 @@ public class CustomerBookingValidations {
     }
 
     private void validateOnPendingForCreditCheck(CustomerBooking entity) {
+        validateParty(entity.getCustomer(), "Customer detail");
+        validateMandatory(entity.getIncoTerms(), "Incoterms");
+        validateMandatory(entity.getDirection(), "Shipment Type");
+        validateMandatory(entity.getServiceMode(), "Service Type");
+        validateMandatory(entity.getCarrierDetails(), "Carrier Details");
 
-        if (entity.getCustomer() == null || entity.getCustomer().getOrgCode() == null || entity.getCustomer().getAddressCode() == null)
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
+        CarrierDetails carrier = entity.getCarrierDetails();
+        validateMandatory(carrier.getOrigin(), "Origin");
+        validateMandatory(carrier.getDestination(), "Destination");
+        validateMandatory(carrier.getOriginPort(), "POL");
+        validateMandatory(carrier.getDestinationPort(), "POD");
 
-        if (Objects.isNull(entity.getIncoTerms()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Incoterms"));
-
-        if (Objects.isNull(entity.getDirection()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Shipment Type"));
-
-        if (Objects.isNull(entity.getServiceMode()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Service Type"));
-
-        if (Objects.isNull(entity.getCarrierDetails()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Carrier Details"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getOrigin()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Origin"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getDestination()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Destination"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
-
-        if (Objects.isNull(entity.getTransportType()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Transport Mode"));
-
-        if (Objects.isNull(entity.getCargoType()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));
-
-        if(Set.of(Constants.CARGO_TYPE_FCL, Constants.CARGO_TYPE_FTL).contains(entity.getCargoType()) && entity.getContainersList().isEmpty()) {
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Atleast one container"));
+        validateMandatory(entity.getTransportType(), "Transport Mode");
+        validateMandatory(entity.getCargoType(), "Cargo Type");
+        validateCargoContents(entity);
+        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_DOM, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
+            validateParty(entity.getConsignor(), "Consignor detail");
         }
-
-        if(Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(entity.getCargoType()) && entity.getPackingList().isEmpty()) {
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Atleast one package"));
+        if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
+            validateParty(entity.getConsignee(), "Consignee detail");
         }
-
-        if ((Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode())) && Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_DOM, Constants.DIRECTION_CTS).contains(entity.getDirection()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignor detail"));
-
-        if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && Objects.equals(Constants.DIRECTION_IMP, entity.getDirection()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignee detail"));
-
     }
 
+    private void validateMandatory(Object value, String fieldName) {
+        if (Objects.isNull(value)) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, fieldName));
+        }
+    }
+
+    private void validateParty(Parties party, String fieldName) {
+        if (party == null || party.getOrgCode() == null || party.getAddressCode() == null) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, fieldName));
+        }
+    }
+
+    private void validateCargoContents(CustomerBooking entity) {
+        String cargoType = entity.getCargoType();
+        if (Set.of(Constants.CARGO_TYPE_FCL, Constants.CARGO_TYPE_FTL).contains(cargoType) && entity.getContainersList().isEmpty()) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Atleast one container"));
+        }
+        if (Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(cargoType) && entity.getPackingList().isEmpty()) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Atleast one Package"));
+        }
+    }
 }

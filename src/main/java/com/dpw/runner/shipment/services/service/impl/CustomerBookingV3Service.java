@@ -1927,13 +1927,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setAdditionalParties(updatedParties);
         }
 
-        List<Containers> containers = customerBooking.getContainersList();
-        Map<UUID, Containers> containerMap = new HashMap<>();
-        if (containers != null && !containers.isEmpty()) {
-            for (Containers container : containers) {
-                containerMap.put(container.getGuid(), container);
-            }
-        }
         List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
         if (bookingChargesRequest != null) {
             List<BookingCharges> bookingCharges = bookingChargesDao.updateEntityFromBooking(commonUtils.convertToEntityList(bookingChargesRequest, BookingCharges.class), bookingId);
@@ -2383,25 +2376,21 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         Set<String> distinctPackTypes = new HashSet<>();
         boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBooking.getTransportType());
         boolean stopWeightCalculation = false;
-        for (Packing p : packings) {
-            if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
-                totalVolume = totalVolume.add(new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), customerBooking.getVolumeUnit()).toString()));
+        for (Packing packing : packings) {
+            totalVolume = addVolume(packing, totalVolume, customerBooking);
+            if (!isStringNullOrEmpty(packing.getPacks())) {
+                totalPacks += Integer.parseInt(packing.getPacks());
             }
-            if (!isStringNullOrEmpty(p.getPacks())) {
-                totalPacks += Integer.parseInt(p.getPacks());
+            addDistinctPackType(distinctPackTypes, packing);
+            if (stopWeightCalculation) {
+                continue;
             }
-            addDistinctPackType(distinctPackTypes, p);
-            if (!stopWeightCalculation) {
-                boolean hasWeight = p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit());
-                if (isAirTransport) {
-                    if (!hasWeight) {
-                        stopWeightCalculation = true;
-                        continue;
-                    }
-                }
-                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()) : BigDecimal.ZERO;
-                totalWeight = totalWeight.add(weight);
+            boolean hasWeight = hasWeightInfo(packing);
+            if (isAirTransport && !hasWeight) {
+                stopWeightCalculation = true;
+                continue;
             }
+            totalWeight = totalWeight.add(getConvertedWeight(packing, customerBooking));
         }
         customerBooking.setGrossWeight(totalWeight);
         customerBooking.setVolume(totalVolume);
@@ -2409,6 +2398,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
         customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         customerBooking.setPackageType(getPackUnit(distinctPackTypes));
+    }
+
+    private BigDecimal addVolume(Packing p, BigDecimal totalVolume, CustomerBooking booking) throws RunnerException {
+        if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
+            BigDecimal converted = new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), booking.getVolumeUnit()).toString());
+            return totalVolume.add(converted);
+        }
+        return totalVolume;
+    }
+
+    private boolean hasWeightInfo(Packing packing) {
+        return packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit());
+    }
+
+    private BigDecimal getConvertedWeight(Packing packing, CustomerBooking booking) throws RunnerException {
+        if (hasWeightInfo(packing)) {
+            return new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), booking.getGrossWeightUnit()).toString());
+        }
+        return BigDecimal.ZERO;
     }
 
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
