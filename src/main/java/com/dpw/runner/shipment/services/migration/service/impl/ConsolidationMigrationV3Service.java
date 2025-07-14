@@ -147,12 +147,35 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
 
         // Console utilisation update
-        setContainerUtilisationForConsolidation(console, shipmentDetailsList, containerTypeMap);
+        Set<Containers> consoleContainers = setContainerUtilisationForConsolidation(console, shipmentDetailsList, containerTypeMap);
 
         //consol Packs Utilisation
         if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(console.getTransportMode())){
             setPacksUtilisationForConsolidation(console);
         }
+
+        Set<Containers> shipmentContainers = new HashSet<>();
+        for (ShipmentDetails shipment : console.getShipmentsList()) {
+            shipment.setConsolidationList(new HashSet<>());
+            shipment.getConsolidationList().add(console);
+
+            for (Containers container : shipment.getContainersList()) {
+                if (container.getShipmentsList() == null) {
+                    container.setShipmentsList(new HashSet<>());
+                }
+                container.getShipmentsList().add(shipment);
+                shipmentContainers.add(container);
+            }
+        }
+        Set<Containers> finalContainers = new HashSet<>();
+        if (!CommonUtils.setIsNullOrEmpty(consoleContainers)) {
+            finalContainers.addAll(consoleContainers);
+        }
+
+        if (!CommonUtils.setIsNullOrEmpty(shipmentContainers)) {
+            finalContainers.addAll(shipmentContainers);
+        }
+        console.setContainersList(new ArrayList<>(finalContainers));
 
         return console;
     }
@@ -164,12 +187,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
     }
 
-    private void setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
+    private Set<Containers> setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
                                                          Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         //Identify container associated only with consolidation and and call setContainerUtilisationForShipment
         Set<Containers> consolContainers = getOnlyConsolidationContainers(console, shipmentDetailsList);
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(console.getShipmentType());
         shipmentMigrationV3Service.setContainerUtilisation(consolContainers, containerTypeMap, isFCL);
+        return consolContainers;
     }
 
     private Set<Containers> getOnlyConsolidationContainers(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
