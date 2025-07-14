@@ -2413,13 +2413,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         return packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit());
     }
 
-    private BigDecimal getConvertedWeight(Packing packing, CustomerBooking booking) throws RunnerException {
-        if (hasWeightInfo(packing)) {
-            return new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), booking.getGrossWeightUnit()).toString());
-        }
-        return BigDecimal.ZERO;
-    }
-
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
         if (!isStringNullOrEmpty(packing.getPacksType())) {
             distinctPackTypes.add(packing.getPacksType());
