@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity.commons;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.google.common.base.Strings;
 import lombok.*;
 import lombok.Generated;
@@ -43,6 +44,7 @@ public class BaseEntity implements Serializable {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreatedDate
+    @ JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 
     @UpdateTimestamp

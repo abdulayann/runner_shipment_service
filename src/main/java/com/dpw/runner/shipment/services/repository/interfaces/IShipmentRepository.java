@@ -266,4 +266,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "s.dgPacksUnit = :dgPacksUnit " +
             "WHERE s.id = :shipmentId")
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+
+    @Query(value = "SELECT * FROM shipment_details WHERE tenant_id = ?1", nativeQuery = true)
+    List<ShipmentDetails> findAllByTenantId(Integer tenantId);
 }
