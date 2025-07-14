@@ -665,7 +665,16 @@ class PackingV3ServiceTest extends CommonMocks {
 
         verify(packingDao, never()).saveAll(any());
     }
+    @Test
+    void testProcessPacksAfterShipmentAttachment_AirMode() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        shipmentDetails.setPackingList(List.of(new Packing()));
 
+        packingV3Service.processPacksAfterShipmentAttachment(1L, shipmentDetails);
+
+        verify(packingDao, times(1)).saveAll(any());
+    }
     @Test
     void testProcessPacksAfterShipmentAttachment_nullPackingList_shouldDoNothing() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();

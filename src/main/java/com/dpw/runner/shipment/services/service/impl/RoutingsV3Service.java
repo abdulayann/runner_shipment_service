@@ -339,7 +339,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         carrierDetails.setEtd(firstLeg.getEtd());
         carrierDetails.setAtd(firstLeg.getAtd());
         carrierDetails.setOriginPort(firstLeg.getPol());
-        carrierDetails.setOriginLocCode(firstLeg.getOriginPortLocCode());
+        carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
 
         carrierDetails.setEta(lastLeg.getEta());
         carrierDetails.setAta(lastLeg.getAta());
