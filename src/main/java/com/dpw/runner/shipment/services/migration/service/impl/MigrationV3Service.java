@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -12,22 +10,15 @@ import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
-import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
-import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-
+import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -48,11 +39,14 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
+    @Autowired
+    private IConsolidationRepository consolidationRepository;
+
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId) {
 
         Map<String, Integer> map = new HashMap<>();
-        TenantContext.setCurrentTenant(tenantId);
+//        TenantContext.setCurrentTenant(tenantId);
 //        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(false, tenantId);
 
         ConsolidationDetails consolidationss = consolidationDetailsDao.findConsolidationsById(consolId);
@@ -61,42 +55,52 @@ public class MigrationV3Service implements IMigrationV3Service {
         map.put("Total Consolidation", consolidationDetails.size());
         List<Future<Long>> queue = new ArrayList<>();
         log.info("fetched {} consolidation for Migrations", consolidationDetails.size());
+
         consolidationDetails.forEach(cos -> {
-            // execute async
-            Future<Long> future = trxExecutor.runInAsync(() ->
-                    trxExecutor.runInTrx(() -> {
-                        ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
-                        return response.getId();
-                    })
-            );
-            queue.add(future);
+            ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
+            consolidationRepository.save(response);
         });
+
+//
+//        consolidationDetails.forEach(cos -> {
+//            // execute async
+//            Future<Long> future = trxExecutor.runInAsync(() ->
+//                    trxExecutor.runInTrx(() -> {
+//                        ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
+//
+//
+//
+//                        return response.getId();
+//                    })
+//            );
+//            queue.add(future);
+//        });
         List<Long> processed = collectAllProcessedIds(queue);
         map.put("Total Consolidation Migrated", processed.size());
 
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(false, tenantId);
-        map.put("Total Shipment", shipmentDetailsList.size());
-        List<Future<Long>> shipmentQueue = new ArrayList<>();
-        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
-        for (ShipmentDetails ship : shipmentDetailsList) {
-            // execute async
-            Future<Long> future = trxExecutor.runInAsync(() ->
-                    trxExecutor.runInTrx(() -> {
-                        ShipmentDetails response = null;
-                        try {
-                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
-                        } catch (RunnerException e) {
-                            throw new RuntimeException(e);
-                        }
-                        return response.getId();
-                    })
-            );
-            shipmentQueue.add(future);
-        }
-        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
-        map.put("Total Shipment Migrated", shipmentProcessed.size());
+//        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(false, tenantId);
+//        map.put("Total Shipment", shipmentDetailsList.size());
+//        List<Future<Long>> shipmentQueue = new ArrayList<>();
+//        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
+//        for (ShipmentDetails ship : shipmentDetailsList) {
+//            // execute async
+//            Future<Long> future = trxExecutor.runInAsync(() ->
+//                    trxExecutor.runInTrx(() -> {
+//                        ShipmentDetails response = null;
+//                        try {
+//                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
+//                        } catch (RunnerException e) {
+//                            throw new RuntimeException(e);
+//                        }
+//                        return response.getId();
+//                    })
+//            );
+//            shipmentQueue.add(future);
+//        }
+//        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
+//        map.put("Total Shipment Migrated", shipmentProcessed.size());
 
-        TenantContext.removeTenant();
+//        TenantContext.removeTenant();
 
         return map;
 

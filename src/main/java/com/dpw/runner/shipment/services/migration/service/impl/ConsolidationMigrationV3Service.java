@@ -23,24 +23,24 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 @Slf4j
@@ -96,17 +96,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         //TODO guid to container -> shipment's container store
         // Attach Container to shipment
-        Set<ShipmentDetails> consolShipmentsList = consolidationDetails1.getShipmentsList();
-        for (ShipmentDetails shp : consolShipmentsList) {
-            Set<Containers> originalContainers = shp.getContainersList();
-            Set<Containers> updatedContainers = new HashSet<>();
-
-            for (Containers originalContainer : originalContainers) {
-                Containers updatedContainer = uuidVsUpdatedContainers.get(originalContainer.getGuid());
-                updatedContainers.add(Objects.requireNonNullElse(updatedContainer, originalContainer));
-            }
-            shp.setContainersList(updatedContainers);
-        }
+        Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
+//        for (ShipmentDetails shp : consolShipmentsList) {
+//            Set<Containers> originalContainers = shp.getContainersList();
+//            Set<Containers> updatedContainers = new HashSet<>();
+//
+//            for (Containers originalContainer : originalContainers) {
+//                Containers updatedContainer = uuidVsUpdatedContainers.get(originalContainer.getGuid());
+//                updatedContainers.add(Objects.requireNonNullElse(updatedContainer, originalContainer));
+//            }
+//            shp.setContainersList(updatedContainers);
+//        }
 
 
 
@@ -147,7 +147,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
 
         // ConsoleSave
-        consolidationRepository.save(consolidationDetails1);
+//        consolidationRepository.save(console);
 
 
 
@@ -159,15 +159,42 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Container splitting and creation (With new Guids)
         // Container Attachment to shipment (add containers in shipment)
-        List<Containers> splitContainers = distributeContainers(console.getContainersList());
+        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
+        Map<UUID, List<UUID>> containerGuidToShipments = new HashMap<>();
+        Map<UUID, ShipmentDetails> guidToShipment = new HashMap<>();
+        shipmentDetailsList.forEach(shp -> {
+            guidToShipment.put(shp.getGuid(), shp);
+            Set<Containers> containersList = shp.getContainersList();
+
+            for (Containers containers : containersList) {
+                List<UUID> shipmentUuids = containerGuidToShipments.get(containers.getGuid());
+                if (shipmentUuids == null) {
+                    shipmentUuids = new ArrayList<>();
+                }
+                shipmentUuids.add(shp.getGuid());
+                containerGuidToShipments.put(containers.getGuid(), shipmentUuids);
+            }
+
+            shp.setContainersList(new HashSet<>());
+
+        });
+
+        List<Containers> splitContainers = distributeContainers(console.getContainersList(), containerGuidToShipments);
         console.setContainersList(splitContainers);
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
-        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
+        containerGuidToShipments.forEach((containerGuid, shipmentGuids) -> {
+            for (UUID shipmentGuid : shipmentGuids) {
+                ShipmentDetails details = guidToShipment.get(shipmentGuid);
+                Containers containers = guidVsContainer.get(containerGuid);
+                details.getContainersList().add(containers);
+            }
+        });
 
         if(ObjectUtils.isNotEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
+
                     shipmentMigrationV3Service.mapShipmentV2ToV3(ship, packingVsContainerGuid);
                 } catch (RunnerException e) {
                     throw new IllegalArgumentException(e);
@@ -193,6 +220,16 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void assignPackingsToContainers(List<ShipmentDetails> shipmentDetailsList, Map<UUID, UUID> packingVsContainerGuid, Map<UUID, Containers> guidVsContainer) {
+        packingVsContainerGuid.forEach((packGuid, containerGuid) -> {
+            Containers containers = guidVsContainer.get(containerGuid);
+            containers.setGrossWeight(BigDecimal.ZERO);
+            containers.setGrossWeightUnit(null);
+            containers.setGrossVolume(BigDecimal.ZERO);
+            containers.setGrossVolumeUnit(null);
+            containers.setPacks(null);
+            containers.setPacksType(null);
+        });
+
         for (ShipmentDetails shipment : shipmentDetailsList) {
             List<Packing> packingList = shipment.getPackingList();
 
@@ -214,6 +251,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     continue; // skip if container is not mapped
                 }
                 try {
+                    // TODO: DEVA took deafault units from tenant settings | check for
                     containerV3Service.addPackageDataToContainer(container, packing);
                 } catch (RunnerException e) {
                     throw new IllegalArgumentException(e);
@@ -223,7 +261,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     @Override
-    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) {
+    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
         Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
         if(consolidationDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
@@ -264,7 +302,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
-    public List<Containers> distributeContainers(List<Containers> inputContainers) {
+    public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments) {
         List<Containers> resultContainers = new ArrayList<>();
 
         for (Containers container : inputContainers) {
@@ -275,7 +313,35 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 continue;
             }
 
-            distributeMultiCountContainer(container, count, resultContainers);
+            List<Containers> tempContainers = new ArrayList<>();
+            distributeMultiCountContainer(container, count, tempContainers);
+
+            for (Containers tempContainer : tempContainers) {
+                if (tempContainer.getId() == null && !containerGuidToShipments.containsKey(tempContainer.getGuid())) {
+                    List<UUID> shipmentUuids = containerGuidToShipments.get(container.getGuid());
+                    containerGuidToShipments.put(tempContainer.getGuid(), shipmentUuids);
+                }
+            }
+
+//            List<UUID> shipmentGuids = containerGuidToShipments.get(container.getGuid());
+
+//            shipmentGuids.forEach(sGuid -> {
+//                ShipmentDetails details = guidToShipment.get(sGuid);
+//                Set<Containers> containersList = details.getContainersList();
+//
+//                for (Containers tempContainer : tempContainers) {
+//                    for (Containers containers : containersList) {
+//                        if(tempContainer.getId()==null) {
+//
+//                        }
+//                    }
+//                }
+//
+//
+//            });
+
+            resultContainers.addAll(tempContainers);
+
         }
 
         return resultContainers;

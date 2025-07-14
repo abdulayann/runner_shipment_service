@@ -5,7 +5,6 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -118,7 +117,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void redistributeSummaryToPacks(ShipmentDetails shipmentDetails) {
-        int packLineItems = shipmentDetails.getPackingList().size();
+        List<Packing> packingList = shipmentDetails.getPackingList();
+        packingList = packingList.stream().filter(p -> !Boolean.TRUE.equals(p.getIsDeleted())).toList();
+        int packLineItems = packingList.size();
+        if (packLineItems == 0) {
+            return;
+        }
 
         if(shipmentDetails.getWeight() == null) {
             shipmentDetails.setWeight(BigDecimal.ZERO);
@@ -144,17 +148,17 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
         for (int i = 0; i < packLineItems; i++) {
             if(i == packLineItems-1) {
-                shipmentDetails.getPackingList().get(i).setWeight(shipmentDetails.getWeight().subtract(BigDecimal.valueOf(weight)));
-                shipmentDetails.getPackingList().get(i).setVolume(shipmentDetails.getVolume().subtract(BigDecimal.valueOf(volume)));
-                shipmentDetails.getPackingList().get(i).setPacks(String.valueOf((shipmentDetails.getNoOfPacks() - noOfPacks) > 0 ? (shipmentDetails.getNoOfPacks() - noOfPacks) : 1));
+                packingList.get(i).setWeight(shipmentDetails.getWeight().subtract(BigDecimal.valueOf(weight)));
+                packingList.get(i).setVolume(shipmentDetails.getVolume().subtract(BigDecimal.valueOf(volume)));
+                packingList.get(i).setPacks(String.valueOf((shipmentDetails.getNoOfPacks() - noOfPacks) > 0 ? (shipmentDetails.getNoOfPacks() - noOfPacks) : 1));
             } else {
-                shipmentDetails.getPackingList().get(i).setWeight(BigDecimal.valueOf(weight));
-                shipmentDetails.getPackingList().get(i).setVolume(BigDecimal.valueOf(volume));
-                shipmentDetails.getPackingList().get(i).setPacks(String.valueOf(noOfPacks));
+                packingList.get(i).setWeight(BigDecimal.valueOf(weight));
+                packingList.get(i).setVolume(BigDecimal.valueOf(volume));
+                packingList.get(i).setPacks(String.valueOf(noOfPacks));
             }
-            shipmentDetails.getPackingList().get(i).setWeightUnit(weightUnit);
-            shipmentDetails.getPackingList().get(i).setVolumeUnit(volumeUnit);
-            shipmentDetails.getPackingList().get(i).setPacksType(packsType);
+            packingList.get(i).setWeightUnit(weightUnit);
+            packingList.get(i).setVolumeUnit(volumeUnit);
+            packingList.get(i).setPacksType(packsType);
         }
     }
 
@@ -224,7 +228,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
         cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
         cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
-        cargoDetailsResponse = packingV3Service.calculateCargoDetails(shipmentDetails.getPackingList(), cargoDetailsResponse);
+        List<Packing> packingList = shipmentDetails.getPackingList().stream().filter(packing -> !Boolean.TRUE.equals(packing.getIsDeleted())).toList();
+
+        cargoDetailsResponse = packingV3Service.calculateCargoDetails(packingList, cargoDetailsResponse);
 
         // update to shipment fields
         shipmentDetails.setNoOfPacks(cargoDetailsResponse.getNoOfPacks());
