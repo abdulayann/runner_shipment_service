@@ -128,23 +128,21 @@ public class CargoService implements ICargoService {
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
         boolean stopWeightCalculation = false;
-        boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode());
         Set<String> distinctPackTypes = new HashSet<>();
-        for (Packing p : packings) {
-            if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
-                totalVolume = totalVolume.add(new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), response.getVolumeUnit()).toString()));
+        boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode());
+        for (Packing packing : packings) {
+            totalVolume = addPackingVolume(totalVolume, packing, response);
+            if (!isStringNullOrEmpty(packing.getPacks())) {
+                totalPacks += Integer.parseInt(packing.getPacks());
             }
-            if (!isStringNullOrEmpty(p.getPacks())) {
-                totalPacks += Integer.parseInt(p.getPacks());
-            }
-            addDistinctPackType(distinctPackTypes, p);
+            addDistinctPackType(distinctPackTypes, packing);
             if (!stopWeightCalculation) {
-                boolean hasWeight = p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit());
+                boolean hasWeight = packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit());
                 if (isAirTransport && !hasWeight) {
                     stopWeightCalculation = true;
                     continue;
                 }
-                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), response.getWeightUnit()).toString()) : BigDecimal.ZERO;
+                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()) : BigDecimal.ZERO;
                 totalWeight = totalWeight.add(weight);
             }
         }
@@ -157,8 +155,14 @@ public class CargoService implements ICargoService {
         response.setWeight(totalWeight);
     }
 
-    private boolean isAirWeightMissing(Packing p, CargoDetailsResponse r) {
-        return p.getWeight() == null && Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(r.getTransportMode());
+    private BigDecimal addPackingVolume(BigDecimal totalVolume, Packing packing, CargoDetailsResponse response) throws RunnerException {
+        if (packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
+            BigDecimal converted = new BigDecimal(
+                    convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()
+            );
+            return totalVolume.add(converted);
+        }
+        return totalVolume;
     }
 
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {

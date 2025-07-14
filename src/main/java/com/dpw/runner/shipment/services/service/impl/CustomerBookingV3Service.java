@@ -2376,21 +2376,22 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         Set<String> distinctPackTypes = new HashSet<>();
         boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBooking.getTransportType());
         boolean stopWeightCalculation = false;
+
         for (Packing packing : packings) {
             totalVolume = addVolume(packing, totalVolume, customerBooking);
             if (!isStringNullOrEmpty(packing.getPacks())) {
                 totalPacks += Integer.parseInt(packing.getPacks());
             }
             addDistinctPackType(distinctPackTypes, packing);
-            if (stopWeightCalculation) {
-                continue;
+            if (!stopWeightCalculation) {
+                boolean hasWeight = hasWeightInfo(packing);
+                if (isAirTransport && !hasWeight) {
+                    stopWeightCalculation = true;
+                    continue;
+                }
+                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()) : BigDecimal.ZERO;
+                totalWeight = totalWeight.add(weight);
             }
-            boolean hasWeight = hasWeightInfo(packing);
-            if (isAirTransport && !hasWeight) {
-                stopWeightCalculation = true;
-                continue;
-            }
-            totalWeight = totalWeight.add(getConvertedWeight(packing, customerBooking));
         }
         customerBooking.setGrossWeight(totalWeight);
         customerBooking.setVolume(totalVolume);
