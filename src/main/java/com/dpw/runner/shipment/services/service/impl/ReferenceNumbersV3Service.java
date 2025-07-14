@@ -1,21 +1,22 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersV3Service;
 import com.dpw.runner.shipment.services.utils.v3.ReferenceNumbersValidationUtil;
@@ -26,10 +27,18 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -50,6 +59,14 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
 
     @Autowired
     private ReferenceNumbersValidationUtil referenceNumbersValidationUtil;
+    public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
+            Map.entry(Constants.REFERENCE_TYPE_FIELD, RunnerEntityMapping.builder().tableName(Constants.REFERENCE_NUMBERS_TABLE).dataType(String.class).fieldName(Constants.REFERENCE_TYPE_FIELD).isContainsText(true).build()),
+            Map.entry(Constants.REFERENCE_NUMBERS_FIELD, RunnerEntityMapping.builder().tableName(Constants.REFERENCE_NUMBERS_TABLE).dataType(String.class).fieldName(Constants.REFERENCE_NUMBERS_FIELD).isContainsText(true).build()),
+            Map.entry(Constants.REFERENCE_NUMBERS_SHIPMENT_ID_FIELD, RunnerEntityMapping.builder().tableName(Constants.REFERENCE_NUMBERS_TABLE).dataType(Long.class).fieldName(Constants.REFERENCE_NUMBERS_SHIPMENT_ID_FIELD).isContainsText(true).build()),
+            Map.entry("createdAt", RunnerEntityMapping.builder().tableName(Constants.REFERENCE_NUMBERS_TABLE).dataType(LocalDateTime.class).fieldName("createdAt").build()),
+            Map.entry("updatedAt", RunnerEntityMapping.builder().tableName(Constants.REFERENCE_NUMBERS_TABLE).dataType(LocalDateTime.class).fieldName("updatedAt").build())
+
+    );
 
     @Override
     @Transactional
@@ -152,13 +169,40 @@ public class ReferenceNumbersV3Service implements IReferenceNumbersV3Service {
         Page<ReferenceNumbers> referenceNumbersPage;
 
         //Fetch all party list from db
-        if(Objects.equals(xSource, NETWORK_TRANSFER))
+        if (Objects.equals(xSource, NETWORK_TRANSFER))
             referenceNumbersPage = referenceNumbersDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
         else
             referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
 
         log.info("Reference numbers list retrieved successfully for Request Id: {} | List content: {}", LoggerHelper.getRequestIdFromMDC(), referenceNumbersPage.getContent());
         return convertEntityListToDtoList(referenceNumbersPage.getContent());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listReferenceNumbers(ListCommonRequest request, String xSource) {
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+        log.info("Starting reference number listing | Request ID: {} | Request Body: {}", requestId, request);
+
+        Pair<Specification<ReferenceNumbers>, Pageable> tuple = fetchData(request, ReferenceNumbers.class, TABLES_NAMES);
+
+        Page<ReferenceNumbers> referenceNumbersPage;
+
+        //Fetch all party list from db
+        if (Objects.equals(xSource, NETWORK_TRANSFER))
+            referenceNumbersPage = referenceNumbersDao.findAllWithoutTenantFilter(tuple.getLeft(), tuple.getRight());
+        else
+            referenceNumbersPage = referenceNumbersDao.findAll(tuple.getLeft(), tuple.getRight());
+
+        List<ReferenceNumbers> numbersPageContent = referenceNumbersPage.getContent();
+        log.info("Reference numbers list retrieved successfully for Request Id: {} | List content: {}", LoggerHelper.getRequestIdFromMDC(), numbersPageContent);
+
+        List<ReferenceNumbersResponse> filteredList = convertEntityListToDtoList(numbersPageContent);
+        List<IRunnerResponse> responses = new ArrayList<>();
+        responses.addAll(filteredList);
+        return ResponseHelper.buildListSuccessResponse(
+                responses,
+                referenceNumbersPage.getTotalPages(),
+                referenceNumbersPage.getTotalElements());
     }
 
 
