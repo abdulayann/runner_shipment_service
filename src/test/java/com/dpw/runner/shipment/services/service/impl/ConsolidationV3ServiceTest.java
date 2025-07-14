@@ -90,6 +90,7 @@ import java.util.concurrent.Executors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -5388,5 +5389,71 @@ if (unitConversionUtilityMockedStatic != null) {
     assertEquals(0, getNoOfCont.invoke(result));
     assertEquals(BigDecimal.ZERO, getTeus.invoke(result));
     assertEquals(0, getDgContCount.invoke(result));
+  }
+
+  @Test
+  void testGetDGShipment_WhenHazardousContainerPresent_ReturnsFalse() {
+    Long consolidationId = 1L;
+    Containers hazardousContainer = new Containers();
+    hazardousContainer.setHazardous(true);
+
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setContainersList(List.of(hazardousContainer));
+    details.setShipmentsList(Collections.emptySet());
+
+    when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(details));
+
+    CheckDGShipment result = consolidationV3Service.getDGShipment(consolidationId);
+
+    assertThat(result.getIsDGShipmentPresent()).isFalse();
+  }
+
+  @Test
+  void testGetDGShipment_WhenHazardousShipmentPresent_ReturnsTrue() {
+    Long consolidationId = 2L;
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setContainsHazardous(true);
+
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setContainersList(Collections.emptyList());
+    details.setShipmentsList(Set.of(shipment));
+
+    when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(details));
+
+    CheckDGShipment result = consolidationV3Service.getDGShipment(consolidationId);
+
+    assertThat(result.getIsDGShipmentPresent()).isTrue();
+  }
+
+  @Test
+  void testGetDGShipment_WhenNoHazardousInfo_ReturnsFalse() {
+    Long consolidationId = 3L;
+
+    ConsolidationDetails details = new ConsolidationDetails();
+    details.setContainersList(Collections.emptyList());
+    details.setShipmentsList(Collections.emptySet());
+
+    when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(details));
+
+    CheckDGShipment result = consolidationV3Service.getDGShipment(consolidationId);
+
+    assertThat(result.getIsDGShipmentPresent()).isFalse();
+  }
+
+  @Test
+  void testGetDGShipment_WhenConsolidationIdNull_ThrowsException() {
+    assertThatThrownBy(() -> consolidationV3Service.getDGShipment(null))
+            .isInstanceOf(ValidationException.class)
+            .hasMessage("Consolidation Id is required");
+  }
+
+  @Test
+  void testGetDGShipment_WhenConsolidationNotFound_ThrowsException() {
+    Long invalidId = 999L;
+    when(consolidationDetailsDao.findById(invalidId)).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> consolidationV3Service.getDGShipment(invalidId))
+            .isInstanceOf(ValidationException.class)
+            .hasMessage("No Consolidation found for the Id: " + invalidId);
   }
 }

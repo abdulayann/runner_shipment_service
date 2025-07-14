@@ -210,4 +210,10 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.getConsoleSyncAchievedData(consolidationId));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.GET_DG_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> getDGShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getDGShipment(id));
+    }
+
 }

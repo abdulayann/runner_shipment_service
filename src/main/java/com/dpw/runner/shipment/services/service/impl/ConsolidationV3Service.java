@@ -4717,4 +4717,32 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         );
     }
 
+    @Override
+    public CheckDGShipment getDGShipment(Long consolidationId) {
+        if (consolidationId == null) {
+            throw new ValidationException("Consolidation Id is required");
+        }
+
+        var console = consolidationDetailsDao.findById(consolidationId)
+                .orElseThrow(() -> new ValidationException("No Consolidation found for the Id: " + consolidationId));
+
+        if (hasHazardousContainer(console)) {
+            return CheckDGShipment.builder().isDGShipmentPresent(false).build();
+        }
+
+        boolean isDgShipmentPresent = hasHazardousShipment(console);
+        return CheckDGShipment.builder().isDGShipmentPresent(isDgShipmentPresent).build();
+    }
+
+    private boolean hasHazardousContainer(ConsolidationDetails console) {
+        var containers = console.getContainersList();
+        return containers != null && containers.stream()
+                .anyMatch(container -> Boolean.TRUE.equals(container.getHazardous()));
+    }
+
+    private boolean hasHazardousShipment(ConsolidationDetails console) {
+        var shipments = console.getShipmentsList();
+        return shipments != null && shipments.stream()
+                .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
+    }
 }
