@@ -58,7 +58,8 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         consolidationDetails.forEach(cos -> {
             ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
-            consolidationRepository.save(response);
+//            ConsolidationDetails save = consolidationRepository.save(response);
+            log.info("Saved");
         });
 
 //

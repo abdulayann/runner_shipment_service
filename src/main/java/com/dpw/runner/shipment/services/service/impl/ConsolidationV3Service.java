@@ -4724,6 +4724,23 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return achievedQuantitiesResponse;
     }
 
+    @Override
+    public AchievedQuantities calculateAchievedQuantitiesEntity(ConsolidationDetails consolidationDetails) throws RunnerException, JsonMappingException {
+        AchievedQuantities achievedQuantities = consolidationDetails.getAchievedQuantities();
+        ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
+        jsonHelper.updateValue(achievedQuantities, shipmentWtVolResponse);
+        achievedQuantities.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
+        achievedQuantities.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
+        achievedQuantities.setConsolidatedVolume(shipmentWtVolResponse.getVolume());
+        achievedQuantities.setConsolidatedVolumeUnit(shipmentWtVolResponse.getVolumeUnit());
+        achievedQuantities.setConsolidationChargeQuantity(shipmentWtVolResponse.getChargable());
+        achievedQuantities.setConsolidationChargeQuantityUnit(shipmentWtVolResponse.getChargeableUnit());
+        achievedQuantities.setContainerCount(shipmentWtVolResponse.getConsoleContainerCount());
+        achievedQuantities.setTeuCount(shipmentWtVolResponse.getConsoleTeuCount());
+        achievedQuantities.setDgContainerCount(shipmentWtVolResponse.getConsoleDgContainerCount());
+        return achievedQuantities;
+    }
+
     private boolean isInterBranchContextNeeded(ConsolidationDetails consolidationDetails) {
 
         if (Objects.isNull(consolidationDetails) || Objects.isNull(consolidationDetails.getShipmentsList()))

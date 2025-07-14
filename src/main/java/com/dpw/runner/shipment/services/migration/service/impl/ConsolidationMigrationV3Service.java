@@ -4,12 +4,11 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -19,6 +18,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepo
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -78,6 +78,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IConsolidationRepository consolidationRepository;
 
+    @Autowired
+    private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
+
     @Override
     @Transactional
     public ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails) {
@@ -90,6 +93,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // ContainerSave
         List<Containers> updatedContainersList = console.getContainersList();
+        Set<Long> originalContainerIds = updatedContainersList.stream().map(Containers::getId).filter(Objects::nonNull).collect(Collectors.toSet());
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
         Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
@@ -142,12 +146,30 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // ShipmentSave
         // TODO: replace existing container with matching Guid of new container , same for Packs
-        shipmentRepository.saveAll(consolShipmentsList);
+
+        List<ShipmentsContainersMapping> shipmentsContainersMappings = new ArrayList<>();
 
 
+
+        consolShipmentsList.forEach(shp->{
+            shp.setConsolidationList(new HashSet<>());
+            shp.getConsolidationList().add(console);
+
+
+
+//            shp.getContainersList().forEach(con -> {
+//                if(!originalContainerIds.contains(con.getId())) {
+//                    shipmentsContainersMappings.add(new ShipmentsContainersMapping(con.getId(), shp.getId()));
+//                }
+//            });
+//            shp.setContainersList(null);
+        });
+        List<ShipmentDetails> shipmentDetails = shipmentRepository.saveAll(consolShipmentsList);
+
+//        List<ShipmentsContainersMapping> shipmentsContainersMappings1 = shipmentsContainersMappingRepository.saveAll(shipmentsContainersMappings);
 
         // ConsoleSave
-//        consolidationRepository.save(console);
+        consolidationRepository.save(console);
 
 
 
@@ -196,7 +218,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 try {
 
                     shipmentMigrationV3Service.mapShipmentV2ToV3(ship, packingVsContainerGuid);
-                } catch (RunnerException e) {
+                } catch (Exception e) {
                     throw new IllegalArgumentException(e);
                 }
             });
@@ -207,9 +229,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Console summary update
         try {
-            AchievedQuantitiesResponse achievedQuantitiesResponse = consolidationV3Service.calculateAchievedQuantities(consolidationDetails);
-            AchievedQuantities achievedQuantities = jsonHelper.convertValue(achievedQuantitiesResponse, AchievedQuantities.class);
-            consolidationDetails.setAchievedQuantities(achievedQuantities);
+            consolidationV3Service.calculateAchievedQuantitiesEntity(consolidationDetails);
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }

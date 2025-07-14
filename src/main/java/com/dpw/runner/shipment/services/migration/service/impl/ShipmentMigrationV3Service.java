@@ -25,7 +25,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,6 +37,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
@@ -124,37 +124,39 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             return;
         }
 
-        if(shipmentDetails.getWeight() == null) {
-            shipmentDetails.setWeight(BigDecimal.ZERO);
+        BigDecimal shipmentWeight = shipmentDetails.getWeight();
+        BigDecimal shipmentVolume = shipmentDetails.getVolume();
+        BigDecimal shipmentNoOfPacks = shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentDetails.getNoOfPacks());
+
+        if(shipmentWeight == null) {
+            shipmentWeight = BigDecimal.ZERO;
         }
 
-        if(shipmentDetails.getVolume() == null) {
-            shipmentDetails.setVolume(BigDecimal.ZERO);
+        if(shipmentVolume == null) {
+            shipmentVolume = BigDecimal.ZERO;
         }
 
-        if(shipmentDetails.getNoOfPacks() == null) {
-            shipmentDetails.setNoOfPacks(0);
+        BigDecimal[] weightWithRemain = shipmentWeight.divideAndRemainder(BigDecimal.valueOf(packLineItems));
+        BigDecimal[] volumeWithRemain = shipmentVolume.divideAndRemainder(BigDecimal.valueOf(packLineItems));
+        BigDecimal[] noOfPacksWithRemain = shipmentNoOfPacks.divideAndRemainder(BigDecimal.valueOf(packLineItems));
+        if(noOfPacksWithRemain[0].equals(BigDecimal.ZERO)) {
+            noOfPacksWithRemain[0] = BigDecimal.ONE;
+            noOfPacksWithRemain[1] = BigDecimal.ZERO;
         }
 
-        int weight = shipmentDetails.getWeight().divide(BigDecimal.valueOf(packLineItems),10, RoundingMode.DOWN).intValue();
-        int volume = shipmentDetails.getVolume().divide(BigDecimal.valueOf(packLineItems),10, RoundingMode.DOWN).intValue();
-        Integer noOfPacks = shipmentDetails.getNoOfPacks()/packLineItems;
-        if(noOfPacks == 0) {
-            noOfPacks = 1;
-        }
         String volumeUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getVolumeUnit())? shipmentDetails.getVolumeUnit() : commonUtils.getDefaultVolumeUnit();
         String weightUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getWeightUnit())? shipmentDetails.getWeightUnit() : commonUtils.getDefaultWeightUnit();
         String packsType = commonUtils.getPacksUnit(shipmentDetails.getPacksUnit());
 
         for (int i = 0; i < packLineItems; i++) {
             if(i == packLineItems-1) {
-                packingList.get(i).setWeight(shipmentDetails.getWeight().subtract(BigDecimal.valueOf(weight)));
-                packingList.get(i).setVolume(shipmentDetails.getVolume().subtract(BigDecimal.valueOf(volume)));
-                packingList.get(i).setPacks(String.valueOf((shipmentDetails.getNoOfPacks() - noOfPacks) > 0 ? (shipmentDetails.getNoOfPacks() - noOfPacks) : 1));
+                packingList.get(i).setWeight(weightWithRemain[0].add(weightWithRemain[1]));
+                packingList.get(i).setVolume(volumeWithRemain[0].add(volumeWithRemain[1]));
+                packingList.get(i).setPacks(String.valueOf(noOfPacksWithRemain[0].add(noOfPacksWithRemain[1])));
             } else {
-                packingList.get(i).setWeight(BigDecimal.valueOf(weight));
-                packingList.get(i).setVolume(BigDecimal.valueOf(volume));
-                packingList.get(i).setPacks(String.valueOf(noOfPacks));
+                packingList.get(i).setWeight(weightWithRemain[0]);
+                packingList.get(i).setVolume(volumeWithRemain[0]);
+                packingList.get(i).setPacks(String.valueOf(noOfPacksWithRemain[0]));
             }
             packingList.get(i).setWeightUnit(weightUnit);
             packingList.get(i).setVolumeUnit(volumeUnit);
@@ -198,7 +200,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private void createPackWithContainerInfo(Packing packing, Containers container) {
         String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
         packing.setPacks(count);
-        packing.setPacks(commonUtils.getPacksUnit(container.getPacksType()));
+        packing.setPacksType(commonUtils.getPacksUnit(container.getPacksType()));
         packing.setWeight(container.getGrossWeight());
         packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
         packing.setVolume(container.getGrossVolume());
@@ -207,10 +209,19 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void createPacksForUnassignedContainers(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        Map<Long, Containers> containerMap = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        List<Containers> unassignedContainers = new ArrayList<>(shipmentDetails.getContainersList().stream()
+                .filter(containers -> ObjectUtils.isEmpty(containers.getId())).toList());
+
+        Map<Long, Containers> containerMap = shipmentDetails.getContainersList().stream()
+                .filter(containers -> ObjectUtils.isNotEmpty(containers.getId()))
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+
         shipmentDetails.getPackingList().forEach(packing -> containerMap.remove(packing.getContainerId()));
-        if(!containerMap.isEmpty()) {
-            for (var cont: containerMap.values()) {
+
+        unassignedContainers.addAll(containerMap.values());
+
+        if(!unassignedContainers.isEmpty()) {
+            for (var cont: unassignedContainers) {
                 Packing packing = new Packing();
                 packing.setGuid(UUID.randomUUID());
                 packing.setShipmentId(shipmentDetails.getId());
