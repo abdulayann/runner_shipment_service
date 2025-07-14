@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiReferences;
 import com.dpw.runner.shipment.services.entity.TiTruckDriverDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
@@ -40,16 +41,12 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -234,5 +231,59 @@ class TransportInstructionLegsReferenceServiceImplTest {
         assertEquals(1, actualListResult.getTotalPages().intValue());
         assertEquals(1, actualListResult.getTiLegsReferenceResponses().size());
         assertEquals(1L, actualListResult.getTotalCount().longValue());
+    }
+
+    @Test
+    void testCreate_shouldThrowValidationException_whenTiLegNotFound() {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setTiLegId(999L);
+        when(iTiLegRepository.findById(999L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.create(request));
+        assertEquals("Transport Instruction Legs does not exist for tiId: 999", ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowValidationException_whenReferenceNotFound() {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setId(123L);
+        when(iTiReferenceDao.findById(123L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.update(request));
+        assertEquals("Invalid Transport Instruction Legs reference id123", ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowValidationException_whenTiLegNotFound() {
+        TransportInstructionLegsReferenceRequest request = new TransportInstructionLegsReferenceRequest();
+        request.setId(123L);
+        request.setTiLegId(999L);
+        when(iTiReferenceDao.findById(123L)).thenReturn(Optional.of(new TiReferences()));
+        when(iTiLegRepository.findById(999L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.update(request));
+        assertEquals("Transport Instruction Legs does not exist for tiId: 999", ex.getMessage());
+    }
+
+    @Test
+    void testDelete_shouldThrowValidationException_whenReferenceNotFound() {
+        when(iTiReferenceDao.findById(123L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.delete(123L));
+        assertEquals("Invalid Ti legs reference Id: 123", ex.getMessage());
+    }
+
+    @Test
+    void testRetrieveById_shouldThrowValidationException_whenReferenceNotFound() {
+        when(iTiReferenceDao.findById(321L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.retrieveById(321L));
+        assertEquals("Invalid Ti legs reference Id: 321", ex.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowValidationException_whenTiLegNotFound() {
+        TransportInstructionLegsReferenceRequest ref = new TransportInstructionLegsReferenceRequest();
+        ref.setTiLegId(999L);
+        TransportInstructionLegsReferenceListRequest request = new TransportInstructionLegsReferenceListRequest();
+        request.setReferences(List.of(ref));
+        when(iTiLegRepository.findById(999L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () -> transportInstructionLegsReferenceService.bulkCreate(request));
+        assertEquals("Transport Instruction Legs does not exist for tiId: 999", ex.getMessage());
     }
 }

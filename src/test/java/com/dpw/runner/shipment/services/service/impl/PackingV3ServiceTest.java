@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSumm
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
@@ -858,4 +859,13 @@ class PackingV3ServiceTest extends CommonMocks {
         verify(containerV3Service).unAssignContainers(any(), any());
     }
 
+    @Test
+    void testSetPacksUnits_shouldSetOnlyDgPacksUnit_whenOnlyDgSetHasSingleValue() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        Set<String> uniquePacksUnits = new HashSet<>();
+        Set<String> dgPacksUnitSet = Set.of("KG");
+        packingV3Service.setPacksUnits(cargoDetailsResponse, uniquePacksUnits, dgPacksUnitSet);
+        assertNull(cargoDetailsResponse.getPacksUnit(), "packsUnit should be null");
+        assertEquals("KG", cargoDetailsResponse.getDgPacksUnit(), "dgPacksUnit should be set to 'KG'");
+    }
 }

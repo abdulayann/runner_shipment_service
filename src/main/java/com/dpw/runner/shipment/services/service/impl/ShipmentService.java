@@ -3067,11 +3067,10 @@ public class ShipmentService implements IShipmentService {
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
         // Syncing shipment to V1
-        CompletableFuture<Void> bookingUpdateFuture = null;
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         log.info("shipment afterSave syncShipment..... ");
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-            bookingUpdateFuture = CompletableFuture.runAsync(
+            CompletableFuture.runAsync(
                     masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
                     executorService
             );

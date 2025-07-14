@@ -1318,4 +1318,72 @@ class TransportInstructionLegsContainersServiceImplTest {
         verify(jsonHelper).convertValue(Mockito.<TiContainers>any(),
                 Mockito.<Class<TransportInstructionLegsContainersResponse>>any());
     }
+
+    @Test
+    void testRetrieveById_shouldThrowValidationException_whenIdNotFound() {
+        Long invalidId = 999L;
+        when(iTiContainerDao.findById(invalidId)).thenReturn(Optional.empty());
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            transportInstructionLegsContainersServiceImpl.retrieveById(invalidId);
+        });
+        assertEquals("Invalid Ti legs container Id: 999", exception.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowValidationException_whenTiLegIdsAreDifferent() {
+        TransportInstructionLegsContainersRequest req1 = new TransportInstructionLegsContainersRequest();
+        req1.setTiLegId(100L);
+        TransportInstructionLegsContainersRequest req2 = new TransportInstructionLegsContainersRequest();
+        req2.setTiLegId(200L);
+        TransportInstructionLegsContainersListRequest request = new TransportInstructionLegsContainersListRequest();
+        request.setContainersRequests(List.of(req1, req2));
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.bulkCreate(request)
+        );
+        assertEquals("All tiLegId values must be the same", exception.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowValidationException_whenTiLegNotFound() {
+        Long legId = 123L;
+        TransportInstructionLegsContainersRequest req = new TransportInstructionLegsContainersRequest();
+        req.setTiLegId(legId);
+        TransportInstructionLegsContainersListRequest request = new TransportInstructionLegsContainersListRequest();
+        request.setContainersRequests(List.of(req));
+        when(iTiContainerDao.findById(legId)).thenReturn(Optional.empty());
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.bulkCreate(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + legId, exception.getMessage());
+    }
+
+    @Test
+    void update_shouldThrowValidationException_whenContainerIdNotFound() {
+        Long invalidId = 999L;
+        TransportInstructionLegsContainersRequest request = new TransportInstructionLegsContainersRequest();
+        request.setId(invalidId);
+        request.setTiLegId(100L);
+        when(iTiContainerDao.findById(invalidId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.update(request)
+        );
+        assertEquals("Invalid Transport Instruction Legs containers id" + invalidId, ex.getMessage());
+    }
+
+    @Test
+    void update_shouldThrowValidationException_whenTiLegIdNotFound() {
+        Long validId = 1L;
+        Long invalidTiLegId = 555L;
+        TiContainers existingContainer = new TiContainers();
+        existingContainer.setId(validId);
+        TransportInstructionLegsContainersRequest request = new TransportInstructionLegsContainersRequest();
+        request.setId(validId);
+        request.setTiLegId(invalidTiLegId);
+        when(iTiContainerDao.findById(validId)).thenReturn(Optional.of(existingContainer));
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.update(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
+    }
 }

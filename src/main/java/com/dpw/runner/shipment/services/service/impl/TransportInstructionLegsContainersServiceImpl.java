@@ -54,6 +54,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 @Slf4j
 public class TransportInstructionLegsContainersServiceImpl implements ITransportInstructionLegsContainersService {
+    private static final String TI_LEGS_DOES_NOT_EXIST = "Transport Instruction Legs does not exist for tiId: ";
     @Autowired
     private ITiLegRepository tiLegRepository;
     @Autowired
@@ -81,8 +82,8 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         log.info("Starting Transport Instruction Legs containers creation | Request ID: {} | Request Body: {}", requestId, request);
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         TiLegs tiLegsEntity = tiLegs.get();
         validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber(), request.getId());
@@ -113,13 +114,13 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         log.info("Starting Transport Instruction Legs containers update | Request ID: {} | Request Body: {}", requestId, request);
         Long id = request.getId();
         Optional<TiContainers> existingTiLegsContainers = tiContainerDao.findById(id);
-        if (!existingTiLegsContainers.isPresent()) {
+        if (existingTiLegsContainers.isEmpty()) {
             throw new ValidationException("Invalid Transport Instruction Legs containers id" + id);
         }
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         TiLegs tiLegsEntity = tiLegs.get();
         validateDuplicateContainerNumberInLeg(tiLegsEntity.getTiContainers(), request.getNumber(), request.getId());
@@ -179,7 +180,7 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
     public TransportInstructionLegsContainersResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
         Optional<TiContainers> tiContainers = tiContainerDao.findById(id);
-        if (!tiContainers.isPresent()) {
+        if (tiContainers.isEmpty()) {
             throw new ValidationException("Invalid Ti legs container Id: " + id);
         }
         TiContainers tiContainersEntity = tiContainers.get();
@@ -201,7 +202,7 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
     public TransportInstructionLegsContainersResponse retrieveById(Long id) {
 
         Optional<TiContainers> tiContainers = tiContainerDao.findById(id);
-        if (!tiContainers.isPresent()) {
+        if (tiContainers.isEmpty()) {
             throw new ValidationException("Invalid Ti legs container Id: " + id);
         }
         return jsonHelper.convertValue(tiContainers.get(), TransportInstructionLegsContainersResponse.class);
@@ -219,8 +220,8 @@ public class TransportInstructionLegsContainersServiceImpl implements ITransport
         }
 
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         TiLegs tiLegsEntity = tiLegs.get();
         request.getContainersRequests().forEach(containersRequest -> {

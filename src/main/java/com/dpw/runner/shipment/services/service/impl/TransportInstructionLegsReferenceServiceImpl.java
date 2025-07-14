@@ -51,6 +51,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 @Service
 @Slf4j
 public class TransportInstructionLegsReferenceServiceImpl implements ITransportInstructionLegsReferenceService {
+    private static final String TI_LEGS_DOES_NOT_EXIST = "Transport Instruction Legs does not exist for tiId: ";
     @Autowired
     private ITiLegRepository tiLegRepository;
     @Autowired
@@ -76,8 +77,8 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         log.info("Starting Transport Instruction Legs reference creation | Request ID: {} | Request Body: {}", requestId, request);
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         validateTransportInstructionLegsReferenceNumbers(request);
         // Convert DTO to Entity
@@ -111,8 +112,8 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         }
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         validateTransportInstructionLegsReferenceNumbers(request);
         // Convert DTO to Entity
@@ -159,7 +160,7 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
     public TransportInstructionLegsReferenceResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
         Optional<TiReferences> tiReferences = tiReferenceDao.findById(id);
-        if (!tiReferences.isPresent()) {
+        if (tiReferences.isEmpty()) {
             throw new ValidationException("Invalid Ti legs reference Id: " + id);
         }
         TiReferences tiReferenceEntity = tiReferences.get();
@@ -180,7 +181,7 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
     @Override
     public TransportInstructionLegsReferenceResponse retrieveById(Long id) {
         Optional<TiReferences> tiReferences = tiReferenceDao.findById(id);
-        if (!tiReferences.isPresent()) {
+        if (tiReferences.isEmpty()) {
             throw new ValidationException("Invalid Ti legs reference Id: " + id);
         }
         return jsonHelper.convertValue(tiReferences.get(), TransportInstructionLegsReferenceResponse.class);
@@ -199,8 +200,8 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         }
 
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         request.getReferences()
                 .forEach(this::validateTransportInstructionLegsReferenceNumbers);

@@ -778,14 +778,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if(tenantSetting.getBolNumberGeneration() != null) {
             res = tenantSetting.getBolNumberPrefix() != null ? tenantSetting.getBolNumberPrefix() : "";
-            switch(tenantSetting.getBolNumberGeneration()) {
-                case Random :
-                    res += StringUtility.getRandomString(10);
-                    break;
-                default :
-                    String serialNumber = v1Service.getMaxConsolidationId();
-                    res += serialNumber;
-                    break;
+            if (tenantSetting.getBolNumberGeneration() == GenerationType.Random) {
+                res += StringUtility.getRandomString(10);
+            } else {
+                String serialNumber = v1Service.getMaxConsolidationId();
+                res += serialNumber;
             }
         }
 
@@ -1273,7 +1270,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 if(Objects.equals(weight, BigDecimal.ZERO))
                     consolidationDetails.getAchievedQuantities().setWeightUtilization("0");
                 else
-                    consolidationDetails.getAchievedQuantities().setWeightUtilization( String.valueOf( (consolidatedWeight.divide(weight, 4, BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
+                    consolidationDetails.getAchievedQuantities().setWeightUtilization(String.valueOf((consolidatedWeight.divide(weight, 4, RoundingMode.HALF_UP)).multiply(new BigDecimal(100)).doubleValue()));
             }
             if (consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != null && consolidationDetails.getAllocations().getVolumeUnit() != null) {
                 BigDecimal consolidatedVolume = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
@@ -1281,7 +1278,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 if(Objects.equals(volume, BigDecimal.ZERO))
                     consolidationDetails.getAchievedQuantities().setVolumeUtilization("0");
                 else
-                    consolidationDetails.getAchievedQuantities().setVolumeUtilization( String.valueOf( (consolidatedVolume.divide(volume, 4, BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
+                    consolidationDetails.getAchievedQuantities().setVolumeUtilization(String.valueOf((consolidatedVolume.divide(volume, 4, RoundingMode.HALF_UP)).multiply(new BigDecimal(100)).doubleValue()));
             }
             return consolidationDetails;
         } catch (Exception e) {
@@ -2929,35 +2926,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 packs = packs + (shipmentDetails.getNoOfPacks() != null ? shipmentDetails.getNoOfPacks() : 0);
                 dgPacks = dgPacks + (shipmentDetails.getDgPacksCount() != null ? shipmentDetails.getDgPacksCount() : 0);
                 slacCount = slacCount + (shipmentDetails.getSlac() != null ? shipmentDetails.getSlac() : 0);
-                if(isStringNullOrEmpty(packsType))
-                    packsType = shipmentDetails.getPacksUnit();
-                else if(!isStringNullOrEmpty(shipmentDetails.getPacksUnit()) && !Objects.equals(packsType, shipmentDetails.getPacksUnit()))
-                    packsType = PackingConstants.PKG;
-                if(isStringNullOrEmpty(dgPacksType))
-                    dgPacksType = shipmentDetails.getDgPacksUnit();
-                else if(!isStringNullOrEmpty(shipmentDetails.getDgPacksUnit()) && !Objects.equals(dgPacksType, shipmentDetails.getDgPacksUnit()))
-                    dgPacksType = PackingConstants.PKG;
-                updateContainerMap(shipmentDetails, containersMap);
+                packsType = getPacksType(shipmentDetails, packsType);
+                dgPacksType = getPacksType(shipmentDetails, dgPacksType, containersMap);
             }
         }
 
-        for(Containers containers: containersMap.values()) {
-            noOfCont++;
-            if(Objects.nonNull(containers.getTeu()))
-                teus = teus.add(containers.getTeu());
-            if(Boolean.TRUE.equals(containers.getHazardous()))
-                dgContCount++;
-        }
+        Result result = getResult(containersMap, noOfCont, teus, dgContCount);
 
-        if(!listIsNullOrEmpty(consoleContainersList)) {
-            for(Containers containers: consoleContainersList) {
-                consoleNoOfCont++;
-                if(Objects.nonNull(containers.getTeu()))
-                    consoleTeus = consoleTeus.add(containers.getTeu());
-                if(Boolean.TRUE.equals(containers.getHazardous()))
-                    consoleDgContCount++;
-            }
-        }
+        ConsoleCount consoleCount = getConsoleCount(consoleContainersList, consoleNoOfCont, consoleTeus, consoleDgContCount);
 
         VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
 
@@ -2972,17 +2948,66 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .chargeableUnit(vwOb.getChargeableUnit())
                 .weightVolume(vwOb.getVolumeWeight())
                 .weightVolumeUnit(vwOb.getVolumeWeightUnit())
-                .containerCount(noOfCont)
-                .teuCount(teus)
-                .dgContainerCount(dgContCount)
+                .containerCount(result.noOfCont())
+                .teuCount(result.teus())
+                .dgContainerCount(result.dgContCount())
                 .shipmentsCount(shipmentsCount)
-                .consoleTeuCount(consoleTeus)
-                .consoleDgContainerCount(consoleDgContCount)
-                .consoleContainerCount(consoleNoOfCont)
+                .consoleTeuCount(consoleCount.consoleTeus())
+                .consoleDgContainerCount(consoleCount.consoleDgContCount())
+                .consoleContainerCount(consoleCount.consoleNoOfCont())
                 .dgPacks(dgPacks)
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
                 .build();
+    }
+
+    public String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
+        if(isStringNullOrEmpty(packsType))
+            packsType = shipmentDetails.getPacksUnit();
+        else if(!isStringNullOrEmpty(shipmentDetails.getPacksUnit()) && !Objects.equals(packsType, shipmentDetails.getPacksUnit()))
+            packsType = PackingConstants.PKG;
+        return packsType;
+    }
+
+    private String getPacksType(ShipmentDetails shipmentDetails, String dgPacksType, Map<Long, Containers> containersMap) {
+        if(isStringNullOrEmpty(dgPacksType))
+            dgPacksType = shipmentDetails.getDgPacksUnit();
+        else if(!isStringNullOrEmpty(shipmentDetails.getDgPacksUnit()) && !Objects.equals(dgPacksType, shipmentDetails.getDgPacksUnit()))
+            dgPacksType = PackingConstants.PKG;
+        updateContainerMap(shipmentDetails, containersMap);
+        return dgPacksType;
+    }
+
+    @NotNull
+    private static ConsoleCount getConsoleCount(List<Containers> consoleContainersList, Integer consoleNoOfCont, BigDecimal consoleTeus, Integer consoleDgContCount) {
+        if(!listIsNullOrEmpty(consoleContainersList)) {
+            for(Containers containers: consoleContainersList) {
+                consoleNoOfCont++;
+                if(Objects.nonNull(containers.getTeu()))
+                    consoleTeus = consoleTeus.add(containers.getTeu());
+                if(Boolean.TRUE.equals(containers.getHazardous()))
+                    consoleDgContCount++;
+            }
+        }
+        return new ConsoleCount(consoleNoOfCont, consoleDgContCount, consoleTeus);
+    }
+
+    private record ConsoleCount(Integer consoleNoOfCont, Integer consoleDgContCount, BigDecimal consoleTeus) {
+    }
+
+    @NotNull
+    private static Result getResult(Map<Long, Containers> containersMap, Integer noOfCont, BigDecimal teus, Integer dgContCount) {
+        for(Containers containers: containersMap.values()) {
+            noOfCont++;
+            if(Objects.nonNull(containers.getTeu()))
+                teus = teus.add(containers.getTeu());
+            if(Boolean.TRUE.equals(containers.getHazardous()))
+                dgContCount++;
+        }
+        return new Result(noOfCont, dgContCount, teus);
+    }
+
+    private record Result(Integer noOfCont, Integer dgContCount, BigDecimal teus) {
     }
 
     @Override

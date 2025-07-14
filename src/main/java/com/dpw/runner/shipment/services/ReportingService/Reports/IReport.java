@@ -2830,19 +2830,19 @@ public abstract class IReport {
             lastLine.append(city.trim());
         }
         if (!CommonUtils.isStringNullOrEmpty(state)) {
-            if (lastLine.length() > 0) lastLine.append(" ");
+            if (!lastLine.isEmpty()) lastLine.append(" ");
             lastLine.append(state.trim());
         }
         if (!CommonUtils.isStringNullOrEmpty(zipcode)) {
-            if (lastLine.length() > 0) lastLine.append(" ");
+            if (!lastLine.isEmpty()) lastLine.append(" ");
             lastLine.append(zipcode.trim());
         }
         if (!CommonUtils.isStringNullOrEmpty(country)) {
-            if (lastLine.length() > 0) lastLine.append(" ");
+            if (!lastLine.isEmpty()) lastLine.append(" ");
             lastLine.append(country.trim());
         }
 
-        if (lastLine.length() > 0) {
+        if (!lastLine.isEmpty()) {
             sb.append(lastLine.toString());
         }
 

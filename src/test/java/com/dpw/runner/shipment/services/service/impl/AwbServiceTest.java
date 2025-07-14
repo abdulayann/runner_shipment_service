@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AirMessagingLogsConstants;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
@@ -3539,21 +3540,6 @@ class AwbServiceTest extends CommonMocks {
 
     }
 
-    private ListCommonRequest constructListCommonRequest(String fieldName, Object value, String operator) {
-        ListCommonRequest request = new ListCommonRequest();
-        request.setPageNo(1);
-        request.setPageSize(Integer.MAX_VALUE);
-
-        List<FilterCriteria> criterias = new ArrayList<>();
-        List<FilterCriteria> innerFilters = new ArrayList();
-        Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
-        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilters.add(filterCriteria);
-        criterias.add(FilterCriteria.builder().innerFilter(innerFilters).logicOperator(criterias.isEmpty() ? null : "or").build());
-        request.setFilterCriteria(criterias);
-        return request;
-    }
-
     private FetchAwbListRequest contructFetchAwbListRequest(String fieldName, Object value, String operator) {
         FetchAwbListRequest request = new FetchAwbListRequest();
         request.setPageNo(1);
@@ -4504,7 +4490,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void testResetHawbWithAirSecurityPermission() throws RunnerException {
+    void testResetHawbWithAirSecurityPermission() {
         ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).shipmentId(1L).awbType("DMAWB").resetType(AwbReset.AWB_ROUTING).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
         testShipment.setTransportMode("AIR");
@@ -4522,7 +4508,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void testResetMawbWithAirSecurityPermission() throws RunnerException {
+    void testResetMawbWithAirSecurityPermission() {
         ResetAwbRequest resetAwbRequest = ResetAwbRequest.builder().id(2L).consolidationId(1L).awbType("MAWB").resetType(AwbReset.AWB_ROUTING).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
         testDmawb.setShipmentId(null);
@@ -4542,4 +4528,72 @@ class AwbServiceTest extends CommonMocks {
         assertNotNull(e);
     }
 
+    @Test
+    void testConstructShipperAddress_shouldPopulateAllFields() {
+        AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
+        AddressDataV1 shipperAddressData = new AddressDataV1();
+        shipperAddressData.setAddress1("123 Main St");
+        shipperAddressData.setAddress2("Apt 4B");
+        shipperAddressData.setCity("New York");
+        shipperAddressData.setState("NY");
+        shipperAddressData.setZipPostCode("10001");
+        shipperAddressData.setContactPerson("John Doe");
+        shipperAddressData.setContactPhone("1234567890");
+        shipperAddressData.setTaxRegNumber("TAX123");
+        Map<String, Object> addressMap = new HashMap<>();
+        addressMap.put(PartiesConstants.COUNTRY, "US");
+        Map<String, String> countryMap = new HashMap<>();
+        countryMap.put("US", "United States");
+        awbService.constructShipperAddress(awbShipmentInfo, addressMap, countryMap, shipperAddressData);
+        assertEquals("123 MAIN ST", awbShipmentInfo.getShipperAddress());
+        assertEquals("APT 4B", awbShipmentInfo.getShipperAddress2());
+        assertEquals("New York", awbShipmentInfo.getShipperCity());
+        assertEquals("NY", awbShipmentInfo.getShipperState());
+        assertEquals("10001", awbShipmentInfo.getShipperZipCode());
+        assertEquals("JOHN DOE", awbShipmentInfo.getShipperContactName());
+        assertEquals("1234567890", awbShipmentInfo.getShipperPhone());
+        assertEquals("TAX123", awbShipmentInfo.getIssuingAgentTaxRegistrationNumber());
+    }
+
+    @Test
+    void testIsCreateNotifyParty_whenShipmentAlreadyCreated_shouldReturnFalseAndRemoveParty() {
+        Awb awb = new Awb();
+        AwbNotifyPartyInfo partyInfo = new AwbNotifyPartyInfo();
+        partyInfo.setIsShipmentCreated(true);
+        List<AwbNotifyPartyInfo> notifyList = new ArrayList<>();
+        notifyList.add(partyInfo);
+        awb.setAwbNotifyPartyInfo(notifyList);
+        Map<Long, AddressDataV1> addressMap = new HashMap<>();
+        Map<String, String> countryMap = new HashMap<>();
+        Parties party = new Parties();
+        AwbNotifyPartyInfo deleteParty = new AwbNotifyPartyInfo();
+        AwbService serviceSpy = Mockito.spy(new AwbService());
+        Mockito.doReturn(partyInfo).when(serviceSpy)
+                .getDeleteParty(any(), any(), any(), any(), any());
+        boolean result = serviceSpy.isCreateNotifyParty(awb, addressMap, true, deleteParty, party, countryMap);
+        assertFalse(result);
+        assertTrue(awb.getAwbNotifyPartyInfo().isEmpty());
+    }
+
+    @Test
+    void testValidateAndConstructNotifyPartyAddress_shouldInvokeConstructNotifyPartyAddress_whenPartyAndAddressIdAreNotNull() {
+        Map<String, String> alpha2DigitToCountry = Map.of("US", "United States");
+        AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
+        Parties party = new Parties();
+        party.setAddressId("123");
+        party.setAddressData(Map.of("line1", "123 Main St"));
+        AddressDataV1 addressData = new AddressDataV1();
+        Map<Long, AddressDataV1> addressDataV1Map = Map.of(123L, addressData);
+        AwbService spyService = Mockito.spy(new AwbService());
+        doNothing().when(spyService).constructNotifyPartyAddress(
+                any(), any(), anyMap(), any()
+        );
+        spyService.validateAndConstructNotifyPartyAddress(alpha2DigitToCountry, party, notifyPartyInfo, addressDataV1Map);
+        verify(spyService, times(1)).constructNotifyPartyAddress(
+                notifyPartyInfo,
+                party.getAddressData(),
+                alpha2DigitToCountry,
+                addressData
+        );
+    }
 }
