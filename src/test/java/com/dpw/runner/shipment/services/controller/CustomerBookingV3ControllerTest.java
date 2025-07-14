@@ -58,7 +58,7 @@ class CustomerBookingV3ControllerTest {
     @Test
     void createBooking_Success() throws RunnerException {
         when(customerBookingV3Service.create(any())).thenReturn(new CustomerBookingV3Response());
-        var response = customerBookingV3Controller.createBooking(new CustomerBookingV3Request());
+        var response = customerBookingV3Controller.createBooking(new CustomerBookingV3Request(), any());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

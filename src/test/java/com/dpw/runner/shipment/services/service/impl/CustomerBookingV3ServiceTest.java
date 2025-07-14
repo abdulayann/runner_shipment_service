@@ -3909,4 +3909,68 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         assertEquals(BookingSource.Runner, response.getSource());
     }
 
+    @Test
+    void testUpdatePackingInfoInBooking() throws RunnerException {
+        Packing packing = new Packing();
+        packing.setBookingId(1L);
+        packing.setVolume(BigDecimal.TEN);
+        packing.setVolumeUnit("M3");
+        packing.setWeight(BigDecimal.TEN);
+        packing.setWeightUnit("Kg");
+        Packing packing1 = new Packing();
+        packing1.setBookingId(2L);
+        packing1.setVolume(BigDecimal.ONE);
+        packing1.setVolumeUnit("M3");
+        packing1.setWeightUnit("Kg");
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
+        customerBookingService.updatePackingInfoInBooking(1L);
+        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
+    @Test
+    void testUpdatePackingInfoInBookingWithNoPacking() throws RunnerException {
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
+        when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of());
+        customerBookingService.updatePackingInfoInBooking(1L);
+        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
+    @Test
+    void testUpdateContainerInfoInBooking() throws RunnerException {
+        Containers containers = new Containers();
+        containers.setContainerCode("20FR");
+        containers.setContainerCount(1L);
+        containers.setBookingId(2L);
+        containers.setId(3L);
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("20FR");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(containers));
+        customerBookingService.updateContainerInfoInBooking(2L);
+        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
+    @Test
+    void testUpdateContainerInfoInBookingWithNoContainers() throws RunnerException {
+        DependentServiceResponse mdmResponse = mock(DependentServiceResponse.class);
+        when(mdmServiceAdapter.getContainerTypes()).thenReturn(mdmResponse);
+        MdmContainerTypeResponse mdmContainerTypeResponse = new MdmContainerTypeResponse();
+        mdmContainerTypeResponse.setCode("20FR");
+        mdmContainerTypeResponse.setTeu(BigDecimal.valueOf(2));
+        Map<String, Object> mdmMap = new HashMap<>();
+        mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
+        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
+        when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of());
+        customerBookingService.updateContainerInfoInBooking(2L);
+        verify(customerBookingDao, times(1)).save(any(CustomerBooking.class));
+    }
+
 }
