@@ -656,7 +656,7 @@ public class PackingV3Service implements IPackingV3Service {
         packingDao.removeContainersFromPacking(containerIds);
     }
 
-    private Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
+    public Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public interface IContainerV3Service {
@@ -55,4 +57,6 @@ public interface IContainerV3Service {
     List<ContainerInfoProjection> getContainers(List<Long> containerIds);
     void pushContainersToDependentServices(List<Containers> containersList);
     ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
+
+    Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData);
 }

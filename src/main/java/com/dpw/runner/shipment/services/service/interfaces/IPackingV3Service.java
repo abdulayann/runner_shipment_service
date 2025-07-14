@@ -69,4 +69,5 @@ public interface IPackingV3Service {
     Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
     void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException;
+    Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData);
 }
