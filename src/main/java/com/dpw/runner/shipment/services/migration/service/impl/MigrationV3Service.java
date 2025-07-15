@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,8 +56,8 @@ public class MigrationV3Service implements IMigrationV3Service {
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId) {
 
         Map<String, Integer> map = new HashMap<>();
-//        TenantContext.setCurrentTenant(tenantId);
-//        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(false, tenantId);
+////        TenantContext.setCurrentTenant(tenantId);
+////        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(false, tenantId);
         List<ConsolidationDetails> consolidationDetails = List.of(consolidationDetailsDao.findConsolidationsById(consolId));
 
         map.put("Total Consolidation", consolidationDetails.size());
@@ -91,35 +92,42 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         });
 
-
         List<Long> processed = collectAllProcessedIds(queue);
         map.put("Total Consolidation Migrated", processed.size());
 
 //        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(false, tenantId);
-//        map.put("Total Shipment", shipmentDetailsList.size());
-//        List<Future<Long>> shipmentQueue = new ArrayList<>();
-//        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
-//        for (ShipmentDetails ship : shipmentDetailsList) {
-//            // execute async
-//            Future<Long> future = trxExecutor.runInAsync(() ->
-//                    trxExecutor.runInTrx(() -> {
-//                        ShipmentDetails response = null;
-//                        try {
-//                            v1Service.setAuthContext();
-//                            TenantContext.setCurrentTenant(tenantId);
-//                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
-//                        } catch (Exception e) {
-//                            throw new IllegalArgumentException(e);
-//                        } finally {
-//                            v1Service.clearAuthContext();
-//                        }
-//                        return response.getId();
-//                    })
-//            );
-//            shipmentQueue.add(future);
-//        }
-//        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
-//        map.put("Total Shipment Migrated", shipmentProcessed.size());
+        Optional<ShipmentDetails> shipmentByIdWithQuery = shipmentDao.findShipmentByIdWithQuery(consolId);
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentByIdWithQuery.get());
+        map.put("Total Shipment", shipmentDetailsList.size());
+        List<Future<Long>> shipmentQueue = new ArrayList<>();
+        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
+        for (ShipmentDetails ship : shipmentDetailsList) {
+            // execute async
+            Future<Long> future = trxExecutor.runInAsync(() -> {
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+
+                    return trxExecutor.runInTrx(() -> {
+                        ShipmentDetails response = null;
+                        try {
+                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                        return response.getId();
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
+            shipmentQueue.add(future);
+        }
+        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
+        map.put("Total Shipment Migrated", shipmentProcessed.size());
 
         return map;
 
