@@ -115,10 +115,11 @@ public class PackingV3Service implements IPackingV3Service {
     @Autowired
     private CommonUtils commonUtils;
 
-    @Lazy
     @Autowired
+    @Lazy
     private IShipmentServiceV3 shipmentService;
 
+    @Lazy
     @Autowired
     private ICustomerBookingV3Service customerBookingV3Service;
 
