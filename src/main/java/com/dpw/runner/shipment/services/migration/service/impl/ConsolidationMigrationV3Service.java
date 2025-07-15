@@ -6,41 +6,22 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
-import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
+
+import javax.transaction.Transactional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -80,6 +61,18 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
+
+    @Autowired
+    IContainerRepository containerRepository;
+    @Autowired
+    IPackingRepository packingRepository;
+    @Autowired
+    IShipmentRepository shipmentRepository;
+    @Autowired
+    IConsolidationRepository consolidationRepository;
+
+    @Autowired
+    private IPackingService packingService;
 
     @Override
     @Transactional
@@ -291,9 +284,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
 
         // ContainerSave
+        containerRepository.saveAll(console.getContainersList());
         // PackingSave
+        packingRepository.saveAll(console.getPackingList());
         // ShipmentSave
+        shipmentRepository.saveAll(console.getShipmentsList());
         // ConsoleSave
+        consolidationRepository.save(console);
 
         return console;
     }
@@ -315,11 +312,44 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
 
         // Console utilisation update
-        setContainerUtilisationForConsolidation(console, shipmentDetailsList, containerTypeMap);
+        Set<Containers> consoleContainers = setContainerUtilisationForConsolidation(console, shipmentDetailsList, containerTypeMap);
 
-        //TODO : Packs utilisation Update : V3 --> V2
+        //consol Packs Utilisation
+        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(console.getTransportMode())){
+            setPacksUtilisationForConsolidation(console);
+        }
+
+        Set<Containers> shipmentContainers = new HashSet<>();
+        for (ShipmentDetails shipment : console.getShipmentsList()) {
+            shipment.setConsolidationList(new HashSet<>());
+            shipment.getConsolidationList().add(console);
+
+            for (Containers container : shipment.getContainersList()) {
+                if (container.getShipmentsList() == null) {
+                    container.setShipmentsList(new HashSet<>());
+                }
+                container.getShipmentsList().add(shipment);
+                shipmentContainers.add(container);
+            }
+        }
+        Set<Containers> finalContainers = new HashSet<>();
+        if (!CommonUtils.setIsNullOrEmpty(consoleContainers)) {
+            finalContainers.addAll(consoleContainers);
+        }
+
+        if (!CommonUtils.setIsNullOrEmpty(shipmentContainers)) {
+            finalContainers.addAll(shipmentContainers);
+        }
+        console.setContainersList(new ArrayList<>(finalContainers));
 
         return console;
+    }
+
+    private void setPacksUtilisationForConsolidation(ConsolidationDetails consol) throws RunnerException {
+        CalculatePackUtilizationRequest calculatePackUtilizationRequest = CalculatePackUtilizationRequest.builder()
+                .consolidationId(consol.getId())
+                .build();
+        packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
     }
 
     public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments) {
@@ -407,13 +437,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return value != null ? value : BigDecimal.ZERO;
     }
 
-
-    private void setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
+    private Set<Containers> setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
                                                          Map<String, EntityTransferContainerType> containerTypeMap) throws RunnerException {
         //Identify container associated only with consolidation and and call setContainerUtilisationForShipment
         Set<Containers> consolContainers = getOnlyConsolidationContainers(console, shipmentDetailsList);
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(console.getShipmentType());
         shipmentMigrationV3Service.setContainerUtilisation(consolContainers, containerTypeMap, isFCL);
+        return consolContainers;
     }
 
     private Set<Containers> getOnlyConsolidationContainers(ConsolidationDetails consolidationDetails, List<ShipmentDetails> shipmentDetailsList) {
