@@ -112,4 +112,9 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     private ResponseEntity<IRunnerResponse> handleSectionFieldsException(final SectionFieldsException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(BackupFailureException.class)
+    public final ResponseEntity<IRunnerResponse> handleBackupFailureException(final BackupFailureException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

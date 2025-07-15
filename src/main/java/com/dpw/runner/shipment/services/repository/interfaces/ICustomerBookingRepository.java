@@ -45,4 +45,7 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
+
+    @Query(value = "SELECT * from customer_booking where tenant_id = ?1", nativeQuery = true)
+    List<CustomerBooking> findAllByTenantId(Integer tenantId);
 }

@@ -15,6 +15,8 @@ import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -231,4 +233,10 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber) {
         return customerBookingRepository.findByShipmentReferenceNumber(shipmentReferenceNumber);
     }
+
+    @Override
+    public List<CustomerBooking> findAllByTenantId(Integer tenantId) {
+        return customerBookingRepository.findAllByTenantId(tenantId);
+    }
+
 }

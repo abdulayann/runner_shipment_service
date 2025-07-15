@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.migration.entity;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,10 +17,10 @@ import java.util.UUID;
 @Entity
 @Setter
 @Getter
-@Table(name = "shipment_backup")
+@Table(name = "customer_booking_backup")
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShipmentBackupEntity {
+public class CustomerBookingBackupEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,15 +32,12 @@ public class ShipmentBackupEntity {
     @Column(name = "back_up_time_utc", nullable = false)
     private Instant backupTimeUtc = Instant.now();
 
-    @Column(name = "shipment_id")
-    private Long shipmentId;
+    @Column(name = "booking_id")
+    private Long bookingId;
 
-    @Column(name = "shipment_guid")
-    private UUID shipmentGuid;
+    @Column(name = "booking_guid")
+    private UUID bookingGuid;
 
-    @Column(name = "shipment_details", columnDefinition = "jsonb")
-    private String shipmentDetail;
-
-    @Column(name = "pickup_delivery_details", columnDefinition = "jsonb")
-    private String pickupDeliveryDetail;
+    @Column(name = "customer_booking_details", columnDefinition = "jsonb")
+    private String customerBookingDetails;
 }
