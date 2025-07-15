@@ -147,6 +147,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
             shp.setContainersList(new HashSet<>());
 
+            setCutOffProperties(console, shp);
+
         });
 
         List<Containers> splitContainers = distributeContainers(console.getContainersList(), containerGuidToShipments);
@@ -188,9 +190,19 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             throw new IllegalArgumentException(e);
         }
 
-        // TODO SUBHAM Console to shipment cutoff fields update, Agents, etc (Refer excel)
-
         return console;
+    }
+
+    private void setCutOffProperties(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
+        shipmentDetails.setTerminalCutoff(console.getTerminalCutoff());
+        shipmentDetails.setVerifiedGrossMassCutoff(console.getVerifiedGrossMassCutoff());
+        shipmentDetails.setShippingInstructionCutoff(console.getShipInstructionCutoff());
+        shipmentDetails.setDgCutoff(console.getHazardousBookingCutoff());
+        shipmentDetails.setReeferCutoff(console.getReeferCutoff());
+        shipmentDetails.setEarliestEmptyEquipmentPickUp(console.getEarliestEmptyEquPickUp());
+        shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(console.getLatestFullEquDeliveredToCarrier());
+        shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(console.getEarliestDropOffFullEquToCarrier());
+        shipmentDetails.setLatestArrivalTime(console.getLatDate());
     }
 
     private void assignPackingsToContainers(List<ShipmentDetails> shipmentDetailsList, Map<UUID, UUID> packingVsContainerGuid, Map<UUID, Containers> guidVsContainer) {
