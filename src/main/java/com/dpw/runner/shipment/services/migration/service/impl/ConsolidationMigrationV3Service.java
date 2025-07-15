@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -98,32 +97,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // ContainerSave
         List<Containers> updatedContainersList = console.getContainersList();
-        Set<Long> originalContainerIds = updatedContainersList.stream().map(Containers::getId).filter(Objects::nonNull).collect(Collectors.toSet());
         List<Containers> savedUpdatedContainersList = containerRepository.saveAllAndFlush(updatedContainersList);
         Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
-
-        //TODO guid to container -> shipment's container store
-        // Attach Container to shipment
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
-//        for (ShipmentDetails shp : consolShipmentsList) {
-//            Set<Containers> originalContainers = shp.getContainersList();
-//            Set<Containers> updatedContainers = new HashSet<>();
-//
-//            for (Containers originalContainer : originalContainers) {
-//                Containers updatedContainer = uuidVsUpdatedContainers.get(originalContainer.getGuid());
-//                updatedContainers.add(Objects.requireNonNullElse(updatedContainer, originalContainer));
-//            }
-//            shp.setContainersList(updatedContainers);
-//        }
 
-
-
-
-
-
-        // PackingSave
-        // TODO: replace conatiner id in packs
         for (ShipmentDetails consolShipment : consolShipmentsList) {
             List<Packing> packingList = consolShipment.getPackingList();
             for (Packing packing : packingList) {
@@ -133,41 +111,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     packing.setContainerId(containers.getId());
                 }
             }
-            packingRepository.saveAllAndFlush(packingList);
+            packingRepository.saveAll(packingList);
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // ShipmentSave
-        // TODO: replace existing container with matching Guid of new container , same for Packs
-
-        List<ShipmentsContainersMapping> shipmentsContainersMappings = new ArrayList<>();
-
-
 
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
         });
-        List<ShipmentDetails> shipmentDetails = shipmentRepository.saveAllAndFlush(consolShipmentsList);
 
-//        List<ShipmentsContainersMapping> shipmentsContainersMappings1 = shipmentsContainersMappingRepository.saveAll(shipmentsContainersMappings);
+        shipmentRepository.saveAll(consolShipmentsList);
 
-        // ConsoleSave
-        consolidationRepository.saveAndFlush(console);
-
-
+        consolidationRepository.save(console);
 
         return console;
     }
@@ -175,8 +129,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid) {
         ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
-        // Container splitting and creation (With new Guids)
-        // Container Attachment to shipment (add containers in shipment)
         List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
         Map<UUID, List<UUID>> containerGuidToShipments = new HashMap<>();
         Map<UUID, ShipmentDetails> guidToShipment = new HashMap<>();
@@ -236,7 +188,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             throw new IllegalArgumentException(e);
         }
 
-        // TODO Console to shipment cutoff fields update, Agents, etc (Refer excel)
+        // TODO SUBHAM Console to shipment cutoff fields update, Agents, etc (Refer excel)
 
         return console;
     }
