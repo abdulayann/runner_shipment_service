@@ -126,7 +126,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String assignedTo;
 
     @Column(name = "additional_terms")
-    @Size(max=50000, message = "max size is 50000 for additional_terms")
+    @Size(max=25000, message = "max size is 25000 for additional_terms")
     private String additionalTerms;
 
     @Column(name = "goods_description")
