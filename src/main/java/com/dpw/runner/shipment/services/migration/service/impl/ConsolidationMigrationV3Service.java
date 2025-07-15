@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -27,6 +29,8 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 
 @Service
 @Slf4j
@@ -54,6 +58,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     IShipmentRepository shipmentRepository;
     @Autowired
     IConsolidationRepository consolidationRepository;
+    @Autowired
+    CommonUtils commonUtils;
 
     @Autowired
     private IPackingService packingService;
@@ -184,7 +190,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         CalculatePackUtilizationRequest calculatePackUtilizationRequest = CalculatePackUtilizationRequest.builder()
                 .consolidationId(consol.getId())
                 .build();
-        packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+        PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+        if(packSummaryResponse.getConsolidationAchievedQuantities() != null && coLoadingConsolChecks(consol)){
+            consol.setAchievedQuantities(jsonHelper.convertCreateValue(packSummaryResponse.getConsolidationAchievedQuantities(), AchievedQuantities.class));
+            commonUtils.calculateConsolUtilization(consol);
+        }
     }
 
     private Set<Containers> setContainerUtilisationForConsolidation(ConsolidationDetails console, List<ShipmentDetails> shipmentDetailsList,
@@ -212,5 +222,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 .filter(container -> !shipmentContainerIds.contains(container.getId()))
                 .collect(Collectors.toSet());
     }
+
+    private boolean coLoadingConsolChecks(ConsolidationDetails consol) {
+        boolean flag = true;
+        if(!consol.getTransportMode().equalsIgnoreCase(TRANSPORT_MODE_AIR))
+            flag = false;
+        if(!Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()))
+            flag = false;
+        if(!(consol.getAllocations() != null && consol.getAllocations().getWeight() != null))
+            flag = false;
+        return flag;
+    }
+
 
 }
