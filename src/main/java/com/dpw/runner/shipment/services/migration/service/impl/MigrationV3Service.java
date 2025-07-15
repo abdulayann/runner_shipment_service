@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
+import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -46,6 +48,9 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private NotesUtil notesUtil;
 
+    @Autowired
+    private V1ServiceImpl v1Service;
+
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId) {
 
@@ -60,14 +65,33 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         consolidationDetails.forEach(cos -> {
             // execute async
-            Future<Long> future = trxExecutor.runInAsync(() ->
-                    trxExecutor.runInTrx(() -> {
-                        ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
-                        return response.getId();
-                    })
-            );
+            Future<Long> future = trxExecutor.runInAsync(() -> {
+
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+
+                    return trxExecutor.runInTrx(() -> {
+                        try {
+
+                            ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
+                            return response.getId();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
             queue.add(future);
+
         });
+
+
         List<Long> processed = collectAllProcessedIds(queue);
         map.put("Total Consolidation Migrated", processed.size());
 
@@ -81,9 +105,13 @@ public class MigrationV3Service implements IMigrationV3Service {
 //                    trxExecutor.runInTrx(() -> {
 //                        ShipmentDetails response = null;
 //                        try {
+//                            v1Service.setAuthContext();
+//                            TenantContext.setCurrentTenant(tenantId);
 //                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
 //                        } catch (Exception e) {
 //                            throw new IllegalArgumentException(e);
+//                        } finally {
+//                            v1Service.clearAuthContext();
 //                        }
 //                        return response.getId();
 //                    })
@@ -92,8 +120,6 @@ public class MigrationV3Service implements IMigrationV3Service {
 //        }
 //        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
 //        map.put("Total Shipment Migrated", shipmentProcessed.size());
-
-//        TenantContext.removeTenant();
 
         return map;
 

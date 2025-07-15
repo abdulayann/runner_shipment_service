@@ -402,7 +402,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
     }
 
-    // TODO: SUBHAM check if any more fields should be corrected - DEVA
     private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume, BigDecimal weightRemainder, BigDecimal volumeRemainder) {
         Containers newContainer = jsonHelper.convertValue(sourceContainer, Containers.class);
         newContainer.setId(null);
@@ -410,6 +409,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         newContainer.setContainerCount(1L);
         newContainer.setGrossWeight(baseWeight.add(weightRemainder));
         newContainer.setGrossVolume(baseVolume.add(volumeRemainder));
+        newContainer.setCreatedBy(sourceContainer.getCreatedBy());
+        newContainer.setUpdatedBy(sourceContainer.getUpdatedBy());
 
         return newContainer;
     }

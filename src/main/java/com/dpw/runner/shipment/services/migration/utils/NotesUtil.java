@@ -1,21 +1,31 @@
 package com.dpw.runner.shipment.services.migration.utils;
 
-import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Notes;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import java.util.*;
 
 @Slf4j
 @Component
@@ -37,7 +47,7 @@ public class NotesUtil {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private INotesDao notesDao;
+    private INotesRepository notesRepository;
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -73,7 +83,10 @@ public class NotesUtil {
                 .entityType(entityType).text(text.toString()).build();
 
         Notes notes = jsonHelper.convertValue(notesRequest, Notes.class);
-        notesDao.save(notes);
+        notes.setIsReadOnly(Boolean.TRUE);
+        notes.setCreatedBy(Constants.APPLICATION);
+        notes.setUpdatedBy(Constants.APPLICATION);
+        notesRepository.save(notes);
     }
 
     private void appendContainerDataInText(Set<Containers> containersList, StringBuilder text) {

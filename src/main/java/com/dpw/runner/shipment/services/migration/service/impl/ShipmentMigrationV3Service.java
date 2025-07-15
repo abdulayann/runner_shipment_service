@@ -177,6 +177,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             Packing packing = new Packing();
             packing.setGuid(UUID.randomUUID());
             packing.setShipmentId(shipmentDetails.getId());
+            packing.setCreatedBy(shipmentDetails.getCreatedBy());
+            packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
             packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
             shipmentDetails.getPackingList().add(packing);
         });
@@ -196,6 +198,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         shipmentDetails.getContainersList().forEach(container -> {
             Packing packing = new Packing();
             packing.setGuid(UUID.randomUUID());
+            packing.setCreatedBy(shipmentDetails.getCreatedBy());
+            packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
             packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
             // populate Container info to pack
             createPackWithContainerInfo(packing, container);
@@ -231,6 +235,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                 Packing packing = new Packing();
                 packing.setGuid(UUID.randomUUID());
                 packing.setShipmentId(shipmentDetails.getId());
+                packing.setCreatedBy(shipmentDetails.getCreatedBy());
+                packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
                 packingVsContainerGuid.putIfAbsent(packing.getGuid(), cont.getGuid());
                 // populate Container info to pack
                 createPackWithContainerInfo(packing, cont);
