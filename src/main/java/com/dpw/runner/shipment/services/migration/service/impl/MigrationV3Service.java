@@ -62,7 +62,6 @@ public class MigrationV3Service implements IMigrationV3Service {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() ->
                     trxExecutor.runInTrx(() -> {
-                        notesUtil.addNotesForConsolidation(cos);
                         ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
                         return response.getId();
                     })

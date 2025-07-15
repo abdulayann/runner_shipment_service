@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
@@ -85,11 +86,16 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private IPackingService packingService;
 
+    @Autowired
+    private NotesUtil notesUtil;
+
     @Override
     @Transactional
     public ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails) {
         ConsolidationDetails consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId())
                 .orElseThrow(() -> new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId()));
+
+        notesUtil.addNotesForConsolidation(consolidationDetails1);
 
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         // Convert V2 Console and Attached shipment to V3
@@ -97,7 +103,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // ContainerSave
         List<Containers> updatedContainersList = console.getContainersList();
-        List<Containers> savedUpdatedContainersList = containerRepository.saveAllAndFlush(updatedContainersList);
+        List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
         Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
@@ -117,10 +123,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
+            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
 
+        console.setIsMigratedToV3(Boolean.TRUE);
         consolidationRepository.save(console);
 
         return console;

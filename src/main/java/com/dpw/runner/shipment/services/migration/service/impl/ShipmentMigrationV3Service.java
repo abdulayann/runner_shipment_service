@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
@@ -64,15 +65,19 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPackingV3Service packingV3Service;
     @Autowired
     private IPackingRepository packingRepository;
+    @Autowired
+    private NotesUtil notesUtil;
 
     @Override
     public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+
         if(shipmentDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
+        notesUtil.addNotesForShipment(shipment);
         mapShipmentV2ToV3(shipment, new HashMap<>());
 
         // Save packing details
@@ -80,6 +85,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             packingRepository.saveAll(shipment.getPackingList());
         }
         // save shipment
+        shipment.setIsMigratedToV3(Boolean.TRUE);
         shipmentRepository.save(shipment);
         return shipment;
     }
