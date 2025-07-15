@@ -34,6 +34,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 
 @Service
 @Slf4j
+@SuppressWarnings("java:S112")
 public class ConsolidationMigrationV3Service implements IConsolidationMigrationV3Service {
 
     @Autowired
@@ -123,6 +124,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Convert V3 Console and Attached shipment to V2
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
+        setMigratedV3Flag(console, false);
 
         // ContainerSave
         containerRepository.saveAll(console.getContainersList());
@@ -136,12 +138,26 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
+    private void setMigratedV3Flag(ConsolidationDetails consolidationDetails, boolean isMigratedV3) {
+        consolidationDetails.setIsMigratedToV3(isMigratedV3);
+
+        if(consolidationDetails.getShipmentsList() != null) {
+            for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                shipmentDetails.setIsMigratedToV3(isMigratedV3);
+            }
+        }
+    }
+
     public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
         ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
         Map<String, EntityTransferContainerType> containerTypeMap = shipmentMigrationV3Service.fetchContainerTypeDetails(console.getContainersList());
 
-        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        if(console.getShipmentsList() != null) {
+            shipmentDetailsList = console.getShipmentsList().stream().toList();
+        }
         if(!CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
