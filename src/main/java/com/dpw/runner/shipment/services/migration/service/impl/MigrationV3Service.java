@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,9 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private IConsolidationRepository consolidationRepository;
 
+    @Autowired
+    private NotesUtil notesUtil;
+
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId) {
 
@@ -58,6 +62,7 @@ public class MigrationV3Service implements IMigrationV3Service {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() ->
                     trxExecutor.runInTrx(() -> {
+                        notesUtil.addNotesForConsolidation(cos);
                         ConsolidationDetails response = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos);
                         return response.getId();
                     })
@@ -67,27 +72,27 @@ public class MigrationV3Service implements IMigrationV3Service {
         List<Long> processed = collectAllProcessedIds(queue);
         map.put("Total Consolidation Migrated", processed.size());
 
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(false, tenantId);
-        map.put("Total Shipment", shipmentDetailsList.size());
-        List<Future<Long>> shipmentQueue = new ArrayList<>();
-        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
-        for (ShipmentDetails ship : shipmentDetailsList) {
-            // execute async
-            Future<Long> future = trxExecutor.runInAsync(() ->
-                    trxExecutor.runInTrx(() -> {
-                        ShipmentDetails response = null;
-                        try {
-                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
-                        } catch (Exception e) {
-                            throw new IllegalArgumentException(e);
-                        }
-                        return response.getId();
-                    })
-            );
-            shipmentQueue.add(future);
-        }
-        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
-        map.put("Total Shipment Migrated", shipmentProcessed.size());
+//        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(false, tenantId);
+//        map.put("Total Shipment", shipmentDetailsList.size());
+//        List<Future<Long>> shipmentQueue = new ArrayList<>();
+//        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
+//        for (ShipmentDetails ship : shipmentDetailsList) {
+//            // execute async
+//            Future<Long> future = trxExecutor.runInAsync(() ->
+//                    trxExecutor.runInTrx(() -> {
+//                        ShipmentDetails response = null;
+//                        try {
+//                            response = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
+//                        } catch (Exception e) {
+//                            throw new IllegalArgumentException(e);
+//                        }
+//                        return response.getId();
+//                    })
+//            );
+//            shipmentQueue.add(future);
+//        }
+//        List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
+//        map.put("Total Shipment Migrated", shipmentProcessed.size());
 
 //        TenantContext.removeTenant();
 
