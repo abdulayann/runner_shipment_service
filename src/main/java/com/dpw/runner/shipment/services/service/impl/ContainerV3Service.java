@@ -169,6 +169,9 @@ public class ContainerV3Service implements IContainerV3Service {
     private ContainerV3Util containerV3Util;
 
     @Autowired
+    private ICustomerBookingV3Service customerBookingV3Service;
+
+    @Autowired
     @Lazy
     private ContainerV3Service self;
 
@@ -362,6 +365,10 @@ public class ContainerV3Service implements IContainerV3Service {
         // update console achieved data
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
+
+        if (Objects.equals(BOOKING, module)) {
+            customerBookingV3Service.updateContainerInfoInBooking(containersToDelete.iterator().next().getBookingId());
+        }
 
         // Log the deletion activity for auditing and tracking purposes
         recordAuditLogs(containersToDelete, null, DBOperationType.DELETE);
@@ -1140,8 +1147,10 @@ public class ContainerV3Service implements IContainerV3Service {
         return masterDataResponse;
     }
 
-    private void handlePostSaveActions(Containers container, ContainerV3Request request, String module) {
-        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+    private void handlePostSaveActions(Containers container, ContainerV3Request request, String module) throws RunnerException {
+        if (Objects.equals(BOOKING, module)) {
+            customerBookingV3Service.updateContainerInfoInBooking(request.getBookingId());
+        }
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
@@ -1194,8 +1203,10 @@ public class ContainerV3Service implements IContainerV3Service {
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
   }
 
-    private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) {
-        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+    private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) throws RunnerException {
+        if (Objects.equals(BOOKING, module)) {
+            customerBookingV3Service.updateContainerInfoInBooking(containers.iterator().next().getBookingId());
+        }
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
         CompletableFuture.allOf(afterSaveFuture).join();
     }

@@ -488,7 +488,7 @@ class CargoServiceTest {
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(null);
+        vwOb.setChargeable(BigDecimal.TEN);
         vwOb.setChargeableUnit("KG");
         vwOb.setVolumeWeight(BigDecimal.valueOf(480));
         vwOb.setVolumeWeightUnit("KG");
@@ -498,8 +498,8 @@ class CargoServiceTest {
 
         assertEquals(1, response.getContainers());
         assertEquals(BigDecimal.valueOf(2.0), response.getTeuCount());
-        assertNull(response.getWeight());
-        assertNull(response.getChargable());
+        assertEquals(BigDecimal.ZERO, response.getWeight());
+        assertEquals(BigDecimal.valueOf(10.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(3), response.getVolume());
         assertEquals(5, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(480), response.getVolumetricWeight());
