@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
@@ -11,6 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.Hibernate;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +24,9 @@ import java.util.List;
 @Service
 @Slf4j
 public class ShipmentStrategy implements BackupRestoreStrategy {
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -41,13 +49,16 @@ public class ShipmentStrategy implements BackupRestoreStrategy {
                 backupEntity.setTenantId(tenantId);
                 backupEntity.setShipmentId(details.getShipmentId());
                 backupEntity.setShipmentGuid(details.getGuid());
-                backupEntity.setShipmentDetail(details);
+                ShipmentDetailsResponse response = modelMapper.map(details, ShipmentDetailsResponse.class);
+                backupEntity.setShipmentDetail(response);
+
                 List<PickupDeliveryDetails> pickupDeliveryDetails = pickupDeliveryDetailsDao.findByShipmentId(details.getId());
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.registerModule(new JavaTimeModule());
-                mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-                String jsonString = mapper.writeValueAsString(pickupDeliveryDetails);
-                backupEntity.setPickupDeliveryDetail(jsonString);
+
+                List<PickupDeliveryDetailsResponse> dtoList = modelMapper.map(
+                        pickupDeliveryDetails,
+                        new TypeToken<List<PickupDeliveryDetailsResponse>>() {}.getType()
+                );
+                backupEntity.setPickupDeliveryDetail(dtoList);
                 shipmentBackupRepository.save(backupEntity);
             }
         }   catch (Exception e) {

@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.migration.entity;
 
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -49,8 +51,9 @@ public class ShipmentBackupEntity {
 
     @Type(type = "jsonb")
     @Column(name = "shipment_details" , columnDefinition = "jsonb")
-    private ShipmentDetails shipmentDetail;
+    private ShipmentDetailsResponse shipmentDetail;
 
+    @Type(type = "jsonb")
     @Column(name  = "pickup_delivery_detail",  columnDefinition = "jsonb")
-    private String pickupDeliveryDetail;
+    private List<PickupDeliveryDetailsResponse> pickupDeliveryDetail;
 }
