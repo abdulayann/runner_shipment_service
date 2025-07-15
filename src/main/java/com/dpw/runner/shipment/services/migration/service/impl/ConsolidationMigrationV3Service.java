@@ -4,24 +4,45 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
-
-import javax.transaction.Transactional;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -63,15 +84,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
     @Autowired
-    IContainerRepository containerRepository;
-    @Autowired
-    IPackingRepository packingRepository;
-    @Autowired
-    IShipmentRepository shipmentRepository;
-    @Autowired
-    IConsolidationRepository consolidationRepository;
-
-    @Autowired
     private IPackingService packingService;
 
     @Override
@@ -87,7 +99,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // ContainerSave
         List<Containers> updatedContainersList = console.getContainersList();
         Set<Long> originalContainerIds = updatedContainersList.stream().map(Containers::getId).filter(Objects::nonNull).collect(Collectors.toSet());
-        List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
+        List<Containers> savedUpdatedContainersList = containerRepository.saveAllAndFlush(updatedContainersList);
         Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
 
 
@@ -121,7 +133,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     packing.setContainerId(containers.getId());
                 }
             }
-            packingRepository.saveAll(packingList);
+            packingRepository.saveAllAndFlush(packingList);
         }
 
 
@@ -147,22 +159,13 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
-
-
-
-//            shp.getContainersList().forEach(con -> {
-//                if(!originalContainerIds.contains(con.getId())) {
-//                    shipmentsContainersMappings.add(new ShipmentsContainersMapping(con.getId(), shp.getId()));
-//                }
-//            });
-//            shp.setContainersList(null);
         });
-        List<ShipmentDetails> shipmentDetails = shipmentRepository.saveAll(consolShipmentsList);
+        List<ShipmentDetails> shipmentDetails = shipmentRepository.saveAllAndFlush(consolShipmentsList);
 
 //        List<ShipmentsContainersMapping> shipmentsContainersMappings1 = shipmentsContainersMappingRepository.saveAll(shipmentsContainersMappings);
 
         // ConsoleSave
-        consolidationRepository.save(console);
+        consolidationRepository.saveAndFlush(console);
 
 
 
@@ -203,6 +206,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 ShipmentDetails details = guidToShipment.get(shipmentGuid);
                 Containers containers = guidVsContainer.get(containerGuid);
                 details.getContainersList().add(containers);
+                if(ObjectUtils.isEmpty(containers.getShipmentsList())) {
+                    containers.setShipmentsList(new HashSet<>());
+                }
+                if(containers.getId()!=null) {
+                    containers.getShipmentsList().add(details);
+                }
             }
         });
 
