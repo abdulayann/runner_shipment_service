@@ -169,6 +169,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private ContainerV3Util containerV3Util;
 
     @Autowired
+    @Lazy
     private ICustomerBookingV3Service customerBookingV3Service;
 
     @Autowired
