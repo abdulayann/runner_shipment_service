@@ -2311,8 +2311,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             Long shipmentId = shipmentDetails.getId();
             if(consolidationId != null) {
                 consolidationV3Service.attachShipments(ShipmentConsoleAttachDetachV3Request.builder().consolidationId(consolidationId).shipmentIds(Collections.singleton(shipmentId)).build());
+                processPacksAndContainers(customerBookingV3Request, containerList, consolidationId, shipmentDetails);
             }
-            processPacksAndContainers(customerBookingV3Request, containerList, consolidationId, shipmentDetails);
             shipmentDao.save(shipmentDetails, false);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             generateAfterSaveEvents(shipmentDetails, shipmentSettingsDetails);
