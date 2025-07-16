@@ -9,4 +9,6 @@ import lombok.Setter;
 public class ConsolidationMigrationRequest {
     private Integer tenantId;
 
+    private Long consolId;
+
 }
