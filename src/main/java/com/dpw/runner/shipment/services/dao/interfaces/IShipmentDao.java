@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -74,4 +75,6 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
 
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+
+    void UpdateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId);
 }

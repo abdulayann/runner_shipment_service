@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.projection.CustomerBookingProjection;
@@ -266,4 +267,14 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "s.dgPacksUnit = :dgPacksUnit " +
             "WHERE s.id = :shipmentId")
     void updateDgPacksDetailsInShipment(@Param("dgPacks") Integer dgPacks, @Param("dgPacksUnit") String dgPacksUnit, @Param("shipmentId") Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_details s " +
+            "SET contains_hazardous = :isHazardous, " +
+            "ocean_dg_status = :oceanDGStatus " +
+            "WHERE id = :shipmentId", nativeQuery = true)
+    void updateDgStatusInShipment(@Param("isHazardous") Boolean isHazardous,
+                                  @Param("oceanDGStatus") String oceanDGStatus,
+                                  @Param("shipmentId") Long shipmentId);
 }
