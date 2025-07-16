@@ -56,7 +56,6 @@ public class MigrationV3Service implements IMigrationV3Service {
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId) {
 
         Map<String, Integer> map = new HashMap<>();
-////        TenantContext.setCurrentTenant(tenantId);
 ////        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(false, tenantId);
         List<ConsolidationDetails> consolidationDetails = List.of(consolidationDetailsDao.findConsolidationsById(consolId));
 

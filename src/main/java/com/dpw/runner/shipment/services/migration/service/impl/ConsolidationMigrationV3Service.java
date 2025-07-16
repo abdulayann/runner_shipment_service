@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -21,7 +21,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepo
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -46,8 +45,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-
 @Service
 @Slf4j
 @SuppressWarnings("java:S112")
@@ -57,15 +54,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     private IShipmentMigrationV3Service shipmentMigrationV3Service;
 
     @Autowired
-    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
     @Autowired
     private JsonHelper jsonHelper;
-
-    @Autowired
-    private IShipmentDao shipmentDao;
 
     @Autowired
     private IShipmentRepository shipmentRepository;
@@ -77,9 +69,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired
-    IConsolidationRepository consolidationRepository;
+    private CommonUtils commonUtils;
+
     @Autowired
-    CommonUtils commonUtils;
     private IContainerRepository containerRepository;
 
     @Autowired
@@ -87,9 +79,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Autowired
     private IConsolidationRepository consolidationRepository;
-
-    @Autowired
-    private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
     @Autowired
     private IPackingService packingService;
@@ -253,7 +242,6 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     continue; // skip if container is not mapped
                 }
                 try {
-                    // TODO: DEVA took deafault units from tenant settings | check for
                     containerV3Service.addPackageDataToContainer(container, packing);
                 } catch (RunnerException e) {
                     throw new IllegalArgumentException(e);
