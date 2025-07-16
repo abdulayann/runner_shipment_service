@@ -19,7 +19,6 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -268,6 +267,6 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "WHERE s.id = :shipmentId")
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
 
-    @Query(value = "SELECT * FROM shipment_details WHERE tenant_id = ?1", nativeQuery = true)
-    List<ShipmentDetails> findAllByTenantId(Integer tenantId);
+    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1", nativeQuery = true)
+    List<Long> findShipmentIdsByTenantId(Integer tenantId);
 }

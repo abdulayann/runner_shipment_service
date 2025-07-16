@@ -32,5 +32,5 @@ public interface ICustomerBookingDao {
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
 
-    List<CustomerBooking> findAllByTenantId(Integer tenantId);
+    List<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
 }

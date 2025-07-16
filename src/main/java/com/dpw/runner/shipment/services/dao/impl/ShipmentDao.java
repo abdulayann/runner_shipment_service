@@ -944,7 +944,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public List<ShipmentDetails> findAllByTenantId(Integer tenantId) {
-        return shipmentRepository.findAllByTenantId(tenantId);
+    public List<Long> findShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findShipmentIdsByTenantId(tenantId);
     }
 }

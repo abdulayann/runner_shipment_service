@@ -235,8 +235,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     }
 
     @Override
-    public List<CustomerBooking> findAllByTenantId(Integer tenantId) {
-        return customerBookingRepository.findAllByTenantId(tenantId);
+    public List<Long> findCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findCustomerBookingIdsByTenantId(tenantId);
     }
 
 }
