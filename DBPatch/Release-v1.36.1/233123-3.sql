@@ -38,6 +38,9 @@ WHERE shp.receiving_branch IS NOT NULL
   AND shp.receiving_branch != shp.tenant_id
   AND shp2.id IS NOT NULL
   AND nt.entity_id IS NULL
+  and shp.job_type = 'DRT'
+  and shp.transport_mode = 'AIR'
+  and shp.direction = 'EXP'
   and shp.id!=8768;
 
 
@@ -83,5 +86,8 @@ LEFT JOIN shipment_details cd2
 LEFT JOIN network_transfer nt
     ON nt.entity_id = c.id AND nt.entity_guid = c.guid AND nt.job_type ='CTS'
 WHERE cd2.id IS NOT NULL
-  AND nt.entity_id IS NULL;
+  AND nt.entity_id IS NULL
+  and c.job_type = 'DRT'
+    and c.transport_mode = 'AIR'
+    and c.direction = 'EXP';
 

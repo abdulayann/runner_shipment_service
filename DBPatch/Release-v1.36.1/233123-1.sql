@@ -38,6 +38,8 @@ WHERE c.receiving_branch IS NOT NULL
   AND c.receiving_branch != c.tenant_id
   AND cd2.id IS NOT NULL
   AND nt.entity_id IS NULL
+  and c.shipment_type = 'EXP'
+  and c.source_guid IS NULL
   AND c.id not in(2634, 5498, 5883, 8484, 40697);
 
 INSERT INTO network_transfer (
@@ -81,4 +83,6 @@ LEFT JOIN consolidation_details cd2
 LEFT JOIN network_transfer nt
     ON nt.entity_id = c.id AND nt.entity_guid = c.guid And nt.job_type ='CTS'
 WHERE cd2.id IS NOT NULL
+    and c.shipment_type = 'EXP'
+    and c.source_guid IS NULL
   AND nt.entity_id IS NULL;

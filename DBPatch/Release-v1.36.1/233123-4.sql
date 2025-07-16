@@ -14,7 +14,7 @@ WHERE EXISTS (
       AND cd2.tenant_id = c.receiving_branch
       AND c.receiving_branch IS NOT NULL
       AND c.receiving_branch != c.tenant_id
-);
+) AND c.is_transferred_to_receiving_branch=false;
 
 UPDATE triangulation_partner_shipment tpc
 SET is_accepted = TRUE
@@ -33,4 +33,4 @@ WHERE EXISTS (
         AND nt.status = 'ACCEPTED'
     WHERE c.id = tpc.shipment_id
       AND cd2.id IS NOT NULL
-);
+) AND tpc.is_accepted = false;
