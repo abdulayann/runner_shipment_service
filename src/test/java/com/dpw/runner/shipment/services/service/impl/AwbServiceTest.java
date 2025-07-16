@@ -355,7 +355,7 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setSecurityStatus(Constants.SHR);
         testShipment.setIncoterms("EEE");
         addShipmentDataForAwbGeneration(testShipment);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true).setIsRunnerV3Enabled(true);
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(awbDao.save(any())).thenReturn(testDmawb);
@@ -1807,7 +1807,7 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setPacksVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true).setIsRunnerV3Enabled(true);
         Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
 
