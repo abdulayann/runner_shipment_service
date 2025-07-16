@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.migration.repository.interfaces.Shipment
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupHandler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,7 +42,6 @@ public class ShipmentBackupHandler implements BackupHandler {
     private ShipmentBackupRepository shipmentBackupRepository;
 
     @Autowired
-    @Qualifier("asyncExecutor")
     private ThreadPoolTaskExecutor asyncExecutor;
 
     @Autowired
@@ -60,14 +61,19 @@ public class ShipmentBackupHandler implements BackupHandler {
             log.info("No shipment records found for tenant: {}", tenantId);
             return;
         }
-        List<CompletableFuture<Void>> futures = shipmentIds.stream()
-                .map(shipmentId -> CompletableFuture.runAsync(
-                        () -> self.processAndBackupShipment(shipmentId),
-                        asyncExecutor))
-                .toList();
 
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        log.info("Completed shipment backup for tenant: {}", tenantId);
+        List<List<Long>> batches = Lists.partition(shipmentIds, 100);
+
+        batches.forEach(batch -> {
+            List<CompletableFuture<Void>> futures = batch.stream()
+                    .map(shipmentId -> CompletableFuture.runAsync(
+                            () -> self.processAndBackupShipment(shipmentId),
+                            asyncExecutor))
+                    .toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            log.info("Completed batch of {} shipments", batch.size());
+        });
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

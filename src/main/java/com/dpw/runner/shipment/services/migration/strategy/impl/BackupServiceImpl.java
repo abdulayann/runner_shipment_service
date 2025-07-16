@@ -5,10 +5,11 @@ import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupHand
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.internal.util.stereotypes.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -21,36 +22,55 @@ public class BackupServiceImpl implements BackupService {
     private final List<BackupHandler> backupHandlers;
     private final ThreadPoolTaskExecutor asyncExecutor;
 
+    @Lazy
+    @Autowired
+    private BackupServiceImpl self;
+
     @Override
     public void backupTenantData(Integer tenantId) {
 
         log.info("Starting backup for tenantId: {}", tenantId);
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
-
-        for (BackupHandler handler : backupHandlers) {
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() ->
-                    handler.backup(tenantId), asyncExecutor).exceptionally(ex -> {
-                throw new CompletionException(ex);
-            });
-            futures.add(future);
-        }
+        List<CompletableFuture<Void>> futures = backupHandlers.stream()
+                .map(handler -> CompletableFuture.runAsync(
+                        () -> self.executeHandlerSafely(handler, tenantId),
+                        asyncExecutor
+                ))
+                .toList();
 
         try {
-            // Wait for all handlers to complete or throw immediately on any failure
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            log.info("Backup process completed successfully for tenant: {}", tenantId);
         } catch (CompletionException e) {
-            log.error("Backup process failed for tenant: {}. Triggering rollback for all handlers.", tenantId);
-            backupHandlers.forEach(handler -> {
-                try {
-                    handler.rollback(tenantId);
-                } catch (Exception rollbackEx) {
-                    //If one rollback failed, continue with other rollbacks.
-                    log.error("Rollback failed for handler: {} and tenant: {}", handler.getClass().getSimpleName(), tenantId, rollbackEx);
-                }
-            });
-
-            throw new BackupFailureException("Backup failed for tenant: " + tenantId, e.getCause());
+            log.error("Backup failed for tenant: {}. Initiating rollback.", tenantId, e);
+            handleBackupFailure(tenantId);
         }
+    }
+
+    @Override
+    public void removeTenantData(Integer tenantId) {
+        handleBackupFailure(tenantId);
+    }
+
+    private void executeHandlerSafely(BackupHandler handler, Integer tenantId) {
+
+        try {
+            log.info("Executing {} for tenant {}",
+                    handler.getClass().getSimpleName(), tenantId);
+            handler.backup(tenantId);
+        } catch (Exception e) {
+            log.error("Handler {} failed", handler.getClass().getSimpleName(), e);
+            throw new CompletionException(e);
+        }
+    }
+
+    private void handleBackupFailure(Integer tenantId) {
+
+        backupHandlers.forEach(handler -> {
+            try {
+                handler.rollback(tenantId);
+            } catch (Exception ex) {
+                log.error("Rollback failed for {}", handler.getClass().getSimpleName(), ex);
+            }
+        });
+        throw new BackupFailureException("Backup failed");
     }
 }
