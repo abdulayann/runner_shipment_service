@@ -1174,8 +1174,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         List<Long> shipmentIdsForAttachment = Arrays.asList(100L, 101L);
         when(commonUtils.checkIfDGClass1(Mockito.any())).thenReturn(true);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-        when(shipmentDao.save(testShipment,false)).thenReturn(testShipment);
-        when(shipmentSync.sync(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyBoolean())).thenReturn(Mockito.any());
         containerV3Service.checkAndMakeDG(container, shipmentIdsForAttachment);
         assertNotNull(container.getPacksList());
         assertFalse(container.getPacksList().isEmpty());
