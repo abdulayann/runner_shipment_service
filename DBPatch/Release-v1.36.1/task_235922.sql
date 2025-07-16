@@ -52,5 +52,5 @@ update parties set
   }'
  where id IN ('1073557');
 
-  update shipment_details set client_dps_address_id = 93789, updated_at = NOW()
+  update shipment_details set consignee_dps_address_id = 93789, updated_at = NOW()
   where id IN (70233);
