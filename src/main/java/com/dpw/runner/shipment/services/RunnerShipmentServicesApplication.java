@@ -26,9 +26,11 @@ import java.util.TimeZone;
 public class RunnerShipmentServicesApplication {
 
     public static void main(String[] args) {
+        log.info("Deploying Release-v3.1.0 from feature/310-working");
         TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
         SpringApplication.run(RunnerShipmentServicesApplication.class, args);
         log.info("--------==========Shipment Service Started==========--------");
+        
 
     }
 
