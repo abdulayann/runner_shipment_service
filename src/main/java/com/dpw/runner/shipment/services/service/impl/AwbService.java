@@ -707,12 +707,14 @@ public class AwbService implements IAwbService {
 
         if (isPackUpdate) {
             mawbGoodsDescriptionInfo.setNtrQtyGoods(mawbGoodsDescriptionInfo.getNtrQtyGoods());
-            mawbGoodsDescriptionInfo.setGrossVolume(totalGrossVolumeOfMawbGood.setScale(3, RoundingMode.HALF_UP));
-            mawbGoodsDescriptionInfo.setGrossVolumeUnit(VOLUME_UNIT_M3);
-            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+            if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+                mawbGoodsDescriptionInfo.setGrossVolume(totalGrossVolumeOfMawbGood.setScale(3, RoundingMode.HALF_UP));
+                mawbGoodsDescriptionInfo.setGrossVolumeUnit(VOLUME_UNIT_M3);
+                mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+                mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+                mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+            }
             mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
-            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
         }
 
         updateMawbTotalAmount(mawbGoodsDescriptionInfo);
@@ -1314,6 +1316,14 @@ public class AwbService implements IAwbService {
             awbGoodsDescriptionInfo.setAwbPackingInfo(awbPackingList);
             awbGoodsDescriptionInfo.setHsCode(String.join(",", uniqueHsCodes));
         }
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            awbGoodsDescriptionInfo.setSlaCCode(consolidationDetails.getAchievedQuantities().getSlacCount());
+            awbGoodsDescriptionInfo.setChargeableWt(consolidationDetails.getAchievedQuantities().getConsolidationChargeQuantity());
+            awbGoodsDescriptionInfo.setGrossWt(consolidationDetails.getAchievedQuantities().getConsolidatedWeight());
+            awbGoodsDescriptionInfo.setGrossWtUnit(consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit());
+            awbGoodsDescriptionInfo.setGrossVolume(consolidationDetails.getAchievedQuantities().getConsolidatedVolume());
+            awbGoodsDescriptionInfo.setGrossVolumeUnit(consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit());
+        }
         return Arrays.asList(awbGoodsDescriptionInfo);
     }
 
@@ -1771,6 +1781,8 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume() != null ? shipmentDetails.getVolume().setScale(3, RoundingMode.HALF_UP) : BigDecimal.ZERO.setScale(3, RoundingMode.HALF_UP));
         awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
         awbGoodsDescriptionInfo.setPiecesNo(shipmentDetails.getNoOfPacks());
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+            awbGoodsDescriptionInfo.setSlaCCode(shipmentDetails.getSlac());
         awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                 AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
         awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
@@ -2485,6 +2497,8 @@ public class AwbService implements IAwbService {
             awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
             awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                     AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+                awbGoodsDescriptionInfo.setSlaCCode(shipmentDetails.getSlac());
             awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
             awbGoodsDescriptionInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() != null ? shipmentDetails.getGoodsDescription() : "");
             totalPacksCount = getPacksCountForPackingInfo(awb, awbGoodsDescriptionInfo, totalPacksCount);
