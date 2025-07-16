@@ -338,12 +338,12 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
         Routings firstLeg = mainCarriageRoutings.get(0);
         Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
-        if (TransportInfoStatus.YES.equals(transportInfoStatus) || TransportInfoStatus.IH.equals(transportInfoStatus)) {
+        if (TransportInfoStatus.YES.equals(transportInfoStatus)) {
             Routings mainCarriageLeg = firstLeg;
             if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
                 updateCarrierDetailsForSea(mainCarriageRoutings, carrierDetails, firstLeg, lastLeg, mainCarriageLeg);
-            } else if (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) && StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber())) {
-                carrierDetails.setFlightNumber(mainCarriageLeg.getFlightNumber());
+            } else if (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
+                setCarrierAndFlightNumberForAir(carrierDetails, mainCarriageLeg);
             }
         }
         carrierDetails.setEtd(firstLeg.getEtd());
@@ -386,18 +386,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         Routings firstLeg = mainCarriageRoutings.get(0);
         Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
 
-        if (TransportInfoStatus.YES.equals(transportInfoStatus)) {
-            Routings mainCarriageLeg = firstLeg;
-            if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
-                shipmentDetails.setTransportInfoStatus(transportInfoStatus);
-                if (TransportInfoStatus.IH.equals(transportInfoStatus) && Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort()) && Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
-                    shipmentDetails.setTransportInfoStatus(TransportInfoStatus.YES);
-                }
-                updateCarrierDetailsForSea(mainCarriageRoutings, carrierDetails, firstLeg, lastLeg, mainCarriageLeg);
-            } else if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber())) {
-                carrierDetails.setFlightNumber(mainCarriageLeg.getFlightNumber());
-            }
-        }
+        updateCarrierDetailsBasedOnTransportInfoStatus(shipmentDetails, mainCarriageRoutings, transportInfoStatus, carrierDetails, firstLeg, lastLeg);
         if (Boolean.TRUE.equals(carrierDetails.getIsSameAsOriginPort())) {
             carrierDetails.setOrigin(carrierDetails.getOriginPort());
             carrierDetails.setOriginLocCode(carrierDetails.getOriginPortLocCode());
@@ -417,6 +406,34 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));
+    }
+
+    private static void updateCarrierDetailsBasedOnTransportInfoStatus(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, TransportInfoStatus transportInfoStatus, CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+        if (TransportInfoStatus.YES.equals(transportInfoStatus) || TransportInfoStatus.IH.equals(transportInfoStatus)) {
+            Routings mainCarriageLeg = firstLeg;
+            if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+                shipmentDetails.setTransportInfoStatus(transportInfoStatus);
+                if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+                    if (Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort()) && Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
+                        shipmentDetails.setTransportInfoStatus(TransportInfoStatus.YES);
+                        updateCarrierDetailsForSea(mainCarriageRoutings, carrierDetails, firstLeg, lastLeg, mainCarriageLeg);
+                    }
+                } else {
+                    updateCarrierDetailsForSea(mainCarriageRoutings, carrierDetails, firstLeg, lastLeg, mainCarriageLeg);
+                }
+            } else if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+                setCarrierAndFlightNumberForAir(carrierDetails, mainCarriageLeg);
+            }
+        }
+    }
+
+    private static void setCarrierAndFlightNumberForAir(CarrierDetails carrierDetails, Routings mainCarriageLeg) {
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber())) {
+            carrierDetails.setFlightNumber(mainCarriageLeg.getFlightNumber());
+        }
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier())) {
+            carrierDetails.setShippingLine(mainCarriageLeg.getCarrier());
+        }
     }
 
     @Override
