@@ -18,6 +18,7 @@ import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
 import com.dpw.runner.shipment.services.dto.response.CheckDGShipment;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.response.OrderManagement.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
@@ -236,7 +237,7 @@ class ConsolidationV3ControllerTest {
   @Test
   void testDGShipments(){
     Long id = 1L;
-    when(consolidationV3Service.getDGShipment(id)).thenReturn(new CheckDGShipment());
+    when(consolidationV3Service.getDGShipment(id)).thenReturn(new CheckDGShipmentV3());
     var response = controller.getDGShipment(id);
 
     assertNotNull(response);
