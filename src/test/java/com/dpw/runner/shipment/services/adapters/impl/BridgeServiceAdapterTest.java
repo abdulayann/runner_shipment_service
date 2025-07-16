@@ -18,6 +18,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -29,6 +32,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -155,10 +159,11 @@ class BridgeServiceAdapterTest {
                 bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel));
     }
 
-    @Test
-    @DisplayName("Should extract description from valid JSON error when GBLCS request fails")
-    void testExtractErrorDescription_ValidJsonWithArray() {
 
+    @ParameterizedTest(name = "{index} => description={1}")
+    @MethodSource("errorMessageProvider")
+    @DisplayName("Should correctly extract description from error response")
+    void testExtractErrorDescription_Parameterized(String errorMessage, String expectedDescription) {
         BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -167,180 +172,29 @@ class BridgeServiceAdapterTest {
 
         when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
                 .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "400: [{\"error\":{\"description\":\"Invalid request parameters\"}}]";
+
         RestClientException exception = new RestClientException(errorMessage);
 
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
                 .thenThrow(exception);
 
-        // Act & Assert
         RunnerException thrownException = assertThrows(RunnerException.class, () -> {
             bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
         });
 
-        assertEquals("Invalid request parameters", thrownException.getMessage());
+        assertEquals(expectedDescription, thrownException.getMessage());
     }
 
-    @Test
-    @DisplayName("Should return 'Description not found' when error object has no description field")
-    void testExtractErrorDescription_NoDescriptionField() {
-
-        BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
-        authLoginResponse.setAccessToken("accessToken");
-
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-                .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "400: [{\"error\":{\"code\":\"ERR001\"}}]";
-        RestClientException exception = new RestClientException(errorMessage);
-
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
-                .thenThrow(exception);
-
-        // Act & Assert
-        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
-            bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
-        });
-
-        assertEquals("Description not found", thrownException.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should extract description from valid JSON with multiple array elements")
-    void testExtractErrorDescription_ValidJsonWithMultipleArrayElements() {
-
-        BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
-        authLoginResponse.setAccessToken("accessToken");
-
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-                .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "500: [{\"error\":{\"description\":\"Database connection failed\"}}, {\"error\":{\"description\":\"Secondary error\"}}]";
-        RestClientException exception = new RestClientException(errorMessage);
-
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
-                .thenThrow(exception);
-
-        // Act & Assert
-        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
-            bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
-        });
-
-        assertEquals("Database connection failed", thrownException.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should return 'Description not found' when error object is missing")
-    void testExtractErrorDescription_NoErrorObject() {
-
-        BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
-        authLoginResponse.setAccessToken("accessToken");
-
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-                .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "400: [{\"message\":\"Something went wrong\"}]";
-        RestClientException exception = new RestClientException(errorMessage);
-
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
-                .thenThrow(exception);
-
-        // Act & Assert
-        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
-            bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
-        });
-
-        assertEquals("Description not found", thrownException.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should return 'Invalid message format' when no colon is found")
-    void testExtractErrorDescription_NoColon() {
-
-        BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
-        authLoginResponse.setAccessToken("accessToken");
-
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-                .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "400 Bad Request";
-        RestClientException exception = new RestClientException(errorMessage);
-
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
-                .thenThrow(exception);
-
-        // Act & Assert
-        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
-            bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
-        });
-
-        assertEquals("Invalid message format", thrownException.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should handle description with null value")
-    void testExtractErrorDescription_NullDescription() {
-        BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
-        authLoginResponse.setAccessToken("accessToken");
-
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-                .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "400: [{\"error\":{\"description\":null}}]";
-        RestClientException exception = new RestClientException(errorMessage);
-
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
-                .thenThrow(exception);
-
-        // Act & Assert
-        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
-            bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
-        });
-
-        assertEquals("null", thrownException.getMessage());
-    }
-
-    @Test
-    @DisplayName("Should handle description with empty string")
-    void testExtractErrorDescription_EmptyDescription() {
-
-        BridgeRequest request = BridgeRequest.builder().requestCode("GBLCS").build();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-
-        AuthLoginResponse authLoginResponse = new AuthLoginResponse();
-        authLoginResponse.setAccessToken("accessToken");
-
-        when(restTemplate.exchange(Mockito.<RequestEntity<Object>>any(), eq(AuthLoginResponse.class)))
-                .thenReturn(ResponseEntity.ok(authLoginResponse));
-        // Arrange
-        String errorMessage = "400: [{\"error\":{\"description\":\"\"}}]";
-        RestClientException exception = new RestClientException(errorMessage);
-
-        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(BridgeServiceResponse.class)))
-                .thenThrow(exception);
-
-        // Act & Assert
-        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
-            bridgeServiceAdapter.requestOutBoundFileTransfer(commonRequestModel);
-        });
-
-        assertEquals("", thrownException.getMessage());
+    private static Stream<Arguments> errorMessageProvider() {
+        return Stream.of(
+                Arguments.of("400: [{\"error\":{\"description\":\"Invalid request parameters\"}}]", "Invalid request parameters"),
+                Arguments.of("400: [{\"error\":{\"code\":\"ERR001\"}}]", "Description not found"),
+                Arguments.of("500: [{\"error\":{\"description\":\"Database connection failed\"}}, {\"error\":{\"description\":\"Secondary error\"}}]", "Database connection failed"),
+                Arguments.of("400: [{\"message\":\"Something went wrong\"}]", "Description not found"),
+                Arguments.of("400 Bad Request", "Invalid message format"),
+                Arguments.of("400: [{\"error\":{\"description\":null}}]", "null"),
+                Arguments.of("400: [{\"error\":{\"description\":\"\"}}]", "")
+        );
     }
 
     @Test
