@@ -928,6 +928,7 @@ class AwbServiceTest extends CommonMocks {
 
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        mockShipmentSettings();
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().intraBranch(false).build()));
         // Mocking
@@ -1635,6 +1636,8 @@ class AwbServiceTest extends CommonMocks {
         // retrieve request works with id
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(id).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
+
 
         List<ShipmentSettingsDetails> mockTenantSettingsList = List.of(new ShipmentSettingsDetails());
         AwbResponse awbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
@@ -1648,6 +1651,7 @@ class AwbServiceTest extends CommonMocks {
         when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(mockTenantSettingsList);
 
         when(mawbHawbLinkDao.findByMawbId(id)).thenReturn(mockMawbHawbLink);
+        mockShipmentSettings();
 
 
         //Make service call
@@ -2178,6 +2182,7 @@ class AwbServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(resetAwbRequest);
 
         testShipment.setHouseBill("custom-house-bill");
+        mockShipmentSettings();
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
@@ -2383,6 +2388,7 @@ class AwbServiceTest extends CommonMocks {
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
 
+        mockShipmentSettings();
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
