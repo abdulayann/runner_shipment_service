@@ -45,4 +45,7 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
+
+    @Query(value = "SELECT * FROM customer_booking WHERE is_migrated_to_v3 = ?1 and tenant_id = ?2 and is_deleted = false", nativeQuery = true)
+    List<CustomerBooking> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId);
 }

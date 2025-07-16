@@ -177,6 +177,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.PACKA
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
@@ -2399,10 +2400,5 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setWeightVolume(vwOb.getVolumeWeight());
             customerBooking.setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
         }
-    }
-
-    private double roundOffAirShipment(double charge) {
-        return (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) ?
-                Math.floor(charge) + 0.5 : Math.ceil(charge);
     }
 }
