@@ -41,6 +41,19 @@ public class ControllerLoggingAspect {
         HttpServletRequest request =
                 ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
 
+        this.logRequest(joinPoint, request);
+
+        Object response = null;
+        try {
+            response = joinPoint.proceed();
+            return response;
+        } finally {
+            this.logResponse(response);
+        }
+    }
+
+    // Log the request in desired format
+    private void logRequest(ProceedingJoinPoint joinPoint, HttpServletRequest request) {
         String method = request.getMethod();
         String url = request.getRequestURI();
         String query = request.getQueryString();
@@ -74,34 +87,32 @@ public class ControllerLoggingAspect {
                 query != null ? query : "",
                 headers,
                 jsonBodies);
+    }
 
-        Object response = null;
+
+    // Log the response in desired format
+    private void logResponse(Object response) {
+        String responseLog;
+        String status = null;
+
         try {
-            response = joinPoint.proceed();
-            return response;
-        } finally {
-            String responseLog;
-            String status = null;
-
-            try {
-                Object bodyToLog = response;
-                if (response instanceof ResponseEntity<?> entity) {
-                    Object responseBody = entity.getBody();
-                    status = StringUtility.convertToString(entity.getStatusCode());
-                    bodyToLog = (responseBody instanceof Resource
-                            || responseBody instanceof InputStream
-                            || responseBody instanceof byte[]
-                            || responseBody instanceof StreamingResponseBody
-                            || responseBody instanceof HttpServletResponse)
-                            ? "[Binary/Stream Response]"
-                            : responseBody;
-                }
-                responseLog = jsonHelper.convertToJson(bodyToLog);
-            } catch (Exception e) {
-                responseLog = "[Unserializable Response: " + e.getMessage() + "]";
+            Object bodyToLog = response;
+            if (response instanceof ResponseEntity<?> entity) {
+                Object responseBody = entity.getBody();
+                status = StringUtility.convertToString(entity.getStatusCode());
+                bodyToLog = (responseBody instanceof Resource
+                        || responseBody instanceof InputStream
+                        || responseBody instanceof byte[]
+                        || responseBody instanceof StreamingResponseBody
+                        || responseBody instanceof HttpServletResponse)
+                        ? "[Binary/Stream Response]"
+                        : responseBody;
             }
-
-            log.info("{} | RESPONSE RETURNED [HTTP-STATUS={}] [RESPONSE={}]", LoggerHelper.getRequestIdFromMDC(), status, responseLog);
+            responseLog = jsonHelper.convertToJson(bodyToLog);
+        } catch (Exception e) {
+            responseLog = "[Unserializable Response: " + e.getMessage() + "]";
         }
+
+        log.info("{} | RESPONSE RETURNED [HTTP-STATUS={}] [RESPONSE={}]", LoggerHelper.getRequestIdFromMDC(), status, responseLog);
     }
 }
