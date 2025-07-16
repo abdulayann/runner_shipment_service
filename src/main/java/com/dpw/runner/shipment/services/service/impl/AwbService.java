@@ -707,13 +707,7 @@ public class AwbService implements IAwbService {
 
         if (isPackUpdate) {
             mawbGoodsDescriptionInfo.setNtrQtyGoods(mawbGoodsDescriptionInfo.getNtrQtyGoods());
-            if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
-                mawbGoodsDescriptionInfo.setGrossVolume(totalGrossVolumeOfMawbGood.setScale(3, RoundingMode.HALF_UP));
-                mawbGoodsDescriptionInfo.setGrossVolumeUnit(VOLUME_UNIT_M3);
-                mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
-                mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
-                mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
-            }
+            populateMawbFields(mawbGoodsDescriptionInfo, totalGrossVolumeOfMawbGood, totalGrossWeightOfMawbGood, grossWeightUnit, chargeableWeightOfMawbGood);
             mawbGoodsDescriptionInfo.setPiecesNo(noOfPacks);
         }
 
@@ -721,6 +715,16 @@ public class AwbService implements IAwbService {
         totalAmountOfMawbGood = mawbGoodsDescriptionInfo.getTotalAmount();
         mawbGoodsDescriptionInfo.setTotalAmount(totalAmountOfMawbGood);
         return Pair.of(totalVolumetricWeight, mawbGoodsDescriptionInfo);
+    }
+
+    private void populateMawbFields(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, BigDecimal totalGrossVolumeOfMawbGood, BigDecimal totalGrossWeightOfMawbGood, String grossWeightUnit, BigDecimal chargeableWeightOfMawbGood) {
+        if (!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())) {
+            mawbGoodsDescriptionInfo.setGrossVolume(totalGrossVolumeOfMawbGood.setScale(3, RoundingMode.HALF_UP));
+            mawbGoodsDescriptionInfo.setGrossVolumeUnit(VOLUME_UNIT_M3);
+            mawbGoodsDescriptionInfo.setGrossWt(totalGrossWeightOfMawbGood);
+            mawbGoodsDescriptionInfo.setGrossWtUnit(grossWeightUnit);
+            mawbGoodsDescriptionInfo.setChargeableWt(roundOffAirShipment(chargeableWeightOfMawbGood));
+        }
     }
 
     private void updateMawbTotalAmount(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo) {
@@ -2497,8 +2501,7 @@ public class AwbService implements IAwbService {
             awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
             awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
                     AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
-            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
-                awbGoodsDescriptionInfo.setSlaCCode(shipmentDetails.getSlac());
+            setSlacCodeForV3Shipment(awbGoodsDescriptionInfo, shipmentDetails);
             awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
             awbGoodsDescriptionInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() != null ? shipmentDetails.getGoodsDescription() : "");
             totalPacksCount = getPacksCountForPackingInfo(awb, awbGoodsDescriptionInfo, totalPacksCount);
@@ -2510,6 +2513,11 @@ public class AwbService implements IAwbService {
         } else {
             processGoodsDescriptionFieldsLockedOrNot(shipmentDetails, awb, awbGoodsDescriptionInfoList);
         }
+    }
+
+    private void setSlacCodeForV3Shipment(AwbGoodsDescriptionInfo awbGoodsDescriptionInfo, ShipmentDetails shipmentDetails) {
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+            awbGoodsDescriptionInfo.setSlaCCode(shipmentDetails.getSlac());
     }
 
     private Integer getPacksCountForPackingInfo(Awb awb, AwbGoodsDescriptionInfo awbGoodsDescriptionInfo, Integer totalPacksCount) {
