@@ -5,6 +5,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -44,8 +46,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+
 @Service
 @Slf4j
+@SuppressWarnings("java:S112")
 public class ConsolidationMigrationV3Service implements IConsolidationMigrationV3Service {
 
     @Autowired
@@ -72,6 +77,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired
+    IConsolidationRepository consolidationRepository;
+    @Autowired
+    CommonUtils commonUtils;
     private IContainerRepository containerRepository;
 
     @Autowired
@@ -263,6 +271,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Convert V3 Console and Attached shipment to V2
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
+        setMigratedV3Flag(console, false);
 
         // ContainerSave
         containerRepository.saveAll(console.getContainersList());
@@ -276,12 +285,26 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
+    private void setMigratedV3Flag(ConsolidationDetails consolidationDetails, boolean isMigratedV3) {
+        consolidationDetails.setIsMigratedToV3(isMigratedV3);
+
+        if(consolidationDetails.getShipmentsList() != null) {
+            for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                shipmentDetails.setIsMigratedToV3(isMigratedV3);
+            }
+        }
+    }
+
     public ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
         ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
         Map<String, EntityTransferContainerType> containerTypeMap = shipmentMigrationV3Service.fetchContainerTypeDetails(console.getContainersList());
 
-        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        if(console.getShipmentsList() != null) {
+            shipmentDetailsList = console.getShipmentsList().stream().toList();
+        }
         if(!CommonUtils.listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentDetailsList.forEach(ship -> {
                 try {
@@ -330,7 +353,11 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         CalculatePackUtilizationRequest calculatePackUtilizationRequest = CalculatePackUtilizationRequest.builder()
                 .consolidationId(consol.getId())
                 .build();
-        packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+        PackSummaryResponse packSummaryResponse = packingService.calculatePacksUtilisationForConsolidation(calculatePackUtilizationRequest);
+        if(packSummaryResponse.getConsolidationAchievedQuantities() != null && coLoadingConsolChecks(consol)){
+            consol.setAchievedQuantities(jsonHelper.convertCreateValue(packSummaryResponse.getConsolidationAchievedQuantities(), AchievedQuantities.class));
+            commonUtils.calculateConsolUtilization(consol);
+        }
     }
 
     public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments) {
@@ -444,5 +471,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 .filter(container -> !shipmentContainerIds.contains(container.getId()))
                 .collect(Collectors.toSet());
     }
+
+    private boolean coLoadingConsolChecks(ConsolidationDetails consol) {
+        boolean flag = true;
+        if(!consol.getTransportMode().equalsIgnoreCase(TRANSPORT_MODE_AIR))
+            flag = false;
+        if(!Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()))
+            flag = false;
+        if(!(consol.getAllocations() != null && consol.getAllocations().getWeight() != null))
+            flag = false;
+        return flag;
+    }
+
 
 }
