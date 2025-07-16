@@ -11,6 +11,8 @@ import com.dpw.runner.shipment.services.dto.response.bridgeService.AuthLoginResp
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -20,6 +22,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
 
 @Service
 @Slf4j
@@ -86,6 +90,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
 
         BridgeRequest request  = (BridgeRequest) commonRequestModel.getData();
@@ -99,8 +104,35 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         }
         catch (Exception e) {
             log.error("Error while hitting bridge service request endpoint", e);
-            throw new RunnerException(e.getMessage());
+            throw new RunnerException(request.getRequestCode().equalsIgnoreCase("GBLCS") ? extractErrorDescription(e.getMessage()) : e.getMessage());
         }
 
+    }
+
+    private String extractErrorDescription(String detailMessage) {
+        try {
+            // Remove status code and colon prefix
+            int colonIndex = detailMessage.indexOf(':');
+            if (colonIndex == -1 || colonIndex + 1 >= detailMessage.length()) {
+                return "Invalid message format";
+            }
+
+            // Extract the JSON substring
+            String json = detailMessage.substring(colonIndex + 1).trim();
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(json);
+
+            // It's an array of error objects
+            if (rootNode.isArray() && !rootNode.isEmpty()) {
+                JsonNode errorNode = rootNode.get(0).get("error");
+                if (errorNode != null && errorNode.has("description")) {
+                    return errorNode.get("description").asText();
+                }
+            }
+            return "Description not found";
+        } catch (Exception e) {
+            return "Error parsing detailMessage: " + e.getMessage();
+        }
     }
 }
