@@ -15,10 +15,9 @@ import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationV3Req
 import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.AllShipmentCountResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipment;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationSailingScheduleRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;

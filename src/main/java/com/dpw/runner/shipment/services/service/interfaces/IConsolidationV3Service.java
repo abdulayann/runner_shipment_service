@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.dto.request.CalculateAchievedValueReques
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
-import com.dpw.runner.shipment.services.dto.response.OrderManagement.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationDetailsV3Request;
 import com.dpw.runner.shipment.services.dto.v3.request.ConsolidationEtV3Request;

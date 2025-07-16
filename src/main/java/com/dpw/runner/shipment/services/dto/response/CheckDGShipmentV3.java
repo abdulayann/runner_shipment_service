@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.dto.response.OrderManagement;
+package com.dpw.runner.shipment.services.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
