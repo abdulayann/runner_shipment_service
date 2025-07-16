@@ -60,4 +60,6 @@ public interface IConsolidationDetailsDao {
     String getBookingNumberFromConsol(Long consolidationId);
 
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId);
+
+    List<Long> findConsolidationIdsByTenantId(Integer tenantId);
 }

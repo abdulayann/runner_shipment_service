@@ -794,6 +794,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
     }
 
+    @Override
+    public List<Long> findConsolidationIdsByTenantId(Integer tenantId) {
+        return consolidationRepository.findConsolidationIdsByTenantId(tenantId);
+    }
+
     private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole, boolean allowDGValueChange) {
         errors.addAll(applyConsolidationValidationsV3(consolidationDetails, allowDGValueChange));
         if (!errors.isEmpty())
