@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -4719,7 +4720,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public CheckDGShipment getDGShipment(Long consolidationId) {
+    public CheckDGShipmentV3 getDGShipment(Long consolidationId) {
         if (consolidationId == null) {
             throw new ValidationException("Consolidation Id is required");
         }
@@ -4727,12 +4728,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         var console = consolidationDetailsDao.findById(consolidationId)
                 .orElseThrow(() -> new ValidationException("No Consolidation found for the Id: " + consolidationId));
 
-        if (hasHazardousContainer(console)) {
-            return CheckDGShipment.builder().isDGShipmentPresent(false).build();
-        }
-
+        boolean isAnyContainerDG = hasHazardousContainer(console);
         boolean isDgShipmentPresent = hasHazardousShipment(console);
-        return CheckDGShipment.builder().isDGShipmentPresent(isDgShipmentPresent).build();
+
+        return CheckDGShipmentV3.builder()
+                .isAnyContainerDG(isAnyContainerDG)
+                .isDGShipmentPresent(isDgShipmentPresent)
+                .build();
     }
 
     private boolean hasHazardousContainer(ConsolidationDetails console) {

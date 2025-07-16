@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
+import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -5403,7 +5404,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(details));
 
-    CheckDGShipment result = consolidationV3Service.getDGShipment(consolidationId);
+    CheckDGShipmentV3 result = consolidationV3Service.getDGShipment(consolidationId);
 
     assertThat(result.getIsDGShipmentPresent()).isFalse();
   }
@@ -5420,7 +5421,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(details));
 
-    CheckDGShipment result = consolidationV3Service.getDGShipment(consolidationId);
+    CheckDGShipmentV3 result = consolidationV3Service.getDGShipment(consolidationId);
 
     assertThat(result.getIsDGShipmentPresent()).isTrue();
   }
@@ -5435,7 +5436,7 @@ if (unitConversionUtilityMockedStatic != null) {
 
     when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(details));
 
-    CheckDGShipment result = consolidationV3Service.getDGShipment(consolidationId);
+    CheckDGShipmentV3 result = consolidationV3Service.getDGShipment(consolidationId);
 
     assertThat(result.getIsDGShipmentPresent()).isFalse();
   }
