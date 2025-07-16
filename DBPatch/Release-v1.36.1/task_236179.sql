@@ -1,0 +1,1 @@
+update shipment_setting set disable_bl_parties_name = true where id in (178,87);
