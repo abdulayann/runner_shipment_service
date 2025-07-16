@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.aspects;
 
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -9,11 +10,17 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.InputStream;
 import java.util.*;
 
 @Aspect
@@ -74,13 +81,27 @@ public class ControllerLoggingAspect {
             return response;
         } finally {
             String responseLog;
+            String status = null;
+
             try {
-                responseLog = jsonHelper.convertToJson(response);
+                Object bodyToLog = response;
+                if (response instanceof ResponseEntity<?> entity) {
+                    Object responseBody = entity.getBody();
+                    status = StringUtility.convertToString(entity.getStatusCode());
+                    bodyToLog = (responseBody instanceof Resource
+                            || responseBody instanceof InputStream
+                            || responseBody instanceof byte[]
+                            || responseBody instanceof StreamingResponseBody
+                            || responseBody instanceof HttpServletResponse)
+                            ? "[Binary/Stream Response]"
+                            : responseBody;
+                }
+                responseLog = jsonHelper.convertToJson(bodyToLog);
             } catch (Exception e) {
                 responseLog = "[Unserializable Response: " + e.getMessage() + "]";
             }
-            log.info("{} | RESPONSE RETURNED [RESPONSE={}]",
-                    LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(responseLog));
+
+            log.info("{} | RESPONSE RETURNED [HTTP-STATUS={}] [RESPONSE={}]", LoggerHelper.getRequestIdFromMDC(), status, responseLog);
         }
     }
 }
