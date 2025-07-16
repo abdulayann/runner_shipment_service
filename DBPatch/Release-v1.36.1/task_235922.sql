@@ -1,0 +1,53 @@
+update parties set
+ org_code = 'FRC00037428',
+ address_code = 'FRO00039059',
+ org_id = '154571',
+ address_id = '257673',
+ updated_at = NOW(),
+ org_data =
+ '{
+      "Id": 154571,
+      "City": "NINGO",
+      "Guid": "e0f3f7a7-2344-48d9-859c-a86d5496ff66",
+      "Email": "",
+      "State": "Zhejiang",
+      "label": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+      "value": "FRC00037428",
+      "Country": "CHN",
+      "Address1": "SANXING VILLAGE, GULIN TOWN, YINZHOU DISTRICT",
+      "Address2": "",
+      "FullName": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+      "Payables": false,
+      "CompanyId": 372,
+      "Receivables": false,
+      "ZipPostCode": "315010",
+      "ForworderAgent": false,
+      "OrganizationCode": "FRC00037428",
+      "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+      "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com"
+  }',
+ address_data =
+ '{
+      "Id": 257673,
+      "City": "NINGO",
+      "Guid": "0048087a-da65-4af5-98ce-83d08a2cd8aa",
+      "Email": "",
+      "State": "Zhejiang",
+      "Country": "CHN",
+      "OrgGuid": "e0f3f7a7-2344-48d9-859c-a86d5496ff66",
+      "Address1": "SANXING VILLAGE, GULIN TOWN, YINZHOU DISTRICT",
+      "Address2": "",
+      "OrgSource": "CRP",
+      "AddressType": 2,
+      "CompanyName": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+      "OrgFullName": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+      "OrgPayables": false,
+      "ZipPostCode": "315010",
+      "KnownConsignor": false,
+      "OrgReceivables": false,
+      "RegulatedAgent": false,
+      "OrgActiveClient": true,
+      "AddressShortCode": "FRO00039059",
+      "OrgOrganizationCode": "FRC00037428"
+  }'
+ where id IN ('1073557');
