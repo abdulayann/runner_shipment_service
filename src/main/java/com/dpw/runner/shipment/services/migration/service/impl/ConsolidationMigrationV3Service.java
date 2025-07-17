@@ -89,20 +89,36 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Override
     @Transactional
     public ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails) {
-        ConsolidationDetails consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId())
-                .orElseThrow(() -> new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId()));
 
-        notesUtil.addNotesForConsolidation(consolidationDetails1);
+        Long consolidationId = consolidationDetails.getId();
+        log.info("Starting V2 to V3 migration for Consolidation [id={}]", consolidationId);
 
+        ConsolidationDetails consolFromDb = consolidationDetailsDao.findById(consolidationId)
+                .orElseThrow(() -> {
+                    log.error("No Consolidation found with ID: {}", consolidationId);
+                    return new DataRetrievalFailureException("No Console found with given id: " + consolidationId);
+                });
+
+        // Step 2: Add notes to existing consolidation (for traceability & audit)
+        notesUtil.addNotesForConsolidation(consolFromDb);
+        log.info("Notes added for Consolidation [id={}]", consolidationId);
+
+        // This map is used to track which packing maps to which container during migration
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
-        // Convert V2 Console and Attached shipment to V3
-        ConsolidationDetails console = mapConsoleV2ToV3(consolidationDetails1, packingVsContainerGuid);
+        // Step 3: Convert V2 console + its attached shipments into V3 structure
+        ConsolidationDetails console = mapConsoleV2ToV3(consolFromDb, packingVsContainerGuid);
+        log.info("Mapped V2 Consolidation to V3 [id={}]", consolidationId);
 
-        // ContainerSave
+        // Step 4: Save all containers separately first, as they must be saved before referencing in packings
         List<Containers> updatedContainersList = console.getContainersList();
         List<Containers> savedUpdatedContainersList = containerRepository.saveAll(updatedContainersList);
-        Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        log.info("Saved {} updated container(s) for Consolidation [id={}]", savedUpdatedContainersList.size(), consolidationId);
 
+        // Step 5: Map from GUID to container so we can set containerId in packings
+        Map<UUID, Containers> uuidVsUpdatedContainers = savedUpdatedContainersList.stream()
+                .collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+
+        // Step 6: Update all packings inside shipments with newly persisted container IDs
         Set<ShipmentDetails> consolShipmentsList = console.getShipmentsList();
 
         for (ShipmentDetails consolShipment : consolShipmentsList) {
@@ -112,11 +128,15 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 Containers containers = uuidVsUpdatedContainers.get(containerGuid);
                 if (containers != null) {
                     packing.setContainerId(containers.getId());
+                } else {
+                    log.info("No container mapping found for Packing [guid={}] in Shipment [id={}]", packing.getGuid(), consolShipment.getId());
                 }
             }
             packingRepository.saveAll(packingList);
+            log.info("Saved {} packing(s) for Shipment [id={}]", packingList.size(), consolShipment.getId());
         }
 
+        // Step 7: Update back-reference from shipment → consolidation
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
@@ -124,78 +144,123 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
+        log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
 
+        // Step 8: Mark consolidation itself as migrated and save
         console.setIsMigratedToV3(Boolean.TRUE);
         consolidationRepository.save(console);
 
+        log.info("Migration complete for Consolidation [id={}]", consolidationId);
         return console;
     }
 
+    /**
+     * Transforms a V2-style ConsolidationDetails into a V3-compatible object graph. This involves cloning the consolidation, redistributing containers, linking shipments and
+     * packings, and updating necessary cut-off fields and computed fields.
+     *
+     * @param consolidationDetails   V2 entity from DB
+     * @param packingVsContainerGuid map to record packing-to-container association during transformation
+     * @return transformed V3-compatible consolidation
+     */
     public ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        ConsolidationDetails console = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
 
-        List<ShipmentDetails> shipmentDetailsList = console.getShipmentsList().stream().toList();
-        Map<UUID, List<UUID>> containerGuidToShipments = new HashMap<>();
-        Map<UUID, ShipmentDetails> guidToShipment = new HashMap<>();
-        shipmentDetailsList.forEach(shp -> {
-            guidToShipment.put(shp.getGuid(), shp);
-            Set<Containers> containersList = shp.getContainersList();
+        UUID consolGuid = consolidationDetails.getGuid();
+        log.info("Mapping V2 to V3 for Consolidation [guid={}]", consolGuid);
 
-            for (Containers containers : containersList) {
-                List<UUID> shipmentUuids = containerGuidToShipments.get(containers.getGuid());
-                if (shipmentUuids == null) {
-                    shipmentUuids = new ArrayList<>();
-                }
-                shipmentUuids.add(shp.getGuid());
-                containerGuidToShipments.put(containers.getGuid(), shipmentUuids);
+        // Step 1: Deep clone the V2 consolidation object using JSON helper
+        ConsolidationDetails clonedConsole = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
+
+        // Defensive fallback
+        if (clonedConsole == null) {
+            log.error("Failed to deep clone Consolidation [guid={}]", consolGuid);
+            throw new IllegalStateException("Failed to clone Consolidation object");
+        }
+
+        // Extract shipments from the cloned clonedConsole object
+        List<ShipmentDetails> shipmentDetailsList = clonedConsole.getShipmentsList().stream().toList();
+        log.info("Cloned Consolidation has {} shipment(s) [guid={}]", shipmentDetailsList.size(), consolGuid);
+
+        // Step 2: Prepare shipment <→> container mappings
+        Map<UUID, List<UUID>> containerGuidToShipments = new HashMap<>(); // containerGuid → list of shipmentGuids
+        Map<UUID, ShipmentDetails> guidToShipment = new HashMap<>(); // shipmentGuid → shipment
+
+        for (ShipmentDetails shipment : shipmentDetailsList) {
+            UUID shipmentGuid = shipment.getGuid();
+            guidToShipment.put(shipmentGuid, shipment);
+
+            for (Containers container : shipment.getContainersList()) {
+                UUID containerGuid = container.getGuid();
+                containerGuidToShipments.computeIfAbsent(containerGuid, k -> new ArrayList<>()).add(shipmentGuid);
             }
 
-            shp.setContainersList(new HashSet<>());
+            // Step 3a: Clear shipment's containers list (they will be re-linked after splitting)
+            shipment.setContainersList(new HashSet<>());
 
-            setCutOffProperties(console, shp);
+            // Step 3b: Copy relevant cutoff timestamps from console → shipment
+            setCutOffProperties(clonedConsole, shipment);
+        }
 
-        });
+        log.info("Prepared shipment ↔ container mappings for [{}] container(s)", containerGuidToShipments.size());
 
-        List<Containers> splitContainers = distributeContainers(console.getContainersList(), containerGuidToShipments);
-        console.setContainersList(splitContainers);
+        // Step 4: Distribute multi-count containers into individual container instances
+        List<Containers> splitContainers = distributeContainers(clonedConsole.getContainersList(), containerGuidToShipments);
+        clonedConsole.setContainersList(splitContainers);
+
         Map<UUID, Containers> guidVsContainer = splitContainers.stream().collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        log.info("Distributed containers. Total after split: {}", splitContainers.size());
 
+        // Step 5: Re-link containers <→ shipments for V3 structure
         containerGuidToShipments.forEach((containerGuid, shipmentGuids) -> {
             for (UUID shipmentGuid : shipmentGuids) {
-                ShipmentDetails details = guidToShipment.get(shipmentGuid);
-                Containers containers = guidVsContainer.get(containerGuid);
-                details.getContainersList().add(containers);
-                if(ObjectUtils.isEmpty(containers.getShipmentsList())) {
-                    containers.setShipmentsList(new HashSet<>());
-                }
-                if(containers.getId()!=null) {
-                    containers.getShipmentsList().add(details);
+                ShipmentDetails shipment = guidToShipment.get(shipmentGuid);
+                Containers container = guidVsContainer.get(containerGuid);
+
+                if (shipment != null && container != null) {
+                    shipment.getContainersList().add(container);
+
+                    // Ensure container's reverse reference is also updated
+                    if (ObjectUtils.isEmpty(container.getShipmentsList())) {
+                        container.setShipmentsList(new HashSet<>());
+                    }
+
+                    // Only add reverse link if container is persisted (defensive check)
+                    if (container.getId() != null) {
+                        container.getShipmentsList().add(shipment);
+                    }
+                } else {
+                    log.info("Failed to re-link container [guid={}] or shipment [guid={}] - possibly missing after clone", containerGuid, shipmentGuid);
                 }
             }
         });
 
-        if(ObjectUtils.isNotEmpty(shipmentDetailsList)) {
-            shipmentDetailsList.forEach(ship -> {
+        // Step 6: Transform each Shipment to V3 (populates packingVsContainerGuid)
+        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
+            for (ShipmentDetails shipment : shipmentDetailsList) {
                 try {
-
-                    shipmentMigrationV3Service.mapShipmentV2ToV3(ship, packingVsContainerGuid);
+                    shipmentMigrationV3Service.mapShipmentV2ToV3(shipment, packingVsContainerGuid);
                 } catch (Exception e) {
-                    throw new IllegalArgumentException(e);
+                    log.error("Failed to transform Shipment [guid={}] to V3 format", shipment.getGuid(), e);
+                    throw new IllegalArgumentException("Shipment transformation failed", e);
                 }
-            });
+            }
         }
 
-        // Update Container from attached packages (based on packingVsContainerGuid)
+        log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
+
+        // Step 7: Attach packings to correct containers using packingVsContainerGuid
         assignPackingsToContainers(shipmentDetailsList, packingVsContainerGuid, guidVsContainer);
+        log.info("Packings assigned to containers for Consolidation [guid={}]", consolGuid);
 
-        // Console summary update
+        // Step 8: Update console-level summary like weight/volume/counts/etc.
         try {
-            consolidationV3Service.calculateAchievedQuantitiesEntity(consolidationDetails);
+            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
         } catch (Exception e) {
-            throw new IllegalArgumentException(e);
+            log.error("Failed to compute achieved quantities for Consolidation [guid={}]", consolGuid, e);
+            throw new IllegalArgumentException("Summary calculation failed", e);
         }
 
-        return console;
+        log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
+        return clonedConsole;
     }
 
     private void setCutOffProperties(ConsolidationDetails console, ShipmentDetails shipmentDetails) {
@@ -211,23 +276,36 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void assignPackingsToContainers(List<ShipmentDetails> shipmentDetailsList, Map<UUID, UUID> packingVsContainerGuid, Map<UUID, Containers> guidVsContainer) {
+
+        log.info("Starting packing-to-container assignment. Packings to map: {}", packingVsContainerGuid.size());
+
+        // Step 1: Pre-clear container fields to re-aggregate packing data from scratch
         packingVsContainerGuid.forEach((packGuid, containerGuid) -> {
-            Containers containers = guidVsContainer.get(containerGuid);
-            containers.setGrossWeight(BigDecimal.ZERO);
-            containers.setGrossWeightUnit(null);
-            containers.setGrossVolume(BigDecimal.ZERO);
-            containers.setGrossVolumeUnit(null);
-            containers.setPacks(null);
-            containers.setPacksType(null);
+            Containers container = guidVsContainer.get(containerGuid);
+            if (container != null) {
+                container.setGrossWeight(BigDecimal.ZERO);
+                container.setGrossWeightUnit(null);
+                container.setGrossVolume(BigDecimal.ZERO);
+                container.setGrossVolumeUnit(null);
+                container.setPacks(null);
+                container.setPacksType(null);
+                log.info("Cleared aggregation fields for container [guid={}]", containerGuid);
+            } else {
+                log.info("Container [guid={}] not found while clearing pre-aggregation fields", containerGuid);
+            }
         });
 
+        // Step 2: Process each shipment and assign their packings
         for (ShipmentDetails shipment : shipmentDetailsList) {
+            UUID shipmentGuid = shipment.getGuid();
             List<Packing> packingList = shipment.getPackingList();
 
             if (packingList == null || packingList.isEmpty()) {
+                log.debug("No packings found for Shipment [guid={}], skipping...", shipmentGuid);
                 continue;
             }
 
+            // Prepare packing lookup map for faster access
             Map<UUID, Packing> packingByGuid = packingList.stream()
                     .collect(Collectors.toMap(Packing::getGuid, Function.identity()));
 
@@ -239,15 +317,22 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                 Containers container = guidVsContainer.get(containerGuid);
 
                 if (container == null) {
-                    continue; // skip if container is not mapped
+                    log.warn("No container found for Packing [guid={}]. Skipping assignment.", packingGuid);
+                    continue;
                 }
+
                 try {
+                    // Add packing data to container aggregation (e.g. weight, volume)
                     containerV3Service.addPackageDataToContainer(container, packing);
+                    log.debug("Assigned Packing data [guid={}] to Container [guid={}]", packingGuid, containerGuid);
                 } catch (RunnerException e) {
-                    throw new IllegalArgumentException(e);
+                    log.error("Failed to assign Packing [guid={}] to Container [guid={}]", packingGuid, containerGuid, e);
+                    throw new IllegalArgumentException("Failed to add packing to container", e);
                 }
             }
         }
+
+        log.info("Completed packing data-to-container assignment for {} shipments", shipmentDetailsList.size());
     }
 
     @Override
@@ -348,48 +433,50 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         }
     }
 
+    /**
+     * Splits containers with count > 1 into individual 1-count containers.
+     * Distributes weight and volume proportionally and rewires shipment mappings accordingly.
+     *
+     * @param inputContainers             List of containers from V2 (could have count > 1)
+     * @param containerGuidToShipments   Mapping of original container GUID to shipment GUIDs (used to reattach new containers)
+     * @return A list of containers where each has containerCount == 1
+     */
     public List<Containers> distributeContainers(List<Containers> inputContainers, Map<UUID, List<UUID>> containerGuidToShipments) {
         List<Containers> resultContainers = new ArrayList<>();
 
         for (Containers container : inputContainers) {
+            UUID originalGuid = container.getGuid();
             Long count = container.getContainerCount();
 
+            // If count is null or <= 1, keep container as-is (no splitting needed)
             if (count == null || count <= 1) {
                 resultContainers.add(container);
                 continue;
             }
 
+            log.info("Splitting container [guid={}] with count={}", originalGuid, count);
+
             List<Containers> tempContainers = new ArrayList<>();
+
+            // Step 1: Split container by duplicating with distributed weight/volume
             distributeMultiCountContainer(container, count, tempContainers);
 
+            // Step 2: For each newly generated container, propagate shipment links from original
             for (Containers tempContainer : tempContainers) {
+                // Only copy mapping if it's a new, unsaved container and not already mapped
                 if (tempContainer.getId() == null && !containerGuidToShipments.containsKey(tempContainer.getGuid())) {
-                    List<UUID> shipmentUuids = containerGuidToShipments.get(container.getGuid());
-                    containerGuidToShipments.put(tempContainer.getGuid(), shipmentUuids);
+                    List<UUID> shipmentUuids = containerGuidToShipments.get(originalGuid);
+                    if (shipmentUuids != null) {
+                        containerGuidToShipments.put(tempContainer.getGuid(), shipmentUuids);
+                        log.info("Mapped split container [guid={}] to shipments {}", tempContainer.getGuid(), shipmentUuids);
+                    }
                 }
             }
 
-//            List<UUID> shipmentGuids = containerGuidToShipments.get(container.getGuid());
-
-//            shipmentGuids.forEach(sGuid -> {
-//                ShipmentDetails details = guidToShipment.get(sGuid);
-//                Set<Containers> containersList = details.getContainersList();
-//
-//                for (Containers tempContainer : tempContainers) {
-//                    for (Containers containers : containersList) {
-//                        if(tempContainer.getId()==null) {
-//
-//                        }
-//                    }
-//                }
-//
-//
-//            });
-
             resultContainers.addAll(tempContainers);
-
         }
 
+        log.info("Finished container splitting. Input: {}, Output: {}", inputContainers.size(), resultContainers.size());
         return resultContainers;
     }
 
@@ -397,6 +484,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
 
+        // Divide weight and volume equally, remainder added to last container
         BigDecimal[] weightParts = totalWeight.divideAndRemainder(BigDecimal.valueOf(count));
         BigDecimal[] volumeParts = totalVolume.divideAndRemainder(BigDecimal.valueOf(count));
 
@@ -405,27 +493,44 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         BigDecimal baseVolume = volumeParts[0];
         BigDecimal volumeRemainder = volumeParts[1];
 
-        // Update original container
+        // Step 1: Convert original container into a 1-count container with base values
         original.setContainerCount(1L);
         original.setGrossWeight(baseWeight);
         original.setGrossVolume(baseVolume);
         resultContainers.add(original);
 
+        // Step 2: Generate new containers for remaining (count - 1)
         for (int i = 1; i < count; i++) {
-            resultContainers.add(createDistributedCopy(original, baseWeight, baseVolume, i == count - 1 ? weightRemainder : BigDecimal.ZERO,
-                    i == count - 1 ? volumeRemainder : BigDecimal.ZERO));
+            boolean isLast = (i == count - 1);
+
+            resultContainers.add(
+                    createDistributedCopy(
+                            original,
+                            baseWeight,
+                            baseVolume,
+                            isLast ? weightRemainder : BigDecimal.ZERO,
+                            isLast ? volumeRemainder : BigDecimal.ZERO
+                    )
+            );
         }
+
+        log.info("Split container [guid={}] into {} parts", original.getGuid(), count);
     }
 
-    private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume, BigDecimal weightRemainder, BigDecimal volumeRemainder) {
+    private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume,
+            BigDecimal weightRemainder, BigDecimal volumeRemainder) {
         Containers newContainer = jsonHelper.convertValue(sourceContainer, Containers.class);
-        newContainer.setId(null);
+        newContainer.setId(null); // Ensure new identity
         newContainer.setGuid(UUID.randomUUID());
         newContainer.setContainerCount(1L);
         newContainer.setGrossWeight(baseWeight.add(weightRemainder));
         newContainer.setGrossVolume(baseVolume.add(volumeRemainder));
+
         newContainer.setCreatedBy(sourceContainer.getCreatedBy());
         newContainer.setUpdatedBy(sourceContainer.getUpdatedBy());
+
+        log.info("Created split container [guid={}] with weight={} + {} and volume={} + {}",
+                newContainer.getGuid(), baseWeight, weightRemainder, baseVolume, volumeRemainder);
 
         return newContainer;
     }
