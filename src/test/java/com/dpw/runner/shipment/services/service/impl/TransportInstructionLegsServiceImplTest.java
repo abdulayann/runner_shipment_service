@@ -154,11 +154,12 @@ class TransportInstructionLegsServiceImplTest {
         request.setActualPickup(LocalDateTime.now());
         request.setActualDelivery(LocalDateTime.now().plusDays(3));
         request.setEstimatedDelivery(LocalDateTime.now().plusDays(3));
-
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        pickupDeliveryDetails.setTiLegsList(List.of(tiLegs));
         when(iTiLegDao.save(any())).thenReturn(tiLegs);
         when(jsonHelper.convertValue(any(), eq(TiLegs.class))).thenReturn(tiLegs);
         when(jsonHelper.convertValue(any(), eq(TransportInstructionLegsResponse.class))).thenReturn(new TransportInstructionLegsResponse());
-        when(pickupDeliveryDetailsRepository.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(pickupDeliveryDetailsRepository.findById(anyLong())).thenReturn(Optional.of(pickupDeliveryDetails));
         TransportInstructionLegsResponse response = transportInstructionLegsService.create(request);
         assertNotNull(response);
     }

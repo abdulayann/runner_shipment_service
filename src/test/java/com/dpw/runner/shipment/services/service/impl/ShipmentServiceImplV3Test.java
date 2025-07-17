@@ -672,6 +672,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         Routings routings = new Routings();
         routings.setId(1L);
         routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVesselName("vesel");
+        routings.setVoyage("0123");
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
         shipmentDetailsEntity.setRoutingsList(List.of(routings));
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetailsEntity));
 
@@ -937,7 +940,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         Routings routings = new Routings();
         routings.setId(1L);
         routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVesselName("vessel");
+        routings.setVoyage("0123");
+        routings.setMode("SEA");
+        routings.setIsSelectedForDocument(true);
         shipmentDetailsEntity.setRoutingsList(List.of(routings));
+        shipmentDetailsEntity.setId(1l);
+        shipmentDetailsEntity.setGuid(UUID.randomUUID());
 
 
         Runnable mockRunnable = mock(Runnable.class);
@@ -949,16 +958,13 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         var shipId = 1L;
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setId(shipId);
-        shipmentDetails.setGuid(UUID.randomUUID());
 
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetailsEntity));
         when(notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(anyList(), anyString())).thenReturn(Map.of(1L, 5));
 
         when(modelMapper.map(any(), any())).thenReturn(ShipmentRetrieveLiteResponse.builder().build());
 
-        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetailsEntity));
 
         ShipmentRetrieveLiteResponse result = shipmentServiceImplV3.retrieveById(commonRequestModel, false, null);
 
