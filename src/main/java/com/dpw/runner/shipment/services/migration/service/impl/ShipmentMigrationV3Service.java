@@ -308,12 +308,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             return;
         }
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
-        setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL);
+        setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL, true);
     }
 
-    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
+    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL, boolean isAttached) throws RunnerException {
         for (Containers container: containers) {
-            container.setIsAttached(true);
+            container.setIsAttached(isAttached);
             if (containerTypeMap.containsKey(container.getContainerCode())) {
                 EntityTransferContainerType containerType = containerTypeMap.get(container.getContainerCode());
                 if (containerType.getMaxCargoGrossWeight() != null) {
