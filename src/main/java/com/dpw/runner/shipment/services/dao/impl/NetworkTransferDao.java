@@ -173,4 +173,10 @@ public class NetworkTransferDao implements INetworkTransferDao {
     public List<NetworkTransfer> findByEntityGuids(List<UUID> guid) {
         return networkTransferRepository.findByEntityGuids(guid);
     }
+
+    @Override
+    public List<NetworkTransfer> findNteByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId) {
+        return networkTransferRepository.findByTenantIdToMigrate(isMigratedToV3, tenantId);
+    }
+
 }

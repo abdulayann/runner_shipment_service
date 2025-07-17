@@ -8,8 +8,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 public interface IEntityTransferService {
-    ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> sendConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importShipment(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
