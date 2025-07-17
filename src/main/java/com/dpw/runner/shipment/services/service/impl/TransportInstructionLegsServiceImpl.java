@@ -86,7 +86,14 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         validateTransportInstructionLegs(request);
         // Convert DTO to Entity
         TiLegs tiLegs = jsonHelper.convertValue(request, TiLegs.class);
-        tiLegs.setSequence(Long.valueOf(transportInstruction.get().getTiLegsList() != null ? transportInstruction.get().getTiLegsList().size() : 0) + 1);
+        List<TiLegs> tiLegsList = transportInstruction.get().getTiLegsList();
+        if (!CollectionUtils.isEmpty(tiLegsList)) {
+            Long sequence = 1l;
+            for (TiLegs leg : tiLegsList) {
+                leg.setSequence(sequence++);
+            }
+        }
+        tiLegs.setSequence(Long.valueOf(tiLegsList != null ? tiLegsList.size() : 0) + 1);
         tiLegs.setPickupDeliveryDetailsId(tiId);
         log.debug("Converted Transport Instruction Legs request to entity | Entity: {}", tiLegs);
         // Save to DB
