@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.migration.controller;
 
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.migration.dtos.BookingMigrationRequest;
 import com.dpw.runner.shipment.services.migration.dtos.ConsolidationMigrationRequest;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
@@ -33,4 +35,17 @@ public class MigrationV3Controller {
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         return migrationV3Service.migrateV3ToV2(request.getTenantId());
     }
+
+    @RequestMapping("/booking/v2/v3")
+    public Map<String, Integer> bookingMigrationFromV2ToV3(@RequestBody BookingMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+        authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
+        return migrationV3Service.bookingV2ToV3Migration(request.getTenantId(), request.getBookingId());
+    }
+
+    @RequestMapping("/booking/v3/v2")
+    public Map<String, Integer> bookingMigrationFromV3ToV2(@RequestBody BookingMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+        authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
+        return migrationV3Service.bookingV3ToV2Migration(request.getTenantId(), request.getBookingId());
+    }
+
 }
