@@ -305,9 +305,6 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         migrateNetworkTransferV3ToV2(tenantId, map);
 
-        TenantContext.removeTenant();
-
-
         return map;
     }
 
