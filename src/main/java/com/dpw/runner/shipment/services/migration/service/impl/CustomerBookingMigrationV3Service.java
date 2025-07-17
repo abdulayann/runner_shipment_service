@@ -134,6 +134,8 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         //Update CargoSummary
         updateCargoSummaryInBooking(customerBooking, codeTeuMap);
 
+        customerBooking.setIsMigratedToV3(Boolean.TRUE);
+
         return null;
     }
 
@@ -151,6 +153,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Override
     public CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
+        customerBooking.setIsMigratedToV3(Boolean.FALSE);
         return null;
     }
 
