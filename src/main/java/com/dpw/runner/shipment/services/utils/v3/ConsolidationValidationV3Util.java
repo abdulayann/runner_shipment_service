@@ -171,24 +171,7 @@ public class ConsolidationValidationV3Util {
                     anyDGShipment = true;
 
                 // Rule 2: If it's an Air DG consolidation and shipment is from another branch
-                if (!Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
-                    anyInterBranchShipment = true;
-
-                    // Inter-branch Air DG shipment is not allowed
-                    if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
-                        if (fromConsolidation) {
-                            throw new RunnerException(String.format(
-                                    AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT,
-                                    shipmentDetails.getShipmentId()
-                            ));
-                        } else {
-                            throw new RunnerException(String.format(
-                                    AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION,
-                                    consolidationDetails.getConsolidationNumber()
-                            ));
-                        }
-                    }
-                }
+                anyInterBranchShipment = isAnyInterBranchShipment(consolidationDetails, fromConsolidation, shipmentDetails, anyInterBranchShipment);
             }
         }
 
@@ -196,6 +179,28 @@ public class ConsolidationValidationV3Util {
         validateAirDgHazardousForConsole(consolidationDetails, shipmentIds, fromConsolidation, existingShipments, anyInterBranchShipment);
         // Permission check for DG shipments
         validateAirSecurityAndDGForAttachDetach(consolidationDetails, anyDGShipment);
+    }
+
+    private static boolean isAnyInterBranchShipment(ConsolidationDetails consolidationDetails, boolean fromConsolidation, ShipmentDetails shipmentDetails, boolean anyInterBranchShipment) throws RunnerException {
+        if (!Objects.equals(consolidationDetails.getTenantId(), shipmentDetails.getTenantId())) {
+            anyInterBranchShipment = true;
+
+            // Inter-branch Air DG shipment is not allowed
+            if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                if (fromConsolidation) {
+                    throw new RunnerException(String.format(
+                            AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT,
+                            shipmentDetails.getShipmentId()
+                    ));
+                } else {
+                    throw new RunnerException(String.format(
+                            AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION,
+                            consolidationDetails.getConsolidationNumber()
+                    ));
+                }
+            }
+        }
+        return anyInterBranchShipment;
     }
 
     /**

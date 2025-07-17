@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
@@ -204,9 +205,15 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Boolean isBorrowed;
     private Integer dgPacksCount;
     private String dgPacksUnit;
+    private String primarySalesAgentEmail;
+    private String secondarySalesAgentEmail;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
 
     private List<EntityTransferServiceDetails> servicesList;
     private Boolean isMigratedToV3 = false;
+    private TransportInfoStatus transportInfoStatus;
+    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
 
 
 }

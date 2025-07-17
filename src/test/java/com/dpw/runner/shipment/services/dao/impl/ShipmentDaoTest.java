@@ -2196,4 +2196,14 @@ class ShipmentDaoTest extends CommonMocks {
                 .updateAdditionalDetailsByShipmentId(1l, true);
     }
 
+    @Test
+    void updateDgStatusInShipmentTest(){
+        Boolean isHazardous = true;
+        String oceanDGStatus = "oceanDGStatus";
+        Long id = 1L;
+
+        shipmentDao.updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
+        verify(shipmentRepository, times(1))
+                .updateDgStatusInShipment(isHazardous, oceanDGStatus, id);
+    }
 }

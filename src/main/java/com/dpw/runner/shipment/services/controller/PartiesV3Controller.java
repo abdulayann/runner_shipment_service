@@ -49,7 +49,6 @@ public class PartiesV3Controller {
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid @NonNull PartiesRequest partiesRequest) {
         log.info("Received Party Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(partiesRequest));
         return ResponseHelper.buildSuccessResponse(partiesService.create(partiesRequest));
-        //TODO: UI has to send partyType, entityId, entityType as "CUSTOMER_BOOKING", country
     }
 
     @ApiResponses(value = {
@@ -68,13 +67,6 @@ public class PartiesV3Controller {
         log.info("Received Party Delete request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(partiesRequest));
         return ResponseHelper.buildSuccessResponse(partiesService.delete(partiesRequest));
     }
-
-//    @ApiResponses(value = {@ApiResponse(code = 200, message = NotesConstants.NOTES_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
-//    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-//    public ResponseEntity<IRunnerResponse> retrieve(@RequestParam @NonNull Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
-//        CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
-//        return partiesService.retrieveById(CommonRequestModel.buildRequest(request));
-//    }
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, response = MyListResponseClass.class, message = PartiesConstants.PARTIES_LIST_SUCCESSFUL, responseContainer = PartiesConstants.PARTIES_LIST_SUCCESSFUL)

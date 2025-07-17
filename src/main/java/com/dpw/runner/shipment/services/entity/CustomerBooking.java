@@ -311,6 +311,11 @@ public class CustomerBooking extends MultiTenancy {
     @OrganizationMasterData
     private Long bookingAgent;
 
+    @Column(name = "co_load_carrier_name")
+    @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64)
+    private String coLoadCarrierName;
+
     @Column(name = "partner_bkg_number")
     @Size(max = 64)
     private String partnerBkgNumber;

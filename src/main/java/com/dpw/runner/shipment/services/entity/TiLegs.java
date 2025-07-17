@@ -59,17 +59,17 @@ public class TiLegs extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiReferences> tiReferences = new ArrayList<>();;
+    private List<TiReferences> tiReferences = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiTruckDriverDetails> tiTruckDriverDetails = new ArrayList<>();;
+    private List<TiTruckDriverDetails> tiTruckDriverDetails = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
-    private List<TiContainers> tiContainers = new ArrayList<>();;
+    private List<TiContainers> tiContainers = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "ti_leg_id")

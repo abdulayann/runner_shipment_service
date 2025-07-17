@@ -10,12 +10,6 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,6 +18,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 
 @Repository
@@ -271,5 +272,15 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "s.dgPacksCount = :dgPacks, " +
             "s.dgPacksUnit = :dgPacksUnit " +
             "WHERE s.id = :shipmentId")
-    void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+    void updateDgPacksDetailsInShipment(@Param("dgPacks") Integer dgPacks, @Param("dgPacksUnit") String dgPacksUnit, @Param("shipmentId") Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_details s " +
+            "SET contains_hazardous = :isHazardous, " +
+            "ocean_dg_status = :oceanDGStatus " +
+            "WHERE id = :shipmentId", nativeQuery = true)
+    void updateDgStatusInShipment(@Param("isHazardous") Boolean isHazardous,
+                                  @Param("oceanDGStatus") String oceanDGStatus,
+                                  @Param("shipmentId") Long shipmentId);
 }

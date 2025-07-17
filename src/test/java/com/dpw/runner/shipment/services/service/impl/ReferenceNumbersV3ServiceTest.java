@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.ReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -28,6 +29,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -269,5 +271,15 @@ class ReferenceNumbersV3ServiceTest {
         verify(referenceNumbersValidationUtil).validateUpdateRequest(request);
         verify(referenceNumbersDao).findById(404L);
     }
-
+    @Test
+    void testListReferenceNumbers_success() {
+        List<ReferenceNumbers> referenceNumbers = Collections.singletonList(testReferenceNumbers);
+        ReferenceNumbersResponse response = mock(ReferenceNumbersResponse.class);
+        var listRequest = new ListCommonRequest();
+        ReferenceNumbersV3Service spyService = spy(referenceNumbersV3Service);
+        doReturn(new PageImpl<>(referenceNumbers)).when(referenceNumbersDao).findAll(any(), any());
+        when(jsonHelper.convertValue(any(), eq(ReferenceNumbersResponse.class))).thenReturn(response);
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.listReferenceNumbers(listRequest, null);
+        assertNotNull(responseEntity);
+    }
 }

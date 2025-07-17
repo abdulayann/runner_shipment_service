@@ -56,8 +56,8 @@ public class TransportInstructionTruckDriverController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_TRUCK_DRIVER_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        TransportInstructionLegsTruckDriverListResponse legsListResponse = transportInstructionLegsTruckDriverService.list(listCommonRequest);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        TransportInstructionLegsTruckDriverListResponse legsListResponse = transportInstructionLegsTruckDriverService.list(listCommonRequest, getMasterData);
         return ResponseHelper.buildSuccessResponse(legsListResponse, legsListResponse.getTotalPages(), legsListResponse.getTotalCount());
     }
 

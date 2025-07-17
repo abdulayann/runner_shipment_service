@@ -9,22 +9,22 @@ public class ReportConstants {
     public static final String COMPANY_ADDRESS = "CompanyAddress";
     public static final String HAWB_PACKS_MAP = "hawbPacksMap";
     public static final String C_D_DG = "C_D_DG";
-    public static final String C_D_Reefer = "C_D_Reefer";
-    public static final String C_CA_DGContainer = "C_CA_DGContainer";
-    public static final String C_CA_DGPackages = "C_CA_DGPackages";
-    public static final String C_C_DGPackagesType = "C_C_DGPackagesType";
-    public static final String C_C_DGContainer = "C_C_DGContainer";
-    public static final String C_C_DGPackages = "C_C_DGPackages";
-    public static final String C_C_AdditionalTerms = "C_C_AdditionalTerms";
-    public static final String C_C_SLACCount = "C_C_SLACCount";
-    public static final String C_LastVessel = "C_LastVessel";
-    public static final String C_LastVoyage = "C_LastVoyage";
-    public static final String C_FirstVessel = "C_FirstVessel";
-    public static final String C_LastFlightNumber = "C_LastFlightNumber";
-    public static final String C_LastCarrier = "C_LastCarrier";
-    public static final String C_FirstVoyage = "C_FirstVoyage";
-    public static final String C_FirstCarrier = "C_FirstCarrier";
-    public static final String C_FirstFlightNumber = "C_FirstFlightNumber";
+    public static final String C_D_REEFER = "C_D_Reefer";
+    public static final String C_CA_DGCONTAINER = "C_CA_DGContainer";
+    public static final String C_CA_DGPACKAGES = "C_CA_DGPackages";
+    public static final String C_C_DGPACKAGESTYPE = "C_C_DGPackagesType";
+    public static final String C_C_DGCONTAINER = "C_C_DGContainer";
+    public static final String C_C_DGPACKAGES = "C_C_DGPackages";
+    public static final String C_C_ADDITIONAL_TERMS = "C_C_AdditionalTerms";
+    public static final String C_C_SLACCOUNT = "C_C_SLACCount";
+    public static final String C_LASTVESSEL = "C_LastVessel";
+    public static final String C_LASTVOYAGE = "C_LastVoyage";
+    public static final String C_FIRSTVESSEL = "C_FirstVessel";
+    public static final String C_LASTFLIGHTNUMBER = "C_LastFlightNumber";
+    public static final String C_LASTCARRIER = "C_LastCarrier";
+    public static final String C_FIRSTVOYAGE = "C_FirstVoyage";
+    public static final String C_FIRSTCARRIER = "C_FirstCarrier";
+    public static final String C_FIRSTFLIGHTNUMBER = "C_FirstFlightNumber";
     public static final String HAS_LEGS = "HasLegs";
     public static final String TI_LEGS = "TILegs";
     public static final String HAS_CONTAINERS = "HasContainers";
@@ -38,6 +38,7 @@ public class ReportConstants {
     public static final String PICKUP_ORDER_V3 = "PickupOrderV3";
     public static final String DELIVERY_ORDER_V3 = "DeliveryOrderV3";
     public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
+    public static final String CONTACT = "Contact";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";

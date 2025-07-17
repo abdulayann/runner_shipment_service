@@ -204,5 +204,6 @@ public class ApiConstants {
 
     public static final String AIB_ACTION = "/aib/action";
     public static final String AIB_NOTIFICATIONS = "/aib/notification";
+    public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
 }

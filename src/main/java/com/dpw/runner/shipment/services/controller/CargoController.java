@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.constants.CargoConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CargoChargeableRequest;
 import com.dpw.runner.shipment.services.dto.request.CargoDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.CargoChargeableResponse;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;

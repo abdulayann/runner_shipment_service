@@ -27,6 +27,7 @@ import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +39,7 @@ import static com.dpw.runner.shipment.services.commons.constants.ContainerConsta
 @RestController
 @RequestMapping(PackingConstants.PACKING_V3_API_HANDLE)
 @Slf4j
+@Validated
 public class PackingV3Controller {
 
     private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
@@ -77,21 +79,21 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE)
-    public ResponseEntity<IRunnerResponse> updateFromShipment(@RequestBody PackingV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateFromShipment(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Update request from Shipment with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.update(request, Constants.SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_UPDATE)
-    public ResponseEntity<IRunnerResponse> updateFromConsolidation(@RequestBody PackingV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateFromConsolidation(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Update request from Consolidation with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.update(request, Constants.CONSOLIDATION));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(value = ApiConstants.CUSTOMER_BOOKING + ApiConstants.API_UPDATE)
-    public ResponseEntity<IRunnerResponse> updateFromCustomerBooking(@RequestBody PackingV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateFromCustomerBooking(@Valid @RequestBody PackingV3Request request) throws RunnerException {
         log.info("Received Packing Update request from CustomerBooking with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(packingV3Service.update(request, Constants.BOOKING));
     }
@@ -116,13 +118,13 @@ public class PackingV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT + ApiConstants.API_UPDATE_BULK)
-    public ResponseEntity<IRunnerResponse> updateBulkFromShipment(@RequestBody List<PackingV3Request> request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateBulkFromShipment(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.SHIPMENT));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PackingConstants.PACKING_UPDATE_SUCCESSFUL, response = BulkPackingResponse.class)})
     @PutMapping(value = ApiConstants.CONSOLIDATION + ApiConstants.API_UPDATE_BULK)
-    public ResponseEntity<IRunnerResponse> updateBulkFromConsolidation(@RequestBody List<PackingV3Request> request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateBulkFromConsolidation(@Valid @RequestBody List<@Valid PackingV3Request> request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(packingV3Service.updateBulk(request, Constants.CONSOLIDATION));
     }
 
