@@ -127,6 +127,7 @@ public class PackingV3Service implements IPackingV3Service {
     private DependentServiceHelper dependentServiceHelper;
 
     @Autowired
+    @Lazy
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired

@@ -45,6 +45,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -101,6 +102,7 @@ public class PackingV3Util {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
     @Autowired
+    @Lazy
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired
