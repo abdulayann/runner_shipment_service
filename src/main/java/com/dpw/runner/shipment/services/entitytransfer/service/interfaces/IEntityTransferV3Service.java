@@ -9,9 +9,9 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 public interface IEntityTransferV3Service {
-    List<Integer> sendShipment(CommonRequestModel commonRequestModel);
+    List<Integer> sendShipment(CommonRequestModel commonRequestModel) throws RunnerException;
     String importShipment(CommonRequestModel commonRequestModel) throws RunnerException, JsonMappingException;
-    List<Integer> sendConsolidation(CommonRequestModel commonRequestModel);
+    List<Integer> sendConsolidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> importConsolidation(CommonRequestModel commonRequestModel) throws RunnerException, JsonMappingException;
     List<String> getTenantName(List<Integer> tenantIds);
 }

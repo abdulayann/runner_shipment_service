@@ -205,4 +205,8 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Integer dgPacksCount;
     private String dgPacksUnit;
 
+    private List<EntityTransferServiceDetails> servicesList;
+    private Boolean isMigratedToV3 = false;
+
+
 }
