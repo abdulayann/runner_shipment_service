@@ -164,7 +164,7 @@ public class ListContractResponse implements IRunnerResponse {
         @JsonProperty("code")
         private String code;
         @JsonProperty("country_id")
-        private Long country_id;
+        private String country_id;
         @JsonProperty("is_archived")
         private Boolean is_archived;
         @JsonProperty("is_dpw_owned")
