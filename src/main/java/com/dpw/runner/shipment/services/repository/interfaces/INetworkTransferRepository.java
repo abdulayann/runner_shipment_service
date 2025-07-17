@@ -78,6 +78,10 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
 
     @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE tenant_id = ?2 AND status IN ('TRANSFERRED', 'RETRANSFERRED') AND isMigratedToV3 = ?1", nativeQuery = true)
+    List<NetworkTransfer> findByTenantIdToMigrate(boolean isMigratedToV3, Integer tenantId);
+
+    @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_guid in (?1)", nativeQuery = true)
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
 }

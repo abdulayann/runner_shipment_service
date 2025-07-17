@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendC
 import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferV3Service;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -141,11 +142,13 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 quartzJobInfo.setJobStatus(JobState.ERROR);
                 quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
                 quartzJobInfoDao.save(quartzJobInfo);
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
-    private void sendShipment(QuartzJobInfo quartzJobInfo, SendShipmentRequest sendShipmentRequest, ShipmentDetails shipment) {
+    private void sendShipment(QuartzJobInfo quartzJobInfo, SendShipmentRequest sendShipmentRequest, ShipmentDetails shipment) throws RunnerException {
         ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
             var etResponse = entityTransferV3Service.sendShipment(CommonRequestModel.buildRequest(sendShipmentRequest));
@@ -245,11 +248,13 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 quartzJobInfo.setJobStatus(JobState.ERROR);
                 quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
                 quartzJobInfoDao.save(quartzJobInfo);
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
             }
         }
     }
 
-    private void sendConsolidation(QuartzJobInfo quartzJobInfo, SendConsolidationRequest sendConsolidationRequest, ConsolidationDetails consolidation, List<Long> shipmentIds) {
+    private void sendConsolidation(QuartzJobInfo quartzJobInfo, SendConsolidationRequest sendConsolidationRequest, ConsolidationDetails consolidation, List<Long> shipmentIds) throws RunnerException {
         ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
             var etResponse = entityTransferV3Service.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
