@@ -942,4 +942,9 @@ public class ShipmentDao implements IShipmentDao {
     public void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId) {
         shipmentRepository.updateDgPacksDetailsInShipment(dgPacks, dgPacksUnit, shipmentId);
     }
+
+    @Override
+    public void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId){
+        shipmentRepository.updateDgStatusInShipment(isHazardous, oceanDGStatus, shipmentId);
+    }
 }

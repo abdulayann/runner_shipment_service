@@ -1308,7 +1308,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
 
-    public void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
+    public void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) {
         boolean isDG = false;
         boolean isDGClass1Added = false;
         if(Boolean.TRUE.equals(container.getHazardous())) {
@@ -1332,19 +1332,18 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void saveDGShipment(Long shipmentId, boolean isDGClass1Added) throws RunnerException {
+    private void saveDGShipment(Long shipmentId, boolean isDGClass1Added) {
         Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
         if(!optionalShipmentDetails.isPresent())
             return;
         ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-        shipmentDao.entityDetach(List.of(shipmentDetails));
 
         boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
         shipmentDetails.setContainsHazardous(true);
         saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
         if(saveShipment) {
-            shipmentDetails = shipmentDao.save(shipmentDetails, false);
-            shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
+            String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
+            shipmentDao.updateDgStatusInShipment(shipmentDetails.getContainsHazardous(), oceanDGStatus, shipmentId);
         }
     }
 
@@ -1500,7 +1499,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
                                                   Containers container, List<Long> shipmentIdsForAttachment,
-                                                  List<Long> shipmentIdsToRemoveContainerCargo) throws RunnerException {
+                                                  List<Long> shipmentIdsToRemoveContainerCargo) {
         if (!listIsNullOrEmpty(shipmentIdsToSetContainerCargo))
             shipmentDao.setShipmentIdsToContainer(shipmentIdsToSetContainerCargo, container.getId());
         if(!listIsNullOrEmpty(shipmentIdsToRemoveContainerCargo))
