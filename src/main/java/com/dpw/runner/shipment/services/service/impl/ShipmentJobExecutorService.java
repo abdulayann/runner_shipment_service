@@ -137,13 +137,11 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                     commonErrorLogsDao.logShipmentAutomaticTransferErrors(validationResponse, shipment.get().getId());
                 }
                 quartzJobInfoDao.save(quartzJobInfo);
-            } catch (ValidationException ex) {
+            } catch (ValidationException | RunnerException ex) {
                 log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
                 quartzJobInfo.setJobStatus(JobState.ERROR);
                 quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
                 quartzJobInfoDao.save(quartzJobInfo);
-            } catch (RunnerException e) {
-                throw new RuntimeException(e);
             }
         }
     }
@@ -243,13 +241,11 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                     commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);
                 }
                 quartzJobInfoDao.save(quartzJobInfo);
-            } catch (ValidationException ex) {
+            } catch (ValidationException | RunnerException ex) {
                 log.info(QuartzJobInfoConstants.VALIDATION_EXCEPTION_FOR_AUTOMATIC_TRANSFER + ex.getMessage());
                 quartzJobInfo.setJobStatus(JobState.ERROR);
                 quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + ex.getMessage());
                 quartzJobInfoDao.save(quartzJobInfo);
-            } catch (RunnerException e) {
-                throw new RuntimeException(e);
             }
         }
     }
