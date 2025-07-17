@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
@@ -98,6 +99,9 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
 
     @Autowired
     private IAuditLogService auditLogService;
@@ -207,9 +211,34 @@ public class PackingV3Service implements IPackingV3Service {
             if (checkIfLCLConsolidationEligible(shipmentDetails)) {
                 updateShipmentGateInDateAndStatusFromPacks(shipmentDetails, finalPackings);
             }
+            updateOceanDGStatus(shipmentDetails, finalPackings);
             if(consolidationDetails != null)
                 consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
             updateAttachedContainersData(packings, shipmentDetails);
+        }
+    }
+
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> packingList) {
+        if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(packingList)
+                || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
+
+        boolean isDG = false;
+        boolean isDGClass1Added = false;
+        for (Packing packing : packingList) {
+            if (Boolean.TRUE.equals(packing.getHazardous())) {
+                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
+                isDG = true;
+            }
+        }
+
+        if(isDG){
+            boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
+            shipmentDetails.setContainsHazardous(true);
+            saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+            if(saveShipment) {
+                String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
+                shipmentDao.updateDgStatusInShipment(shipmentDetails.getContainsHazardous(), oceanDGStatus, shipmentDetails.getId());
+            }
         }
     }
 
@@ -225,7 +254,6 @@ public class PackingV3Service implements IPackingV3Service {
             cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
             cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
             shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
-
         }
         return packings;
     }
