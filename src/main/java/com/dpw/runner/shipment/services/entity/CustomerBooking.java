@@ -415,4 +415,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "additional_terms")
     private String additionalTerms;
+
+    @Column(name = "is_migrated_to_v3")
+    private Boolean isMigratedToV3;
 }

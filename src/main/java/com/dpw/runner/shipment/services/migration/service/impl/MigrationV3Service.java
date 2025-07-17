@@ -3,26 +3,32 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
+
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.Future;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.concurrent.Future;
 
 @Service
 @Slf4j
@@ -38,10 +44,16 @@ public class MigrationV3Service implements IMigrationV3Service {
     private IShipmentMigrationV3Service shipmentMigrationV3Service;
 
     @Autowired
+    private ICustomerBookingV3MigrationService customerBookingV3MigrationService;
+
+    @Autowired
     private IShipmentDao shipmentDao;
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
 
     @Autowired
     private IConsolidationRepository consolidationRepository;
@@ -149,6 +161,10 @@ public class MigrationV3Service implements IMigrationV3Service {
         return consolidationDetailsDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
     }
 
+    private List<CustomerBooking> fetchBookingFromDB(boolean isMigratedToV3, Integer tenantId) {
+        return customerBookingDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
+    }
+
     private List<ShipmentDetails> fetchShipmentFromDB(boolean isMigratedToV3, Integer tenantId) {
         return shipmentDao.findShipmentByIsMigratedToV3(isMigratedToV3, tenantId);
     }
@@ -201,6 +217,86 @@ public class MigrationV3Service implements IMigrationV3Service {
         List<Long> shipmentProcessed = collectAllProcessedIds(shipmentQueue);
         map.put("Total Shipment Migrated", shipmentProcessed.size());
         TenantContext.removeTenant();
+        return map;
+    }
+
+    @Override
+    public Map<String, Integer> bookingV2ToV3Migration(Integer tenantId, Long bookingId) {
+        Map<String, Integer> map = new HashMap<>();
+//        List<CustomerBooking> customerBookingList = fetchBookingFromDB(false, tenantId);
+        List<CustomerBooking> customerBookingList = List.of(customerBookingDao.findById(bookingId).get());
+        map.put("Total Bookings", customerBookingList.size());
+        List<Future<Long>> bookingQueue = new ArrayList<>();
+        log.info("fetched {} bookings for Migrations", customerBookingList.size());
+        customerBookingList.forEach(booking -> {
+            // execute async
+            Future<Long> future = trxExecutor.runInAsync(() -> {
+
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+                    Map<String, BigDecimal> codeTeuMap = customerBookingV3MigrationService.getCodeTeuMapping();
+                    return trxExecutor.runInTrx(() -> {
+                        try {
+
+                            CustomerBooking response = customerBookingV3MigrationService.migrateBookingV2ToV3(booking, codeTeuMap);
+                            return response.getId();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
+            bookingQueue.add(future);
+        });
+
+        List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
+        map.put("Total Bookings Migrated", bookingsProcessed.size());
+        return map;
+    }
+
+    @Override
+    public Map<String, Integer> bookingV3ToV2Migration(Integer tenantId, Long bookingId) {
+        Map<String, Integer> map = new HashMap<>();
+//        List<CustomerBooking> customerBookingList = fetchBookingFromDB(false, tenantId);
+        List<CustomerBooking> customerBookingList = List.of(customerBookingDao.findById(bookingId).get());
+        map.put("Total Bookings", customerBookingList.size());
+        List<Future<Long>> bookingQueue = new ArrayList<>();
+        log.info("fetched {} bookings for Migrations", customerBookingList.size());
+        customerBookingList.forEach(booking -> {
+            // execute async
+            Future<Long> future = trxExecutor.runInAsync(() -> {
+
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+                    Map<String, BigDecimal> codeTeuMap = customerBookingV3MigrationService.getCodeTeuMapping();
+                    return trxExecutor.runInTrx(() -> {
+                        try {
+
+                            CustomerBooking response = customerBookingV3MigrationService.migrateBookingV3ToV2(booking, codeTeuMap);
+                            return response.getId();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
+            bookingQueue.add(future);
+        });
+
+        List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
+        map.put("Total Bookings Migrated", bookingsProcessed.size());
         return map;
     }
 
