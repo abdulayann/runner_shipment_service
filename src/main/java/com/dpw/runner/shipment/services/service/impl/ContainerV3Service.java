@@ -183,6 +183,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private IShipmentServiceV3 shipmentService;
 
     @Autowired
+    @Lazy
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired

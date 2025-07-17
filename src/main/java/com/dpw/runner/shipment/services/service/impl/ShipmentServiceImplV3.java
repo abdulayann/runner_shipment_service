@@ -302,6 +302,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Autowired
     ExecutorService executorService;
     @Autowired
+    @Lazy
     private IContainerV3Service containerV3Service;
     @Autowired
     private ContainerV3Util containerV3Util;
