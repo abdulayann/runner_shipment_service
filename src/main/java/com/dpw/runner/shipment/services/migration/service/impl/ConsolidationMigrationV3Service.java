@@ -544,7 +544,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         //Identify container associated only with consolidation and and call setContainerUtilisationForShipment
         Set<Containers> consolContainers = getOnlyConsolidationContainers(console, shipmentDetailsList);
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(console.getShipmentType());
-        shipmentMigrationV3Service.setContainerUtilisation(consolContainers, containerTypeMap, isFCL);
+        shipmentMigrationV3Service.setContainerUtilisation(consolContainers, containerTypeMap, isFCL, false);
         return consolContainers;
     }
 
