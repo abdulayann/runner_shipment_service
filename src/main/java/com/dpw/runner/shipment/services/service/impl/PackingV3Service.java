@@ -1076,7 +1076,7 @@ public class PackingV3Service implements IPackingV3Service {
             double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
 
             // Chargeable weight for sea is the greater of volume (in m³) vs weight in tons (derived by dividing kg by 100)
-            chargeableWeight = Math.max(wtInKg / 100, volInM3);
+            chargeableWeight = Math.max(wtInKg / 1000, volInM3);
 
             // Unit is now volume-based (m³) instead of weight-based
             packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
