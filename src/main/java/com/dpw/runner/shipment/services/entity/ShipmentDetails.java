@@ -714,8 +714,19 @@ public class ShipmentDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String dgPacksUnit;
 
+<<<<<<< Updated upstream
     @Column(name = "is_migrated_to_v3")
     private Boolean isMigratedToV3;
+=======
+    @Column(name = "transport_info_status")
+    @Enumerated(EnumType.STRING)
+    private TransportInfoStatus transportInfoStatus;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
+>>>>>>> Stashed changes
 
     @Override
     public boolean equals(Object o) {
