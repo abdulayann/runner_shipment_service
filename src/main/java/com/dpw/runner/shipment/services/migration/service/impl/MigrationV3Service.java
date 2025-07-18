@@ -161,56 +161,22 @@ public class MigrationV3Service implements IMigrationV3Service {
         return customerBookingDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
     }
 
-    private List<ShipmentDetails> fetchShipmentFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return shipmentDao.findShipmentByIsMigratedToV3(isMigratedToV3, tenantId);
-    }
+
 
     @Override
     public Map<String, Integer> migrateV3ToV2(Integer tenantId) {
-        Map<String, Integer> map = new HashMap<>();
+        Map<String, Integer> result = new HashMap<>();
 
         log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
 
         Map<String, Integer> consolidationStats = consolidationMigrationV3Service.migrateConsolidationsForTenant(tenantId);
-        map.putAll(consolidationStats);
+        result.putAll(consolidationStats);
 
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(true, tenantId);
-        map.put("Total Shipment", shipmentDetailsList.size());
-        log.info("Starting V3 to V2 Shipment migration for tenant [{}]. Found {} shipment(s).", tenantId, shipmentDetailsList.size());
+        Map<String, Integer> shipmentStats = shipmentMigrationV3Service.migrateShipmentsForTenant(tenantId);
+        result.putAll(shipmentStats);
 
-        List<Future<Long>> shipmentFutures = new ArrayList<>();
-        log.info("fetched {} shipments for V3 to V2 Migrations", shipmentDetailsList.size());
-        for (ShipmentDetails ship : shipmentDetailsList) {// execute async
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
-
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-                            log.info("Migrating Shipment with [id={}]", ship.getId());
-                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV3ToV2(ship);
-                            log.info("Successfully migrated the Shipment [oldId={}, newId={}]", ship.getId(), migrated.getId());
-                            return migrated.getId();
-                        } catch (Exception e) {
-                            log.error("Shipment migration failed [id={}]: {}", ship.getId(), e.getMessage(), e);
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Async failure during shipment setup [id={}]", ship.getId(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            shipmentFutures.add(future);
-        }
-        List<Long> migratedShipmentIds = collectAllProcessedIds(shipmentFutures);
-        map.put("Total Shipment Migrated", migratedShipmentIds.size());
-        log.info("Shipment migration completed: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentDetailsList.size(), tenantId);
-        return map;
+        log.info("[Migration] Completed migration for tenant [{}]: {}", tenantId, result);
+        return result;
     }
 
     @Override

@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
@@ -630,7 +631,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             }));
         }
 
-        List<Long> migratedIds = collectAllProcessedIds(futures);
+        List<Long> migratedIds = MigrationUtil.collectAllProcessedIds(futures);
         stats.put("Total Consolidation Migrated", migratedIds.size());
 
         log.info("[ConsolidationMigration] Tenant [{}]: {}/{} consolidations migrated successfully.",
@@ -643,16 +644,5 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return consolidationDetailsDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
     }
 
-    private List<Long> collectAllProcessedIds(List<Future<Long>> queue) {
-        List<Long> ids = new ArrayList<>();
-        for (Future<Long> future : queue) {
-            try {
-                ids.add(future.get());
-            } catch (Exception er) {
-                log.error("Error in trx", er);
-            }
-        }
-        return ids;
-    }
 
 }
