@@ -19,18 +19,20 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.lang.reflect.InvocationTargetException;
@@ -41,21 +43,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {TransportInstructionLegsPackagesServiceImpl.class})
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
-@EnableConfigurationProperties
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@Execution(CONCURRENT)
 class TransportInstructionLegsPackagesServiceImplTest {
     @MockBean
     private DependentServiceHelper dependentServiceHelper;
@@ -76,9 +80,19 @@ class TransportInstructionLegsPackagesServiceImplTest {
     @MockBean
     private UserContext userContext;
 
-    @Autowired
+    @InjectMocks
     private TransportInstructionLegsPackagesServiceImpl transportInstructionLegsPackagesService;
+    @MockBean
+    private MasterDataUtils masterDataUtils;
+    @MockBean
+    ExecutorService executorServiceMasterData;
+    @MockBean
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
+    @BeforeEach
+    void setup() {
+        transportInstructionLegsPackagesService.executorServiceMasterData = Executors.newFixedThreadPool(2);
+    }
 
     @Test
     void testCreate() {
@@ -285,6 +299,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         verify(iTiLegRepository).findById(Mockito.<Long>any());
     }
 
+
     @Test
     void testCreate4() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
             NoSuchMethodException, InvocationTargetException {
@@ -375,7 +390,12 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .tiLegId(1L)
                 .tunnelRestrictionCode("Tunnel Restriction Code")
                 .packageType("BBL")
-                .dimensions("10x20x30")
+                .length(BigDecimal.TEN)
+                .width(BigDecimal.TEN)
+                .height(BigDecimal.TEN)
+                .widthUnit("FT")
+                .heightUnit("FT")
+                .lengthUnit("FT")
                 .unNumber("42");
         TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
                 .volumeUnit("M3")
@@ -391,6 +411,75 @@ class TransportInstructionLegsPackagesServiceImplTest {
         assertNotNull(response);
         verify(iTiLegRepository).findById(Mockito.<Long>any());
     }
+
+    @Test
+    void testCreateWithValidationException() {
+
+        Optional<TiLegs> ofResult = Optional.of(new TiLegs());
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder dgClassResult = TransportInstructionLegsPackagesRequest
+                .builder()
+                .dangerous(true)
+                .description("The characteristics of someone or something");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder grossWeightUnitResult = dgClassResult
+                .grossWeight(new BigDecimal("2.3"))
+                .grossWeightUnit("KG");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder idResult = grossWeightUnitResult
+                .guid(UUID.randomUUID())
+                .id(1L);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder unNumberResult = idResult
+                .netWeight(new BigDecimal("2.3"))
+                .netWeightUnit("KG")
+                .noOfPackages("20")
+                .substanceName("Substance Name")
+                .tiLegId(1L)
+                .tunnelRestrictionCode("Tunnel Restriction Code")
+                .packageType("BBL")
+                .length(BigDecimal.TEN)
+                .lengthUnit("FT")
+                .unNumber("42");
+        TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
+                .volumeUnit("M3")
+                .build();
+
+        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.create(request));
+    }
+
+    @Test
+    void testCreateWithValidationException1() {
+
+        Optional<TiLegs> ofResult = Optional.of(new TiLegs());
+        when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder dgClassResult = TransportInstructionLegsPackagesRequest
+                .builder()
+                .dangerous(true)
+                .description("The characteristics of someone or something");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder grossWeightUnitResult = dgClassResult
+                .grossWeight(new BigDecimal("2.3"))
+                .grossWeightUnit("KG");
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder idResult = grossWeightUnitResult
+                .guid(UUID.randomUUID())
+                .id(1L);
+        TransportInstructionLegsPackagesRequest.TransportInstructionLegsPackagesRequestBuilder unNumberResult = idResult
+                .netWeight(new BigDecimal("2.3"))
+                .netWeightUnit("KG")
+                .noOfPackages("20")
+                .substanceName("Substance Name")
+                .tiLegId(1L)
+                .tunnelRestrictionCode("Tunnel Restriction Code")
+                .packageType("BBL")
+                .length(BigDecimal.TEN)
+                .width(BigDecimal.TEN)
+                .height(BigDecimal.TEN)
+                .lengthUnit("FT")
+                .unNumber("42");
+        TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
+                .volumeUnit("M3")
+                .build();
+
+        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.create(request));
+    }
+
     @Test
     void testCreateBulk() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
             NoSuchMethodException, InvocationTargetException {
@@ -481,7 +570,12 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .tiLegId(1L)
                 .tunnelRestrictionCode("Tunnel Restriction Code")
                 .packageType("BBL")
-                .dimensions("10x20x30")
+                .length(BigDecimal.TEN)
+                .width(BigDecimal.TEN)
+                .height(BigDecimal.TEN)
+                .widthUnit("FT")
+                .heightUnit("FT")
+                .lengthUnit("FT")
                 .unNumber("42");
         TransportInstructionLegsPackagesRequest request = unNumberResult.volume(new BigDecimal("2.3"))
                 .volumeUnit("M3")
@@ -499,6 +593,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         assertNotNull(response);
         verify(iTiLegRepository).findById(Mockito.<Long>any());
     }
+
     @Test
     void testUpdate() throws RunnerException, JsonProcessingException, IllegalAccessException, NoSuchFieldException,
             NoSuchMethodException, InvocationTargetException {
@@ -616,7 +711,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         when(iTiPackageDao.findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any()))
                 .thenReturn(new PageImpl<>(content));
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -684,7 +779,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         when(iTiPackageDao.findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
@@ -781,7 +876,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
         when(iTiPackageDao.findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         verify(jsonHelper, atLeast(1)).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
@@ -804,8 +899,14 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .populateRAKC(true);
         SortRequest sortRequest = SortRequest.builder().fieldName("Field Name").order("Order").build();
         ListCommonRequest request = populateRAKCResult.sortRequest(sortRequest).build();
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         TransportInstructionLegsPackagesListResponse actualListResult = transportInstructionLegsPackagesService
-                .list(request);
+                .list(request, true);
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -855,7 +956,7 @@ class TransportInstructionLegsPackagesServiceImplTest {
                 .populateRAKC(true);
         SortRequest sortRequest = SortRequest.builder().fieldName("Field Name").order("Order").build();
         ListCommonRequest request = populateRAKCResult.sortRequest(sortRequest).build();
-        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.list(request));
+        assertThrows(ValidationException.class, () -> transportInstructionLegsPackagesService.list(request, true));
         verify(iTiPackageDao).findAll(Mockito.<Specification<TiPackages>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
@@ -1011,5 +1112,86 @@ class TransportInstructionLegsPackagesServiceImplTest {
         verify(iTiPackageDao).findById(Mockito.<Long>any());
         verify(jsonHelper).convertValue(Mockito.<TiPackages>any(),
                 Mockito.<Class<TransportInstructionLegsPackagesResponse>>any());
+    }
+
+    @Test
+    void testCreate_shouldThrowException_whenTiLegsNotFound() {
+        Long invalidTiLegId = 999L;
+        TransportInstructionLegsPackagesRequest request = new TransportInstructionLegsPackagesRequest();
+        request.setTiLegId(invalidTiLegId);
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.create(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowException_whenPackageNotFound() {
+        Long invalidPackageId = 888L;
+        Long validTiLegId = 100L;
+        TransportInstructionLegsPackagesRequest request = new TransportInstructionLegsPackagesRequest();
+        request.setId(invalidPackageId);
+        request.setTiLegId(validTiLegId);
+        when(iTiPackageDao.findById(invalidPackageId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.update(request)
+        );
+        assertEquals("Invalid Transport Instruction Legs packages id" + invalidPackageId, ex.getMessage());
+    }
+
+    @Test
+    void testUpdate_shouldThrowException_whenTiLegsNotFound() {
+        Long packageId = 111L;
+        Long invalidTiLegId = 999L;
+        TransportInstructionLegsPackagesRequest request = new TransportInstructionLegsPackagesRequest();
+        request.setId(packageId);
+        request.setTiLegId(invalidTiLegId);
+        TiPackages existingPackage = new TiPackages();
+        when(iTiPackageDao.findById(packageId)).thenReturn(Optional.of(existingPackage));
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.update(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
+    }
+
+    @Test
+    void testRetrieveById_shouldThrowException_whenPackageNotFound() {
+        Long invalidPackageId = 123L;
+        when(iTiPackageDao.findById(invalidPackageId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.retrieveById(invalidPackageId)
+        );
+        assertEquals("Invalid Ti legs package Id: " + invalidPackageId, ex.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowException_whenTiLegIdMismatch() {
+        Long legId1 = 100L, legId2 = 200L;
+        TransportInstructionLegsPackagesRequest req1 = new TransportInstructionLegsPackagesRequest();
+        req1.setTiLegId(legId1);
+        TransportInstructionLegsPackagesRequest req2 = new TransportInstructionLegsPackagesRequest();
+        req2.setTiLegId(legId2);
+        TransportInstructionLegsPackagesListRequest request = new TransportInstructionLegsPackagesListRequest();
+        request.setPackagesRequests(List.of(req1, req2));
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.bulkCreate(request)
+        );
+        assertEquals("All tiLegId values must be the same", ex.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowException_whenTiLegNotFound() {
+        Long invalidTiLegId = 555L;
+        TransportInstructionLegsPackagesRequest req = new TransportInstructionLegsPackagesRequest();
+        req.setTiLegId(invalidTiLegId);
+        TransportInstructionLegsPackagesListRequest request = new TransportInstructionLegsPackagesListRequest();
+        request.setPackagesRequests(List.of(req));
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsPackagesService.bulkCreate(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
     }
 }

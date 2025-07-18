@@ -2,15 +2,12 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -23,12 +20,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 @Slf4j
 @RestController
@@ -44,8 +44,11 @@ public class ReferenceNumbersV3Controller {
         this.jsonHelper = jsonHelper;
     }
 
-    private static class MyResponseClass extends RunnerResponse<ReferenceNumbersResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<ReferenceNumbersResponse> {}
+    private static class MyResponseClass extends RunnerResponse<ReferenceNumbersResponse> {
+    }
+
+    private static class MyListResponseClass extends RunnerListResponse<ReferenceNumbersResponse> {
+    }
 
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
@@ -92,6 +95,15 @@ public class ReferenceNumbersV3Controller {
         List<ReferenceNumbersResponse> referenceNumbersList = referenceNumbersV3Service.list(listCommonRequest, xSource);
         List<IRunnerResponse> responseList = referenceNumbersList.stream().map(p -> (IRunnerResponse) p).toList();
         return ResponseHelper.buildListSuccessResponse(responseList);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = MyListResponseClass.class, message = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL, responseContainer = ReferenceNumbersConstants.REFERENCE_NUMBERS_LIST_SUCCESSFUL)
+    })
+    @PostMapping(ApiConstants.API_LIST_V3)
+    public ResponseEntity<IRunnerResponse> listV3(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest,
+                                                  @RequestHeader(value = "x-source", required = false) String xSource) {
+        return referenceNumbersV3Service.listReferenceNumbers(listCommonRequest, xSource);
     }
 
 }

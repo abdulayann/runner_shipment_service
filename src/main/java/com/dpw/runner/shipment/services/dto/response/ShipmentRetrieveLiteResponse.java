@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
@@ -250,5 +251,6 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isEmptyWeightPackAvailable = Boolean.FALSE;
     private Boolean isInterBranchConsoleAttached;
     private Boolean isMigratedToV3;
-
+    private TransportInfoStatus transportInfoStatus;
+    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
 }

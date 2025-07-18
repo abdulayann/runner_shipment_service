@@ -21,18 +21,21 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsContainersService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.lang.reflect.InvocationTargetException;
@@ -43,10 +46,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.anyBoolean;
@@ -56,10 +61,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {TransportInstructionLegsContainersServiceImpl.class})
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
-@EnableConfigurationProperties
+@ExtendWith({MockitoExtension.class, SpringExtension.class})
+@Execution(CONCURRENT)
 class TransportInstructionLegsContainersServiceImplTest {
     @MockBean
     private DependentServiceHelper dependentServiceHelper;
@@ -82,13 +85,19 @@ class TransportInstructionLegsContainersServiceImplTest {
     @MockBean
     private UserContext userContext;
 
-    @Autowired
+    @InjectMocks
     private TransportInstructionLegsContainersServiceImpl transportInstructionLegsContainersServiceImpl;
+    @MockBean
+    private MasterDataUtils masterDataUtils;
 
-    /**
-     * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#create(TransportInstructionLegsContainersRequest)}
-     */
+    @MockBean
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
+
+    @BeforeEach
+    void setup() {
+        transportInstructionLegsContainersServiceImpl.executorServiceMasterData = Executors.newFixedThreadPool(2);
+    }
+
     @Test
     void testCreate() {
         ContainerNumberCheckResponse containerNumberCheckResponse = new ContainerNumberCheckResponse();
@@ -203,7 +212,6 @@ class TransportInstructionLegsContainersServiceImplTest {
         verify(jsonHelper).convertValue(Mockito.<TransportInstructionLegsContainersRequest>any(),
                 Mockito.<Class<TiContainers>>any());
         verify(iTiLegRepository).findById(Mockito.<Long>any());
-        verify(iContainerV3Service).validateContainerNumber(Mockito.<String>any());
     }
 
     /**
@@ -285,7 +293,6 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiLegs.setTiTruckDriverDetails(new ArrayList<>());
         tiLegs.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setUpdatedBy("2020-03-01");
-        Optional<TiLegs> ofResult = Optional.of(tiLegs);
         when(iTiLegRepository.findById(Mockito.<Long>any())).thenReturn(Optional.empty());
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder dgClassResult = TransportInstructionLegsContainersRequest
                 .builder()
@@ -530,6 +537,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -561,6 +569,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         tiContainers.setId(1l);
         tiContainers.setNumber("CONT1234567");
         TiLegs tiLegs = new TiLegs();
+        tiLegs.setId(1l);
         tiLegs.setActualDelivery(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setActualPickup(LocalDate.of(1970, 1, 1).atStartOfDay());
         tiLegs.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
@@ -594,8 +603,8 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .grossWeight(new BigDecimal("2.3"))
                 .grossWeightUnit("KG");
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder idResult = grossWeightUnitResult
-                .guid(UUID.randomUUID())
-                .id(1L);
+                .guid(UUID.randomUUID());
+
         TransportInstructionLegsContainersRequest.TransportInstructionLegsContainersRequestBuilder unNumberResult = idResult
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
@@ -703,6 +712,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -822,6 +832,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .netWeight(new BigDecimal("2.3"))
                 .netWeightUnit("KG")
                 .noOfPackages("20")
+                .packageType("BAG")
                 .number("CONT1234567")
                 .substanceName("Substance Name")
                 .tiLegId(1L)
@@ -846,7 +857,7 @@ class TransportInstructionLegsContainersServiceImplTest {
 
     /**
      * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#list(ListCommonRequest)}
+     * {@link ITransportInstructionLegsContainersService#list(ListCommonRequest, boolean)}
      */
     @Test
     void testList() {
@@ -854,7 +865,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         when(iTiContainerDao.findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any()))
                 .thenReturn(new PageImpl<>(content));
         TransportInstructionLegsContainersListResponse actualListResult = transportInstructionLegsContainersServiceImpl
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiContainerDao).findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -863,7 +874,7 @@ class TransportInstructionLegsContainersServiceImplTest {
 
     /**
      * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#list(ListCommonRequest)}
+     * {@link ITransportInstructionLegsContainersService#list(ListCommonRequest, boolean)}
      */
     @Test
     void testList2() {
@@ -930,7 +941,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         when(iTiContainerDao.findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
         TransportInstructionLegsContainersListResponse actualListResult = transportInstructionLegsContainersServiceImpl
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiContainerDao).findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiContainers>any(),
                 Mockito.<Class<TransportInstructionLegsContainersResponse>>any());
@@ -941,7 +952,7 @@ class TransportInstructionLegsContainersServiceImplTest {
 
     /**
      * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#list(ListCommonRequest)}
+     * {@link ITransportInstructionLegsContainersService#list(ListCommonRequest, boolean)}
      */
     @Test
     void testList3() {
@@ -1036,8 +1047,14 @@ class TransportInstructionLegsContainersServiceImplTest {
         PageImpl<TiContainers> pageImpl = new PageImpl<>(content);
         when(iTiContainerDao.findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         TransportInstructionLegsContainersListResponse actualListResult = transportInstructionLegsContainersServiceImpl
-                .list(new ListCommonRequest());
+                .list(new ListCommonRequest(), true);
         verify(iTiContainerDao).findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any());
         verify(jsonHelper, atLeast(1)).convertValue(Mockito.<TiContainers>any(),
                 Mockito.<Class<TransportInstructionLegsContainersResponse>>any());
@@ -1048,7 +1065,7 @@ class TransportInstructionLegsContainersServiceImplTest {
 
     /**
      * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#list(ListCommonRequest)}
+     * {@link ITransportInstructionLegsContainersService#list(ListCommonRequest, boolean)}
      */
     @Test
     void testList4() {
@@ -1065,7 +1082,7 @@ class TransportInstructionLegsContainersServiceImplTest {
         SortRequest sortRequest = SortRequest.builder().fieldName("Field Name").order("Order").build();
         ListCommonRequest request = populateRAKCResult.sortRequest(sortRequest).build();
         TransportInstructionLegsContainersListResponse actualListResult = transportInstructionLegsContainersServiceImpl
-                .list(request);
+                .list(request, true);
         verify(iTiContainerDao).findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any());
         assertEquals(0L, actualListResult.getTotalCount().longValue());
         assertEquals(1, actualListResult.getTotalPages().intValue());
@@ -1074,7 +1091,7 @@ class TransportInstructionLegsContainersServiceImplTest {
 
     /**
      * Method under test:
-     * {@link TransportInstructionLegsContainersServiceImpl#list(ListCommonRequest)}
+     * {@link ITransportInstructionLegsContainersService#list(ListCommonRequest, boolean)}
      */
     @Test
     void testList5() {
@@ -1121,7 +1138,7 @@ class TransportInstructionLegsContainersServiceImplTest {
                 .populateRAKC(true);
         SortRequest sortRequest = SortRequest.builder().fieldName("Field Name").order("Order").build();
         ListCommonRequest request = populateRAKCResult.sortRequest(sortRequest).build();
-        assertThrows(ValidationException.class, () -> transportInstructionLegsContainersServiceImpl.list(request));
+        assertThrows(ValidationException.class, () -> transportInstructionLegsContainersServiceImpl.list(request, true));
         verify(iTiContainerDao).findAll(Mockito.<Specification<TiContainers>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiContainers>any(),
                 Mockito.<Class<TransportInstructionLegsContainersResponse>>any());
@@ -1300,5 +1317,73 @@ class TransportInstructionLegsContainersServiceImplTest {
         verify(iTiContainerDao).findById(Mockito.<Long>any());
         verify(jsonHelper).convertValue(Mockito.<TiContainers>any(),
                 Mockito.<Class<TransportInstructionLegsContainersResponse>>any());
+    }
+
+    @Test
+    void testRetrieveById_shouldThrowValidationException_whenIdNotFound() {
+        Long invalidId = 999L;
+        when(iTiContainerDao.findById(invalidId)).thenReturn(Optional.empty());
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            transportInstructionLegsContainersServiceImpl.retrieveById(invalidId);
+        });
+        assertEquals("Invalid Ti legs container Id: 999", exception.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowValidationException_whenTiLegIdsAreDifferent() {
+        TransportInstructionLegsContainersRequest req1 = new TransportInstructionLegsContainersRequest();
+        req1.setTiLegId(100L);
+        TransportInstructionLegsContainersRequest req2 = new TransportInstructionLegsContainersRequest();
+        req2.setTiLegId(200L);
+        TransportInstructionLegsContainersListRequest request = new TransportInstructionLegsContainersListRequest();
+        request.setContainersRequests(List.of(req1, req2));
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.bulkCreate(request)
+        );
+        assertEquals("All tiLegId values must be the same", exception.getMessage());
+    }
+
+    @Test
+    void testBulkCreate_shouldThrowValidationException_whenTiLegNotFound() {
+        Long legId = 123L;
+        TransportInstructionLegsContainersRequest req = new TransportInstructionLegsContainersRequest();
+        req.setTiLegId(legId);
+        TransportInstructionLegsContainersListRequest request = new TransportInstructionLegsContainersListRequest();
+        request.setContainersRequests(List.of(req));
+        when(iTiContainerDao.findById(legId)).thenReturn(Optional.empty());
+        ValidationException exception = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.bulkCreate(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + legId, exception.getMessage());
+    }
+
+    @Test
+    void update_shouldThrowValidationException_whenContainerIdNotFound() {
+        Long invalidId = 999L;
+        TransportInstructionLegsContainersRequest request = new TransportInstructionLegsContainersRequest();
+        request.setId(invalidId);
+        request.setTiLegId(100L);
+        when(iTiContainerDao.findById(invalidId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.update(request)
+        );
+        assertEquals("Invalid Transport Instruction Legs containers id" + invalidId, ex.getMessage());
+    }
+
+    @Test
+    void update_shouldThrowValidationException_whenTiLegIdNotFound() {
+        Long validId = 1L;
+        Long invalidTiLegId = 555L;
+        TiContainers existingContainer = new TiContainers();
+        existingContainer.setId(validId);
+        TransportInstructionLegsContainersRequest request = new TransportInstructionLegsContainersRequest();
+        request.setId(validId);
+        request.setTiLegId(invalidTiLegId);
+        when(iTiContainerDao.findById(validId)).thenReturn(Optional.of(existingContainer));
+        when(iTiLegRepository.findById(invalidTiLegId)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                transportInstructionLegsContainersServiceImpl.update(request)
+        );
+        assertEquals("Transport Instruction Legs does not exist for tiId: " + invalidTiLegId, ex.getMessage());
     }
 }

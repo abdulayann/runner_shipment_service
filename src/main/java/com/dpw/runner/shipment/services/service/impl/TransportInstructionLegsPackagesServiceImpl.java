@@ -10,11 +10,10 @@ import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsP
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsPackagesRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsPackagesResponse;
-import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceListResponse;
-import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiPackages;
-import com.dpw.runner.shipment.services.entity.TiReferences;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -24,11 +23,14 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsPackagesService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,17 +38,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
 @Slf4j
 public class TransportInstructionLegsPackagesServiceImpl implements ITransportInstructionLegsPackagesService {
+    private static final String TI_LEGS_DOES_NOT_EXIST = "Transport Instruction Legs does not exist for tiId: ";
     @Autowired
     private ITiLegRepository tiLegRepository;
     @Autowired
@@ -57,10 +63,13 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     private IAuditLogService auditLogService;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
-    private static final Pattern DIMENSION_PATTERN = Pattern.compile(
-            "^\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*$"
-    );
-
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+    @Autowired
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
     @Override
     public TransportInstructionLegsPackagesResponse create(TransportInstructionLegsPackagesRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -69,8 +78,8 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         log.info("Starting Transport Instruction Legs packages creation | Request ID: {} | Request Body: {}", requestId, request);
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException( TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         validateTransportInstructionLegsPackagesDetails(request);
         // Convert DTO to Entity
@@ -99,13 +108,13 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         log.info("Starting Transport Instruction Legs packages update | Request ID: {} | Request Body: {}", requestId, request);
         Long id = request.getId();
         Optional<TiPackages> existingTiLegsPackages = tiPackageDao.findById(id);
-        if (!existingTiLegsPackages.isPresent()) {
+        if (existingTiLegsPackages.isEmpty()) {
             throw new ValidationException("Invalid Transport Instruction Legs packages id" + id);
         }
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         validateTransportInstructionLegsPackagesDetails(request);
         // Convert DTO to Entity
@@ -128,7 +137,7 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     }
 
     @Override
-    public TransportInstructionLegsPackagesListResponse list(ListCommonRequest request) {
+    public TransportInstructionLegsPackagesListResponse list(ListCommonRequest request, boolean getMasterData) {
 
         // construct specifications for filter request
         Pair<Specification<TiPackages>, Pageable> tuple = fetchData(request, TiPackages.class);
@@ -137,6 +146,10 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         TransportInstructionLegsPackagesListResponse transportInstructionLegsPackagesListResponse = new TransportInstructionLegsPackagesListResponse();
         if (tiLegsPackagesPage != null) {
             List<TransportInstructionLegsPackagesResponse> responseList = convertEntityListToDtoList(tiLegsPackagesPage.getContent());
+            if (getMasterData) {
+                Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+                transportInstructionLegsPackagesListResponse.setMasterData(masterDataResponse);
+            }
             transportInstructionLegsPackagesListResponse.setTiLegsPackagesResponses(responseList);
             transportInstructionLegsPackagesListResponse.setTotalPages(tiLegsPackagesPage.getTotalPages());
             transportInstructionLegsPackagesListResponse.setTotalCount(tiLegsPackagesPage.getTotalElements());
@@ -149,7 +162,7 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     public TransportInstructionLegsPackagesResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
         Optional<TiPackages> tiPackages = tiPackageDao.findById(id);
-        if (!tiPackages.isPresent()) {
+        if (tiPackages.isEmpty()) {
             throw new ValidationException("Invalid Ti legs package Id: " + id);
         }
         TiPackages tiPackagesEntity = tiPackages.get();
@@ -171,7 +184,7 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     public TransportInstructionLegsPackagesResponse retrieveById(Long id) {
 
         Optional<TiPackages> tiPackages = tiPackageDao.findById(id);
-        if (!tiPackages.isPresent()) {
+        if (tiPackages.isEmpty()) {
             throw new ValidationException("Invalid Ti legs package Id: " + id);
         }
         return jsonHelper.convertValue(tiPackages.get(), TransportInstructionLegsPackagesResponse.class);
@@ -189,8 +202,8 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
             throw new ValidationException("All tiLegId values must be the same");
         }
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         request.getPackagesRequests()
                 .forEach(this::validateTransportInstructionLegsPackagesDetails);
@@ -257,8 +270,15 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
     }
 
     private void validateTransportInstructionLegsPackagesDetails(TransportInstructionLegsPackagesRequest transportInstructionLegsPackagesRequest) {
+        boolean allPresent = transportInstructionLegsPackagesRequest.getLength() != null && transportInstructionLegsPackagesRequest.getWidth() != null && transportInstructionLegsPackagesRequest.getHeight() != null;
+        boolean allNull = transportInstructionLegsPackagesRequest.getLength() == null && transportInstructionLegsPackagesRequest.getWidth() == null && transportInstructionLegsPackagesRequest.getHeight() == null;
 
-        validateDimensions(transportInstructionLegsPackagesRequest.getDimensions());
+        if (!(allPresent || allNull)) {
+            throw new ValidationException("Either all of length, width, and height must be provided, or none of them.");
+        }
+        validateValueAndUnit(transportInstructionLegsPackagesRequest.getLength(), transportInstructionLegsPackagesRequest.getLengthUnit(), "length");
+        validateValueAndUnit(transportInstructionLegsPackagesRequest.getWidth(), transportInstructionLegsPackagesRequest.getWidthUnit(), "width");
+        validateValueAndUnit(transportInstructionLegsPackagesRequest.getHeight(), transportInstructionLegsPackagesRequest.getHeightUnit(), "height");
         if ((transportInstructionLegsPackagesRequest.getGrossWeight() != null && StringUtility.isEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit())) ||
                 (transportInstructionLegsPackagesRequest.getGrossWeight() == null && StringUtility.isNotEmpty(transportInstructionLegsPackagesRequest.getGrossWeightUnit()))) {
             throw new ValidationException("Packages: Gross weight and gross weight unit must both be provided or both be null.");
@@ -291,21 +311,27 @@ public class TransportInstructionLegsPackagesServiceImpl implements ITransportIn
         }
     }
 
-    public void validateDimensions(String dimensions) {
-        if (StringUtility.isNotEmpty(dimensions)) {
-            Matcher matcher = DIMENSION_PATTERN.matcher(dimensions);
-            if (!matcher.matches()) {
-                throw new ValidationException("Dimensions must be in the format LxWxH (e.g., 10x20x30).");
-            }
+    private void validateValueAndUnit(BigDecimal value, String unit, String fieldName) {
+        boolean valuePresent = value != null;
+        boolean unitPresent = unit != null && !unit.isBlank();
 
-            // Optional: parse values and validate further (e.g., non-zero, max size)
-            double length = Double.parseDouble(matcher.group(1));
-            double width = Double.parseDouble(matcher.group(3));
-            double height = Double.parseDouble(matcher.group(5));
+        if (valuePresent ^ unitPresent) {
+            throw new ValidationException(fieldName + " and " + fieldName + "Unit must both be present or both null");
+        }
+    }
 
-            if (length <= 0 || width <= 0 || height <= 0) {
-                throw new ValidationException("Length, width, and height must be positive numbers.");
+    private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsPackagesResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var dropModeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> transportInstructionValidationUtil.addAllTiPackagesMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(dropModeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.TI_LEGS_PACKAGE_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_MESSAGE, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_TI_LEGS_PACKAGE_LIST, ex.getMessage());
             }
         }
+        return masterDataResponse;
     }
 }

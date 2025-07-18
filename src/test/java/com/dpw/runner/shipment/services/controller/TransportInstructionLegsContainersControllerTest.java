@@ -23,6 +23,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {TransportInstructionContainersController.class})
@@ -79,9 +80,9 @@ class TransportInstructionLegsContainersControllerTest {
         legsListResponse.setTotalCount(1l);
         legsListResponse.setTotalPages(1);
         legsListResponse.setTiLegsContainersResponses(List.of(new TransportInstructionLegsContainersResponse()));
-        when(transportInstructionLegsContainersService.list(any())).thenReturn(legsListResponse);
+        when(transportInstructionLegsContainersService.list(any(), anyBoolean())).thenReturn(legsListResponse);
         // Mock
-        var responseEntity = transportInstructionContainersController.list(new ListCommonRequest());
+        var responseEntity = transportInstructionContainersController.list(new ListCommonRequest(), true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

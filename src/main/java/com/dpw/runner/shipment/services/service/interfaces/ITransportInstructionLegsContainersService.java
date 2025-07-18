@@ -17,7 +17,7 @@ public interface ITransportInstructionLegsContainersService {
 
     TransportInstructionLegsContainersResponse update(TransportInstructionLegsContainersRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 
-    TransportInstructionLegsContainersListResponse list(ListCommonRequest request);
+    TransportInstructionLegsContainersListResponse list(ListCommonRequest request, boolean getMasterData);
 
     TransportInstructionLegsContainersResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 

@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -26,9 +28,9 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private Long bookingId;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
-    @NonNull
+    @NotBlank(message = "packs is required")
     private String packs;
-    @NonNull
+    @NotBlank(message = "Packs type is required")
     private String packsType;
     private BigDecimal weight;
     private String weightUnit;
@@ -36,7 +38,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private String volumeUnit;
     private String inspections;
     private String origin;
-    @NonNull
+    @NotBlank(message = "Commodity is required")
     private String commodity;
     private String packingOrder;
     private BigDecimal length;
@@ -45,6 +47,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private String widthUnit;
     private BigDecimal height;
     private String heightUnit;
+    @Size(max = 25000, message = "Max size is 25000 for marks and num")
     private String marksnNums;
     private String flashPoint;
     private String UNDGContact;
@@ -55,6 +58,7 @@ public class PackingV3Request extends CommonRequest implements IRunnerRequest {
     private String maxTempUnit;
     private String HSCode;
     private String countryCode;
+    @Size(max = 25000, message = "Max size is 25000 for goods description")
     private String goodsDescription;
     private String referenceNumber;
     private String DGClass;

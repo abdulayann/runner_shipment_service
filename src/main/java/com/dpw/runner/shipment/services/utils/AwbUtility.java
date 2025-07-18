@@ -158,22 +158,27 @@ public class AwbUtility {
             String groupName = groupEntry.getKey();
             List<String> fields = groupEntry.getValue();
             boolean isLocked = false;
-            for (String fieldName : fields) {
-                try {
-                    Field field = lockSettings.getClass().getDeclaredField(fieldName);
-                    field.setAccessible(true);
-                    Object value = field.get(lockSettings);
-                    if (Boolean.TRUE.equals(value)) {
-                        isLocked = true;
-                        break;
-                    }
-                } catch (NoSuchFieldException | IllegalAccessException e) {
-                    log.warn("Could not access field '{}' in lock settings: {}", fieldName, e.getMessage());
-                }
-            }
+            isLocked = checkIsLocked(fields, lockSettings, isLocked);
             groupLockStatus.put(groupName, isLocked);
         }
         return groupLockStatus;
+    }
+
+    private static boolean checkIsLocked(List<String> fields, Object lockSettings, boolean isLocked) {
+        for (String fieldName : fields) {
+            try {
+                Field field = lockSettings.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
+                Object value = field.get(lockSettings);
+                if (Boolean.TRUE.equals(value)) {
+                    isLocked = true;
+                    break;
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                log.warn("Could not access field '{}' in lock settings: {}", fieldName, e.getMessage());
+            }
+        }
+        return isLocked;
     }
 
     public static String getFormattedAddress(AwbAddressParam addressParam)

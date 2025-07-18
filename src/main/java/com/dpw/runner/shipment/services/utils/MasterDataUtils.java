@@ -241,10 +241,8 @@ public class MasterDataUtils{
         }
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             carriers.addAll(createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId(), cacheMap));
-        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response){
-            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
-                carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
-            }
+        } else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+            carriers.addAll(createInBulkCarriersRequest(customerBookingV3Response.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId(), cacheMap));
         }
     }
 
@@ -260,10 +258,8 @@ public class MasterDataUtils{
         else if (response instanceof ConsolidationDetailsResponse consolidationDetailsResponse && consolidationDetailsResponse.getCarrierDetails() != null && StringUtility.isNotEmpty(consolidationDetailsResponse.getCarrierDetails().getShippingLine())) {
             consolidationDetailsResponse.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + consolidationDetailsResponse.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
         }
-        else if (response instanceof CustomerBookingV3Response customerBookingV3Response) {
-            if(customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
-                customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
-            }
+        else if (response instanceof CustomerBookingV3Response customerBookingV3Response && customerBookingV3Response.getCarrierDetails()!= null && StringUtility.isNotEmpty(customerBookingV3Response.getCarrierDetails().getShippingLine())) {
+            customerBookingV3Response.getCarrierDetails().setCarrierMasterData(setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName() + customerBookingV3Response.getCarrierDetails().getId()), CacheConstants.CARRIER, cacheMap));
         }
     }
 
@@ -1112,62 +1108,66 @@ public class MasterDataUtils{
     private <T> List<String> getFieldsFromClassBasedOnMasterDataType(Class<T> mainClass, String masterDataType) {
         List<String> fields = new ArrayList<>();
         for (Field field : mainClass.getDeclaredFields()) {
-            switch (masterDataType) {
-                case Constants.COLLECTION_TABLE:
-                    if (field.isAnnotationPresent(CollectionTable.class)) {
-                        fields.add(field.getName());
-                    }
-                    break;
-                case Constants.VESSEL_MASTER_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.VESSEL_MASTER_DATA, fields);
-                    break;
-                case Constants.CHARGE_TYPE_MASTER_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.CHARGE_TYPE_MASTER_DATA, fields);
-                    break;
-                case Constants.COMMODITY_TYPE_MASTER_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.COMMODITY_TYPE_MASTER_DATA, fields);
-                    break;
-                case Constants.CURRENCY_MASTER_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.CURRENCY_MASTER_DATA, fields);
-                    break;
-                case Constants.CONTAINER_TYPE_MASTER_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.CONTAINER_TYPE_MASTER_DATA, fields);
-                    break;
-                case Constants.CARRIER_MASTER_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.CARRIER_MASTER_DATA, fields);
-                    break;
-                case Constants.DG_SUBSTANCE:
-                    addFieldIfDedicatedMasterData(field, Constants.DG_SUBSTANCE, fields);
-                    break;
-                case Constants.WARE_HOUSE_DATA:
-                    addFieldIfDedicatedMasterData(field, Constants.WARE_HOUSE_DATA, fields);
-                    break;
-                case Constants.ACTIVITY_TYPE:
-                    addFieldIfDedicatedMasterData(field, Constants.ACTIVITY_TYPE, fields);
-                    break;
-                case Constants.SALES_AGENT:
-                    addFieldIfDedicatedMasterData(field, Constants.SALES_AGENT, fields);
-                    break;
-                case Constants.TENANT_MASTER_DATA:
-                    if (field.isAnnotationPresent(TenantIdData.class))
-                        fields.add(field.getName());
-                    break;
-                case Constants.UNLOCATIONS:
-                    if (field.isAnnotationPresent(UnlocationData.class))
-                        fields.add(field.getName());
-                    break;
-                case Constants.MASTER_DATA:
-                    if (field.isAnnotationPresent(MasterData.class))
-                        fields.add(field.getName());
-                    break;
-                case Constants.ORGANIZATIONS:
-                    if (field.isAnnotationPresent(OrganizationMasterData.class))
-                        fields.add(field.getName());
-                    break;
-                default:
-            }
+            addFiledBasedOnMasterData(masterDataType, field, fields);
         }
         return fields;
+    }
+
+    private void addFiledBasedOnMasterData(String masterDataType, Field field, List<String> fields) {
+        switch (masterDataType) {
+            case Constants.COLLECTION_TABLE:
+                if (field.isAnnotationPresent(CollectionTable.class)) {
+                    fields.add(field.getName());
+                }
+                break;
+            case Constants.VESSEL_MASTER_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.VESSEL_MASTER_DATA, fields);
+                break;
+            case Constants.CHARGE_TYPE_MASTER_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.CHARGE_TYPE_MASTER_DATA, fields);
+                break;
+            case Constants.COMMODITY_TYPE_MASTER_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.COMMODITY_TYPE_MASTER_DATA, fields);
+                break;
+            case Constants.CURRENCY_MASTER_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.CURRENCY_MASTER_DATA, fields);
+                break;
+            case Constants.CONTAINER_TYPE_MASTER_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.CONTAINER_TYPE_MASTER_DATA, fields);
+                break;
+            case Constants.CARRIER_MASTER_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.CARRIER_MASTER_DATA, fields);
+                break;
+            case Constants.DG_SUBSTANCE:
+                addFieldIfDedicatedMasterData(field, Constants.DG_SUBSTANCE, fields);
+                break;
+            case Constants.WARE_HOUSE_DATA:
+                addFieldIfDedicatedMasterData(field, Constants.WARE_HOUSE_DATA, fields);
+                break;
+            case Constants.ACTIVITY_TYPE:
+                addFieldIfDedicatedMasterData(field, Constants.ACTIVITY_TYPE, fields);
+                break;
+            case Constants.SALES_AGENT:
+                addFieldIfDedicatedMasterData(field, Constants.SALES_AGENT, fields);
+                break;
+            case Constants.TENANT_MASTER_DATA:
+                if (field.isAnnotationPresent(TenantIdData.class))
+                    fields.add(field.getName());
+                break;
+            case Constants.UNLOCATIONS:
+                if (field.isAnnotationPresent(UnlocationData.class))
+                    fields.add(field.getName());
+                break;
+            case Constants.MASTER_DATA:
+                if (field.isAnnotationPresent(MasterData.class))
+                    fields.add(field.getName());
+                break;
+            case Constants.ORGANIZATIONS:
+                if (field.isAnnotationPresent(OrganizationMasterData.class))
+                    fields.add(field.getName());
+                break;
+            default:
+        }
     }
 
     private void addFieldIfDedicatedMasterData(Field field, String expectedType, List<String> fields) {
