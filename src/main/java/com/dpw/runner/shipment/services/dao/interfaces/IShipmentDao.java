@@ -74,5 +74,5 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
 
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
-    List<Long> findShipmentIdsByTenantId(Integer tenantId);
+    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
 }

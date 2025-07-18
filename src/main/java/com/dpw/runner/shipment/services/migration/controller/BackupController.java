@@ -1,33 +1,46 @@
 package com.dpw.runner.shipment.services.migration.controller;
 
-import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupService;
+import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
+/**
+    V2 backup controller at 0th day.
+ */
 @RestController
 @RequestMapping("/api/backup")
 @Slf4j
 public class BackupController {
 
     @Autowired
-    private BackupService backupService;
+    private TenantDataBackupService backupService;
 
     @PostMapping
-    public ResponseEntity<String> backupTenantData(@RequestParam Integer tenantId) {
-        backupService.backupTenantData(tenantId);
-        return ResponseEntity.ok("Backup completed for tenant: " + tenantId);
+    public ResponseEntity<Void> backupTenantData(@RequestParam Integer tenantId) {
+        try {
+            backupService.backupTenantData(tenantId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Backup failed for tenant: {}", tenantId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @DeleteMapping()
-    public ResponseEntity<String> removeTenantData(@RequestParam Integer tenantId) {
-        backupService.removeTenantData(tenantId);
-        return ResponseEntity.ok("Backup removed for tenant: " + tenantId);
+    public ResponseEntity<Void> removeTenantData(@RequestParam Integer tenantId) {
+        try {
+            backupService.deleteBackupForTenant(tenantId);
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            log.error("Backup failed for tenant: {}", tenantId, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

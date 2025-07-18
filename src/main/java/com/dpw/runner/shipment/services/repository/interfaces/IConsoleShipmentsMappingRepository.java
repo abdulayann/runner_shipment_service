@@ -61,4 +61,5 @@ public interface IConsoleShipmentsMappingRepository extends JpaRepository<Consol
 
     @Query(value = "SELECT COUNT(*) FROM console_shipment_mapping csm join shipment_details sd on csm.shipment_id = sd.id WHERE csm.is_attachment_done = false AND csm.request_type = ?1 AND sd.tenant_id = ?2", nativeQuery = true)
     Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId);
+
 }

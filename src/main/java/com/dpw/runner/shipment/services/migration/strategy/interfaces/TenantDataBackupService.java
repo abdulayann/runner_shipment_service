@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.migration.strategy.interfaces;
 
-public interface BackupService {
+public interface TenantDataBackupService {
 
     void backupTenantData(Integer tenantId);
-    void removeTenantData(Integer tenantId);
+    void deleteBackupForTenant(Integer tenantId);
 }

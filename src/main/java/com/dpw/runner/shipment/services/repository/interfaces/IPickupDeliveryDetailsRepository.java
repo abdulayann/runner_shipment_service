@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+
 @Generated
 public interface IPickupDeliveryDetailsRepository extends MultiTenancyRepository<PickupDeliveryDetails> {
     List<PickupDeliveryDetails> findByShipmentId(Long shipmentId);
@@ -19,4 +21,7 @@ public interface IPickupDeliveryDetailsRepository extends MultiTenancyRepository
     List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
     @Query(value = "SELECT count(*) from pickup_delivery_details where shipment_id = :shipmentId and is_deleted in(true,false)", nativeQuery = true)
     Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId);
+
+    @Query(value = "SELECT * FROM pickup_delivery_details WHERE shipment_id IN ?1", nativeQuery = true)
+    List<PickupDeliveryDetails> findByShipmentIdIn(Set<Long> shipmentIds);
 }

@@ -29,6 +29,42 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
+    // Used for Async
+    @Bean(name = "asyncBackupServiceExecutor")
+    public ThreadPoolTaskExecutor backupServiceExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(3);
+        executor.setMaxPoolSize(3);
+        executor.setQueueCapacity(6);
+        executor.setAllowCoreThreadTimeOut(false);
+        executor.setKeepAliveSeconds(120);
+        executor.setThreadNamePrefix("BackupServiceAsyncThread-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(600);
+        executor.initialize();
+        return executor;
+    }
+
+
+    // Used for Async
+    @Bean(name = "asyncBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupHandlerExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(15);
+        executor.setMaxPoolSize(20);
+        executor.setQueueCapacity(200);
+        executor.setAllowCoreThreadTimeOut(false);
+        executor.setKeepAliveSeconds(120);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(300);
+        executor.setThreadNamePrefix("BackupHandlerAsyncThread-");
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
+    }
+
+
     // Used for Completable future
     @Bean
     @Primary

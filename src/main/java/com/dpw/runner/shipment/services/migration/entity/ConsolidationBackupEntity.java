@@ -16,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Table(name = "consolidation_backup")
 public class ConsolidationBackupEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -29,16 +30,9 @@ public class ConsolidationBackupEntity {
     @Column(name = "consolidation_guid")
     private UUID consolidationGuid;
 
-    @Column(name = "json_data", columnDefinition = "jsonb")
-    private String jsonData;
+    @Column(name = "consolidation_details", columnDefinition = "jsonb")
+    private String consolidationDetails;
 
     @Column(name = "back_up_time_utc", nullable = false)
-    private Instant backUpTimeUtc;
-
-    @PrePersist
-    protected void onCreate() {
-        if (backUpTimeUtc == null) {
-            backUpTimeUtc = Instant.now();
-        }
-    }
+    private Instant backUpTimeUtc = Instant.now();
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Repository @Generated
@@ -46,6 +47,9 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
 
-    @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1", nativeQuery = true)
-    List<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
+    @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1 and is_deleted = false", nativeQuery = true)
+    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
+
+    @Query(value = "SELECT * FROM customer_booking WHERE id IN ?1", nativeQuery = true)
+    List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
 }
