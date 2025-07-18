@@ -20,5 +20,5 @@ public interface IShipmentMigrationV3Service {
 
     Map<String, EntityTransferContainerType> fetchContainerTypeDetails(List<Containers> containers);
 
-    Map<String, Integer> migrateShipmentsForTenant(Integer tenantId);
+    Map<String, Integer> migrateShipmentsV3ToV2ForTenant(Integer tenantId);
 }

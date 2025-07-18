@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -153,14 +154,14 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
-            shp.setIsMigratedToV3(Boolean.TRUE);
+//            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
 
         // Step 8: Mark consolidation itself as migrated and save
-        console.setIsMigratedToV3(Boolean.TRUE);
+//        console.setIsMigratedToV3(Boolean.TRUE);
         consolidationRepository.save(console);
 
         log.info("Migration complete for Consolidation [id={}]", consolidationId);
@@ -359,7 +360,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // Convert V3 Console and Attached shipment to V2
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
         log.info("Mapped V3 Consolidation to V2 [id={}]", console.getId());
-        setMigratedV3Flag(console, false);
+        setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V3);
 
         // ContainerSave
         containerRepository.saveAll(console.getContainersList());
@@ -377,12 +378,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
-    private void setMigratedV3Flag(ConsolidationDetails consolidationDetails, boolean isMigratedV3) {
-        consolidationDetails.setIsMigratedToV3(isMigratedV3);
+    private void setMigrationStatusEnum(ConsolidationDetails consolidationDetails, MigrationStatus migrationStatus) {
+        consolidationDetails.setMigrationStatus(migrationStatus);
 
         if(consolidationDetails.getShipmentsList() != null) {
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                shipmentDetails.setIsMigratedToV3(isMigratedV3);
+                shipmentDetails.setMigrationStatus(migrationStatus);
             }
         }
     }
@@ -595,9 +596,9 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return flag;
     }
 
-    public Map<String, Integer> migrateConsolidationsForTenant(Integer tenantId) {
+    public Map<String, Integer> migrateConsolidationsV3ToV2ForTenant(Integer tenantId) {
         Map<String, Integer> stats = new HashMap<>();
-        List<Long> consolidationDetailsIds = fetchConsoleFromDB(true, tenantId);
+        List<Long> consolidationDetailsIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
 
         log.info("[ConsolidationMigration] Tenant [{}]: Found [{}] consolidation(s) to migrate.", tenantId, consolidationDetailsIds.size());
         stats.put("Total Consolidation", consolidationDetailsIds.size());
@@ -640,8 +641,8 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return stats;
     }
 
-    private List<Long> fetchConsoleFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return consolidationDetailsDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
+    private List<Long> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {
+        return consolidationDetailsDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
 

@@ -9,5 +9,5 @@ public interface IConsolidationMigrationV3Service {
     ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails);
     ConsolidationDetails migrateConsolidationV3ToV2(Long consolidationId) throws RunnerException;
 
-    Map<String, Integer> migrateConsolidationsForTenant(Integer tenantId);
+    Map<String, Integer> migrateConsolidationsV3ToV2ForTenant(Integer tenantId);
 }

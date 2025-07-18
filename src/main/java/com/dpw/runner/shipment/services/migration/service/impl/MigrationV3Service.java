@@ -169,10 +169,10 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
 
-        Map<String, Integer> consolidationStats = consolidationMigrationV3Service.migrateConsolidationsForTenant(tenantId);
+        Map<String, Integer> consolidationStats = consolidationMigrationV3Service.migrateConsolidationsV3ToV2ForTenant(tenantId);
         result.putAll(consolidationStats);
 
-        Map<String, Integer> shipmentStats = shipmentMigrationV3Service.migrateShipmentsForTenant(tenantId);
+        Map<String, Integer> shipmentStats = shipmentMigrationV3Service.migrateShipmentsV3ToV2ForTenant(tenantId);
         result.putAll(shipmentStats);
 
         log.info("[Migration] Completed migration for tenant [{}]: {}", tenantId, result);

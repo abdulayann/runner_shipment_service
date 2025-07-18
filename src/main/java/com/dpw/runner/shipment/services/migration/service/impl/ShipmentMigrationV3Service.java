@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -96,7 +97,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             log.info("Saved updated packings for Shipment [id={}]", shipment.getId());
         }
         // save shipment
-        shipment.setIsMigratedToV3(Boolean.TRUE);
+//        shipment.setIsMigratedToV3(Boolean.TRUE);
         shipmentRepository.save(shipment);
         log.info("Migration V2 to V3 complete for Shipment [id={}]", shipment.getId());
         return shipment;
@@ -298,7 +299,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             containerRepository.saveAll(shipment.getContainersList().stream().toList());
             log.info("Saved updated containers for Shipment [id={}]", shipment.getId());
         }
-        shipment.setIsMigratedToV3(false);
+        shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         // save shipment
         shipmentRepository.save(shipment);
         log.info("Migration V3 to V2 complete for Shipment [id={}]", shipment.getId());
@@ -397,9 +398,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         return containerTypeMap;
     }
 
-    public Map<String, Integer> migrateShipmentsForTenant(Integer tenantId) {
+    public Map<String, Integer> migrateShipmentsV3ToV2ForTenant(Integer tenantId) {
         Map<String, Integer> stats = new HashMap<>();
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(true, tenantId);
+        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
 
         log.info("[ShipmentMigration] Tenant [{}]: Found [{}] shipment(s) to migrate.", tenantId, shipmentDetailsList.size());
         stats.put("Total Shipment", shipmentDetailsList.size());
@@ -442,8 +443,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         return stats;
     }
 
-    private List<ShipmentDetails> fetchShipmentFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return shipmentDao.findShipmentByIsMigratedToV3(isMigratedToV3, tenantId);
+    private List<ShipmentDetails> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
 }
