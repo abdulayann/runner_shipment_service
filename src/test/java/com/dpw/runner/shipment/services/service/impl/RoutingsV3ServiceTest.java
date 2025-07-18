@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -24,6 +25,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -34,6 +36,7 @@ import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -325,6 +328,61 @@ class RoutingsV3ServiceTest extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+        verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+    @Test
+    void testUpdateTransportInfoStatus_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVesselName("vessel");
+        routings.setVoyage("0123");
+        routings.setLeg(1L);
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest.setIsSelectedForDocument(Boolean.TRUE);
+        RoutingsRequest routingsRequest1 = new RoutingsRequest();
+        routingsRequest1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest1.setIsSelectedForDocument(Boolean.TRUE);
+        Routings routings1 = new Routings();
+        routings1.setLeg(2L);
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setVesselName("vessel");
+        routings1.setVoyage("0123");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        UpdateTransportStatusRequest updateTransportStatusRequest = new UpdateTransportStatusRequest();
+        updateTransportStatusRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        updateTransportStatusRequest.setShipmentId(1L);
+
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routings1);
+        routingsList.add(routings);
+        when(jsonHelper.convertValue(eq(routingsList), any(TypeReference.class)))
+                .thenReturn(requestList);
+        when(routingsDao.findByShipmentId(1L)).thenReturn(routingsList);
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        BulkRoutingResponse result = routingsService.updateTransportInfoStatus(updateTransportStatusRequest);
 
         assertNotNull(result.getRoutingsResponseList());
         assertEquals(1, result.getRoutingsResponseList().size());
@@ -717,5 +775,20 @@ class RoutingsV3ServiceTest extends CommonMocks {
 
         assertEquals(1, result.size());
         assertEquals(1, newToAppendAtEnd.size());
+    }
+    @Test
+    void testUpdateTransportInfoStatus_Exception() {
+        UpdateTransportStatusRequest request = new UpdateTransportStatusRequest();
+        request.setTransportInfoStatus(TransportInfoStatus.IH);
+        assertThrows(ValidationException.class, () -> routingsService.updateTransportInfoStatus(request));
+    }
+    @Test
+    void testUpdateTransportInfoStatus_Exception1() {
+        UpdateTransportStatusRequest request = new UpdateTransportStatusRequest();
+        request.setTransportInfoStatus(TransportInfoStatus.YES);
+        request.setShipmentId(1L);
+
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> routingsService.updateTransportInfoStatus(request));
     }
 }

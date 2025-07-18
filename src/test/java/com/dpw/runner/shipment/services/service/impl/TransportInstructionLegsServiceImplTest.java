@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegs
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
@@ -49,6 +50,7 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -195,7 +197,19 @@ class TransportInstructionLegsServiceImplTest {
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         TiLegs tiLegs = new TiLegs();
-        tiLegs.setPickupDeliveryDetailsId(1l);
+        tiLegs.setId(1L);
+        tiLegs.setPickupDeliveryDetailsId(1L);
+
+        TiLegs tiLegs1 = new TiLegs();
+        tiLegs1.setId(2L);
+        tiLegs1.setPickupDeliveryDetailsId(1L);
+        List<TiLegs> tiLegsList = new ArrayList<>();
+        tiLegsList.add(tiLegs);
+        tiLegsList.add(tiLegs1);
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        pickupDeliveryDetails.setId(1L);
+        pickupDeliveryDetails.setTiLegsList(tiLegsList);
+        when(pickupDeliveryDetailsRepository.findById(any())).thenReturn(Optional.of(pickupDeliveryDetails));
         when(iTiLegRepository.findById(any())).thenReturn(Optional.of(tiLegs));
         when(iTiLegDao.findById(Mockito.<Long>any())).thenReturn(Optional.of(tiLegs));
         doNothing().when(iTiLegDao).delete(any());
@@ -265,5 +279,17 @@ class TransportInstructionLegsServiceImplTest {
         assertEquals(1, actualListResult.getTotalPages().intValue());
         assertEquals(1, actualListResult.getTiLegsResponses().size());
         assertEquals(1L, actualListResult.getTotalCount().longValue());
+    }
+    @Test
+    void testCreate_Exception() {
+        TransportInstructionLegsRequest request = new TransportInstructionLegsRequest();
+        request.setTiId(1L);
+        when(pickupDeliveryDetailsRepository.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> transportInstructionLegsService.create(request));
+    }
+    @Test
+    void testDelete_Exception() {
+        when(iTiLegDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> transportInstructionLegsService.delete(1L));
     }
 }
