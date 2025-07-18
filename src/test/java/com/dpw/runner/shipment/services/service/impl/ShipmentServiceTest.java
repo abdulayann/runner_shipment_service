@@ -1706,6 +1706,8 @@ ShipmentServiceTest extends CommonMocks {
         mockTenantResponse.setEntity(tenantModel);
         when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
 
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().build());
+
         LocalDateTime mockDateTime = LocalDateTime.now();
 
         ShipmentDetailsResponse expectedResponse = new ShipmentDetailsResponse();
@@ -1744,6 +1746,10 @@ ShipmentServiceTest extends CommonMocks {
         mockTenantResponse.setEntity(tenantModel);
         when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
 
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantIds", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+
         LocalDateTime mockDateTime = LocalDateTime.now();
 
         ShipmentDetailsResponse expectedResponse = new ShipmentDetailsResponse();
@@ -1766,6 +1772,77 @@ ShipmentServiceTest extends CommonMocks {
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
         assertEquals("AE", shipmentDetailsResponse.getDepartment());
+    }
+
+
+    @Test
+    void getDefaultShipmentPopulatesDefaultDepartmentFromMdm2() {
+        // Mock data
+        ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
+        tenantSettings.setDefaultTransportMode("AIR");
+        tenantSettings.setDefaultShipmentType("EXP");
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
+
+        UsersDto user = new UsersDto();
+        user.setTenantId(1);
+        UserContext.setUser(user);
+
+        TenantModel tenantModel = new TenantModel();
+
+        V1RetrieveResponse mockTenantResponse = new V1RetrieveResponse();
+        mockTenantResponse.setEntity(tenantModel);
+        when(v1Service.retrieveTenant()).thenReturn(mockTenantResponse);
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put("TenantId", 1);
+        when(v1ServiceUtil.getDefaultAgentOrg((any()))).thenReturn(PartiesResponse.builder().orgData(orgData).build());
+
+        LocalDateTime mockDateTime = LocalDateTime.now();
+
+        ShipmentDetailsResponse expectedResponse = new ShipmentDetailsResponse();
+        expectedResponse.setSource(Constants.SYSTEM);
+        expectedResponse.setStatus(ShipmentStatus.Created.getValue());
+        expectedResponse.setAdditionalDetails(new AdditionalDetailResponse());
+        expectedResponse.setCarrierDetails(new CarrierDetailResponse());
+        expectedResponse.setCustomerCategory(CustomerCategoryRates.CATEGORY_5);
+        expectedResponse.setShipmentCreatedOn(mockDateTime);
+        expectedResponse.setSourceTenantId(1L);
+
+        when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+
+        // Execute the method under test
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getDefaultShipment();
+        RunnerResponse runnerResponse = objectMapper.convertValue(httpResponse.getBody(), RunnerResponse.class);
+        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(runnerResponse.getData(), ShipmentDetailsResponse.class);
+
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals("AE", shipmentDetailsResponse.getDepartment());
+    }
+
+    @Test
+    void setOriginBranchMasterDataTest(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayName", "EGYPT Alexandria p10");
+        ShipmentDetailsResponse response = ShipmentDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->shipmentService.setOriginBranchMasterData(response));
+    }
+
+    @Test
+    void setOriginBranchMasterDataTest2(){
+        ShipmentDetailsResponse response = ShipmentDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        assertDoesNotThrow(()->shipmentService.setOriginBranchMasterData(response));
+    }
+    @Test
+    void setOriginBranchMasterDataTest3(){
+        Map<String, String> tenantIdsData = Map.of("originBranch_displayNames", "EGYPT Alexandria p10");
+        ShipmentDetailsResponse response = ShipmentDetailsResponse.builder().build();
+        response.setOriginBranch(1L);
+        response.setTenantIdsData(tenantIdsData);
+        assertDoesNotThrow(()->shipmentService.setOriginBranchMasterData(response));
     }
 
 

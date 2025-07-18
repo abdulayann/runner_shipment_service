@@ -412,7 +412,6 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     }
 
     public ResponseEntity<IRunnerResponse> completeUpdateFromV1(Optional<ShipmentSettingsDetails> oldEntity, CommonRequestModel commonRequestModel) throws RunnerException {
-        String responseMsg;
         ShipmentSettingRequest request = (ShipmentSettingRequest) commonRequestModel.getData();
 
         try {
@@ -461,11 +460,16 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
             return getfuncResponseEntity(oldEntity, request, shipmentSettingsDetails);
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            throw new GenericException(e);
+            handleResponseMessageAndThrowGenericError(e);
         }
+        return null;
+    }
+
+    private static void handleResponseMessageAndThrowGenericError(Exception e) {
+        String responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+        log.error(responseMsg, e);
+        throw new GenericException(e);
     }
 
     private void setExistingFieldNotInV1(ShipmentSettingRequest request, ShipmentSettingsDetails oldEntity){
@@ -638,7 +642,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     @Override
     public ResponseEntity<IRunnerResponse> uploadTemplate(CommonRequestModel commonRequestModel) {
         TemplateUploadRequest templateUploadRequest = (TemplateUploadRequest) commonRequestModel.getData();
-        if(templateUploadRequest.getPreviousFileId() == null || templateUploadRequest.getPreviousFileId().length() == 0) {
+        if(templateUploadRequest.getPreviousFileId() == null || templateUploadRequest.getPreviousFileId().isEmpty()) {
             try {
                 ResponseEntity<TemplateUploadResponse> response = documentService.createDocumentTemplate(templateUploadRequest);
                 if(response.getStatusCode() != HttpStatus.CREATED) {

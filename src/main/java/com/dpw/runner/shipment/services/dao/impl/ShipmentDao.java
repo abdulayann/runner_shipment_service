@@ -264,6 +264,10 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
         return shipmentRepository.findByShipmentId(shipmentNumber);
     }
+    @Override
+    public List<ShipmentDetails> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
@@ -941,5 +945,10 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId) {
         shipmentRepository.updateDgPacksDetailsInShipment(dgPacks, dgPacksUnit, shipmentId);
+    }
+
+    @Override
+    public void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId){
+        shipmentRepository.updateDgStatusInShipment(isHazardous, oceanDGStatus, shipmentId);
     }
 }

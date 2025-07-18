@@ -14,7 +14,6 @@ import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.service.interfaces.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -26,10 +25,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -58,14 +58,14 @@ class CustomerBookingV3ControllerTest {
     @Test
     void createBooking_Success() throws RunnerException {
         when(customerBookingV3Service.create(any())).thenReturn(new CustomerBookingV3Response());
-        var response = customerBookingV3Controller.createBooking(new CustomerBookingV3Request());
+        var response = customerBookingV3Controller.createBooking(new CustomerBookingV3Request(), any());
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
-    void updateBooking_Success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void updateBooking_Success() throws RunnerException {
         when(customerBookingV3Service.update(any())).thenReturn(new CustomerBookingV3Response());
-        var response = customerBookingV3Controller.updateBooking(new CustomerBookingV3Request());
+        var response = customerBookingV3Controller.updateBooking(new CustomerBookingV3Request(), Boolean.FALSE);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

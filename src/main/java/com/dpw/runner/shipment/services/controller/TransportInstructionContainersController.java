@@ -48,6 +48,7 @@ public class TransportInstructionContainersController {
     public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid TransportInstructionLegsContainersRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsContainersService.create(request));
     }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_CONTAINERS_CREATE_SUCCESSFUL),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -56,6 +57,7 @@ public class TransportInstructionContainersController {
     public ResponseEntity<IRunnerResponse> bulkCreate(@RequestBody @Valid TransportInstructionLegsContainersListRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         return ResponseHelper.buildSuccessResponse(transportInstructionLegsContainersService.bulkCreate(request));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_CONTAINERS_DELETE_SUCCESSFUL)})
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@ApiParam(value = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_CONTAINERS_ID, required = true) @RequestParam @Valid Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -64,8 +66,8 @@ public class TransportInstructionContainersController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_CONTAINERS_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
-        TransportInstructionLegsContainersListResponse legsListResponse = transportInstructionLegsContainersService.list(listCommonRequest);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        TransportInstructionLegsContainersListResponse legsListResponse = transportInstructionLegsContainersService.list(listCommonRequest, getMasterData);
         return ResponseHelper.buildSuccessResponse(legsListResponse, legsListResponse.getTotalPages(), legsListResponse.getTotalCount());
     }
 

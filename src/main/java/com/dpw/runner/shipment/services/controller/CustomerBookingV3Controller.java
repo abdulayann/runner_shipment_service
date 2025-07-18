@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
 
@@ -74,14 +75,14 @@ public class CustomerBookingV3Controller {
     })
     @PostMapping(ApiConstants.API_CREATE)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_CREATE + "')")
-    public ResponseEntity<IRunnerResponse> createBooking(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> createBooking(@RequestBody @Valid CustomerBookingV3Request request, @RequestParam(defaultValue = "false") @Valid Boolean isSaveAsDraft) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.create(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
-    public ResponseEntity<IRunnerResponse> updateBooking(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> updateBooking(@RequestBody @Valid CustomerBookingV3Request request, @RequestParam(defaultValue = "false") @Valid Boolean isSaveAsDraft) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
     }
 

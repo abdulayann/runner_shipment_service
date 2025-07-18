@@ -137,11 +137,9 @@ public class FreightCertificationReport extends IReport{
 
         processBillingList(freightCertificationModel, dictionary);
 
-        if (freightCertificationModel.shipmentDetails != null) {
-            if (ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
-                ConsolidationModel consolidationModel = freightCertificationModel.shipmentDetails.getConsolidationList().get(0);
-                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
-            }
+        if (freightCertificationModel.shipmentDetails != null && ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
+            ConsolidationModel consolidationModel = freightCertificationModel.shipmentDetails.getConsolidationList().get(0);
+            this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
         }
 
         if(freightCertificationModel.shipmentDetails != null) {

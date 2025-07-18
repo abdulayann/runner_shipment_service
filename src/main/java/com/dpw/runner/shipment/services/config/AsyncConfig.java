@@ -119,4 +119,15 @@ public class AsyncConfig implements AsyncConfigurer {
         };
         return new ThreadPoolExecutor(corePool, maxPool, aliveTime, unit, workingQueue, executionHandler);
     }
+
+    @Bean(name = "asyncExecutorForMigration3")
+    public ThreadPoolTaskExecutor taskExecutorForMigration3() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(10);
+        executor.setThreadNamePrefix("MyMigrationAsyncThread-");
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
+    }
 }
