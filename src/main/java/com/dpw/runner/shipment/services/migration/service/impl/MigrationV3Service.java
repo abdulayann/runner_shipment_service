@@ -156,9 +156,6 @@ public class MigrationV3Service implements IMigrationV3Service {
         return map;
     }
 
-    private List<ConsolidationDetails> fetchConsoleFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return consolidationDetailsDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
-    }
 
     private List<CustomerBooking> fetchBookingFromDB(boolean isMigratedToV3, Integer tenantId) {
         return customerBookingDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
@@ -171,41 +168,11 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Override
     public Map<String, Integer> migrateV3ToV2(Integer tenantId) {
         Map<String, Integer> map = new HashMap<>();
-        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(true, tenantId);
-        log.info("Starting V3 to V2 migration for tenant [{}]. Found {} consolidation(s).", tenantId, consolidationDetails.size());
-        map.put("Total Consolidation", consolidationDetails.size());
-        List<Future<Long>> queue = new ArrayList<>();
-        log.info("Fetched {} consolidation for Migrations", consolidationDetails.size());
-        consolidationDetails.forEach(cos -> {
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
 
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-                            log.info("Migrating Consolidation with [id={}]", cos.getId());
-                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV3ToV2(cos);
-                            log.info("Successfully migrated the Consolidation [oldId={}, newId={}]", cos.getId(), migrated.getId());
-                            return migrated.getId();
-                        } catch (Exception e) {
-                            log.error("Consolidation migration failed [id={}]: {}", cos.getId(), e.getMessage(), e);
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Async failure during consolidation setup [id={}]", cos.getId(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            queue.add(future);
-        });
-        List<Long> migratedConsolIds = collectAllProcessedIds(queue);
-        map.put("Total Consolidation Migrated", migratedConsolIds.size());
-        log.info("Consolidation migration completed: {}/{} migrated for tenant [{}]", migratedConsolIds.size(), consolidationDetails.size(), tenantId);
+        log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
+
+        Map<String, Integer> consolidationStats = consolidationMigrationV3Service.migrateConsolidationsForTenant(tenantId);
+        map.putAll(consolidationStats);
 
         List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(true, tenantId);
         map.put("Total Shipment", shipmentDetailsList.size());

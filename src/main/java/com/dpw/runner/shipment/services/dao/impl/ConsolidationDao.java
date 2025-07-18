@@ -640,7 +640,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public List<ConsolidationDetails> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId) {
+    public List<Long> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId) {
         return consolidationRepository.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
     }
 
