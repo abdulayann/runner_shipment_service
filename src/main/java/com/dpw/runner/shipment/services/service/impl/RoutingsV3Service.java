@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -42,6 +43,7 @@ import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -61,6 +63,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -853,6 +856,26 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     public List<Routings> getRoutingsByConsolidationId(Long consolidationId) {
         return routingsDao.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    @Transactional
+    public BulkRoutingResponse updateTransportInfoStatus(UpdateTransportStatusRequest request) throws RunnerException {
+        if (TransportInfoStatus.IH.equals(request.getTransportInfoStatus())) {
+            throw new ValidationException("Transport pol/pod info status can not be IH");
+        }
+        Optional<ShipmentDetails> shipmentDetailsEntity = shipmentServiceV3.findById(request.getShipmentId());
+        if(shipmentDetailsEntity.isEmpty()) {
+            throw new ValidationException("Invalid shipment id");
+        }
+        List<Routings> routingsList = routingsDao.findByShipmentId(request.getShipmentId());
+        routingsList.sort(Comparator.comparingLong(Routings::getLeg));
+        List<RoutingsRequest> routingsRequests = jsonHelper.convertValue(routingsList, new TypeReference<List<RoutingsRequest>>() {});
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(request.getTransportInfoStatus());
+        bulkUpdateRoutingsRequest.setRoutings(routingsRequests);
+        bulkUpdateRoutingsRequest.setEntityId(request.getShipmentId());
+        return updateBulk(bulkUpdateRoutingsRequest, SHIPMENT);
     }
 
     public Map<String, Object> getAllMasterDataForRoute(RoutingsResponse response) {

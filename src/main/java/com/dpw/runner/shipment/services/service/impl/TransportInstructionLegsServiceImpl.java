@@ -80,7 +80,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         log.info("Starting Transport Instruction Legs creation | Request ID: {} | Request Body: {}", requestId, request);
         Long tiId = request.getTiId();
         Optional<PickupDeliveryDetails> transportInstruction = pickupDeliveryDetailsRepository.findById(tiId);
-        if (!transportInstruction.isPresent()) {
+        if (transportInstruction.isEmpty()) {
             throw new ValidationException("Transport Instruction does not exist for tiId: " + tiId);
         }
         validateTransportInstructionLegs(request);
@@ -88,12 +88,12 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         TiLegs tiLegs = jsonHelper.convertValue(request, TiLegs.class);
         List<TiLegs> tiLegsList = transportInstruction.get().getTiLegsList();
         if (!CollectionUtils.isEmpty(tiLegsList)) {
-            Long sequence = 1l;
+            long sequence = 1L;
             for (TiLegs leg : tiLegsList) {
                 leg.setSequence(sequence++);
             }
         }
-        tiLegs.setSequence(Long.valueOf(tiLegsList != null ? tiLegsList.size() : 0) + 1);
+        tiLegs.setSequence((long) (tiLegsList != null ? tiLegsList.size() : 0) + 1);
         tiLegs.setPickupDeliveryDetailsId(tiId);
         log.debug("Converted Transport Instruction Legs request to entity | Entity: {}", tiLegs);
         // Save to DB
@@ -105,7 +105,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         log.info("Audit log recorded for Transport Instruction Legs creation | Transport Instruction Legs ID: {}", tiLegsEntity.getId());
 
         TransportInstructionLegsResponse response = jsonHelper.convertValue(tiLegsEntity, TransportInstructionLegsResponse.class);
-        log.info("Returning Transport Instruction Legs response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
+        log.info("Returning Transport Instruction Legs create response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
         // Triggering Event for shipment and console for DependentServices update
         triggerPushToDownStreamForTransportInstruction(tiLegsEntity.getPickupDeliveryDetailsId());
         return response;
@@ -147,7 +147,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         log.info("Audit log recorded for Transport Instruction Legs Update | Transport Instruction Legs ID: {}", tiLegsEntity.getId());
 
         TransportInstructionLegsResponse response = jsonHelper.convertValue(tiLegsEntity, TransportInstructionLegsResponse.class);
-        log.info("Returning Transport Instruction Legs response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
+        log.info("Returning Transport Instruction Legs update response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
         // Triggering Event for shipment and console for DependentServices update
         triggerPushToDownStreamForTransportInstruction(tiLegsEntity.getPickupDeliveryDetailsId());
         return response;
@@ -178,12 +178,22 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     @Transactional
     public TransportInstructionLegsResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Optional<TiLegs> tiLegs = tiLegsDao.findById(id);
-        if (!tiLegs.isPresent()) {
+        if (tiLegs.isEmpty()) {
             throw new ValidationException("Invalid Ti legs Id: " + id);
         }
         TiLegs tiLegsEntity = tiLegs.get();
-        tiLegsDao.delete(tiLegsEntity);
-
+        Long pickupDeliveryId = tiLegsEntity.getPickupDeliveryDetailsId();
+        Optional<PickupDeliveryDetails> transportInstruction = pickupDeliveryDetailsRepository.findById(pickupDeliveryId);
+        if (transportInstruction.isPresent()) {
+            List<TiLegs> tiLegsList = transportInstruction.get().getTiLegsList();
+            tiLegsList.removeIf(tiLeg -> Objects.equals(tiLeg.getId(), id));
+            if (!CollectionUtils.isEmpty(tiLegsList)) {
+                long sequence = 1L;
+                for (TiLegs leg : tiLegsList) {
+                    leg.setSequence(sequence++);
+                }
+            }
+        }
         recordAuditLogs(tiLegsEntity, null, DBOperationType.DELETE);
 
         // Triggering Event for shipment and console for DependentServices update
