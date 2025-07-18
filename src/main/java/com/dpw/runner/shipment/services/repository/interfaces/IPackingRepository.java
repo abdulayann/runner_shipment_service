@@ -141,5 +141,13 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     @Query(value = "SELECT EXISTS (SELECT 1 FROM packing WHERE shipment_id = :shipmentId and is_deleted = false)", nativeQuery = true)
     boolean existsPackingByShipmentId(@Param("shipmentId") Long shipmentId);
+
+    @Modifying
+    @Query(value = "UPDATE packing SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long consolidationId);
+
+    @Modifying
+    @Query(value = "UPDATE packing SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByPackingIdsAndConsolidationId(List<Long> packingIds, Long consolidationId);
 }
 

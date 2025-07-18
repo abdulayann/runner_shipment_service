@@ -62,4 +62,8 @@ public interface IContainerDao {
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 
     List<ContainerInfoProjection> findByContainerIds(List<Long> containerIds);
+
+    void deleteAdditionalDataByContainersIdsConsolidationId(List<Long> containersIds, Long consolidationId);
+
+    void revertSoftDeleteByContainersIdsAndConsolidationId(List<Long> containersIds, Long consolidationId);
 }
