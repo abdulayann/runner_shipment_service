@@ -2,19 +2,25 @@ package com.dpw.runner.shipment.services.dto.v3.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.AchievedQuantitiesRequest;
+import com.dpw.runner.shipment.services.dto.request.AllocationsRequest;
+import com.dpw.runner.shipment.services.dto.request.ArrivalDepartureDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
+import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Data
 @Builder
@@ -171,4 +177,5 @@ public class ConsolidationDetailsV3Request extends CommonRequest implements IRun
     private String bookingStatus;
     private String bookingNumber;
     private String incoterms;
+    private MigrationStatus migrationStatus;
 }

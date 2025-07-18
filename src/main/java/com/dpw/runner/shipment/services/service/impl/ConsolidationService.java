@@ -193,6 +193,7 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
@@ -803,6 +804,8 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
+        consolidationDetails.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
+
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             consolidationDetails.setShipmentsList(null);

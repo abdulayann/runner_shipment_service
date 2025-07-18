@@ -347,7 +347,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // Convert V3 Console and Attached shipment to V2
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
         log.info("Mapped V3 Consolidation to V2 [id={}]", console.getId());
-        setMigratedV3Flag(console, false);
+        setMigratedV3Flag(console);
 
         // ContainerSave
         containerRepository.saveAll(console.getContainersList());
@@ -365,12 +365,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
-    private void setMigratedV3Flag(ConsolidationDetails consolidationDetails, boolean isMigratedV3) {
-        consolidationDetails.setIsMigratedToV3(isMigratedV3);
+    private void setMigratedV3Flag(ConsolidationDetails consolidationDetails) {
+        consolidationDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
 
         if(consolidationDetails.getShipmentsList() != null) {
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                shipmentDetails.setIsMigratedToV3(isMigratedV3);
+                shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
             }
         }
     }
