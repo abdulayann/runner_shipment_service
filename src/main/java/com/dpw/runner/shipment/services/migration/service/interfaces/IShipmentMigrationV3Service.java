@@ -19,4 +19,6 @@ public interface IShipmentMigrationV3Service {
     void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL, boolean isAttached) throws RunnerException;
 
     Map<String, EntityTransferContainerType> fetchContainerTypeDetails(List<Containers> containers);
+
+    Map<String, Integer> migrateShipmentsForTenant(Integer tenantId);
 }

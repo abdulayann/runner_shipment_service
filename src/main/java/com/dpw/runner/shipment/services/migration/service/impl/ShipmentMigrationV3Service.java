@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -16,7 +18,9 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContain
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
@@ -35,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +63,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IShipmentRepository shipmentRepository;
     @Autowired
     IContainerRepository containerRepository;
+    @Autowired
+    private HelperExecutor trxExecutor;
 
     @Autowired
     private CommonUtils commonUtils;
@@ -389,4 +396,54 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
         return containerTypeMap;
     }
+
+    public Map<String, Integer> migrateShipmentsForTenant(Integer tenantId) {
+        Map<String, Integer> stats = new HashMap<>();
+        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(true, tenantId);
+
+        log.info("[ShipmentMigration] Tenant [{}]: Found [{}] shipment(s) to migrate.", tenantId, shipmentDetailsList.size());
+        stats.put("Total Shipment", shipmentDetailsList.size());
+
+        List<Future<Long>> futures = new ArrayList<>();
+
+        for (ShipmentDetails ship : shipmentDetailsList) {
+            futures.add(trxExecutor.runInAsync(() -> {
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+
+                    return trxExecutor.runInTrx(() -> {
+                        log.info("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Starting migration...", tenantId, ship.getId());
+                        ShipmentDetails migrated = null;
+                        try {
+                            migrated = migrateShipmentV3ToV2(ship);
+                        } catch (RunnerException e) {
+                            throw new RuntimeException(e);
+                        }
+                        log.info("[ShipmentMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, ship.getId(), migrated.getId());
+                        return migrated.getId();
+                    });
+                } catch (Exception e) {
+                    log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, ship.getId(), e.getMessage(), e);
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            }));
+        }
+
+        List<Long> migratedIds = MigrationUtil.collectAllProcessedIds(futures);
+        stats.put("Total Shipment Migrated", migratedIds.size());
+
+        log.info("[ShipmentMigration] Tenant [{}]: {}/{} shipments migrated successfully.",
+                tenantId, migratedIds.size(), shipmentDetailsList.size());
+
+        return stats;
+    }
+
+    private List<ShipmentDetails> fetchShipmentFromDB(boolean isMigratedToV3, Integer tenantId) {
+        return shipmentDao.findShipmentByIsMigratedToV3(isMigratedToV3, tenantId);
+    }
+
 }
