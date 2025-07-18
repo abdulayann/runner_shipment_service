@@ -715,9 +715,6 @@ public class ShipmentDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String dgPacksUnit;
 
-    @Column(name = "is_migrated_to_v3")
-    private Boolean isMigratedToV3;
-
     @Column(name = "transport_info_status")
     @Enumerated(EnumType.STRING)
     private TransportInfoStatus transportInfoStatus;

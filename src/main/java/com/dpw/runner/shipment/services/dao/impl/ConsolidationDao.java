@@ -649,8 +649,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public List<ConsolidationDetails> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId) {
-        return consolidationRepository.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return consolidationRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
     @Override

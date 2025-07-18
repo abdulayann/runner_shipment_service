@@ -8,8 +8,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
@@ -211,17 +209,11 @@ public class MigrationV3Service implements IMigrationV3Service {
         log.info("Network Transfer migration complete: {}/{} migrated for tenant [{}]", migratedNteIds.size(), networkTranferList.size(), tenantId);
     }
 
-    private List<ConsolidationDetails> fetchConsoleFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return consolidationDetailsDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
-    }
-
     private List<CustomerBooking> fetchBookingFromDB(boolean isMigratedToV3, Integer tenantId) {
         return customerBookingDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
     }
 
-    private List<ShipmentDetails> fetchShipmentFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return shipmentDao.findShipmentByIsMigratedToV3(isMigratedToV3, tenantId);
-    }
+
 
     private List<NetworkTransfer> fetchNteFromDB(boolean isMigratedToV3, Integer tenantId) {
         return networkTransferDao.findNteByIsMigratedToV3(isMigratedToV3, tenantId);
@@ -229,83 +221,19 @@ public class MigrationV3Service implements IMigrationV3Service {
 
     @Override
     public Map<String, Integer> migrateV3ToV2(Integer tenantId) {
-        Map<String, Integer> map = new HashMap<>();
-        List<ConsolidationDetails> consolidationDetails = fetchConsoleFromDB(true, tenantId);
-        log.info("Starting V3 to V2 migration for tenant [{}]. Found {} consolidation(s).", tenantId, consolidationDetails.size());
-        map.put("Total Consolidation", consolidationDetails.size());
-        List<Future<Long>> queue = new ArrayList<>();
-        log.info("Fetched {} consolidation for Migrations", consolidationDetails.size());
-        consolidationDetails.forEach(cos -> {
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
+        Map<String, Integer> result = new HashMap<>();
 
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-                            log.info("Migrating Consolidation with [id={}]", cos.getId());
-                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV3ToV2(cos);
-                            log.info("Successfully migrated the Consolidation [oldId={}, newId={}]", cos.getId(), migrated.getId());
-                            return migrated.getId();
-                        } catch (Exception e) {
-                            log.error("Consolidation migration failed [id={}]: {}", cos.getId(), e.getMessage(), e);
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Async failure during consolidation setup [id={}]", cos.getId(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            queue.add(future);
-        });
-        List<Long> migratedConsolIds = collectAllProcessedIds(queue);
-        map.put("Total Consolidation Migrated", migratedConsolIds.size());
-        log.info("Consolidation migration completed: {}/{} migrated for tenant [{}]", migratedConsolIds.size(), consolidationDetails.size(), tenantId);
+        log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
 
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(true, tenantId);
-        map.put("Total Shipment", shipmentDetailsList.size());
-        log.info("Starting V3 to V2 Shipment migration for tenant [{}]. Found {} shipment(s).", tenantId, shipmentDetailsList.size());
+        Map<String, Integer> consolidationStats = consolidationMigrationV3Service.migrateConsolidationsV3ToV2ForTenant(tenantId);
+        result.putAll(consolidationStats);
 
-        List<Future<Long>> shipmentFutures = new ArrayList<>();
-        log.info("fetched {} shipments for V3 to V2 Migrations", shipmentDetailsList.size());
-        for (ShipmentDetails ship : shipmentDetailsList) {// execute async
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
+        Map<String, Integer> shipmentStats = shipmentMigrationV3Service.migrateShipmentsV3ToV2ForTenant(tenantId);
+        result.putAll(shipmentStats);
 
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-                            log.info("Migrating Shipment with [id={}]", ship.getId());
-                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV3ToV2(ship);
-                            log.info("Successfully migrated the Shipment [oldId={}, newId={}]", ship.getId(), migrated.getId());
-                            return migrated.getId();
-                        } catch (Exception e) {
-                            log.error("Shipment migration failed [id={}]: {}", ship.getId(), e.getMessage(), e);
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Async failure during shipment setup [id={}]", ship.getId(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            shipmentFutures.add(future);
-        }
-        List<Long> migratedShipmentIds = collectAllProcessedIds(shipmentFutures);
-        map.put("Total Shipment Migrated", migratedShipmentIds.size());
-        log.info("Shipment migration completed: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentDetailsList.size(), tenantId);
-
-        migrateNetworkTransferV3ToV2(tenantId, map);
-
-        return map;
+        migrateNetworkTransferV3ToV2(tenantId, result);
+        log.info("[Migration] Completed migration for tenant [{}]: {}", tenantId, result);
+        return result;
     }
 
     private void migrateNetworkTransferV3ToV2(Integer tenantId, Map<String, Integer> map) {

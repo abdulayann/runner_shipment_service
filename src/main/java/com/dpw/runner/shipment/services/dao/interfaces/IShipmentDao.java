@@ -24,7 +24,7 @@ public interface IShipmentDao {
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
-    List<ShipmentDetails> findShipmentByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId);
+    List<ShipmentDetails> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 

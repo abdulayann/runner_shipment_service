@@ -8,7 +8,9 @@ import java.util.UUID;
 
 public interface IConsolidationMigrationV3Service {
     ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails);
-    ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException;
     ConsolidationDetails mapConsoleV2ToV3(ConsolidationDetails consolidationDetails, Map<UUID, UUID> packingVsContainerGuid);
     ConsolidationDetails mapConsoleV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException;
+    ConsolidationDetails migrateConsolidationV3ToV2(Long consolidationId) throws RunnerException;
+
+    Map<String, Integer> migrateConsolidationsV3ToV2ForTenant(Integer tenantId);
 }

@@ -82,8 +82,8 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_UPDATE_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_MODIFY + "')")
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> updateBooking(@RequestBody @Valid CustomerBookingV3Request request, @RequestParam(defaultValue = "false") @Valid Boolean isSaveAsDraft) throws RunnerException {
-        return customerBookingV3Service.update(request).thenApply(ResponseHelper::buildSuccessResponse);
+    public ResponseEntity<IRunnerResponse> updateBooking(@RequestBody @Valid CustomerBookingV3Request request, @RequestParam(defaultValue = "false") @Valid Boolean isSaveAsDraft) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.DELETE_SUCCESSFUL, response = CustomerBookingV3DeleteResponse.class)})
@@ -121,8 +121,8 @@ public class CustomerBookingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})
     @PutMapping(ApiConstants.API_CANCEL_BOOKING)
     @PreAuthorize("hasAuthority('" + PermissionConstants.CUSTOMER_BOOKINGS_CANCEL + "')")
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> cancel(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
-        return customerBookingV3Service.update(request).thenApply(ResponseHelper::buildSuccessResponse);
+    public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingV3Request request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(customerBookingV3Service.update(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = CustomerBookingV3Response.class)})

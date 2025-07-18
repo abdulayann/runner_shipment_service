@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.migration.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
@@ -11,11 +13,14 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IConsolidationMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
@@ -24,6 +29,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepositor
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -44,6 +50,8 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
+
+import java.util.concurrent.Future;
 
 @Service
 @Slf4j
@@ -85,6 +93,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Autowired
     private NotesUtil notesUtil;
+
+    @Autowired
+    private V1ServiceImpl v1Service;
+
+    @Autowired
+    private HelperExecutor trxExecutor;
 
     @Override
     @Transactional
@@ -140,14 +154,14 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
-            shp.setIsMigratedToV3(Boolean.TRUE);
+//            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
 
         // Step 8: Mark consolidation itself as migrated and save
-        console.setIsMigratedToV3(Boolean.TRUE);
+//        console.setIsMigratedToV3(Boolean.TRUE);
         consolidationRepository.save(console);
 
         log.info("Migration complete for Consolidation [id={}]", consolidationId);
@@ -336,17 +350,17 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     @Override
-    public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
-        log.info("Starting V3 to V2 migration for Consolidation [id={}]", consolidationDetails.getId());
-        Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
+    public ConsolidationDetails migrateConsolidationV3ToV2(Long consoleId) throws RunnerException {
+        log.info("Starting V3 to V2 migration for Consolidation [id={}]", consoleId);
+        Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consoleId);
         if(consolidationDetails1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
+            throw new DataRetrievalFailureException("No Console found with given id: " + consoleId);
         }
 
         // Convert V3 Console and Attached shipment to V2
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
         log.info("Mapped V3 Consolidation to V2 [id={}]", console.getId());
-        setMigratedV3Flag(console, false);
+        setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V3);
 
         // ContainerSave
         containerRepository.saveAll(console.getContainersList());
@@ -364,12 +378,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         return console;
     }
 
-    private void setMigratedV3Flag(ConsolidationDetails consolidationDetails, boolean isMigratedV3) {
-        consolidationDetails.setIsMigratedToV3(isMigratedV3);
+    private void setMigrationStatusEnum(ConsolidationDetails consolidationDetails, MigrationStatus migrationStatus) {
+        consolidationDetails.setMigrationStatus(migrationStatus);
 
         if(consolidationDetails.getShipmentsList() != null) {
             for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-                shipmentDetails.setIsMigratedToV3(isMigratedV3);
+                shipmentDetails.setMigrationStatus(migrationStatus);
             }
         }
     }
@@ -580,6 +594,55 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         if(!(consol.getAllocations() != null && consol.getAllocations().getWeight() != null))
             flag = false;
         return flag;
+    }
+
+    public Map<String, Integer> migrateConsolidationsV3ToV2ForTenant(Integer tenantId) {
+        Map<String, Integer> stats = new HashMap<>();
+        List<Long> consolidationDetailsIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
+
+        log.info("[ConsolidationMigration] Tenant [{}]: Found [{}] consolidation(s) to migrate.", tenantId, consolidationDetailsIds.size());
+        stats.put("Total Consolidation", consolidationDetailsIds.size());
+
+        List<Future<Long>> futures = new ArrayList<>();
+
+        for (Long consoleIds : consolidationDetailsIds) {
+            futures.add(trxExecutor.runInAsync(() -> {
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+
+                    return trxExecutor.runInTrx(() -> {
+                        log.info("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Starting migration...", tenantId, consoleIds);
+                        ConsolidationDetails migrated = null;
+                        try {
+                            migrated = migrateConsolidationV3ToV2(consoleIds);
+                        } catch (RunnerException e) {
+                            throw new RuntimeException(e);
+                        }
+                        log.info("[ConsolidationMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, consoleIds, migrated.getId());
+                        return migrated.getId();
+                    });
+                } catch (Exception e) {
+                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            }));
+        }
+
+        List<Long> migratedIds = MigrationUtil.collectAllProcessedIds(futures);
+        stats.put("Total Consolidation Migrated", migratedIds.size());
+
+        log.info("[ConsolidationMigration] Tenant [{}]: {}/{} consolidations migrated successfully.",
+                tenantId, migratedIds.size(), consolidationDetailsIds.size());
+
+        return stats;
+    }
+
+    private List<Long> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {
+        return consolidationDetailsDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
 

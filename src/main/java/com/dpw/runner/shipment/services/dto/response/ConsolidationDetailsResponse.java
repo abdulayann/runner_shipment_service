@@ -171,5 +171,4 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private Long originBranch;
-    private Boolean isMigratedToV3;
 }
