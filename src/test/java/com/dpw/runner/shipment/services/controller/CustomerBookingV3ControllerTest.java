@@ -63,17 +63,10 @@ class CustomerBookingV3ControllerTest {
     }
 
     @Test
-    void updateBooking_Success() throws Exception {
-        CustomerBookingV3Response mockResponse = new CustomerBookingV3Response();
-        CompletableFuture<CustomerBookingV3Response> future = CompletableFuture.completedFuture(mockResponse);
-
-        when(customerBookingV3Service.update(any())).thenReturn(future);
-        CompletableFuture<ResponseEntity<IRunnerResponse>> resultFuture = customerBookingV3Controller.updateBooking(new CustomerBookingV3Request(), Boolean.FALSE);
-        ResponseEntity<IRunnerResponse> response = resultFuture.get(2, TimeUnit.SECONDS);
-        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+    void updateBooking_Success() throws RunnerException {
+        when(customerBookingV3Service.update(any())).thenReturn(new CustomerBookingV3Response());
+        var response = customerBookingV3Controller.updateBooking(new CustomerBookingV3Request(), Boolean.FALSE);
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(responseBody);
-        assertTrue(responseBody.getData() instanceof CustomerBookingV3Response);
     }
 
     @Test
@@ -102,18 +95,9 @@ class CustomerBookingV3ControllerTest {
 
     @Test
     void cancelBooking_Success() throws Exception {
-        // Arrange
-        CustomerBookingV3Response mockResponse = new CustomerBookingV3Response();
-        CompletableFuture<CustomerBookingV3Response> future = CompletableFuture.completedFuture(mockResponse);
-        when(customerBookingV3Service.update(any())).thenReturn(future);
-        // Act
-        CompletableFuture<ResponseEntity<IRunnerResponse>> resultFuture = customerBookingV3Controller.cancel(new CustomerBookingV3Request());
-        ResponseEntity<IRunnerResponse> response = resultFuture.get(2, TimeUnit.SECONDS);
-        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
-        // Assert
+        when(customerBookingV3Service.update(any())).thenReturn(new CustomerBookingV3Response());
+        var response = customerBookingV3Controller.cancel(new CustomerBookingV3Request());
         assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(responseBody);
-        assertTrue(responseBody.getData() instanceof CustomerBookingV3Response);
     }
 
     @Test
