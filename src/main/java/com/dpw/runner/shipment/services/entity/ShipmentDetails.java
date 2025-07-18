@@ -717,6 +717,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_migrated_to_v3")
     private Boolean isMigratedToV3;
 
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
