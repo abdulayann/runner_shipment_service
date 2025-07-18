@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
@@ -50,8 +51,6 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.Future;
 
 @Service
 @Slf4j
@@ -100,11 +99,10 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     @Autowired
     private HelperExecutor trxExecutor;
 
-    @Override
     @Transactional
-    public ConsolidationDetails migrateConsolidationV2ToV3(ConsolidationDetails consolidationDetails) {
+    @Override
+    public ConsolidationDetails migrateConsolidationV2ToV3(Long consolidationId) {
 
-        Long consolidationId = consolidationDetails.getId();
         log.info("Starting V2 to V3 migration for Consolidation [id={}]", consolidationId);
 
         ConsolidationDetails consolFromDb = consolidationDetailsDao.findById(consolidationId)
