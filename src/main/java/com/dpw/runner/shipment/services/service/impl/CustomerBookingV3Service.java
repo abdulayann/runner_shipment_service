@@ -347,7 +347,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
     @Override
     @Transactional
-    public CompletableFuture<CustomerBookingV3Response> update(CustomerBookingV3Request request) throws RunnerException {
+    public CustomerBookingV3Response update(CustomerBookingV3Request request) throws RunnerException {
         validateBookingUpdateRequest(request);
         Long id = request.getId();
         CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
@@ -393,15 +393,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-        CustomerBookingV3Response customerBookingV3Response = jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
-        CompletableFuture<CustomerBookingV3Response> future = new CompletableFuture<>();
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                future.complete(customerBookingV3Response);
-            }
-        });
-        return future;
+        return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
     @Override

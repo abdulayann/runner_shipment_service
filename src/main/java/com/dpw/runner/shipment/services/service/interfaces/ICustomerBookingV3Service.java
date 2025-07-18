@@ -15,11 +15,10 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 public interface ICustomerBookingV3Service {
     CustomerBookingV3Response create(CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
-    CompletableFuture<CustomerBookingV3Response> update(CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
+    CustomerBookingV3Response update(CustomerBookingV3Request customerBookingV3Request) throws RunnerException;
     CustomerBookingV3DeleteResponse delete(@Valid Long id) throws RunnerException;
     void updateContainerInfoInBooking(Long bookingId) throws RunnerException;
     CustomerBookingV3ListResponse list(@Valid ListCommonRequest listCommonRequest, Boolean getMasterData) throws RunnerException;
