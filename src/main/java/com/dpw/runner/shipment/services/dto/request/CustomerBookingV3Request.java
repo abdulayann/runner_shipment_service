@@ -98,6 +98,7 @@ public class CustomerBookingV3Request extends CommonRequest implements IRunnerRe
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
+    private String coLoadCarrierName;
     private String partnerBkgNumber;
     private String partnerBLOrAWBNumber;
     private String carrierBookingNumber;

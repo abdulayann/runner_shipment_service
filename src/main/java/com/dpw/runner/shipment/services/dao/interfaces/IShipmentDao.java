@@ -75,4 +75,6 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
 
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+
+    void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId);
 }

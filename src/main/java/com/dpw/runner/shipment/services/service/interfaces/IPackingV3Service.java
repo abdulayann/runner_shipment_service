@@ -22,10 +22,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.auth.AuthenticationException;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
 public interface IPackingV3Service {
 

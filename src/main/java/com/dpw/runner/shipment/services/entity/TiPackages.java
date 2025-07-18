@@ -41,26 +41,46 @@ public class TiPackages extends MultiTenancy {
     @Size(max=1024, message = "max size is 1024 for description")
     private String description;
 
-    @Column(name = "dimensions")
-    @Size(max=1024, message = "max size is 1024 for description")
-    private String dimensions;
+    @Column(name = "length")
+    private BigDecimal length;
+
+    @Column(name = "length_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
+    private String lengthUnit;
+
+    @Column(name = "width")
+    private BigDecimal width;
+
+    @Column(name = "width_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
+    private String widthUnit;
+
+    @Column(name = "height")
+    private BigDecimal height;
+
+    @Column(name = "height_unit")
+    @MasterData(type = MasterDataType.DIMENSION_UNIT)
+    private String heightUnit;
 
     @Column(name = "gross_weight")
     private BigDecimal grossWeight;
 
     @Column(name = "gross_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String grossWeightUnit;
 
     @Column(name = "net_weight")
     private BigDecimal netWeight;
 
     @Column(name = "net_weight_unit")
+    @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
 
     @Column(name = "volume")
     private BigDecimal volume;
 
     @Column(name = "volume_unit")
+    @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
 
     @Column(name = "dangerous")

@@ -184,7 +184,7 @@ public class DeliveryOrderReport extends IReport{
         dictionary.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.NET_WEIGHT_CAMELCASE, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getNetWeight(), v1TenantSettingsResponse));
-        if(deliveryOrderModel.getContainers() != null && !deliveryOrderModel.getContainers().isEmpty()) {
+        if(hasContainers(deliveryOrderModel)) {
             processShipmentContainers(deliveryOrderModel, v1TenantSettingsResponse, dictionary);
         }
 
@@ -193,14 +193,7 @@ public class DeliveryOrderReport extends IReport{
 
         processShipmentPackingList(deliveryOrderModel, dictionary);
 
-        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
-            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
-                }
-            }
-        }
+        populateChargeDescriptions(dictionary, chargeTypesWithoutTranslation);
 
         processShipmentDeliveryDetails(deliveryOrderModel, dictionary, v1TenantSettingsResponse);
         Integer decimalPlaces = commonUtils.getShipmentSettingFromContext().getDecimalPlaces() == null ? 2 : commonUtils.getShipmentSettingFromContext().getDecimalPlaces();
@@ -233,6 +226,21 @@ public class DeliveryOrderReport extends IReport{
         }
 
         return dictionary;
+    }
+
+    private void populateChargeDescriptions(Map<String, Object> dictionary, List<String> chargeTypesWithoutTranslation) {
+        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List) {
+            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> charge: values) {
+                if(charge.containsKey(CHARGE_TYPE_CODE) && charge.get(CHARGE_TYPE_CODE) != null) {
+                    charge.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)charge.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                }
+            }
+        }
+    }
+
+    private static boolean hasContainers(DeliveryOrderModel deliveryOrderModel) {
+        return deliveryOrderModel.getContainers() != null && !deliveryOrderModel.getContainers().isEmpty();
     }
 
     private void processShipmentWeightVolume(DeliveryOrderModel deliveryOrderModel, Integer decimalPlaces, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {

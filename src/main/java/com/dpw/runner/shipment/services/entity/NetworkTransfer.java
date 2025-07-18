@@ -83,4 +83,7 @@ public class NetworkTransfer extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private NetworkTransferSource source;
 
+    @Column(name = "is_migrated_to_v3")
+    private Boolean isMigratedToV3;
+
 }

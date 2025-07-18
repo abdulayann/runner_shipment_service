@@ -30,7 +30,15 @@ public class TransportInstructionLegsPackagesRequest implements IRunnerRequest {
     private String packageType;
     @Size(max = 1024, message = "max size is 1024 for description")
     private String description;
-    private String dimensions;
+    @MaxTotalDigits(5)
+    private BigDecimal length;
+    private String lengthUnit;
+    @MaxTotalDigits(5)
+    private BigDecimal width;
+    private String widthUnit;
+    @MaxTotalDigits(5)
+    private BigDecimal height;
+    private String heightUnit;
     @MaxTotalDigits(15)
     private BigDecimal grossWeight;
     private String grossWeightUnit;

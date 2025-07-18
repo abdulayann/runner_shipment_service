@@ -190,6 +190,17 @@ public class ConsolidationV3Controller {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ALL_SHIPMENT_COUNT, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.AIB_SHIPMENT_COUNT)
+    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@RequestParam() Long id) {
+        log.info("{} Request received for aibAttachedPendingShipmentCount for consolidation: {}", LoggerHelper.getRequestIdFromMDC(), id);
+        try {
+            return consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(id).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
     
     @ApiResponses(value = {
             @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)
@@ -197,6 +208,12 @@ public class ConsolidationV3Controller {
     @GetMapping(ApiConstants.API_GET_SYNC_ACHIEVED_DATA)
     public ResponseEntity<IRunnerResponse> getConsoleSyncAchievedData(@RequestParam Long consolidationId) throws RunnerException, JsonMappingException {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.getConsoleSyncAchievedData(consolidationId));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.GET_DG_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> getDGShipment(@ApiParam(value = ShipmentConstants.CONSOLIDATION_ID, required = true) @RequestParam Long id) {
+        return ResponseHelper.buildSuccessResponse(consolidationV3Service.getDGShipment(id));
     }
 
 }

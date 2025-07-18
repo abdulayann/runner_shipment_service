@@ -82,43 +82,60 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.DATE_BEHAVIOR_TYPE, enumList);
 
+        addShipmentPackageStatusInResponse(response);
+        addFileStatusInResponse(response);
+        addTaskTypeInResponse(response);
+        addTaskStatusInResponse(response);
+        addAirAuthorisingEntityInResponse(response);
+        addNetworkTransferStatusAndTypesInResponse(response);
+        addContainerPraStatusEnums(response);
+        addNotificationRequestTypeEnums(response);
+        return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
+    }
+
+    private static void addShipmentPackageStatusInResponse(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(ShipmentPackStatus shipmentPackStatus : ShipmentPackStatus.values()){
             enumList.add(EnumConstantResponse.builder().id(shipmentPackStatus.getValue()).description(shipmentPackStatus.getDescription()).name(shipmentPackStatus.name()).build());
         }
         response.put(Constants.SHIPMENT_PACK_STATUS, enumList);
+    }
 
+    private static void addFileStatusInResponse(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(FileStatus fileStatus : FileStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(fileStatus.getValue()).description(fileStatus.getDescription()).name(fileStatus.name()).build());
         }
         response.put(Constants.FILE_STATUS, enumList);
+    }
 
+    private static void addTaskTypeInResponse(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(TaskType taskType : TaskType.values()) {
             enumList.add(EnumConstantResponse.builder().id(taskType.getValue()).description(taskType.getDescription()).name(taskType.name()).build());
         }
         response.put(Constants.TASK_TYPE, enumList);
+    }
 
+    private static void addTaskStatusInResponse(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(TaskStatus taskStatus : TaskStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(taskStatus.getValue()).description(taskStatus.getDescription()).name(taskStatus.name()).build());
         }
         response.put(Constants.TASK_STATUS, enumList);
+    }
 
+    private static void addAirAuthorisingEntityInResponse(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(AirAuthorisingEntity entity : AirAuthorisingEntity.values()) {
             enumList.add(EnumConstantResponse.builder().id(entity.getValue()).description(entity.getDescription()).name(entity.name()).build());
         }
         response.put(Constants.AIR_AUTHORISING_ENTITY, enumList);
-
-        addNetworkTransferStatusAndTypesInResponse(response);
-
-        addContainerPraStatusEnums(response);
-
-        addNotificationRequestTypeEnums(response);
-
-        return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 
     private void addNetworkTransferStatusAndTypesInResponse(Map<String, List<EnumConstantResponse>> response) {

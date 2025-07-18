@@ -135,6 +135,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Map<String, String> currenciesMasterData;
     private Map<String, String> tenantIdsData;
     private Map<String, String> textData;
+    private Map<String, Object> masterDataMap;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private String modeOfBooking;
