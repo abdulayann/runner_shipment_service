@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
@@ -420,4 +421,8 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "additional_terms")
     private String additionalTerms;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
 }

@@ -719,6 +719,10 @@ public class ShipmentDetails extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private TransportInfoStatus transportInfoStatus;
 
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
+
 
     @Override
     public boolean equals(Object o) {
