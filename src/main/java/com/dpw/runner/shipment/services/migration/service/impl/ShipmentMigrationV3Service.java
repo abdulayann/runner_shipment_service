@@ -51,6 +51,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S112")
 public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     IV1Service v1Service;
