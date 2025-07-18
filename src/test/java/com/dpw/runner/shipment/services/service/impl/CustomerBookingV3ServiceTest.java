@@ -1404,7 +1404,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithSuccess() throws Exception {
+    void testV3BookingUpdateWithSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
@@ -1441,21 +1441,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
-            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response actualResponse = futureResponse.get();
-            // Assert
-            assertNotNull(actualResponse);
-            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
-        }
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
+
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
     }
 
     @Test
@@ -1495,7 +1486,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithPendingWithKycStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithPendingWithKycStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         CustomerBooking inputCustomerBooking = new CustomerBooking();
         inputCustomerBooking.setId(1L);
@@ -1534,27 +1525,16 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
-            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
 
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response actualResponse = futureResponse.get();
-
-            // Assert
-            assertNotNull(actualResponse);
-            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
-        }
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1604,23 +1584,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
 
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response actualResponse = futureResponse.get();
-
-            // Assert
-            assertNotNull(actualResponse);
-            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
-        }
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
     }
 
 
@@ -1681,7 +1650,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirCargoSecurity() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirCargoSecurity() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1732,23 +1701,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
 
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response actualResponse = futureResponse.get();
-
-            // Assert
-            assertNotNull(actualResponse);
-            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
-        }
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
     }
 
     @Test
@@ -1807,7 +1765,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirSecurityPermissions() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithReadyForShipmentStatusSuccessWithoutAirSecurityPermissions() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         CustomerBooking existingBooking = new CustomerBooking();
         existingBooking.setId(1L);
@@ -1866,26 +1824,16 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
-            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response actualResponse = futureResponse.get();
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
 
-            // Assert
-            assertNotNull(actualResponse);
-            assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
-        }
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(expectedResponse.getBookingStatus(), actualResponse.getBookingStatus());
     }
 
     @Test
-    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled() throws RunnerException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled() throws RunnerException {
         // Arrange
         UUID bookingGuid = UUID.randomUUID();
         UUID shipmentGuid = UUID.randomUUID();
@@ -1932,23 +1880,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
         mockShipmentSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
-            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
+        // Act
+        CustomerBookingV3Response actualResponse = customerBookingService.update(request);
 
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response actualResponse = futureResponse.get();
-
-            // Assert
-            assertNotNull(actualResponse);
-            assertEquals(BookingStatus.PENDING_FOR_REVIEW, actualResponse.getBookingStatus());
-        }
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(BookingStatus.PENDING_FOR_REVIEW, actualResponse.getBookingStatus());
     }
 
     @Test
@@ -2006,26 +1943,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
         mockShipmentSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
-            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
+        // Act
+        CustomerBookingV3Response response = customerBookingService.update(request);
 
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(bookingId, response.getId());
-
-            verify(customerBookingDao, times(2)).save(any());
-            verify(eventDao).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
-        }
+        // Assert
+        assertNotNull(response);
+        assertEquals(bookingId, response.getId());
+        verify(customerBookingDao, times(2)).save(any());
+        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
     }
 
     @Test
@@ -2085,27 +2010,15 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
         mockShipmentSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+        // Act
+        CustomerBookingV3Response response = customerBookingService.update(request);
 
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(bookingId, response.getId());
-            verify(customerBookingDao, times(2)).save(any());
-            verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
-            verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
-        }
+        // Assert
+        assertNotNull(response);
+        assertEquals(bookingId, response.getId());
+        verify(customerBookingDao, times(2)).save(any());
+        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
+        verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
     }
 
     @Test
@@ -2170,25 +2083,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mockTenantSettings();
         mockShipmentSettings();
 
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
+        // Act
+        CustomerBookingV3Response response = customerBookingService.update(request);
 
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(bookingId, response.getId());
-            verify(customerBookingDao, times(2)).save(any());
-            verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
-        }
+        // Assert
+        assertNotNull(response);
+        assertEquals(bookingId, response.getId());
+        verify(customerBookingDao, times(2)).save(any());
+        verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
     }
 
     @Test
@@ -2217,7 +2119,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentDisabled() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentDisabled() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
@@ -2248,27 +2150,15 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockTenantSettings();
         mockShipmentSettings();
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            verify(customerBookingDao, times(3)).save(any());
-        }
+        // Test
+        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Assert
+        assertNotNull(response);
+        verify(customerBookingDao, times(3)).save(any());
     }
 
     @Test
-    void testV3BookingUpdateWithSuccessCreateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithSuccessCreateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -2289,27 +2179,15 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         mdmMap.put("data", Arrays.asList(Collections.singletonMap("code", "40GP")));
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            verify(customerBookingDao, times(2)).save(any());
-        }
+        // Test
+        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Assert
+        assertNotNull(response);
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
-    void testBookingUpdateWithSuccessUpdateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testBookingUpdateWithSuccessUpdateInPlatform() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setIsPlatformBookingCreated(true);
@@ -2332,29 +2210,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            assertEquals(customerBookingResponse, response);
-            verify(customerBookingDao, times(2)).save(any());
-        }
+        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Assert
+        assertNotNull(response);
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization() throws RunnerException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithUtilization() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
@@ -2380,26 +2243,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
-        try (MockedStatic<TransactionSynchronizationManager> tsm = mockStatic(TransactionSynchronizationManager.class)) {
-            tsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            tsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-            // Assert
-            assertNotNull(response);
-            assertEquals(BookingStatus.CANCELLED, response.getBookingStatus());
-            verify(customerBookingDao, times(2)).save(any());
-        }
+        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Assert
+        assertNotNull(response);
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
@@ -2424,27 +2275,14 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            verify(customerBookingDao, times(2)).save(any());
-        }
+        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Assert
+        assertNotNull(response);
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
-    void testV3BookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException, ExecutionException, InterruptedException {
+    void testV3BookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
@@ -2468,23 +2306,10 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(mdmContainerTypeResponse));
         mockShipmentSettings();
         // Test
-        try (MockedStatic<TransactionSynchronizationManager> mockedTSM = mockStatic(TransactionSynchronizationManager.class)) {
-            mockedTSM.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
-            mockedTSM.when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
-                    .thenAnswer(invocation -> {
-                        TransactionSynchronization sync = invocation.getArgument(0);
-                        sync.afterCommit();
-                        return null;
-                    });
-
-            // Act
-            CompletableFuture<CustomerBookingV3Response> futureResponse = customerBookingService.update(request);
-            CustomerBookingV3Response response = futureResponse.get();
-
-            // Assert
-            assertNotNull(response);
-            verify(customerBookingDao, times(2)).save(any());
-        }
+        CustomerBookingV3Response response = customerBookingService.update(request);
+        // Assert
+        assertNotNull(response);
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
