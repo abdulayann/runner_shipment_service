@@ -337,6 +337,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     @Override
     public ConsolidationDetails migrateConsolidationV3ToV2(ConsolidationDetails consolidationDetails) throws RunnerException {
+        log.info("Starting V3 to V2 migration for Consolidation [id={}]", consolidationDetails.getId());
         Optional<ConsolidationDetails> consolidationDetails1 = consolidationDetailsDao.findById(consolidationDetails.getId());
         if(consolidationDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Console found with given id: " + consolidationDetails.getId());
@@ -344,16 +345,21 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Convert V3 Console and Attached shipment to V2
         ConsolidationDetails console = mapConsoleV3ToV2(consolidationDetails1.get());
+        log.info("Mapped V3 Consolidation to V2 [id={}]", console.getId());
         setMigratedV3Flag(console, false);
 
         // ContainerSave
         containerRepository.saveAll(console.getContainersList());
+        log.info("Saved updated containers for Consolidation [id={}]", console.getId());
         // PackingSave
         packingRepository.saveAll(console.getPackingList());
+        log.info("Saved packings for Consolidation [id={}]", console.getId());
         // ShipmentSave
         shipmentRepository.saveAll(console.getShipmentsList());
+        log.info("Updated shipment(s) linked to migrated Consolidation [id={}]", console.getId());
         // ConsoleSave
         consolidationRepository.save(console);
+        log.info("Migration V3 to V2 complete for Consolidation [id={}]", console.getId());
 
         return console;
     }

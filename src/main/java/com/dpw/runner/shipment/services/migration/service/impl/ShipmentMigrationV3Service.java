@@ -70,6 +70,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
+        log.info("Starting V2 to V3 migration for Shipment [id={}]", shipmentDetails.getId());
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
 
@@ -78,15 +79,19 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         notesUtil.addNotesForShipment(shipment);
+        log.info("Notes added for Shipment [id={}]", shipment.getId());
         mapShipmentV2ToV3(shipment, new HashMap<>());
+        log.info("Mapped V2 Shipment to V3 [id={}]", shipment.getId());
 
         // Save packing details
         if(!CommonUtils.listIsNullOrEmpty(shipment.getPackingList())) {
             packingRepository.saveAll(shipment.getPackingList());
+            log.info("Saved updated packings for Shipment [id={}]", shipment.getId());
         }
         // save shipment
         shipment.setIsMigratedToV3(Boolean.TRUE);
         shipmentRepository.save(shipment);
+        log.info("Migration V2 to V3 complete for Shipment [id={}]", shipment.getId());
         return shipment;
     }
 
@@ -272,6 +277,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
+        log.info("Starting V3 to V2 migration for Shipment [id={}]", shipmentDetails.getId());
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
         if(shipmentDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
@@ -279,13 +285,16 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipment.getContainersList());
         mapShipmentV3ToV2(shipment, containerTypeMap);
+        log.info("Mapped V3 Shipment to V2 [id={}]", shipment.getId());
 
         if (!CommonUtils.setIsNullOrEmpty(shipment.getContainersList())) {
             containerRepository.saveAll(shipment.getContainersList().stream().toList());
+            log.info("Saved updated containers for Shipment [id={}]", shipment.getId());
         }
         shipment.setIsMigratedToV3(false);
         // save shipment
         shipmentRepository.save(shipment);
+        log.info("Migration V3 to V2 complete for Shipment [id={}]", shipment.getId());
         return shipment;
     }
 
