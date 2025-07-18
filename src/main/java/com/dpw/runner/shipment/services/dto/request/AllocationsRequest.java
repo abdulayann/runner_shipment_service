@@ -40,4 +40,5 @@ public class AllocationsRequest implements IRunnerRequest {
     private Integer dgContainerCount;
     private Integer containerCount;
     private BigDecimal teuCount;
+    private Integer slacCount;
 }
