@@ -87,7 +87,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Autowired
     private JsonHelper jsonHelper;
 
-    @Autowired
+    @Autowired @Lazy
     private PackingValidationV3Util packingValidationV3Util;
 
     @Autowired
