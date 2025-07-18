@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -140,14 +141,14 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
-            shp.setIsMigratedToV3(Boolean.TRUE);
+            shp.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         });
 
         shipmentRepository.saveAll(consolShipmentsList);
         log.info("Updated {} shipment(s) to link to migrated Consolidation [id={}]", consolShipmentsList.size(), consolidationId);
 
         // Step 8: Mark consolidation itself as migrated and save
-        console.setIsMigratedToV3(Boolean.TRUE);
+        console.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         consolidationRepository.save(console);
 
         log.info("Migration complete for Consolidation [id={}]", consolidationId);
