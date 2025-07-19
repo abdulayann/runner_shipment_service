@@ -51,7 +51,7 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean(name = "asyncBackupHandlerExecutor")
     public ThreadPoolTaskExecutor backupHandlerExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(15);
+        executor.setCorePoolSize(12);
         executor.setMaxPoolSize(20);
         executor.setQueueCapacity(200);
         executor.setAllowCoreThreadTimeOut(false);

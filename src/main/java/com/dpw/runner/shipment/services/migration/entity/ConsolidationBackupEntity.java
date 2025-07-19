@@ -35,4 +35,7 @@ public class ConsolidationBackupEntity {
 
     @Column(name = "back_up_time_utc", nullable = false)
     private Instant backUpTimeUtc = Instant.now();
+
+    @Column(name = "console_shipment_mapping_details", columnDefinition = "jsonb")
+    private String consoleShipmentMapping;
 }

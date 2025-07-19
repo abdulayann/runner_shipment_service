@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
@@ -22,10 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -70,7 +74,7 @@ public class ConsolidationBackupHandler implements BackupHandler {
             log.info("No shipment records found for tenant: {}", tenantId);
             return;
         }
-        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(consolidationIds), 150)
+        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(consolidationIds), 100)
                 .stream()
                 .map(batch -> CompletableFuture.runAsync(
                         () -> lazyProxySelf.processAndBackupConsolidationsBatch(new HashSet<>(batch)),
@@ -91,10 +95,15 @@ public class ConsolidationBackupHandler implements BackupHandler {
             long startTime = System.currentTimeMillis();
             transactionTemplate.execute(status -> {
                 List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(consolidationIds);
+                Map<Long, List<ConsoleShipmentMapping>> consoleMappingsByConsolidationId =
+                        consoleShipmentMappingDao.findByConsolidationIdsByQuery(consolidationIds)
+                                .stream()
+                                .collect(Collectors.groupingBy(ConsoleShipmentMapping::getConsolidationId));
                 log.info("Time b: {}", System.currentTimeMillis() - startTime);
 
                 List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
-                        .map(this::mapToBackupEntity)
+                        .map((detail -> mapToBackupEntity(detail, consoleMappingsByConsolidationId.getOrDefault(detail.getId(),
+                                Collections.emptyList()))))
                         .toList();
                 long startTime1 = System.currentTimeMillis();
 
@@ -109,7 +118,7 @@ public class ConsolidationBackupHandler implements BackupHandler {
         }
     }
 
-    private ConsolidationBackupEntity mapToBackupEntity(ConsolidationDetails consolidationDetail) {
+    private ConsolidationBackupEntity mapToBackupEntity(ConsolidationDetails consolidationDetail, List<ConsoleShipmentMapping> consoleMappings) {
         try {
             ConsolidationBackupEntity consolidationBackupEntity = new ConsolidationBackupEntity();
             consolidationBackupEntity.setTenantId(consolidationDetail.getTenantId());
@@ -121,6 +130,7 @@ public class ConsolidationBackupHandler implements BackupHandler {
             consolidationBackupEntity.setConsolidationDetails(objectMapper.writeValueAsString(consolidationDetail));
             log.info("Time a: {}", System.currentTimeMillis() - startTime);
             consolidationDetail.setShipmentsList(shipmentList);
+            consolidationBackupEntity.setConsoleShipmentMapping(objectMapper.writeValueAsString(consoleMappings));
             return consolidationBackupEntity;
         } catch (Exception e) {
             log.error("Failed to create backup entity for consolidation id: {}", consolidationDetail.getId(), e);
