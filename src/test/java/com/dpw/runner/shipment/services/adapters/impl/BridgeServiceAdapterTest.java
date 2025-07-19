@@ -193,7 +193,9 @@ class BridgeServiceAdapterTest {
                 Arguments.of("400: [{\"message\":\"Something went wrong\"}]", "Description not found"),
                 Arguments.of("400 Bad Request", "Invalid message format"),
                 Arguments.of("400: [{\"error\":{\"description\":null}}]", "null"),
-                Arguments.of("400: [{\"error\":{\"description\":\"\"}}]", "")
+                Arguments.of("400: [{\"error\":{\"description\":\"\"}}]", ""),
+                Arguments.of("400: [{\"error\":{\"description\":\"[MandatoryField: Master bill should be a mandatory field]\"}}]", "MandatoryField: Master bill should be a mandatory field"),
+                Arguments.of("400: [{\"error\":{\"description\":\"[MandatoryField: Master bill should be a mandatory field\"}}]", "[MandatoryField: Master bill should be a mandatory field")
         );
     }
 
