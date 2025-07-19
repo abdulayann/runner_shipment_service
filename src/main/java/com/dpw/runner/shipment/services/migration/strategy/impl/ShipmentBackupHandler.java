@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static java.lang.Boolean.TRUE;
+
 @Service
 @Slf4j
 public class ShipmentBackupHandler implements BackupHandler {
@@ -74,7 +76,7 @@ public class ShipmentBackupHandler implements BackupHandler {
             return;
         }
 
-        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(shipmentIds), 150)
+        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(shipmentIds), 100)
                 .stream()
                 .map(batch -> CompletableFuture.runAsync(
                         () -> lazyProxySelf.processAndBackupShipmentsBatch(new HashSet<>(batch)),
@@ -120,6 +122,9 @@ public class ShipmentBackupHandler implements BackupHandler {
             shipmentBackupEntity.setTenantId(shipment.getTenantId());
             shipmentBackupEntity.setShipmentId(shipment.getId());
             shipmentBackupEntity.setShipmentGuid(shipment.getGuid());
+            if (!shipment.getConsolidationList().isEmpty()){
+                shipmentBackupEntity.setIsShipmentAttached(TRUE);
+            }
             Set<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
             shipment.setConsolidationList(null);
             long startTime = System.currentTimeMillis();

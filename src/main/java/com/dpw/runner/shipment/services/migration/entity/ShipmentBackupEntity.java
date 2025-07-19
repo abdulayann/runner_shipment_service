@@ -39,6 +39,9 @@ public class ShipmentBackupEntity {
     @Column(name = "shipment_guid")
     private UUID shipmentGuid;
 
+    @Column(name = "is_shipment_attached")
+    private Boolean isShipmentAttached = Boolean.FALSE;
+
     @Column(name = "shipment_details", columnDefinition = "jsonb")
     private String shipmentDetail;
 
