@@ -4107,18 +4107,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShipmentSettingsDetails shipmentSettings = commonUtils.getShipmentSettingFromContext();
-        request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
+        request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS));
         ListCommonRequest listRequest = setCrieteriaForAttachShipment(request, consolidationDetails.get());
         log.info("{} | attachListShipment | Final Criteria: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listRequest));
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(listRequest, ShipmentDetails.class, ShipmentService.tableNames);
-        Specification<ShipmentDetails> spec = tuple.getLeft();
-        if (shipmentSettings.getIsShipmentLevelContainer() != null && shipmentSettings.getIsShipmentLevelContainer())
-            spec = spec.and(ShipmentService.notInConsoleMappingTable());
-        else
-            spec = spec.and(ShipmentService.notInConsoleMappingTable()).and(ShipmentService.notInContainerMappingTable());
         if (Boolean.TRUE.equals(consolidationDetails.get().getInterBranchConsole()))
             commonUtils.setInterBranchContextForHub();
-        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(spec, tuple.getRight());
+        Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
                 convertEntityListToDtoListForAttachListShipment(shipmentDetailsPage.getContent(), true, request),
                 shipmentDetailsPage.getTotalPages(),
@@ -4126,18 +4121,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private ListCommonRequest setCrieteriaForAttachShipment(AttachListShipmentRequest request, ConsolidationDetails console) {
-        var tenantSettings = commonUtils.getCurrentTenantSettings();
-        boolean setShipmentTypefilter = false;
-        boolean isFcl = true;
-        boolean isLcl = true;
-        Set<ShipmentDetails> shipmentDetailsList = console.getShipmentsList();
-        if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
-            setShipmentTypefilter = true;
-            for (var ship : shipmentDetailsList) {
-                isFcl = Objects.equals(ship.getShipmentType(), Constants.CARGO_TYPE_FCL);
-                isLcl = Objects.equals(ship.getShipmentType(), Constants.SHIPMENT_TYPE_LCL);
-            }
-        }
         List<ConsoleShipmentMapping> consoleShipMappings = consoleShipmentMappingDao.findByConsolidationIdAll(request.getConsolidationId());
         List<Long> excludeShipments = consoleShipMappings.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
 
@@ -4146,149 +4129,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
         ListCommonRequest defaultRequest;
         defaultRequest = CommonUtils.andCriteria(Constants.TRANSPORT_MODE, console.getTransportMode(), EQ, request);
+        defaultRequest = CommonUtils.andCriteria(Constants.DIRECTION, console.getShipmentType(), EQ, defaultRequest);
         if (excludeShipments != null && !excludeShipments.isEmpty())
             defaultRequest = CommonUtils.andCriteria(ID, excludeShipments, "NOTIN", defaultRequest);
 
-        addDirectionCriteria(console, defaultRequest);
-        addShipmentTypeCriteria(console, setShipmentTypefilter, defaultRequest, isFcl, isLcl);
-        CommonUtils.andCriteria(Constants.STATUS, 2, "!=", defaultRequest);
-        CommonUtils.andCriteria(Constants.STATUS, 3, "!=", defaultRequest);
-        if (checkForNonDGConsoleAndAirDgFlagAndNonDGUser(console))
-            CommonUtils.andCriteria(CONTAINS_HAZARDOUS, false, EQ, defaultRequest);
-        List<FilterCriteria> criterias = defaultRequest.getFilterCriteria();
-        List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
-        Criteria criteria = Criteria.builder().fieldName(Constants.TRANSPORT_MODE).operator("!=").value(Constants.TRANSPORT_MODE_AIR).build();
-        FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        List<FilterCriteria> innerFilers1 = new ArrayList<>();
-        innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName(Constants.JOB_TYPE).operator("!=").value(Constants.SHIPMENT_TYPE_DRT).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-        innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName(Constants.JOB_TYPE).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-        innerFilers1.add(filterCriteria);
-        filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-        innerFilters.add(filterCriteria);
-        CarrierDetails consolidationCarrierDetails = console.getCarrierDetails();
-        addCriteriaForAir(console, tenantSettings, consolidationCarrierDetails, defaultRequest);
-
-        defaultRequest = processEtaMatchRequest(request, console, tenantSettings, consolidationCarrierDetails, defaultRequest, innerFilters);
-        defaultRequest = processEtdMatchRequest(request, console, tenantSettings, consolidationCarrierDetails, defaultRequest, innerFilters);
-        processScheduleMatchRequest(request, console, consolidationCarrierDetails, innerFilters);
-        return defaultRequest;
-    }
-
-    private void addDirectionCriteria(ConsolidationDetails consolidationDetails, ListCommonRequest defaultRequest) {
-        if (!Objects.isNull(consolidationDetails.getShipmentType()))
-            CommonUtils.andCriteria(Constants.DIRECTION, consolidationDetails.getShipmentType(), Constants.EQ, defaultRequest);
-        else
-            CommonUtils.andCriteria(Constants.DIRECTION, "", Constants.IS_NULL, defaultRequest);
-    }
-
-    private void addShipmentTypeCriteria(ConsolidationDetails console, boolean setShipmentTypefilter, ListCommonRequest defaultRequest, boolean isFcl, boolean isLcl) {
-        if (setShipmentTypefilter) {
-            if (isFcl)
-                CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, Constants.CARGO_TYPE_FCL, Constants.EQ, defaultRequest);
-            else if (isLcl)
-                CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, Constants.SHIPMENT_TYPE_LCL, Constants.EQ, defaultRequest);
-        }
-        if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.isNull(console.getContainerCategory())) {
-            CommonUtils.andCriteria(Constants.SHIPMENT_TYPE, console.getContainerCategory(), Constants.EQ, defaultRequest);
-        }
-    }
-
-    private boolean checkForNonDGConsoleAndAirDgFlagAndNonDGUser(ConsolidationDetails console) {
-        if (!consolidationV3Service.checkForAirDGFlag(console))
-            return false;
-        if (Boolean.TRUE.equals(console.getHazardous()))
-            return false;
-        return !isAirDgUser();
-    }
-
-    private boolean isAirDgUser() {
-        return UserContext.isAirDgUser();
-    }
-
-    private void addCriteriaForAir(ConsolidationDetails console, V1TenantSettingsResponse tenantSettings, CarrierDetails consoleCarrier, ListCommonRequest defaultRequest) {
-        if (!Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
-                || Boolean.FALSE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
-            if (!Objects.isNull(consoleCarrier.getOriginPort()))
-                CommonUtils.andCriteria(Constants.ORIGIN_PORT, consoleCarrier.getOriginPort(), Constants.EQ, defaultRequest);
-            else
-                CommonUtils.andCriteria(Constants.ORIGIN_PORT, "", Constants.IS_NULL, defaultRequest);
-            if (!Objects.isNull(consoleCarrier.getDestinationPort()))
-                CommonUtils.andCriteria(Constants.DESTINATION_PORT, consoleCarrier.getDestinationPort(), Constants.EQ, defaultRequest);
-            else
-                CommonUtils.andCriteria(Constants.DESTINATION_PORT, "", Constants.IS_NULL, defaultRequest);
-        }
-    }
-
-    private ListCommonRequest processEtaMatchRequest(AttachListShipmentRequest request, ConsolidationDetails console, V1TenantSettingsResponse tenantSettings,
-                                                     CarrierDetails consoleCarrier, ListCommonRequest defaultRequest, List<FilterCriteria> innerFilters) {
-        List<FilterCriteria> innerFilers1;
-        Criteria criteria;
-        FilterCriteria filterCriteria;
-        if (Boolean.TRUE.equals(request.getEtaMatch())) {
-            if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(console.getShipmentType(), Constants.DIRECTION_EXP)
-                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
-                if (!Objects.isNull(consoleCarrier.getEta())) {
-                    LocalDateTime eta = consoleCarrier.getEta();
-                    var thresholdETAFrom = eta.plusDays(-1);
-                    var thresholdETATo = eta.plusDays(1);
-
-                    defaultRequest = CommonUtils.andCriteria("eta", thresholdETAFrom, ">=", defaultRequest);
-                    defaultRequest = CommonUtils.andCriteria("eta", thresholdETATo, "<=", defaultRequest);
-                }
-            } else {
-                innerFilers1 = new ArrayList<>();
-                if (!Objects.isNull(consoleCarrier.getEta()))
-                    criteria = Criteria.builder().fieldName("eta").operator(Constants.EQ).value(consoleCarrier.getEta()).build();
-                else
-                    criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
-                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-                innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName("eta").operator(Constants.IS_NULL).build();
-                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-                innerFilers1.add(filterCriteria);
-                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-                innerFilters.add(filterCriteria);
-            }
-        }
-        return defaultRequest;
-    }
-
-    private ListCommonRequest processEtdMatchRequest(AttachListShipmentRequest request, ConsolidationDetails console,
-                                                     V1TenantSettingsResponse tenantSettings, CarrierDetails consoleCarrier,
-                                                     ListCommonRequest defaultRequest, List<FilterCriteria> innerFilters) {
-        FilterCriteria filterCriteria;
-        List<FilterCriteria> innerFilers1;
-        Criteria criteria;
-        if (Boolean.TRUE.equals(request.getEtdMatch())) {
-
-            if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
-                    && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
-                if (!Objects.isNull(consoleCarrier.getEtd())) {
-                    LocalDateTime etd = consoleCarrier.getEtd();
-                    var thresholdETDFrom = etd.plusDays(-1);
-                    var thresholdETDTo = etd.plusDays(1);
-                    defaultRequest = CommonUtils.andCriteria("etd", thresholdETDFrom, ">=", defaultRequest);
-                    defaultRequest = CommonUtils.andCriteria("etd", thresholdETDTo, "<=", defaultRequest);
-                }
-            } else {
-                innerFilers1 = new ArrayList<>();
-                if (!Objects.isNull(consoleCarrier.getEtd()))
-                    criteria = Criteria.builder().fieldName("etd").operator(Constants.EQ).value(consoleCarrier.getEtd()).build();
-                else
-                    criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
-                filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-                innerFilers1.add(filterCriteria);
-                criteria = Criteria.builder().fieldName("etd").operator(Constants.IS_NULL).build();
-                filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-                innerFilers1.add(filterCriteria);
-                filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-                innerFilters.add(filterCriteria);
-            }
-        }
         return defaultRequest;
     }
 
@@ -4310,77 +4154,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return responseList;
     }
 
-    private void processScheduleMatchRequest(AttachListShipmentRequest request, ConsolidationDetails consolidationDetails, CarrierDetails consolidationCarrierDetails, List<FilterCriteria> innerFilters) {
-        if (Boolean.TRUE.equals(request.getScheduleMatch())) {
-            if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
-                processAirScheduledMatchRequest(consolidationCarrierDetails, innerFilters);
-            } else if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_SEA)) {
-                processSeaScheduledMatchRequest(consolidationCarrierDetails, innerFilters);
-            }
-        }
-    }
-
-    private void processAirScheduledMatchRequest(CarrierDetails consoleCarrier, List<FilterCriteria> innerFilters) {
-        List<FilterCriteria> innerFilers1;
-        Criteria criteria;
-        FilterCriteria filterCriteria;
-        innerFilers1 = new ArrayList<>();
-        if (!Objects.isNull(consoleCarrier.getFlightNumber()))
-            criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator(Constants.EQ).value(consoleCarrier.getFlightNumber()).build();
-        else
-            criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName(Constants.FLIGHT_NUMBER).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-        innerFilers1.add(filterCriteria);
-        filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-        innerFilters.add(filterCriteria);
-
-        innerFilers1 = new ArrayList<>();
-        if (!Objects.isNull(consoleCarrier.getShippingLine()))
-            criteria = Criteria.builder().fieldName(Constants.SHIPPING_LINE).operator(Constants.EQ).value(consoleCarrier.getShippingLine()).build();
-        else
-            criteria = Criteria.builder().fieldName(Constants.SHIPPING_LINE).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName(Constants.SHIPPING_LINE).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-        innerFilers1.add(filterCriteria);
-        filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-        innerFilters.add(filterCriteria);
-    }
-
-    private void processSeaScheduledMatchRequest(CarrierDetails consoleCarrier, List<FilterCriteria> innerFilters) {
-        Criteria criteria;
-        List<FilterCriteria> innerFilers1;
-        FilterCriteria filterCriteria;
-        innerFilers1 = new ArrayList<>();
-        if (!Objects.isNull(consoleCarrier.getVessel()))
-            criteria = Criteria.builder().fieldName(Constants.VESSEL).operator(Constants.EQ).value(consoleCarrier.getVessel()).build();
-        else
-            criteria = Criteria.builder().fieldName(Constants.VESSEL).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName(Constants.VESSEL).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-        innerFilers1.add(filterCriteria);
-        filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-        innerFilters.add(filterCriteria);
-
-        innerFilers1 = new ArrayList<>();
-        if (!Objects.isNull(consoleCarrier.getVoyage()))
-            criteria = Criteria.builder().fieldName(Constants.VOYAGE).operator(Constants.EQ).value(consoleCarrier.getVoyage()).build();
-        else
-            criteria = Criteria.builder().fieldName(Constants.VOYAGE).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        innerFilers1.add(filterCriteria);
-        criteria = Criteria.builder().fieldName(Constants.VOYAGE).operator(Constants.IS_NULL).build();
-        filterCriteria = FilterCriteria.builder().criteria(criteria).logicOperator("or").build();
-        innerFilers1.add(filterCriteria);
-        filterCriteria = FilterCriteria.builder().logicOperator("and").innerFilter(innerFilers1).build();
-        innerFilters.add(filterCriteria);
-    }
 
     /**
      * This method will provide Interbranch Pending Notifications - Includes both Pull & Push requests for shipment
