@@ -127,7 +127,13 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             if (rootNode.isArray() && !rootNode.isEmpty()) {
                 JsonNode errorNode = rootNode.get(0).get("error");
                 if (errorNode != null && errorNode.has("description")) {
-                    return errorNode.get("description").asText();
+                    String rawDescription = errorNode.get("description").asText();
+
+                    // Remove leading and trailing square brackets if present
+                    if (rawDescription.startsWith("[") && rawDescription.endsWith("]")) {
+                        rawDescription = rawDescription.substring(1, rawDescription.length() - 1).trim();
+                    }
+                    return rawDescription;
                 }
             }
             return "Description not found";
