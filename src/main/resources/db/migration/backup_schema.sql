@@ -1,7 +1,7 @@
 DO $$
 DECLARE
     old_schema TEXT := 'public';
-    new_schema TEXT := 'public_' || to_char(now(), 'YYYYMMDD_HH24MI');
+    new_schema TEXT := '__SCHEMA__';
     r RECORD;
 BEGIN
     -- Create the new schema dynamically
