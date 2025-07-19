@@ -595,4 +595,14 @@ public class PackingDao implements IPackingDao {
         return packingRepository.existsPackingByShipmentId(shipmentId);
     }
 
+    @Override
+    public void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long consolidationId) {
+        packingRepository.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPackingIdsAndConsolidationId(List<Long> packingIds, Long consolidationId) {
+        packingRepository.revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
+    }
+
 }

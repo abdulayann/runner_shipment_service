@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -51,4 +52,12 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     default Page<Routings> findAllWithoutTenantFilter(Specification<Routings> spec, Pageable pageable) {
         return findAll(spec, pageable);
     }
+
+    @Modifying
+    @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void deleteAdditionalDataByRoutingsIdsConsolidationId(List<Long> routingsIds, Long consolidationId);
+
+    @Modifying
+    @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByRoutingsIdsAndConsolidationId(List<Long> routingsIds, Long consolidationId);
 }

@@ -54,4 +54,8 @@ public interface IEventDao {
     List<Events> updateEventsList(List<Events> shipmentEvents);
 
     void updateAllEventDetails(List<Events> events);
+
+    void deleteAdditionalDataByEventsIdsConsolidationId(List<Long> eventsIds, Long consolidationId);
+
+    void revertSoftDeleteByEventsIdsAndConsolidationId(List<Long> eventsIds, Long consolidationId);
 }

@@ -152,4 +152,12 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
             WHERE c.id in(:containerIds)
             """)
     List<ContainerInfoProjection> findByContainerIds(@Param("containerIds") List<Long> containerIds);
+
+    @Modifying
+    @Query(value = "UPDATE containers SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void deleteAdditionalDataByContainersIdsConsolidationId(List<Long> containersIds, Long consolidationId);
+
+    @Modifying
+    @Query(value = "UPDATE containers SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByContainersIdsAndConsolidationId(List<Long> containersIds, Long consolidationId);
 }
