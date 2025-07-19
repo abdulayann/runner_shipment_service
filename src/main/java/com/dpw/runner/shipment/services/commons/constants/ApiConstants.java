@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ApiConstants {
     private ApiConstants(){}
     public static final String API_CREATE = "/create";
+    public static final String SAILING_SCHEDULE_API_CREATE = "/create/sailing-schedules";
     public static final String API_CREATE_TAGS_SHIPMENT = "/tags/shipment";
     public static final String API_UPLOAD = "/upload";
     public static final String API_UPLOAD_EVENTS = "/upload-events";
