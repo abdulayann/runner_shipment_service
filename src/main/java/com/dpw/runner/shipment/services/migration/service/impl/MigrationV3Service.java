@@ -158,61 +158,14 @@ public class MigrationV3Service implements IMigrationV3Service {
         map.put("Total Shipment Migrated", migratedShipmentIds.size());
         log.info("Shipment migration complete: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentDetailsList.size(), tenantId);
 
-        migrateNetworkTransferV2ToV3(tenantId, map);
+        Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId);
+        map.putAll(nteStats);
 
         return map;
     }
 
-    private void migrateNetworkTransferV2ToV3(Integer tenantId, Map<String, Integer> map) {
-        ////        List<NetworkTransfer> networkTranferList = fetchNteFromDB(false, tenantId);
-        NetworkTransfer networkTransfer = networkTransferDao.findByIdWithQuery(936L).get();
-        List<NetworkTransfer> networkTranferList = Collections.singletonList(networkTransfer);
-        map.put("Total NetworkTransfer", networkTranferList.size());
-        log.info("Starting NetworkTransfer migration for tenant [{}]. Found {} NetworkTransfer(s).", tenantId, networkTranferList.size());
-
-        List<Future<Long>> networkTransferFutures = new ArrayList<>();
-        log.info("fetched {} networkTransfer for Migrations", networkTranferList.size());
-        for (NetworkTransfer nte : networkTranferList) {
-            // execute async
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
-
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-                            log.info("Migrating NetworkTransfer [id={}]", nte.getId());
-                            NetworkTransfer migrated = networkTransferMigrationService.migrateNteFromV2ToV3(nte);
-                            log.info("Successfully migrated NetworkTransfer [oldId={}, newId={}]", nte.getId(), migrated.getId());
-                            return migrated.getId();
-                        } catch (Exception e) {
-                            log.error("NetworkTransfer migration failed [id={}]: {}", nte.getId(), e.getMessage(), e);
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Async failure during NetworkTransfer setup [id={}]", nte.getId(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            networkTransferFutures.add(future);
-        }
-        List<Long> migratedNteIds = collectAllProcessedIds(networkTransferFutures);
-        map.put("Total Network Transfer Migrated", migratedNteIds.size());
-        log.info("Network Transfer migration complete: {}/{} migrated for tenant [{}]", migratedNteIds.size(), networkTranferList.size(), tenantId);
-    }
-
     private List<CustomerBooking> fetchBookingFromDB(boolean isMigratedToV3, Integer tenantId) {
         return customerBookingDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
-    }
-
-
-
-    private List<NetworkTransfer> fetchNteFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return networkTransferDao.findNteByIsMigratedToV3(isMigratedToV3, tenantId);
     }
 
     @Override
@@ -227,48 +180,11 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<String, Integer> shipmentStats = shipmentMigrationV3Service.migrateShipmentsV3ToV2ForTenant(tenantId);
         result.putAll(shipmentStats);
 
-        migrateNetworkTransferV3ToV2(tenantId, result);
+        Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV3ToV2ForTenant(tenantId);
+        result.putAll(nteStats);
+
         log.info("[Migration] Completed migration for tenant [{}]: {}", tenantId, result);
         return result;
-    }
-
-    private void migrateNetworkTransferV3ToV2(Integer tenantId, Map<String, Integer> map) {
-        List<NetworkTransfer> networkTransferList = fetchNteFromDB(true, tenantId);
-        map.put("Total networkTransfer", networkTransferList.size());
-        log.info("Starting V3 to V2 networkTransfer migration for tenant [{}]. Found {} shipment(s).", tenantId, networkTransferList.size());
-
-        List<Future<Long>> networkTransferFutures = new ArrayList<>();
-        log.info("fetched {} NetworkTransfer for V3 to V2 Migrations", networkTransferList.size());
-        for (NetworkTransfer nte : networkTransferList) {// execute async
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
-
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-                            log.info("Migrating NetworkTransfer with [id={}]", nte.getId());
-                            NetworkTransfer migrated = networkTransferMigrationService.migrateNteFromV3ToV2(nte);
-                            log.info("Successfully migrated the NetworkTransfer [oldId={}, newId={}]", nte.getId(), migrated.getId());
-                            return migrated.getId();
-                        } catch (Exception e) {
-                            log.error("networkTransferFutures migration failed [id={}]: {}", nte.getId(), e.getMessage(), e);
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    log.error("Async failure during networkTransferFutures setup [id={}]", nte.getId(), e);
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            networkTransferFutures.add(future);
-        }
-        List<Long> migratedNetworkTransferIds = collectAllProcessedIds(networkTransferFutures);
-        map.put("Total networkTransfer Migrated", migratedNetworkTransferIds.size());
-        log.info("Network Transfer migration completed: {}/{} migrated for tenant [{}]", migratedNetworkTransferIds.size(), networkTransferList.size(), tenantId);
     }
 
     @Override

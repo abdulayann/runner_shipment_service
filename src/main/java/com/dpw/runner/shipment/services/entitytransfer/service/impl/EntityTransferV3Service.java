@@ -1951,7 +1951,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             return v2V3Map;
         }
         for(ShipmentSettingsDetails shipmentSettingsDetails: shipmentSettingsDetailsList){
-            v2V3Map.put(shipmentSettingsDetails.getTenantId(), shipmentSettingsDetails.getIsRunnerV3Enabled().equals(Boolean.TRUE));
+            v2V3Map.put(shipmentSettingsDetails.getTenantId(), Objects.equals(shipmentSettingsDetails.getIsRunnerV3Enabled(), Boolean.TRUE));
         }
         return v2V3Map;
     }
