@@ -2,12 +2,14 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -46,6 +48,10 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
 
-    @Query(value = "SELECT * FROM customer_booking WHERE is_migrated_to_v3 = ?1 and tenant_id = ?2 and is_deleted = false", nativeQuery = true)
-    List<CustomerBooking> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId);
+    @Query(value = "SELECT cb.* FROM customer_booking cb " +
+            "WHERE cb.migration_status IN (:statuses) " +
+            "AND cb.tenant_id = :tenantId " +
+            "AND cb.is_deleted = false",
+            nativeQuery = true)
+    List<CustomerBooking> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
 }

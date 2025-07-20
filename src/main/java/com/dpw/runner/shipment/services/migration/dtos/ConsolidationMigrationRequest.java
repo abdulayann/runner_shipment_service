@@ -11,4 +11,6 @@ public class ConsolidationMigrationRequest {
 
     private Long consolId;
 
+    private Long bookingId;
+
 }

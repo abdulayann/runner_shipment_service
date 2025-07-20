@@ -27,8 +27,12 @@ public class MigrationV3Controller {
 
     @PostMapping("/v2/v3")
     public Map<String, Integer> migrationFromV2ToV3(@RequestBody ConsolidationMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
+        log.info("Received migration request from V2 to V3 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        return migrationV3Service.migrateV2ToV3(request.getTenantId(), request.getConsolId());
+        log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
+        Map<String, Integer> result = migrationV3Service.migrateV2ToV3(request.getTenantId(), request.getConsolId(), request.getBookingId());
+        log.info("Migration from V2 to V3 completed for tenantId: {}. Result: {}", request.getTenantId(), result);
+        return result;
     }
 
     @RequestMapping("/v3/v2")
@@ -36,21 +40,9 @@ public class MigrationV3Controller {
         log.info("Received migration request from V3 to V2 for tenantId: {}", request.getTenantId());
         authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
         log.debug("Authentication successful for X-API-KEY: {}", xApiKey);
-        Map<String, Integer> result = migrationV3Service.migrateV3ToV2(request.getTenantId());
-        log.info("Migration completed for tenantId: {}. Result: {}", request.getTenantId(), result);
+        Map<String, Integer> result = migrationV3Service.migrateV3ToV2(request.getTenantId(), request.getBookingId());
+        log.info("Migration from V3 to V2 completed for tenantId: {}. Result: {}", request.getTenantId(), result);
         return result;
-    }
-
-    @RequestMapping("/booking/v2/v3")
-    public Map<String, Integer> bookingMigrationFromV2ToV3(@RequestBody BookingMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
-        authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        return migrationV3Service.bookingV2ToV3Migration(request.getTenantId(), request.getBookingId());
-    }
-
-    @RequestMapping("/booking/v3/v2")
-    public Map<String, Integer> bookingMigrationFromV3ToV2(@RequestBody BookingMigrationRequest request, @RequestHeader(value = ApiConstants.X_API_KEY, required = false) String xApiKey) {
-        authenticationService.authenticate(Constants.MIGRATION_API, xApiKey);
-        return migrationV3Service.bookingV3ToV2Migration(request.getTenantId(), request.getBookingId());
     }
 
 }

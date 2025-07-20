@@ -31,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
+
 @Service
 @Slf4j
 public class MigrationV3Service implements IMigrationV3Service {
@@ -72,7 +74,7 @@ public class MigrationV3Service implements IMigrationV3Service {
     private V1ServiceImpl v1Service;
 
     @Override
-    public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId) {
+    public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
         Map<String, Integer> map = new HashMap<>();
         // Step 1: Fetch all V2 consolidations for tenant
         List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
@@ -161,15 +163,13 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId);
         map.putAll(nteStats);
 
+        Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);
+        map.putAll(bookingStats);
         return map;
     }
 
-    private List<CustomerBooking> fetchBookingFromDB(boolean isMigratedToV3, Integer tenantId) {
-        return customerBookingDao.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
-    }
-
     @Override
-    public Map<String, Integer> migrateV3ToV2(Integer tenantId) {
+    public Map<String, Integer> migrateV3ToV2(Integer tenantId, Long bookingId) {
         Map<String, Integer> result = new HashMap<>();
 
         log.info("[Migration] Initiating full V3 to V2 migration for tenant [{}]", tenantId);
@@ -183,100 +183,11 @@ public class MigrationV3Service implements IMigrationV3Service {
         Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV3ToV2ForTenant(tenantId);
         result.putAll(nteStats);
 
+        Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV3ToV2ForTenant(tenantId);
+        result.putAll(bookingStats);
+
         log.info("[Migration] Completed migration for tenant [{}]: {}", tenantId, result);
         return result;
-    }
-
-    @Override
-    public Map<String, Integer> bookingV2ToV3Migration(Integer tenantId, Long bookingId) {
-        Map<String, Integer> map = new HashMap<>();
-//        List<CustomerBooking> customerBookingList = fetchBookingFromDB(false, tenantId);
-        List<CustomerBooking> customerBookingList = List.of(customerBookingDao.findById(bookingId).get());
-        map.put("Total Bookings", customerBookingList.size());
-        List<Future<Long>> bookingQueue = new ArrayList<>();
-        log.info("fetched {} bookings for Migrations", customerBookingList.size());
-        customerBookingList.forEach(booking -> {
-            // execute async
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
-                    Map<String, BigDecimal> codeTeuMap = customerBookingV3MigrationService.getCodeTeuMapping();
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-
-                            CustomerBooking response = customerBookingV3MigrationService.migrateBookingV2ToV3(booking, codeTeuMap);
-                            return response.getId();
-                        } catch (Exception e) {
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            bookingQueue.add(future);
-        });
-
-        List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
-        map.put("Total Bookings Migrated", bookingsProcessed.size());
-        return map;
-    }
-
-    @Override
-    public Map<String, Integer> bookingV3ToV2Migration(Integer tenantId, Long bookingId) {
-        Map<String, Integer> map = new HashMap<>();
-//        List<CustomerBooking> customerBookingList = fetchBookingFromDB(false, tenantId);
-        List<CustomerBooking> customerBookingList = List.of(customerBookingDao.findById(bookingId).get());
-        map.put("Total Bookings", customerBookingList.size());
-        List<Future<Long>> bookingQueue = new ArrayList<>();
-        log.info("fetched {} bookings for Migrations", customerBookingList.size());
-        customerBookingList.forEach(booking -> {
-            // execute async
-            Future<Long> future = trxExecutor.runInAsync(() -> {
-
-                try {
-                    v1Service.setAuthContext();
-                    TenantContext.setCurrentTenant(tenantId);
-                    UserContext.getUser().setPermissions(new HashMap<>());
-                    Map<String, BigDecimal> codeTeuMap = customerBookingV3MigrationService.getCodeTeuMapping();
-                    return trxExecutor.runInTrx(() -> {
-                        try {
-
-                            CustomerBooking response = customerBookingV3MigrationService.migrateBookingV3ToV2(booking, codeTeuMap);
-                            return response.getId();
-                        } catch (Exception e) {
-                            throw new IllegalArgumentException(e);
-                        }
-                    });
-                } catch (Exception e) {
-                    throw new IllegalArgumentException(e);
-                } finally {
-                    v1Service.clearAuthContext();
-                }
-            });
-            bookingQueue.add(future);
-        });
-
-        List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
-        map.put("Total Bookings Migrated", bookingsProcessed.size());
-        return map;
-    }
-
-    private List<Long> collectAllProcessedIds(List<Future<Long>> queue) {
-        List<Long> ids = new ArrayList<>();
-        for (Future<Long> future : queue) {
-            try {
-                ids.add(future.get());
-            } catch (Exception er) {
-                log.error("Error in trx", er);
-            }
-        }
-        return ids;
     }
 
     private List<Long> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {

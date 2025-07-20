@@ -14,4 +14,7 @@ public interface ICustomerBookingV3MigrationService {
     CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) throws RunnerException;
 
     Map<String, BigDecimal> getCodeTeuMapping();
+
+    Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId);
+    Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId);
 }
