@@ -582,6 +582,16 @@ public class EventDao implements IEventDao {
         eventRepository.revertSoftDeleteByEventsIdsAndConsolidationId(eventsIds, consolidationId);
     }
 
+    @Override
+    public void deleteAdditionalEventDetailsByEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType) {
+        eventRepository.deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
+
+    @Override
+    public void revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType) {
+        eventRepository.revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, entityId, entityType);
+    }
+
     private void processShipmentEvents(Events event, Map<Long, ShipmentDetails> shipmentDetailsMap, Map<Long, Long> shipmentToConsolidationMap) {
         ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
 

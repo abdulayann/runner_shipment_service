@@ -84,4 +84,8 @@ public interface IPackingDao {
     void deleteAdditionalPackingByCustomerBookingId(List<Long> packingIds, Long bookingId);
 
     void revertSoftDeleteByPackingIdsAndBookingId(List<Long> packingIds, Long bookingId);
+
+    void deleteAdditionalPackingByShipmentId(List<Long> packingIds, Long shipmentId);
+
+    void revertSoftDeleteByPackingIdsAndShipmentId(List<Long> packingIds, Long shipmentId);
 }

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,10 +25,22 @@ public interface IJobRepository extends MultiTenancyRepository<Jobs> {
     Page<Jobs> findAll(Specification<Jobs> spec, Pageable pageable);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE jobs SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
     void deleteAdditionalDataByJobsIdsAndConsolidationId(List<Long> jobsIds, Long consolidationId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE jobs SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
     void revertSoftDeleteByJobsIdsAndConsolidationId(List<Long> jobsIds, Long consolidationId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE jobs SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void deleteAdditionalJobsByShipmentId(List<Long> jobsIds, Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE jobs SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByJobsIdsAndShipmentId(List<Long> jobsIds, Long shipmentId);
 }

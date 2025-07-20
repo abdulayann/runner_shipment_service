@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,10 +55,12 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     }
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and consolidation_id = ?2", nativeQuery = true)
     void deleteAdditionalDataByRoutingsIdsConsolidationId(List<Long> routingsIds, Long consolidationId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
     void revertSoftDeleteByRoutingsIdsAndConsolidationId(List<Long> routingsIds, Long consolidationId);
 
@@ -68,4 +71,14 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     @Modifying
     @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and booking_id = ?2", nativeQuery = true)
     void revertSoftDeleteByRoutingsIdsAndBookingId(List<Long> routingsIds, Long bookingId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void deleteAdditionalroutingsByShipmentId(List<Long> routingsIds, Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByroutingsIdsAndShipmentId(List<Long> routingsIds, Long shipmentId);
 }

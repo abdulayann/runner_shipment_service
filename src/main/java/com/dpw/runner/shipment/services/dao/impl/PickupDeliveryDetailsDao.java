@@ -91,6 +91,16 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         return pickupDeliveryDetailsRepository.findByShipmentIdIn(shipmentIds);
     }
 
+    @Override
+    public void deleteAdditionalPickupDeliveryDetailsByShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId) {
+        pickupDeliveryDetailsRepository.deleteAdditionalPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsIds, shipmentId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId) {
+        pickupDeliveryDetailsRepository.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(pickupDeliveryDetailsIds, shipmentId);
+    }
+
     public List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {
         List<PickupDeliveryDetails> res = new ArrayList<>();
         for(PickupDeliveryDetails req : pickupDeliveryDetailsRequests){

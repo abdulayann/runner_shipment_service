@@ -32,4 +32,13 @@ public interface IShipmentOrderRepository extends JpaRepository<ShipmentOrder, L
 
     @Transactional
     void deleteAllByShipmentId(Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_order SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void deleteAdditionalShipmentOrderByShipmentId(List<Long> shipmentOrderIds, Long shipmentId);
+
+    @Modifying
+    @Query(value = "UPDATE shipment_order SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByshipmentOrderIdsAndShipmentId(List<Long> shipmentOrderIds, Long shipmentId);
 }

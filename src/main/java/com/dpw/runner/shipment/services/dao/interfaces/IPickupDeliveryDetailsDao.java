@@ -22,4 +22,8 @@ public interface IPickupDeliveryDetailsDao {
 
     Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId);
     List<PickupDeliveryDetails> findByShipmentIdIn(Set<Long> shipmentIds);
+
+    void deleteAdditionalPickupDeliveryDetailsByShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
+
+    void revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
 }

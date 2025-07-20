@@ -9,6 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,10 +25,12 @@ public interface IFileRepoRepository extends MultiTenancyRepository<FileRepo> {
     }
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE file_repo SET is_deleted = true WHERE id NOT IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
     void deleteAdditionalDataByFileRepoIdsEntityIdAndEntityType(List<Long> fileRepoIds, Long entityId, String entityType);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE file_repo SET is_deleted = false WHERE id IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
     void revertSoftDeleteByFileRepoIdsEntityIdAndEntityType(List<Long> fileRepoIds, Long entityId, String entityType);
 }

@@ -615,4 +615,14 @@ public class PackingDao implements IPackingDao {
         packingRepository.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
     }
 
+    @Override
+    public void deleteAdditionalPackingByShipmentId(List<Long> packingIds, Long shipmentId) {
+        packingRepository.deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPackingIdsAndShipmentId(List<Long> packingIds, Long shipmentId) {
+        packingRepository.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
+    }
+
 }

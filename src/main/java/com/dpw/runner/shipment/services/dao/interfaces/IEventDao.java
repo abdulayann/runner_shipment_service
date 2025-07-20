@@ -58,4 +58,8 @@ public interface IEventDao {
     void deleteAdditionalDataByEventsIdsConsolidationId(List<Long> eventsIds, Long consolidationId);
 
     void revertSoftDeleteByEventsIdsAndConsolidationId(List<Long> eventsIds, Long consolidationId);
+
+    void deleteAdditionalEventDetailsByEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType);
+
+    void revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType);
 }

@@ -21,4 +21,8 @@ public interface INotesDao {
     List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType);
     List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType, Map<Long, Notes> oldEntityMap);
     List<Notes> updateEntityFromOtherEntity(List<Notes> notesList, Long entityId, String entityType, List<Notes> oldEntityList) throws RunnerException;
+
+    void deleteAdditionalNotesByEntityIdAndEntityType(List<Long> notesIds, Long entityId, String entityType);
+
+    void revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(List<Long> notesIds, Long entityId, String entityType);
 }

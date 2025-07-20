@@ -66,4 +66,8 @@ public interface IRoutingsDao {
     void deleteAdditionalDataByRoutingsIdsBookingId(List<Long> routingsIds, Long bookngId);
 
     void revertSoftDeleteByRoutingsIdsAndBookingId(List<Long> routingsIds, Long bookingId);
+
+    void deleteAdditionalroutingsByShipmentId(List<Long> routingsIds, Long shipmentId);
+
+    void revertSoftDeleteByroutingsIdsAndShipmentId(List<Long> routingsIds, Long shipmentId);
 }

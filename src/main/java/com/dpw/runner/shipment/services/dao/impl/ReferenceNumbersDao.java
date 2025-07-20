@@ -531,6 +531,16 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     }
 
 
+    @Override
+    public void deleteAdditionalreferenceNumbersByShipmentId(List<Long> referenceNumbersIds, Long shipmentId) {
+        referenceNumbersRepository.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
+    }
+
+    @Override
+    public void revertSoftDeleteByreferenceNumbersIdsAndShipmentId(List<Long> referenceNumbersIds, Long shipmentId) {
+        referenceNumbersRepository.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
+    }
+
     private Pair<String, String> prepareReferenceNumberDataForSave(ReferenceNumbers req) {
         String oldEntityJsonString = null;
         String operation = DBOperationType.CREATE.name();

@@ -64,4 +64,8 @@ public interface IConsolidationDetailsDao {
     Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
 
     ConsolidationDetails save(ConsolidationDetails consolidationDetails);
+
+    void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
 }

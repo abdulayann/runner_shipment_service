@@ -4,7 +4,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyR
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,4 +26,14 @@ public interface IPickupDeliveryDetailsRepository extends MultiTenancyRepository
 
     @Query(value = "SELECT * FROM pickup_delivery_details WHERE shipment_id IN ?1", nativeQuery = true)
     List<PickupDeliveryDetails> findByShipmentIdIn(Set<Long> shipmentIds);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE pickup_delivery_details SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void deleteAdditionalPickupDeliveryDetailsByShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE pickup_delivery_details SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
 }
