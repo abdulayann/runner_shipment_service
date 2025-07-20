@@ -1,0 +1,192 @@
+package com.dpw.runner.shipment.services.migration.strategy.impl;
+
+
+import com.dpw.runner.shipment.services.dao.impl.ContainerDao;
+import com.dpw.runner.shipment.services.dao.impl.PackingDao;
+import com.dpw.runner.shipment.services.dao.impl.PartiesDao;
+import com.dpw.runner.shipment.services.dao.impl.ReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.impl.RoutingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.entity.BookingCharges;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.FileRepo;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
+import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
+import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
+import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
+import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class CustomerBookingRestoreHandler implements RestoreHandler {
+
+    private final ICustomerBookingBackupRepository backupRepository;
+    private final ICustomerBookingDao customerBookingDao;
+    // Add other repositories as needed
+
+    @Qualifier("rollbackTaskExecutor")
+    private final ThreadPoolTaskExecutor rollbackTaskExecutor;
+    private final ObjectMapper objectMapper;
+    private final TransactionTemplate transactionTemplate;
+    private final ContainerDao containerDao;
+    private final PackingDao packingDao;   //method is done.
+    private final RoutingsDao routingsDao;
+    private final ReferenceNumbersDao referenceNumbersDao;
+    private final IFileRepoRepository fileRepoRepository;
+    private final IBookingChargesDao bookingChargesDao;
+    private final PartiesDao partiesDao;
+
+    @Override
+    public void restore(Integer tenantId) {
+        Set<Long> allBackupBookingIds = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        Set<Long> allOriginalBookingIds = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
+
+        // Soft delete bookings not present in backup
+        Set<Long> idsToDelete = Sets.difference(allOriginalBookingIds, allBackupBookingIds);
+        if (!idsToDelete.isEmpty()) {
+            customerBookingDao.deleteCustomerBookingIds(idsToDelete);
+        }
+
+        Lists.partition(new ArrayList<>(allBackupBookingIds), 100).forEach(batch -> {
+            List<CompletableFuture<Void>> futures = batch.stream().map(bookingId ->
+                    CompletableFuture.runAsync(() -> restoreBookingWithTransaction(bookingId), rollbackTaskExecutor)).toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).exceptionally(ex -> {
+                log.error("Batch failed", ex);
+                return null;
+            }).join();
+        });
+    }
+
+
+    private void restoreBookingWithTransaction(Long bookingId) {
+
+        transactionTemplate.executeWithoutResult(status -> {
+            try {
+                CustomerBookingBackupEntity backup = backupRepository.findCustomerBookingDetailsById(bookingId);
+                CustomerBooking backupData = objectMapper.readValue(backup.getCustomerBookingDetails(), CustomerBooking.class);
+                restoreOneToManyMapping(backupData, bookingId);
+                customerBookingDao.save(backupData);
+            } catch (Exception e) {
+                status.setRollbackOnly();
+                log.error("Failed booking {}: {}", bookingId, e.getMessage());
+                throw new RestoreFailureException("Rollback failed", e);
+            }
+        });
+    }
+
+    private void restoreOneToManyMapping(CustomerBooking backupData, Long bookingId) {
+
+        List<Long> packingIds = backupData.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
+        validateAndRestorePackingDetails(bookingId, packingIds, backupData);
+
+        List<Long> referenceNumberIds = backupData.getReferenceNumbersList().stream().map(ReferenceNumbers::getId).filter(Objects::nonNull).toList();
+        validateAndRestoreReferenceNumberDetails(bookingId, referenceNumberIds, backupData);
+
+        List<Long> routingIds = backupData.getRoutingList().stream().map(Routings::getId).filter(Objects::nonNull).toList();
+        validateAndRestoreRoutingDetails(bookingId, routingIds, backupData);
+
+        List<Long> containerIds = backupData.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
+        validateAndRestoreContainersDetails(bookingId, containerIds, backupData);
+
+        List<Long> additionalPartiesIds = backupData.getAdditionalParties().stream().map(Parties::getId).filter(Objects::nonNull).toList();
+        validateAndRestoreAdditionalPartiesDetails(bookingId, additionalPartiesIds, backupData);
+
+
+        List<Long> fileRepoIds = backupData.getFileRepoList().stream().map(FileRepo::getId).filter(Objects::nonNull).toList();
+        validateAndRestoreFileRepoDetails(bookingId, fileRepoIds, backupData);
+
+
+        List<Long> bookingChargeIds = backupData.getBookingCharges().stream().map(BookingCharges::getId).filter(Objects::nonNull).toList();
+        validateAndRestoreBookingChargesDetails(bookingId, bookingChargeIds, backupData);
+
+    }
+
+    private void validateAndRestoreBookingChargesDetails(Long bookingId, List<Long> bookingChargeIds, CustomerBooking backupData) {
+        bookingChargesDao.deleteAdditionalPackingByCustomerBookingId(bookingChargeIds, bookingId);
+        bookingChargesDao.revertSoftDeleteByPackingIdsAndBookingId(bookingChargeIds, bookingId);
+        for (BookingCharges restored : backupData.getBookingCharges()) {
+            bookingChargesDao.save(restored);
+        }
+    }
+
+    private void validateAndRestoreFileRepoDetails(Long bookingId, List<Long> fileRepoIds, CustomerBooking backupData) {
+        fileRepoRepository.deleteAdditionalDataByFileRepoIdsEntityIdAndEntityType(fileRepoIds, bookingId, BOOKING);
+        fileRepoRepository.revertSoftDeleteByFileRepoIdsEntityIdAndEntityType(fileRepoIds, bookingId, BOOKING);
+        for (FileRepo restored : backupData.getFileRepoList()) {
+            fileRepoRepository.save(restored);
+        }
+    }
+
+    private void validateAndRestoreAdditionalPartiesDetails(Long bookingId, List<Long> partiesIds, CustomerBooking backupData) {
+
+        partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
+        partiesDao.revertSoftDeleteByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
+        for (Parties restored : backupData.getAdditionalParties()) {
+            partiesDao.save(restored);
+        }
+    }
+
+    private void validateAndRestoreContainersDetails(Long bookingId, List<Long> containersIds, CustomerBooking backupData) {
+        containerDao.deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
+        containerDao.revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
+        for (Containers restored : backupData.getContainersList()) {
+            containerDao.save(restored);
+        }
+    }
+
+    private void validateAndRestoreRoutingDetails(Long bookingId, List<Long> routingsIds, CustomerBooking backupData) {
+
+        routingsDao.deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
+        routingsDao.revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
+        for (Routings restored : backupData.getRoutingList()) {
+            routingsDao.save(restored);
+        }
+    }
+
+    private void validateAndRestoreReferenceNumberDetails(Long bookingId, List<Long> referenceNumberIds, CustomerBooking backupData) {
+
+        referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
+        referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
+        for (ReferenceNumbers restored : backupData.getReferenceNumbersList()) {
+            referenceNumbersDao.save(restored);
+        }
+    }
+
+    private void validateAndRestorePackingDetails(Long bookingId, List<Long> packingIds, CustomerBooking backupData) {
+
+        packingDao.deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
+        packingDao.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
+        for (Packing restored : backupData.getPackingList()) {
+            packingDao.save(restored);
+        }
+    }
+}
+
+
+

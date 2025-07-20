@@ -194,4 +194,14 @@ public class BookingChargesDao implements IBookingChargesDao {
             throw new RunnerException(e.getMessage());
         }
     }
+
+    @Override
+    public void deleteAdditionalPackingByCustomerBookingId(List<Long> bookingChargesIds, Long bookingId) {
+        bookingChargesRepository.deleteAdditionalPackingByCustomerBookingId(bookingChargesIds, bookingId);
+    }
+
+    @Override
+    public void revertSoftDeleteByPackingIdsAndBookingId(List<Long> bookingChargesIds, Long bookingId) {
+        bookingChargesRepository.revertSoftDeleteByPackingIdsAndBookingId(bookingChargesIds, bookingId);
+    }
 }

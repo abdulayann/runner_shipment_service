@@ -243,4 +243,14 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids) {
         return customerBookingRepository.findCustomerBookingByIds(ids);
     }
+
+    @Override
+    public void deleteCustomerBookingIds(Set<Long> ids) {
+         customerBookingRepository.deleteCustomerBookingIds(ids);
+    }
+
+    @Override
+    public Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId);
+    }
 }
