@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -214,6 +215,7 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private Boolean isMigratedToV3 = false;
     private TransportInfoStatus transportInfoStatus;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
+    private MigrationStatus migrationStatus;
 
 
 }

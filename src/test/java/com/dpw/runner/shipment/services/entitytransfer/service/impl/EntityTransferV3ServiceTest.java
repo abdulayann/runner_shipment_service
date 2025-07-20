@@ -215,7 +215,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipmentSuccess() {
+    void testSendShipmentSuccess() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -240,6 +240,24 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETPayload);
         when(shipmentService.fetchAllMasterDataByKey(any(), any())).thenReturn(new HashMap<String, Object>());
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(2);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(3);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
         assertNotNull(httpResponse);
@@ -247,7 +265,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipmentSuccess_WithTriangulationPartner() {
+    void testSendShipmentSuccess_WithTriangulationPartner() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -278,6 +296,24 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETPayload);
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(2);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(3);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
 
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
@@ -323,7 +359,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendConsolidationSuccess() {
+    void testSendConsolidationSuccess() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
@@ -357,13 +393,30 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(mockETPayload);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETShipment);
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
 
         List<Integer> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertNotNull(responseEntity);
     }
 
     @Test
-    void testConsolidationInterBranchSuccess() {
+    void testConsolidationInterBranchSuccess() throws RunnerException {
         int mockTenantId = 10;
         UUID shipGuid = UUID.randomUUID();
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
@@ -414,6 +467,23 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETShipment);
         when(v1ServiceUtil.fetchCoLoadInfo(any(), any())).thenReturn(coLoadMap);
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
         List<Integer> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertNotNull(responseEntity);
 
@@ -422,7 +492,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
     @Test
     // change IMP -> EXP || EXP -> IMP if receiving branch == send to branch
-    void testConsolidationSuccessReverseDirectionInResponsePayload() {
+    void testConsolidationSuccessReverseDirectionInResponsePayload() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setReceivingBranch(66L);
@@ -457,6 +527,24 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ConsolidationDetails.class))).thenReturn(mockETPayload);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETShipment);
+
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
 
         List<Integer> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertNotNull(responseEntity);
@@ -1588,7 +1676,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipmentForNTESuccess() {
+    void testSendShipmentForNTESuccess() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -1620,6 +1708,24 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(notificationDao.findNotificationForEntityTransfer(anyLong(), anyString(), anyInt(), anyList())).thenReturn(new ArrayList<>());
         doNothing().when(notificationDao).deleteAll(anyList());
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(2);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(3);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
         assertNotNull(httpResponse);
@@ -1627,7 +1733,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendShipment_alreadyAcceptedNT() {
+    void testSendShipment_alreadyAcceptedNT() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -1659,13 +1765,31 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         lenient().when(networkTransferDao.findByEntityAndTenantList(155357L, SHIPMENT,
             sendShipmentRequest.getSendToBranch())).thenReturn(List.of(mockNetworkTransfer));
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(2);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(3);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         List<Integer> response = entityTransferService.sendShipment(
             commonRequestModel);
         assertNotNull(response);
     }
 
     @Test
-    void testSendShipment_alreadyReTransferNT() {
+    void testSendShipment_alreadyReTransferNT() throws RunnerException {
         Long shipmentId = 1L;
         int mockTenantId = 10;
 
@@ -1696,12 +1820,30 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(networkTransferDao.findByTenantAndEntity(anyInt(), anyLong(), anyString()))
             .thenReturn(Optional.of(mockNetworkTransfer));
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(2);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(300);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         List<Integer> response = entityTransferService.sendShipment(commonRequestModel);
         assertNotNull(response);
     }
 
     @Test
-    void testSendConsolidationForNTESuccess() {
+    void testSendConsolidationForNTESuccess() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
@@ -1740,12 +1882,30 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(notificationDao.findNotificationForEntityTransfer(anyLong(), anyString(), anyInt(), anyList())).thenReturn(new ArrayList<>());
         doNothing().when(notificationDao).deleteAll(anyList());
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(11);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         List<Integer> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertNotNull(responseEntity);
     }
 
     @Test
-    void testSendConsolidation_For_InterBranchConsole_And_NTE() {
+    void testSendConsolidation_For_InterBranchConsole_And_NTE() throws RunnerException {
         int mockTenantId = 10;
         UUID shipGuid = UUID.randomUUID();
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
@@ -1805,12 +1965,30 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(notificationDao.findNotificationForEntityTransfer(anyLong(), anyString(), anyInt(), anyList())).thenReturn(new ArrayList<>());
         doNothing().when(notificationDao).deleteAll(anyList());
         when(v1ServiceUtil.fetchCoLoadInfo(any(), any())).thenReturn(coLoadMap);
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         List<Integer> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
         assertNotNull(responseEntity);
     }
 
     @Test
-    void testSendConsolidationWithTriangulationPartner() {
+    void testSendConsolidationWithTriangulationPartner() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
@@ -1849,6 +2027,24 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETShipment);
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         // Call method
         List<Integer> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
 
@@ -1864,7 +2060,7 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
 
     @Test
-    void testSendConsolidation_alreadyAcceptedNT() {
+    void testSendConsolidation_alreadyAcceptedNT() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setTenantId(mockTenantId);
@@ -1905,12 +2101,30 @@ class EntityTransferV3ServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendConsolidationRequest);
 
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(69);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(11);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
+
         List<Integer> response = entityTransferService.sendConsolidation(commonRequestModel);
         assertNotNull(response);
     }
 
     @Test
-    void testSendConsolidation_alreadyRetransferNT() {
+    void testSendConsolidation_alreadyRetransferNT() throws RunnerException {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setTenantId(mockTenantId);
@@ -1948,6 +2162,24 @@ class EntityTransferV3ServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
         when(jsonHelper.convertValue(any(), eq(EntityTransferV3ShipmentDetails.class))).thenReturn(mockETShipment);
         when(networkTransferDao.findByTenantAndEntity(anyInt(), anyLong(), anyString())).thenReturn(Optional.of(mockNetworkTransfer));
+
+        ShipmentSettingsDetails shipmentSettingsDetails1 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails1.setTenantId(10);
+        shipmentSettingsDetails1.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails2 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails2.setTenantId(66);
+        shipmentSettingsDetails2.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails3 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails3.setTenantId(11);
+        shipmentSettingsDetails3.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails4 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails4.setTenantId(4);
+        shipmentSettingsDetails4.setIsRunnerV3Enabled(Boolean.TRUE);
+        ShipmentSettingsDetails shipmentSettingsDetails5 = ShipmentSettingsDetails.builder().build();
+        shipmentSettingsDetails5.setTenantId(1);
+        shipmentSettingsDetails5.setIsRunnerV3Enabled(Boolean.TRUE);
+        List<ShipmentSettingsDetails> shipmentSettingsDetailsList = new ArrayList<>(List.of(shipmentSettingsDetails2, shipmentSettingsDetails1, shipmentSettingsDetails3, shipmentSettingsDetails4, shipmentSettingsDetails5));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(shipmentSettingsDetailsList);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(sendConsolidationRequest);
 

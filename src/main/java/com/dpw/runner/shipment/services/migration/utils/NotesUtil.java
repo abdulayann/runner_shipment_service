@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.migration.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
@@ -11,7 +12,6 @@ import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
@@ -47,7 +47,7 @@ public class NotesUtil {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private INotesRepository notesRepository;
+    private INotesDao notesDao;
 
     @Autowired
     private IShipmentDao shipmentDao;
@@ -56,6 +56,12 @@ public class NotesUtil {
     String commodity = "Commodity: ";
 
     public void addNotesForShipment(ShipmentDetails shipmentDetails){
+        StringBuilder text = getShipmentNotes(shipmentDetails);
+        Notes notes = getNotes(shipmentDetails.getId(), "SHIPMENT", text);
+        notesDao.save(notes);
+    }
+
+    public StringBuilder getShipmentNotes(ShipmentDetails shipmentDetails) {
         Set<Containers> containersList = shipmentDetails.getContainersList();
         List<Packing> packingList = shipmentDetails.getPackingList();
         StringBuilder text = new StringBuilder();
@@ -74,11 +80,10 @@ public class NotesUtil {
 
         appendContainerDataInText(containersList, text);
         appendPackingDataInText(packingList, containersList, text);
-
-        addNotes(shipmentDetails.getId(), "SHIPMENT", text);
+        return text;
     }
 
-    private void addNotes(Long entityId, String entityType, StringBuilder text) {
+    public Notes getNotes(Long entityId, String entityType, StringBuilder text) {
         NotesRequest notesRequest = NotesRequest.builder().entityId(entityId)
                 .entityType(entityType).text(text.toString()).build();
 
@@ -86,7 +91,7 @@ public class NotesUtil {
         notes.setIsReadOnly(Boolean.TRUE);
         notes.setCreatedBy(Constants.APPLICATION);
         notes.setUpdatedBy(Constants.APPLICATION);
-        notesRepository.save(notes);
+        return notes;
     }
 
     private void appendContainerDataInText(Set<Containers> containersList, StringBuilder text) {
@@ -210,6 +215,12 @@ public class NotesUtil {
     }
 
     public void addNotesForConsolidation(ConsolidationDetails consolidationDetails){
+        StringBuilder text = getConsolNotes(consolidationDetails);
+        Notes notes = getNotes(consolidationDetails.getId(), "CONSOLIDATION", text);
+        notesDao.save(notes);
+    }
+
+    public StringBuilder getConsolNotes(ConsolidationDetails consolidationDetails) {
         List<Containers> containersList = consolidationDetails.getContainersList();
         List<Packing> packingList = consolidationDetails.getPackingList();
         Set<Containers> containersSet = new HashSet<>(containersList);
@@ -224,9 +235,8 @@ public class NotesUtil {
 
         appendContainerDataInText(containersSet, text);
         appendPackingDataInText(packingList, containersSet, text);
-        addNotes(consolidationDetails.getId(), "CONSOLIDATION", text);
+        return text;
     }
-
 
 
     @SuppressWarnings("unchecked")

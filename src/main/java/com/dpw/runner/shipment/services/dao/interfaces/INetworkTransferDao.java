@@ -40,10 +40,12 @@ public interface INetworkTransferDao {
 
     void updateStatus(Long id, String status);
 
+    void updateWithCustomMigrationStatus(NetworkTransfer networkTransfer);
+
     List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType);
 
     String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId);
     String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
-    List<NetworkTransfer> findNteByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId);
+    List<NetworkTransfer> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId);
 }

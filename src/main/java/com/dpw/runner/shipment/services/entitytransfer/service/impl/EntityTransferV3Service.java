@@ -250,7 +250,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                     var entityTransferPayload = prepareShipmentPayload(shipment);
                     entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                     entityTransferPayload.setAdditionalDocs(additionalDocs);
-                    entityTransferPayload.setIsMigratedToV3(false);
+                    entityTransferPayload.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
                     v3Payload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ShipmentDetails.class);
                 }
                 v2V3TaskPayloadMap.put(tenantId, v3Payload);
@@ -261,7 +261,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                     var entityTransferPayload = prepareShipmentPayload(v2ShipmentDetails);
                     entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                     entityTransferPayload.setAdditionalDocs(additionalDocs);
-                    entityTransferPayload.setIsMigratedToV3(false);
+                    entityTransferPayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
                     v2Payload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ShipmentDetails.class);
                 }
                 v2V3TaskPayloadMap.put(tenantId, v2Payload);
@@ -445,7 +445,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             if (Boolean.TRUE.equals(isV3)) {
                 if (v3Payload == null) {
                     var entityTransferConsolePayload = prepareConsolidationPayload(consol, sendConsolidationRequest, false);
-                    entityTransferConsolePayload.setIsMigratedToV3(false);
+                    entityTransferConsolePayload.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
                     v3Payload = jsonHelper.convertValue(entityTransferConsolePayload, EntityTransferV3ConsolidationDetails.class);
                 }
                 v2V3TaskPayloadMap.put(tenantId, v3Payload);
@@ -454,7 +454,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
                     ConsolidationDetails v3Consol = jsonHelper.convertValue(consol, ConsolidationDetails.class);
                     ConsolidationDetails v2ConsolidationDetails = consolidationMigrationV3Service.mapConsoleV3ToV2(v3Consol);
                     var entityTransferConsolePayload = prepareConsolidationPayload(v2ConsolidationDetails, sendConsolidationRequest, true);
-                    entityTransferConsolePayload.setIsMigratedToV3(false);
+                    entityTransferConsolePayload.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
                     v2Payload = jsonHelper.convertValue(entityTransferConsolePayload, EntityTransferV3ConsolidationDetails.class);
                 }
                 v2V3TaskPayloadMap.put(tenantId, v2Payload);
@@ -1951,7 +1951,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             return v2V3Map;
         }
         for(ShipmentSettingsDetails shipmentSettingsDetails: shipmentSettingsDetailsList){
-            v2V3Map.put(shipmentSettingsDetails.getTenantId(), shipmentSettingsDetails.getIsRunnerV3Enabled().equals(Boolean.TRUE));
+            v2V3Map.put(shipmentSettingsDetails.getTenantId(), Objects.equals(shipmentSettingsDetails.getIsRunnerV3Enabled(), Boolean.TRUE));
         }
         return v2V3Map;
     }
