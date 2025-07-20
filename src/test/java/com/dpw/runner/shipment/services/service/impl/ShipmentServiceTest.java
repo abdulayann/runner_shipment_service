@@ -3500,12 +3500,14 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().shipmentId(JsonNullable.of("AIR-CAN-00001")).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .build();
 
         doNothing().when(shipmentDetailsMapper).update(any(), any());
@@ -3629,12 +3631,14 @@ ShipmentServiceTest extends CommonMocks {
 
 
         List<TruckDriverDetails> truckDriverDetailsList = Arrays.asList(TruckDriverDetails.builder().build());
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .truckDriverDetails(truckDriverDetailsList)
                 .build();
 
@@ -3829,12 +3833,14 @@ ShipmentServiceTest extends CommonMocks {
 
         ServiceDetails serviceDetails = new ServiceDetails();
         serviceDetails.setShipmentId(1L);
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .servicesList(Arrays.asList(serviceDetails))
                 .build();
 
@@ -5113,6 +5119,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void partialUpdateTestSea() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setId(2L);
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
@@ -5121,7 +5130,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .jobType(Constants.SHIPMENT_TYPE_DRT)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .build();
@@ -5537,8 +5546,10 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void update() throws RunnerException {
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
@@ -5558,7 +5569,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateWithGuid(){
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         ShipmentDetails savedShipmentDetails = new ShipmentDetails();
@@ -5573,7 +5586,9 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void updateWithContainerListNull() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(Containers.builder().build()))).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containersList(new HashSet<>(Arrays.asList(containers))).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(ShipmentRequest.builder().id(1L).build()).build();
 
         ShipmentDetails savedShipmentDetails = new ShipmentDetails();
@@ -6544,8 +6559,11 @@ ShipmentServiceTest extends CommonMocks {
                 .allocatedVolumeUnit(Constants.VOLUME_UNIT_M3)
                 .shipmentsList(new HashSet<>(Arrays.asList(ShipmentDetails.builder().shipmentType(Constants.CARGO_TYPE_FCL).build())))
                 .build()));
+        Containers container = Containers.builder().build();
+        container.setId(1L);
+        container.setGuid(UUID.randomUUID());
         Set<Containers> containers = new HashSet<>();
-        containers.add(new Containers());
+        containers.add(container);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).shipmentType(Constants.CARGO_TYPE_FCL).build();
         shipmentDetails1.setGuid(UUID.randomUUID());
         shipmentDetails1.setContainersList(containers);
@@ -7347,6 +7365,7 @@ ShipmentServiceTest extends CommonMocks {
         Containers containers = new Containers();
         containers.setContainerCode("20GP");
         containers.setContainerCount(1L);
+        containers.setGuid(UUID.randomUUID());
         shipmentDetails.setContainersList(new HashSet<>(Arrays.asList(containers)));
 
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails));
@@ -8373,6 +8392,8 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).additionalDetail(AdditionalDetailRequest.builder().build()).build();
         shipmentPatchRequest.setEventsList(Arrays.asList(eventsRequest));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentPatchRequest).build();
+        Containers containers = Containers.builder().build();
+        containers.setGuid(UUID.randomUUID());
 
         Events puedEvent  = Events.builder().build().setEventCode(EventConstants.PUED).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         Events tredEvent  = Events.builder().build().setEventCode(EventConstants.TRED).setActual(LocalDateTime.now()).setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -8382,7 +8403,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .additionalDetails(getmockAdditionalDetails(LocalDateTime.now(), false, false,false))
                 .carrierDetails(carrierDetailsOld)
                 .eventsList(List.of(puedEvent, tredEvent))
@@ -8399,7 +8420,7 @@ ShipmentServiceTest extends CommonMocks {
                 .shipmentId("AIR-CAN-00001")
                 .shipmentCreatedOn(LocalDateTime.now())
                 .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build())))
-                .containersList(new HashSet<>(Arrays.asList(Containers.builder().build())))
+                .containersList(new HashSet<>(Arrays.asList(containers)))
                 .additionalDetails(additionalDetailsNew)
                 .carrierDetails(carrierDetailsNew)
                 .eventsList(List.of(puedEvent, tredEvent))
@@ -8709,9 +8730,11 @@ ShipmentServiceTest extends CommonMocks {
             .hazardous(true)
             .build();
         containers1.setId(1l);
+        containers1.setGuid(UUID.randomUUID());
 
         Containers containers2 = Containers.builder().build();
         containers2.setId(2l);
+        containers2.setGuid(UUID.randomUUID());
 
         Packing packing1 = new Packing();
         packing1.setHazardous(true);

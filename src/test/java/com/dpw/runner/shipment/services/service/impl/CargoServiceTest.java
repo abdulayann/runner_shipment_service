@@ -94,6 +94,7 @@ class CargoServiceTest {
         CargoDetailsRequest request = createRequest("SHIPMENT", "1");
         ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
         Containers container1 = new Containers();
+        container1.setGuid(UUID.randomUUID());
         container1.setContainerCount(3L);
         container1.setContainerCode("40GP");
 

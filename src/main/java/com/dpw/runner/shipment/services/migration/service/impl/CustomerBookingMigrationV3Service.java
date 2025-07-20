@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
 import com.dpw.runner.shipment.services.adapters.impl.MDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -11,11 +13,14 @@ import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.MdmException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBookingV3MigrationService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -24,9 +29,11 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.*;
 import java.math.RoundingMode;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.migration.utils.MigrationUtil.collectAllProcessedIds;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
@@ -51,6 +58,12 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Autowired
     IConsolidationV3Service consolidationV3Service;
+
+    @Autowired
+    V1ServiceImpl v1Service;
+
+    @Autowired
+    HelperExecutor trxExecutor;
 
     Map<String, String> v2ToV3ServiceTypeMap = Map.ofEntries(
             // AIR
@@ -112,6 +125,86 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
 
     @Override
+    public Map<String, Integer> migrateBookingV2ToV3ForTenant(Integer tenantId) {
+        Map<String, Integer> map = new HashMap<>();
+        List<CustomerBooking> customerBookingList = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V3.name(), MigrationStatus.CREATED_IN_V2.name()), tenantId);
+        map.put("Total Bookings", customerBookingList.size());
+        List<Future<Long>> bookingQueue = new ArrayList<>();
+        log.info("fetched {} bookings for Migrations", customerBookingList.size());
+        customerBookingList.forEach(booking -> {
+            // execute async
+            Future<Long> future = trxExecutor.runInAsync(() -> {
+
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+                    Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
+                    return trxExecutor.runInTrx(() -> {
+                        try {
+
+                            CustomerBooking response = migrateBookingV2ToV3(booking, codeTeuMap);
+                            return response.getId();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
+            bookingQueue.add(future);
+        });
+
+        List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
+        map.put("Total Bookings Migrated", bookingsProcessed.size());
+        log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), customerBookingList.size(), tenantId);
+        return map;
+    }
+
+    @Override
+    public Map<String, Integer> migrateBookingV3ToV2ForTenant(Integer tenantId) {
+        Map<String, Integer> map = new HashMap<>();
+        List<CustomerBooking> customerBookingList = fetchBookingFromDB(List.of(MigrationStatus.MIGRATED_FROM_V2.name(), MigrationStatus.CREATED_IN_V3.name()), tenantId);
+        map.put("Total Bookings", customerBookingList.size());
+        List<Future<Long>> bookingQueue = new ArrayList<>();
+        log.info("fetched {} bookings for Migrations", customerBookingList.size());
+        customerBookingList.forEach(booking -> {
+            // execute async
+            Future<Long> future = trxExecutor.runInAsync(() -> {
+
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+                    Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
+                    return trxExecutor.runInTrx(() -> {
+                        try {
+
+                            CustomerBooking response = migrateBookingV3ToV2(booking, codeTeuMap);
+                            return response.getId();
+                        } catch (Exception e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            });
+            bookingQueue.add(future);
+        });
+
+        List<Long> bookingsProcessed = collectAllProcessedIds(bookingQueue);
+        map.put("Total Bookings Migrated", bookingsProcessed.size());
+        log.info("Booking migration complete: {}/{} migrated for tenant [{}]", bookingsProcessed.size(), customerBookingList.size(), tenantId);
+        return map;
+    }
+
+    @Override
     public CustomerBooking migrateBookingV2ToV3(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
         Optional<CustomerBooking> customerBooking1 = customerBookingDao.findById(customerBooking.getId());
         if(customerBooking1.isEmpty()) {
@@ -134,7 +227,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         //Update CargoSummary
         updateCargoSummaryInBooking(customerBooking, codeTeuMap);
 
-        customerBooking.setIsMigratedToV3(Boolean.TRUE);
+        customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
 
         return null;
     }
@@ -153,7 +246,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
 
     @Override
     public CustomerBooking mapBookingV3ToV2(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
-        customerBooking.setIsMigratedToV3(Boolean.FALSE);
+        customerBooking.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         return null;
     }
 
@@ -238,7 +331,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
     }
 
-    public Map<String, BigDecimal> getCodeTeuMapping() {
+    private Map<String, BigDecimal> getCodeTeuMapping() {
         try {
             DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
             List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
@@ -282,6 +375,10 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
             customerBooking.setWeightVolume(vwOb.getVolumeWeight());
             customerBooking.setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
         }
+    }
+
+    private List<CustomerBooking> fetchBookingFromDB(List<String> migrationStatuses, Integer tenantId) {
+        return customerBookingDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
 }

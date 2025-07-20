@@ -235,7 +235,7 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     }
 
     @Override
-    public List<CustomerBooking> findAllByIsMigratedToV3(boolean isMigratedToV3, Integer tenantId) {
-        return customerBookingRepository.findAllByIsMigratedToV3(isMigratedToV3, tenantId);
+    public List<CustomerBooking> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return customerBookingRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 }

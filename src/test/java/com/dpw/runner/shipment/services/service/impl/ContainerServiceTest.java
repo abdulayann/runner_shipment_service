@@ -1525,10 +1525,12 @@ class ContainerServiceTest extends CommonMocks {
         // Arrange
         Containers c1 = new Containers();
         c1.setId(1L);
+        c1.setGuid(UUID.randomUUID());
         c1.setConsolidationId(1L);
         c1.setContainerNumber("C123");
         c1.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().bookingReference("DBFC-4317515-934863").build())));
         Containers c2 = new Containers();
+        c2.setGuid(UUID.randomUUID());
         c2.setId(2L);
         c2.setContainerNumber("C456");
 
