@@ -327,6 +327,7 @@ public class EntityTransferService implements IEntityTransferService {
                     var entityTransferPayload = prepareShipmentPayload(shipment);
                     entityTransferPayload.setSourceBranchTenantName(tenantMap.get(shipment.getTenantId()).getTenantName());
                     entityTransferPayload.setAdditionalDocs(additionalDocs);
+                    entityTransferPayload.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
                     v2Payload = jsonHelper.convertValue(entityTransferPayload, EntityTransferV3ShipmentDetails.class);
                 }
                 v2V3TaskPayloadMap.put(tenantId, v2Payload);
@@ -513,6 +514,7 @@ public class EntityTransferService implements IEntityTransferService {
                 if (v2Payload == null) {
                     var entityTransferConsolePayload = prepareConsolidationPayload(consol, sendConsolidationRequest, false);
                     entityTransferConsolePayload.setIsMigratedToV3(false);
+                    entityTransferConsolePayload.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
                     v2Payload = jsonHelper.convertValue(entityTransferConsolePayload, EntityTransferV3ConsolidationDetails.class);
                 }
                 v2V3TaskPayloadMap.put(tenantId, v2Payload);
