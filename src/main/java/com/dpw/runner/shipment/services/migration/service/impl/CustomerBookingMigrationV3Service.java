@@ -331,7 +331,7 @@ public class CustomerBookingMigrationV3Service implements ICustomerBookingV3Migr
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
     }
 
-    public Map<String, BigDecimal> getCodeTeuMapping() {
+    private Map<String, BigDecimal> getCodeTeuMapping() {
         try {
             DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
             List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
