@@ -35,4 +35,12 @@ public interface IReferenceNumbersRepository extends MultiTenancyRepository<Refe
     @Modifying
     @Query(value = "UPDATE reference_numbers SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
     void revertSoftDeleteByReferenceNumberIdsAndConsolidationId(List<Long> referenceNumberIds, Long consolidationId);
+
+    @Modifying
+    @Query(value = "UPDATE reference_numbers SET is_deleted = true WHERE id NOT IN (?1) and booking_id = ?2", nativeQuery = true)
+    void deleteAdditionalDataByReferenceNumberIdsBookingId(List<Long> referenceNumberIds, Long bookingId);
+
+    @Modifying
+    @Query(value = "UPDATE reference_numbers SET is_deleted = false WHERE id IN (?1) and booking_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByReferenceNumberIdsAndBookingId(List<Long> referenceNumberIds, Long bookingId);
 }

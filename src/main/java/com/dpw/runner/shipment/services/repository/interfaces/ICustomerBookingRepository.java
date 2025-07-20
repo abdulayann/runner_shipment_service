@@ -52,4 +52,11 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
 
     @Query(value = "SELECT * FROM customer_booking WHERE id IN ?1", nativeQuery = true)
     List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
+
+    @Modifying
+    @Query(value = "Update customer_booking set is_delete = true WHERE id IN ?1", nativeQuery = true)
+    void deleteCustomerBookingIds(Set<Long> ids);
+
+    @Query(value = "SELECT cb.id from customer_booking cb where cb.tenant_id = ?1", nativeQuery = true)
+    Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
 }

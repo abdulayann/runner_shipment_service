@@ -183,6 +183,17 @@ public class RoutingsDao implements IRoutingsDao {
     }
 
     @Override
+    public void deleteAdditionalDataByRoutingsIdsBookingId(List<Long> routingsIds, Long bookingId) {
+        routingsRepository.deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
+    }
+
+    @Override
+    public void revertSoftDeleteByRoutingsIdsAndBookingId(List<Long> routingsIds, Long bookingId) {
+        routingsRepository.revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
+    }
+
+
+    @Override
     public List<Routings> saveEntityFromShipment(List<Routings> routings, Long shipmentId) {
         List<Routings> res = new ArrayList<>();
         for (Routings req : routings) {

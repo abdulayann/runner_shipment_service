@@ -66,4 +66,8 @@ public interface IContainerDao {
     void deleteAdditionalDataByContainersIdsConsolidationId(List<Long> containersIds, Long consolidationId);
 
     void revertSoftDeleteByContainersIdsAndConsolidationId(List<Long> containersIds, Long consolidationId);
+
+    void deleteAdditionalDataByContainersIdsBookingId(List<Long> containersIds, Long bookingId);
+
+    void revertSoftDeleteByContainersIdsAndBookingId(List<Long> containersIds, Long bookingId);
 }

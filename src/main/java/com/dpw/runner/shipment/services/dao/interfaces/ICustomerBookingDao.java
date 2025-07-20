@@ -36,4 +36,6 @@ public interface ICustomerBookingDao {
 
     Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
     List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
+    void deleteCustomerBookingIds(Set<Long> ids);
+    Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
 }
