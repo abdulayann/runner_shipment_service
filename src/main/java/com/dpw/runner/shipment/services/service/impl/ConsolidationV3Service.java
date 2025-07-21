@@ -4211,20 +4211,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 commonUtils.setInterBranchContextForHub();
             }
             if (ShipmentRequestedType.APPROVE.equals(aibActionRequest.getShipmentRequestedType())) { // one console multiple shipments
-                aibActionRequest.getListOfShipments().stream().forEach(shipmentId -> {
-                    try {
-                        this.attachShipments(
-                                ShipmentConsoleAttachDetachV3Request.builder()
-                                        .shipmentRequestedType(aibActionRequest.getShipmentRequestedType())
-                                        .consolidationId(aibActionRequest.getConsoleId())
-                                        .shipmentIds(new HashSet<>(aibActionRequest.getListOfShipments()))
-                                        .isFromConsolidation(true)
-                                        .build());
-                    } catch (RunnerException e) {
-                        log.error("{} | Error while attaching shipments during AIB Action for Console: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
-                        throw new ValidationException(e.getMessage());
-                    }
-                });
+                try {
+                    this.attachShipments(
+                            ShipmentConsoleAttachDetachV3Request.builder()
+                                    .shipmentRequestedType(aibActionRequest.getShipmentRequestedType())
+                                    .consolidationId(aibActionRequest.getConsoleId())
+                                    .shipmentIds(new HashSet<>(aibActionRequest.getListOfShipments()))
+                                    .isFromConsolidation(true)
+                                    .build());
+                } catch (RunnerException e) {
+                    log.error("{} | Error while attaching shipments during AIB Action for Console: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
+                    throw new ValidationException(e.getMessage());
+                }
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), Constants.IN);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
