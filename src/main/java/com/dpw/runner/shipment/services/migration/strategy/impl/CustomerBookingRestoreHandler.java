@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.dao.impl.ContainerDao;
 import com.dpw.runner.shipment.services.dao.impl.PackingDao;
 import com.dpw.runner.shipment.services.dao.impl.PartiesDao;
@@ -8,6 +9,8 @@ import com.dpw.runner.shipment.services.dao.impl.ReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.impl.RoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.entity.BookingCharges;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -20,7 +23,13 @@ import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureExcep
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
+import com.dpw.runner.shipment.services.repository.interfaces.IBookingChargesRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -53,16 +62,17 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
     private final ThreadPoolTaskExecutor rollbackTaskExecutor;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
-    private final ContainerDao containerDao;
-    private final PackingDao packingDao;   //method is done.
-    private final RoutingsDao routingsDao;
-    private final ReferenceNumbersDao referenceNumbersDao;
-    private final IFileRepoRepository fileRepoRepository;
-    private final IBookingChargesDao bookingChargesDao;
-    private final PartiesDao partiesDao;
+    private final IContainerRepository containerDao;
+    private final IPackingRepository packingDao;   //method is done.
+    private final IRoutingsRepository routingsDao;
+    private final IReferenceNumbersRepository referenceNumbersDao;
+    private final IBookingChargesRepository bookingChargesDao;
+    private final IPartiesRepository partiesDao;
 
     @Override
     public void restore(Integer tenantId) {
+
+        TenantContext.setCurrentTenant(tenantId);
         Set<Long> allBackupBookingIds = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
         Set<Long> allOriginalBookingIds = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
 
@@ -117,11 +127,6 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
         List<Long> additionalPartiesIds = backupData.getAdditionalParties().stream().map(Parties::getId).filter(Objects::nonNull).toList();
         validateAndRestoreAdditionalPartiesDetails(bookingId, additionalPartiesIds, backupData);
 
-
-        List<Long> fileRepoIds = backupData.getFileRepoList().stream().map(FileRepo::getId).filter(Objects::nonNull).toList();
-        validateAndRestoreFileRepoDetails(bookingId, fileRepoIds, backupData);
-
-
         List<Long> bookingChargeIds = backupData.getBookingCharges().stream().map(BookingCharges::getId).filter(Objects::nonNull).toList();
         validateAndRestoreBookingChargesDetails(bookingId, bookingChargeIds, backupData);
 
@@ -130,61 +135,41 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
     private void validateAndRestoreBookingChargesDetails(Long bookingId, List<Long> bookingChargeIds, CustomerBooking backupData) {
         bookingChargesDao.deleteAdditionalPackingByCustomerBookingId(bookingChargeIds, bookingId);
         bookingChargesDao.revertSoftDeleteByPackingIdsAndBookingId(bookingChargeIds, bookingId);
-        for (BookingCharges restored : backupData.getBookingCharges()) {
-            bookingChargesDao.save(restored);
-        }
-    }
-
-    private void validateAndRestoreFileRepoDetails(Long bookingId, List<Long> fileRepoIds, CustomerBooking backupData) {
-        fileRepoRepository.deleteAdditionalDataByFileRepoIdsEntityIdAndEntityType(fileRepoIds, bookingId, BOOKING);
-        fileRepoRepository.revertSoftDeleteByFileRepoIdsEntityIdAndEntityType(fileRepoIds, bookingId, BOOKING);
-        for (FileRepo restored : backupData.getFileRepoList()) {
-            fileRepoRepository.save(restored);
-        }
+        bookingChargesDao.saveAll(backupData.getBookingCharges());
     }
 
     private void validateAndRestoreAdditionalPartiesDetails(Long bookingId, List<Long> partiesIds, CustomerBooking backupData) {
 
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
         partiesDao.revertSoftDeleteByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
-        for (Parties restored : backupData.getAdditionalParties()) {
-            partiesDao.save(restored);
-        }
+        partiesDao.saveAll(backupData.getAdditionalParties());
     }
 
     private void validateAndRestoreContainersDetails(Long bookingId, List<Long> containersIds, CustomerBooking backupData) {
         containerDao.deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
         containerDao.revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
-        for (Containers restored : backupData.getContainersList()) {
-            containerDao.save(restored);
-        }
+        containerDao.saveAll(backupData.getContainersList());
     }
 
     private void validateAndRestoreRoutingDetails(Long bookingId, List<Long> routingsIds, CustomerBooking backupData) {
 
         routingsDao.deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
         routingsDao.revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
-        for (Routings restored : backupData.getRoutingList()) {
-            routingsDao.save(restored);
-        }
+        routingsDao.saveAll(backupData.getRoutingList());
     }
 
     private void validateAndRestoreReferenceNumberDetails(Long bookingId, List<Long> referenceNumberIds, CustomerBooking backupData) {
 
         referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
         referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
-        for (ReferenceNumbers restored : backupData.getReferenceNumbersList()) {
-            referenceNumbersDao.save(restored);
-        }
+        referenceNumbersDao.saveAll(backupData.getReferenceNumbersList());
     }
 
     private void validateAndRestorePackingDetails(Long bookingId, List<Long> packingIds, CustomerBooking backupData) {
 
         packingDao.deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
         packingDao.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
-        for (Packing restored : backupData.getPackingList()) {
-            packingDao.save(restored);
-        }
+        packingDao.saveAll(backupData.getPackingList());
     }
 }
 
