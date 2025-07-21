@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
@@ -105,8 +106,9 @@ class RoutingV3ControllerTest {
     @Test
     void shipmentUpdateTransportInfoStatus() throws RunnerException {
         UpdateTransportStatusRequest updateTransportStatusRequest = new UpdateTransportStatusRequest();
-        updateTransportStatusRequest.setShipmentId(1L);
-        var response = routingController.shipmentUpdateTransportInfoStatus(updateTransportStatusRequest);
+        updateTransportStatusRequest.setEntityId(1L);
+        updateTransportStatusRequest.setEntityType(Constants.SHIPMENT);
+        var response = routingController.shipmentConsolUpdateTransportInfoStatus(updateTransportStatusRequest);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

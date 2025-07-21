@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -946,6 +947,33 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         shipmentDetailsEntity.setId(1l);
         shipmentDetailsEntity.setGuid(UUID.randomUUID());
 
+        Routings routings1 = new Routings();
+        routings1.setId(3L);
+        routings1.setMode(TRANSPORT_MODE_SEA);
+        routings1.setConsolidationId(1L);
+        routings1.setVoyage("0123");
+        routings1.setVesselName("vessel");
+        routings1.setPol("pol");
+        routings1.setFlightNumber("0123");
+        routings1.setPod("pod");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+        Routings routings2 = new Routings();
+        routings2.setId(3l);
+        routings2.setMode(TRANSPORT_MODE_SEA);
+        routings2.setConsolidationId(1L);
+        routings2.setVoyage("0123");
+        routings2.setVesselName("vessel");
+        routings2.setPol("pol");
+        routings2.setPod("pod");
+        routings1.setFlightNumber("0123");
+        routings2.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOriginPort("origin");
+        carrierDetails.setDestinationPort("dest");
+        shipmentDetailsEntity.setCarrierDetails(carrierDetails);
+        shipmentDetailsEntity.setTransportInfoStatus(TransportInfoStatus.IH);
+        shipmentDetailsEntity.setRoutingsList(List.of(routings1,routings2));
 
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {

@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.Serializable;
 @Data
@@ -17,8 +18,10 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateTransportStatusRequest implements Serializable {
-    @NotNull(message = "ShipmentId can not be null")
-    private Long shipmentId;
+    @NotNull(message = "EntityId can not be null")
+    private Long entityId;
+    @NotBlank(message = "Entity Type can not be blank")
+    private String entityType;
     @NotNull(message = "Transport info can not be null")
     private TransportInfoStatus transportInfoStatus;
 }

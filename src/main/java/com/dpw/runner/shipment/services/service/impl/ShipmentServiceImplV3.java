@@ -77,6 +77,7 @@ import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -679,6 +680,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<Routings> routingsList = shipmentDetailsEntity.getRoutingsList();
         if (!CollectionUtils.isEmpty(routingsList)) {
             List<Routings> mainCarriageRoutings = routingsList.stream().filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE).toList();
+            setTransportInfoStatusMessage(shipmentDetailsEntity, response, mainCarriageRoutings);
             if (!CollectionUtils.isEmpty(mainCarriageRoutings)) {
                 response.setIsMainCarriageAvailable(true);
                 Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
@@ -690,6 +692,28 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         || (TRANSPORT_MODE_AIR.equals(route.getMode()) && StringUtility.isNotEmpty(route.getCarrier()) && StringUtility.isNotEmpty(route.getFlightNumber()))) {
                     response.setIsVesselVoyageOrCarrierFlightNumberAvailable(true);
                 }
+            }
+
+        }
+    }
+
+    private static void setTransportInfoStatusMessage(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response, List<Routings> mainCarriageRoutings) {
+        if (TransportInfoStatus.IH.equals(shipmentDetailsEntity.getTransportInfoStatus())) {
+            Routings firstLeg = mainCarriageRoutings.get(0);
+            Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
+            CarrierDetails carrierDetails = shipmentDetailsEntity.getCarrierDetails();
+            String polMessage = "";
+            String podMessage = "";
+            if (Objects.nonNull(carrierDetails) && !Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort())) {
+                polMessage = Constants.POL_WARNING_MESSAGE;
+                response.setTransportInfoStatusMessage(polMessage);
+            }
+            if (Objects.nonNull(carrierDetails) && !Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
+                podMessage = Constants.POD_WARNING_MESSAGE;
+                response.setTransportInfoStatusMessage(podMessage);
+            }
+            if (StringUtility.isNotEmpty(polMessage) && StringUtility.isNotEmpty(podMessage)) {
+                response.setTransportInfoStatusMessage(Constants.POL_POD_WARNING_MESSAGE);
             }
 
         }
