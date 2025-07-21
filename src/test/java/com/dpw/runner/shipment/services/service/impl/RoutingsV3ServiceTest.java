@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -291,18 +292,87 @@ class RoutingsV3ServiceTest extends CommonMocks {
         routingsRequest.setId(2L);
         routings.setId(2L);
         routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVesselName("vessel");
+        routings.setVoyage("0123");
         routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest.setIsSelectedForDocument(Boolean.TRUE);
+        RoutingsRequest routingsRequest1 = new RoutingsRequest();
+        routingsRequest1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest1.setIsSelectedForDocument(Boolean.TRUE);
+        Routings routings1 = new Routings();
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setVesselName("vessel");
+        routings1.setVoyage("0123");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .build();
-        List<RoutingsRequest> requestList = List.of(routingsRequest);
+        List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
         bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
         RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
 
-        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
-        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings));
-        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+        verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+    @Test
+    void testUpdateBulkAir_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setCarrier("carrier");
+        routings.setFlightNumber("0123");
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest.setIsSelectedForDocument(Boolean.TRUE);
+        RoutingsRequest routingsRequest1 = new RoutingsRequest();
+        routingsRequest1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest1.setIsSelectedForDocument(Boolean.TRUE);
+        Routings routings1 = new Routings();
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setCarrier("carr");
+        routings1.setFlightNumber("0123");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setIsSameAsDestinationPort(true);
+        carrierDetails.setIsSameAsOriginPort(true);
+        carrierDetails.setDestinationPort("DIEMATA");
+        carrierDetails.setDestinationLocCode("PORT_CODE");
+        carrierDetails.setDestinationPortCountry("ind");
+        carrierDetails.setOriginPort("DIEMATA");
+        carrierDetails.setOriginPortLocCode("PORT_CODE");
+        carrierDetails.setOriginPortCountry("ind");
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(carrierDetails)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
@@ -342,6 +412,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         routings.setId(2L);
         routings.setConsolidationId(1L);
         routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setIsSelectedForDocument(true);
         Routings routings1 = new Routings();
         routings1.setId(3l);
         routings1.setConsolidationId(1L);
@@ -356,6 +427,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
                 .routingsList(List.of(routings, routings1, routings2))
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .build();
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
                 .carrierDetails(new CarrierDetails())
@@ -365,6 +437,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         List<RoutingsRequest> requestList = List.of(routingsRequest);
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
         bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
         RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
 
         when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));

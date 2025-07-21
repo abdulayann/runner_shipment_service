@@ -33,15 +33,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
-import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadAttributesRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
@@ -57,7 +49,6 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
@@ -90,8 +81,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -148,6 +138,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -177,6 +169,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.PACKA
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
@@ -313,8 +306,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }
         try {
-            createEntities(customerBooking, customerBookingV3Request);
             Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            createEntities(customerBooking, customerBookingV3Request, containerTeuMap);
             updateCargoInformation(customerBooking, containerTeuMap);
             /**
              * Platform service integration
@@ -387,8 +380,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if(checkNPMContractUtilization(customerBooking)) {
             contractUtilisationForUpdate(customerBooking, oldEntity.get());
         }
-        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+        customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()), containerTeuMap);
         updateCargoInformation(customerBooking, containerTeuMap);
         try {
             //Check 2
@@ -402,7 +395,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         } catch (Exception e) {
             log.error(e.getMessage());
         }
-
         return jsonHelper.convertValue(customerBooking, CustomerBookingV3Response.class);
     }
 
@@ -447,6 +439,40 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         CustomerBookingV3Response customerBookingV3Response = (CustomerBookingV3Response) commonUtils.setIncludedFieldsToResponse(customerBooking, includeColumns.stream().collect(Collectors.toSet()), new CustomerBookingV3Response());
         log.info("Total time taken in setting customer details response {}", (System.currentTimeMillis() - start));
         return fetchAllMasterDataByKey(customerBookingV3Response);
+    }
+
+    @Override
+    public void updatePackingInfoInBooking(Long bookingId) throws RunnerException {
+        Optional<CustomerBooking> optionalCustomerBooking = customerBookingDao.findById(bookingId);
+        if(optionalCustomerBooking.isPresent()) {
+            CustomerBooking customerBooking = optionalCustomerBooking.get();
+            List<Packing> packingList = packingDao.findByBookingIdIn(List.of(bookingId));
+            if (!packingList.isEmpty()) {
+                calculateCargoDetails(packingList, customerBooking);
+                customerBooking.setPackingList(packingList);
+            }
+            customerBookingDao.save(customerBooking);
+        }
+    }
+
+    @Override
+    public void updateContainerInfoInBooking(Long bookingId) throws RunnerException {
+        Optional<CustomerBooking> optionalBooking = customerBookingDao.findById(bookingId);
+        if(optionalBooking.isPresent()) {
+            CustomerBooking customerBooking = optionalBooking.get();
+            Map<String, BigDecimal> containerTeuMap = getCodeTeuMapping();
+            List<Containers> containersList = containerDao.findByBookingIdIn(List.of(customerBooking.getId()));
+            Long containerCount = containersList.stream().mapToLong(c -> c.getContainerCount() != null ? c.getContainerCount() : 0).sum();
+            BigDecimal teuCount = containersList.stream()
+                    .map(c -> containerTeuMap.getOrDefault(c.getContainerCode(), BigDecimal.ZERO)
+                            .multiply(BigDecimal.valueOf(Optional.ofNullable(c.getContainerCount()).orElse(0L))))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add)
+                    .setScale(1, RoundingMode.UNNECESSARY);
+            customerBooking.setContainers(containerCount);
+            customerBooking.setTeuCount(teuCount);
+            customerBooking.setContainersList(containersList);
+            customerBookingDao.save(customerBooking);
+        }
     }
 
     public Map<String, Object> fetchAllMasterDataByKey(CustomerBookingV3Response customerBookingV3Response) {
@@ -1236,12 +1262,15 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private CustomerBookingV3Response updatePlatformBooking(CustomerBookingV3Request request, CustomerBooking oldEntity) throws RunnerException {
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         if(request.getSource()==null)
             customerBooking.setSource(BookingSource.Platform);
         try {
-            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
+            Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity), containerTeuMap);
+            updateCargoInformation(customerBooking, containerTeuMap);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -1253,6 +1282,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         if (request == null) {
             log.error("Request is null for Customer Booking Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+        CompletableFuture<Map<String, BigDecimal>> containerTeuMapFuture = CompletableFuture.supplyAsync(withMdcSupplier(this::getCodeTeuMapping), executorServiceMasterData);
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsConsigneeAddressFreeText(customerBooking.getIsConsigneeFreeText() != null && customerBooking.getIsConsigneeFreeText());
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
@@ -1262,7 +1292,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setSource(BookingSource.Platform);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
-            createEntities(customerBooking, request);
+            Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
+            createEntities(customerBooking, request, containerTeuMap);
+            updateCargoInformation(customerBooking, containerTeuMap);
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -1533,7 +1565,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private void createEntities(CustomerBooking customerBooking, CustomerBookingV3Request request) throws RunnerException {
+    private void createEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, Map<String, BigDecimal> containerTeuMap) throws RunnerException {
         if (customerBooking.getIsPlatformBookingCreated() == null) {
             customerBooking.setIsPlatformBookingCreated(false);
         }
@@ -1550,11 +1582,12 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             }
         }
         populateTotalRevenueDetails(customerBooking, request);
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
 
-        saveChildEntities(customerBooking, request);
+        saveChildEntities(customerBooking, request, containerTeuMap);
         generateBookingAcknowledgementEvent(request);
 
         List<Containers> containers = customerBooking.getContainersList();
@@ -1767,7 +1800,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking.setTotalRevenue(totalRevenue);
     }
 
-    private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingV3Request request) throws RunnerException {
+    private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, Map<String, BigDecimal> containerTeuMap) throws RunnerException {
         Long bookingId = customerBooking.getId();
         List<PackingV3Request> packingRequest = request.getPackingList();
         if (packingRequest != null)
@@ -1783,6 +1816,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
         List<ContainerV3Request> containerRequest = request.getContainersList();
         if (containerRequest != null) {
+            for(ContainerV3Request container: containerRequest) {
+                container.setTeu(containerTeuMap.get(container.getContainerCode()));
+            }
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
         }
@@ -1849,13 +1885,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, String oldEntity) throws RunnerException {
+    private CustomerBooking updateEntities(CustomerBooking customerBooking, CustomerBookingV3Request request, String oldEntity, Map<String, BigDecimal> containerTeuMap) throws RunnerException {
         populateTotalRevenueDetails(customerBooking, request);
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
             throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
         }
-
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V3);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -1873,6 +1909,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
 
         List<ContainerV3Request> containerRequest = request.getContainersList();
         if (containerRequest != null) {
+            for(ContainerV3Request container: containerRequest) {
+                container.setTeu(containerTeuMap.get(container.getContainerCode()));
+            }
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
         }
@@ -1883,13 +1922,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setAdditionalParties(updatedParties);
         }
 
-        List<Containers> containers = customerBooking.getContainersList();
-        Map<UUID, Containers> containerMap = new HashMap<>();
-        if (containers != null && !containers.isEmpty()) {
-            for (Containers container : containers) {
-                containerMap.put(container.getGuid(), container);
-            }
-        }
         List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
         if (bookingChargesRequest != null) {
             List<BookingCharges> bookingCharges = bookingChargesDao.updateEntityFromBooking(commonUtils.convertToEntityList(bookingChargesRequest, BookingCharges.class), bookingId);
@@ -2274,26 +2306,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<CustomerBooking> lst, Boolean getMasterData) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(customerBooking -> {
-            CustomerBookingV3Response response = modelMapper.map(customerBooking, CustomerBookingV3Response.class);
-            responseList.add(response);
-        });
-        try{
-            if(Boolean.TRUE.equals(getMasterData)) {
-                double startTime = System.currentTimeMillis();
-                var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList(responseList)), executorServiceMasterData);
-                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
-                CompletableFuture.allOf(locationDataFuture, carrierDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.BOOKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
-            }
-        } catch (Exception ex){
-            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_BOOKING_LIST, ex.getLocalizedMessage());
-        }
-        return responseList;
-    }
-
     private void validateBookingUpdateRequest(CustomerBookingV3Request request) {
         if (request == null || request.getId() == null) {
             log.error("Request is empty for Booking update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -2308,15 +2320,25 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             containers = containerDao.findByBookingIdIn(List.of(booking.getId()));
             packings = packingDao.findByBookingIdIn(List.of(booking.getId()));
         }
-        if(!packings.isEmpty()) {
+        booking.setContainers(null);
+        booking.setTeuCount(null);
+        if (!containers.isEmpty()) {
+            updateContainerInBooking(booking, codeTeuMap);
+        }
+        if (!packings.isEmpty()) {
             calculateCargoDetails(packings, booking);
         }
-        if(!containers.isEmpty()) {
-            booking.setContainers(getTotalContainerCount(containers));
-            booking.setTeuCount(getTotalTeu(containers, codeTeuMap));
-        }
-        log.info("CustomerBooking before save is {}", jsonHelper.convertToJson(booking));
+        calculateVW(booking);
         customerBookingDao.save(booking);
+    }
+
+    private void updateContainerInBooking(CustomerBooking customerBooking, Map<String, BigDecimal> codeTeuMap) {
+        List<Containers> containersList = customerBooking.getContainersList();
+        for(Containers containers: containersList) {
+            containers.setTeu(codeTeuMap.get(containers.getContainerCode()));
+        }
+        customerBooking.setContainers(getTotalContainerCount(customerBooking.getContainersList()));
+        customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {
@@ -2342,22 +2364,29 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 .setScale(1, RoundingMode.UNNECESSARY);
     }
 
-    private void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking) throws RunnerException {
+    public void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
         int totalPacks = 0;
         Set<String> distinctPackTypes = new HashSet<>();
-        for (Packing p : packings) {
-            if (p.getWeight() != null && !isStringNullOrEmpty(p.getWeightUnit())) {
-                totalWeight = totalWeight.add(new BigDecimal(convertUnit(MASS, p.getWeight(), p.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()));
+        boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBooking.getTransportType());
+        boolean stopWeightCalculation = false;
+
+        for (Packing packing : packings) {
+            totalVolume = addVolume(packing, totalVolume, customerBooking);
+            if (!isStringNullOrEmpty(packing.getPacks())) {
+                totalPacks += Integer.parseInt(packing.getPacks());
             }
-            if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
-                totalVolume = totalVolume.add(new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), customerBooking.getVolumeUnit()).toString()));
+            addDistinctPackType(distinctPackTypes, packing);
+            if (!stopWeightCalculation) {
+                boolean hasWeight = hasWeightInfo(packing);
+                if (isAirTransport && !hasWeight) {
+                    stopWeightCalculation = true;
+                    continue;
+                }
+                BigDecimal weight = hasWeight ? new BigDecimal(convertUnit(MASS, packing.getWeight(), packing.getWeightUnit(), customerBooking.getGrossWeightUnit()).toString()) : BigDecimal.ZERO;
+                totalWeight = totalWeight.add(weight);
             }
-            if (!isStringNullOrEmpty(p.getPacks())) {
-                totalPacks += Integer.parseInt(p.getPacks());
-            }
-            addDistinctPackType(distinctPackTypes, p);
         }
         customerBooking.setGrossWeight(totalWeight);
         customerBooking.setVolume(totalVolume);
@@ -2365,7 +2394,18 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
         customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         customerBooking.setPackageType(getPackUnit(distinctPackTypes));
-        calculateVW(customerBooking);
+    }
+
+    private BigDecimal addVolume(Packing p, BigDecimal totalVolume, CustomerBooking booking) throws RunnerException {
+        if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
+            BigDecimal converted = new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), booking.getVolumeUnit()).toString());
+            return totalVolume.add(converted);
+        }
+        return totalVolume;
+    }
+
+    private boolean hasWeightInfo(Packing packing) {
+        return packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit());
     }
 
     private void addDistinctPackType(Set<String> distinctPackTypes, Packing packing) {
@@ -2399,10 +2439,5 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setWeightVolume(vwOb.getVolumeWeight());
             customerBooking.setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
         }
-    }
-
-    private double roundOffAirShipment(double charge) {
-        return (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) ?
-                Math.floor(charge) + 0.5 : Math.ceil(charge);
     }
 }

@@ -22,10 +22,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.http.auth.AuthenticationException;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
 public interface IPackingV3Service {
 
@@ -69,4 +67,5 @@ public interface IPackingV3Service {
     Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
     void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException;
+    Map<String, Object> getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData);
 }

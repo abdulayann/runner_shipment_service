@@ -910,7 +910,7 @@ public class EventService implements IEventService {
         return isShipmentUpdateRequired;
     }
 
-    private void updateShipmentDetails(ShipmentDetails shipment, List<Events> events,
+    private void updateShipmentDetails(ShipmentDetails shipment,
             LocalDateTime shipmentAta, LocalDateTime shipmentAtd, Container container, String messageId) {
         // Try to update carrier details
         try {
@@ -975,22 +975,6 @@ public class EventService implements IEventService {
         });
 
         eventDao.updateEventsList(shipmentEvents);
-    }
-
-    private void updateEmptyContainerReturnedStatus(ShipmentDetails shipment, List<Events> events) {
-        // Check for empty container returned event
-        boolean isEmptyContainerReturnedEvent = events.stream()
-                .anyMatch(event -> EventConstants.EMCR.equals(event.getEventCode()));
-
-        AdditionalDetails additionalDetails = shipment.getAdditionalDetails();
-        // Update empty container returned status if conditions are met
-        if (isEmptyContainerReturnedEvent
-                && additionalDetails != null
-                && !Boolean.TRUE.equals(additionalDetails.getEmptyContainerReturned())
-                && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())) {
-            shipmentDao.updateAdditionalDetailsByShipmentId(shipment.getId(), true);
-        }
     }
 
     private void updateCarrierDetails(ShipmentDetails shipment, LocalDateTime shipmentAta, LocalDateTime shipmentAtd) {
@@ -1282,7 +1266,7 @@ public class EventService implements IEventService {
 
         log.info("Extracted ATA: {}, ATD: {} for shipment: {} messageId {}", shipmentAta, shipmentAtd, shipmentDetails.getShipmentId(), messageId);
 
-        updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container, messageId);
+        updateShipmentDetails(shipmentDetails, shipmentAta, shipmentAtd, container, messageId);
         log.info("Finished updating shipment with tracking events. Success: {} messageId {}", isSuccess, messageId);
         return isSuccess;
     }

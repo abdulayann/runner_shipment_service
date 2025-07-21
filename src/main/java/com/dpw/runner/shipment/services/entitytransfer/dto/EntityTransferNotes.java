@@ -18,4 +18,5 @@ public class EntityTransferNotes implements IEntityTranferBaseEntity {
     private Boolean isActive;
     private String label;
     private String assignedTo;
+    private Boolean isReadOnly;
 }

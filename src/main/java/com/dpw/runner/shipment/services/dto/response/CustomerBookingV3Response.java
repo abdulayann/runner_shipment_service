@@ -115,6 +115,7 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
+    private String coLoadCarrierName;
     private String partnerBkgNumber;
     private String partnerBLOrAWBNumber;
     private String carrierBookingNumber;

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INetworkTransferRepository;
@@ -61,6 +62,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
         }
+        networkTransfer.setMigrationStatus(MigrationStatus.NT_CREATED);
         return networkTransferRepository.save(networkTransfer);
     }
 
@@ -144,6 +146,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(networkTransferEntity), Constants.NETWORK_TRANSFER_ENTITY, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
+            networkTransferEntity.setMigrationStatus(MigrationStatus.NT_CREATED);
         }
         return networkTransferRepository.saveAll(networkTransferEntityList);
     }
@@ -154,6 +157,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     @Override
     public void updateStatus(Long id, String status) {
         networkTransferRepository.updateStatus(id, status);
+    }
+
+    @Override
+    public void updateWithCustomMigrationStatus(NetworkTransfer networkTransfer) {
+        networkTransferRepository.save(networkTransfer);
     }
     @Override
     public List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType) {
@@ -173,4 +181,10 @@ public class NetworkTransferDao implements INetworkTransferDao {
     public List<NetworkTransfer> findByEntityGuids(List<UUID> guid) {
         return networkTransferRepository.findByEntityGuids(guid);
     }
+
+    @Override
+    public List<NetworkTransfer> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return networkTransferRepository.findNteForMigrationStatuses(migrationStatuses, tenantId);
+    }
+
 }

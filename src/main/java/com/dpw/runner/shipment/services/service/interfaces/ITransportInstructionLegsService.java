@@ -19,7 +19,7 @@ public interface ITransportInstructionLegsService {
 
     TransportInstructionLegsResponse update(TransportInstructionLegsRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 
-    TransportInstructionLegsListResponse list(ListCommonRequest request);
+    TransportInstructionLegsListResponse list(ListCommonRequest request,  boolean getMasterData);
 
     TransportInstructionLegsResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 

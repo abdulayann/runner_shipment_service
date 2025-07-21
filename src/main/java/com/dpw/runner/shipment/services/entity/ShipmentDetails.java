@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
@@ -125,7 +126,7 @@ public class ShipmentDetails extends MultiTenancy {
     private String assignedTo;
 
     @Column(name = "additional_terms")
-    @Size(max=50000, message = "max size is 50000 for additional_terms")
+    @Size(max=25000, message = "max size is 25000 for additional_terms")
     private String additionalTerms;
 
     @Column(name = "goods_description")
@@ -714,8 +715,13 @@ public class ShipmentDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String dgPacksUnit;
 
-    @Column(name = "is_migrated_to_v3")
-    private Boolean isMigratedToV3;
+    @Column(name = "transport_info_status")
+    @Enumerated(EnumType.STRING)
+    private TransportInfoStatus transportInfoStatus;
+
+    @Column(name = "migration_status")
+    @Enumerated(EnumType.STRING)
+    private MigrationStatus migrationStatus;
 
     @Override
     public boolean equals(Object o) {

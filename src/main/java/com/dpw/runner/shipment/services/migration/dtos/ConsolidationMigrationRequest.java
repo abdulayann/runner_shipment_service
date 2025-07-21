@@ -7,9 +7,10 @@ import lombok.Setter;
 @Setter
 @Getter
 public class ConsolidationMigrationRequest {
+    private Integer tenantId;
 
-    private ListCommonRequest consolidation;
+    private Long consolId;
 
-    private ListCommonRequest shipment;
+    private Long bookingId;
 
 }

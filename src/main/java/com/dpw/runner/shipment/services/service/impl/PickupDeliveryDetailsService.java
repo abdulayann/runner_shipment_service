@@ -3,11 +3,13 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
@@ -25,6 +27,10 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.InstructionType;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -52,6 +58,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,6 +70,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -69,6 +78,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CREATED_AT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
@@ -92,6 +103,12 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private IContainerV3Service containerV3Service;
     private static final Pattern DIMENSION_PATTERN = Pattern.compile(
             "^\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*$"
+    );
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry(Constants.TRANSPORT_DETAIL_SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.PICKUP_DELIVERY_DETAILS).dataType(Long.class).fieldName(Constants.TRANSPORT_DETAIL_SHIPMENT_ID).isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_DETAIL_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.TRANSPORT_DETAIL).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_DETAIL_INSTRUCTION_TYPE, RunnerEntityMapping.builder().tableName(Constants.PICKUP_DELIVERY_DETAILS).dataType(InstructionType.class).fieldName(Constants.TRANSPORT_DETAIL_INSTRUCTION_TYPE).isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_DETAIL_TI_REFERENCE, RunnerEntityMapping.builder().tableName(Constants.PICKUP_DELIVERY_DETAILS).dataType(String.class).fieldName(Constants.TRANSPORT_DETAIL_TI_REFERENCE).isContainsText(true).build())
     );
 
     @Autowired
@@ -589,7 +606,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 return ResponseHelper.buildFailedResponse("Request is empty for Pickup Delivery list with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
-            Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
+            Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class, tableNames);
             Page<PickupDeliveryDetails> pickupDeliveryDetailsPage = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Pickup Delivery list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(

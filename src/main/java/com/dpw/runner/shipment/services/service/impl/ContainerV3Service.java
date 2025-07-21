@@ -1,5 +1,13 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -12,18 +20,31 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AttachedShipmentResponse;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerBeforeSaveRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -50,10 +71,37 @@ import com.dpw.runner.shipment.services.service_bus.model.ContainerUpdateRequest
 import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
+import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.PostConstruct;
+import javax.persistence.EntityNotFoundException;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
@@ -68,24 +116,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
-import javax.annotation.PostConstruct;
-import javax.persistence.EntityNotFoundException;
-import javax.servlet.http.HttpServletResponse;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.ContainerConstants.CONTAINER_ALREADY_ASSIGNED_MSG;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -170,6 +200,10 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     @Lazy
+    private ICustomerBookingV3Service customerBookingV3Service;
+
+    @Autowired
+    @Lazy
     private ContainerV3Service self;
 
     @Autowired
@@ -179,6 +213,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private IShipmentServiceV3 shipmentService;
 
     @Autowired
+    @Lazy
     private IConsolidationV3Service consolidationV3Service;
 
     @Autowired
@@ -215,7 +250,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(new ArrayList<>(List.of(container)), containerRequest.getConsolidationId(), containerBeforeSaveRequest, new ArrayList<>(List.of(containerRequest)), module);
+        containerBeforeSave(containerRequest.getConsolidationId(), containerBeforeSaveRequest, new ArrayList<>(List.of(containerRequest)), module);
 
         // Save to DB
         Containers savedContainer = containerDao.save(container);
@@ -290,7 +325,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(originalContainers, containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
+        containerBeforeSave(containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
 
         for(ContainerV3Request containerRequest : containerRequestList){
             List<Containers> containers = new ArrayList<>(getSiblingContainers(containerRequest));
@@ -363,6 +398,10 @@ public class ContainerV3Service implements IContainerV3Service {
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
 
+        if (Objects.equals(BOOKING, module)) {
+            customerBookingV3Service.updateContainerInfoInBooking(containersToDelete.iterator().next().getBookingId());
+        }
+
         // Log the deletion activity for auditing and tracking purposes
         recordAuditLogs(containersToDelete, null, DBOperationType.DELETE);
 
@@ -372,60 +411,74 @@ public class ContainerV3Service implements IContainerV3Service {
                 .build();
     }
 
-    private void containerBeforeSave(List<Containers> containers, Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
+    private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
         List<ContainerV3Request> containerV3Requests, String module) throws RunnerException {
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
         processContainerDG(containerV3Requests, module);
     }
 
     private void processContainerDG(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
-            if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
-
-            if(SHIPMENT.equalsIgnoreCase(module)){
-                for(ContainerV3Request containerV3Request : containerRequestList){
-                    Long shipmentId = containerV3Request.getShipmentsId();
-                    if(!containerV3Request.getHazardous()) continue;
-
-                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
-                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                    if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())){
-                        callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                        shipmentDao.save(shipmentDetails, false);
-                    }
-                }
-            }else{
-                for(ContainerV3Request containerV3Request : containerRequestList){
-                    Long consolidationId = containerV3Request.getConsolidationId();
-                    if(containerV3Request.getHazardous()!= null && !containerV3Request.getHazardous()) continue;
-
-                    ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-                    if(TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())){
-                    consolidationDetails.setHazardous(true);
-                    if(!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
-                        throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
-                    }
-                    consolidationDetailsDao.update(consolidationDetails, false, false);
-                    if(containerV3Request.getId() != null) {
-                        List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
-                            containerV3Request.getId());
-                        for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
-                            Long shipmentId = shipmentsContainersMapping.getId();
-                            Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
-                                shipmentId);
-                            ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                            shipmentDetails.setContainsHazardous(true);
-                            shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                            callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                            shipmentDao.save(shipmentDetails, false);
-                        }
-                    }
-                    }
-                }
+        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            validateAndSaveDGShipment(containerRequestList);
+        } else {
+            for (ContainerV3Request containerV3Request : containerRequestList) {
+                Long consolidationId = containerV3Request.getConsolidationId();
+                if (containerV3Request.getHazardous() != null && !containerV3Request.getHazardous()) continue;
+                ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
+                validateAndProcessDGConsolidation(containerV3Request, consolidationDetails);
             }
+        }
     }
 
-    private void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ContainerV3Request container) {
+    private void validateAndProcessDGConsolidation(ContainerV3Request containerV3Request, ConsolidationDetails consolidationDetails) throws RunnerException {
+        if (TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+            consolidationDetails.setHazardous(true);
+            if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
+                throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+            }
+            consolidationDetailsDao.update(consolidationDetails, false, false);
+            processDGShipmentDetailsFromContainer(containerV3Request);
+        }
+    }
+
+    public void processDGShipmentDetailsFromContainer(ContainerV3Request containerV3Request) throws RunnerException {
+        if (containerV3Request.getId() != null) {
+            List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
+                    containerV3Request.getId());
+            for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+                Long shipmentId = shipmentsContainersMapping.getId();
+                Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
+                        shipmentId);
+                if (optionalShipmentDetails.isPresent()) {
+                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                    shipmentDetails.setContainsHazardous(true);
+                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                    shipmentDao.save(shipmentDetails, false);
+                }
+            }
+        }
+    }
+
+    public void validateAndSaveDGShipment(List<ContainerV3Request> containerRequestList) throws RunnerException {
+        for(ContainerV3Request containerV3Request : containerRequestList){
+            Long shipmentId = containerV3Request.getShipmentsId();
+            if(!Boolean.FALSE.equals(containerV3Request.getHazardous())) continue;
+
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
+            if (optionalShipmentDetails.isPresent()) {
+                ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
+                    shipmentDao.save(shipmentDetails, false);
+                }
+            }
+        }
+    }
+
+    public void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ContainerV3Request container) {
         Containers oldContainer = null;
         boolean isDGClass1 = commonUtils.checkIfDGClass1(container.getDgClass());
         if(container.getId() == null) {
@@ -433,7 +486,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         if(container.getId() != null) {
                oldContainer = containerRepository.getById(container.getId());
-            if(oldContainer != null && commonUtils.checkIfDGFieldsChangedInContainer(container, oldContainer)) {
+            if(commonUtils.checkIfDGFieldsChangedInContainer(container, oldContainer)) {
                 commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1);
             }
         }
@@ -827,6 +880,7 @@ public class ContainerV3Service implements IContainerV3Service {
         int dgContainers = 0;
         double netWeight = 0;
         long assignedContainers = 0;
+        int totalDgPackages = 0;
         List<ContainerSummaryResponse.GroupedContainerSummary> groupedContainerSummaryList = new ArrayList<>();
         String toWeightUnit = Constants.WEIGHT_UNIT_KG;
         String toVolumeUnit = Constants.VOLUME_UNIT_M3;
@@ -852,7 +906,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
                 totalPacks = getTotalPacks(containers, totalPacks);
                 packsType = commonUtils.getPacksUnit(packsType, containers.getPacksType());
-
+                totalDgPackages = getTotalDGPacks(containers, totalDgPackages);
                 ContainerSummaryResponse.GroupedContainerSummary summary = summaryMap.computeIfAbsent(containers.getContainerCode(), k -> {
                     ContainerSummaryResponse.GroupedContainerSummary s = new ContainerSummaryResponse.GroupedContainerSummary();
                     s.setContainerCode(k);
@@ -890,9 +944,20 @@ public class ContainerV3Service implements IContainerV3Service {
             response.setSummary("");
         setContainerSummary(containersList, response);
         response.setDgContainers(dgContainers);
+        response.setTotalDgPackages(totalDgPackages);
         setAssignedContainerCount(containersList, isShipment, assignedContainers, v1TenantSettingsResponse, response);
         response.setGroupedContainersSummary(groupedContainerSummaryList);
         return response;
+    }
+
+    int getTotalDGPacks(Containers containers, int totalDgPackages) {
+        if(containers.getPacksList() != null) {
+            for (Packing packing : containers.getPacksList()) {
+                if (Boolean.TRUE.equals(packing.getHazardous())) totalDgPackages++;
+            }
+        }
+
+        return totalDgPackages;
     }
 
     private void setAssignedContainerCount(List<Containers> containersList, boolean isShipment, long assignedContainers, V1TenantSettingsResponse v1TenantSettingsResponse, ContainerSummaryResponse response) {
@@ -1096,7 +1161,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+    public Map<String, Object> getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
         Map<String, Object> masterDataResponse = new HashMap<>();
         if (getMasterData) {
             try {
@@ -1114,8 +1179,10 @@ public class ContainerV3Service implements IContainerV3Service {
         return masterDataResponse;
     }
 
-    private void handlePostSaveActions(Containers container, ContainerV3Request request, String module) {
-        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+    private void handlePostSaveActions(Containers container, ContainerV3Request request, String module) throws RunnerException {
+        if (Objects.equals(BOOKING, module)) {
+            customerBookingV3Service.updateContainerInfoInBooking(request.getBookingId());
+        }
 
         List<CompletableFuture<Void>> futures = new ArrayList<>();
 
@@ -1168,8 +1235,10 @@ public class ContainerV3Service implements IContainerV3Service {
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
   }
 
-    private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) {
-        if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+    private void runAsyncPostSaveOperations(List<Containers> containers, boolean isAutoSell, String module) throws RunnerException {
+        if (Objects.equals(BOOKING, module)) {
+            customerBookingV3Service.updateContainerInfoInBooking(containers.iterator().next().getBookingId());
+        }
         CompletableFuture<Void> afterSaveFuture = runAfterSaveAsync(containers, isAutoSell);
         CompletableFuture.allOf(afterSaveFuture).join();
     }
@@ -1270,11 +1339,11 @@ public class ContainerV3Service implements IContainerV3Service {
         return jsonHelper.convertValue(container, ContainerResponse.class);
     }
 
-    private void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) throws RunnerException {
+    public void checkAndMakeDG(Containers container, List<Long> shipmentIdsForAttachment) {
         boolean isDG = false;
         boolean isDGClass1Added = false;
         if(Boolean.TRUE.equals(container.getHazardous())) {
-            isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(container.getDgClass());
+            isDGClass1Added = commonUtils.checkIfDGClass1(container.getDgClass());
             isDG = true;
         }
 
@@ -1294,19 +1363,18 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void saveDGShipment(Long shipmentId, boolean isDGClass1Added) throws RunnerException {
+    private void saveDGShipment(Long shipmentId, boolean isDGClass1Added) {
         Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(shipmentId);
         if(!optionalShipmentDetails.isPresent())
             return;
         ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-        shipmentDao.entityDetach(List.of(shipmentDetails));
 
         boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
         shipmentDetails.setContainsHazardous(true);
         saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
         if(saveShipment) {
-            shipmentDetails = shipmentDao.save(shipmentDetails, false);
-            shipmentSync.sync(shipmentDetails, null, null, shipmentDetails.getGuid().toString(), false);
+            String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
+            shipmentDao.updateDgStatusInShipment(shipmentDetails.getContainsHazardous(), oceanDGStatus, shipmentId);
         }
     }
 
@@ -1404,7 +1472,7 @@ public class ContainerV3Service implements IContainerV3Service {
         containerV3Util.setWtVolUnits(container);
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), customerBookingV3Request.getGrossWeight(), customerBookingV3Request.getGrossWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), customerBookingV3Request.getVolume(), customerBookingV3Request.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainer(container, customerBookingV3Request.getQuantity(), customerBookingV3Request.getQuantityUnit());
+        containerV3Util.addNoOfPackagesValueToContainer(container, String.valueOf(customerBookingV3Request.getPackages()), customerBookingV3Request.getPackageType());
     }
 
     @Override
@@ -1453,16 +1521,16 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    private void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
+    public void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException {
         containerV3Util.setWtVolUnits(container);
         container.setGrossWeight(containerV3Util.getAddedWeight(container.getGrossWeight(), container.getGrossWeightUnit(), packing.getWeight(), packing.getWeightUnit()));
         container.setGrossVolume(containerV3Util.getAddedVolume(container.getGrossVolume(), container.getGrossVolumeUnit(), packing.getVolume(), packing.getVolumeUnit()));
-        containerV3Util.addNoOfPackagesToContainerFromPacks(container, packing.getPacks(), packing.getPacksType());
+        containerV3Util.addNoOfPackagesValueToContainer(container, packing.getPacks(), packing.getPacksType());
     }
 
     private Containers saveAssignContainerResults(List<Long> shipmentIdsToSetContainerCargo, Map<Long, Packing> packingListMap,
                                                   Containers container, List<Long> shipmentIdsForAttachment,
-                                                  List<Long> shipmentIdsToRemoveContainerCargo) throws RunnerException {
+                                                  List<Long> shipmentIdsToRemoveContainerCargo) {
         if (!listIsNullOrEmpty(shipmentIdsToSetContainerCargo))
             shipmentDao.setShipmentIdsToContainer(shipmentIdsToSetContainerCargo, container.getId());
         if(!listIsNullOrEmpty(shipmentIdsToRemoveContainerCargo))

@@ -10,12 +10,6 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,6 +18,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 
 @Repository
@@ -162,6 +163,12 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
 
+    @Query(value = "SELECT sd.* FROM shipment_details sd "+
+            "LEFT JOIN console_shipment_mapping csm " +
+            "ON sd.id = csm.shipment_id " +
+            "WHERE csm.shipment_id IS NULL and sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
+    List<ShipmentDetails> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+
     @Modifying
     @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
@@ -265,7 +272,17 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "s.dgPacksCount = :dgPacks, " +
             "s.dgPacksUnit = :dgPacksUnit " +
             "WHERE s.id = :shipmentId")
-    void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+    void updateDgPacksDetailsInShipment(@Param("dgPacks") Integer dgPacks, @Param("dgPacksUnit") String dgPacksUnit, @Param("shipmentId") Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_details s " +
+            "SET contains_hazardous = :isHazardous, " +
+            "ocean_dg_status = :oceanDGStatus " +
+            "WHERE id = :shipmentId", nativeQuery = true)
+    void updateDgStatusInShipment(@Param("isHazardous") Boolean isHazardous,
+                                  @Param("oceanDGStatus") String oceanDGStatus,
+                                  @Param("shipmentId") Long shipmentId);
 
     @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1 and is_deleted = false", nativeQuery = true)
     Set<Long> findShipmentIdsByTenantId(Integer tenantId);

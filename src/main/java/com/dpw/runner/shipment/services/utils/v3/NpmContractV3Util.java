@@ -11,10 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 @Slf4j
@@ -69,9 +66,9 @@ public class NpmContractV3Util {
         if (meta == null) return;
         var loadAttributes = meta.getLoad_attributes();
         request.setPacks(loadAttributes.getQuantity().toString());
-        request.setWeight(loadAttributes.getWeight());
+        request.setWeight(Objects.isNull(loadAttributes.getWeight()) ? BigDecimal.ZERO : loadAttributes.getWeight());
         request.setWeightUnit(loadAttributes.getWeight_uom());
-        request.setVolume(loadAttributes.getVolume());
+        request.setVolume(Objects.isNull(loadAttributes.getVolume()) ? BigDecimal.ZERO : loadAttributes.getVolume());
         request.setVolumeUnit(loadAttributes.getVolume_uom());
         request.setIsDimension(false);
         var dimensions = loadAttributes.getDimensions();

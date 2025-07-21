@@ -27,7 +27,7 @@ import java.util.UUID;
 @SuppressWarnings("java:S6539")
 public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailV3Request additionalDetails;
-    @Size(max=50000, message = "max size is 50000 for additional terms")
+    @Size(max=25000, message = "max size is 25000 for additional terms")
     private String additionalTerms;
     private String assignedTo;
     private Boolean autoUpdateWtVol;
@@ -56,7 +56,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String freightLocalCurrency;
     private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
-    @Size(max = 50000, message = "max size is 50000 for goods description")
+    @Size(max = 25000, message = "max size is 25000 for goods description")
     private String goodsDescription;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     private String houseBill;
@@ -72,7 +72,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isShipmentReadOnly;
     private String jobType;
     private String lockedBy;
-    @Size(max = 50000, message = "Max size is 50000 for marks and num")
+    @Size(max = 25000, message = "Max size is 25000 for marks and num")
     private String marksNum;
     @JsonDeserialize(using = TrimStringDeserializer.class)
     @Size(max = 50, message = "Max size is 50 for masterBill")
@@ -239,5 +239,6 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isBorrowed;
     private Long originBranch;
     private Integer slac;
+    private MigrationStatus migrationStatus;
 
 }

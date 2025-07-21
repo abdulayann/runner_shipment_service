@@ -1,32 +1,37 @@
 package com.dpw.runner.shipment.services.migration.service.impl;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.migration.HelperExecutor;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
+import com.dpw.runner.shipment.services.migration.utils.MigrationUtil;
+import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,17 +39,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.math.RoundingMode;
-import java.util.ArrayList;
 import java.util.UUID;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S112")
 public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     IV1Service v1Service;
@@ -56,32 +63,44 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     IShipmentDao shipmentDao;
     @Autowired
     IShipmentRepository shipmentRepository;
-
     @Autowired
-    IPackingDao packingDao;
-
+    IContainerRepository containerRepository;
     @Autowired
-    IContainerDao containerDao;
+    private HelperExecutor trxExecutor;
 
     @Autowired
     private CommonUtils commonUtils;
     @Autowired
     private IPackingV3Service packingV3Service;
+    @Autowired
+    private IPackingRepository packingRepository;
+    @Autowired
+    private NotesUtil notesUtil;
 
     @Override
     public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
+        log.info("Starting V2 to V3 migration for Shipment [id={}]", shipmentDetails.getId());
         // Handle migration of all the shipments where there is no console attached.
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+
         if(shipmentDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
+        notesUtil.addNotesForShipment(shipment);
+        log.info("Notes added for Shipment [id={}]", shipment.getId());
         mapShipmentV2ToV3(shipment, new HashMap<>());
+        log.info("Mapped V2 Shipment to V3 [id={}]", shipment.getId());
 
         // Save packing details
-        packingDao.saveAll(shipment.getPackingList());
+        if(!CommonUtils.listIsNullOrEmpty(shipment.getPackingList())) {
+            packingRepository.saveAll(shipment.getPackingList());
+            log.info("Saved updated packings for Shipment [id={}]", shipment.getId());
+        }
         // save shipment
+//        shipment.setIsMigratedToV3(Boolean.TRUE);
         shipmentRepository.save(shipment);
+        log.info("Migration V2 to V3 complete for Shipment [id={}]", shipment.getId());
         return shipment;
     }
 
@@ -118,30 +137,50 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void redistributeSummaryToPacks(ShipmentDetails shipmentDetails) {
-        int packLineItems = shipmentDetails.getPackingList().size();
-        int weight = shipmentDetails.getWeight().divide(BigDecimal.valueOf(packLineItems),10, RoundingMode.DOWN).intValue();
-        int volume = shipmentDetails.getVolume().divide(BigDecimal.valueOf(packLineItems),10, RoundingMode.DOWN).intValue();
-        Integer noOfPacks = shipmentDetails.getNoOfPacks()/packLineItems;
-        if(noOfPacks == 0) {
-            noOfPacks = 1;
+        List<Packing> packingList = shipmentDetails.getPackingList();
+        packingList = packingList.stream().filter(p -> !Boolean.TRUE.equals(p.getIsDeleted())).toList();
+        int packLineItems = packingList.size();
+        if (packLineItems == 0) {
+            return;
         }
+
+        BigDecimal shipmentWeight = shipmentDetails.getWeight();
+        BigDecimal shipmentVolume = shipmentDetails.getVolume();
+        BigDecimal shipmentNoOfPacks = shipmentDetails.getNoOfPacks() == null ? BigDecimal.ZERO : BigDecimal.valueOf(shipmentDetails.getNoOfPacks());
+
+        if(shipmentWeight == null) {
+            shipmentWeight = BigDecimal.ZERO;
+        }
+
+        if(shipmentVolume == null) {
+            shipmentVolume = BigDecimal.ZERO;
+        }
+
+        BigDecimal[] weightWithRemain = shipmentWeight.divideAndRemainder(BigDecimal.valueOf(packLineItems));
+        BigDecimal[] volumeWithRemain = shipmentVolume.divideAndRemainder(BigDecimal.valueOf(packLineItems));
+        BigDecimal[] noOfPacksWithRemain = shipmentNoOfPacks.divideAndRemainder(BigDecimal.valueOf(packLineItems));
+        if(noOfPacksWithRemain[0].equals(BigDecimal.ZERO)) {
+            noOfPacksWithRemain[0] = BigDecimal.ONE;
+            noOfPacksWithRemain[1] = BigDecimal.ZERO;
+        }
+
         String volumeUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getVolumeUnit())? shipmentDetails.getVolumeUnit() : commonUtils.getDefaultVolumeUnit();
         String weightUnit = !CommonUtils.isStringNullOrEmpty(shipmentDetails.getWeightUnit())? shipmentDetails.getWeightUnit() : commonUtils.getDefaultWeightUnit();
         String packsType = commonUtils.getPacksUnit(shipmentDetails.getPacksUnit());
 
         for (int i = 0; i < packLineItems; i++) {
             if(i == packLineItems-1) {
-                shipmentDetails.getPackingList().get(i).setWeight(shipmentDetails.getWeight().subtract(BigDecimal.valueOf(weight)));
-                shipmentDetails.getPackingList().get(i).setVolume(shipmentDetails.getVolume().subtract(BigDecimal.valueOf(volume)));
-                shipmentDetails.getPackingList().get(i).setPacks(String.valueOf((shipmentDetails.getNoOfPacks() - noOfPacks) > 0 ? (shipmentDetails.getNoOfPacks() - noOfPacks) : 1));
+                packingList.get(i).setWeight(weightWithRemain[0].add(weightWithRemain[1]));
+                packingList.get(i).setVolume(volumeWithRemain[0].add(volumeWithRemain[1]));
+                packingList.get(i).setPacks(String.valueOf(noOfPacksWithRemain[0].add(noOfPacksWithRemain[1])));
             } else {
-                shipmentDetails.getPackingList().get(i).setWeight(BigDecimal.valueOf(weight));
-                shipmentDetails.getPackingList().get(i).setVolume(BigDecimal.valueOf(volume));
-                shipmentDetails.getPackingList().get(i).setPacks(String.valueOf(noOfPacks));
+                packingList.get(i).setWeight(weightWithRemain[0]);
+                packingList.get(i).setVolume(volumeWithRemain[0]);
+                packingList.get(i).setPacks(String.valueOf(noOfPacksWithRemain[0]));
             }
-            shipmentDetails.getPackingList().get(i).setWeightUnit(weightUnit);
-            shipmentDetails.getPackingList().get(i).setVolumeUnit(volumeUnit);
-            shipmentDetails.getPackingList().get(i).setPacksType(packsType);
+            packingList.get(i).setWeightUnit(weightUnit);
+            packingList.get(i).setVolumeUnit(volumeUnit);
+            packingList.get(i).setPacksType(packsType);
         }
     }
 
@@ -152,6 +191,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             Packing packing = new Packing();
             packing.setGuid(UUID.randomUUID());
             packing.setShipmentId(shipmentDetails.getId());
+            packing.setCreatedBy(shipmentDetails.getCreatedBy());
+            packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
             packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
             shipmentDetails.getPackingList().add(packing);
         });
@@ -171,6 +212,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         shipmentDetails.getContainersList().forEach(container -> {
             Packing packing = new Packing();
             packing.setGuid(UUID.randomUUID());
+            packing.setCreatedBy(shipmentDetails.getCreatedBy());
+            packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
             packingVsContainerGuid.putIfAbsent(packing.getGuid(), container.getGuid());
             // populate Container info to pack
             createPackWithContainerInfo(packing, container);
@@ -181,7 +224,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private void createPackWithContainerInfo(Packing packing, Containers container) {
         String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
         packing.setPacks(count);
-        packing.setPacks(commonUtils.getPacksUnit(container.getPacksType()));
+        packing.setPacksType(commonUtils.getPacksUnit(container.getPacksType()));
         packing.setWeight(container.getGrossWeight());
         packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
         packing.setVolume(container.getGrossVolume());
@@ -190,13 +233,24 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void createPacksForUnassignedContainers(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        Map<Long, Containers> containerMap = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        List<Containers> unassignedContainers = new ArrayList<>(shipmentDetails.getContainersList().stream()
+                .filter(containers -> ObjectUtils.isEmpty(containers.getId())).toList());
+
+        Map<Long, Containers> containerMap = shipmentDetails.getContainersList().stream()
+                .filter(containers -> ObjectUtils.isNotEmpty(containers.getId()))
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+
         shipmentDetails.getPackingList().forEach(packing -> containerMap.remove(packing.getContainerId()));
-        if(!containerMap.isEmpty()) {
-            for (var cont: containerMap.values()) {
+
+        unassignedContainers.addAll(containerMap.values());
+
+        if(!unassignedContainers.isEmpty()) {
+            for (var cont: unassignedContainers) {
                 Packing packing = new Packing();
                 packing.setGuid(UUID.randomUUID());
                 packing.setShipmentId(shipmentDetails.getId());
+                packing.setCreatedBy(shipmentDetails.getCreatedBy());
+                packing.setUpdatedBy(shipmentDetails.getUpdatedBy());
                 packingVsContainerGuid.putIfAbsent(packing.getGuid(), cont.getGuid());
                 // populate Container info to pack
                 createPackWithContainerInfo(packing, cont);
@@ -211,7 +265,9 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
         cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
         cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
-        cargoDetailsResponse = packingV3Service.calculateCargoDetails(shipmentDetails.getPackingList(), cargoDetailsResponse);
+        List<Packing> packingList = shipmentDetails.getPackingList().stream().filter(packing -> !Boolean.TRUE.equals(packing.getIsDeleted())).toList();
+
+        cargoDetailsResponse = packingV3Service.calculateCargoDetails(packingList, cargoDetailsResponse);
 
         // update to shipment fields
         shipmentDetails.setNoOfPacks(cargoDetailsResponse.getNoOfPacks());
@@ -230,19 +286,24 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     @Override
     public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
+        log.info("Starting V3 to V2 migration for Shipment [id={}]", shipmentDetails.getId());
         Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
         if(shipmentDetails1.isEmpty()) {
             throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
-        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipmentDetails.getContainersList());
+        Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipment.getContainersList());
         mapShipmentV3ToV2(shipment, containerTypeMap);
+        log.info("Mapped V3 Shipment to V2 [id={}]", shipment.getId());
 
-        if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-            containerDao.saveAll(shipmentDetails.getContainersList().stream().toList());
+        if (!CommonUtils.setIsNullOrEmpty(shipment.getContainersList())) {
+            containerRepository.saveAll(shipment.getContainersList().stream().toList());
+            log.info("Saved updated containers for Shipment [id={}]", shipment.getId());
         }
+        shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
         // save shipment
         shipmentRepository.save(shipment);
+        log.info("Migration V3 to V2 complete for Shipment [id={}]", shipment.getId());
         return shipment;
     }
 
@@ -265,12 +326,12 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             return;
         }
         boolean isFCL = Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
-        setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL);
+        setContainerUtilisation(shipmentDetails.getContainersList(), containerTypeMap, isFCL, true);
     }
 
-    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL) throws RunnerException {
+    public void setContainerUtilisation(Set<Containers> containers, Map<String, EntityTransferContainerType> containerTypeMap, boolean isFCL, boolean isAttached) throws RunnerException {
         for (Containers container: containers) {
-            container.setIsAttached(true);
+            container.setIsAttached(isAttached);
             if (containerTypeMap.containsKey(container.getContainerCode())) {
                 EntityTransferContainerType containerType = containerTypeMap.get(container.getContainerCode());
                 if (containerType.getMaxCargoGrossWeight() != null) {
@@ -324,7 +385,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         List<Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.CODE),
                 "In",
-                containerTypeCodes.stream().toList()
+                List.of(containerTypeCodes.stream().toList())
         );
         listRequest.setCriteriaRequests(criteria);
         V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(listRequest);
@@ -337,4 +398,54 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
         return containerTypeMap;
     }
+
+    public Map<String, Integer> migrateShipmentsV3ToV2ForTenant(Integer tenantId) {
+        Map<String, Integer> stats = new HashMap<>();
+        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
+
+        log.info("[ShipmentMigration] Tenant [{}]: Found [{}] shipment(s) to migrate.", tenantId, shipmentDetailsList.size());
+        stats.put("Total Shipment", shipmentDetailsList.size());
+
+        List<Future<Long>> futures = new ArrayList<>();
+
+        for (ShipmentDetails ship : shipmentDetailsList) {
+            futures.add(trxExecutor.runInAsync(() -> {
+                try {
+                    v1Service.setAuthContext();
+                    TenantContext.setCurrentTenant(tenantId);
+                    UserContext.getUser().setPermissions(new HashMap<>());
+
+                    return trxExecutor.runInTrx(() -> {
+                        log.info("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Starting migration...", tenantId, ship.getId());
+                        ShipmentDetails migrated = null;
+                        try {
+                            migrated = migrateShipmentV3ToV2(ship);
+                        } catch (RunnerException e) {
+                            throw new RuntimeException(e);
+                        }
+                        log.info("[ShipmentMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, ship.getId(), migrated.getId());
+                        return migrated.getId();
+                    });
+                } catch (Exception e) {
+                    log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, ship.getId(), e.getMessage(), e);
+                    throw new IllegalArgumentException(e);
+                } finally {
+                    v1Service.clearAuthContext();
+                }
+            }));
+        }
+
+        List<Long> migratedIds = MigrationUtil.collectAllProcessedIds(futures);
+        stats.put("Total Shipment Migrated", migratedIds.size());
+
+        log.info("[ShipmentMigration] Tenant [{}]: {}/{} shipments migrated successfully.",
+                tenantId, migratedIds.size(), shipmentDetailsList.size());
+
+        return stats;
+    }
+
+    private List<ShipmentDetails> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
 }

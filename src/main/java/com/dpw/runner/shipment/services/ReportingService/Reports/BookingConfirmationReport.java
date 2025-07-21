@@ -66,14 +66,7 @@ public class BookingConfirmationReport extends IReport{
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
 
         populateShipmentOrganizationsLL(bookingConfirmationModel.hblModel.shipment, dictionary, orgWithoutTranslation);
-        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
-            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
-                }
-            }
-        }
+        populateChargeDescriptions(dictionary, chargeTypesWithoutTranslation);
 
         dictionary.put(ReportConstants.HAWB_NO, bookingConfirmationModel.hblModel.shipment.getHouseBill());
         dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.hblModel.shipment.getMasterBill());
@@ -117,6 +110,17 @@ public class BookingConfirmationReport extends IReport{
             this.getPackingDetails(bookingConfirmationModel.hblModel.getShipment(), dictionary);
         }
         return dictionary;
+    }
+
+    private void populateChargeDescriptions(Map<String, Object> dictionary, List<String> chargeTypesWithoutTranslation) {
+        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List) {
+            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> charge: values) {
+                if(charge.containsKey(CHARGE_TYPE_CODE) && charge.get(CHARGE_TYPE_CODE) != null) {
+                    charge.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)charge.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                }
+            }
+        }
     }
 
     private void processReferenceNumberList(List<ReferenceNumbersModel> referenceNumbers, Map<String, Object> dictionary) {
