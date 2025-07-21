@@ -1450,6 +1450,9 @@ public class PackingV3Service implements IPackingV3Service {
         Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
         Set<Long> shipmentIds = new HashSet<>();
         for(Packing packing: packingList) {
+            if(packing.getContainerId() == null) {
+                throw new ValidationException("Container Id is null for packing with Id: " + packing.getId());
+            }
             containerIdPacksIdMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
             containerIdPacksIdMap.get(packing.getContainerId()).add(packing);
             shipmentIds.add(packing.getShipmentId());
