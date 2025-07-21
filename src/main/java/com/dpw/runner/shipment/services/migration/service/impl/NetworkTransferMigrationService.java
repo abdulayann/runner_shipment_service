@@ -97,7 +97,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(consolidationId);
         ConsolidationDetails v2Consol = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        setShipmentListForConsole(existingPayload, v2Consol);
 
         if(v2Consol.getShipmentsList()!=null && !v2Consol.getShipmentsList().isEmpty()){
             for(ShipmentDetails shipmentDetails: v2Consol.getShipmentsList()){
@@ -131,20 +130,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V2);
         networkTransferDao.updateWithCustomMigrationStatus(networkTransfer);
         return networkTransfer;
-    }
-
-    private void setShipmentListForConsole(EntityTransferV3ConsolidationDetails existingPayload, ConsolidationDetails consol) {
-        if(existingPayload.getShipmentsList()==null || existingPayload.getShipmentsList().isEmpty()){
-            consol.setShipmentsList(new HashSet<>());
-        }else{
-            Set<String> existingShipmentIds = existingPayload.getShipmentsList()
-                    .stream()
-                    .map(EntityTransferV3ShipmentDetails::getShipmentId)
-                    .collect(Collectors.toSet());
-            consol.getShipmentsList().removeIf(
-                    shipment -> !existingShipmentIds.contains(shipment.getShipmentId())
-            );
-        }
     }
 
 
@@ -186,7 +171,6 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         EntityTransferV3ConsolidationDetails existingPayload = jsonHelper.convertValue(entityPayload, EntityTransferV3ConsolidationDetails.class);
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findConsolidationsById(consolidationId);
         ConsolidationDetails v3Consol = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
-        setShipmentListForConsole(existingPayload, v3Consol);
         ConsolidationDetails v2Consol = consolidationMigrationV3Service.mapConsoleV3ToV2(v3Consol);
         EntityTransferV3ConsolidationDetails newPayload = jsonHelper.convertValue(v2Consol, EntityTransferV3ConsolidationDetails.class);
 
@@ -227,26 +211,47 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         List<EntityTransferV3ShipmentDetails> transferShipmentDetails = new ArrayList<>();
         Map<UUID, List<UUID>> containerVsShipmentGuid = new HashMap<>();
         List<EntityTransferV3ShipmentDetails> etConsoleShipments = existingPayload.getShipmentsList();
-        if(!consolDetails.getShipmentsList().isEmpty() && etConsoleShipments!=null) {
+        if (!consolDetails.getShipmentsList().isEmpty() && etConsoleShipments != null) {
             for (var shipment : consolDetails.getShipmentsList()) {
-                for(var etShipment: etConsoleShipments) {
-                    if(!Objects.equals(etShipment.getShipmentId(), shipment.getShipmentId()))
-                        continue;
+                // Try to find a matching shipment in etConsoleShipments
+                var matchedShipment = etConsoleShipments.stream()
+                        .filter(etShipment -> Objects.equals(etShipment.getShipmentId(), shipment.getShipmentId()))
+                        .findFirst()
+                        .orElse(null);
+
+                if (matchedShipment == null) {
+                    // No match found, so this is an extra shipment
+                    processExtraShipment(existingPayload, shipment, transferShipmentDetails);
+                } else {
+                    // Match found, convert and copy necessary fields
                     EntityTransferV3ShipmentDetails entityTransferShipment = jsonHelper.convertValue(shipment, EntityTransferV3ShipmentDetails.class);
-                    // populate master data and other fields
-                    entityTransferShipment.setMasterData(etShipment.getMasterData());
-                    entityTransferShipment.setSourceBranchTenantName(etShipment.getSourceBranchTenantName());
-                    entityTransferShipment.setAdditionalDocs(etShipment.getAdditionalDocs());
-                    entityTransferShipment.setDirection(etShipment.getDirection());
-                    entityTransferShipment.setSendToBranch(etShipment.getSendToBranch());
+                    entityTransferShipment.setMasterData(matchedShipment.getMasterData());
+                    entityTransferShipment.setSourceBranchTenantName(matchedShipment.getSourceBranchTenantName());
+                    entityTransferShipment.setAdditionalDocs(matchedShipment.getAdditionalDocs());
+                    entityTransferShipment.setDirection(matchedShipment.getDirection());
+                    entityTransferShipment.setSendToBranch(matchedShipment.getSendToBranch());
                     transferShipmentDetails.add(entityTransferShipment);
-                    processContainerVsShipmentGuidMap(shipment, containerVsShipmentGuid);
                 }
+                processContainerVsShipmentGuidMap(shipment, containerVsShipmentGuid);
+            }
+        } else if (!consolDetails.getShipmentsList().isEmpty()) {
+            for (var shipment : consolDetails.getShipmentsList()) {
+                processExtraShipment(existingPayload, shipment, transferShipmentDetails);
+                processContainerVsShipmentGuidMap(shipment, containerVsShipmentGuid);
             }
         }
 
+
         newPayload.setShipmentsList(transferShipmentDetails);
         newPayload.setContainerVsShipmentGuid(containerVsShipmentGuid);
+    }
+
+    private void processExtraShipment(EntityTransferV3ConsolidationDetails existingPayload, ShipmentDetails shipment, List<EntityTransferV3ShipmentDetails> transferShipmentDetails) {
+        EntityTransferV3ShipmentDetails entityTransferShipment = jsonHelper.convertValue(shipment, EntityTransferV3ShipmentDetails.class);
+        entityTransferShipment.setSourceBranchTenantName(existingPayload.getSourceBranchTenantName());
+        entityTransferShipment.setDirection(existingPayload.getShipmentType());
+        entityTransferShipment.setSendToBranch(existingPayload.getSendToBranch());
+        transferShipmentDetails.add(entityTransferShipment);
     }
 
     private void processContainerVsShipmentGuidMap(ShipmentDetails shipment, Map<UUID, List<UUID>> containerVsShipmentGuid) {
