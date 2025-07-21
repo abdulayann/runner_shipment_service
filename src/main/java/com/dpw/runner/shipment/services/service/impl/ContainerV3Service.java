@@ -914,8 +914,8 @@ public class ContainerV3Service implements IContainerV3Service {
             response.setSummary("");
         setContainerSummary(containersList, response);
         response.setDgContainers(dgContainers);
-        response.setTotalDgPackages(totalDgPackages);
-        response.setTotalPackagesWithoutUnit(totalPacks);
+        response.setTotalDgPackages((long) totalDgPackages);
+        response.setTotalPackagesWithoutUnit((long) totalPacks);
         setAssignedContainerCount(containersList, isShipment, assignedContainers, v1TenantSettingsResponse, response);
         response.setGroupedContainersSummary(groupedContainerSummaryList);
         return response;
