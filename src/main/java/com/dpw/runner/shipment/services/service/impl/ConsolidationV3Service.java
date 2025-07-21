@@ -3547,7 +3547,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if (!listIsNullOrEmpty(excludeConsolidation))
                 consolListRequest = CommonUtils.andCriteria("id", excludeConsolidation, "NOTIN", consolListRequest);
         }
-        if (request.getBranchIds() != null && request.getBranchIds().size() > 0) {
+        if (!ObjectUtils.isEmpty(request.getBranchIds())){
             consolListRequest = CommonUtils.andCriteria(TENANT_ID, request.getBranchIds(), "IN", consolListRequest);
         }
 
