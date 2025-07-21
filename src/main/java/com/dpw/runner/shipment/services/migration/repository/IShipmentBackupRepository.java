@@ -15,5 +15,8 @@ public interface IShipmentBackupRepository extends JpaRepository<ShipmentBackupE
     ShipmentBackupEntity findByShipmentId(Long shipmentId);
 
     @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1", nativeQuery = true)
-    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
+    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
+
+    @Query(value = "SELECT c.shipment_id FROM shipment_backup c WHERE c.tenant_id = ?1 and is_shipment_attached = false", nativeQuery = true)
+    Set<Long> findNonAttachedShipmentIdsByTenantId(Integer tenantId);
 }

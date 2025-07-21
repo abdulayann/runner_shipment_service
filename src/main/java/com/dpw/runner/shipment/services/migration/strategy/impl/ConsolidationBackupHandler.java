@@ -71,7 +71,7 @@ public class ConsolidationBackupHandler implements BackupHandler {
         Set<Long> consolidationIds = consolidationDetailsDao.findConsolidationIdsByTenantId(tenantId);
         log.info("Consolidation fetch apis : {} ", System.currentTimeMillis() - startTime);
         if (consolidationIds.isEmpty()) {
-            log.info("No shipment records found for tenant: {}", tenantId);
+            log.info("No consolidation records found for tenant: {}", tenantId);
             return;
         }
         List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(consolidationIds), 100)
@@ -92,24 +92,20 @@ public class ConsolidationBackupHandler implements BackupHandler {
 
     public void processAndBackupConsolidationsBatch(Set<Long> consolidationIds) {
         try {
-            long startTime = System.currentTimeMillis();
+
             transactionTemplate.execute(status -> {
                 List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(consolidationIds);
                 Map<Long, List<ConsoleShipmentMapping>> consoleMappingsByConsolidationId =
                         consoleShipmentMappingDao.findByConsolidationIdsByQuery(consolidationIds)
                                 .stream()
                                 .collect(Collectors.groupingBy(ConsoleShipmentMapping::getConsolidationId));
-                log.info("Time b: {}", System.currentTimeMillis() - startTime);
 
                 List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
                         .map((detail -> mapToBackupEntity(detail, consoleMappingsByConsolidationId.getOrDefault(detail.getId(),
                                 Collections.emptyList()))))
                         .toList();
-                long startTime1 = System.currentTimeMillis();
 
                 consolidationBackupRepository.saveAll(backupEntities);
-                log.info("Time c: {}", System.currentTimeMillis() - startTime1);
-                log.info("Time : {}", System.currentTimeMillis() - startTime);
                 return true;
             });
         } catch (Exception e) {
@@ -126,9 +122,7 @@ public class ConsolidationBackupHandler implements BackupHandler {
             consolidationBackupEntity.setConsolidationGuid(consolidationDetail.getGuid());
             Set<ShipmentDetails> shipmentList = consolidationDetail.getShipmentsList();
             consolidationDetail.setShipmentsList(null);
-            long startTime = System.currentTimeMillis();
             consolidationBackupEntity.setConsolidationDetails(objectMapper.writeValueAsString(consolidationDetail));
-            log.info("Time a: {}", System.currentTimeMillis() - startTime);
             consolidationDetail.setShipmentsList(shipmentList);
             consolidationBackupEntity.setConsoleShipmentMapping(objectMapper.writeValueAsString(consoleMappings));
             return consolidationBackupEntity;

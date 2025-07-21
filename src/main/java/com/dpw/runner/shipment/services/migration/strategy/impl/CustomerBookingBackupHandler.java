@@ -75,7 +75,6 @@ public class CustomerBookingBackupHandler implements BackupHandler {
                 .toList();
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            log.info("Booking completed : {}", System.currentTimeMillis() - start);
         } catch (Exception e) {
             log.error("Backup failed for tenant {}", tenantId, e);
             throw new BackupFailureException("Backup failed for tenant: " + tenantId, e);
@@ -86,7 +85,6 @@ public class CustomerBookingBackupHandler implements BackupHandler {
     public void processAndBackupBookingsBatch(Set<Long> customerBookingIds) {
 
         try {
-            long time = System.currentTimeMillis();
             transactionTemplate.execute(status -> {
                 List<CustomerBooking> customerBookings =
                         customerBookingDao.findCustomerBookingByIds(customerBookingIds);
@@ -96,7 +94,6 @@ public class CustomerBookingBackupHandler implements BackupHandler {
                         .toList();
 
                 customerBookingRepository.saveAll(customerBookingEntities);
-                log.info("Booking time : {}" , System.currentTimeMillis() - time);
                 return true;
             });
         } catch (Exception e) {

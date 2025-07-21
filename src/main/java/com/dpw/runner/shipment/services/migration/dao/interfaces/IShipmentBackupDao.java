@@ -7,4 +7,5 @@ import java.util.Set;
 public interface IShipmentBackupDao {
     ShipmentBackupEntity findByShipmentId(Long shipmentId);
     Set<Long> findShipmentIdsByTenantId(Integer tenantId);
+    Set<Long> findNonAttachedShipmentIdsByTenantId(Integer tenantId);
 }

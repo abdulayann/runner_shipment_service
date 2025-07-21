@@ -248,7 +248,9 @@ public class ShipmentRestoreHandler implements RestoreHandler {
             shipmentDao.deleteShipmentDetailsByIds(idsToDelete);
         }
 
-        Lists.partition(new ArrayList<>(allBackupShipmentIds), 100).forEach(batch -> {
+        Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
+
+        Lists.partition(new ArrayList<>(nonAttachedShipmentIds), 100).forEach(batch -> {
             List<CompletableFuture<Void>> futures = batch.stream().map(shipmentId ->
                     CompletableFuture.runAsync(() -> {
                         try {

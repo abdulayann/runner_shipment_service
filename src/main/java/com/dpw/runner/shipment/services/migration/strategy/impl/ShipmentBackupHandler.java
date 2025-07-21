@@ -117,19 +117,16 @@ public class ShipmentBackupHandler implements BackupHandler {
 
     private ShipmentBackupEntity mapToBackupEntity(ShipmentDetails shipment, List<PickupDeliveryDetails> pickupDetails) {
         try {
-
             ShipmentBackupEntity shipmentBackupEntity = new ShipmentBackupEntity();
             shipmentBackupEntity.setTenantId(shipment.getTenantId());
             shipmentBackupEntity.setShipmentId(shipment.getId());
             shipmentBackupEntity.setShipmentGuid(shipment.getGuid());
-            if (!shipment.getConsolidationList().isEmpty()){
+            if (!shipment.getConsolidationList().isEmpty()) {
                 shipmentBackupEntity.setIsShipmentAttached(TRUE);
             }
             Set<ConsolidationDetails> consolidationList = shipment.getConsolidationList();
             shipment.setConsolidationList(null);
-            long startTime = System.currentTimeMillis();
             shipmentBackupEntity.setShipmentDetail(objectMapper.writeValueAsString(shipment));
-            log.info("Time to complete shipment : {}", System.currentTimeMillis() - startTime);
             shipment.setConsolidationList(consolidationList);
             String pickupDeliveryJson = objectMapper.writeValueAsString(pickupDetails);
             shipmentBackupEntity.setPickupDeliveryDetail(pickupDeliveryJson);

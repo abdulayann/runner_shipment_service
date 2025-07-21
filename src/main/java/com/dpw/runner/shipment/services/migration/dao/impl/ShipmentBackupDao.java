@@ -28,6 +28,11 @@ public class ShipmentBackupDao implements IShipmentBackupDao {
 
     @Override
     public Set<Long> findShipmentIdsByTenantId(Integer tenantId) {
-        return shipmentBackupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        return shipmentBackupRepository.findShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public Set<Long> findNonAttachedShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentBackupRepository.findNonAttachedShipmentIdsByTenantId(tenantId);
     }
 }

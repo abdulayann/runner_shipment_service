@@ -187,7 +187,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             """)
     void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
 
-    @Query(value = "SELECT c.id FROM consolidation_details c WHERE c.tenant_id = ?1 and c.id = 11463", nativeQuery = true)
+    @Query(value = "SELECT c.id FROM consolidation_details c WHERE c.tenant_id = ?1", nativeQuery = true)
     Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
 
     @Modifying
