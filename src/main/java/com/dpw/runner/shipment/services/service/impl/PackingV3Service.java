@@ -1285,7 +1285,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     private void populateSummaryDetails(List<Packing> packings, CargoDetailsResponse response, Set<String> uniquePacksUnits, BigDecimal totalWeight, BigDecimal totalVolume, Integer totalPacks) throws RunnerException {
         Set<String> dgPacksUnitSet = new HashSet<>();
-        Integer dgPacksCount = 0;
+        int dgPacksCount = 0;
         boolean skipWeightInCalculation = false;
         if (TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
             skipWeightInCalculation = packings.stream()
@@ -1330,6 +1330,9 @@ public class PackingV3Service implements IPackingV3Service {
             response.setPacksUnit(uniquePacksUnits.iterator().next());
         }
         if (dgPacksUnitSet.size() == 1) {
+            if (CollectionUtils.isEmpty(uniquePacksUnits)) {
+                response.setPacksUnit(dgPacksUnitSet.iterator().next());
+            }
             response.setDgPacksUnit(dgPacksUnitSet.iterator().next());
         }
     }
