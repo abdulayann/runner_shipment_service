@@ -355,8 +355,12 @@ class RoutingsV3ServiceTest extends CommonMocks {
         routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
         routings1.setPod("DEIMETA");
         routings1.setDestinationPortLocCode("destportLoc");
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routings1);
+        routingsList.add(routings);
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .carrierDetails(new CarrierDetails())
+                .routingsList(routingsList)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .build();
         List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
@@ -367,14 +371,11 @@ class RoutingsV3ServiceTest extends CommonMocks {
 
         UpdateTransportStatusRequest updateTransportStatusRequest = new UpdateTransportStatusRequest();
         updateTransportStatusRequest.setTransportInfoStatus(TransportInfoStatus.YES);
-        updateTransportStatusRequest.setShipmentId(1L);
+        updateTransportStatusRequest.setEntityId(1L);
+        updateTransportStatusRequest.setEntityType(Constants.SHIPMENT);
 
-        List<Routings> routingsList = new ArrayList<>();
-        routingsList.add(routings1);
-        routingsList.add(routings);
         when(jsonHelper.convertValue(eq(routingsList), any(TypeReference.class)))
                 .thenReturn(requestList);
-        when(routingsDao.findByShipmentId(1L)).thenReturn(routingsList);
         when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
         when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
@@ -389,10 +390,69 @@ class RoutingsV3ServiceTest extends CommonMocks {
         verify(auditLogService, atLeastOnce()).addAuditLog(any());
     }
     @Test
+    void testUpdateTransportInfoConsolStatus_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setGuid(UUID.randomUUID());
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setVesselName("vessel");
+        routings.setVoyage("0123");
+        routings.setLeg(1L);
+        routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest.setIsSelectedForDocument(Boolean.TRUE);
+        RoutingsRequest routingsRequest1 = new RoutingsRequest();
+        routingsRequest1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routingsRequest1.setIsSelectedForDocument(Boolean.TRUE);
+        Routings routings1 = new Routings();
+        routings1.setLeg(2L);
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setVesselName("vessel");
+        routings1.setVoyage("0123");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routings1);
+        routingsList.add(routings);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(new CarrierDetails())
+                .routingsList(routingsList)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .build();
+        List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        UpdateTransportStatusRequest updateTransportStatusRequest = new UpdateTransportStatusRequest();
+        updateTransportStatusRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        updateTransportStatusRequest.setEntityId(1L);
+        updateTransportStatusRequest.setEntityType(Constants.SHIPMENT);
+
+        when(jsonHelper.convertValue(eq(routingsList), any(TypeReference.class)))
+                .thenReturn(requestList);
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        BulkRoutingResponse result = routingsService.updateTransportInfoStatus(updateTransportStatusRequest);
+
+        assertNotNull(result.getRoutingsResponseList());
+        assertEquals(1, result.getRoutingsResponseList().size());
+        verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+
+    @Test
     void testUpdateBulkAir_success() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         routingsRequest.setId(2L);
         routings.setId(2L);
         routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setConsolidationId(1L);
         routings.setCarrier("carrier");
         routings.setFlightNumber("0123");
         routingsRequest.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
@@ -403,6 +463,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         Routings routings1 = new Routings();
         routings1.setIsSelectedForDocument(Boolean.TRUE);
         routings1.setId(2l);
+        routings1.setConsolidationId(1L);
         routings1.setCarrier("carr");
         routings1.setFlightNumber("0123");
         routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
@@ -417,25 +478,35 @@ class RoutingsV3ServiceTest extends CommonMocks {
         carrierDetails.setOriginPort("DIEMATA");
         carrierDetails.setOriginPortLocCode("PORT_CODE");
         carrierDetails.setOriginPortCountry("ind");
-
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+        List<Routings> routingsList = new ArrayList<>();
+        routingsList.add(routings1);
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
                 .carrierDetails(carrierDetails)
+                .routingsList(routingsList)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .build();
         List<RoutingsRequest> requestList = List.of(routingsRequest, routingsRequest1);
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
         bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setEntityId(1L);
         bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
         RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
 
         when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings, routings1));
         when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings, routings1));
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
-        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationV3Service.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        when(consolidationV3Service.getConsolidationById(anyLong())).thenReturn(consolidationDetails);
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
         doNothing().when(auditLogService).addAuditLog(any());
 
-        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.CONSOLIDATION);
 
         assertNotNull(result.getRoutingsResponseList());
         assertEquals(1, result.getRoutingsResponseList().size());
@@ -786,7 +857,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
     void testUpdateTransportInfoStatus_Exception1() {
         UpdateTransportStatusRequest request = new UpdateTransportStatusRequest();
         request.setTransportInfoStatus(TransportInfoStatus.YES);
-        request.setShipmentId(1L);
+        request.setEntityId(1L);
+        request.setEntityType(Constants.SHIPMENT);
 
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(ValidationException.class, () -> routingsService.updateTransportInfoStatus(request));

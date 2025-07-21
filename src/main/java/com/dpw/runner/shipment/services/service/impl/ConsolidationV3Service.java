@@ -2822,7 +2822,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(!Objects.equals(source, NETWORK_TRANSFER))
             setPendingActionCountInResponse(consoleDetails, response);
         createConsolidationPayload(consoleDetails, response);
-
         return response;
     }
 

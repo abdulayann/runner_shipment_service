@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.RoutingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -16,7 +15,6 @@ import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import io.swagger.annotations.ApiParam;
@@ -124,8 +122,9 @@ public class RoutingV3Controller {
     }
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_TRANSPORT_STATUS_SUCCESS, response = BulkRoutingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT_API_UPDATE_TRANSPORT_INFO_STATUS)
-    public ResponseEntity<IRunnerResponse> shipmentUpdateTransportInfoStatus(@Valid @RequestBody UpdateTransportStatusRequest request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> shipmentConsolUpdateTransportInfoStatus(@Valid @RequestBody UpdateTransportStatusRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(routingService.updateTransportInfoStatus(request));
     }
+
 
 }
