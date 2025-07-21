@@ -414,6 +414,8 @@ class CustomerBookingValidationsTest extends CommonMocks {
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutServiceMode));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCarrierDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCarrierOriginPort));
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutConsignor));
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutConsignee));
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().FetchRatesMandate(true).build());
         mockTenantSettings();

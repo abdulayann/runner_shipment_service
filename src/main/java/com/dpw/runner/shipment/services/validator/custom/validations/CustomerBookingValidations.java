@@ -91,6 +91,12 @@ public class CustomerBookingValidations {
     }
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
+        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_DOM, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
+            validateParty(entity.getConsignor(), "Consignor detail");
+        }
+        if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
+            validateParty(entity.getConsignee(), "Consignee detail");
+        }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
         if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) && (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty()))
@@ -113,12 +119,6 @@ public class CustomerBookingValidations {
         validateMandatory(entity.getTransportType(), "Transport Mode");
         validateMandatory(entity.getCargoType(), "Cargo Type");
         validateCargoContents(entity);
-        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_DOM, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
-            validateParty(entity.getConsignor(), "Consignor detail");
-        }
-        if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
-            validateParty(entity.getConsignee(), "Consignee detail");
-        }
     }
 
     private void validateMandatory(Object value, String fieldName) {
