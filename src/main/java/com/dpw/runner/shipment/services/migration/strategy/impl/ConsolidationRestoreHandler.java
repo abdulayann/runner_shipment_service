@@ -1,14 +1,23 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
+import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -48,19 +57,37 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
     private PackingDao packingDao;
 
     @Autowired
+    private IPackingRepository packingRepository;
+
+    @Autowired
     private ReferenceNumbersDao referenceNumbersDao;
+
+    @Autowired
+    private IReferenceNumbersRepository referenceNumbersRepository;
 
     @Autowired
     private RoutingsDao routingsDao;
 
     @Autowired
+    private IRoutingsRepository routingsRepository;
+
+    @Autowired
     private ContainerDao containerDao;
+
+    @Autowired
+    private IContainerRepository containerRepository;
 
     @Autowired
     private EventDao eventDao;
 
     @Autowired
+    private IEventRepository eventRepository;
+
+    @Autowired
     private PartiesDao partiesDao;
+
+    @Autowired
+    private IPartiesRepository partiesRepository;
 
     @Autowired
     private IJobRepository iJobRepository;
@@ -129,6 +156,9 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
         }*/
 
+        TenantContext.setCurrentTenant(tenantId);
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+
         List<Long> consolidationIds = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
         consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
         consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
@@ -167,7 +197,13 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
                 Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
                 for (Long shipmentId : shipmentIds) {
-                    shipmentRestoreHandler.restoreShipmentDetails(shipmentId, containerShipmentMap);
+                    if(consolidationDetails.getShipmentsList() == null){
+                        consolidationDetails.setShipmentsList(new HashSet<>());
+                    }
+                    ShipmentDetails shipmentDetails = shipmentRestoreHandler.restoreShipmentDetails(shipmentId, containerShipmentMap, consolidationDetails);
+                    if (shipmentDetails != null) {
+                        consolidationDetails.getShipmentsList().add(shipmentDetails);
+                    }
                 }
                 validateAndSaveContainers(consolidationId, consolidationDetails, containerShipmentMap, shipmentIds);
             }
@@ -183,8 +219,6 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
             validateAndRestorePartiesDetails(consolidationId, consolidationAddressIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
-            List<Long> fileRepoIds = consolidationDetails.getFileRepoList().stream().map(FileRepo::getId).filter(Objects::nonNull).toList();
-            validateAndSaveFileRepoDetails(consolidationId, fileRepoIds, consolidationDetails);
 //TODO packking to containersIds
 
             consolidationDao.save(consolidationDetails);
@@ -206,9 +240,8 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
         containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
         containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
-        List<Containers> containers = containerDao.findByIdIn(containersIds);
-        List<Long> allShipmentIdsFromContainerMap = containerShipmentMap.values().stream().flatMap(List::stream).distinct().toList();
-        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByIdIn(allShipmentIdsFromContainerMap);
+        List<Containers> containers = consolidationDetails.getContainersList();
+        List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
                 .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
         for (Containers container : containers) {
@@ -223,31 +256,25 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
                 container.setShipmentsList(shipmentSet);
             }
         }
-        containerDao.saveAll(containers);
+        containerRepository.saveAll(containers);
     }
 
     private void validateAndStoreJobsDetails(Long consolidationId, List<Long> jobsIds, ConsolidationDetails consolidationDetails) {
         iJobRepository.deleteAdditionalDataByJobsIdsAndConsolidationId(jobsIds, consolidationId);
         iJobRepository.revertSoftDeleteByJobsIdsAndConsolidationId(jobsIds, consolidationId);
-        for (Jobs restored : consolidationDetails.getJobsList()) {
-            iJobRepository.save(restored);
-        }
+        iJobRepository.saveAll(consolidationDetails.getJobsList());
     }
 
     private void validateAndRestorePartiesDetails(Long consolidationId, List<Long> consolidationAddressIds, ConsolidationDetails consolidationDetails) {
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(consolidationAddressIds, consolidationId, Constants.CONSOLIDATION_ADDRESSES);
         partiesDao.revertSoftDeleteByPartiesIdsEntityIdAndEntityType(consolidationAddressIds, consolidationId, Constants.CONSOLIDATION_ADDRESSES);
-        for (Parties restored : consolidationDetails.getConsolidationAddresses()) {
-            partiesDao.save(restored);
-        }
+        partiesRepository.saveAll(consolidationDetails.getConsolidationAddresses());
     }
 
     private void validateAndRestoreEventsDetails(Long consolidationId, List<Long> eventsIds, ConsolidationDetails consolidationDetails) {
         eventDao.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
         eventDao.revertSoftDeleteByEventsIdsAndConsolidationId(eventsIds, consolidationId);
-        for (Events restored : consolidationDetails.getEventsList()) {
-            eventDao.save(restored);
-        }
+        eventRepository.saveAll(consolidationDetails.getEventsList());
     }
 
 /*    private void validateAndRestoreContainersDetails(Long consolidationId, List<Long> containersIds, ConsolidationDetails consolidationDetails) {
@@ -261,25 +288,19 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
     private void validateAndRestoreRoutingDetails(Long consolidationId, List<Long> routingsIds, ConsolidationDetails consolidationDetails) {
         routingsDao.deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
         routingsDao.revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
-        for (Routings restored : consolidationDetails.getRoutingsList()) {
-            routingsDao.save(restored);
-        }
+        routingsRepository.saveAll(consolidationDetails.getRoutingsList());
     }
 
     private void validateAndRestoreReferenceNumberDetails(Long consolidationId, List<Long> referenceNumberIds, ConsolidationDetails consolidationDetails) {
         referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
         referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
-        for (ReferenceNumbers restored : consolidationDetails.getReferenceNumbersList()) {
-            referenceNumbersDao.save(restored);
-        }
+        referenceNumbersRepository.saveAll(consolidationDetails.getReferenceNumbersList());
     }
 
     private void validateAndRestorePackingDetails(Long consolidationId, List<Long> packingIds, ConsolidationDetails consolidationDetails) {
         packingDao.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
         packingDao.revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
-        for (Packing restored : consolidationDetails.getPackingList()) {
-            packingDao.save(restored);
-        }
+        packingRepository.saveAll(consolidationDetails.getPackingList());
     }
 
 
