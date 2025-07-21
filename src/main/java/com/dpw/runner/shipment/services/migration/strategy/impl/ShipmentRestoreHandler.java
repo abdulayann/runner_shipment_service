@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -129,11 +130,14 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     @Autowired
     @Qualifier("rollbackTaskExecutor")
     private ThreadPoolTaskExecutor rollbackTaskExecutor;
+    @Autowired
+    private ShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
         ShipmentBackupEntity shipmentBackupDetails = shipmentBackupDao.findByShipmentId(shipmentId);
+        Set<Long> shipmentsContainersMapping = new HashSet<>(shipmentsContainersMappingDao.findByShipmentId(shipmentId).stream().map(ShipmentsContainersMapping::getContainerId).toList());
         if (null == shipmentBackupDetails) {
             log.info("No Shipment records found for ShipmentId: {}", shipmentId);
             return null;
@@ -143,6 +147,9 @@ public class ShipmentRestoreHandler implements RestoreHandler {
             shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
         }
         processContainerToShipmentMapping(shipmentId, shipmentDetails, containerShipmentMap);
+
+        var containerList = shipmentDetails.getContainersList().stream().filter(x->shipmentsContainersMapping.contains(x.getId())).collect(Collectors.toSet());
+        shipmentDetails.setContainersList(containerList);
         List<Long> packingIds = shipmentDetails.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndSetPackingDetails(shipmentId, packingIds, shipmentDetails);
         List<Long> bookingCarriageIds = shipmentDetails.getBookingCarriagesList().stream().map(BookingCarriage::getId).filter(Objects::nonNull).toList();

@@ -194,7 +194,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
                 shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
                 //TODO need to delete the new set of shipment data.
                 //TODO need to diss for flag
-
+                revertContainers(consolidationDetails);
                 Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
                 for (Long shipmentId : shipmentIds) {
                     if(consolidationDetails.getShipmentsList() == null){
@@ -205,10 +205,8 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
                         consolidationDetails.getShipmentsList().add(shipmentDetails);
                     }
                 }
-                validateAndSaveContainers(consolidationId, consolidationDetails, containerShipmentMap, shipmentIds);
+                validateAndSaveContainers(consolidationDetails, containerShipmentMap);
             }
-            List<Long> packingIds = consolidationDetails.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
-            validateAndRestorePackingDetails(consolidationId, packingIds, consolidationDetails);
             List<Long> referenceNumberIds = consolidationDetails.getReferenceNumbersList().stream().map(ReferenceNumbers::getId).filter(Objects::nonNull).toList();
             validateAndRestoreReferenceNumberDetails(consolidationId, referenceNumberIds, consolidationDetails);
             List<Long> routingsIds = consolidationDetails.getRoutingsList().stream().map(Routings::getId).filter(Objects::nonNull).toList();
@@ -228,6 +226,12 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         }
     }
 
+    private void revertContainers(ConsolidationDetails consolidationDetails) {
+        List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
+        containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationDetails.getId());
+        containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationDetails.getId());
+    }
+
     private void validateAndSaveFileRepoDetails(Long consolidationId, List<Long> fileRepoIds, ConsolidationDetails consolidationDetails) {
         iFileRepoRepository.deleteAdditionalDataByFileRepoIdsEntityIdAndEntityType(fileRepoIds, consolidationId, Constants.CONSOLIDATION);
         iFileRepoRepository.revertSoftDeleteByFileRepoIdsEntityIdAndEntityType(fileRepoIds, consolidationId, Constants.CONSOLIDATION);
@@ -236,10 +240,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         }
     }
 
-    private void validateAndSaveContainers(Long consolidationId, ConsolidationDetails consolidationDetails, Map<Long, List<Long>> containerShipmentMap, List<Long> shipmentIds) {
-        List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
-        containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
-        containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
+    private void validateAndSaveContainers(ConsolidationDetails consolidationDetails, Map<Long, List<Long>> containerShipmentMap) {
         List<Containers> containers = consolidationDetails.getContainersList();
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
@@ -247,8 +248,8 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         for (Containers container : containers) {
             List<Long> shipmentsIds = containerShipmentMap.get(container.getId());
             if (shipmentsIds != null) {
-                Set<ShipmentDetails> shipmentSet = (!shipmentIds.isEmpty())
-                        ? shipmentIds.stream()
+                Set<ShipmentDetails> shipmentSet = (!shipmentsIds.isEmpty())
+                        ? shipmentsIds.stream()
                         .map(shipmentDetailsMap::get)
                         .filter(Objects::nonNull)
                         .collect(Collectors.toSet())
