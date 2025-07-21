@@ -9,7 +9,19 @@ import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.dao.interfaces.IShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
+import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.IShipmentOrderRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
@@ -34,10 +46,19 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     private PackingDao packingDao;
 
     @Autowired
+    private IPackingRepository packingRepository;
+
+    @Autowired
     private ReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
+    private IReferenceNumbersRepository referenceNumbersRepository;
+
+    @Autowired
     private RoutingsDao routingsDao;
+
+    @Autowired
+    private IRoutingsRepository routingsRepository;
 
     @Autowired
     private ContainerDao containerDao;
@@ -46,7 +67,13 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     private EventDao eventDao;
 
     @Autowired
+    private IEventRepository eventRepository;
+
+    @Autowired
     private PartiesDao partiesDao;
+
+    @Autowired
+    private IPartiesRepository partiesRepository;
 
     @Autowired
     private IJobRepository iJobRepository;
@@ -58,22 +85,43 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     private BookingCarriageDao bookingCarriageDao;
 
     @Autowired
+    private IBookingCarriageRepository bookingCarriageRepository;
+
+    @Autowired
     private ELDetailsDao elDetailsDao;
+
+    @Autowired
+    private IELDetailsRepository ielDetailsRepository;
 
     @Autowired
     private ServiceDetailsDao serviceDetailsDao;
 
     @Autowired
+    private IServiceDetailsRepository serviceDetailsRepository;
+
+    @Autowired
     private TruckDriverDetailsDao truckDriverDetailsDao;
+
+    @Autowired
+    private ITruckDriverDetailsRepository iTruckDriverDetailsRepository;
 
     @Autowired
     private NotesDao notesDao;
 
     @Autowired
+    private INotesRepository notesRepository;
+
+    @Autowired
     private ShipmentOrderDao shipmentOrderDao;
 
     @Autowired
+    private IShipmentOrderRepository shipmentOrderRepository;
+
+    @Autowired
     private PickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+
+    @Autowired
+    private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
 
     @Autowired
     private ShipmentDao shipmentDao;
@@ -82,15 +130,18 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     @Qualifier("rollbackTaskExecutor")
     private ThreadPoolTaskExecutor rollbackTaskExecutor;
 
-    public void restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap) throws JsonProcessingException {
+    public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
         ShipmentBackupEntity shipmentBackupDetails = shipmentBackupDao.findByShipmentId(shipmentId);
         if (null == shipmentBackupDetails) {
             log.info("No Shipment records found for ShipmentId: {}", shipmentId);
-            return;
+            return null;
         }
         ShipmentDetails shipmentDetails = objectMapper.readValue(shipmentBackupDetails.getShipmentDetail(), ShipmentDetails.class);
+        if(consolidationDetails != null) {
+            shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
+        }
         processContainerToShipmentMapping(shipmentId, shipmentDetails, containerShipmentMap);
         List<Long> packingIds = shipmentDetails.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndSetPackingDetails(shipmentId, packingIds, shipmentDetails);
@@ -119,6 +170,7 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         List<Long> pickupDeliveryDetailsIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream().map(PickupDeliveryDetails::getId).filter(Objects::nonNull).toList();
         validateAndSetPickupDeliveryDetails(shipmentId, pickupDeliveryDetailsIds, shipmentDetails);
         shipmentDao.saveWithoutValidation(shipmentDetails);
+        return shipmentDetails;
     }
 
     private void processContainerToShipmentMapping(Long shipmentId, ShipmentDetails shipmentDetails, Map<Long, List<Long>> containerShipmentMap) {
@@ -135,105 +187,79 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     private void validateAndSetPickupDeliveryDetails(Long shipmentId, List<Long> pickupDeliveryDetailsIds, ShipmentDetails shipmentDetails) {
         pickupDeliveryDetailsDao.deleteAdditionalPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsIds, shipmentId);
         pickupDeliveryDetailsDao.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(pickupDeliveryDetailsIds, shipmentId);
-        for (PickupDeliveryDetails restored : shipmentDetails.getPickupDeliveryDetailsInstructions()) {
-            pickupDeliveryDetailsDao.save(restored);
-        }
+        pickupDeliveryDetailsRepository.saveAll(shipmentDetails.getPickupDeliveryDetailsInstructions());
     }
 
     private void validateAndSetShipmentOrderDetails(Long shipmentId, List<Long> shipmentOrderIds, ShipmentDetails shipmentDetails) {
         shipmentOrderDao.deleteAdditionalShipmentOrderByShipmentId(shipmentOrderIds, shipmentId);
         shipmentOrderDao.revertSoftDeleteByshipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
-        for (ShipmentOrder restored : shipmentDetails.getShipmentOrders()) {
-            shipmentOrderDao.save(restored);
-        }
+        shipmentOrderRepository.saveAll(shipmentDetails.getShipmentOrders());
     }
 
     private void validateAndSetPartiesDetails(Long shipmentId, List<Long> partiesIds, ShipmentDetails shipmentDetails) {
         partiesDao.deleteAdditionalPartiesByEntityIdAndEntityType(partiesIds, shipmentId, Constants.SHIPMENT_ADDRESSES);
         partiesDao.revertSoftDeleteByPartiesIdsAndEntityIdAndEntityType(partiesIds, shipmentId, Constants.SHIPMENT_ADDRESSES);
-        for (Parties restored : shipmentDetails.getShipmentAddresses()) {
-            partiesDao.save(restored);
-        }
+        partiesRepository.saveAll(shipmentDetails.getShipmentAddresses());
     }
 
     private void validateAndSetJobsDetails(Long shipmentId, List<Long> jobsIds, ShipmentDetails shipmentDetails) {
         iJobRepository.deleteAdditionalJobsByShipmentId(jobsIds, shipmentId);
         iJobRepository.revertSoftDeleteByJobsIdsAndShipmentId(jobsIds, shipmentId);
-        for (Jobs restored : shipmentDetails.getJobsList()) {
-            iJobRepository.save(restored);
-        }
+        iJobRepository.saveAll(shipmentDetails.getJobsList());
     }
 
     private void validateAndSetNotesDetails(Long shipmentId, List<Long> notesIds, ShipmentDetails shipmentDetails) {
         notesDao.deleteAdditionalNotesByEntityIdAndEntityType(notesIds, shipmentId, Constants.SHIPMENT);
         notesDao.revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(notesIds, shipmentId, Constants.SHIPMENT);
-        for (Notes restored : shipmentDetails.getNotesList()) {
-            notesDao.save(restored);
-        }
+        notesRepository.saveAll(shipmentDetails.getNotesList());
     }
 
     private void validateAndSetTruckDriverDetails(Long shipmentId, List<Long> truckDriverDetailsIds, ShipmentDetails shipmentDetails) {
         truckDriverDetailsDao.deleteAdditionalTruckDriverDetailsByShipmentId(truckDriverDetailsIds, shipmentId);
         truckDriverDetailsDao.revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(truckDriverDetailsIds, shipmentId);
-        for (TruckDriverDetails restored : shipmentDetails.getTruckDriverDetails()) {
-            truckDriverDetailsDao.save(restored);
-        }
+        iTruckDriverDetailsRepository.saveAll(shipmentDetails.getTruckDriverDetails());
     }
 
     private void validateAndSetServiceDetails(Long shipmentId, List<Long> serviceDetailsIds, ShipmentDetails shipmentDetails) {
         serviceDetailsDao.deleteAdditionalServiceDetailsByShipmentId(serviceDetailsIds, shipmentId);
         serviceDetailsDao.revertSoftDeleteByServiceDetailsIdsAndShipmentId(serviceDetailsIds, shipmentId);
-        for (ServiceDetails restored : shipmentDetails.getServicesList()) {
-            serviceDetailsDao.save(restored);
-        }
+        serviceDetailsRepository.saveAll(shipmentDetails.getServicesList());
     }
 
     private void validateAndSetRoutingsIds(Long shipmentId, List<Long> routingsIds, ShipmentDetails shipmentDetails) {
         routingsDao.deleteAdditionalroutingsByShipmentId(routingsIds, shipmentId);
         routingsDao.revertSoftDeleteByroutingsIdsAndShipmentId(routingsIds, shipmentId);
-        for (Routings restored : shipmentDetails.getRoutingsList()) {
-            routingsDao.save(restored);
-        }
+        routingsRepository.saveAll(shipmentDetails.getRoutingsList());
     }
 
     private void validateAndSetReferenceNumbersDetails(Long shipmentId, List<Long> referenceNumbersIds, ShipmentDetails shipmentDetails) {
         referenceNumbersDao.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
         referenceNumbersDao.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
-        for (ReferenceNumbers restored : shipmentDetails.getReferenceNumbersList()) {
-            referenceNumbersDao.save(restored);
-        }
+        referenceNumbersRepository.saveAll(shipmentDetails.getReferenceNumbersList());
     }
 
     private void validateAndSetEventsDetails(Long shipmentId, List<Long> eventsIds, ShipmentDetails shipmentDetails) {
         eventDao.deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, shipmentId, Constants.SHIPMENT);
         eventDao.revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, shipmentId, Constants.SHIPMENT);
-        for (Events restored : shipmentDetails.getEventsList()) {
-            eventDao.save(restored);
-        }
+        eventRepository.saveAll(shipmentDetails.getEventsList());
     }
 
     private void validateAndSetElDetails(Long shipmentId, List<Long> elDetailsIds, ShipmentDetails shipmentDetails) {
         elDetailsDao.deleteAdditionalElDetailsByShipmentId(elDetailsIds, shipmentId);
         elDetailsDao.revertSoftDeleteByElDetailsIdsAndShipmentId(elDetailsIds, shipmentId);
-        for (ELDetails restored : shipmentDetails.getElDetailsList()) {
-            elDetailsDao.save(restored);
-        }
+        ielDetailsRepository.saveAll(shipmentDetails.getElDetailsList());
     }
 
     private void validateAndSetBookingCarriagesDetails(Long shipmentId, List<Long> bookingCarriageIds, ShipmentDetails shipmentDetails) {
         bookingCarriageDao.deleteAdditionalbookingCarriageByShipmentId(bookingCarriageIds, shipmentId);
         bookingCarriageDao.revertSoftDeleteBybookingCarriageIdsAndShipmentId(bookingCarriageIds, shipmentId);
-        for (BookingCarriage restored : shipmentDetails.getBookingCarriagesList()) {
-            bookingCarriageDao.save(restored);
-        }
+        bookingCarriageRepository.saveAll(shipmentDetails.getBookingCarriagesList());
     }
 
     private void validateAndSetPackingDetails(Long shipmentId, List<Long> packingIds, ShipmentDetails shipmentDetails) {
         packingDao.deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
         packingDao.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
-        for (Packing restored : shipmentDetails.getPackingList()) {
-            packingDao.save(restored);
-        }
+        packingRepository.saveAll(shipmentDetails.getPackingList());
     }
 
     @Override
@@ -254,7 +280,7 @@ public class ShipmentRestoreHandler implements RestoreHandler {
             List<CompletableFuture<Void>> futures = batch.stream().map(shipmentId ->
                     CompletableFuture.runAsync(() -> {
                         try {
-                            restoreShipmentDetails(shipmentId, null);
+                            restoreShipmentDetails(shipmentId, null, null);
                         } catch (Exception e) {
                             log.error("Failed shipment restore {}: {}", shipmentId, e.getMessage());
                             throw new RestoreFailureException("Rollback failed", e);

@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +54,9 @@ public class RestoreServiceImpl implements RestoreService {
         } catch (Exception e) {
             log.error("Handler {} failed", handler.getClass().getSimpleName(), e);
             throw new CompletionException(e);
+        } finally {
+            TenantContext.removeTenant();
+            UserContext.removeUser();
         }
     }
 }
