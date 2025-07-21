@@ -1151,6 +1151,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testListWithNoResult() throws RunnerException {
         when(customerBookingDao.findAll(any(), any())).thenReturn(Page.empty());
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        doNothing().when(masterDataUtils).fetchCarriersForList(anyList());
+        doNothing().when(masterDataUtils).setLocationData(anyList(), anyString());
         // Test
         CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest(), Boolean.TRUE);
         // Assert
@@ -1163,6 +1166,9 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
         customerBookingV3Response.setId(2L);
         when(customerBookingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(customerBooking)));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        doNothing().when(masterDataUtils).fetchCarriersForList(anyList());
+        doNothing().when(masterDataUtils).setLocationData(anyList(), anyString());
         // Test
         CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest(), Boolean.TRUE);
         // Assert

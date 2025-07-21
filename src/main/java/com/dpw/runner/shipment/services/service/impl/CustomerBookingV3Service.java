@@ -81,6 +81,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -759,7 +760,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.info("Booking list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             long totalPages = customerBookingPage.getSize() == 0 ? 0 : (long) Math.ceil((double) customerBookingPage.getTotalElements() / customerBookingPage.getSize());
             return CustomerBookingV3ListResponse.builder()
-                    .customerBookingV3Responses(convertEntityListToDtoList(customerBookingPage.getContent()))
+                    .customerBookingV3Responses(convertEntityListToDtoList(customerBookingPage.getContent(), getMasterData))
                     .totalPages((int) totalPages)
                     .totalCount(customerBookingPage.getTotalElements())
                     .build();
@@ -771,13 +772,19 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private <T extends IRunnerResponse> List<T> convertEntityListToDtoList(List<CustomerBooking> lst) {
+    private <T extends IRunnerResponse> List<T> convertEntityListToDtoList(List<CustomerBooking> lst, Boolean getMasterData) {
         List<T> responseList = new ArrayList<>();
         lst.forEach(customerBooking -> {
             T response = modelMapper.map(customerBooking, (Class<T>) CustomerBookingV3Response.class);
             responseList.add(response);
         });
-        masterDataUtils.setLocationData((List<IRunnerResponse>) responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        if(Boolean.TRUE.equals(getMasterData)) {
+            double startTime = System.currentTimeMillis();
+            var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList((List<IRunnerResponse>) responseList)), executorServiceMasterData);
+            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData((List<IRunnerResponse>) responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
+            CompletableFuture.allOf(locationDataFuture, carrierDataFuture).join();
+            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.BOOKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+        }
         return responseList;
     }
 
