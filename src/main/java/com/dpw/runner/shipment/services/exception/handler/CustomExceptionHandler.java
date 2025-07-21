@@ -61,6 +61,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
         String errorMessages = ex.getConstraintViolations().stream()
                 .map(ConstraintViolation::getMessage)
                 .collect(Collectors.joining(", "));
+
         return ResponseHelper.buildFailedResponse(errorMessages, HttpStatus.BAD_REQUEST);
     }
 
