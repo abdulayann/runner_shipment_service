@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -2843,5 +2845,36 @@ public class CommonUtils {
         if(isStringNullOrEmpty(getShipmentSettingFromContext().getVolumeChargeableUnit()))
             return VOLUME_UNIT_M3;
         return getShipmentSettingFromContext().getVolumeChargeableUnit();
+    }
+    public static String setTransportInfoStatusMessage(CarrierDetails carrierDetails, TransportInfoStatus transportInfoStatus, List<Routings> mainCarriageRoutings) {
+        if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+            Routings firstLeg = mainCarriageRoutings.get(0);
+            Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
+            String polMessage = Constants.EMPTY_STRING;
+            String podMessage = Constants.EMPTY_STRING;
+            if (Objects.nonNull(carrierDetails) && !Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort())) {
+                polMessage = Constants.POL_WARNING_MESSAGE;
+            }
+            if (Objects.nonNull(carrierDetails) && !Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
+                podMessage = Constants.POD_WARNING_MESSAGE;
+            }
+            if (StringUtility.isNotEmpty(polMessage) && StringUtility.isNotEmpty(podMessage)) {
+                return Constants.POL_POD_WARNING_MESSAGE;
+            } else if (StringUtility.isNotEmpty(polMessage)) {
+                return Constants.POL_WARNING_MESSAGE;
+            } else if (StringUtility.isNotEmpty(podMessage)) {
+                return Constants.POD_WARNING_MESSAGE;
+            }
+        }
+        return Constants.EMPTY_STRING;
+    }
+    public static Boolean isVesselVoyageOrCarrierFlightNumberAvailable(List<Routings> mainCarriageRoutings) {
+        Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
+        Routings route = mainCarriageRoutings.get(0);
+        if (routings.isPresent()) {
+            route = routings.get();
+        }
+        return (Constants.TRANSPORT_MODE_SEA.equals(route.getMode()) && StringUtility.isNotEmpty(route.getVesselName()) && StringUtility.isNotEmpty(route.getVoyage()))
+                || (TRANSPORT_MODE_AIR.equals(route.getMode()) && StringUtility.isNotEmpty(route.getCarrier()) && StringUtility.isNotEmpty(route.getFlightNumber()));
     }
 }

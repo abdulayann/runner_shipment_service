@@ -680,40 +680,10 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<Routings> routingsList = shipmentDetailsEntity.getRoutingsList();
         if (!CollectionUtils.isEmpty(routingsList)) {
             List<Routings> mainCarriageRoutings = routingsList.stream().filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE).toList();
-            setTransportInfoStatusMessage(shipmentDetailsEntity, response, mainCarriageRoutings);
+            CommonUtils.setTransportInfoStatusMessage(shipmentDetailsEntity.getCarrierDetails(),shipmentDetailsEntity.getTransportInfoStatus(), mainCarriageRoutings);
             if (!CollectionUtils.isEmpty(mainCarriageRoutings)) {
                 response.setIsMainCarriageAvailable(true);
-                Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
-                Routings route = mainCarriageRoutings.get(0);
-                if (routings.isPresent()) {
-                    route = routings.get();
-                }
-                if ((Constants.TRANSPORT_MODE_SEA.equals(route.getMode()) && StringUtility.isNotEmpty(route.getVesselName()) && StringUtility.isNotEmpty(route.getVoyage()))
-                        || (TRANSPORT_MODE_AIR.equals(route.getMode()) && StringUtility.isNotEmpty(route.getCarrier()) && StringUtility.isNotEmpty(route.getFlightNumber()))) {
-                    response.setIsVesselVoyageOrCarrierFlightNumberAvailable(true);
-                }
-            }
-
-        }
-    }
-
-    private static void setTransportInfoStatusMessage(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response, List<Routings> mainCarriageRoutings) {
-        if (TransportInfoStatus.IH.equals(shipmentDetailsEntity.getTransportInfoStatus())) {
-            Routings firstLeg = mainCarriageRoutings.get(0);
-            Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
-            CarrierDetails carrierDetails = shipmentDetailsEntity.getCarrierDetails();
-            String polMessage = "";
-            String podMessage = "";
-            if (Objects.nonNull(carrierDetails) && !Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort())) {
-                polMessage = Constants.POL_WARNING_MESSAGE;
-                response.setTransportInfoStatusMessage(polMessage);
-            }
-            if (Objects.nonNull(carrierDetails) && !Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
-                podMessage = Constants.POD_WARNING_MESSAGE;
-                response.setTransportInfoStatusMessage(podMessage);
-            }
-            if (StringUtility.isNotEmpty(polMessage) && StringUtility.isNotEmpty(podMessage)) {
-                response.setTransportInfoStatusMessage(Constants.POL_POD_WARNING_MESSAGE);
+                response.setIsVesselVoyageOrCarrierFlightNumberAvailable(CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mainCarriageRoutings));
             }
 
         }

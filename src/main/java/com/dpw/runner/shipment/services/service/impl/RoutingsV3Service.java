@@ -634,6 +634,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         List<RoutingsResponse> routingsListResponses = new ArrayList<>();
         lst.forEach(route -> {
             var response = modelMapper.map(route, RoutingsResponse.class);
+            if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getMode())) {
+                response.setVoyage(response.getFlightNumber());
+            }
             routingsListResponses.add(response);
         });
         return routingsListResponses;
