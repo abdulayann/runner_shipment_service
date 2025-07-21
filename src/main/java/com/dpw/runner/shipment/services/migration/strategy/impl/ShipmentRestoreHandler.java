@@ -4,20 +4,28 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
+import com.dpw.runner.shipment.services.migration.dao.interfaces.IShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
+import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 @Slf4j
-public class ShipmentRestoreHandler {
+public class ShipmentRestoreHandler implements RestoreHandler {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -70,7 +78,11 @@ public class ShipmentRestoreHandler {
     @Autowired
     private ShipmentDao shipmentDao;
 
-    public void restoreShipmentDetails (Long shipmentId, Map<Long, List<Long>> containerShipmentMap) throws JsonProcessingException {
+    @Autowired
+    @Qualifier("rollbackTaskExecutor")
+    private ThreadPoolTaskExecutor rollbackTaskExecutor;
+
+    public void restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap) throws JsonProcessingException {
 
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
         ShipmentBackupEntity shipmentBackupDetails = shipmentBackupDao.findByShipmentId(shipmentId);
@@ -222,5 +234,35 @@ public class ShipmentRestoreHandler {
         for (Packing restored : shipmentDetails.getPackingList()) {
             packingDao.save(restored);
         }
+    }
+
+    @Override
+    public void restore(Integer tenantId) {
+
+        Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
+        Set<Long> allOriginalShipmentIds = shipmentDao.findAllShipmentIdsByTenantId(tenantId);
+
+        // Soft delete bookings not present in backup
+        Set<Long> idsToDelete = Sets.difference(allBackupShipmentIds, allOriginalShipmentIds);
+        if (!idsToDelete.isEmpty()) {
+            shipmentDao.deleteShipmentDetailsByIds(idsToDelete);
+        }
+
+        Lists.partition(new ArrayList<>(allBackupShipmentIds), 100).forEach(batch -> {
+            List<CompletableFuture<Void>> futures = batch.stream().map(shipmentId ->
+                    CompletableFuture.runAsync(() -> {
+                        try {
+                            restoreShipmentDetails(shipmentId, null);
+                        } catch (Exception e) {
+                            log.error("Failed shipment restore {}: {}", shipmentId, e.getMessage());
+                            throw new RestoreFailureException("Rollback failed", e);
+                        }
+                    }, rollbackTaskExecutor)).toList();
+
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).exceptionally(ex -> {
+                log.error("Batch failed", ex);
+                return null;
+            }).join();
+        });
     }
 }

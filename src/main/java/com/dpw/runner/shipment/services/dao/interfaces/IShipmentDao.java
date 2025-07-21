@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 public interface IShipmentDao {
     ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException;
@@ -77,4 +79,6 @@ public interface IShipmentDao {
     Set<Long> findShipmentIdsByTenantId(Integer tenantId);
 
     void revertSoftDeleteShipmentIdAndTenantId(List<Long> allShipmentIdsFromContainerMap, Integer tenantId);
+    Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
+    void deleteShipmentDetailsByIds(Set<Long> ids);
 }

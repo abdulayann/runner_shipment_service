@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @SuppressWarnings("java:S3776")
 @Repository
@@ -23,5 +24,10 @@ public class ShipmentBackupDao implements IShipmentBackupDao {
     @Override
     public ShipmentBackupEntity findByShipmentId(Long shipmentId) {
         return shipmentBackupRepository.findByShipmentId(shipmentId);
+    }
+
+    @Override
+    public Set<Long> findShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentBackupRepository.findCustomerBookingIdsByTenantId(tenantId);
     }
 }
