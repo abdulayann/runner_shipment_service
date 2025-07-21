@@ -1983,18 +1983,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private boolean checkWeightIsSame(BigDecimal weight1, String weightUnit1, BigDecimal weight2, String weightUnit2) throws RunnerException {
         if(!Objects.isNull(weight1) && !Objects.isNull(weight2) && !isStringNullOrEmpty(weightUnit1) && !isStringNullOrEmpty(weightUnit2)) {
-            return Objects.equals(weight2.doubleValue(), new BigDecimal(convertUnit(MASS, weight1, weightUnit1, weightUnit2).toString()).doubleValue());
+            return weight2.compareTo(new BigDecimal(convertUnit(MASS, weight1, weightUnit1, weightUnit2).toString())) == 0;
         }
-        return (Objects.isNull(weight1) || Objects.equals(weight1, BigDecimal.ZERO)) &&
-                (Objects.isNull(weight2) || Objects.equals(weight2, BigDecimal.ZERO));
+        return (Objects.isNull(weight1) || BigDecimal.ZERO.compareTo(weight1) == 0) &&
+                (Objects.isNull(weight2) || BigDecimal.ZERO.compareTo(weight2) == 0);
     }
 
     private boolean checkVolumeIsSame(BigDecimal volume1, String volumeUnit1, BigDecimal volume2, String volumeUnit2) throws RunnerException {
         if(!Objects.isNull(volume1) && !Objects.isNull(volume2) && !isStringNullOrEmpty(volumeUnit1) && !isStringNullOrEmpty(volumeUnit2)) {
-            return Objects.equals(volume2.doubleValue(), new BigDecimal(convertUnit(VOLUME, volume1, volumeUnit1, volumeUnit2).toString()).doubleValue());
+            return volume2.compareTo(new BigDecimal(convertUnit(VOLUME, volume1, volumeUnit1, volumeUnit2).toString())) == 0;
         }
-        return (Objects.isNull(volume1) || Objects.equals(volume1, BigDecimal.ZERO)) &&
-                (Objects.isNull(volume2) || Objects.equals(volume2, BigDecimal.ZERO));
+        return (Objects.isNull(volume1) || BigDecimal.ZERO.compareTo(volume1) == 0) &&
+                (Objects.isNull(volume2) || BigDecimal.ZERO.compareTo(volume2) == 0);
     }
 
     private boolean checkPackagesIsSame(Integer packages1, String packagesUnit1, Integer packages2, String packagesUnit2) {
@@ -2017,8 +2017,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(!Objects.isNull(count1) && !Objects.isNull(count2)) {
             return Objects.equals(count2.doubleValue(), count1.doubleValue());
         }
-        return (Objects.isNull(count1) || Objects.equals(count1, BigDecimal.ZERO)) &&
-                (Objects.isNull(count2) || Objects.equals(count2, BigDecimal.ZERO));
+        return (Objects.isNull(count1) || BigDecimal.ZERO.compareTo(count1) == 0) &&
+                (Objects.isNull(count2) || BigDecimal.ZERO.compareTo(count2) == 0);
     }
 
 
@@ -4591,7 +4591,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
         AchievedQuantitiesResponse achievedQuantitiesResponse = jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class);
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
-        jsonHelper.updateValue(achievedQuantitiesResponse, shipmentWtVolResponse);
+        achievedQuantitiesResponse.setWeightVolume(shipmentWtVolResponse.getWeightVolume());
+        achievedQuantitiesResponse.setWeightVolumeUnit(shipmentWtVolResponse.getWeightVolumeUnit());
+        achievedQuantitiesResponse.setPacks(shipmentWtVolResponse.getPacks());
+        achievedQuantitiesResponse.setPacksType(shipmentWtVolResponse.getPacksType());
+        achievedQuantitiesResponse.setDgPacks(shipmentWtVolResponse.getDgPacks());
+        achievedQuantitiesResponse.setDgPacksType(shipmentWtVolResponse.getDgPacksType());
+        achievedQuantitiesResponse.setSlacCount(shipmentWtVolResponse.getSlacCount());
         achievedQuantitiesResponse.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
         achievedQuantitiesResponse.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
         achievedQuantitiesResponse.setConsolidatedVolume(shipmentWtVolResponse.getVolume());
