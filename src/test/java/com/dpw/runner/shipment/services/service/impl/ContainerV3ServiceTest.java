@@ -214,6 +214,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testDGPacks1(){
         Containers containers1 = new Containers();
         Packing packing = new Packing();
+        packing.setPacks("1");
         packing.setHazardous(true);
         containers1.setPacksList(List.of(packing));
 
@@ -226,6 +227,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testDGPacks2(){
         Containers containers2 = new Containers();
         Packing packing2 = new Packing();
+        packing2.setPacks("22");
         packing2.setHazardous(false);
         containers2.setPacksList(List.of(packing2));
 
