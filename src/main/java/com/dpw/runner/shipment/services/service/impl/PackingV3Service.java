@@ -1319,6 +1319,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (!StringUtility.isEmpty(packing.getPacksType())) {
             if (packing.getHazardous() != null && packing.getHazardous()) {
                 dgPacksUnitSet.add(packing.getPacksType());
+                uniquePacksUnits.add(packing.getPacksType());
             } else {
                 uniquePacksUnits.add(packing.getPacksType());
             }
@@ -1330,9 +1331,6 @@ public class PackingV3Service implements IPackingV3Service {
             response.setPacksUnit(uniquePacksUnits.iterator().next());
         }
         if (dgPacksUnitSet.size() == 1) {
-            if (CollectionUtils.isEmpty(uniquePacksUnits)) {
-                response.setPacksUnit(dgPacksUnitSet.iterator().next());
-            }
             response.setDgPacksUnit(dgPacksUnitSet.iterator().next());
         }
     }

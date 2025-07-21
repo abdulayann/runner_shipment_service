@@ -875,17 +875,20 @@ class PackingV3ServiceTest extends CommonMocks {
     void testSetPacksUnits_shouldSetOnlyDgPacksUnit_whenOnlyDgSetHasSingleValue() {
         CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
         Set<String> uniquePacksUnits = new HashSet<>();
+        uniquePacksUnits.add("KG");
         Set<String> dgPacksUnitSet = Set.of("KG");
         packingV3Service.setPacksUnits(cargoDetailsResponse, uniquePacksUnits, dgPacksUnitSet);
+        assertEquals("KG",cargoDetailsResponse.getPacksUnit());
         assertEquals("KG", cargoDetailsResponse.getDgPacksUnit(), "dgPacksUnit should be set to 'KG'");
     }
     @Test
     void testSetPacksUnits_shouldSetDgPacksAndTotalPackUnit_whenOnlyDgSetHasSingleValue() {
         CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
         Set<String> uniquePacksUnits = new HashSet<>();
+        uniquePacksUnits.add("KG");
         Set<String> dgPacksUnitSet = Set.of("KG");
         packingV3Service.setPacksUnits(cargoDetailsResponse, uniquePacksUnits, dgPacksUnitSet);
-        assertEquals("KG",cargoDetailsResponse.getPacksUnit());
+        assertNotNull(cargoDetailsResponse.getPacksUnit());
         assertEquals("KG", cargoDetailsResponse.getDgPacksUnit(), "dgPacksUnit should be set to 'KG'");
     }
 
