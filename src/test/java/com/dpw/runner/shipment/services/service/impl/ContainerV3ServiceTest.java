@@ -214,11 +214,12 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testDGPacks1(){
         Containers containers1 = new Containers();
         Packing packing = new Packing();
+        packing.setPacks("1");
         packing.setHazardous(true);
         containers1.setPacksList(List.of(packing));
 
-        int packCount = 0;
-        int result = containerV3Service.getTotalDGPacks(containers1, packCount);
+        double packCount = 0;
+        double result = containerV3Service.getTotalDGPacks(containers1, packCount);
         assertEquals(1, result);
     }
 
@@ -226,11 +227,12 @@ class ContainerV3ServiceTest extends CommonMocks {
     void testDGPacks2(){
         Containers containers2 = new Containers();
         Packing packing2 = new Packing();
+        packing2.setPacks("22");
         packing2.setHazardous(false);
         containers2.setPacksList(List.of(packing2));
 
-        int packCount = 0;
-        int result = containerV3Service.getTotalDGPacks(containers2, packCount);
+        double packCount = 0;
+        double result = containerV3Service.getTotalDGPacks(containers2, packCount);
         assertEquals(packCount, result);
     }
     @Test
@@ -997,7 +999,6 @@ class ContainerV3ServiceTest extends CommonMocks {
         containerV3Service.pushContainersToDependentServices(containersList);
 
         // Assert
-//        verify(commonUtils, times(1)).getCurrentTenantSettings();
         verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
     }
 
@@ -1008,13 +1009,10 @@ class ContainerV3ServiceTest extends CommonMocks {
         V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
         tenantSettings.setLogicAppIntegrationEnabled(true);
 
-//        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-
         // Act
         containerV3Service.pushContainersToDependentServices(containersList);
 
         // Assert
-//        verify(commonUtils, times(1)).getCurrentTenantSettings();
         verify(producer, never()).produceToKafka(anyString(), anyString(), anyString());
 
     }
@@ -1153,7 +1151,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCheckAndMakeDG() throws RunnerException {
+    void testCheckAndMakeDG() {
         Containers container = new Containers();
         container.setHazardous(Boolean.TRUE);
         container.setDgClass("1");
@@ -1165,7 +1163,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCheckAndMakeDG2() throws RunnerException {
+    void testCheckAndMakeDG2() {
         Containers container = new Containers();
         container.setHazardous(Boolean.FALSE);
         container.setDgClass("1");
