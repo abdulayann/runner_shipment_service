@@ -35,7 +35,7 @@ public class TransportInstructionReportHelper {
         legsDictionary.put(ReportConstants.HAS_LEGS, true);
         TILegsModel tiLegsModel = modelMapper.map(tilegs, TILegsModel.class);
         tiLegsModel.setLegType(tilegs.getLegType().getDescription());
-        tiLegsModel.setOrigin(tilegs.getOrigin() != null ? tilegs.getOrigin().getOrgData().get(FULL_NAME) : Constants.EMPTY_STRING);
+        tiLegsModel.setOrigin(getOriginFullName(tilegs));
         if (tilegs.getOrigin() != null) {
             tiLegsModel.setOriginAddress(getFormattedAddress(modelMapper.map(tilegs.getOrigin(), PartiesModel.class), false));
         }
@@ -44,6 +44,16 @@ public class TransportInstructionReportHelper {
             tiLegsModel.setDestinationAddress(getFormattedAddress(modelMapper.map(tilegs.getDestination(), PartiesModel.class), false));
         }
         legsDictionary.put(ReportConstants.TI_LEGS, tiLegsModel);
+    }
+
+    private static Object getOriginFullName(TiLegs tilegs) {
+        if (tilegs.getOrigin() != null) {
+            Map<String, Object> orgData = tilegs.getOrigin().getOrgData();
+            if (orgData != null) {
+              return orgData.get(FULL_NAME);
+            }
+        }
+        return Constants.EMPTY_STRING;
     }
 
     public void addTransportInstructionLegsTruckDriverDataIntoDictionary(TiLegs tilegs, Map<String, Object> legsDictionary) {

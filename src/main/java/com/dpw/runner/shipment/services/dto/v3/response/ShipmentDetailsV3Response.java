@@ -261,4 +261,5 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Long containerAssignedToShipmentCargo;
     private Boolean isBorrowed;
     private Long originBranch;
+    private Integer slac;
 }
