@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -2813,18 +2814,24 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetails consoleDetails = consolidationDetails.get();
         log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
         ConsolidationDetailsV3Response response = jsonHelper.convertValue(consoleDetails, ConsolidationDetailsV3Response.class);
-        List<Routings> routingsList = consoleDetails.getRoutingsList();
-        if (!CollectionUtils.isEmpty(routingsList)) {
-            boolean isMainCarriagePresent = routingsList.stream()
-                    .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-            response.setIsMainCarriageAvailable(isMainCarriagePresent);
-        }
         if(!Objects.equals(source, NETWORK_TRANSFER))
             setPendingActionCountInResponse(consoleDetails, response);
         createConsolidationPayload(consoleDetails, response);
+        setMainCarriageFlag(consoleDetails, response);
         return response;
     }
+    private void setMainCarriageFlag(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response response) {
+        List<Routings> routingsList = consolidationDetails.getRoutingsList();
+        if (!CollectionUtils.isEmpty(routingsList)) {
+            List<Routings> mainCarriageRoutings = routingsList.stream().filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE).toList();
+            response.setTransportInfoStatusMessage(CommonUtils.setTransportInfoStatusMessage(consolidationDetails.getCarrierDetails(), consolidationDetails.getTransportInfoStatus(), mainCarriageRoutings));
+            if (!CollectionUtils.isEmpty(mainCarriageRoutings)) {
+                response.setIsMainCarriageAvailable(true);
+                response.setIsVesselVoyageOrCarrierFlightNumberAvailable(CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mainCarriageRoutings));
+            }
 
+        }
+    }
     private void setPendingActionCountInResponse(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response response) {
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.getId()), CONSOLIDATION);
