@@ -332,6 +332,8 @@ class DocumentManagerServiceImplTest {
     @Test
     void testPushSystemGeneratedDocumentToDocMaster2() {
         var request = new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1});
+        var fileName = "test.txt";
+        var uploadRequest = new DocUploadRequest();
         DocumentManagerResponse<DocumentManagerDataResponse> documentManagerResponse = new DocumentManagerResponse<>();
         documentManagerResponse.setCount(3L);
         documentManagerResponse.setData(new DocumentManagerDataResponse());
@@ -339,7 +341,7 @@ class DocumentManagerServiceImplTest {
         when(documentManagerRestClient.temporaryFileUpload(Mockito.<DocumentManagerTempFileUploadRequest>any()))
                 .thenReturn(documentManagerResponse);
 
-        assertThrows(DocumentClientException.class, () -> documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(request, "test.txt", new DocUploadRequest()));
+        assertThrows(DocumentClientException.class, () -> documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(request, fileName, uploadRequest));
     }
 
 
