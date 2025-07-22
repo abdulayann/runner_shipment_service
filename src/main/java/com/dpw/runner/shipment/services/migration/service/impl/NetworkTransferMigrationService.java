@@ -312,9 +312,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
     @Override
     public Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId) {
         Map<String, Integer> map = new HashMap<>();
-        ////        List<NetworkTransfer> networkTranferList = fetchNteFromDB(List.of(MigrationStatus.NT_CREATED.name(), MigrationStatus.NT_PROCESSED_FOR_V2.name()), tenantId);
-        NetworkTransfer networkTransfer = networkTransferDao.findByIdWithQuery(936L).get();
-        List<NetworkTransfer> networkTranferList = Collections.singletonList(networkTransfer);
+        List<NetworkTransfer> networkTranferList = fetchNteFromDB(List.of(MigrationStatus.NT_CREATED.name(), MigrationStatus.NT_PROCESSED_FOR_V3.name()), tenantId);
         map.put("Total NetworkTransfer", networkTranferList.size());
         log.info("Starting NetworkTransfer migration for tenant [{}]. Found {} NetworkTransfer(s).", tenantId, networkTranferList.size());
 
