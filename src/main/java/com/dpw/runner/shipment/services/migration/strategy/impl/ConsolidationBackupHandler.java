@@ -66,7 +66,8 @@ public class ConsolidationBackupHandler implements BackupHandler {
 
     @Override
     public void backup(Integer tenantId) {
-        long startTime = System.currentTimeMillis();
+       /*
+       long startTime = System.currentTimeMillis();
         log.info("Starting consolidation backup for tenantId: {}", tenantId);
         Set<Long> consolidationIds = consolidationDetailsDao.findConsolidationIdsByTenantId(tenantId);
         log.info("Consolidation fetch apis : {} ", System.currentTimeMillis() - startTime);
@@ -86,7 +87,7 @@ public class ConsolidationBackupHandler implements BackupHandler {
         } catch (Exception e) {
             log.error("Backup failed for tenant {}", tenantId, e);
             throw new BackupFailureException("Backup failed for tenant: " + tenantId, e);
-        }
+        }*/
     }
 
 

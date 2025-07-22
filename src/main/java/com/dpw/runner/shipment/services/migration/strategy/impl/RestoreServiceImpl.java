@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -40,8 +42,9 @@ public class RestoreServiceImpl implements RestoreService {
 
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-        } catch (CompletionException e) {
-            log.error("Backup failed for tenant: {}. Initiating rollback.", tenantId, e);
+        } catch (Exception e) {
+            log.error("Restore failed for tenant : {}", tenantId, e);
+            throw new RestoreFailureException("Restore failed : ", e);
         }
     }
 
@@ -54,9 +57,6 @@ public class RestoreServiceImpl implements RestoreService {
         } catch (Exception e) {
             log.error("Handler {} failed", handler.getClass().getSimpleName(), e);
             throw new CompletionException(e);
-        } finally {
-            TenantContext.removeTenant();
-            UserContext.removeUser();
         }
     }
 }

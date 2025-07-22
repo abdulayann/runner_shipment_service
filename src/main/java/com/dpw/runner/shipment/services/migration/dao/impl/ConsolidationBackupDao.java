@@ -24,6 +24,11 @@ public class ConsolidationBackupDao implements IConsolidationBackupDao {
         return consolidationBackupRepository.findConsolidationIdsByTenantId(tenantId);
     }
 
+    @Override
+    public void makeIsDeleteTrueToMarkRestoreSuccessful(Long id) {
+        consolidationBackupRepository.makeIsDeleteTrueToMarkRestoreSuccessful(id);
+    }
+
     public ConsolidationBackupEntity findConsolidationsById(Long consolidationId) {
         return consolidationBackupRepository.findConsolidationsById(consolidationId);
     }

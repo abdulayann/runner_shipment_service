@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupHandler;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -54,9 +57,9 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     private List<CompletableFuture<Void>> initiateBackupTasks(Integer tenantId) {
         return backupHandlers.stream()
                 .map(handler -> CompletableFuture.runAsync(() -> {
-                    log.info("Starting execution of {}", handler.getClass().getSimpleName());
-                    handler.backup(tenantId);
-                }, asyncBackupServiceExecutor)
+                            log.info("Starting execution of {}", handler.getClass().getSimpleName());
+                            handler.backup(tenantId);
+                        }, asyncBackupServiceExecutor)
                         .exceptionally(ex -> {
                             log.error("Async backup failed for handler: {}", handler.getClass().getSimpleName(), ex);
                             return null;

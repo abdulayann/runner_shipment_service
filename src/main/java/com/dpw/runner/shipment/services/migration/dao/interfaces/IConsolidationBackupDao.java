@@ -4,4 +4,6 @@ import java.util.List;
 
 public interface IConsolidationBackupDao {
     List<Long> findConsolidationIdsByTenantId(Integer tenantId);
+
+    void makeIsDeleteTrueToMarkRestoreSuccessful(Long id);
 }

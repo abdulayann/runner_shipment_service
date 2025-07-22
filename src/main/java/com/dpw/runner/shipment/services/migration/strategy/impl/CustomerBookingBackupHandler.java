@@ -54,7 +54,7 @@ public class CustomerBookingBackupHandler implements BackupHandler {
 
     @Override
     public void backup(Integer tenantId) {
-        long start = System.currentTimeMillis();
+        /*long start = System.currentTimeMillis();
         log.info("Starting customer booking backup for tenantId: {}", tenantId);
         Set<Long> customerBookingIds = customerBookingDao.findCustomerBookingIdsByTenantId(tenantId);
         log.info("for Booking fetch api : {}", System.currentTimeMillis() - start);
@@ -78,7 +78,7 @@ public class CustomerBookingBackupHandler implements BackupHandler {
         } catch (Exception e) {
             log.error("Backup failed for tenant {}", tenantId, e);
             throw new BackupFailureException("Backup failed for tenant: " + tenantId, e);
-        }
+        }*/
         log.info("Completed customer booking backup for tenantId: {}", tenantId);
     }
 

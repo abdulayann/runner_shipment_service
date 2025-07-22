@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.migration.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,14 +21,8 @@ import java.util.UUID;
 @Table(name = "customer_booking_backup")
 @NoArgsConstructor
 @AllArgsConstructor
-public class CustomerBookingBackupEntity {
+public class CustomerBookingBackupEntity extends MultiTenancy {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private Integer tenantId;
 
     @Column(name = "back_up_time_utc", nullable = false)
     private Instant backupTimeUtc = Instant.now();

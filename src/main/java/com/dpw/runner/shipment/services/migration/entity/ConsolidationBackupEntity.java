@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.migration.entity;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,14 +16,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "consolidation_backup")
-public class ConsolidationBackupEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(nullable = false)
-    private Integer tenantId;
+public class ConsolidationBackupEntity extends MultiTenancy {
 
     @Column(name = "consolidation_id")
     private Long consolidationId;

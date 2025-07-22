@@ -35,4 +35,9 @@ public class ShipmentBackupDao implements IShipmentBackupDao {
     public Set<Long> findNonAttachedShipmentIdsByTenantId(Integer tenantId) {
         return shipmentBackupRepository.findNonAttachedShipmentIdsByTenantId(tenantId);
     }
+
+    @Override
+    public void makeIsDeleteTrueToMarkRestoreSuccessful(Long id) {
+        shipmentBackupRepository.makeIsDeleteTrueToMarkRestoreSuccessful(id);
+    }
 }

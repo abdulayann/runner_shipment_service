@@ -143,12 +143,12 @@ public class ShipmentRestoreHandler implements RestoreHandler {
             return null;
         }
         ShipmentDetails shipmentDetails = objectMapper.readValue(shipmentBackupDetails.getShipmentDetail(), ShipmentDetails.class);
-        if(consolidationDetails != null) {
+        if (consolidationDetails != null) {
             shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
         }
         processContainerToShipmentMapping(shipmentId, shipmentDetails, containerShipmentMap);
 
-        var containerList = shipmentDetails.getContainersList().stream().filter(x->shipmentsContainersMapping.contains(x.getId())).collect(Collectors.toSet());
+        var containerList = shipmentDetails.getContainersList().stream().filter(x -> shipmentsContainersMapping.contains(x.getId())).collect(Collectors.toSet());
         shipmentDetails.setContainersList(containerList);
         List<Long> packingIds = shipmentDetails.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndSetPackingDetails(shipmentId, packingIds, shipmentDetails);
@@ -177,6 +177,8 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         List<Long> pickupDeliveryDetailsIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream().map(PickupDeliveryDetails::getId).filter(Objects::nonNull).toList();
         validateAndSetPickupDeliveryDetails(shipmentId, pickupDeliveryDetailsIds, shipmentDetails);
         shipmentDao.saveWithoutValidation(shipmentDetails);
+        shipmentBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(shipmentBackupDetails.getId());
+
         return shipmentDetails;
     }
 
@@ -273,6 +275,9 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     public void restore(Integer tenantId) {
 
         Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
+        if (allBackupShipmentIds.isEmpty()) {
+            return;
+        }
         Set<Long> allOriginalShipmentIds = shipmentDao.findAllShipmentIdsByTenantId(tenantId);
 
         // Soft delete bookings not present in backup

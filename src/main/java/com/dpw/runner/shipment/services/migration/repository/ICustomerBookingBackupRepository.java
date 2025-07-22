@@ -13,12 +13,13 @@ import java.util.Set;
 public interface ICustomerBookingBackupRepository extends JpaRepository<CustomerBookingBackupEntity, Long> {
     void deleteByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT c.booking_id FROM customer_booking_backup c WHERE c.tenant_id = ?1", nativeQuery = true)
+    @Query(value = "SELECT c.booking_id FROM customer_booking_backup c WHERE c.tenant_id = ?1 and is_delete = false", nativeQuery = true)
     Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
 
     @Query(value = "SELECT * FROM customer_booking_backup c WHERE c.booking_id = ?1", nativeQuery = true)
     CustomerBookingBackupEntity findCustomerBookingDetailsById(Long bookingId);
 
-    @Query(value = "SELECT * FROM customer_booking_backup c WHERE c.booking_id in ?1", nativeQuery = true)
-    List<CustomerBookingBackupEntity> findCustomerBookingDetailsByIds(Set<Long> ids);
+    @Modifying
+    @Query(value = "UPDATE customer_booking_backup SET is_deleted = true WHERE id = ?1", nativeQuery = true)
+    void makeIsDeleteTrueToMarkRestoreSuccessful(Long backupId);
 }

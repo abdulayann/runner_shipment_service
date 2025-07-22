@@ -72,8 +72,11 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
     @Override
     public void restore(Integer tenantId) {
 
-        TenantContext.setCurrentTenant(tenantId);
         Set<Long> allBackupBookingIds = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
+        if (allBackupBookingIds.isEmpty()) {
+            return;
+        }
+
         Set<Long> allOriginalBookingIds = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
 
         // Soft delete bookings not present in backup
@@ -102,6 +105,7 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
                 CustomerBooking backupData = objectMapper.readValue(backup.getCustomerBookingDetails(), CustomerBooking.class);
                 restoreOneToManyMapping(backupData, bookingId);
                 customerBookingDao.save(backupData);
+                backupRepository.makeIsDeleteTrueToMarkRestoreSuccessful(backup.getId());
             } catch (Exception e) {
                 status.setRollbackOnly();
                 log.error("Failed booking {}: {}", bookingId, e.getMessage());

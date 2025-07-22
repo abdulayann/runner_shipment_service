@@ -106,67 +106,14 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
 
-        // for local test
-/*            Long consolidationId = 6990L;
-            ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
-        try {
-            ConsolidationDetails consolidationDetails = objectMapper.readValue(consolidationBackupDetails.getConsolidationDetails(), ConsolidationDetails.class);
-            if (consolidationBackupDetails.getConsoleShipmentMapping() != null) {
-                List<ConsoleShipmentMapping> mappingList = objectMapper.readValue(
-                        consolidationBackupDetails.getConsoleShipmentMapping(),
-                        new TypeReference<>() {
-                        }
-                );
-                List<Long> shipmentIds = mappingList.stream().map(ConsoleShipmentMapping::getShipmentId).filter(Objects::nonNull).toList();
-                shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
-                //shipmentDao
-                //TODO need to delete the new set of shipment data.
-
-                Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
-                for (Long shipmentId : shipmentIds) {
-                    shipmentRestoreHandler.restoreShipmentDetails(shipmentId, containerShipmentMap);
-                }
-
-                // add this in to another class
-                List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
-                containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
-                containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
-                List<Containers> containers = containerDao.findByIdIn(containersIds);
-                List<Long> allShipmentIdsFromContainerMap = containerShipmentMap.values().stream().flatMap(List::stream).distinct().toList();
-//                shipmentDao.revertSoftDeleteShipmentIdAndTenantId(allShipmentIdsFromContainerMap, tenantId);
-                List<ShipmentDetails> shipmentDetailsList = shipmentDao.findByIdIn(allShipmentIdsFromContainerMap);
-                Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
-                        .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
-                for (Containers container : containers) {
-                    List<Long> shipmentsIds = containerShipmentMap.get(container.getId());
-                    if (shipmentsIds != null) {
-                        Set<ShipmentDetails> shipmentSet = (!shipmentIds.isEmpty())
-                                ? shipmentIds.stream()
-                                .map(shipmentDetailsMap::get)
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toSet())
-                                : Collections.emptySet();
-                        container.setShipmentsList(shipmentSet);
-                    }
-                }
-                containerDao.saveAll(containers);
-                System.out.println("hi");
-            }
-        } catch (Exception e) {
-            log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
-        }*/
-
-        TenantContext.setCurrentTenant(tenantId);
-        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-
         List<Long> consolidationIds = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
-        consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
-        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
-
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);
             return;
         }
+        consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
+        consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
+
 
         List<CompletableFuture<Void>> futures = consolidationIds.stream()
                 .map(consolidationId -> CompletableFuture.runAsync(
@@ -197,7 +144,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
                 revertContainers(consolidationDetails);
                 Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
                 for (Long shipmentId : shipmentIds) {
-                    if(consolidationDetails.getShipmentsList() == null){
+                    if (consolidationDetails.getShipmentsList() == null) {
                         consolidationDetails.setShipmentsList(new HashSet<>());
                     }
                     ShipmentDetails shipmentDetails = shipmentRestoreHandler.restoreShipmentDetails(shipmentId, containerShipmentMap, consolidationDetails);
@@ -220,6 +167,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 //TODO packking to containersIds
 
             consolidationDao.save(consolidationDetails);
+            consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
