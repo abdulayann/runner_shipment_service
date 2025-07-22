@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Data
+@Data @Generated
 public class ShipmentListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
