@@ -122,13 +122,13 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
         validateAndRestoreRoutingDetails(bookingId, routingIds, backupData);
 
         List<Long> containerIds = backupData.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
-        validateAndRestoreContainersDetails(bookingId, containerIds, backupData);
+        validateAndRestoreContainersDetails(bookingId, containerIds, backupData); // need to check
 
         List<Long> additionalPartiesIds = backupData.getAdditionalParties().stream().map(Parties::getId).filter(Objects::nonNull).toList();
         validateAndRestoreAdditionalPartiesDetails(bookingId, additionalPartiesIds, backupData);
 
         List<Long> bookingChargeIds = backupData.getBookingCharges().stream().map(BookingCharges::getId).filter(Objects::nonNull).toList();
-        validateAndRestoreBookingChargesDetails(bookingId, bookingChargeIds, backupData);
+        validateAndRestoreBookingChargesDetails(bookingId, bookingChargeIds, backupData);// need to check
 
     }
 
