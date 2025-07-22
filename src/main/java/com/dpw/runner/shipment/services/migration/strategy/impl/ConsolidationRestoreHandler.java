@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepositor
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -32,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -131,6 +133,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
             Integer tenantId = consolidationBackupDetails.getTenantId();
             ConsolidationDetails consolidationDetails = objectMapper.readValue(consolidationBackupDetails.getConsolidationDetails(), ConsolidationDetails.class);
+            Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
             if (consolidationBackupDetails.getConsoleShipmentMapping() != null) {
                 List<ConsoleShipmentMapping> mappingList = objectMapper.readValue(
                         consolidationBackupDetails.getConsoleShipmentMapping(),
@@ -142,7 +145,6 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
                 //TODO need to delete the new set of shipment data.
                 //TODO need to diss for flag
                 revertContainers(consolidationDetails);
-                Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
                 for (Long shipmentId : shipmentIds) {
                     if (consolidationDetails.getShipmentsList() == null) {
                         consolidationDetails.setShipmentsList(new HashSet<>());
@@ -152,16 +154,16 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
                         consolidationDetails.getShipmentsList().add(shipmentDetails);
                     }
                 }
-                validateAndSaveContainers(consolidationDetails, containerShipmentMap);
             }
+            List<Long> allPartiesIds = getAllPartiesIds(consolidationDetails);
+            validateAndRestorePartiesDetails(consolidationId, allPartiesIds, consolidationDetails);
+            validateAndSaveContainers(consolidationDetails, containerShipmentMap);
             List<Long> referenceNumberIds = consolidationDetails.getReferenceNumbersList().stream().map(ReferenceNumbers::getId).filter(Objects::nonNull).toList();
             validateAndRestoreReferenceNumberDetails(consolidationId, referenceNumberIds, consolidationDetails);
             List<Long> routingsIds = consolidationDetails.getRoutingsList().stream().map(Routings::getId).filter(Objects::nonNull).toList();
             validateAndRestoreRoutingDetails(consolidationId, routingsIds, consolidationDetails);
             List<Long> eventsIds = consolidationDetails.getEventsList().stream().map(Events::getId).filter(Objects::nonNull).toList();
             validateAndRestoreEventsDetails(consolidationId, eventsIds, consolidationDetails);
-            List<Long> consolidationAddressIds = consolidationDetails.getConsolidationAddresses().stream().map(Parties::getId).filter(Objects::nonNull).toList();
-            validateAndRestorePartiesDetails(consolidationId, consolidationAddressIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
 //TODO packking to containersIds
@@ -172,6 +174,15 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
         }
+    }
+
+    @NotNull
+    private static List<Long> getAllPartiesIds(ConsolidationDetails consolidationDetails) {
+        return Stream.of(
+                        consolidationDetails.getContainersList().stream().flatMap(container -> Stream.of(container.getPickupAddress(), container.getDeliveryAddress())),
+                        consolidationDetails.getJobsList().stream().flatMap(job -> Stream.of(job.getBuyerDetail(), job.getSupplierDetail())),
+                        consolidationDetails.getConsolidationAddresses().stream()).flatMap(Function.identity()).filter(Objects::nonNull)
+                .map(Parties::getId).filter(Objects::nonNull).distinct().toList();
     }
 
     private void revertContainers(ConsolidationDetails consolidationDetails) {
@@ -190,6 +201,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
     private void validateAndSaveContainers(ConsolidationDetails consolidationDetails, Map<Long, List<Long>> containerShipmentMap) {
         List<Containers> containers = consolidationDetails.getContainersList();
+
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
                 .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
