@@ -2323,6 +2323,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         String transportMode = console.getTransportMode();
         shipmentDetails.setConsolRef(console.getConsolidationNumber());
+        shipmentDetails.setJobType(console.getConsolidationType());
 
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
