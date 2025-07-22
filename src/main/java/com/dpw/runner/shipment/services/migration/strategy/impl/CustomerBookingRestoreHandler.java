@@ -143,9 +143,8 @@ public class CustomerBookingRestoreHandler implements RestoreHandler {
     }
 
     private void validateAndRestoreAdditionalPartiesDetails(Long bookingId, List<Long> partiesIds, CustomerBooking backupData) {
-
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
-        partiesDao.revertSoftDeleteByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
+        partiesDao.revertSoftDeleteByPartiesIds(partiesIds);
         partiesDao.saveAll(backupData.getAdditionalParties());
     }
 

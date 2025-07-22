@@ -578,8 +578,8 @@ public class EventDao implements IEventDao {
     }
 
     @Override
-    public void revertSoftDeleteByEventsIdsAndConsolidationId(List<Long> eventsIds, Long consolidationId) {
-        eventRepository.revertSoftDeleteByEventsIdsAndConsolidationId(eventsIds, consolidationId);
+    public void revertSoftDeleteByEventsIds(List<Long> eventsIds) {
+        eventRepository.revertSoftDeleteByEventsIds(eventsIds);
     }
 
     @Override
