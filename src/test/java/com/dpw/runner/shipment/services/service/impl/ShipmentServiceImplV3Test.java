@@ -5449,7 +5449,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
 
@@ -5496,7 +5495,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
 
@@ -5543,7 +5541,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
 
@@ -5586,8 +5583,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-
-        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
 
@@ -5632,7 +5627,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
-        mockShipmentSettings();
         // Execute the method under test
         ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
 
