@@ -393,6 +393,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
         Routings firstLeg = mainCarriageRoutings.get(0);
         Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
+        consolidationDetails.setTransportInfoStatus(transportInfoStatus);
         if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
             updateVesselAndVoyage(mainCarriageRoutings, carrierDetails, firstLeg);
         } else if (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
@@ -459,8 +460,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     private static void updateCarrierDetailsBasedOnTransportInfoStatus(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, TransportInfoStatus transportInfoStatus, CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+        shipmentDetails.setTransportInfoStatus(transportInfoStatus);
         if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
-            shipmentDetails.setTransportInfoStatus(transportInfoStatus);
             updateVesselAndVoyage(mainCarriageRoutings, carrierDetails, firstLeg);
         } else if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
             setCarrierAndFlightNumberForAir(carrierDetails, firstLeg);
