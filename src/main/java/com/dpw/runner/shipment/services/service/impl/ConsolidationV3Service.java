@@ -542,7 +542,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if(!Boolean.TRUE.equals(isCreate)){
             // This method will only work for non air transport modes , validation check moved inside the method
-            updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments);
+            updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments, true);
         }
 
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
@@ -1704,7 +1704,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDao.entityDetach(shipmentDetailsList);
 
         // Refresh linked shipment data after attachment process
-        updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>());
+        updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>(), fromConsolidation);
 
         // If any inter-console linkage needs to be handled, process it now
         processInterConsoleAttachShipment(consolidationDetails, shipmentDetailsList);
@@ -2220,11 +2220,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @throws RunnerException If EFreight status is invalid or CFS cutoff validation fails
      */
     public List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldConsolEntity,
-            Boolean fromAttachShipment, Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
+            Boolean fromAttachShipment, Map<Long, ShipmentDetails> dgStatusChangeInShipments, Boolean fromConsole) throws RunnerException {
+
+        // This will ve true if console is/was interbranch enabled
+        boolean isOrWasInterBranchConsole = Optional.ofNullable(console.getInterBranchConsole()).orElse(false) ||
+                Optional.ofNullable(oldConsolEntity)
+                        .map(e -> e.getInterBranchConsole())
+                        .orElse(false);
 
         // Set interbranc context if Interbranch Flag is/was enabled
-        if (Boolean.TRUE.equals(console.getInterBranchConsole()) ||
-                (Objects.nonNull(oldConsolEntity) && Boolean.TRUE.equals(oldConsolEntity.getInterBranchConsole())) )
+        if (Boolean.TRUE.equals(fromConsole) && isOrWasInterBranchConsole)
             commonUtils.setInterBranchContextForHub();
 
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -4557,7 +4562,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .chargeable(StringUtility.convertToString(shipment.getChargable()) + StringUtility.convertToString(shipment.getChargeableUnit()))
                 .requestedBy(consoleShipmentsMap.get(shipment.getId()).getCreatedBy())
                 .requestedOn(consoleShipmentsMap.get(shipment.getId()).getCreatedAt())
-                .requestedType(consoleShipmentsMap.get(shipment.getId()).getRequestedType())
+                .requestedType(Objects.nonNull(consoleShipmentsMap.get(shipment.getId()).getRequestedType()) ? consoleShipmentsMap.get(shipment.getId()).getRequestedType().getV3Description() : null)
                 .build();
     }
 

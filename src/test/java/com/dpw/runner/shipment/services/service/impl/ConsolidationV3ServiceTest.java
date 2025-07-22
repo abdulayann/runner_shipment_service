@@ -740,7 +740,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails,
-        null, true, new HashMap<>()));
+        null, true, new HashMap<>(), true));
   }
 
   @Test
@@ -775,7 +775,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true);
     assertNotNull(shipmentDetailsList);
   }
 
@@ -813,7 +813,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true);
     assertNotNull(shipmentDetailsList);
   }
 
@@ -854,7 +854,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationValidationV3Util.checkIfShipmentDateGreaterThanConsole(any(), any())).thenReturn(true);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>()));
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true));
 
   }
 
