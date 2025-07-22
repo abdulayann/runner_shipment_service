@@ -4178,14 +4178,14 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     private Map<Long, Long> getShipmentToBookingIdsMap(List<ShipmentDetails> shipments) {
-        List<String> shipmentIdsAsStrings = shipments.stream()
+        List<String> shipmentIds = shipments.stream()
                 .map(shipment -> String.valueOf(shipment.getId())).distinct().toList();
 
-        List<CustomerBookingProjection> bookingProjections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIdsAsStrings);
+        List<CustomerBookingProjection> projections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIds);
 
-        return bookingProjections.stream()
+        return projections.stream()
                 .collect(Collectors.toMap(
-                        projection -> Long.valueOf(projection.getShipmentId()), // convert String to Long
+                        data -> Long.valueOf(data.getShipmentId()),
                         CustomerBookingProjection::getId
                 ));
     }
