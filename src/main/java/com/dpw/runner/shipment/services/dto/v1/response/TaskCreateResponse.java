@@ -16,4 +16,5 @@ import lombok.Setter;
 @NoArgsConstructor
 public class TaskCreateResponse  implements IRunnerResponse {
   private String tasksId;
+  private String taskGuid;
 }

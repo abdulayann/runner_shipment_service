@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -141,6 +142,9 @@ public class PackingV3Service implements IPackingV3Service {
     @Autowired
     private IContainerV3Service containerV3Service;
 
+    @Autowired
+    private ShipmentValidationV3Util shipmentValidationV3Util;
+
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Data
@@ -218,7 +222,7 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> packingList) {
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> packingList) throws RunnerException {
         if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(packingList)
                 || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
 
@@ -232,12 +236,11 @@ public class PackingV3Service implements IPackingV3Service {
         }
 
         if(isDG){
-            boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
-            shipmentDetails.setContainsHazardous(true);
-            saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+            boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
             if(saveShipment) {
+                shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
-                shipmentDao.updateDgStatusInShipment(shipmentDetails.getContainsHazardous(), oceanDGStatus, shipmentDetails.getId());
+                shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
             }
         }
     }

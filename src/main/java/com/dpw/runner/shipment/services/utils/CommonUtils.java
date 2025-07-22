@@ -1379,6 +1379,11 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
+    public String getTaskIdHyperLinkV3(String shipmentId, String taskUuid) {
+        String link = baseUrl + "/v2/cr3/shipments/task/" + taskUuid;
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
+    }
+
     public String getConsolidationIdHyperLink(String consolidationId, Long id) {
         String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
         return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
@@ -1848,6 +1853,7 @@ public class CommonUtils {
             return TaskCreateResponse
                 .builder()
                 .tasksId(mdmTaskCreateResponse.getId().toString())
+                .taskGuid(mdmTaskCreateResponse.getUuid())
                 .build();
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
