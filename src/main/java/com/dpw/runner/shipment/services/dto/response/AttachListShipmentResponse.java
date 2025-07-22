@@ -6,7 +6,10 @@ import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
