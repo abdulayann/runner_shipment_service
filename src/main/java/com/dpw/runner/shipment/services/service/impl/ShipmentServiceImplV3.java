@@ -2010,6 +2010,21 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    private void formatWeightAndVolumeFieldsForAttachmentPannel(AttachListShipmentResponse attachListShipmentResponse, V1TenantSettingsResponse v1TenantSettings) {
+        if (ObjectUtils.isNotEmpty(attachListShipmentResponse.getWeight()))
+            attachListShipmentResponse.setWeightFormatted(IReport.convertToWeightNumberFormat(attachListShipmentResponse.getWeight(), v1TenantSettings));
+
+        if (ObjectUtils.isNotEmpty(attachListShipmentResponse.getVolume()))
+            attachListShipmentResponse.setVolumeFormatted(IReport.convertToVolumeNumberFormat(attachListShipmentResponse.getVolume(), v1TenantSettings));
+
+        if (ObjectUtils.isNotEmpty(attachListShipmentResponse.getVolumetricWeight()))
+            attachListShipmentResponse.setVolumetricWeightFormatted(IReport.convertToWeightNumberFormat(attachListShipmentResponse.getVolumetricWeight(), v1TenantSettings));
+
+        if (ObjectUtils.isNotEmpty(attachListShipmentResponse.getChargable()))
+            attachListShipmentResponse.setChargableFormatted(IReport.convertToWeightNumberFormat(attachListShipmentResponse.getChargable(), v1TenantSettings));
+
+    }
+
     private void setShipperReferenceNumber(ShipmentListResponse response, ShipmentDetails ship) {
         if (ship.getReferenceNumbersList() != null && !ship.getReferenceNumbersList().isEmpty()) {
             Optional<String> srnReferenceNumber = ship.getReferenceNumbersList().stream()
@@ -3695,7 +3710,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 if (resp instanceof ShipmentListResponse shipmentListResponse
                         && requestedTypeMap.containsKey(shipmentListResponse.getId())
                         && !Objects.isNull(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType())) {
-                    shipmentListResponse.setRequestedType(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType().getDescription());
+                    shipmentListResponse.setRequestedType(requestedTypeMap.get(shipmentListResponse.getId()).getRequestedType().getV3Description());
                     shipmentListResponse.setRequestedBy(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedBy());
                     shipmentListResponse.setRequestedOn(requestedTypeMap.get(shipmentListResponse.getId()).getCreatedAt());
                 }
@@ -4142,19 +4157,37 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private List<IRunnerResponse> convertEntityListToDtoListForAttachListShipment(List<ShipmentDetails> shipmentDetails, boolean getMasterData, ListCommonRequest request) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<Long> shipmentIdList = shipmentDetails.stream().map(ShipmentDetails::getId).toList();
+        V1TenantSettingsResponse tenantSettings = commonUtils.getCurrentTenantSettings();
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(shipmentIdList, ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(shipmentIdList, SHIPMENT);
+        var shipmentToBookingIdMap = getShipmentToBookingIdsMap(shipmentDetails);
         List<AttachListShipmentResponse> attachListShipmentResponse = AttachListShipmentMapper.INSTANCE.toAttachListShipmentResponse(shipmentDetails);
         attachListShipmentResponse.forEach(response -> {
             if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
             int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
             response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+            Optional.ofNullable(shipmentToBookingIdMap.get(response.getId()))
+                    .ifPresent(response::setBookingId);
+            formatWeightAndVolumeFieldsForAttachmentPannel(response, tenantSettings);
             responseList.add(response);
         });
         shipmentMasterDataHelper.getMasterDataForList(shipmentDetails, responseList, getMasterData, true, request.getIncludeColumns().stream().collect(Collectors.toSet()));
 
         return responseList;
+    }
+
+    private Map<Long, Long> getShipmentToBookingIdsMap(List<ShipmentDetails> shipments) {
+        List<String> shipmentIdsAsStrings = shipments.stream()
+                .map(shipment -> String.valueOf(shipment.getId())).distinct().toList();
+
+        List<CustomerBookingProjection> bookingProjections = shipmentDao.findCustomerBookingProByShipmentIdIn(shipmentIdsAsStrings);
+
+        return bookingProjections.stream()
+                .collect(Collectors.toMap(
+                        projection -> Long.valueOf(projection.getShipmentId()), // convert String to Long
+                        CustomerBookingProjection::getId
+                ));
     }
 
 
@@ -4266,7 +4299,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 .hazardous(consol.getHazardous())
                 .requestedBy(consoleShipMap.get(consol.getId()).getCreatedBy())
                 .requestedOn(consoleShipMap.get(consol.getId()).getCreatedAt())
-                .requestedType(consoleShipMap.get(consol.getId()).getRequestedType())
+                .requestedType(Objects.nonNull(consoleShipMap.get(consol.getId()).getRequestedType()) ? consoleShipMap.get(consol.getId()).getRequestedType().getV3Description() : null)
                 .build();
     }
 
