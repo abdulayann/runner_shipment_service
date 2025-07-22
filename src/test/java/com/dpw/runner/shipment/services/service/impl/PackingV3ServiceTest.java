@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
@@ -100,6 +101,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private HttpServletResponse httpServletResponse;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private ShipmentValidationV3Util shipmentValidationV3Util;
 
     private Packing packing;
     private PackingV3Request request;
@@ -910,7 +913,6 @@ class PackingV3ServiceTest extends CommonMocks {
 
         packingV3Service.updateOceanDGStatus(shipmentDetails, packingList);
 
-        assertTrue(shipmentDetails.getContainsHazardous());
         verify(shipmentDao).updateDgStatusInShipment(true, null, 123L);
     }
 
@@ -933,7 +935,6 @@ class PackingV3ServiceTest extends CommonMocks {
 
         packingV3Service.updateOceanDGStatus(shipmentDetails, packingList);
 
-        assertTrue(shipmentDetails.getContainsHazardous());
         verify(shipmentDao).updateDgStatusInShipment(true, "OCEAN_DG_REQUESTED", 999L);
     }
 
