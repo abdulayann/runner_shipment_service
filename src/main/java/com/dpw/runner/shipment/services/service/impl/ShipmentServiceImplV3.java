@@ -680,7 +680,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         List<Routings> routingsList = shipmentDetailsEntity.getRoutingsList();
         if (!CollectionUtils.isEmpty(routingsList)) {
             List<Routings> mainCarriageRoutings = routingsList.stream().filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE).toList();
-            CommonUtils.setTransportInfoStatusMessage(shipmentDetailsEntity.getCarrierDetails(),shipmentDetailsEntity.getTransportInfoStatus(), mainCarriageRoutings);
+            response.setTransportInfoStatusMessage(CommonUtils.setTransportInfoStatusMessage(shipmentDetailsEntity.getCarrierDetails(),shipmentDetailsEntity.getTransportInfoStatus(), mainCarriageRoutings));
             if (!CollectionUtils.isEmpty(mainCarriageRoutings)) {
                 response.setIsMainCarriageAvailable(true);
                 response.setIsVesselVoyageOrCarrierFlightNumberAvailable(CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mainCarriageRoutings));
