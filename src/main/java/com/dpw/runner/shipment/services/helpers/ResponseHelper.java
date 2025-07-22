@@ -2,7 +2,10 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
@@ -11,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * This helper is used to return generic response
@@ -24,6 +28,8 @@ public class ResponseHelper {
     public static final String RETURN_RESPONSE_WITH_ERROR_MSG = "Return Response with error {}";
     public static final String RETURN_RESPONSE_WITH_DATA_MSG = "Return Response with data {}";
     public static final String REQUEST_ID = "request-Id";
+    public static final String DELIMITER = "-";
+
     public static ResponseEntity<IRunnerResponse> buildSuccessResponse(IRunnerResponse data, int pageNo, long count) {
         log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         RunnerResponse runnerResponse = RunnerResponse.builder().success(true)
@@ -130,6 +136,29 @@ public class ResponseHelper {
                     String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
     }
+
+    public static ResponseEntity<IRunnerResponse> buildFileResponse(byte[] bytes, MediaType contentType, String fileName, Map<String, Object> headers, String prefix) {
+        ByteArrayResourceResponse resource = new ByteArrayResourceResponse(bytes);
+        HttpHeaders httpHeaders = new HttpHeaders();
+
+        if (headers != null && !headers.isEmpty()) {
+            headers.forEach((key, value) -> {
+                String fullHeaderKey = (prefix != null ? prefix + DELIMITER + key : key);
+                httpHeaders.add(fullHeaderKey, StringUtility.convertToString(value));
+            });
+        }
+
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .contentLength(resource.contentLength())
+                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
+                .header(REQUEST_ID, LoggerHelper.getRequestIdFromMDC())
+                .header("X-CSD-Document-Status",
+                        String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
+                .headers(httpHeaders)
+                .body(resource);
+    }
+
     public static ResponseEntity<IRunnerResponse> buildListSuccessContainerResponse(List<ContainerBaseResponse> data, Integer totalPages, Long totalCount) {
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())

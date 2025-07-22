@@ -141,10 +141,13 @@ public class DocumentManagerRestClient {
             );
             log.info("{} | {} URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(),LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, url, jsonHelper.convertToJson(responseEntity.getBody()));
             return responseEntity.getBody();
-        }
-        catch (Exception ex) {
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
             this.logError("saveFile", request, ex);
-            throw new DocumentClientException(ex.getMessage());
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
         }
 
     }

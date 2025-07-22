@@ -51,7 +51,8 @@ public class ReportController {
         String responseMsg;
         HttpStatus httpStatus = null;
         try {
-            return ResponseHelper.buildFileResponse(reportService.getDocumentData(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, request.getReportInfo() + ".pdf");
+            var response = reportService.getDocumentData(CommonRequestModel.buildRequest(request));
+            return ResponseHelper.buildFileResponse(response.getContent(), MediaType.APPLICATION_OCTET_STREAM, request.getReportInfo() + ".pdf", response.getDocumentServiceMap(), "DocMaster");
         } catch (TranslationException e) {
             responseMsg = e.getMessage();
             httpStatus = HttpStatus.PRECONDITION_REQUIRED;
