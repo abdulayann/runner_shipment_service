@@ -1041,9 +1041,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             long totalDGPacks = 0;
 
             for (Packing packing : packingList) {
-                totalPacks += Long.valueOf(packing.getPacks());
-                if (Boolean.TRUE.equals(packing.getHazardous())) {
-                    totalDGPacks += Long.valueOf(packing.getPacks());
+                if(packing.getPacks() != null) {
+                    totalPacks += Long.valueOf(packing.getPacks());
+                    if (Boolean.TRUE.equals(packing.getHazardous())) {
+                        totalDGPacks += Long.valueOf(packing.getPacks());
+                    }
                 }
             }
 
