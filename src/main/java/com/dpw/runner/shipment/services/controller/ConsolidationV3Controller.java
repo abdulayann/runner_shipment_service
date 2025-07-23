@@ -136,7 +136,7 @@ public class ConsolidationV3Controller {
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         ConsolidationListV3Response consolidationListV3Response =  consolidationV3Service.list(listCommonRequest, getMasterData);
-        return ResponseHelper.buildSuccessResponse(consolidationListV3Response, consolidationListV3Response.getTotalPages(),
+        return ResponseHelper.buildListSuccessConsolidationResponse(consolidationListV3Response.getConsolidationListResponses(), consolidationListV3Response.getTotalPages(),
             consolidationListV3Response.getNumberOfRecords());
 
     }
