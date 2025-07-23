@@ -389,6 +389,9 @@ public class ShipmentDao implements IShipmentDao {
         // Duplicate party types not allowed
         addPartyTypeValidationErrors(request, errors);
 
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
+
         // Shipment must be attached to consolidation with same master bill
         addMasterBillValidationErrors(request, errors);
 
@@ -492,6 +495,19 @@ public class ShipmentDao implements IShipmentDao {
 
                 String message = (duplicatePartyTypes.size() == 1) ? " is a duplicate Party Type." : " are duplicate Party Types.";
                 errors.add(types + message);
+            }
+        }
+    }
+
+    private void addAgentOrganisationIdValidationErrors(ShipmentDetails request, Set<String> errors) {
+        if (request.getAdditionalDetails() != null && request.getAdditionalDetails().getExportBroker() != null
+                && request.getAdditionalDetails().getImportBroker() != null) {
+
+            String exportAgentOrganisationId = request.getAdditionalDetails().getExportBroker().getOrgId();
+
+            if (exportAgentOrganisationId != null && exportAgentOrganisationId.equals(
+                    request.getAdditionalDetails().getImportBroker().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
             }
         }
     }
