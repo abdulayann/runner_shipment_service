@@ -201,6 +201,22 @@ public class ShipmentRestoreHandler implements RestoreHandler {
                 safeStream(shipmentDetails.getTruckDriverDetails()).map(TruckDriverDetails::getThirdPartyTransporter),
                 safeStream(shipmentDetails.getJobsList()).flatMap(job -> job == null ? Stream.empty() : Stream.of(job.getBuyerDetail(), job.getSupplierDetail())),
                 safeStream(shipmentDetails.getContainersList()).flatMap(container -> container == null ? Stream.empty() : Stream.of(container.getPickupAddress(), container.getDeliveryAddress())),
+                safeStream(shipmentDetails.getPickupDeliveryDetailsInstructions())
+                        .flatMap(pickupDelivery -> {
+                            if (pickupDelivery == null) {
+                                return Stream.empty();
+                            }
+                            return Stream.concat(
+                                    Stream.of(
+                                            pickupDelivery.getTransporterDetail(),
+                                            pickupDelivery.getBrokerDetail(),
+                                            pickupDelivery.getDestinationDetail(),
+                                            pickupDelivery.getSourceDetail(),
+                                            pickupDelivery.getAgentDetail()
+                                    ),
+                                    safeStream(pickupDelivery.getPartiesList())
+                            );
+                        }),
                 safeStream(shipmentDetails.getShipmentAddresses())).flatMap(Function.identity()).filter(Objects::nonNull).map(parties -> parties == null ? null : parties.getId()).filter(Objects::nonNull).distinct().collect(Collectors.toList());
     }
 
