@@ -25,5 +25,5 @@ public interface IPartiesDao {
     void deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(List<Long> consolidationAddressIds, Long consolidationId, String consolidationAddresses);
     void revertSoftDeleteByPartiesIds(List<Long> partiesIds);
 
-    void deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, Long shipmentId, String pickupDelivery);
+    void deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, String pickupDelivery);
 }

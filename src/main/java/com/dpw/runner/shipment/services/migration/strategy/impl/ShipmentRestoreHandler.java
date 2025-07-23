@@ -240,7 +240,7 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         List<Long> pickupDeliveryDetailsPartiesIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream()
                 .filter(Objects::nonNull).flatMap(pickupDelivery -> pickupDelivery.getPartiesList() == null ? Stream.empty() : pickupDelivery.getPartiesList().stream())
                 .filter(Objects::nonNull).map(Parties::getId).filter(Objects::nonNull).distinct().toList();
-        partiesDao.deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsPartiesIds, pickupDeliveryDetailsIds, shipmentId, "PICKUP_DELIVERY");
+        partiesDao.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(pickupDeliveryDetailsPartiesIds, pickupDeliveryDetailsIds, Constants.PICKUP_DELIVERY);
         pickupDeliveryDetailsDao.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(pickupDeliveryDetailsIds, shipmentId);
         pickupDeliveryDetailsRepository.saveAll(shipmentDetails.getPickupDeliveryDetailsInstructions());
     }

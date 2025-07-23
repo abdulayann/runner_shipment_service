@@ -286,8 +286,8 @@ public class PartiesDao implements IPartiesDao {
     }
 
     @Override
-    public void deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, Long shipmentId, String pickupDelivery) {
-        partiesRepository.deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(partiesIds, pickupDeliveryDetailsIds, shipmentId, pickupDelivery);
+    public void deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, String pickupDelivery) {
+        partiesRepository.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(partiesIds, pickupDeliveryDetailsIds, pickupDelivery);
     }
 
 }
