@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -365,7 +366,7 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     @Override
     public void restore(Integer tenantId) {
 
-        /*Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
+        Set<Long> allBackupShipmentIds = shipmentBackupDao.findShipmentIdsByTenantId(tenantId);
         if (allBackupShipmentIds.isEmpty()) {
             return;
         }
@@ -376,7 +377,6 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         if (!idsToDelete.isEmpty()) {
             shipmentDao.deleteShipmentDetailsByIds(idsToDelete);
         }
-*/
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
 
         Lists.partition(new ArrayList<>(nonAttachedShipmentIds), 100).forEach(batch -> {
