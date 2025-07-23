@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
@@ -37,6 +38,9 @@ public class MasterDataKeyUtils {
     CacheManager cacheManager;
 
     @Autowired
+    CommonUtils commonUtils;
+
+    @Autowired
     CustomKeyGenerator keyGenerator;
 
     public void setMasterDataValue(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> masterDataResponse, Map<String, Object> cacheMap) {
@@ -50,6 +54,7 @@ public class MasterDataKeyUtils {
         }
     }
     private void setKeyValueInResponse(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> response, Map<String, Object> cacheMap) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return;
         fieldNameKeyMap.forEach((key1, value1) -> {
@@ -61,7 +66,7 @@ public class MasterDataKeyUtils {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
-                                response.put(value, object.getLookupDesc());
+                                response.put(value, Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) ? object.getLookupDescV3() : object.getLookupDesc());
                                 response.put(value + Constants.CODE, object.getLocCode());
                                 response.put(value + Constants.IATA_CODE, object.getIATACode());
                                 break;
