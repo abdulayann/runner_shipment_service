@@ -102,6 +102,9 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
     @Autowired
     private IFileRepoRepository iFileRepoRepository;
 
+    @Autowired
+    private NetworkTransferDao networkTransferDao;
+
     @Override
     public void restore(Integer tenantId) {
 
@@ -174,6 +177,8 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
             validateAndRestoreRoutingDetails(consolidationId, routingsIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
+            List<NetworkTransfer> networkTransferList = consolidationBackupDetails.getNetworkTransferDetails()!=null && !consolidationBackupDetails.getNetworkTransferDetails().isEmpty() ? objectMapper.readValue(consolidationBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {}): new ArrayList<>();
+            validateAndSetNetworkTransferDetails(networkTransferList, consolidationId);
 //TODO packking to containersIds
 
             consolidationDao.save(consolidationDetails);
@@ -183,6 +188,44 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
             throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
         }
     }
+
+    private void validateAndSetNetworkTransferDetails(List<NetworkTransfer> networkTransferList, Long consolidationId) {
+        List<NetworkTransfer> networkTransferDbList = networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION_ID);
+
+        List<NetworkTransfer> toSaveList = new ArrayList<>();
+
+        // Map of DB: id -> NetworkTransfer (keep all entries, don't filter upfront)
+        Map<Long, NetworkTransfer> dbMap = networkTransferDbList.stream()
+                .filter(nt -> nt.getId() != null)
+                .collect(Collectors.toMap(NetworkTransfer::getId, nt -> nt));
+
+        for (NetworkTransfer incoming : networkTransferList) {
+            Long id = incoming.getId();
+            UUID guid = incoming.getGuid();
+
+            if (id != null && guid != null && dbMap.containsKey(id)) {
+                NetworkTransfer existing = dbMap.get(id);
+                if (existing.getGuid() != null && existing.getGuid().equals(guid)) {
+                    // Valid match → update
+                    toSaveList.add(incoming);
+                    dbMap.remove(id); // remove matched entry
+                    continue;
+                }
+            }
+
+            // New record (or mismatched guid): remove id and save
+            incoming.setId(null);
+            toSaveList.add(incoming);
+        }
+
+        // All remaining in dbMap are to be deleted
+        List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());
+
+        // Persist
+        networkTransferDao.saveAll(toSaveList);
+        networkTransferDao.deleteByIdsAndLog(toDeleteIds);
+    }
+
     private List<Long> getAllEventsIds(ConsolidationDetails consolidationDetails) {
         return Stream.of(
                 nullSafeCollectionStream(consolidationDetails.getJobsList()).flatMap(job -> nullSafeCollectionStream(job.getEventsList())),
