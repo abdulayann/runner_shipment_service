@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.filters;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
@@ -120,6 +117,7 @@ public class AuthFilter extends OncePerRequestFilter {
             return;
         }
         log.info("RequestID: {} | Auth Successful, API:-{}, username:-{}, tenantId:-{}", LoggerHelper.getRequestIdFromMDC(), servletRequest.getRequestURI(), user.getUsername(), user.getTenantId());
+        VersionContext.setVersionFromPath(req.getServletPath());
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         List<String> grantedPermissions = new ArrayList<>();
@@ -156,6 +154,7 @@ public class AuthFilter extends OncePerRequestFilter {
             SecurityContextHolder.clearContext();
             InterBranchContext.removeContext();
             SyncingContext.removeContext();
+            VersionContext.remove();
         }
 
     }
