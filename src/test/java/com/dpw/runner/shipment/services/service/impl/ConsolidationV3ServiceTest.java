@@ -4260,7 +4260,9 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void testGetSummaryDgPacks() {
     // Setup
-    List<Packing> packingList = List.of(new Packing());
+    Packing packing = new Packing();
+    packing.setPacks("1");
+    List<Packing> packingList = List.of(packing);
 
     // method under test
     String result = consolidationV3Service.getSummaryDgPacks(packingList);
@@ -4272,6 +4274,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testGetSummaryDgPacks1() {
     // Setup
     Packing packing = new Packing();
+    packing.setPacks("1");
     packing.setHazardous(true);
     List<Packing> packingList = List.of(packing);
 
