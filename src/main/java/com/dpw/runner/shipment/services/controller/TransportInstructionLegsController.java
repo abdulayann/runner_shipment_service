@@ -56,8 +56,8 @@ public class TransportInstructionLegsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = TransportInstructionConstants.TRANSPORT_INSTRUCTION_LEGS_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData,  @RequestParam(required = false, defaultValue = "false") boolean populateRAKC) {
-        TransportInstructionLegsListResponse legsListResponse = transportInstructionLegsService.list(listCommonRequest, getMasterData, populateRAKC);
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
+        TransportInstructionLegsListResponse legsListResponse = transportInstructionLegsService.list(listCommonRequest, getMasterData);
         return ResponseHelper.buildSuccessResponse(legsListResponse, legsListResponse.getTotalPages(), legsListResponse.getTotalCount());
     }
 

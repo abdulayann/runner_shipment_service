@@ -290,8 +290,10 @@ class TransportInstructionLegsServiceImplTest {
         });
         when(iTiLegDao.findAll(Mockito.<Specification<TiLegs>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
+        ListCommonRequest listCommonRequest= new ListCommonRequest();
+        listCommonRequest.setPopulateRAKC(true);
         TransportInstructionLegsListResponse actualListResult = transportInstructionLegsService
-                .list(new ListCommonRequest(), true, true);
+                .list(listCommonRequest, true);
         verify(iTiLegDao).findAll(Mockito.<Specification<TiLegs>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiLegs>any(),
                 Mockito.<Class<TransportInstructionLegsResponse>>any());

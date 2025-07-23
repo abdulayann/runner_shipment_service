@@ -159,7 +159,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     }
 
     @Override
-    public TransportInstructionLegsListResponse list(ListCommonRequest request, boolean getMasterData, boolean populateRAKC) {
+    public TransportInstructionLegsListResponse list(ListCommonRequest request, boolean getMasterData) {
         // construct specifications for filter request
         Pair<Specification<TiLegs>, Pageable> tuple = fetchData(request, TiLegs.class);
         Page<TiLegs> tiLegsPage = tiLegsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -172,7 +172,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
                 transportInstructionLegsListResponse.setMasterData(masterDataResponse);
             }
             Map<String, RAKCDetailsResponse> rakcDetailsMap;
-            if (populateRAKC) {
+            if (Boolean.TRUE.equals(request.getPopulateRAKC())) {
                 Set<String> addressIds = new HashSet<>();
                 responseList.forEach(transportInstructionLegsResponse -> getAddressIds(transportInstructionLegsResponse, addressIds));
                 rakcDetailsMap = commonUtils.getRAKCDetailsMap(addressIds.stream().toList());
@@ -180,7 +180,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
                 rakcDetailsMap = new HashMap<>();
             }
             responseList.forEach(response -> {
-                if (populateRAKC && !rakcDetailsMap.isEmpty()) {
+                if (Boolean.TRUE.equals(request.getPopulateRAKC()) && !rakcDetailsMap.isEmpty()) {
                     this.populateRAKCDetails(response, rakcDetailsMap);
                 }
             });
