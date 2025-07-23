@@ -171,4 +171,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private Long originBranch;
+    private String incoterms;
+    private String coLoadCarrierName;
+    private String partner;
 }
