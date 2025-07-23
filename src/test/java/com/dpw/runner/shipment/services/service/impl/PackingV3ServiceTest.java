@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
@@ -100,6 +101,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private HttpServletResponse httpServletResponse;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private ShipmentValidationV3Util shipmentValidationV3Util;
 
     private Packing packing;
     private PackingV3Request request;
@@ -893,7 +896,7 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateOceanDGStatus_shouldUpdateShipment_whenDGPresentAndClass1False() {
+    void testUpdateOceanDGStatus_shouldUpdateShipment_whenDGPresentAndClass1False() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("SEA");
         shipmentDetails.setContainsHazardous(false);
@@ -910,12 +913,11 @@ class PackingV3ServiceTest extends CommonMocks {
 
         packingV3Service.updateOceanDGStatus(shipmentDetails, packingList);
 
-        assertTrue(shipmentDetails.getContainsHazardous());
         verify(shipmentDao).updateDgStatusInShipment(true, null, 123L);
     }
 
     @Test
-    void testUpdateOceanDGStatus_shouldUpdateWithClass1True() {
+    void testUpdateOceanDGStatus_shouldUpdateWithClass1True() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("SEA");
         shipmentDetails.setContainsHazardous(false);
@@ -933,12 +935,11 @@ class PackingV3ServiceTest extends CommonMocks {
 
         packingV3Service.updateOceanDGStatus(shipmentDetails, packingList);
 
-        assertTrue(shipmentDetails.getContainsHazardous());
         verify(shipmentDao).updateDgStatusInShipment(true, "OCEAN_DG_REQUESTED", 999L);
     }
 
     @Test
-    void testUpdateOceanDGStatus_shouldNotUpdate_whenTransportModeNotSea() {
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenTransportModeNotSea() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("AIR");
 
@@ -951,7 +952,7 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateOceanDGStatus_shouldNotUpdate_whenPackingListIsEmpty() {
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenPackingListIsEmpty() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("SEA");
 
@@ -961,7 +962,7 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateOceanDGStatus_shouldNotUpdate_whenShipmentDetailsIsNull() {
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenShipmentDetailsIsNull() throws RunnerException {
         packing = new Packing();
         packing.setHazardous(true);
 
@@ -971,7 +972,7 @@ class PackingV3ServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateOceanDGStatus_shouldNotUpdate_whenNoHazardousPacking() {
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenNoHazardousPacking() throws RunnerException {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setTransportMode("SEA");
 

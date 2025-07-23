@@ -4703,4 +4703,10 @@ class CommonUtilsTest {
         // Verify the result
         assertFalse(result);
     }
+
+    @Test
+    void getTaskIdHyperLinkV3Test(){
+        String url = commonUtils.getTaskIdHyperLinkV3("a", "b");
+        assertNotNull(url);
+    }
 }
