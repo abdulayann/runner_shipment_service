@@ -2299,6 +2299,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             }
         }
     }
@@ -2343,6 +2344,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
             shipmentDetails.setMasterBill(console.getBol());
+            shipmentDetails.setIncoterms(console.getIncoterms());
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
