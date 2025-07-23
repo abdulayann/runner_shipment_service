@@ -90,7 +90,7 @@ public class CustomerBookingValidationsV3 {
     }
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
-        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_DOM, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
+        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
             validateParty(entity.getConsignor(), "Consignor detail");
         }
         if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
