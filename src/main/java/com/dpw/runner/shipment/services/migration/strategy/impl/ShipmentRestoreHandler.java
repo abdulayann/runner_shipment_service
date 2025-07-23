@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
@@ -28,8 +31,11 @@ import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -133,6 +139,10 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     private ThreadPoolTaskExecutor rollbackTaskExecutor;
     @Autowired
     private ShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Autowired
+    @Lazy
+    private ShipmentRestoreHandler self;
 
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 
@@ -308,10 +318,13 @@ public class ShipmentRestoreHandler implements RestoreHandler {
             List<CompletableFuture<Void>> futures = batch.stream().map(shipmentId ->
                     CompletableFuture.runAsync(() -> {
                         try {
-                            restoreShipmentDetails(shipmentId, null, null);
+                            self.restoreShipmentTransaction(shipmentId,tenantId);
                         } catch (Exception e) {
                             log.error("Failed shipment restore {}: {}", shipmentId, e.getMessage());
                             throw new RestoreFailureException("Rollback failed", e);
+                        } finally {
+                            TenantContext.setCurrentTenant(tenantId);
+                            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
                         }
                     }, rollbackTaskExecutor)).toList();
 
@@ -320,5 +333,12 @@ public class ShipmentRestoreHandler implements RestoreHandler {
                 return null;
             }).join();
         });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) throws JsonProcessingException {
+        TenantContext.setCurrentTenant(tenantId);
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+        restoreShipmentDetails(shipmentId, null, null);
     }
 }

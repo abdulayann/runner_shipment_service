@@ -121,7 +121,14 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
         List<CompletableFuture<Void>> futures = consolidationIds.stream()
                 .map(consolidationId -> CompletableFuture.runAsync(
-                        () -> self.processAndRestoreConsolidation(consolidationId),
+                        () -> {
+                            try {
+                                self.processAndRestoreConsolidation(consolidationId, tenantId);
+                            } finally {
+                                TenantContext.removeTenant();
+                                UserContext.removeUser();
+                            }
+                        },
                         asyncExecutor))
                 .toList();
 
@@ -130,10 +137,11 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processAndRestoreConsolidation(Long consolidationId) {
+    public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
+            TenantContext.setCurrentTenant(tenantId);
+            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
-            Integer tenantId = consolidationBackupDetails.getTenantId();
             ConsolidationDetails consolidationDetails = objectMapper.readValue(consolidationBackupDetails.getConsolidationDetails(), ConsolidationDetails.class);
             Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
             if (consolidationBackupDetails.getConsoleShipmentMapping() != null) {
