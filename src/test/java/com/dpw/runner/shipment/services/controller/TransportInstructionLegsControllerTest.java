@@ -98,9 +98,9 @@ class TransportInstructionLegsControllerTest {
         legsListResponse.setTotalCount(1l);
         legsListResponse.setTotalPages(1);
         legsListResponse.setTiLegsResponses(List.of(new TransportInstructionLegsResponse()));
-        when(transportInstructionLegsService.list(any(), anyBoolean())).thenReturn(legsListResponse);
+        when(transportInstructionLegsService.list(any(), anyBoolean(), anyBoolean())).thenReturn(legsListResponse);
         // Mock
-        var responseEntity = transportInstructionLegsController.list(new ListCommonRequest(), true);
+        var responseEntity = transportInstructionLegsController.list(new ListCommonRequest(), true, true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

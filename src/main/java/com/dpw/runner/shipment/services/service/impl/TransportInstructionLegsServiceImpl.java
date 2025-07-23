@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiLegDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsResponse;
@@ -23,6 +24,7 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
@@ -41,6 +43,7 @@ import org.springframework.util.CollectionUtils;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,6 +74,8 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     ExecutorService executorServiceMasterData;
     @Autowired
     private TransportInstructionValidationUtil transportInstructionValidationUtil;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     @Transactional
@@ -154,7 +159,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     }
 
     @Override
-    public TransportInstructionLegsListResponse list(ListCommonRequest request, boolean getMasterData) {
+    public TransportInstructionLegsListResponse list(ListCommonRequest request, boolean getMasterData, boolean populateRAKC) {
         // construct specifications for filter request
         Pair<Specification<TiLegs>, Pageable> tuple = fetchData(request, TiLegs.class);
         Page<TiLegs> tiLegsPage = tiLegsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -166,12 +171,46 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
                 Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
                 transportInstructionLegsListResponse.setMasterData(masterDataResponse);
             }
+            Map<String, RAKCDetailsResponse> rakcDetailsMap;
+            if (populateRAKC) {
+                Set<String> addressIds = new HashSet<>();
+                responseList.forEach(transportInstructionLegsResponse -> getAddressIds(transportInstructionLegsResponse, addressIds));
+                rakcDetailsMap = commonUtils.getRAKCDetailsMap(addressIds.stream().toList());
+            } else {
+                rakcDetailsMap = new HashMap<>();
+            }
+            responseList.forEach(response -> {
+                if (populateRAKC && !rakcDetailsMap.isEmpty()) {
+                    this.populateRAKCDetails(response, rakcDetailsMap);
+                }
+            });
             transportInstructionLegsListResponse.setTiLegsResponses(responseList);
             transportInstructionLegsListResponse.setTotalPages(tiLegsPage.getTotalPages());
             transportInstructionLegsListResponse.setTotalCount(tiLegsPage.getTotalElements());
         }
 
         return transportInstructionLegsListResponse;
+    }
+
+    private void populateRAKCDetails(TransportInstructionLegsResponse transportInstructionLegsResponse, Map<String, RAKCDetailsResponse> rakcDetailsMap) {
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getOrigin())) {
+            transportInstructionLegsResponse.getOrigin().setRAKCDetails(rakcDetailsMap.getOrDefault(transportInstructionLegsResponse.getOrigin().getAddressId(), null));
+        }
+
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getDestination())) {
+            transportInstructionLegsResponse.getDestination().setRAKCDetails(rakcDetailsMap.getOrDefault(transportInstructionLegsResponse.getDestination().getAddressId(), null));
+        }
+    }
+
+    private void getAddressIds(TransportInstructionLegsResponse transportInstructionLegsResponse, Set<String> addressIds) {
+
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getOrigin())) {
+            addressIds.add(transportInstructionLegsResponse.getOrigin().getAddressId());
+        }
+
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getDestination())) {
+            addressIds.add(transportInstructionLegsResponse.getDestination().getAddressId());
+        }
     }
 
     @Override

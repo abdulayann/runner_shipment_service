@@ -4709,4 +4709,80 @@ class CommonUtilsTest {
         String url = commonUtils.getTaskIdHyperLinkV3("a", "b");
         assertNotNull(url);
     }
+
+    @Test
+     void testGetRAKCDetailsMap_WithEmptyAddressIds() {
+        // Given
+        List<String> addressIds = Collections.emptyList();
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertTrue(result.isEmpty(), "The result map should be empty when addressIds is empty.");
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithNullAddressIds() {
+        // Given
+        List<String> addressIds = null;
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertTrue(result.isEmpty(), "The result map should be empty when addressIds is null.");
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithValidAddressIds() {
+        // Given
+        List<String> addressIds = Arrays.asList("1", "2");
+        V1DataResponse addressResponse = mock(V1DataResponse.class);
+        List<RAKCDetailsResponse> rakcDetailsList = Arrays.asList( RAKCDetailsResponse.builder().id(1L).orgId(1L).kCRANumber("Data1").build(), RAKCDetailsResponse.builder().id(2L).orgId(2L).kCRANumber("Data2").build());
+
+        when(iv1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+        when(jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class)).thenReturn(rakcDetailsList);
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertEquals(2, result.size(), "The result map should contain 2 entries.");
+        assertTrue(result.containsKey("1"));
+        assertTrue(result.containsKey("2"));
+        assertEquals("Data1", result.get("1").getKCRANumber());
+        assertEquals("Data2", result.get("2").getKCRANumber());
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithEmptyRAKCDetailsResponse() {
+        // Given
+        List<String> addressIds = Arrays.asList("1", "2");
+        V1DataResponse addressResponse = mock(V1DataResponse.class);
+        List<RAKCDetailsResponse> rakcDetailsList = Collections.emptyList();
+
+        when(iv1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+        when(jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class)).thenReturn(rakcDetailsList);
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertTrue(result.isEmpty(), "The result map should be empty when RAKCDetailsResponse list is empty.");
+    }
+
+    @Test
+     void testConvertV1InCriteriaRequest() {
+        // Given
+        List<String> addressIds = Arrays.asList("1", "2");
+
+        // When
+        CommonV1ListRequest result = commonUtils.convertV1InCriteriaRequest("Id", addressIds);
+
+        // Then
+        assertNotNull(result, "Request should not be null.");
+        assertEquals(3, result.getCriteriaRequests().size(), "CriteriaRequests should contain 1 item.");
+        assertTrue(result.getCriteriaRequests().get(0) instanceof List, "First item in criteriaRequests should be a List.");
+    }
 }
