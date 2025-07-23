@@ -4261,7 +4261,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testGetSummaryDgPacks() {
     // Setup
     Packing packing = new Packing();
-    packing.setPacks("1L");
+    packing.setPacks("1");
     List<Packing> packingList = List.of(packing);
 
     // method under test
@@ -4274,7 +4274,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testGetSummaryDgPacks1() {
     // Setup
     Packing packing = new Packing();
-    packing.setPacks("1L");
+    packing.setPacks("1");
     packing.setHazardous(true);
     List<Packing> packingList = List.of(packing);
 
