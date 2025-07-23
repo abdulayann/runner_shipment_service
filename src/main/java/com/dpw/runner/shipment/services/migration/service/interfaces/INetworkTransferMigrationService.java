@@ -7,8 +7,8 @@ import java.util.Map;
 
 
 public interface INetworkTransferMigrationService {
-    NetworkTransfer migrateNteFromV2ToV3(NetworkTransfer networkTransfer) throws RunnerException;
-    NetworkTransfer migrateNteFromV3ToV2(NetworkTransfer networkTransfer) throws RunnerException;
+    NetworkTransfer migrateNteFromV2ToV3(Long networkTransferId) throws RunnerException;
+    NetworkTransfer migrateNteFromV3ToV2(Long networkTransferId) throws RunnerException;
     Map<String, Integer> migrateNetworkTransferV3ToV2ForTenant(Integer tenantId);
     Map<String, Integer> migrateNetworkTransferV2ToV3ForTenant(Integer tenantId);
 }

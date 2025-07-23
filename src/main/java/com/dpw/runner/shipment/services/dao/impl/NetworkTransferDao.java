@@ -183,7 +183,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
-    public List<NetworkTransfer> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId) {
+    public List<Long> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId) {
         return networkTransferRepository.findNteForMigrationStatuses(migrationStatuses, tenantId);
     }
 

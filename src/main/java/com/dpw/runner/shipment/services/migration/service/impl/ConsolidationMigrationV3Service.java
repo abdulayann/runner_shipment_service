@@ -152,6 +152,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         consolShipmentsList.forEach(shp->{
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
+            shp.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
 //            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
@@ -160,6 +161,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         // Step 8: Mark consolidation itself as migrated and save
 //        console.setIsMigratedToV3(Boolean.TRUE);
+        setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
         consolidationRepository.save(console);
 
         log.info("Migration complete for Consolidation [id={}]", consolidationId);
