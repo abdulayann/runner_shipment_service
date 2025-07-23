@@ -208,6 +208,8 @@ public class ContainerV3Service implements IContainerV3Service {
             throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
         }
 
+        //TODO : CargoType validation check in case of shipment
+
         List<Containers> containersList = getSiblingContainers(containerRequest);
         containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
         String requestId = LoggerHelper.getRequestIdFromMDC();
