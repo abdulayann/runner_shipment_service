@@ -285,4 +285,9 @@ public class PartiesDao implements IPartiesDao {
         partiesRepository.revertSoftDeleteByPartiesIds(addressIds);
     }
 
+    @Override
+    public void deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, Long shipmentId, String pickupDelivery) {
+        partiesRepository.deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(partiesIds, pickupDeliveryDetailsIds, shipmentId, pickupDelivery);
+    }
+
 }

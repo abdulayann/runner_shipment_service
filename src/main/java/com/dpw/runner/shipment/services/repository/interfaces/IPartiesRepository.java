@@ -38,4 +38,9 @@ public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
     @Transactional
     @Query(value = "UPDATE parties SET is_deleted = false WHERE id IN (?1)", nativeQuery = true)
     void revertSoftDeleteByPartiesIds(List<Long> partiesIds);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE parties SET is_deleted = true WHERE id NOT IN (?1) and entity_id = ?2 and shipment_id = ?3 and entity_type = ?4", nativeQuery = true)
+    void deleteAdditionalPartiesInPickupDeliveryDetailsByShipmentId(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, Long shipmentId, String entityType);
 }

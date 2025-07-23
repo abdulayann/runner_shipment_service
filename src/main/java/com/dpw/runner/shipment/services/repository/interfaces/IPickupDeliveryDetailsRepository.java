@@ -29,10 +29,12 @@ public interface IPickupDeliveryDetailsRepository extends MultiTenancyRepository
     List<PickupDeliveryDetails> findByShipmentIdIn(Set<Long> shipmentIds);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE pickup_delivery_details SET is_deleted = true WHERE id NOT IN (?1) and shipment_id = ?2", nativeQuery = true)
     void deleteAdditionalPickupDeliveryDetailsByShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE pickup_delivery_details SET is_deleted = false WHERE id IN (?1) and shipment_id = ?2", nativeQuery = true)
     void revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId);
 }
