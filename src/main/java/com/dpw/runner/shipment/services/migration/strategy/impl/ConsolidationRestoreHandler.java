@@ -107,9 +107,6 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
 
-        TenantContext.setCurrentTenant(tenantId);
-        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-
         List<Long> consolidationIds = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);
