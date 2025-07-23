@@ -649,7 +649,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+    public List<ConsolidationDetails> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
         return consolidationRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 

@@ -598,14 +598,14 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
     public Map<String, Integer> migrateConsolidationsV3ToV2ForTenant(Integer tenantId) {
         Map<String, Integer> stats = new HashMap<>();
-        List<Long> consolidationDetailsIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
+        List<ConsolidationDetails> consolidationDetailsList = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
 
-        log.info("[ConsolidationMigration] Tenant [{}]: Found [{}] consolidation(s) to migrate.", tenantId, consolidationDetailsIds.size());
-        stats.put("Total Consolidation", consolidationDetailsIds.size());
+        log.info("[ConsolidationMigration] Tenant [{}]: Found [{}] consolidation(s) to migrate.", tenantId, consolidationDetailsList.size());
+        stats.put("Total Consolidation", consolidationDetailsList.size());
 
         List<Future<Long>> futures = new ArrayList<>();
 
-        for (Long consoleIds : consolidationDetailsIds) {
+        for (ConsolidationDetails console : consolidationDetailsList) {
             futures.add(trxExecutor.runInAsync(() -> {
                 try {
                     v1Service.setAuthContext();
@@ -613,18 +613,18 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
                     UserContext.getUser().setPermissions(new HashMap<>());
 
                     return trxExecutor.runInTrx(() -> {
-                        log.info("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Starting migration...", tenantId, consoleIds);
+                        log.info("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Starting migration...", tenantId, console.getId());
                         ConsolidationDetails migrated = null;
                         try {
-                            migrated = migrateConsolidationV3ToV2(consoleIds);
+                            migrated = migrateConsolidationV3ToV2(console.getId());
                         } catch (RunnerException e) {
                             throw new RuntimeException(e);
                         }
-                        log.info("[ConsolidationMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, consoleIds, migrated.getId());
+                        log.info("[ConsolidationMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, console.getId(), migrated.getId());
                         return migrated.getId();
                     });
                 } catch (Exception e) {
-                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, consoleIds, e.getMessage(), e);
+                    log.error("[ConsolidationMigration] [Tenant: {}, ConsoleId: {}] Migration failed: {}", tenantId, console.getId(), e.getMessage(), e);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -636,12 +636,12 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         stats.put("Total Consolidation Migrated", migratedIds.size());
 
         log.info("[ConsolidationMigration] Tenant [{}]: {}/{} consolidations migrated successfully.",
-                tenantId, migratedIds.size(), consolidationDetailsIds.size());
+                tenantId, migratedIds.size(), consolidationDetailsList.size());
 
         return stats;
     }
 
-    private List<Long> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {
+    private List<ConsolidationDetails> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {
         return consolidationDetailsDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 

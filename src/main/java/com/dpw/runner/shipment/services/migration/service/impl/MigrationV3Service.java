@@ -7,8 +7,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.migration.HelperExecutor;
@@ -17,12 +15,10 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBo
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
-import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
+import com.dpw.runner.shipment.services.migration.utils.MigrationValidationUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
-import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +64,7 @@ public class MigrationV3Service implements IMigrationV3Service {
     private IConsolidationRepository consolidationRepository;
 
     @Autowired
-    private NotesUtil notesUtil;
+    private MigrationValidationUtil migrationValidationUtil;
 
     @Autowired
     private V1ServiceImpl v1Service;
@@ -76,15 +72,21 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
         Map<String, Integer> map = new HashMap<>();
-        // Step 1: Fetch all V2 consolidations for tenant
-        List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
-        map.put("Total Consolidation", consolIds.size());
-        log.info("Starting V2 to V3 migration for tenant [{}]. Found {} consolidation(s).", tenantId, consolIds.size());
+        // Step 1: Fetch all V2 consolidations, V2 shipments for tenant
+        List<ConsolidationDetails> consolidationDetailsList = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
+
+        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
+
+        // Uncomment this validation once confirmed
+        //migrationValidationUtil.validateLCLAndDGConsolShipment(consolidationDetailsList, shipmentDetailsList);
+
+        map.put("Total Consolidation", consolidationDetailsList.size());
+        log.info("Starting V2 to V3 migration for tenant [{}]. Found {} consolidation(s).", tenantId, consolidationDetailsList.size());
         // Queue for async processing of consolidation migrations
         List<Future<Long>> queue = new ArrayList<>();
-        log.info("fetched {} consolidation for Migrations", consolIds.size());
+        log.info("fetched {} consolidation for Migrations", consolidationDetailsList.size());
 
-        consolIds.forEach(id -> {
+        consolidationDetailsList.forEach(cos -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
 
@@ -95,17 +97,17 @@ public class MigrationV3Service implements IMigrationV3Service {
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating Consolidation [id={}]", id);
-                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(id);
-                            log.info("Successfully migrated Consolidation [oldId={}, newId={}]", id, migrated.getId());
+                            log.info("Migrating Consolidation [id={}]", cos.getId());
+                            ConsolidationDetails migrated = consolidationMigrationV3Service.migrateConsolidationV2ToV3(cos.getId());
+                            log.info("Successfully migrated Consolidation [oldId={}, newId={}]", cos.getId(), migrated.getId());
                             return migrated.getId();
                         } catch (Exception e) {
-                            log.error("Consolidation migration failed [id={}]: {}", id, e.getMessage(), e);
+                            log.error("Consolidation migration failed [id={}]: {}", cos.getId(), e.getMessage(), e);
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during consolidation setup [id={}]", id, e);
+                    log.error("Async failure during consolidation setup [id={}]", cos.getId(), e);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
@@ -117,10 +119,9 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         List<Long> migratedConsolIds = collectAllProcessedIds(queue);
         map.put("Total Consolidation Migrated", migratedConsolIds.size());
-        log.info("Consolidation migration complete: {}/{} migrated for tenant [{}]", migratedConsolIds.size(), consolIds.size(), tenantId);
+        log.info("Consolidation migration complete: {}/{} migrated for tenant [{}]", migratedConsolIds.size(), consolidationDetailsList.size(), tenantId);
 
-        // Step 2: Fetch all V2 shipments for tenant
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
+        // Step 2: Migrate all V2 shipments for tenant
 //        Optional<ShipmentDetails> shipmentByIdWithQuery = shipmentDao.findShipmentByIdWithQuery(consolId);
 //        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentByIdWithQuery.get());
         map.put("Total Shipment", shipmentDetailsList.size());
@@ -190,7 +191,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         return result;
     }
 
-    private List<Long> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {
+    private List<ConsolidationDetails> fetchConsoleFromDB(List<String> migrationStatuses, Integer tenantId) {
         return consolidationDetailsDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
