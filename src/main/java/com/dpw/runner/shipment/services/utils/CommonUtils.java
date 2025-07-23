@@ -2883,4 +2883,27 @@ public class CommonUtils {
         return (Constants.TRANSPORT_MODE_SEA.equals(route.getMode()) && StringUtility.isNotEmpty(route.getVesselName()) && StringUtility.isNotEmpty(route.getVoyage()))
                 || (TRANSPORT_MODE_AIR.equals(route.getMode()) && StringUtility.isNotEmpty(route.getCarrier()) && StringUtility.isNotEmpty(route.getFlightNumber()));
     }
+    public Map<String, RAKCDetailsResponse> getRAKCDetailsMap(List<String> addressIds) {
+        if (CommonUtils.listIsNullOrEmpty(addressIds)) {
+            return Collections.emptyMap();
+        }
+
+        CommonV1ListRequest request = convertV1InCriteriaRequest("Id", addressIds);
+        V1DataResponse addressResponse = iv1Service.addressList(request);
+        List<RAKCDetailsResponse> rakcDetailsList =
+                jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class);
+
+        return CommonUtils.listIsNullOrEmpty(rakcDetailsList)
+                ? Collections.emptyMap()
+                : rakcDetailsList.stream().collect(Collectors.toMap(rakc -> String.valueOf(rakc.getId()), Function.identity()));
+    }
+
+    public CommonV1ListRequest convertV1InCriteriaRequest(String filterValue, List<?> values) {
+        List<String> itemType = new ArrayList<>();
+        itemType.add(filterValue);
+        List<List<?>> param = new ArrayList<>();
+        param.add(values);
+        List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
+        return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
+    }
 }
