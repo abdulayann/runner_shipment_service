@@ -746,6 +746,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!Objects.equals(request.getTransportMode(), TRANSPORT_MODE_AIR)) {
             request.setSlac(null);
         }
+        request.setCargoReadyDate(request.getCargoReadinessDate());
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
 
         try {
@@ -820,6 +821,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         if (!Objects.equals(shipmentRequest.getTransportMode(), TRANSPORT_MODE_AIR)) {
             shipmentRequest.setSlac(null);
         }
+        shipmentRequest.setCargoReadyDate(shipmentRequest.getCargoReadinessDate());
         Optional<ShipmentDetails> oldEntity = retrieveByIdOrGuid(shipmentRequest);
         log.info("{} | completeUpdateShipment db query: retrieveByIdOrGuid.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
         if (oldEntity.isEmpty()) {
