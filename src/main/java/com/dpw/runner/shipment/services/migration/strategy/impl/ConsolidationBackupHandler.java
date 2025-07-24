@@ -113,13 +113,6 @@ public class ConsolidationBackupHandler implements BackupHandler {
                                 .flatMap(consolidationId -> networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION).stream())
                                 .collect(Collectors.groupingBy(NetworkTransfer::getEntityId));
 
-
-//                Map<Long, List<NetworkTransfer>> networkTransferMappingsByConsolidationId = new HashMap<>();
-//                for (Long consolidationId : consolidationIds) {
-//                    List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION);
-//                    networkTransferMappingsByConsolidationId.put(consolidationId, networkTransfers);
-//                }
-
                 List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
                         .map((detail -> mapToBackupEntity(detail,
                                 consoleMappingsByConsolidationId.getOrDefault(detail.getId(), Collections.emptyList()),
