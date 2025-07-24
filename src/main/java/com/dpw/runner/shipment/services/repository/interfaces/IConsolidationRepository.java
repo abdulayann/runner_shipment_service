@@ -199,4 +199,9 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Transactional
     @Query(value = "UPDATE consolidation_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
     void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM triangulation_partner_consolidation WHERE consolidation_id = ?1", nativeQuery = true)
+    void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
 }

@@ -69,4 +69,6 @@ public interface IConsolidationDetailsDao {
     void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
 
     void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
 }

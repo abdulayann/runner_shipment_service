@@ -83,4 +83,6 @@ public interface IShipmentDao {
     void revertSoftDeleteShipmentIdAndTenantId(List<Long> allShipmentIdsFromContainerMap, Integer tenantId);
     Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
     void deleteShipmentDetailsByIds(Set<Long> ids);
+
+    void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
 }

@@ -135,7 +135,7 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         List<Long> pickupDeliveryDetailsIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream().map(PickupDeliveryDetails::getId).filter(Objects::nonNull).toList();
         validateAndSetPickupDeliveryDetails(shipmentId, pickupDeliveryDetailsIds, shipmentDetails);
         validateAndSetNetworkTransferDetails(networkTransferList, shipmentDetails.getId());
-
+        validateAndRestoreTriangularPartnerDetails(shipmentId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
         shipmentBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(shipmentBackupDetails.getId());
 
@@ -362,5 +362,9 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     public static List<Long> ensureNonEmptyIds(List<Long> ids) {
         return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
+    }
+
+    private void validateAndRestoreTriangularPartnerDetails(Long shipmentId) {
+        shipmentDao.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
     }
 }
