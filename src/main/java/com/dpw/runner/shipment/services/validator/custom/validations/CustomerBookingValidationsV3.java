@@ -2,7 +2,9 @@ package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -14,10 +16,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @Slf4j
-public class CustomerBookingValidations {
+public class CustomerBookingValidationsV3 {
 
     @Autowired
     private CommonUtils commonUtils;
@@ -40,11 +43,7 @@ public class CustomerBookingValidations {
         // FCL
         switch (newEntity.getBookingStatus()) {
             case PENDING_FOR_KYC:
-                if (Objects.isNull(newEntity.getCustomer()) || (newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgData()))
-                        || (!newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgCode()))
-                        || (Boolean.TRUE.equals(newEntity.getIsCustomerAddressFreeText()) && Objects.isNull(newEntity.getCustomer().getAddressData()))
-                        || (!Boolean.TRUE.equals(newEntity.getIsCustomerAddressFreeText()) && Objects.isNull(newEntity.getCustomer().getAddressCode())))
-                    throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
+                this.validateOnPendingForKyc(newEntity);
                 break;
 
             case PENDING_FOR_CREDIT_LIMIT:
@@ -61,6 +60,17 @@ public class CustomerBookingValidations {
                 log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, newEntity.getBookingStatus());
                 break;
         }
+    }
+
+    private void validateOnPendingForKyc (CustomerBooking entity) {
+        if (Objects.isNull(entity.getCustomer()) || (entity.getIsCustomerFreeText() && Objects.isNull(entity.getCustomer().getOrgData()))
+                || (!entity.getIsCustomerFreeText() && Objects.isNull(entity.getCustomer().getOrgCode()))
+                || (Boolean.TRUE.equals(entity.getIsCustomerAddressFreeText()) && Objects.isNull(entity.getCustomer().getAddressData()))
+                || (!Boolean.TRUE.equals(entity.getIsCustomerAddressFreeText()) && Objects.isNull(entity.getCustomer().getAddressCode())))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
+
+        validateMandatory(entity.getTransportType(), "Transport Mode");
+        validateMandatory(entity.getCargoType(), "Cargo Type");
     }
 
     private void validateConsigneeConsignor(CustomerBooking newEntity) {
@@ -80,22 +90,17 @@ public class CustomerBookingValidations {
     }
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
-
-        if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && (!Objects.equals(entity.getDirection(),Constants.DIRECTION_EXP) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_DOM)))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignee detail"));
-
-        if ((Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode())) && (!Objects.equals(entity.getDirection(), Constants.DIRECTION_IMP) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_DOM)))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignor detail"));
-
-        if (Objects.isNull(entity.getServiceMode()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Service mode"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getOriginPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POL"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getDestinationPort()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "POD"));
-
+        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
+            validateParty(entity.getConsignor(), "Consignor detail");
+        }
+        if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
+            validateParty(entity.getConsignee(), "Consignee detail");
+        }
+        CarrierDetails carrier = entity.getCarrierDetails();
+        if(!Set.of(Constants.TRANSPORT_MODE_RAI, Constants.TRANSPORT_MODE_ROA).contains(entity.getTransportType())) {
+            validateMandatory(carrier.getOriginPort(), "POL");
+            validateMandatory(carrier.getDestinationPort(), "POD");
+        }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
         if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) && (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty()))
@@ -103,28 +108,47 @@ public class CustomerBookingValidations {
     }
 
     private void validateOnPendingForCreditCheck(CustomerBooking entity) {
+        validateParty(entity.getCustomer(), "Customer detail");
+        if (!Constants.DIRECTION_DOM.equals(entity.getDirection())) {
+            validateMandatory(entity.getIncoTerms(), "Incoterms");
+        }
+        validateMandatory(entity.getDirection(), "Shipment Type");
+        validateMandatory(entity.getServiceMode(), "Service Type");
+        validateMandatory(entity.getCarrierDetails(), "Carrier Details");
 
-        if (entity.getCustomer() == null || entity.getCustomer().getOrgCode() == null || entity.getCustomer().getAddressCode() == null)
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
+        CarrierDetails carrier = entity.getCarrierDetails();
+        validateMandatory(carrier.getOrigin(), "Origin");
+        validateMandatory(carrier.getDestination(), "Destination");
+        if (!Set.of(Constants.TRANSPORT_MODE_AIR, Constants.TRANSPORT_MODE_RAI, Constants.TRANSPORT_MODE_ROA).contains(entity.getTransportType())) {
+            validateMandatory(carrier.getOriginPort(), "POL");
+            validateMandatory(carrier.getDestinationPort(), "POD");
+        }
 
-        if (Objects.isNull(entity.getIncoTerms()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Incoterms"));
-
-        if (Objects.isNull(entity.getCarrierDetails()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Carrier Details"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getOrigin()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Origin"));
-
-        if (Objects.isNull(entity.getCarrierDetails().getDestination()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Destination"));
-
-        if (Objects.isNull(entity.getTransportType()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Transport Mode"));
-
-        if (Objects.isNull(entity.getCargoType()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));
-
+        validateMandatory(entity.getTransportType(), "Transport Mode");
+        validateMandatory(entity.getCargoType(), "Cargo Type");
+        validateCargoContents(entity);
     }
 
+    private void validateMandatory(Object value, String fieldName) {
+        if (Objects.isNull(value)) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, fieldName));
+        }
+    }
+
+    private void validateParty(Parties party, String fieldName) {
+        if (party == null || party.getOrgCode() == null || party.getAddressCode() == null) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, fieldName));
+        }
+    }
+
+    private void validateCargoContents(CustomerBooking entity) {
+        String cargoType = entity.getCargoType();
+        if (Set.of(Constants.CARGO_TYPE_FCL, Constants.CARGO_TYPE_FTL).contains(cargoType) && entity.getContainersList().isEmpty()) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one container"));
+        }
+        if (Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(cargoType) && entity.getPackingList().isEmpty()) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one Package"));
+        }
+    }
 }
+

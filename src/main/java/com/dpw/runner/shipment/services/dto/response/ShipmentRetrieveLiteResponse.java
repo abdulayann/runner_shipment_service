@@ -252,6 +252,8 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isEmptyWeightPackAvailable = Boolean.FALSE;
     private Boolean isInterBranchConsoleAttached;
     private TransportInfoStatus transportInfoStatus;
+    private String transportInfoStatusMessage;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
+    private Integer slac;
     private MigrationStatus migrationStatus;
 }

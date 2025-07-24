@@ -47,4 +47,5 @@ public class AllocationsResponse implements IRunnerResponse {
     private Integer dgContainerCount;
     private Integer containerCount;
     private BigDecimal teuCount;
+    private Integer slacCount;
 }

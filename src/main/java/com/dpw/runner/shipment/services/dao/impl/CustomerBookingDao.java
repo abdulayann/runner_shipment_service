@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.VersionContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
+import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidationsV3;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -46,6 +48,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Autowired
     private CustomerBookingValidations customValidations;
     @Autowired
+    private CustomerBookingValidationsV3 customerBookingValidationsV3;
+    @Autowired
     private CacheManager cacheManager;
     @Autowired
     private ObjectMapper objectMapper;
@@ -71,7 +75,11 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 throw new ValidationException(String.format("Booking with booking number: %s already exists.", customerBooking.getBookingNumber()));
             }
         }
-        customValidations.onSave(old, customerBooking); //Custom Validations
+        if (VersionContext.getVersion().equalsIgnoreCase("V2")) {
+            customValidations.onSave(old, customerBooking);
+        } else {
+            customerBookingValidationsV3.onSave(old, customerBooking);
+        }
         var resp = customerBookingRepository.save(customerBooking);
 
         // ----- Cache update section -----

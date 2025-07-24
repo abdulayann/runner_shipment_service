@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.RoutingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -12,10 +11,10 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IRoutingsV3Service;
 import io.swagger.annotations.ApiParam;
@@ -42,7 +41,7 @@ import java.util.List;
 @Slf4j
 public class RoutingV3Controller {
 
-    private IRoutingsV3Service routingService;
+    private final IRoutingsV3Service routingService;
 
     @Autowired
     public RoutingV3Controller(IRoutingsV3Service routingService) {
@@ -100,9 +99,6 @@ public class RoutingV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_SUCCESS, response = BulkRoutingResponse.class)})
     @PutMapping(value = ApiConstants.SHIPMENT_API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> shipmentUpdateBulk(@RequestBody BulkUpdateRoutingsRequest request) throws RunnerException {
-        if (TransportInfoStatus.IH.equals(request.getTransportInfoStatus())) {
-            throw new ValidationException("Transport info status can not be IH");
-        }
         return ResponseHelper.buildSuccessResponse(routingService.updateBulk(request, Constants.SHIPMENT));
     }
 
@@ -123,6 +119,11 @@ public class RoutingV3Controller {
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam Long routingId,
                                                             @RequestHeader(value = "x-source", required = false) String xSource) {
         return ResponseHelper.buildSuccessResponse(routingService.getAllMasterData(CommonRequestModel.buildRequest(routingId), xSource));
+    }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = RoutingConstants.ROUTINGS_UPDATE_TRANSPORT_STATUS_SUCCESS, response = BulkRoutingResponse.class)})
+    @PutMapping(value = ApiConstants.SHIPMENT_API_UPDATE_TRANSPORT_INFO_STATUS)
+    public ResponseEntity<IRunnerResponse> shipmentConsolUpdateTransportInfoStatus(@Valid @RequestBody UpdateTransportStatusRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(routingService.updateTransportInfoStatus(request));
     }
 
 

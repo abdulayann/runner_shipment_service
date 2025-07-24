@@ -58,6 +58,8 @@ import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -692,7 +694,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if(!Boolean.TRUE.equals(isCreate)){
             // This method will only work for non air transport modes , validation check moved inside the method
-            updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments);
+            updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments, true);
         }
 
         if(consolidationDetails.getDocumentationPartner() != null && consolidationDetails.getDocumentationPartner() == 0)
@@ -1187,12 +1189,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 return null;
             }
 
-            long totalPacks = packingList.size();
+            long totalPacks = 0;
             long totalDGPacks = 0;
 
             for (Packing packing : packingList) {
-                if (Boolean.TRUE.equals(packing.getHazardous())) {
-                    totalDGPacks++;
+                if(packing.getPacks() != null) {
+                    totalPacks += Long.valueOf(packing.getPacks());
+                    if (Boolean.TRUE.equals(packing.getHazardous())) {
+                        totalDGPacks += Long.valueOf(packing.getPacks());
+                    }
                 }
             }
 
@@ -1854,7 +1859,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDao.entityDetach(shipmentDetailsList);
 
         // Refresh linked shipment data after attachment process
-        updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>());
+        updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>(), fromConsolidation);
 
         // If any inter-console linkage needs to be handled, process it now
         processInterConsoleAttachShipment(consolidationDetails, shipmentDetailsList);
@@ -2134,18 +2139,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private boolean checkWeightIsSame(BigDecimal weight1, String weightUnit1, BigDecimal weight2, String weightUnit2) throws RunnerException {
         if(!Objects.isNull(weight1) && !Objects.isNull(weight2) && !isStringNullOrEmpty(weightUnit1) && !isStringNullOrEmpty(weightUnit2)) {
-            return Objects.equals(weight2.doubleValue(), new BigDecimal(convertUnit(MASS, weight1, weightUnit1, weightUnit2).toString()).doubleValue());
+            return weight2.compareTo(new BigDecimal(convertUnit(MASS, weight1, weightUnit1, weightUnit2).toString())) == 0;
         }
-        return (Objects.isNull(weight1) || Objects.equals(weight1, BigDecimal.ZERO)) &&
-                (Objects.isNull(weight2) || Objects.equals(weight2, BigDecimal.ZERO));
+        return (Objects.isNull(weight1) || BigDecimal.ZERO.compareTo(weight1) == 0) &&
+                (Objects.isNull(weight2) || BigDecimal.ZERO.compareTo(weight2) == 0);
     }
 
     private boolean checkVolumeIsSame(BigDecimal volume1, String volumeUnit1, BigDecimal volume2, String volumeUnit2) throws RunnerException {
         if(!Objects.isNull(volume1) && !Objects.isNull(volume2) && !isStringNullOrEmpty(volumeUnit1) && !isStringNullOrEmpty(volumeUnit2)) {
-            return Objects.equals(volume2.doubleValue(), new BigDecimal(convertUnit(VOLUME, volume1, volumeUnit1, volumeUnit2).toString()).doubleValue());
+            return volume2.compareTo(new BigDecimal(convertUnit(VOLUME, volume1, volumeUnit1, volumeUnit2).toString())) == 0;
         }
-        return (Objects.isNull(volume1) || Objects.equals(volume1, BigDecimal.ZERO)) &&
-                (Objects.isNull(volume2) || Objects.equals(volume2, BigDecimal.ZERO));
+        return (Objects.isNull(volume1) || BigDecimal.ZERO.compareTo(volume1) == 0) &&
+                (Objects.isNull(volume2) || BigDecimal.ZERO.compareTo(volume2) == 0);
     }
 
     private boolean checkPackagesIsSame(Integer packages1, String packagesUnit1, Integer packages2, String packagesUnit2) {
@@ -2168,8 +2173,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(!Objects.isNull(count1) && !Objects.isNull(count2)) {
             return Objects.equals(count2.doubleValue(), count1.doubleValue());
         }
-        return (Objects.isNull(count1) || Objects.equals(count1, BigDecimal.ZERO)) &&
-                (Objects.isNull(count2) || Objects.equals(count2, BigDecimal.ZERO));
+        return (Objects.isNull(count1) || BigDecimal.ZERO.compareTo(count1) == 0) &&
+                (Objects.isNull(count2) || BigDecimal.ZERO.compareTo(count2) == 0);
     }
 
 
@@ -2370,11 +2375,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @throws RunnerException If EFreight status is invalid or CFS cutoff validation fails
      */
     public List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldConsolEntity,
-            Boolean fromAttachShipment, Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
+            Boolean fromAttachShipment, Map<Long, ShipmentDetails> dgStatusChangeInShipments, Boolean fromConsole) throws RunnerException {
+
+        // This will ve true if console is/was interbranch enabled
+        boolean isOrWasInterBranchConsole = Optional.ofNullable(console.getInterBranchConsole()).orElse(false) ||
+                Optional.ofNullable(oldConsolEntity)
+                        .map(e -> e.getInterBranchConsole())
+                        .orElse(false);
 
         // Set interbranc context if Interbranch Flag is/was enabled
-        if (Boolean.TRUE.equals(console.getInterBranchConsole()) ||
-                (Objects.nonNull(oldConsolEntity) && Boolean.TRUE.equals(oldConsolEntity.getInterBranchConsole())) )
+        if (Boolean.TRUE.equals(fromConsole) && isOrWasInterBranchConsole)
             commonUtils.setInterBranchContextForHub();
 
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
@@ -2444,6 +2454,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // If transport mode is air, update air-specific fields like flight number
             if (Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 shipmentDetails.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             }
         }
     }
@@ -2468,6 +2479,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         String transportMode = console.getTransportMode();
         shipmentDetails.setConsolRef(console.getConsolidationNumber());
+        shipmentDetails.setJobType(console.getConsolidationType());
 
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
@@ -2487,6 +2499,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
             shipmentDetails.setMasterBill(console.getBol());
+            shipmentDetails.setIncoterms(console.getIncoterms());
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
@@ -2964,19 +2977,24 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         ConsolidationDetails consoleDetails = consolidationDetails.get();
         log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
         ConsolidationDetailsV3Response response = jsonHelper.convertValue(consoleDetails, ConsolidationDetailsV3Response.class);
-        List<Routings> routingsList = consoleDetails.getRoutingsList();
-        if (!CollectionUtils.isEmpty(routingsList)) {
-            boolean isMainCarriagePresent = routingsList.stream()
-                    .anyMatch(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE);
-            response.setIsMainCarriageAvailable(isMainCarriagePresent);
-        }
         if(!Objects.equals(source, NETWORK_TRANSFER))
             setPendingActionCountInResponse(consoleDetails, response);
         createConsolidationPayload(consoleDetails, response);
-
+        setMainCarriageFlag(consoleDetails, response);
         return response;
     }
+    private void setMainCarriageFlag(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response response) {
+        List<Routings> routingsList = consolidationDetails.getRoutingsList();
+        if (!CollectionUtils.isEmpty(routingsList)) {
+            List<Routings> mainCarriageRoutings = routingsList.stream().filter(r -> r.getCarriage() == RoutingCarriage.MAIN_CARRIAGE).toList();
+            response.setTransportInfoStatusMessage(CommonUtils.setTransportInfoStatusMessage(consolidationDetails.getCarrierDetails(), consolidationDetails.getTransportInfoStatus(), mainCarriageRoutings));
+            if (!CollectionUtils.isEmpty(mainCarriageRoutings)) {
+                response.setIsMainCarriageAvailable(true);
+                response.setIsVesselVoyageOrCarrierFlightNumberAvailable(CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mainCarriageRoutings));
+            }
 
+        }
+    }
     private void setPendingActionCountInResponse(ConsolidationDetails consolidationDetails, ConsolidationDetailsV3Response response) {
         var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
         var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.getId()), CONSOLIDATION);
@@ -3698,7 +3716,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             if (!listIsNullOrEmpty(excludeConsolidation))
                 consolListRequest = CommonUtils.andCriteria("id", excludeConsolidation, "NOTIN", consolListRequest);
         }
-        if (request.getBranchIds() != null) {
+        if (!ObjectUtils.isEmpty(request.getBranchIds())){
             consolListRequest = CommonUtils.andCriteria(TENANT_ID, request.getBranchIds(), "IN", consolListRequest);
         }
 
@@ -4362,20 +4380,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 commonUtils.setInterBranchContextForHub();
             }
             if (ShipmentRequestedType.APPROVE.equals(aibActionRequest.getShipmentRequestedType())) { // one console multiple shipments
-                aibActionRequest.getListOfShipments().stream().forEach(shipmentId -> {
-                    try {
-                        this.attachShipments(
-                                ShipmentConsoleAttachDetachV3Request.builder()
-                                        .shipmentRequestedType(aibActionRequest.getShipmentRequestedType())
-                                        .consolidationId(aibActionRequest.getConsoleId())
-                                        .shipmentIds(new HashSet<>(aibActionRequest.getListOfShipments()))
-                                        .isFromConsolidation(true)
-                                        .build());
-                    } catch (RunnerException e) {
-                        log.error("{} | Error while attaching shipments during AIB Action for Console: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
-                        throw new ValidationException(e.getMessage());
-                    }
-                });
+                try {
+                    this.attachShipments(
+                            ShipmentConsoleAttachDetachV3Request.builder()
+                                    .shipmentRequestedType(aibActionRequest.getShipmentRequestedType())
+                                    .consolidationId(aibActionRequest.getConsoleId())
+                                    .shipmentIds(new HashSet<>(aibActionRequest.getListOfShipments()))
+                                    .isFromConsolidation(true)
+                                    .build());
+                } catch (RunnerException e) {
+                    log.error("{} | Error while attaching shipments during AIB Action for Console: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
+                    throw new ValidationException(e.getMessage());
+                }
                 ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.SHIPMENT_ID, aibActionRequest.getListOfShipments(), Constants.IN);
                 Pair<Specification<ConsoleShipmentMapping>, Pageable> pair = fetchData(listCommonRequest, ConsoleShipmentMapping.class);
                 List<ConsoleShipmentMapping> consoleShipmentMappingsForEmails = jsonHelper.convertValueToList(consoleShipmentMappingDao.findAll(pair.getLeft(), pair.getRight()).getContent(), ConsoleShipmentMapping.class);
@@ -4623,7 +4639,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         try {
             ListCommonRequest listRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, request.getId(), Constants.EQ);
             listRequest = andCriteria(Constants.IS_ATTACHMENT_DONE, false, Constants.EQ, listRequest);
-            listRequest = andCriteria("requestedType", ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.name(), "=", listRequest);
             Pair<Specification<ConsoleShipmentMapping>, Pageable> consoleShipMappingPair = fetchData(listRequest, ConsoleShipmentMapping.class);
             Page<ConsoleShipmentMapping> mappingPage = consoleShipmentMappingDao.findAll(consoleShipMappingPair.getLeft(), consoleShipMappingPair.getRight());
 
@@ -4705,7 +4720,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .chargeable(StringUtility.convertToString(shipment.getChargable()) + StringUtility.convertToString(shipment.getChargeableUnit()))
                 .requestedBy(consoleShipmentsMap.get(shipment.getId()).getCreatedBy())
                 .requestedOn(consoleShipmentsMap.get(shipment.getId()).getCreatedAt())
-                .requestedType(consoleShipmentsMap.get(shipment.getId()).getRequestedType())
+                .requestedType(Objects.nonNull(consoleShipmentsMap.get(shipment.getId()).getRequestedType()) ? consoleShipmentsMap.get(shipment.getId()).getRequestedType().getV3Description() : null)
                 .build();
     }
 
@@ -4742,7 +4757,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
         AchievedQuantitiesResponse achievedQuantitiesResponse = jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class);
         ShipmentWtVolResponse shipmentWtVolResponse = calculateShipmentWtVol(consolidationDetails);
-        jsonHelper.updateValue(achievedQuantitiesResponse, shipmentWtVolResponse);
+        achievedQuantitiesResponse.setWeightVolume(shipmentWtVolResponse.getWeightVolume());
+        achievedQuantitiesResponse.setWeightVolumeUnit(shipmentWtVolResponse.getWeightVolumeUnit());
+        achievedQuantitiesResponse.setPacks(shipmentWtVolResponse.getPacks());
+        achievedQuantitiesResponse.setPacksType(shipmentWtVolResponse.getPacksType());
+        achievedQuantitiesResponse.setDgPacks(shipmentWtVolResponse.getDgPacks());
+        achievedQuantitiesResponse.setDgPacksType(shipmentWtVolResponse.getDgPacksType());
+        achievedQuantitiesResponse.setSlacCount(shipmentWtVolResponse.getSlacCount());
         achievedQuantitiesResponse.setConsolidatedWeight(shipmentWtVolResponse.getWeight());
         achievedQuantitiesResponse.setConsolidatedWeightUnit(shipmentWtVolResponse.getWeightUnit());
         achievedQuantitiesResponse.setConsolidatedVolume(shipmentWtVolResponse.getVolume());

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -739,7 +740,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails,
-        null, true, new HashMap<>()));
+        null, true, new HashMap<>(), true));
   }
 
   @Test
@@ -774,7 +775,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true);
     assertNotNull(shipmentDetailsList);
   }
 
@@ -812,7 +813,7 @@ if (unitConversionUtilityMockedStatic != null) {
         .thenReturn(shipments);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>());
+    List<ShipmentDetails> shipmentDetailsList = consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true);
     assertNotNull(shipmentDetailsList);
   }
 
@@ -853,7 +854,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationValidationV3Util.checkIfShipmentDateGreaterThanConsole(any(), any())).thenReturn(true);
 
     lenient().when(routingsV3Service.getRoutingsByShipmentId(any())).thenReturn(new ArrayList<>());
-    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>()));
+    assertThrows(RunnerException.class, () -> consolidationV3Service.updateLinkedShipmentData(consolidationDetails, oldConsolidation, true, new HashMap<>(), true));
 
   }
 
@@ -3954,6 +3955,30 @@ if (unitConversionUtilityMockedStatic != null) {
     CommonGetRequest request = CommonGetRequest.builder().id(id).build();
 
     ConsolidationDetails mockConsolidationDetails =  consolidationDetails;
+
+    Routings routings1 = new Routings();
+    routings1.setId(3L);
+    routings1.setConsolidationId(1L);
+    routings1.setVoyage("0123");
+    routings1.setVesselName("vessel");
+    routings1.setPol("pol");
+    routings1.setPod("pod");
+    routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+
+    Routings routings2 = new Routings();
+    routings2.setId(3l);
+    routings2.setConsolidationId(1L);
+    routings2.setVoyage("0123");
+    routings2.setVesselName("vessel");
+    routings2.setPol("pol");
+    routings2.setPod("pod");
+    routings2.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+    CarrierDetails carrierDetails = new CarrierDetails();
+    carrierDetails.setOriginPort("origin");
+    carrierDetails.setDestinationPort("dest");
+    consolidationDetails.setCarrierDetails(carrierDetails);
+    consolidationDetails.setTransportInfoStatus(TransportInfoStatus.IH);
+    mockConsolidationDetails.setRoutingsList(List.of(routings1,routings2));
     ConsolidationDetailsV3Response mockResponse = new ConsolidationDetailsV3Response();
 
     when(consolidationDetailsDao.findById(id)).thenReturn(Optional.of(mockConsolidationDetails));
@@ -4235,7 +4260,9 @@ if (unitConversionUtilityMockedStatic != null) {
   @Test
   void testGetSummaryDgPacks() {
     // Setup
-    List<Packing> packingList = List.of(new Packing());
+    Packing packing = new Packing();
+    packing.setPacks("1");
+    List<Packing> packingList = List.of(packing);
 
     // method under test
     String result = consolidationV3Service.getSummaryDgPacks(packingList);
@@ -4247,6 +4274,7 @@ if (unitConversionUtilityMockedStatic != null) {
   void testGetSummaryDgPacks1() {
     // Setup
     Packing packing = new Packing();
+    packing.setPacks("1");
     packing.setHazardous(true);
     List<Packing> packingList = List.of(packing);
 

@@ -4986,6 +4986,7 @@ public abstract class IReport {
     private void addBasicConsolidationFields(Map<String, Object> dict, ConsolidationDetails details) {
         dict.put(ReportConstants.C_D_REEFER, details.getReefer());
         dict.put(ReportConstants.C_D_DG, details.getHazardous());
+        dict.put(ReportConstants.C_D_INCOTERM, details.getIncoterms());
 
         // Add container and package counts from allocation section if available
         Allocations al = details.getAllocations();

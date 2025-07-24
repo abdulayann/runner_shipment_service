@@ -9,6 +9,7 @@ public class ReportConstants {
     public static final String COMPANY_ADDRESS = "CompanyAddress";
     public static final String HAWB_PACKS_MAP = "hawbPacksMap";
     public static final String C_D_DG = "C_D_DG";
+    public static final String C_D_INCOTERM = "C_D_IncoTerm";
     public static final String C_D_REEFER = "C_D_Reefer";
     public static final String C_CA_DGCONTAINER = "C_CA_DGContainer";
     public static final String C_CA_DGPACKAGES = "C_CA_DGPackages";

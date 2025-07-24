@@ -36,8 +36,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
 
-    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<Long> shipmentIds);
-
+    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<String> shipmentIds);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
     void saveStatus(Long id, Integer status);
