@@ -65,10 +65,12 @@ public interface IRoutingsRepository extends MultiTenancyRepository<Routings> {
     void revertSoftDeleteByRoutingsIdsAndConsolidationId(List<Long> routingsIds, Long consolidationId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE routings SET is_deleted = true WHERE id NOT IN (?1) and booking_id = ?2", nativeQuery = true)
     void deleteAdditionalDataByRoutingsIdsBookingId(List<Long> routingsIds, Long bookingId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE routings SET is_deleted = false WHERE id IN (?1) and booking_id = ?2", nativeQuery = true)
     void revertSoftDeleteByRoutingsIdsAndBookingId(List<Long> routingsIds, Long bookingId);
 

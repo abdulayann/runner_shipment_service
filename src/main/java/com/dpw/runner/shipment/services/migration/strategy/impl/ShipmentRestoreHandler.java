@@ -6,9 +6,8 @@ import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
-import com.dpw.runner.shipment.services.migration.dao.interfaces.IShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
-import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
+import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
 import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ShipmentRestoreHandler implements RestoreHandler {
+public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     @Autowired
     private ObjectMapper objectMapper;

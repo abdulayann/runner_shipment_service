@@ -1,15 +1,12 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
-import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
+import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
@@ -35,7 +32,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ConsolidationRestoreHandler implements RestoreHandler {
+public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -103,7 +100,6 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
     @Override
     public void restore(Integer tenantId) {
-
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
 
         List<Long> consolidationIds = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);

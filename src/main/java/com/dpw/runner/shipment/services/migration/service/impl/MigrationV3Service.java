@@ -80,8 +80,9 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
 
+        // Taking json backup for respective tenantID.
         backupService.backupTenantData(tenantId);
-        /*Map<String, Integer> map = new HashMap<>();
+        Map<String, Integer> map = new HashMap<>();
         // Step 1: Fetch all V2 consolidations for tenant
         List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
         map.put("Total Consolidation", consolIds.size());
@@ -171,8 +172,7 @@ public class MigrationV3Service implements IMigrationV3Service {
 
         Map<String, Integer> bookingStats = customerBookingV3MigrationService.migrateBookingV2ToV3ForTenant(tenantId);
         map.putAll(bookingStats);
-        return map;*/
-        return null;
+        return map;
     }
 
     @Override

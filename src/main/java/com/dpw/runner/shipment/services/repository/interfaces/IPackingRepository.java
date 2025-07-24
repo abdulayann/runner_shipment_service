@@ -154,10 +154,12 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     void revertSoftDeleteByPackingIdsAndConsolidationId(List<Long> packingIds, Long consolidationId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE packing SET is_deleted = true WHERE id NOT IN (?1) and booking_id = ?2", nativeQuery = true)
     void deleteAdditionalPackingByCustomerBookingId(List<Long> packingIds, Long bookingId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE packing SET is_deleted = false WHERE id IN (?1) and booking_id = ?2", nativeQuery = true)
     void revertSoftDeleteByPackingIdsAndBookingId(List<Long> packingIds, Long bookingId);
 

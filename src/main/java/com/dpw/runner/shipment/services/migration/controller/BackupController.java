@@ -33,14 +33,4 @@ public class BackupController {
         }
     }
 
-    @DeleteMapping()
-    public ResponseEntity<Void> removeTenantData(@RequestParam Integer tenantId) {
-        try {
-            backupService.deleteBackupForTenant(tenantId);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            log.error("Backup failed for tenant: {}", tenantId, e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
 }

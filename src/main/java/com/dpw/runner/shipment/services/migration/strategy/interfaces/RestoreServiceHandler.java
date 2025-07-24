@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.migration.strategy.interfaces;
 
-public interface RestoreHandler {
-
+public interface RestoreServiceHandler {
     void restore(Integer tenantId);
 }

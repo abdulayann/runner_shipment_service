@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.migration.strategy.interfaces;
 
-public interface RestoreService {
-
+public interface TenantDataRestoreService {
     void restoreTenantData(Integer tenantId);
-
 }
