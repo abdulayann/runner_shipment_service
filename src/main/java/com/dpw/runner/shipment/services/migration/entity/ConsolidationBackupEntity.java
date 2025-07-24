@@ -32,4 +32,7 @@ public class ConsolidationBackupEntity extends MultiTenancy {
 
     @Column(name = "console_shipment_mapping_details", columnDefinition = "jsonb")
     private String consoleShipmentMapping;
+
+    @Column(name = "network_transfer_details", columnDefinition = "jsonb")
+    private String networkTransferDetails;
 }

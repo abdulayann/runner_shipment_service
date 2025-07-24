@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface INetworkTransferDao {
@@ -48,4 +49,6 @@ public interface INetworkTransferDao {
     String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
     List<NetworkTransfer> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId);
+
+    List<NetworkTransfer> findNteByIds(List<Long> ids);
 }

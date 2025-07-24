@@ -11,20 +11,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureExcep
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
-import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentOrderRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -144,6 +133,13 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     @Lazy
     private ShipmentRestoreHandler self;
 
+    @Autowired
+    private NetworkTransferDao networkTransferDao;
+
+    @Autowired
+    private INetworkTransferRepository networkTransferRepository;
+
+
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
@@ -157,6 +153,7 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         if (consolidationDetails != null) {
             shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
         }
+        List<NetworkTransfer> networkTransferList = shipmentBackupDetails.getNetworkTransferDetails()!=null && !shipmentBackupDetails.getNetworkTransferDetails().isEmpty() ?objectMapper.readValue(shipmentBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {}): new ArrayList<>();
         processContainerToShipmentMapping(shipmentId, shipmentDetails, containerShipmentMap);
 
         var containerList = shipmentDetails.getContainersList().stream().filter(x -> shipmentsContainersMapping.contains(x.getId())).collect(Collectors.toSet());
@@ -189,6 +186,8 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         validateAndSetShipmentOrderDetails(shipmentId, shipmentOrderIds, shipmentDetails);
         List<Long> pickupDeliveryDetailsIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream().map(PickupDeliveryDetails::getId).filter(Objects::nonNull).toList();
         validateAndSetPickupDeliveryDetails(shipmentId, pickupDeliveryDetailsIds, shipmentDetails);
+        validateAndSetNetworkTransferDetails(networkTransferList, shipmentDetails.getId());
+
         shipmentDao.saveWithoutValidation(shipmentDetails);
         shipmentBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(shipmentBackupDetails.getId());
 
@@ -234,6 +233,44 @@ public class ShipmentRestoreHandler implements RestoreHandler {
             }
         }
     }
+
+    private void validateAndSetNetworkTransferDetails(List<NetworkTransfer> networkTransferList, Long shipmentId) {
+        List<NetworkTransfer> networkTransferDbList = networkTransferDao.findByEntityNTList(shipmentId, Constants.SHIPMENT);
+
+        List<NetworkTransfer> toSaveList = new ArrayList<>();
+
+        // Map of DB: id -> NetworkTransfer (keep all entries, don't filter upfront)
+        Map<Long, NetworkTransfer> dbMap = networkTransferDbList.stream()
+                .filter(nt -> nt.getId() != null)
+                .collect(Collectors.toMap(NetworkTransfer::getId, nt -> nt));
+
+        for (NetworkTransfer incoming : networkTransferList) {
+            Long id = incoming.getId();
+            UUID guid = incoming.getGuid();
+
+            if (id != null && guid != null && dbMap.containsKey(id)) {
+                NetworkTransfer existing = dbMap.get(id);
+                if (existing.getGuid() != null && existing.getGuid().equals(guid)) {
+                    // Valid match → update
+                    toSaveList.add(incoming);
+                    dbMap.remove(id); // remove matched entry
+                    continue;
+                }
+            }
+
+            // New record (or mismatched guid): remove id and save
+            incoming.setId(null);
+            toSaveList.add(incoming);
+        }
+
+        // All remaining in dbMap are to be deleted
+        List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());
+
+        // Persist
+        networkTransferRepository.saveAll(toSaveList);
+        networkTransferRepository.deleteAllById(toDeleteIds);
+    }
+
 
     private void validateAndSetPickupDeliveryDetails(Long shipmentId, List<Long> pickupDeliveryDetailsIds, ShipmentDetails shipmentDetails) {
         pickupDeliveryDetailsDao.deleteAdditionalPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsIds, shipmentId);
@@ -331,7 +368,6 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         if (!idsToDelete.isEmpty()) {
             shipmentDao.deleteShipmentDetailsByIds(idsToDelete);
         }
-
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
 
         Lists.partition(new ArrayList<>(nonAttachedShipmentIds), 100).forEach(batch -> {
