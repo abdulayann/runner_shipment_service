@@ -14,19 +14,19 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
-import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupServiceHandler;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,47 +41,55 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ConsolidationBackupHandler implements BackupServiceHandler {
+public class ConsolidationBackupHandler {
 
-    @Autowired
-    private INetworkTransferDao networkTransferDao;
-
-    @Lazy
-    @Autowired
-    private ConsolidationBackupHandler lazyProxySelf;
-    private static final int DEFAULT_BATCH_SIZE = 150;
+    private static final int DEFAULT_BATCH_SIZE = 100;
     private final IConsolidationBackupRepository consolidationBackupRepository;
     private final IConsolidationDetailsDao consolidationDetailsDao;
     private final IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private final ObjectMapper objectMapper;
+    @Autowired
+    @Qualifier("asyncBackupHandlerExecutor")
     private final ThreadPoolTaskExecutor asyncBackupHandlerExecutor;
     private final V1ServiceImpl v1Service;
+    private final PlatformTransactionManager transactionManager;
+    private final INetworkTransferDao networkTransferDao;
 
-    @Override
+
     public void backup(Integer tenantId) {
         long startTime = System.currentTimeMillis();
         log.info("Starting consolidation backup for tenantId: {}", tenantId);
         Set<Long> consolidationIds = consolidationDetailsDao.findConsolidationIdsByTenantId(tenantId);
+        log.info("Count of consolidation Ids : {}", consolidationIds.size());
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);
             return;
         }
 
+        TransactionTemplate batchTxTemplate = new TransactionTemplate(transactionManager);
+        batchTxTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+
         List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(consolidationIds), DEFAULT_BATCH_SIZE)
                 .stream()
                 .map(batch -> CompletableFuture.runAsync(
-                        () -> {
+                        wrapWithContext(() -> {
                             try {
-                                v1Service.setAuthContext();
-                                TenantContext.setCurrentTenant(tenantId);
-                                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                                lazyProxySelf.processAndBackupConsolidationsBatchData(new HashSet<>(batch));
-                            } finally {
-                                v1Service.clearAuthContext();
+                                batchTxTemplate.execute(status -> {
+                                    try {
+                                        processAndBackupConsolidationsBatchData(new HashSet<>(batch));
+                                        return null;
+                                    } catch (Exception e) {
+                                        status.setRollbackOnly();
+                                        throw e;
+                                    }
+                                });
+                            } catch (Exception e) {
+                                log.error("Batch processing failed (size {}): {}", batch.size(), e.getMessage());
+                                throw new BackupFailureException("Batch processing failed", e);
                             }
-                        },
-                        asyncBackupHandlerExecutor))
-                .toList();
+                        }, tenantId),
+                        asyncBackupHandlerExecutor)).toList();
+
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
             log.info("Consolidation completed : {}", System.currentTimeMillis() - startTime);
@@ -91,8 +99,7 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void processAndBackupConsolidationsBatchData(Set<Long> consolidationIds) {
+    private void processAndBackupConsolidationsBatchData(Set<Long> consolidationIds) {
         List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(consolidationIds);
 
         Map<Long, List<ConsoleShipmentMapping>> consoleMappingsByConsolidationId =
@@ -107,10 +114,9 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
 
         List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
                 .map((detail -> mapToBackupEntity(detail,
-                        consoleMappingsByConsolidationId.getOrDefault(detail.getId(),Collections.emptyList()),
-                        networkTransferMappingsByConsolidationId.getOrDefault(detail.getId(),Collections.emptyList()))))
+                        consoleMappingsByConsolidationId.getOrDefault(detail.getId(), Collections.emptyList()),
+                        networkTransferMappingsByConsolidationId.getOrDefault(detail.getId(), Collections.emptyList()))))
                 .toList();
-
         consolidationBackupRepository.saveAll(backupEntities);
     }
 
@@ -134,9 +140,27 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
         }
     }
 
-    @Override
     @Transactional
     public void rollback(Integer tenantId) {
         consolidationBackupRepository.deleteByTenantId(tenantId);
+    }
+
+
+    public CompletableFuture<Void> backupAsync(Integer tenantId) {
+        return CompletableFuture.runAsync(wrapWithContext(() -> backup(tenantId), tenantId),
+                asyncBackupHandlerExecutor);
+    }
+
+    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+        return () -> {
+            try {
+                v1Service.setAuthContext();
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+                task.run();
+            } finally {
+                v1Service.clearAuthContext();
+            }
+        };
     }
 }

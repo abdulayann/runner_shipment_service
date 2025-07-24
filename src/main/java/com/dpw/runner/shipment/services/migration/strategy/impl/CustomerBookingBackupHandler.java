@@ -8,18 +8,19 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.CustomerBookingBackupEntity;
 import com.dpw.runner.shipment.services.migration.repository.ICustomerBookingBackupRepository;
-import com.dpw.runner.shipment.services.migration.strategy.interfaces.BackupServiceHandler;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,43 +32,54 @@ import java.util.concurrent.CompletableFuture;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class CustomerBookingBackupHandler implements BackupServiceHandler {
+public class CustomerBookingBackupHandler {
 
 
-    @Autowired
-    @Lazy
-    private CustomerBookingBackupHandler lazyProxySelf;
     private static final int DEFAULT_BATCH_SIZE = 100;
     private final ICustomerBookingDao customerBookingDao;
     private final ICustomerBookingBackupRepository customerBookingRepository;
     private final ObjectMapper objectMapper;
+    @Autowired
+    @Qualifier("asyncBackupHandlerExecutor")
     private final ThreadPoolTaskExecutor asyncBackupHandlerExecutor;
     private final V1ServiceImpl v1Service;
+    private final PlatformTransactionManager transactionManager;
 
-
-    @Override
     public void backup(Integer tenantId) {
         long startTime = System.currentTimeMillis();
         log.info("Starting customer booking backup for tenantId: {}", tenantId);
         Set<Long> customerBookingIds = customerBookingDao.findCustomerBookingIdsByTenantId(tenantId);
+        log.info("Count of customerBooking Ids : {}", customerBookingIds.size());
         if (customerBookingIds.isEmpty()) {
             log.info("No customer booking records found for tenantId: {}", tenantId);
             return;
         }
 
-        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(customerBookingIds), DEFAULT_BATCH_SIZE).stream()
+        TransactionTemplate batchTxTemplate = new TransactionTemplate(transactionManager);
+        batchTxTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+
+        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(customerBookingIds), DEFAULT_BATCH_SIZE)
+                .stream()
                 .map(batch -> CompletableFuture.runAsync(
-                        () -> {
+                        wrapWithContext(() -> {
                             try {
-                                v1Service.setAuthContext();
-                                TenantContext.setCurrentTenant(tenantId);
-                                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                                lazyProxySelf.processAndBackupBookingsBatchData(new HashSet<>(batch));
-                            } finally {
-                                v1Service.clearAuthContext();
+                                batchTxTemplate.execute(status -> {
+                                    try {
+                                        processAndBackupBookingsBatchData(new HashSet<>(batch));
+                                        return null;
+                                    } catch (Exception e) {
+                                        status.setRollbackOnly();
+                                        throw e;
+                                    }
+                                });
+                            } catch (Exception e) {
+                                log.error("Batch processing failed (size {}): {}", batch.size(), e.getMessage());
+                                throw new BackupFailureException("Batch processing failed", e);
                             }
-                        },
-                        asyncBackupHandlerExecutor)).toList();
+                        }, tenantId),
+                        asyncBackupHandlerExecutor))
+                .toList();
+
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
             log.info("Customer Booking completed : {}", System.currentTimeMillis() - startTime);
@@ -77,7 +89,6 @@ public class CustomerBookingBackupHandler implements BackupServiceHandler {
         }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void processAndBackupBookingsBatchData(Set<Long> customerBookingIds) {
 
         List<CustomerBooking> customerBookings =
@@ -86,7 +97,6 @@ public class CustomerBookingBackupHandler implements BackupServiceHandler {
         List<CustomerBookingBackupEntity> customerBookingEntities = customerBookings.stream()
                 .map(this::mapToBackupEntity)
                 .toList();
-
         customerBookingRepository.saveAll(customerBookingEntities);
     }
 
@@ -106,9 +116,27 @@ public class CustomerBookingBackupHandler implements BackupServiceHandler {
         }
     }
 
-    @Override
     @Transactional
     public void rollback(Integer tenantId) {
         customerBookingRepository.deleteByTenantId(tenantId);
+    }
+
+
+    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+        return () -> {
+            try {
+                v1Service.setAuthContext();
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+                task.run();
+            } finally {
+                v1Service.clearAuthContext();
+            }
+        };
+    }
+
+    public CompletableFuture<Void> backupAsync(Integer tenantId) {
+        return CompletableFuture.runAsync(wrapWithContext(() -> backup(tenantId), tenantId),
+                asyncBackupHandlerExecutor);
     }
 }
