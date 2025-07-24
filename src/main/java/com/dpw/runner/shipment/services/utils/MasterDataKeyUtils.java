@@ -66,7 +66,7 @@ public class MasterDataKeyUtils {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
-                                response.put(value, Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) ? object.getLookupDescV3() : object.getLookupDesc());
+                                response.put(value, populateLookupDesc(shipmentSettingsDetails, object));
                                 response.put(value + Constants.CODE, object.getLocCode());
                                 response.put(value + Constants.IATA_CODE, object.getIATACode());
                                 break;
@@ -137,6 +137,10 @@ public class MasterDataKeyUtils {
                 });
             }
         });
+    }
+
+    private String populateLookupDesc(ShipmentSettingsDetails shipmentSettingsDetails, EntityTransferUnLocations object) {
+        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) ? object.getLookupDescV3() : object.getLookupDesc();
     }
 
     @Nullable
