@@ -123,6 +123,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         updateShipmentCargoSummary(shipmentDetails);
 
         updateTransportInstruction(shipmentDetails);
+        shipmentDetails.setCargoReadinessDate(shipmentDetails.getCargoReadyDate());
 
         return shipmentDetails;
     }
