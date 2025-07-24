@@ -94,6 +94,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         notesList.add(notes);
         log.info("Notes added for Network Transfer Shipment [id={}]", networkTransfer.getId());
         v3Shipment.setNotesList(notesList);
+        v3Shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         Map<String, Object> stringObjectMap = getCommonShipmentPayload(v3Shipment, entityPayload);
         log.info("New payload created for Network Transfer -> Shipment [id={}]", networkTransfer.getId());
         networkTransfer.setEntityPayload(stringObjectMap);
@@ -122,6 +123,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         log.info("Notes added for Network Transfer Consolidation [id={}]", networkTransfer.getId());
         Map<UUID, UUID> packingVsContainerGuid = new HashMap<>();
         ConsolidationDetails v3Consol = consolidationMigrationV3Service.mapConsoleV2ToV3(v2Consol, packingVsContainerGuid);
+        setMigrationStatus(v3Consol);
         EntityTransferV3ConsolidationDetails newPayload = jsonHelper.convertValue(v3Consol, EntityTransferV3ConsolidationDetails.class);
         log.info("Mapping completed for Network Transfer -> Consolidation [id={}]", networkTransfer.getId());
         prepareCommonConsolePayload(v3Consol, existingPayload, newPayload, consolidationDetails);
@@ -148,6 +150,15 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         return networkTransfer;
     }
 
+    private void setMigrationStatus(ConsolidationDetails v3Consol) {
+        v3Consol.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+        if(v3Consol.getShipmentsList()!=null && !v3Consol.getShipmentsList().isEmpty()){
+            for(ShipmentDetails shipmentDetails: v3Consol.getShipmentsList()){
+                shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+            }
+        }
+    }
+
 
     @Override
     public NetworkTransfer migrateNteFromV3ToV2(Long networkTransferId) throws RunnerException {
@@ -165,10 +176,11 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
                 log.info("No Shipment Details present for Network Transfer with [id={}]", networkTransfer.getId());
                 return null;
             }
-            ShipmentDetails v2Shipment = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
-            ShipmentDetails v3Shipment = shipmentMigrationV3Service.mapShipmentV3ToV2(v2Shipment, null);
+            ShipmentDetails v3Shipment = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
+            ShipmentDetails v2Shipment = shipmentMigrationV3Service.mapShipmentV3ToV2(v3Shipment, null);
             log.info("Mapping completed for Network Transfer for V3 to V2 -> Shipment [id={}]", networkTransfer.getId());
-            Map<String, Object> stringObjectMap = getCommonShipmentPayload(v3Shipment, entityPayload);
+            v2Shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+            Map<String, Object> stringObjectMap = getCommonShipmentPayload(v2Shipment, entityPayload);
             networkTransfer.setEntityPayload(stringObjectMap);
             networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V3);
             log.info("Migration V3 to V2 complete for Network Transfer for Shipment with [id={}]", networkTransfer.getId());
@@ -199,6 +211,14 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         ConsolidationDetails v3Consol = jsonHelper.convertValue(consolidationDetails, ConsolidationDetails.class);
         ConsolidationDetails v2Consol = consolidationMigrationV3Service.mapConsoleV3ToV2(v3Consol);
         log.info("Mapping completed for Network Transfer for V3 to V2 -> Consolidation [id={}]", networkTransfer.getId());
+
+        v2Consol.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+        if(v2Consol.getShipmentsList()!=null && !v2Consol.getShipmentsList().isEmpty()){
+            for(ShipmentDetails shipmentDetails: v2Consol.getShipmentsList()){
+                shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+            }
+        }
+
         EntityTransferV3ConsolidationDetails newPayload = jsonHelper.convertValue(v2Consol, EntityTransferV3ConsolidationDetails.class);
 
         prepareCommonConsolePayload(v2Consol, existingPayload, newPayload, consolidationDetails);
