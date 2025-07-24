@@ -2,11 +2,15 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
@@ -49,6 +53,7 @@ public class ShipmentBackupHandler implements BackupServiceHandler {
     private final IShipmentBackupRepository shipmentBackupRepository;
     private final ThreadPoolTaskExecutor asyncBackupHandlerExecutor;
     private final V1ServiceImpl v1Service;
+    private final INetworkTransferDao networkTransferDao;
 
     @Override
     public void backup(Integer tenantId) {
@@ -92,14 +97,15 @@ public class ShipmentBackupHandler implements BackupServiceHandler {
         List<ShipmentBackupEntity> shipmentBackupEntities = shipmentDetails.stream()
                 .map(shipment -> {
                     List<PickupDeliveryDetails> pickupDetails = pickupDeliveryDetailsDao.findByShipmentId(shipment.getId());
-                    return mapToBackupEntity(shipment, pickupDetails);
+                    List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityNTList(shipment.getId(), Constants.SHIPMENT);
+                    return mapToBackupEntity(shipment, pickupDetails, networkTransfers);
                 })
                 .toList();
 
         shipmentBackupRepository.saveAll(shipmentBackupEntities);
     }
 
-    private ShipmentBackupEntity mapToBackupEntity(ShipmentDetails shipment, List<PickupDeliveryDetails> pickupDetails) {
+    private ShipmentBackupEntity mapToBackupEntity(ShipmentDetails shipment, List<PickupDeliveryDetails> pickupDetails, List<NetworkTransfer> networkTransfers) {
         try {
             ShipmentBackupEntity shipmentBackupEntity = new ShipmentBackupEntity();
             shipmentBackupEntity.setTenantId(shipment.getTenantId());
@@ -114,6 +120,8 @@ public class ShipmentBackupHandler implements BackupServiceHandler {
             shipment.setConsolidationList(consolidationList);
             String pickupDeliveryJson = objectMapper.writeValueAsString(pickupDetails);
             shipmentBackupEntity.setPickupDeliveryDetail(pickupDeliveryJson);
+            String networkTransferJson = objectMapper.writeValueAsString(networkTransfers);
+            shipmentBackupEntity.setNetworkTransferDetails(networkTransferJson);
             return shipmentBackupEntity;
 
         } catch (Exception e) {

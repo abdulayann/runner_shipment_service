@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -84,4 +85,7 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_guid in (?1)", nativeQuery = true)
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
+
+    @Query(value = "SELECT * FROM network_transfer WHERE id IN ?1", nativeQuery = true)
+    List<NetworkTransfer> findNteByIds(List<Long> id);
 }

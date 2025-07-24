@@ -2,11 +2,16 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
@@ -23,6 +28,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -31,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -39,6 +46,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class ConsolidationBackupHandler implements BackupServiceHandler {
+
+    @Autowired
+    private INetworkTransferDao networkTransferDao;
 
     @Lazy
     @Autowired
@@ -94,14 +104,21 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
                         .stream()
                         .collect(Collectors.groupingBy(ConsoleShipmentMapping::getConsolidationId));
 
+        Map<Long, List<NetworkTransfer>> networkTransferMappingsByConsolidationId =
+                consolidationIds.stream()
+                        .flatMap(consolidationId -> networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION).stream())
+                        .collect(Collectors.groupingBy(NetworkTransfer::getEntityId));
+
         List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
                 .map((detail -> mapToBackupEntity(detail, consoleMappingsByConsolidationId.getOrDefault(detail.getId(),
                         Collections.emptyList()))))
                 .toList();
+
         consolidationBackupRepository.saveAll(backupEntities);
     }
 
-    private ConsolidationBackupEntity mapToBackupEntity(ConsolidationDetails consolidationDetail, List<ConsoleShipmentMapping> consoleMappings) {
+    private ConsolidationBackupEntity mapToBackupEntity(ConsolidationDetails consolidationDetail, List<ConsoleShipmentMapping> consoleMappings,
+                                                        List<NetworkTransfer> networkTransfers) {
         try {
             ConsolidationBackupEntity consolidationBackupEntity = new ConsolidationBackupEntity();
             consolidationBackupEntity.setTenantId(consolidationDetail.getTenantId());
@@ -112,6 +129,7 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
             consolidationBackupEntity.setConsolidationDetails(objectMapper.writeValueAsString(consolidationDetail));
             consolidationDetail.setShipmentsList(shipmentList);
             consolidationBackupEntity.setConsoleShipmentMapping(objectMapper.writeValueAsString(consoleMappings));
+            consolidationBackupEntity.setNetworkTransferDetails(objectMapper.writeValueAsString(networkTransfers));
             return consolidationBackupEntity;
         } catch (Exception e) {
             log.error("Failed to create backup entity for consolidation id: {}", consolidationDetail.getId(), e);

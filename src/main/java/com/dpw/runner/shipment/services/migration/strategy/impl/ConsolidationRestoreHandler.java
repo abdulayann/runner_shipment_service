@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreSer
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.INetworkTransferRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
@@ -61,6 +62,12 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     private final ShipmentDao shipmentDao;
     private final V1ServiceImpl v1Service;
 
+
+    @Autowired
+    private NetworkTransferDao networkTransferDao;
+
+    @Autowired
+    private INetworkTransferRepository networkTransferRepository;
 
     @Override
     public void restore(Integer tenantId) {
@@ -131,12 +138,52 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             validateAndRestoreRoutingDetails(consolidationId, routingsIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
+            List<NetworkTransfer> networkTransferList = consolidationBackupDetails.getNetworkTransferDetails()!=null && !consolidationBackupDetails.getNetworkTransferDetails().isEmpty() ? objectMapper.readValue(consolidationBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {}): new ArrayList<>();
+            validateAndSetNetworkTransferDetails(networkTransferList, consolidationId);
+
             consolidationDao.save(consolidationDetails);
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
         }
+    }
+
+    private void validateAndSetNetworkTransferDetails(List<NetworkTransfer> networkTransferList, Long consolidationId) {
+        List<NetworkTransfer> networkTransferDbList = networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION_ID);
+
+        List<NetworkTransfer> toSaveList = new ArrayList<>();
+
+        // Map of DB: id -> NetworkTransfer (keep all entries, don't filter upfront)
+        Map<Long, NetworkTransfer> dbMap = networkTransferDbList.stream()
+                .filter(nt -> nt.getId() != null)
+                .collect(Collectors.toMap(NetworkTransfer::getId, nt -> nt));
+
+        for (NetworkTransfer incoming : networkTransferList) {
+            Long id = incoming.getId();
+            UUID guid = incoming.getGuid();
+
+            if (id != null && guid != null && dbMap.containsKey(id)) {
+                NetworkTransfer existing = dbMap.get(id);
+                if (existing.getGuid() != null && existing.getGuid().equals(guid)) {
+                    // Valid match → update
+                    toSaveList.add(incoming);
+                    dbMap.remove(id); // remove matched entry
+                    continue;
+                }
+            }
+
+            // New record (or mismatched guid): remove id and save
+            incoming.setId(null);
+            toSaveList.add(incoming);
+        }
+
+        // All remaining in dbMap are to be deleted
+        List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());
+
+        // Persist
+        networkTransferRepository.saveAll(toSaveList);
+        networkTransferRepository.deleteAllById(toDeleteIds);
     }
 
     private List<Long> getAllEventsIds(ConsolidationDetails consolidationDetails) {
@@ -158,7 +205,8 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     }
 
     private void revertContainers(ConsolidationDetails consolidationDetails) {
-        List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
+        List<Long> containersIdsList = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
+        List<Long> containersIds = ensureNonEmptyIds(containersIdsList);
         containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationDetails.getId());
         containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationDetails.getId());
     }
@@ -184,33 +232,42 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         containerRepository.saveAll(containers);
     }
 
-    private void validateAndStoreJobsDetails(Long consolidationId, List<Long> jobsIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndStoreJobsDetails(Long consolidationId, List<Long> jobsIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> jobsIds = ensureNonEmptyIds(jobsIdsList);
         iJobRepository.deleteAdditionalDataByJobsIdsAndConsolidationId(jobsIds, consolidationId);
         iJobRepository.revertSoftDeleteByJobsIdsAndConsolidationId(jobsIds, consolidationId);
         iJobRepository.saveAll(consolidationDetails.getJobsList());
     }
 
-    private void validateAndRestorePartiesDetails(Long consolidationId, List<Long> consolidationAddressIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestorePartiesDetails(Long consolidationId, List<Long> consolidationAddressIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> consolidationAddressIds = ensureNonEmptyIds(consolidationAddressIdsList);
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(consolidationAddressIds, consolidationId, Constants.CONSOLIDATION_ADDRESSES);
         partiesDao.revertSoftDeleteByPartiesIds(consolidationAddressIds);
         partiesRepository.saveAll(consolidationDetails.getConsolidationAddresses());
     }
 
-    private void validateAndRestoreEventsDetails(Long consolidationId, List<Long> eventsIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestoreEventsDetails(Long consolidationId, List<Long> eventsIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> eventsIds = ensureNonEmptyIds(eventsIdsList);
         eventDao.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
         eventDao.revertSoftDeleteByEventsIds(eventsIds);
         eventRepository.saveAll(consolidationDetails.getEventsList());
     }
 
-    private void validateAndRestoreRoutingDetails(Long consolidationId, List<Long> routingsIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestoreRoutingDetails(Long consolidationId, List<Long> routingsIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> routingsIds = ensureNonEmptyIds(routingsIdsList);
         routingsDao.deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
         routingsDao.revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
         routingsRepository.saveAll(consolidationDetails.getRoutingsList());
     }
 
-    private void validateAndRestoreReferenceNumberDetails(Long consolidationId, List<Long> referenceNumberIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestoreReferenceNumberDetails(Long consolidationId, List<Long> referenceNumberIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> referenceNumberIds = ensureNonEmptyIds(referenceNumberIdsList);
         referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
         referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
         referenceNumbersRepository.saveAll(consolidationDetails.getReferenceNumbersList());
+    }
+
+    public static List<Long> ensureNonEmptyIds(List<Long> ids) {
+        return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
     }
 }

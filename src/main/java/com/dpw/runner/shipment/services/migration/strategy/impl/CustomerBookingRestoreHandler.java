@@ -169,39 +169,53 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
         });
 
         bookingChargesDao.saveAll(backupData.getBookingCharges());
+
     }
 
-    private void validateAndRestoreAdditionalPartiesDetails(Long bookingId, List<Long> partiesIds, CustomerBooking backupData) {
+    private void validateAndRestoreBookingChargesDetails(Long bookingId, List<Long> bookingChargeIdsList, CustomerBooking backupData) {
+        List<Long> bookingChargeIds = ensureNonEmptyIds(bookingChargeIdsList);
+        bookingChargesDao.deleteAdditionalPackingByCustomerBookingId(bookingChargeIds, bookingId);
+        bookingChargesDao.revertSoftDeleteByPackingIdsAndBookingId(bookingChargeIds, bookingId);
+        bookingChargesDao.saveAll(backupData.getBookingCharges());
+    }
+
+    private void validateAndRestoreAdditionalPartiesDetails(Long bookingId, List<Long> partiesIdsList, CustomerBooking backupData) {
+        List<Long> partiesIds = ensureNonEmptyIds(partiesIdsList);
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(partiesIds, bookingId, BOOKING_ADDITIONAL_PARTY);
         partiesDao.revertSoftDeleteByPartiesIds(partiesIds);
         partiesDao.saveAll(backupData.getAdditionalParties());
     }
 
-    private void validateAndRestoreContainersDetails(Long bookingId, List<Long> containersIds, CustomerBooking backupData) {
+    private void validateAndRestoreContainersDetails(Long bookingId, List<Long> containersIdsList, CustomerBooking backupData) {
+        List<Long> containersIds = ensureNonEmptyIds(containersIdsList);
         containerDao.deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
         containerDao.revertSoftDeleteByContainersIdsAndBookingId(containersIds, bookingId);
         containerDao.saveAll(backupData.getContainersList());
     }
 
-    private void validateAndRestoreRoutingDetails(Long bookingId, List<Long> routingsIds, CustomerBooking backupData) {
-
+    private void validateAndRestoreRoutingDetails(Long bookingId, List<Long> routingsIdsList, CustomerBooking backupData) {
+        List<Long> routingsIds = ensureNonEmptyIds(routingsIdsList);
         routingsDao.deleteAdditionalDataByRoutingsIdsBookingId(routingsIds, bookingId);
         routingsDao.revertSoftDeleteByRoutingsIdsAndBookingId(routingsIds, bookingId);
         routingsDao.saveAll(backupData.getRoutingList());
     }
 
-    private void validateAndRestoreReferenceNumberDetails(Long bookingId, List<Long> referenceNumberIds, CustomerBooking backupData) {
-
+    private void validateAndRestoreReferenceNumberDetails(Long bookingId, List<Long> referenceNumberIdsList, CustomerBooking backupData) {
+        List<Long> referenceNumberIds = ensureNonEmptyIds(referenceNumberIdsList);
         referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
         referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
         referenceNumbersDao.saveAll(backupData.getReferenceNumbersList());
     }
 
-    private void validateAndRestorePackingDetails(Long bookingId, List<Long> packingIds, CustomerBooking backupData) {
-
+    private void validateAndRestorePackingDetails(Long bookingId, List<Long> packingIdsList, CustomerBooking backupData) {
+        List<Long> packingIds = ensureNonEmptyIds(packingIdsList);
         packingDao.deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
         packingDao.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
         packingDao.saveAll(backupData.getPackingList());
+    }
+
+    public static List<Long> ensureNonEmptyIds(List<Long> ids) {
+        return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
     }
 }
 
