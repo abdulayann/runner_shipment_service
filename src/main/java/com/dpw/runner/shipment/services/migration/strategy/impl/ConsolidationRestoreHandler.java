@@ -238,7 +238,8 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
     }
 
     private void revertContainers(ConsolidationDetails consolidationDetails) {
-        List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
+        List<Long> containersIdsList = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
+        List<Long> containersIds = ensureNonEmptyIds(containersIdsList);
         containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationDetails.getId());
         containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationDetails.getId());
     }
@@ -272,19 +273,22 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         containerRepository.saveAll(containers);
     }
 
-    private void validateAndStoreJobsDetails(Long consolidationId, List<Long> jobsIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndStoreJobsDetails(Long consolidationId, List<Long> jobsIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> jobsIds = ensureNonEmptyIds(jobsIdsList);
         iJobRepository.deleteAdditionalDataByJobsIdsAndConsolidationId(jobsIds, consolidationId);
         iJobRepository.revertSoftDeleteByJobsIdsAndConsolidationId(jobsIds, consolidationId);
         iJobRepository.saveAll(consolidationDetails.getJobsList());
     }
 
-    private void validateAndRestorePartiesDetails(Long consolidationId, List<Long> consolidationAddressIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestorePartiesDetails(Long consolidationId, List<Long> consolidationAddressIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> consolidationAddressIds = ensureNonEmptyIds(consolidationAddressIdsList);
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(consolidationAddressIds, consolidationId, Constants.CONSOLIDATION_ADDRESSES);
         partiesDao.revertSoftDeleteByPartiesIds(consolidationAddressIds);
         partiesRepository.saveAll(consolidationDetails.getConsolidationAddresses());
     }
 
-    private void validateAndRestoreEventsDetails(Long consolidationId, List<Long> eventsIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestoreEventsDetails(Long consolidationId, List<Long> eventsIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> eventsIds = ensureNonEmptyIds(eventsIdsList);
         eventDao.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
         eventDao.revertSoftDeleteByEventsIds(eventsIds);
         eventRepository.saveAll(consolidationDetails.getEventsList());
@@ -298,13 +302,15 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         }
     }*/
 
-    private void validateAndRestoreRoutingDetails(Long consolidationId, List<Long> routingsIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestoreRoutingDetails(Long consolidationId, List<Long> routingsIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> routingsIds = ensureNonEmptyIds(routingsIdsList);
         routingsDao.deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
         routingsDao.revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
         routingsRepository.saveAll(consolidationDetails.getRoutingsList());
     }
 
-    private void validateAndRestoreReferenceNumberDetails(Long consolidationId, List<Long> referenceNumberIds, ConsolidationDetails consolidationDetails) {
+    private void validateAndRestoreReferenceNumberDetails(Long consolidationId, List<Long> referenceNumberIdsList, ConsolidationDetails consolidationDetails) {
+        List<Long> referenceNumberIds = ensureNonEmptyIds(referenceNumberIdsList);
         referenceNumbersDao.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
         referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
         referenceNumbersRepository.saveAll(consolidationDetails.getReferenceNumbersList());
@@ -316,5 +322,7 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         packingRepository.saveAll(consolidationDetails.getPackingList());
     }
 
-
+    public static List<Long> ensureNonEmptyIds(List<Long> ids) {
+        return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
+    }
 }

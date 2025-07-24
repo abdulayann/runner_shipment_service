@@ -272,83 +272,97 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     }
 
 
-    private void validateAndSetPickupDeliveryDetails(Long shipmentId, List<Long> pickupDeliveryDetailsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetPickupDeliveryDetails(Long shipmentId, List<Long> pickupDeliveryDetailsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> pickupDeliveryDetailsIds = ensureNonEmptyIds(pickupDeliveryDetailsIdsList);
         pickupDeliveryDetailsDao.deleteAdditionalPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsIds, shipmentId);
-        List<Long> pickupDeliveryDetailsPartiesIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream()
+        List<Long> pickupDeliveryDetailsPartiesIdsList = shipmentDetails.getPickupDeliveryDetailsInstructions().stream()
                 .filter(Objects::nonNull).flatMap(pickupDelivery -> pickupDelivery.getPartiesList() == null ? Stream.empty() : pickupDelivery.getPartiesList().stream())
                 .filter(Objects::nonNull).map(Parties::getId).filter(Objects::nonNull).distinct().toList();
+        List<Long> pickupDeliveryDetailsPartiesIds = ensureNonEmptyIds(pickupDeliveryDetailsPartiesIdsList);
         partiesDao.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(pickupDeliveryDetailsPartiesIds, pickupDeliveryDetailsIds, Constants.PICKUP_DELIVERY);
         pickupDeliveryDetailsDao.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(pickupDeliveryDetailsIds, shipmentId);
         pickupDeliveryDetailsRepository.saveAll(shipmentDetails.getPickupDeliveryDetailsInstructions());
     }
 
-    private void validateAndSetShipmentOrderDetails(Long shipmentId, List<Long> shipmentOrderIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetShipmentOrderDetails(Long shipmentId, List<Long> shipmentOrderIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> shipmentOrderIds = ensureNonEmptyIds(shipmentOrderIdsList);
         shipmentOrderDao.deleteAdditionalShipmentOrderByShipmentId(shipmentOrderIds, shipmentId);
         shipmentOrderDao.revertSoftDeleteByshipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
         shipmentOrderRepository.saveAll(shipmentDetails.getShipmentOrders());
     }
 
-    private void validateAndSetPartiesDetails(Long shipmentId, List<Long> partiesIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetPartiesDetails(Long shipmentId, List<Long> partiesIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> partiesIds = ensureNonEmptyIds(partiesIdsList);
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(partiesIds, shipmentId, Constants.SHIPMENT_ADDRESSES);
         partiesDao.revertSoftDeleteByPartiesIds(partiesIds);
         partiesRepository.saveAll(shipmentDetails.getShipmentAddresses());
     }
 
-    private void validateAndSetJobsDetails(Long shipmentId, List<Long> jobsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetJobsDetails(Long shipmentId, List<Long> jobsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> jobsIds = ensureNonEmptyIds(jobsIdsList);
         iJobRepository.deleteAdditionalJobsByShipmentId(jobsIds, shipmentId);
         iJobRepository.revertSoftDeleteByJobsIdsAndShipmentId(jobsIds, shipmentId);
         iJobRepository.saveAll(shipmentDetails.getJobsList());
     }
 
-    private void validateAndSetNotesDetails(Long shipmentId, List<Long> notesIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetNotesDetails(Long shipmentId, List<Long> notesIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> notesIds = ensureNonEmptyIds(notesIdsList);
         notesDao.deleteAdditionalNotesByEntityIdAndEntityType(notesIds, shipmentId, Constants.SHIPMENT);
         notesDao.revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(notesIds, shipmentId, Constants.SHIPMENT);
         notesRepository.saveAll(shipmentDetails.getNotesList());
     }
 
-    private void validateAndSetTruckDriverDetails(Long shipmentId, List<Long> truckDriverDetailsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetTruckDriverDetails(Long shipmentId, List<Long> truckDriverDetailsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> truckDriverDetailsIds = ensureNonEmptyIds(truckDriverDetailsIdsList);
         truckDriverDetailsDao.deleteAdditionalTruckDriverDetailsByShipmentId(truckDriverDetailsIds, shipmentId);
         truckDriverDetailsDao.revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(truckDriverDetailsIds, shipmentId);
         iTruckDriverDetailsRepository.saveAll(shipmentDetails.getTruckDriverDetails());
     }
 
-    private void validateAndSetServiceDetails(Long shipmentId, List<Long> serviceDetailsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetServiceDetails(Long shipmentId, List<Long> serviceDetailsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> serviceDetailsIds = ensureNonEmptyIds(serviceDetailsIdsList);
         serviceDetailsDao.deleteAdditionalServiceDetailsByShipmentId(serviceDetailsIds, shipmentId);
         serviceDetailsDao.revertSoftDeleteByServiceDetailsIdsAndShipmentId(serviceDetailsIds, shipmentId);
         serviceDetailsRepository.saveAll(shipmentDetails.getServicesList());
     }
 
-    private void validateAndSetRoutingsIds(Long shipmentId, List<Long> routingsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetRoutingsIds(Long shipmentId, List<Long> routingsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> routingsIds = ensureNonEmptyIds(routingsIdsList);
         routingsDao.deleteAdditionalroutingsByShipmentId(routingsIds, shipmentId);
         routingsDao.revertSoftDeleteByroutingsIdsAndShipmentId(routingsIds, shipmentId);
         routingsRepository.saveAll(shipmentDetails.getRoutingsList());
     }
 
-    private void validateAndSetReferenceNumbersDetails(Long shipmentId, List<Long> referenceNumbersIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetReferenceNumbersDetails(Long shipmentId, List<Long> referenceNumbersIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> referenceNumbersIds = ensureNonEmptyIds(referenceNumbersIdsList);
         referenceNumbersDao.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
         referenceNumbersDao.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
         referenceNumbersRepository.saveAll(shipmentDetails.getReferenceNumbersList());
     }
 
-    private void validateAndSetEventsDetails(Long shipmentId, List<Long> eventsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetEventsDetails(Long shipmentId, List<Long> eventsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> eventsIds = ensureNonEmptyIds(eventsIdsList);
         eventDao.deleteAdditionalEventDetailsByEntityIdAndEntityType(eventsIds, shipmentId, Constants.SHIPMENT);
         eventDao.revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(eventsIds, shipmentId, Constants.SHIPMENT);
         eventRepository.saveAll(shipmentDetails.getEventsList());
     }
 
-    private void validateAndSetElDetails(Long shipmentId, List<Long> elDetailsIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetElDetails(Long shipmentId, List<Long> elDetailsIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> elDetailsIds = ensureNonEmptyIds(elDetailsIdsList);
         elDetailsDao.deleteAdditionalElDetailsByShipmentId(elDetailsIds, shipmentId);
         elDetailsDao.revertSoftDeleteByElDetailsIdsAndShipmentId(elDetailsIds, shipmentId);
         ielDetailsRepository.saveAll(shipmentDetails.getElDetailsList());
     }
 
-    private void validateAndSetBookingCarriagesDetails(Long shipmentId, List<Long> bookingCarriageIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetBookingCarriagesDetails(Long shipmentId, List<Long> bookingCarriageIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> bookingCarriageIds = ensureNonEmptyIds(bookingCarriageIdsList);
         bookingCarriageDao.deleteAdditionalbookingCarriageByShipmentId(bookingCarriageIds, shipmentId);
         bookingCarriageDao.revertSoftDeleteBybookingCarriageIdsAndShipmentId(bookingCarriageIds, shipmentId);
         bookingCarriageRepository.saveAll(shipmentDetails.getBookingCarriagesList());
     }
 
-    private void validateAndSetPackingDetails(Long shipmentId, List<Long> packingIds, ShipmentDetails shipmentDetails) {
+    private void validateAndSetPackingDetails(Long shipmentId, List<Long> packingIdsList, ShipmentDetails shipmentDetails) {
+        List<Long> packingIds = ensureNonEmptyIds(packingIdsList);
         packingDao.deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
         packingDao.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
         packingRepository.saveAll(shipmentDetails.getPackingList());
@@ -396,5 +410,9 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         TenantContext.setCurrentTenant(tenantId);
         UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
         restoreShipmentDetails(shipmentId, null, null);
+    }
+
+    public static List<Long> ensureNonEmptyIds(List<Long> ids) {
+        return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
     }
 }
