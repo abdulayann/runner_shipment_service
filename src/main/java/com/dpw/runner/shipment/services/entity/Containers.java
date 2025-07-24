@@ -405,12 +405,25 @@ public class Containers extends MultiTenancy {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Containers that = (Containers) o;
-        return Objects.equals(getId(), that.getId()) && Objects.equals(getGuid().toString(), that.getGuid().toString());
+
+        // If both IDs are non-null, compare only by ID
+        if (this.getId() != null && that.getId() != null) {
+            return Objects.equals(this.getId(), that.getId());
+        }
+
+        // Else, fallback to GUID comparison (ensuring non-null GUIDs)
+        return Objects.equals(this.getGuid(), that.getGuid());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getGuid().toString());
+        // If ID is non-null, use only ID
+        if (getId() != null) {
+            return Objects.hash(getId());
+        }
+
+        // Else use GUID (safely)
+        return Objects.hash(getGuid());
     }
 
 }
