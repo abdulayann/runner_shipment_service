@@ -62,7 +62,7 @@ public class CustomerBookingBackupHandler implements BackupServiceHandler {
                                 v1Service.setAuthContext();
                                 TenantContext.setCurrentTenant(tenantId);
                                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                                lazyProxySelf.processAndBackupBookingsBatchData(new HashSet<>(batch), tenantId);
+                                lazyProxySelf.processAndBackupBookingsBatchData(new HashSet<>(batch));
                             } finally {
                                 v1Service.clearAuthContext();
                             }
@@ -78,7 +78,7 @@ public class CustomerBookingBackupHandler implements BackupServiceHandler {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void processAndBackupBookingsBatchData(Set<Long> customerBookingIds, Integer tenantId) {
+    public void processAndBackupBookingsBatchData(Set<Long> customerBookingIds) {
 
         List<CustomerBooking> customerBookings =
                 customerBookingDao.findCustomerBookingByIds(customerBookingIds);

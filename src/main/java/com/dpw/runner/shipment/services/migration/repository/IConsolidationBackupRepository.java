@@ -12,7 +12,7 @@ import java.util.List;
 public interface IConsolidationBackupRepository extends JpaRepository<ConsolidationBackupEntity, Long> {
     void deleteByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT c.consolidation_id FROM consolidation_backup c WHERE c.tenant_id = ?1 and is_delete = false", nativeQuery = true)
+    @Query(value = "SELECT c.consolidation_id FROM consolidation_backup c WHERE c.tenant_id = ?1 and c.is_delete = false", nativeQuery = true)
     List<Long> findConsolidationIdsByTenantId(Integer tenantId);
 
     @Query(value = "SELECT * FROM consolidation_backup c WHERE c.consolidation_id = ?1", nativeQuery = true)

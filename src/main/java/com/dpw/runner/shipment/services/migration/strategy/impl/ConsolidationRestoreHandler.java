@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
@@ -9,14 +12,14 @@ import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEnti
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
+import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -33,71 +36,31 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ConsolidationRestoreHandler implements RestoreServiceHandler {
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ThreadPoolTaskExecutor asyncExecutor;
 
     @Autowired
     @Lazy
     private ConsolidationRestoreHandler self;
+    private final ObjectMapper objectMapper;
+    private final ThreadPoolTaskExecutor asyncExecutor;
+    private final ConsolidationBackupDao consolidationBackupDao;
+    private final ConsolidationDao consolidationDao;
+    private final ReferenceNumbersDao referenceNumbersDao;
+    private final IReferenceNumbersRepository referenceNumbersRepository;
+    private final RoutingsDao routingsDao;
+    private final IRoutingsRepository routingsRepository;
+    private final ContainerDao containerDao;
+    private final IContainerRepository containerRepository;
+    private final EventDao eventDao;
+    private final IEventRepository eventRepository;
+    private final PartiesDao partiesDao;
+    private final IPartiesRepository partiesRepository;
+    private final IJobRepository iJobRepository;
+    private final ShipmentRestoreHandler shipmentRestoreHandler;
+    private final ShipmentDao shipmentDao;
+    private final V1ServiceImpl v1Service;
 
-    @Autowired
-    private ConsolidationBackupDao consolidationBackupDao;
-
-    @Autowired
-    private ConsolidationDao consolidationDao;
-
-    @Autowired
-    private PackingDao packingDao;
-
-    @Autowired
-    private IPackingRepository packingRepository;
-
-    @Autowired
-    private ReferenceNumbersDao referenceNumbersDao;
-
-    @Autowired
-    private IReferenceNumbersRepository referenceNumbersRepository;
-
-    @Autowired
-    private RoutingsDao routingsDao;
-
-    @Autowired
-    private IRoutingsRepository routingsRepository;
-
-    @Autowired
-    private ContainerDao containerDao;
-
-    @Autowired
-    private IContainerRepository containerRepository;
-
-    @Autowired
-    private EventDao eventDao;
-
-    @Autowired
-    private IEventRepository eventRepository;
-
-    @Autowired
-    private PartiesDao partiesDao;
-
-    @Autowired
-    private IPartiesRepository partiesRepository;
-
-    @Autowired
-    private IJobRepository iJobRepository;
-
-    @Autowired
-    private ShipmentRestoreHandler shipmentRestoreHandler;
-
-    @Autowired
-    private ShipmentDao shipmentDao;
-
-    @Autowired
-    private IFileRepoRepository iFileRepoRepository;
 
     @Override
     public void restore(Integer tenantId) {
@@ -116,6 +79,8 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 .map(consolidationId -> CompletableFuture.runAsync(
                         () -> {
                             try {
+                                TenantContext.setCurrentTenant(tenantId);
+                                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
                                 self.processAndRestoreConsolidation(consolidationId, tenantId);
                             } finally {
                                 TenantContext.removeTenant();
@@ -141,8 +106,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 List<ConsoleShipmentMapping> mappingList = objectMapper.readValue(
                         consolidationBackupDetails.getConsoleShipmentMapping(),
                         new TypeReference<>() {
-                        }
-                );
+                        });
                 List<Long> shipmentIds = mappingList.stream().map(ConsoleShipmentMapping::getShipmentId).filter(Objects::nonNull).toList();
                 shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
                 revertContainers(consolidationDetails);
@@ -167,8 +131,6 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             validateAndRestoreRoutingDetails(consolidationId, routingsIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
-//TODO packking to containersIds
-
             consolidationDao.save(consolidationDetails);
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
         } catch (Exception e) {
@@ -176,6 +138,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
         }
     }
+
     private List<Long> getAllEventsIds(ConsolidationDetails consolidationDetails) {
         return Stream.of(
                 nullSafeCollectionStream(consolidationDetails.getJobsList()).flatMap(job -> nullSafeCollectionStream(job.getEventsList())),
@@ -198,14 +161,6 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         List<Long> containersIds = consolidationDetails.getContainersList().stream().map(Containers::getId).filter(Objects::nonNull).toList();
         containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationDetails.getId());
         containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationDetails.getId());
-    }
-
-    private void validateAndSaveFileRepoDetails(Long consolidationId, List<Long> fileRepoIds, ConsolidationDetails consolidationDetails) {
-        iFileRepoRepository.deleteAdditionalDataByFileRepoIdsEntityIdAndEntityType(fileRepoIds, consolidationId, Constants.CONSOLIDATION);
-        iFileRepoRepository.revertSoftDeleteByFileRepoIdsEntityIdAndEntityType(fileRepoIds, consolidationId, Constants.CONSOLIDATION);
-        for (FileRepo restored : consolidationDetails.getFileRepoList()) {
-            iFileRepoRepository.save(restored);
-        }
     }
 
     private void validateAndSaveContainers(ConsolidationDetails consolidationDetails, Map<Long, List<Long>> containerShipmentMap) {
@@ -247,14 +202,6 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         eventRepository.saveAll(consolidationDetails.getEventsList());
     }
 
-/*    private void validateAndRestoreContainersDetails(Long consolidationId, List<Long> containersIds, ConsolidationDetails consolidationDetails) {
-        containerDao.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
-        containerDao.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
-        for (Containers restored : consolidationDetails.getContainersList()) {
-            containerDao.save(restored);
-        }
-    }*/
-
     private void validateAndRestoreRoutingDetails(Long consolidationId, List<Long> routingsIds, ConsolidationDetails consolidationDetails) {
         routingsDao.deleteAdditionalDataByRoutingsIdsConsolidationId(routingsIds, consolidationId);
         routingsDao.revertSoftDeleteByRoutingsIdsAndConsolidationId(routingsIds, consolidationId);
@@ -266,12 +213,4 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         referenceNumbersDao.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
         referenceNumbersRepository.saveAll(consolidationDetails.getReferenceNumbersList());
     }
-
-    private void validateAndRestorePackingDetails(Long consolidationId, List<Long> packingIds, ConsolidationDetails consolidationDetails) {
-        packingDao.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
-        packingDao.revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
-        packingRepository.saveAll(consolidationDetails.getPackingList());
-    }
-
-
 }

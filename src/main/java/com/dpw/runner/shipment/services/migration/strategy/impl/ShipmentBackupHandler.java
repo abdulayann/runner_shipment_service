@@ -68,7 +68,7 @@ public class ShipmentBackupHandler implements BackupServiceHandler {
                                 v1Service.setAuthContext();
                                 TenantContext.setCurrentTenant(tenantId);
                                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                                lazyProxySelf.processAndBackupShipmentsBatchData(new HashSet<>(batch), tenantId);
+                                lazyProxySelf.processAndBackupShipmentsBatchData(new HashSet<>(batch));
                             } finally {
                                 v1Service.clearAuthContext();
                             }
@@ -86,7 +86,7 @@ public class ShipmentBackupHandler implements BackupServiceHandler {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void processAndBackupShipmentsBatchData(Set<Long> shipmentIds, Integer tenantId) {
+    public void processAndBackupShipmentsBatchData(Set<Long> shipmentIds) {
 
         List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(shipmentIds);
         List<ShipmentBackupEntity> shipmentBackupEntities = shipmentDetails.stream()

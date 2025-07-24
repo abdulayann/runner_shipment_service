@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -45,104 +46,45 @@ import java.util.stream.Stream;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private PackingDao packingDao;
-
-    @Autowired
-    private IPackingRepository packingRepository;
-
-    @Autowired
-    private ReferenceNumbersDao referenceNumbersDao;
-
-    @Autowired
-    private IReferenceNumbersRepository referenceNumbersRepository;
-
-    @Autowired
-    private RoutingsDao routingsDao;
-
-    @Autowired
-    private IRoutingsRepository routingsRepository;
-
-    @Autowired
-    private ContainerDao containerDao;
-
-    @Autowired
-    private EventDao eventDao;
-
-    @Autowired
-    private IEventRepository eventRepository;
-
-    @Autowired
-    private PartiesDao partiesDao;
-
-    @Autowired
-    private IPartiesRepository partiesRepository;
-
-    @Autowired
-    private IJobRepository iJobRepository;
-
-    @Autowired
-    private ShipmentBackupDao shipmentBackupDao;
-
-    @Autowired
-    private BookingCarriageDao bookingCarriageDao;
-
-    @Autowired
-    private IBookingCarriageRepository bookingCarriageRepository;
-
-    @Autowired
-    private ELDetailsDao elDetailsDao;
-
-    @Autowired
-    private IELDetailsRepository ielDetailsRepository;
-
-    @Autowired
-    private ServiceDetailsDao serviceDetailsDao;
-
-    @Autowired
-    private IServiceDetailsRepository serviceDetailsRepository;
-
-    @Autowired
-    private TruckDriverDetailsDao truckDriverDetailsDao;
-
-    @Autowired
-    private ITruckDriverDetailsRepository iTruckDriverDetailsRepository;
-
-    @Autowired
-    private NotesDao notesDao;
-
-    @Autowired
-    private INotesRepository notesRepository;
-
-    @Autowired
-    private ShipmentOrderDao shipmentOrderDao;
-
-    @Autowired
-    private IShipmentOrderRepository shipmentOrderRepository;
-
-    @Autowired
-    private PickupDeliveryDetailsDao pickupDeliveryDetailsDao;
-
-    @Autowired
-    private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
-
-    @Autowired
-    private ShipmentDao shipmentDao;
-
-    @Autowired
-    @Qualifier("rollbackTaskExecutor")
-    private ThreadPoolTaskExecutor rollbackTaskExecutor;
-    @Autowired
-    private ShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     @Autowired
     @Lazy
     private ShipmentRestoreHandler self;
+    private final ObjectMapper objectMapper;
+    private final PackingDao packingDao;
+    private final IPackingRepository packingRepository;
+    private final ReferenceNumbersDao referenceNumbersDao;
+    private final IReferenceNumbersRepository referenceNumbersRepository;
+    private final RoutingsDao routingsDao;
+    private final IRoutingsRepository routingsRepository;
+    private final ContainerDao containerDao;
+    private final EventDao eventDao;
+    private final IEventRepository eventRepository;
+    private final PartiesDao partiesDao;
+    private final IPartiesRepository partiesRepository;
+    private final IJobRepository iJobRepository;
+    private final ShipmentBackupDao shipmentBackupDao;
+    private final BookingCarriageDao bookingCarriageDao;
+    private final IBookingCarriageRepository bookingCarriageRepository;
+    private final ELDetailsDao elDetailsDao;
+    private final IELDetailsRepository ielDetailsRepository;
+    private final ServiceDetailsDao serviceDetailsDao;
+    private final IServiceDetailsRepository serviceDetailsRepository;
+    private final TruckDriverDetailsDao truckDriverDetailsDao;
+    private final ITruckDriverDetailsRepository iTruckDriverDetailsRepository;
+    private final NotesDao notesDao;
+    private final INotesRepository notesRepository;
+    private final ShipmentOrderDao shipmentOrderDao;
+    private final IShipmentOrderRepository shipmentOrderRepository;
+    private final PickupDeliveryDetailsDao pickupDeliveryDetailsDao;
+    private final IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
+    private final ShipmentDao shipmentDao;
+    private final ThreadPoolTaskExecutor rollbackTaskExecutor;
+    private final  ShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
 
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 

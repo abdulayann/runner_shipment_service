@@ -204,5 +204,4 @@ public class MigrationV3Service implements IMigrationV3Service {
     private List<ShipmentDetails> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
         return shipmentDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
-
 }

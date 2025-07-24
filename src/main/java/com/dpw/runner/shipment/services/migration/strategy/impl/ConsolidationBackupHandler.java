@@ -69,7 +69,7 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
                                 v1Service.setAuthContext();
                                 TenantContext.setCurrentTenant(tenantId);
                                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                                lazyProxySelf.processAndBackupConsolidationsBatchData(new HashSet<>(batch), tenantId);
+                                lazyProxySelf.processAndBackupConsolidationsBatchData(new HashSet<>(batch));
                             } finally {
                                 v1Service.clearAuthContext();
                             }
@@ -86,7 +86,7 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void processAndBackupConsolidationsBatchData(Set<Long> consolidationIds, Integer tenantId) {
+    public void processAndBackupConsolidationsBatchData(Set<Long> consolidationIds) {
         List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(consolidationIds);
 
         Map<Long, List<ConsoleShipmentMapping>> consoleMappingsByConsolidationId =
