@@ -140,7 +140,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
             List<NetworkTransfer> networkTransferList = consolidationBackupDetails.getNetworkTransferDetails()!=null && !consolidationBackupDetails.getNetworkTransferDetails().isEmpty() ? objectMapper.readValue(consolidationBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {}): new ArrayList<>();
             validateAndSetNetworkTransferDetails(networkTransferList, consolidationId);
-
+            validateAndRestoreTriangularPartnerDetails(consolidationId);
             consolidationDao.save(consolidationDetails);
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
         } catch (Exception e) {
@@ -214,19 +214,21 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     private void validateAndSaveContainers(ConsolidationDetails consolidationDetails, Map<Long, List<Long>> containerShipmentMap) {
         List<Containers> containers = consolidationDetails.getContainersList();
 
-        List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
-        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
-                .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
-        for (Containers container : containers) {
-            List<Long> shipmentsIds = containerShipmentMap.get(container.getId());
-            if (shipmentsIds != null) {
-                Set<ShipmentDetails> shipmentSet = (!shipmentsIds.isEmpty())
-                        ? shipmentsIds.stream()
-                        .map(shipmentDetailsMap::get)
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toSet())
-                        : Collections.emptySet();
-                container.setShipmentsList(shipmentSet);
+        List<ShipmentDetails> shipmentDetailsList = nullSafeCollectionStream(consolidationDetails.getShipmentsList()).toList();
+        if (!shipmentDetailsList.isEmpty()) {
+            Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
+                    .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
+            for (Containers container : containers) {
+                List<Long> shipmentsIds = containerShipmentMap.get(container.getId());
+                if (shipmentsIds != null) {
+                    Set<ShipmentDetails> shipmentSet = (!shipmentsIds.isEmpty())
+                            ? shipmentsIds.stream()
+                            .map(shipmentDetailsMap::get)
+                            .filter(Objects::nonNull)
+                            .collect(Collectors.toSet())
+                            : Collections.emptySet();
+                    container.setShipmentsList(shipmentSet);
+                }
             }
         }
         containerRepository.saveAll(containers);
@@ -269,5 +271,9 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     public static List<Long> ensureNonEmptyIds(List<Long> ids) {
         return (ids == null || ids.isEmpty()) ? List.of(-1L) : ids;
+    }
+
+    private void validateAndRestoreTriangularPartnerDetails(Long consolidationId) {
+        consolidationDao.deleteTriangularPartnerConsolidationByConsolidationId(consolidationId);
     }
 }

@@ -971,4 +971,9 @@ public class ShipmentDao implements IShipmentDao {
     public void deleteShipmentDetailsByIds(Set<Long> shipmentIds) {
         shipmentRepository.deleteShipmentDetailsByIds(shipmentIds);
     }
+
+    @Override
+    public void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId) {
+        shipmentRepository.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
+    }
 }
