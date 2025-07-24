@@ -11,19 +11,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureExcep
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
-import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IShipmentOrderRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -147,6 +135,9 @@ public class ShipmentRestoreHandler implements RestoreHandler {
 
     @Autowired
     private NetworkTransferDao networkTransferDao;
+
+    @Autowired
+    private INetworkTransferRepository networkTransferRepository;
 
 
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
@@ -276,8 +267,8 @@ public class ShipmentRestoreHandler implements RestoreHandler {
         List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());
 
         // Persist
-        networkTransferDao.saveAll(toSaveList);
-        networkTransferDao.deleteByIdsAndLog(toDeleteIds);
+        networkTransferRepository.saveAll(toSaveList);
+        networkTransferRepository.deleteAllById(toDeleteIds);
     }
 
 
@@ -403,8 +394,7 @@ public class ShipmentRestoreHandler implements RestoreHandler {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) throws JsonProcessingException {
         TenantContext.setCurrentTenant(tenantId);
-        // todo: confirm from pardeep regarding this check
-        UserContext.setUser(UsersDto.builder().TenantId(tenantId).Permissions(new HashMap<>()).build());
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
         restoreShipmentDetails(shipmentId, null, null);
     }
 }

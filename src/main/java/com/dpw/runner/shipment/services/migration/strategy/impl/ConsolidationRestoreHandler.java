@@ -10,14 +10,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureExcept
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreHandler;
-import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IFileRepoRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IJobRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IReferenceNumbersRepository;
-import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
+import com.dpw.runner.shipment.services.repository.interfaces.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -104,6 +97,9 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
 
     @Autowired
     private NetworkTransferDao networkTransferDao;
+
+    @Autowired
+    private INetworkTransferRepository networkTransferRepository;
 
     @Override
     public void restore(Integer tenantId) {
@@ -219,8 +215,8 @@ public class ConsolidationRestoreHandler implements RestoreHandler {
         List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());
 
         // Persist
-        networkTransferDao.saveAll(toSaveList);
-        networkTransferDao.deleteByIdsAndLog(toDeleteIds);
+        networkTransferRepository.saveAll(toSaveList);
+        networkTransferRepository.deleteAllById(toDeleteIds);
     }
 
     private List<Long> getAllEventsIds(ConsolidationDetails consolidationDetails) {
