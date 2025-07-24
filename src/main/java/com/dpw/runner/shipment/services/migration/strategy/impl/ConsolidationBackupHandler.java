@@ -3,14 +3,12 @@ package com.dpw.runner.shipment.services.migration.strategy.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
@@ -28,7 +26,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -37,7 +34,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -110,8 +106,9 @@ public class ConsolidationBackupHandler implements BackupServiceHandler {
                         .collect(Collectors.groupingBy(NetworkTransfer::getEntityId));
 
         List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
-                .map((detail -> mapToBackupEntity(detail, consoleMappingsByConsolidationId.getOrDefault(detail.getId(),
-                        Collections.emptyList()))))
+                .map((detail -> mapToBackupEntity(detail,
+                        consoleMappingsByConsolidationId.getOrDefault(detail.getId(),Collections.emptyList()),
+                        networkTransferMappingsByConsolidationId.getOrDefault(detail.getId(),Collections.emptyList()))))
                 .toList();
 
         consolidationBackupRepository.saveAll(backupEntities);

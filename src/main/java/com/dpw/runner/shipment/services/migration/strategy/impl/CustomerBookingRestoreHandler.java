@@ -144,7 +144,6 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
         List<Long> packingIds = backupData.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndRestorePackingDetails(bookingId, packingIds, backupData);
-
         List<Long> referenceNumberIds = backupData.getReferenceNumbersList().stream().map(ReferenceNumbers::getId).filter(Objects::nonNull).toList();
         validateAndRestoreReferenceNumberDetails(bookingId, referenceNumberIds, backupData);
 
@@ -167,15 +166,6 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
                 charge.setId(null);
             }
         });
-
-        bookingChargesDao.saveAll(backupData.getBookingCharges());
-
-    }
-
-    private void validateAndRestoreBookingChargesDetails(Long bookingId, List<Long> bookingChargeIdsList, CustomerBooking backupData) {
-        List<Long> bookingChargeIds = ensureNonEmptyIds(bookingChargeIdsList);
-        bookingChargesDao.deleteAdditionalPackingByCustomerBookingId(bookingChargeIds, bookingId);
-        bookingChargesDao.revertSoftDeleteByPackingIdsAndBookingId(bookingChargeIds, bookingId);
         bookingChargesDao.saveAll(backupData.getBookingCharges());
     }
 
