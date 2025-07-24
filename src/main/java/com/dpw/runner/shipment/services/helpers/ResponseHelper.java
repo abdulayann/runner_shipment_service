@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.helpers;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.CustomerBookingV3Response;
 import com.dpw.runner.shipment.services.utils.StringUtility;
