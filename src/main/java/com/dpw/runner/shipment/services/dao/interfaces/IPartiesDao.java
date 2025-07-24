@@ -23,9 +23,7 @@ public interface IPartiesDao {
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws RunnerException;
     List<Parties> findByIds(List<Long> id);
     void deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(List<Long> consolidationAddressIds, Long consolidationId, String consolidationAddresses);
-    void revertSoftDeleteByPartiesIdsEntityIdAndEntityType(List<Long> consolidationAddressIds, Long consolidationId, String consolidationAddresses);
+    void revertSoftDeleteByPartiesIds(List<Long> partiesIds);
 
-    void deleteAdditionalPartiesByEntityIdAndEntityType(List<Long> partiesIds, Long entityId, String entityType);
-
-    void revertSoftDeleteByPartiesIdsAndEntityIdAndEntityType(List<Long> partiesIds, Long entityId, String entityType);
+    void deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, String pickupDelivery);
 }

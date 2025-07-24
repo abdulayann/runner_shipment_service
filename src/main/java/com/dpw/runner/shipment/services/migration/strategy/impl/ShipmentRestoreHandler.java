@@ -1,8 +1,11 @@
 package com.dpw.runner.shipment.services.migration.strategy.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ShipmentBackupDao;
@@ -28,12 +31,17 @@ import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -132,6 +140,10 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     @Autowired
     private ShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
+    @Autowired
+    @Lazy
+    private ShipmentRestoreHandler self;
+
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
 
         log.info("Starting shipment restore for shipmentId: {}", shipmentId);
@@ -149,6 +161,8 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
         var containerList = shipmentDetails.getContainersList().stream().filter(x -> shipmentsContainersMapping.contains(x.getId())).collect(Collectors.toSet());
         shipmentDetails.setContainersList(containerList);
+        List <Long> partiesIds = getAllPartiesIds(shipmentDetails);
+        validateAndSetPartiesDetails(shipmentId, partiesIds, shipmentDetails);
         List<Long> packingIds = shipmentDetails.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndSetPackingDetails(shipmentId, packingIds, shipmentDetails);
         List<Long> bookingCarriageIds = shipmentDetails.getBookingCarriagesList().stream().map(BookingCarriage::getId).filter(Objects::nonNull).toList();
@@ -169,8 +183,8 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         validateAndSetNotesDetails(shipmentId, notesIds, shipmentDetails);
         List<Long> jobsIds = shipmentDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
         validateAndSetJobsDetails(shipmentId, jobsIds, shipmentDetails);
-        List<Long> partiesIds = shipmentDetails.getShipmentAddresses().stream().map(Parties::getId).filter(Objects::nonNull).toList();
-        validateAndSetPartiesDetails(shipmentId, partiesIds, shipmentDetails);
+
+
         List<Long> shipmentOrderIds = shipmentDetails.getShipmentOrders().stream().map(ShipmentOrder::getId).filter(Objects::nonNull).toList();
         validateAndSetShipmentOrderDetails(shipmentId, shipmentOrderIds, shipmentDetails);
         List<Long> pickupDeliveryDetailsIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream().map(PickupDeliveryDetails::getId).filter(Objects::nonNull).toList();
@@ -179,6 +193,35 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         shipmentBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(shipmentBackupDetails.getId());
 
         return shipmentDetails;
+    }
+
+    private static List<Long> getAllPartiesIds(ShipmentDetails shipmentDetails) {
+        return Stream.of(
+                safeStream(shipmentDetails.getServicesList()).map(ServiceDetails::getContractor),
+                safeStream(shipmentDetails.getTruckDriverDetails()).map(TruckDriverDetails::getThirdPartyTransporter),
+                safeStream(shipmentDetails.getJobsList()).flatMap(job -> job == null ? Stream.empty() : Stream.of(job.getBuyerDetail(), job.getSupplierDetail())),
+                safeStream(shipmentDetails.getContainersList()).flatMap(container -> container == null ? Stream.empty() : Stream.of(container.getPickupAddress(), container.getDeliveryAddress())),
+                safeStream(shipmentDetails.getPickupDeliveryDetailsInstructions())
+                        .flatMap(pickupDelivery -> {
+                            if (pickupDelivery == null) {
+                                return Stream.empty();
+                            }
+                            return Stream.concat(
+                                    Stream.of(
+                                            pickupDelivery.getTransporterDetail(),
+                                            pickupDelivery.getBrokerDetail(),
+                                            pickupDelivery.getDestinationDetail(),
+                                            pickupDelivery.getSourceDetail(),
+                                            pickupDelivery.getAgentDetail()
+                                    ),
+                                    safeStream(pickupDelivery.getPartiesList())
+                            );
+                        }),
+                safeStream(shipmentDetails.getShipmentAddresses())).flatMap(Function.identity()).filter(Objects::nonNull).map(parties -> parties == null ? null : parties.getId()).filter(Objects::nonNull).distinct().collect(Collectors.toList());
+    }
+
+    private static <T> Stream<T> safeStream(Collection<T> collection) {
+        return collection == null ? Stream.empty() : collection.stream();
     }
 
     private void processContainerToShipmentMapping(Long shipmentId, ShipmentDetails shipmentDetails, Map<Long, List<Long>> containerShipmentMap) {
@@ -194,6 +237,10 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
     private void validateAndSetPickupDeliveryDetails(Long shipmentId, List<Long> pickupDeliveryDetailsIds, ShipmentDetails shipmentDetails) {
         pickupDeliveryDetailsDao.deleteAdditionalPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsIds, shipmentId);
+        List<Long> pickupDeliveryDetailsPartiesIds = shipmentDetails.getPickupDeliveryDetailsInstructions().stream()
+                .filter(Objects::nonNull).flatMap(pickupDelivery -> pickupDelivery.getPartiesList() == null ? Stream.empty() : pickupDelivery.getPartiesList().stream())
+                .filter(Objects::nonNull).map(Parties::getId).filter(Objects::nonNull).distinct().toList();
+        partiesDao.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(pickupDeliveryDetailsPartiesIds, pickupDeliveryDetailsIds, Constants.PICKUP_DELIVERY);
         pickupDeliveryDetailsDao.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(pickupDeliveryDetailsIds, shipmentId);
         pickupDeliveryDetailsRepository.saveAll(shipmentDetails.getPickupDeliveryDetailsInstructions());
     }
@@ -205,8 +252,8 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     }
 
     private void validateAndSetPartiesDetails(Long shipmentId, List<Long> partiesIds, ShipmentDetails shipmentDetails) {
-        partiesDao.deleteAdditionalPartiesByEntityIdAndEntityType(partiesIds, shipmentId, Constants.SHIPMENT_ADDRESSES);
-        partiesDao.revertSoftDeleteByPartiesIdsAndEntityIdAndEntityType(partiesIds, shipmentId, Constants.SHIPMENT_ADDRESSES);
+        partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(partiesIds, shipmentId, Constants.SHIPMENT_ADDRESSES);
+        partiesDao.revertSoftDeleteByPartiesIds(partiesIds);
         partiesRepository.saveAll(shipmentDetails.getShipmentAddresses());
     }
 
@@ -291,10 +338,13 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
             List<CompletableFuture<Void>> futures = batch.stream().map(shipmentId ->
                     CompletableFuture.runAsync(() -> {
                         try {
-                            restoreShipmentDetails(shipmentId, null, null);
+                            self.restoreShipmentTransaction(shipmentId,tenantId);
                         } catch (Exception e) {
                             log.error("Failed shipment restore {}: {}", shipmentId, e.getMessage());
                             throw new RestoreFailureException("Rollback failed", e);
+                        } finally {
+                            TenantContext.setCurrentTenant(tenantId);
+                            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
                         }
                     }, rollbackTaskExecutor)).toList();
 
@@ -303,5 +353,12 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
                 return null;
             }).join();
         });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) throws JsonProcessingException {
+        TenantContext.setCurrentTenant(tenantId);
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+        restoreShipmentDetails(shipmentId, null, null);
     }
 }

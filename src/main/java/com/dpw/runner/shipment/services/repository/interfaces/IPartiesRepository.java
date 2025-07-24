@@ -17,11 +17,14 @@ import java.util.Optional;
 @Repository @Generated
 public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
     Page<Parties> findAll(Specification<Parties> spec, Pageable pageable);
+
     List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType);
+
     default Optional<Parties> findById(Long id) {
         Specification<Parties> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
     List<Parties> findAll();
 
     List<Parties> findByIdIn(List<Long> ids);
@@ -33,16 +36,11 @@ public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE parties SET is_deleted = false WHERE id IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
-    void revertSoftDeleteByPartiesIdsEntityIdAndEntityType(List<Long> addressIds, Long entityId, String entityType);
+    @Query(value = "UPDATE parties SET is_deleted = false WHERE id IN (?1)", nativeQuery = true)
+    void revertSoftDeleteByPartiesIds(List<Long> partiesIds);
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE parties SET is_deleted = true WHERE id NOT IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
-    void deleteAdditionalPartiesByEntityIdAndEntityType(List<Long> partiesIds, Long entityId, String entityType);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE parties SET is_deleted = false WHERE id IN (?1) and entity_id = ?2 and entity_type = ?3", nativeQuery = true)
-    void revertSoftDeleteByPartiesIdsAndEntityIdAndEntityType(List<Long> partiesIds, Long entityId, String entityType);
+    @Query(value = "UPDATE parties SET is_deleted = true WHERE id NOT IN (?1) and entity_id IN (?2) and entity_type = ?3", nativeQuery = true)
+    void deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, String entityType);
 }

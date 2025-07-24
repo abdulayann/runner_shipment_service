@@ -281,18 +281,13 @@ public class PartiesDao implements IPartiesDao {
     }
 
     @Override
-    public void revertSoftDeleteByPartiesIdsEntityIdAndEntityType(List<Long> addressIds, Long entityId, String entityType) {
-        partiesRepository.revertSoftDeleteByPartiesIdsEntityIdAndEntityType(addressIds, entityId, entityType);
+    public void revertSoftDeleteByPartiesIds(List<Long> addressIds) {
+        partiesRepository.revertSoftDeleteByPartiesIds(addressIds);
     }
 
     @Override
-    public void deleteAdditionalPartiesByEntityIdAndEntityType(List<Long> partiesIds, Long entityId, String entityType) {
-        partiesRepository.deleteAdditionalPartiesByEntityIdAndEntityType(partiesIds, entityId, entityType);
-    }
-
-    @Override
-    public void revertSoftDeleteByPartiesIdsAndEntityIdAndEntityType(List<Long> partiesIds, Long entityId, String entityType) {
-        partiesRepository.revertSoftDeleteByPartiesIdsAndEntityIdAndEntityType(partiesIds, entityId, entityType);
+    public void deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(List<Long> partiesIds, List<Long> pickupDeliveryDetailsIds, String pickupDelivery) {
+        partiesRepository.deleteAdditionalPartiesInPickupDeliveryDetailsByEntityIdAndEntityType(partiesIds, pickupDeliveryDetailsIds, pickupDelivery);
     }
 
 }

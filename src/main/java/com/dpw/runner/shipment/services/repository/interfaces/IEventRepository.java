@@ -66,8 +66,8 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
 
     @Modifying
     @Transactional
-    @Query(value = "UPDATE events SET is_deleted = false WHERE id IN (?1) and consolidation_id = ?2", nativeQuery = true)
-    void revertSoftDeleteByEventsIdsAndConsolidationId(List<Long> eventsIds, Long consolidationId);
+    @Query(value = "UPDATE events SET is_deleted = false WHERE id IN (?1)", nativeQuery = true)
+    void revertSoftDeleteByEventsIds(List<Long> eventsIds);
 
     @Modifying
     @Transactional

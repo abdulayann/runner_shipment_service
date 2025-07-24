@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
@@ -113,7 +114,14 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
         List<CompletableFuture<Void>> futures = consolidationIds.stream()
                 .map(consolidationId -> CompletableFuture.runAsync(
-                        () -> self.processAndRestoreConsolidation(consolidationId),
+                        () -> {
+                            try {
+                                self.processAndRestoreConsolidation(consolidationId, tenantId);
+                            } finally {
+                                TenantContext.removeTenant();
+                                UserContext.removeUser();
+                            }
+                        },
                         asyncExecutor))
                 .toList();
 
@@ -122,11 +130,13 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void processAndRestoreConsolidation(Long consolidationId) {
+    public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
+            TenantContext.setCurrentTenant(tenantId);
+            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
             ConsolidationBackupEntity consolidationBackupDetails = consolidationBackupDao.findConsolidationsById(consolidationId);
-            Integer tenantId = consolidationBackupDetails.getTenantId();
             ConsolidationDetails consolidationDetails = objectMapper.readValue(consolidationBackupDetails.getConsolidationDetails(), ConsolidationDetails.class);
+            Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
             if (consolidationBackupDetails.getConsoleShipmentMapping() != null) {
                 List<ConsoleShipmentMapping> mappingList = objectMapper.readValue(
                         consolidationBackupDetails.getConsoleShipmentMapping(),
@@ -135,10 +145,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 );
                 List<Long> shipmentIds = mappingList.stream().map(ConsoleShipmentMapping::getShipmentId).filter(Objects::nonNull).toList();
                 shipmentDao.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
-                //TODO need to delete the new set of shipment data.
-                //TODO need to diss for flag
                 revertContainers(consolidationDetails);
-                Map<Long, List<Long>> containerShipmentMap = new HashMap<>();
                 for (Long shipmentId : shipmentIds) {
                     if (consolidationDetails.getShipmentsList() == null) {
                         consolidationDetails.setShipmentsList(new HashSet<>());
@@ -148,16 +155,16 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                         consolidationDetails.getShipmentsList().add(shipmentDetails);
                     }
                 }
-                validateAndSaveContainers(consolidationDetails, containerShipmentMap);
             }
+            List<Long> allPartiesIds = getAllPartiesIds(consolidationDetails);
+            validateAndRestorePartiesDetails(consolidationId, allPartiesIds, consolidationDetails);
+            List<Long> eventsIds = getAllEventsIds(consolidationDetails);
+            validateAndRestoreEventsDetails(consolidationId, eventsIds, consolidationDetails);
+            validateAndSaveContainers(consolidationDetails, containerShipmentMap);
             List<Long> referenceNumberIds = consolidationDetails.getReferenceNumbersList().stream().map(ReferenceNumbers::getId).filter(Objects::nonNull).toList();
             validateAndRestoreReferenceNumberDetails(consolidationId, referenceNumberIds, consolidationDetails);
             List<Long> routingsIds = consolidationDetails.getRoutingsList().stream().map(Routings::getId).filter(Objects::nonNull).toList();
             validateAndRestoreRoutingDetails(consolidationId, routingsIds, consolidationDetails);
-            List<Long> eventsIds = consolidationDetails.getEventsList().stream().map(Events::getId).filter(Objects::nonNull).toList();
-            validateAndRestoreEventsDetails(consolidationId, eventsIds, consolidationDetails);
-            List<Long> consolidationAddressIds = consolidationDetails.getConsolidationAddresses().stream().map(Parties::getId).filter(Objects::nonNull).toList();
-            validateAndRestorePartiesDetails(consolidationId, consolidationAddressIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
 //TODO packking to containersIds
@@ -168,6 +175,23 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
             throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
         }
+    }
+    private List<Long> getAllEventsIds(ConsolidationDetails consolidationDetails) {
+        return Stream.of(
+                nullSafeCollectionStream(consolidationDetails.getJobsList()).flatMap(job -> nullSafeCollectionStream(job.getEventsList())),
+                nullSafeCollectionStream(consolidationDetails.getContainersList()).flatMap(container -> nullSafeCollectionStream(container.getEventsList())),
+                nullSafeCollectionStream(consolidationDetails.getEventsList())).flatMap(Function.identity()).map(Events::getId).filter(Objects::nonNull).distinct().toList();
+    }
+
+    private static <T> Stream<T> nullSafeCollectionStream(Collection<T> collection) {
+        return (collection == null) ? Stream.empty() : collection.stream();
+    }
+
+    private static List<Long> getAllPartiesIds(ConsolidationDetails consolidationDetails) {
+        return Stream.of(
+                nullSafeCollectionStream(consolidationDetails.getContainersList()).flatMap(container -> Stream.of(container.getPickupAddress(), container.getDeliveryAddress())),
+                nullSafeCollectionStream(consolidationDetails.getJobsList()).flatMap(job -> Stream.of(job.getBuyerDetail(), job.getSupplierDetail())),
+                nullSafeCollectionStream(consolidationDetails.getConsolidationAddresses())).flatMap(Function.identity()).filter(Objects::nonNull).map(Parties::getId).filter(Objects::nonNull).distinct().toList();
     }
 
     private void revertContainers(ConsolidationDetails consolidationDetails) {
@@ -186,6 +210,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     private void validateAndSaveContainers(ConsolidationDetails consolidationDetails, Map<Long, List<Long>> containerShipmentMap) {
         List<Containers> containers = consolidationDetails.getContainersList();
+
         List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList().stream().toList();
         Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDetailsList.stream()
                 .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
@@ -212,13 +237,13 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     private void validateAndRestorePartiesDetails(Long consolidationId, List<Long> consolidationAddressIds, ConsolidationDetails consolidationDetails) {
         partiesDao.deleteAdditionalDataByPartiesIdsEntityIdAndEntityType(consolidationAddressIds, consolidationId, Constants.CONSOLIDATION_ADDRESSES);
-        partiesDao.revertSoftDeleteByPartiesIdsEntityIdAndEntityType(consolidationAddressIds, consolidationId, Constants.CONSOLIDATION_ADDRESSES);
+        partiesDao.revertSoftDeleteByPartiesIds(consolidationAddressIds);
         partiesRepository.saveAll(consolidationDetails.getConsolidationAddresses());
     }
 
     private void validateAndRestoreEventsDetails(Long consolidationId, List<Long> eventsIds, ConsolidationDetails consolidationDetails) {
         eventDao.deleteAdditionalDataByEventsIdsConsolidationId(eventsIds, consolidationId);
-        eventDao.revertSoftDeleteByEventsIdsAndConsolidationId(eventsIds, consolidationId);
+        eventDao.revertSoftDeleteByEventsIds(eventsIds);
         eventRepository.saveAll(consolidationDetails.getEventsList());
     }
 
