@@ -49,20 +49,6 @@ public class ShipmentValidationV3Util {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
 
-    public void validateStaleShipmentUpdateError(ShipmentDetails shipmentDetails, boolean isCreate) {
-        if(!isCreate) {
-            // Check the shipment for attached consolidation, if the user is updating stale shipment and causing shipment to detach
-            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
-            if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
-                consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
-                if (CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()
-                        && !Objects.isNull(consoleShipmentMappings.get(0).getRequestedType())) {
-                    throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
-                }
-            }
-        }
-    }
-
     public void validTransportModeForTrasnportModeConfig(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, boolean isImportFile, V1TenantSettingsResponse tenantSettings) {
         if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && Boolean.FALSE.equals(isImportFile) && (isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode()))
                 && Boolean.FALSE.equals(commonUtils.isTransportModeValid(shipmentDetails.getTransportMode(), Constants.SHIPMENT_DETAILS, tenantSettings))) {
