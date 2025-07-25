@@ -105,9 +105,6 @@ public class ShipmentValidationV3Util {
         if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
             throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
         }
-        // Validation for Partner fields
-        // Validation for DPS Implication
-//        this.validateDPSImplication(shipmentDetails);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
         // Validation for cutoffFields
