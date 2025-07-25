@@ -447,6 +447,11 @@ public class ReportService implements IReportService {
 
     @NotNull
     private byte[] printTransportInstructionLegsData(List<TiLegs> tiLegsList, ReportRequest reportRequest, Map<String, Object> dictionary, DocPages pages) throws DocumentException, IOException {
+        dictionary.put(ReportConstants.HAS_LEGS, false);
+        dictionary.put(ReportConstants.HAS_CONTAINERS, false);
+        dictionary.put(ReportConstants.HAS_PACKAGE_DETAILS, false);
+        dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
+        dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
