@@ -50,22 +50,22 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     Long findMaxId();
 
     @Modifying @Transactional
-    @Query(value = "Update shipment_details set job_status = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set updated_at = now(), job_status = ?2 Where id = ?1", nativeQuery = true)
     void saveJobStatus(Long id, String jobStatus);
 
     @Modifying @Transactional @ExcludeTenantFilter
-    @Query(value = "Update shipment_details set status = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set updated_at = now(), status = ?2 Where id = ?1", nativeQuery = true)
     void saveStatus(Long id, Integer status);
 
     @Modifying @Transactional
-    @Query(value = "Update shipment_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set updated_at = now(), created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1", nativeQuery = true)
     List<ShipmentDetails> getShipmentNumberFromId(List<Long> shipmentIds);
 
     @Modifying @Transactional
-    @Query(value = "Update shipment_details set entity_transfer = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set updated_at = now(), entity_transfer = ?2 Where id = ?1", nativeQuery = true)
     void saveEntityTransfer(Long id, Boolean entityTransfer);
 
     @Query(value = "SELECT * FROM shipment_details WHERE guid IN ?1", nativeQuery = true)
@@ -100,7 +100,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId);
 
     @Modifying @Transactional
-    @Query(value = "Update shipment_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set updated_at = now(), is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
 
     @Modifying @Transactional
@@ -119,7 +119,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Transactional
     @ExcludeTenantFilter
     @Query(value = "UPDATE shipment_additional_details a " +
-            "SET empty_container_returned = ?2 " +
+            "SET updated_at = now(), empty_container_returned = ?2 " +
             "FROM shipment_details s " +
             "WHERE s.additional_details_id = a.id AND s.id = ?1", nativeQuery = true)
     void updateAdditionalDetailsByShipmentId(Long id, Boolean emptyContainerReturned);
@@ -129,14 +129,14 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
     
     @Modifying
-    @Query(value = "update shipment_additional_details set fcr_number = fcr_number + 1 where id in (select additional_details_id from shipment_details where id = ?1)", nativeQuery = true)
+    @Query(value = "update shipment_additional_details set updated_at = now(), fcr_number = fcr_number + 1 where id in (select additional_details_id from shipment_details where id = ?1)", nativeQuery = true)
     void updateFCRNo(Long id);
 
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
 
     @Modifying
-    @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)
+    @Query(value = "Update shipment_details set updated_at = now(), booking_number = ?2 Where guid IN ?1", nativeQuery = true)
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
 
     @ExcludeTenantFilter

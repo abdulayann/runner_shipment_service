@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Generated
 public interface ICarrierRepository extends JpaRepository<CarrierDetails, Long> {
     @Modifying @Transactional
-    @Query(value = "Update carrier_details set origin_loc_code = ?2, origin_port_loc_code = ?3, " +
+    @Query(value = "Update carrier_details set updated_at = now(), origin_loc_code = ?2, origin_port_loc_code = ?3, " +
             "destination_loc_code = ?4, destination_port_loc_code = ?5 Where id = ?1", nativeQuery = true)
     void saveUnLocCodes(Long id, String originLoc, String originPortLoc, String destinationLoc, String destinationPortLoc);
 
@@ -23,7 +23,7 @@ public interface ICarrierRepository extends JpaRepository<CarrierDetails, Long> 
     @Transactional
     @ExcludeTenantFilter
     @Query(value = "UPDATE carrier_details " +
-            "SET ata = ?2 " +
+            "SET updated_at = now(), ata = ?2 " +
             "WHERE id = ?1", nativeQuery = true)
     void updateAta(Long id, LocalDateTime shipmentAta);
 
@@ -31,7 +31,7 @@ public interface ICarrierRepository extends JpaRepository<CarrierDetails, Long> 
     @Transactional
     @ExcludeTenantFilter
     @Query(value = "UPDATE carrier_details " +
-            "SET atd = ?2 " +
+            "SET updated_at = now(), atd = ?2 " +
             "WHERE id = ?1", nativeQuery = true)
     void updateAtd(Long id, LocalDateTime shipmentAta);
 }

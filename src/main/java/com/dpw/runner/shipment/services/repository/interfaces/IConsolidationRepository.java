@@ -47,11 +47,11 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     Long findMaxId();
 
     @Modifying
-    @Query(value = "Update consolidation_details set booking_id = ?2, booking_status = ?3, booking_number = ?4 Where guid = ?1", nativeQuery = true)
+    @Query(value = "Update consolidation_details set updated_at = now(), booking_id = ?2, booking_status = ?3, booking_number = ?4 Where guid = ?1", nativeQuery = true)
     int updateConsoleBookingFields(UUID guid, String bookingId, String bookingStatus, String bookingNumber);
 
     @Modifying @Transactional
-    @Query(value = "Update consolidation_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update consolidation_details set updated_at = now(), created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
     @Query(value = "SELECT consolidation_number FROM consolidation_details WHERE id = ?1", nativeQuery = true)
@@ -85,7 +85,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
 
     @Modifying @Transactional
-    @Query(value = "Update consolidation_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update consolidation_details set updated_at = now(), is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
 
     @Query(value = "SELECT id FROM consolidation_details WHERE guid = ?1", nativeQuery = true)

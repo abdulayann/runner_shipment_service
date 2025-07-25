@@ -43,47 +43,47 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set air_message_status = ?2, air_message_resubmitted = true Where guid = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), air_message_status = ?2, air_message_resubmitted = true Where guid = ?1", nativeQuery = true)
     int updateAirMessageStatus(UUID guid, String airMessageStatus);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set linked_hawb_air_message_status = ?2 Where guid = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), linked_hawb_air_message_status = ?2 Where guid = ?1", nativeQuery = true)
     int updateLinkedHawbAirMessageStatus(UUID guid, String airMessageStatus);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set air_message_status = ?2 Where shipment_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), air_message_status = ?2 Where shipment_id = ?1", nativeQuery = true)
     int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set air_message_status = ?2 Where consolidation_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), air_message_status = ?2 Where consolidation_id = ?1", nativeQuery = true)
     int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set print_type = ?2 Where consolidation_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), print_type = ?2 Where consolidation_id = ?1", nativeQuery = true)
     int updatePrintTypeFromConsolidationId(Long id, String printType);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set original_printed_at = ?2 Where consolidation_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), original_printed_at = ?2 Where consolidation_id = ?1", nativeQuery = true)
     int updatePrintDateFromConsolidationId(Long id, LocalDateTime printedAt);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set print_type = ?2 Where shipment_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), print_type = ?2 Where shipment_id = ?1", nativeQuery = true)
     int updatePrintTypeFromShipmentId(Long id, String printType);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set original_printed_at = ?2 Where shipment_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb updated_at = now(), set original_printed_at = ?2 Where shipment_id = ?1", nativeQuery = true)
     int updatePrintDateFromShipmentId(Long id, LocalDateTime printedAt);
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb set user_mail_id = ?3, user_display_name = ?2 Where guid = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), user_mail_id = ?3, user_display_name = ?2 Where guid = ?1", nativeQuery = true)
     int updateUserDetails(UUID guid, String userDisplayName, String userMailId);
 
     @Query(value = "SELECT * FROM awb WHERE guid = ?1 limit 1", nativeQuery = true)
@@ -94,7 +94,7 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
-    @Query("UPDATE Awb a SET a.airMessageResubmitted = false " +
+    @Query("UPDATE Awb a SET updatedAt = now(), a.airMessageResubmitted = false " +
         "WHERE (:shipmentId IS NULL OR a.shipmentId = :shipmentId) " +
         "AND (:consolidationId IS NULL OR a.consolidationId = :consolidationId)")
     int setAirMessagingResubmittedFalse(Long shipmentId, Long consolidationId);
