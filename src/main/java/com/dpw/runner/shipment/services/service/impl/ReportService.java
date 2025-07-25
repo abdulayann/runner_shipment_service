@@ -456,13 +456,12 @@ public class ReportService implements IReportService {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
             for (TiLegs tilegs : tiLegsList) {
-                Map<String, Object> legsDictionary = new HashMap<>();
+                Map<String, Object> legsDictionary = new HashMap<>(dictionary);
                 transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsTruckDriverDataIntoDictionary(tilegs, legsDictionary);
-                legsDictionary.putAll(dictionary);
 
                 futures.add(executorService.submit(() -> {
                     byte[] mainDocPage = getFromDocumentService(legsDictionary, pages.getMainPageId());
