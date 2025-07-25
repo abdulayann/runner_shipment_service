@@ -163,6 +163,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         validateTransportInstructionLegsPackagesDetails(request);
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
+        pickupDeliveryDetails.setTiLegsList(oldEntity.get().getTiLegsList());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             beforeSave(pickupDeliveryDetails);
