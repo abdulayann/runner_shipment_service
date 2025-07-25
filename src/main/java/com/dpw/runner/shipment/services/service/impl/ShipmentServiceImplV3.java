@@ -1278,8 +1278,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @SuppressWarnings("java:S125")
     protected void beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean isImportFile, ConsoleShipmentData consoleShipmentData) throws RunnerException, JsonMappingException {
-        shipmentValidationV3Util.validateStaleShipmentUpdateError(shipmentDetails, isCreate);
-
         /* Future to populate unloc code in shipment child entities*/
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
