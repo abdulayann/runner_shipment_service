@@ -1345,17 +1345,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
             for(var shipment : consolidationDetails.getShipmentsList()) {
                 Long id = shipment.getId();
                 UUID guid = shipment.getGuid();
-                ShipmentDetails shipmentDetails;
-                if(!skipShipmentMap) {
-                    Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
-                    if (shipmentDetailsOptional.isEmpty()) {
-                        log.error("Shipment with id : {}, is not present while creating task payload", id);
-                        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                    }
-                    shipmentDetails = shipmentDetailsOptional.get();
-                }else{
-                    shipmentDetails = shipment;
-                }
+                ShipmentDetails shipmentDetails = getShipmentDetails(skipShipmentMap, shipment, id);
                 List<String> shipAdditionalDocs = Collections.emptyList();
                 if(sendConsolidationRequest.getShipAdditionalDocs() != null && sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString()) != null) {
                     shipAdditionalDocs = sendConsolidationRequest.getShipAdditionalDocs().get(guid.toString());
@@ -1391,6 +1381,21 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         payload.setMasterData(getConsolMasterData(consolidationDetails));
 
         return payload;
+    }
+
+    private ShipmentDetails getShipmentDetails(boolean skipShipmentMap, ShipmentDetails shipment, Long id) {
+        ShipmentDetails shipmentDetails;
+        if(!skipShipmentMap) {
+            Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(id);
+            if (shipmentDetailsOptional.isEmpty()) {
+                log.error("Shipment with id : {}, is not present while creating task payload", id);
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            shipmentDetails = shipmentDetailsOptional.get();
+        }else{
+            shipmentDetails = shipment;
+        }
+        return shipmentDetails;
     }
 
     private void processContainersList(ShipmentDetails shipmentDetails, Map<UUID, List<UUID>> containerVsShipmentGuid, UUID shipmentGuid) {
