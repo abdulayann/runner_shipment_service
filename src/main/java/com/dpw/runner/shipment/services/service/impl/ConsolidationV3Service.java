@@ -2175,6 +2175,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 !CollectionUtils.isEmpty(console.getRoutingsList()) ||
                 !Objects.equals(console.getCarrierBookingRef(), oldEntity.getCarrierBookingRef()) ||
                 !Objects.equals(console.getBookingNumber(), oldEntity.getBookingNumber()) ||
+                !Objects.equals(console.getConsolidationType(), oldEntity.getConsolidationType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                         (!Objects.equals(console.getCarrierDetails().getVoyage(), oldEntity.getCarrierDetails().getVoyage()) ||
                                 !Objects.equals(console.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()) ||
@@ -2274,9 +2275,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments;
     }
 
-    private void setBookingNumberInShipment(ConsolidationDetails console, ShipmentDetails sd) {
-        if(!isStringNullOrEmpty(console.getBookingNumber()))
-            sd.setBookingNumber(console.getBookingNumber());
+    protected void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+        if(fromAttachShipment != null && !fromAttachShipment){
+            String oldBookingNumber = Objects.isNull(oldEntity) ? null : oldEntity.getBookingNumber();
+            String newBookingNumber = shipmentDetails.getBookingNumber();
+
+            if(Objects.equals(oldBookingNumber, newBookingNumber)){
+                shipmentDetails.setBookingNumber(console.getBookingNumber());
+            }
+        }else{
+            shipmentDetails.setBookingNumber(console.getBookingNumber());
+        }
     }
 
     /**
@@ -2331,7 +2340,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
-            shipmentDetails.setJobType(console.getConsolidationType());
             shipmentDetails.setPartner(console.getPartner());
 
             shipmentDetails.setMasterBill(console.getBol());
@@ -2340,24 +2348,20 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             //Editable Fields
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            setBookingNumberInShipment(console, shipmentDetails);
             serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
         }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
             shipmentDetails.setMasterBill(console.getBol());
-            shipmentDetails.setIncoterms(console.getIncoterms());
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
-            setBookingNumberInShipment(console, shipmentDetails);
             serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            if(shipmentDetails.getAdditionalDetails() != null){
-                shipmentDetails.getAdditionalDetails().setEfreightStatus(console.getEfreightStatus());
-            }
+            setIncoTerms(console, oldEntity, shipmentDetails, fromAttachShipment);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
         if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId())) {
@@ -2402,18 +2406,26 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         updateNonInterBranchConsoleData(console, shipmentDetails);
     }
 
+    protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+        if(fromAttachShipment != null && !fromAttachShipment){
+            String oldIncoTerms = Objects.isNull(oldEntity) ? null : oldEntity.getIncoterms(); // old consolidation value
+            String newIncoTerms = shipmentDetails.getIncoterms(); //shipment current
+
+            if(Objects.equals(oldIncoTerms, newIncoTerms)){
+                shipmentDetails.setIncoterms(console.getIncoterms());
+            }
+        }else{
+            shipmentDetails.setIncoterms(console.getIncoterms());
+        }
+    }
+
     private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
-        if(fromAttachShipment != null && fromAttachShipment){
+        if(fromAttachShipment != null && !fromAttachShipment){
             String oldPartner = Objects.isNull(oldEntity) ? null : oldEntity.getPartner();
             String newPartner = consolidationDetails.getPartner();
 
             if(newPartner != null && !newPartner.equals(oldPartner)){
-                // first set null
-                shipmentDetails.setCoLoadCarrierName(null);
-                shipmentDetails.setCoLoadBlNumber(null);
-                shipmentDetails.setCoLoadBkgNumber(null);
-
                 shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
                 shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
@@ -2423,7 +2435,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void setColoadBookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
-        if(fromAttachShipment != null && fromAttachShipment) {
+        if(fromAttachShipment != null && !fromAttachShipment) {
                 if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
                     shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 }
@@ -2439,6 +2451,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
         }
     }
+
 
     private boolean isFieldChanged(String oldValue, String newValue) {
         return oldValue != null ? !oldValue.equals(newValue) : newValue != null;
