@@ -36,7 +36,7 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
 
     @Modifying
-    @Query(value = "Update customer_booking updated_at = now(), set is_bill_created = ?2 Where id = ?1", nativeQuery = true)
+    @Query(value = "Update customer_booking set updated_at = now(), is_bill_created = ?2 Where id = ?1", nativeQuery = true)
     int updateBillingStatus(Long id, Boolean isBillCreated);
 
     Optional<CustomerBooking> findByOrderManagementId(String orderId);
