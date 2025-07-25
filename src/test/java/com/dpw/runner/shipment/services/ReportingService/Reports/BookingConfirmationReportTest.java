@@ -137,6 +137,7 @@ class BookingConfirmationReportTest extends CommonMocks {
         shipmentModel.setPaymentTerms("PPT");
         shipmentModel.setPacksUnit("PKG");
         shipmentModel.setHouseBill("hsnn1234");
+        shipmentModel.setBookingNumber("Booking1234");
 
         PartiesModel partiesModel = new PartiesModel();
         partiesModel.setOrgCode("Test");
