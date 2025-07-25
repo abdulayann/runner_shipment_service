@@ -208,9 +208,25 @@ public class ContainerV3Service implements IContainerV3Service {
             throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
         }
 
-        //TODO : CargoType validation check in case of shipment
+        String consoleType = null;
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            ShipmentDetails shipmentDetails = shipmentDao.findById(containerRequest.getShipmentsId())
+                    .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerRequest.getShipmentsId()));
 
-        List<Containers> containersList = getSiblingContainers(containerRequest);
+            consoleType = shipmentDetails.getJobType();
+            if(Objects.isNull(shipmentDetails.getConsolidationList()) && !SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)){
+                String errorMessage = String.format("Shipment: %s , must be attached with consolidation to Create Container", shipmentDetails.getShipmentId());
+                throw new ValidationException(errorMessage);
+            }
+
+            containerRequest.setConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+            if (!CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+                String errorMessage = String.format("Invalid cargoType: %s. CargoType must be FCL.", shipmentDetails.getShipmentType());
+                throw new ValidationException(errorMessage);
+            }
+        }
+
+        List<Containers> containersList = getSiblingContainers(containerRequest, module, consoleType);
         containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
@@ -391,6 +407,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void processContainerDG(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+
         if (SHIPMENT.equalsIgnoreCase(module)) {
             validateAndSaveDGShipment(containerRequestList);
         } else {
@@ -660,16 +677,22 @@ public class ContainerV3Service implements IContainerV3Service {
         return message;
     }
 
-    protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
-        if (containerRequest.getConsolidationId() != null) {
+    protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest, String module, String consoleType) {
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            if (SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
+                return containerDao.findByShipmentId(containerRequest.getShipmentsId());
+            }
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
-        } else if (containerRequest.getShipmentsId() != null) {
-            Long shipmentId = containerRequest.getShipmentsId();
-            return containerDao.findByShipmentId(shipmentId);
-        } else if (containerRequest.getBookingId() != null) {
+        }
+        if (Objects.nonNull(containerRequest.getConsolidationId())) {
+            return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
+        }
+
+        if (Objects.nonNull(containerRequest.getBookingId())) {
             return containerDao.findByBookingIdIn(List.of(containerRequest.getBookingId()));
         }
-        return new ArrayList<>();
+
+        return Collections.emptyList();
     }
 
     /**

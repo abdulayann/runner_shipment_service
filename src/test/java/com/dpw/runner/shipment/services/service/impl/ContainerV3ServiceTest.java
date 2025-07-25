@@ -846,7 +846,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Test
     void testGetSiblingContainers() {
-        List<Containers> containersList = containerV3Service.getSiblingContainers(new ContainerV3Request());
+        List<Containers> containersList = containerV3Service.getSiblingContainers(new ContainerV3Request(), "","");
         assertEquals(0, containersList.size());
     }
 
@@ -855,7 +855,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request request = new ContainerV3Request();
         request.setShipmentsId(1L);
         when(containerDao.findByShipmentId(anyLong())).thenReturn(List.of(new Containers()));
-        List<Containers> containersList = containerV3Service.getSiblingContainers(request);
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request,"","");
         assertEquals(1, containersList.size());
     }
 
@@ -864,7 +864,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request request = new ContainerV3Request();
         request.setBookingId(1L);
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(List.of(new Containers()));
-        List<Containers> containersList = containerV3Service.getSiblingContainers(request);
+        List<Containers> containersList = containerV3Service.getSiblingContainers(request,"","");
         assertEquals(1, containersList.size());
     }
 
