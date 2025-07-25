@@ -5485,4 +5485,97 @@ if (unitConversionUtilityMockedStatic != null) {
             .isInstanceOf(ValidationException.class)
             .hasMessage("No Consolidation found for the Id: " + invalidId);
   }
+
+  @Test
+  void testSetIncoTerms_WhenFromAttachShipmentIsFalse_AndOldAndNewIncoTermsMatch_UpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setIncoterms("FOB");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setIncoterms("FOB");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setIncoterms("FOB"); // same as old
+
+    consolidationV3Service.setIncoTerms(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getIncoterms()).isEqualTo("FOB"); // from console
+  }
+
+  @Test
+  void testSetIncoTerms_WhenFromAttachShipmentIsFalse_AndOldAndNewIncoTermsDoNotMatch_DoesNotUpdate() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setIncoterms("FOB");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setIncoterms("CIF");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setIncoterms("FOB"); // does not match old
+
+    consolidationV3Service.setIncoTerms(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getIncoterms()).isEqualTo("FOB"); // remains same
+  }
+
+  @Test
+  void testSetIncoTerms_WhenFromAttachShipmentIsTrue_AlwaysUpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setIncoterms("EXW");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setIncoterms("FOB");
+
+    consolidationV3Service.setIncoTerms(console, null, shipment, true);
+
+    assertThat(shipment.getIncoterms()).isEqualTo("EXW");
+  }
+
+
+  @Test
+  void testSetBookingNumber_WhenFromAttachShipmentIsFalse_AndOldAndNewBookingMatch_UpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setBookingNumber("BK123");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setBookingNumber("BK123");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setBookingNumber("BK123");
+
+    consolidationV3Service.setBookingNumberInShipment(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getBookingNumber()).isEqualTo("BK123");
+  }
+
+  @Test
+  void testSetBookingNumber_WhenFromAttachShipmentIsFalse_AndOldAndNewBookingMismatch_DoesNotUpdate() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setBookingNumber("BK999");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setBookingNumber("BK123");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setBookingNumber("BK123"); // matches old
+
+    consolidationV3Service.setBookingNumberInShipment(console, oldEntity, shipment, false);
+
+    assertThat(shipment.getBookingNumber()).isEqualTo("BK999"); // remains same
+  }
+
+  @Test
+  void testSetBookingNumber_WhenFromAttachShipmentIsTrue_AlwaysUpdatesFromConsole() {
+    ConsolidationDetails console = new ConsolidationDetails();
+    console.setBookingNumber("BK987");
+
+    ShipmentDetails shipment = new ShipmentDetails();
+    shipment.setBookingNumber("BK123");
+
+    consolidationV3Service.setBookingNumberInShipment(console, null, shipment, true);
+
+    assertThat(shipment.getBookingNumber()).isEqualTo("BK987");
+  }
+
+
 }

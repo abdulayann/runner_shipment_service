@@ -2175,6 +2175,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 !CollectionUtils.isEmpty(console.getRoutingsList()) ||
                 !Objects.equals(console.getCarrierBookingRef(), oldEntity.getCarrierBookingRef()) ||
                 !Objects.equals(console.getBookingNumber(), oldEntity.getBookingNumber()) ||
+                !Objects.equals(console.getConsolidationType(), oldEntity.getConsolidationType()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                         (!Objects.equals(console.getCarrierDetails().getVoyage(), oldEntity.getCarrierDetails().getVoyage()) ||
                                 !Objects.equals(console.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()) ||
@@ -2274,7 +2275,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments;
     }
 
-    private void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+    protected void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
         if(fromAttachShipment != null && !fromAttachShipment){
             String oldBookingNumber = Objects.isNull(oldEntity) ? null : oldEntity.getBookingNumber();
             String newBookingNumber = shipmentDetails.getBookingNumber();
@@ -2405,7 +2406,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         updateNonInterBranchConsoleData(console, shipmentDetails);
     }
 
-    private void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+    protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
         if(fromAttachShipment != null && !fromAttachShipment){
             String oldIncoTerms = Objects.isNull(oldEntity) ? null : oldEntity.getIncoterms(); // old consolidation value
             String newIncoTerms = shipmentDetails.getIncoterms(); //shipment current
