@@ -76,7 +76,7 @@ public class CustomerBookingValidationsV3 {
     private void validateConsigneeConsignor(CustomerBooking newEntity) {
         if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor()) && newEntity.getConsignee().getOrgCode() != null
                 && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode())) {
-            throw new ValidationException("Shipper & Consignee parties can't be selected as same.");
+            throw new ValidationException(ErrorConstants.SAME_SHIPPER_CONSIGNEE);
         }
     }
 
