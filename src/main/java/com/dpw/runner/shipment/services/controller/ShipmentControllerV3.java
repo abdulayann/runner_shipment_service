@@ -237,9 +237,9 @@ public class ShipmentControllerV3 {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List")})
     @PostMapping(value = "/attach-list-shipment")
-    public ResponseEntity<IRunnerResponse> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> attachListShipment(@Valid @RequestBody @NonNull AttachListShipmentRequest request, @RequestParam(required = false, defaultValue = "true") boolean getMasterData) {
         try {
-            return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request));
+            return shipmentService.attachListShipment(CommonRequestModel.buildRequest(request), getMasterData);
         } catch (Exception e) {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
