@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -85,6 +86,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     @Autowired
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
 
+    private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
+
     @Override
     public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
         log.info("Starting V2 to V3 migration for Shipment [id={}]", shipmentDetails.getId());
@@ -106,7 +109,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
             log.info("Saved updated packings for Shipment [id={}]", shipment.getId());
         }
         // save shipment
-//        shipment.setIsMigratedToV3(Boolean.TRUE);
+        shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
         shipmentRepository.save(shipment);
         log.info("Migration V2 to V3 complete for Shipment [id={}]", shipment.getId());
         return shipment;
@@ -123,9 +126,20 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         updateShipmentCargoSummary(shipmentDetails);
 
         updateTransportInstruction(shipmentDetails);
-        shipmentDetails.setCargoReadinessDate(shipmentDetails.getCargoReadyDate());
+
+        // Migrated shipment fields
+        updateShipmentFields(shipmentDetails);
 
         return shipmentDetails;
+    }
+
+    private void updateShipmentFields(ShipmentDetails shipmentDetails) {
+        shipmentDetails.setCargoReadinessDate(shipmentDetails.getCargoReadyDate());
+
+        // migrated deprecated shipment status
+        if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
+            shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+        }
     }
 
     private void updateTransportInstruction(ShipmentDetails shipmentDetails) {
