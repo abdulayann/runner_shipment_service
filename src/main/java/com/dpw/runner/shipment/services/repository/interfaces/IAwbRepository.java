@@ -78,7 +78,7 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
 
     @Transactional
     @Modifying
-    @Query(value = "Update Awb updated_at = now(), set original_printed_at = ?2 Where shipment_id = ?1", nativeQuery = true)
+    @Query(value = "Update Awb set updated_at = now(), original_printed_at = ?2 Where shipment_id = ?1", nativeQuery = true)
     int updatePrintDateFromShipmentId(Long id, LocalDateTime printedAt);
 
     @Transactional
