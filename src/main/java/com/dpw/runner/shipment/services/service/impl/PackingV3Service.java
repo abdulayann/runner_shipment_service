@@ -164,6 +164,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingRequest.getContainerId() != null) {
             throw new ValidationException("Package can be assigned to a container only after creation.");
         }
+        packingValidationV3Util.validateRequest(packingRequest);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -269,6 +270,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        packingValidationV3Util.validateRequest(packingRequest);
         Object entity = packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
         if (!Objects.equals(packingRequest.getContainerId(), oldPacking.getContainerId())) {
@@ -381,6 +383,7 @@ public class PackingV3Service implements IPackingV3Service {
         List<PackingV3Request> createRequests = new ArrayList<>();
 
         for (PackingV3Request request : packingRequestList) {
+            packingValidationV3Util.validateRequest(request);
             if (request.getId() != null && incomingIds.contains(request.getId())) {
                 updateRequests.add(request);
             } else {
