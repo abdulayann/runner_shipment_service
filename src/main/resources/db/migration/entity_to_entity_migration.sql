@@ -1,3 +1,50 @@
+
+UPDATE public.air_messaging_logs SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
+
+UPDATE public.air_messaging_logs AS aml
+SET
+    guid = saml.guid,
+    entity_guid = saml.entity_guid,
+    error_message = saml.error_message,
+    message_type = saml.message_type,
+    xml_payload = saml.xml_payload,
+    status = saml.status,
+    tenant_id = saml.tenant_id,
+    created_at = saml.created_at,
+    updated_at = saml.updated_at,
+    created_by = saml.created_by,
+    updated_by = saml.updated_by,
+    is_deleted = saml.is_deleted
+FROM __SCHEMA__.air_messaging_logs AS saml
+WHERE aml.id = saml.id AND saml.tenant_id = __TENANT_ID__;
+
+
+UPDATE public.audit_log SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
+UPDATE public.audit_log AS al
+SET
+    guid = sal.guid,
+    operation = sal.operation,
+    entity = sal.entity,
+    entity_id = sal.entity_id,
+    changes = sal.changes,
+    entity_type = sal.entity_type,
+    parent_type = sal.parent_type,
+    parent_id = sal.parent_id,
+    tenant_id = sal.tenant_id,
+    created_at = sal.created_at,
+    created_by = sal.created_by,
+    updated_at = sal.updated_at,
+    updated_by = sal.updated_by,
+    is_deleted = sal.is_deleted,
+    data_type = sal.data_type,
+    flow = sal.flow,
+    is_integration_log = sal.is_integration_log
+FROM __SCHEMA__.audit_log AS sal
+WHERE al.id = sal.id AND sal.tenant_id = __TENANT_ID__;
+
+
+
+
 UPDATE public.awb SET is_deleted = TRUE WHERE tenant_id = __TENANT_ID__;
 UPDATE public.awb AS pawb
 SET
@@ -1735,7 +1782,7 @@ SET
     "source" = snt."source",
     is_migrated_to_v3 = snt.is_migrated_to_v3
 FROM __SCHEMA__.network_transfer AS snt
-WHERE pnt.id = snt.id AND snt.tenant_id = __TENANT_ID__;
+WHERE pnt.id = snt.id AND snt.source_branch_id = __TENANT_ID__;
 
 
 
@@ -1960,6 +2007,8 @@ DELETE FROM public.dps_event_rule_matched_field WHERE dps_event_id IN (SELECT id
 
 DELETE FROM public.dps_event WHERE entity_id IN (SELECT guid::text FROM public.shipment_details WHERE tenant_id = __TENANT_ID__);
 
+DELETE FROM public.security_status  WHERE shipment_id IN ( SELECT id FROM public.shipment_details WHERE tenant_id = __TENANT_ID__);
+
 
 
 INSERT INTO public.dps_event  SELECT * FROM __SCHEMA__.dps_event
@@ -2007,3 +2056,6 @@ INSERT INTO public.screening_status select * from __SCHEMA__.screening_status wh
 INSERT INTO public.triangulation_partner_consolidation SELECT * FROM __SCHEMA__.triangulation_partner_consolidation WHERE consolidation_id in (select id from __SCHEMA__.consolidation_details where tenant_id = __TENANT_ID__);
 
 INSERT INTO public.triangulation_partner_shipment SELECT * FROM __SCHEMA__.triangulation_partner_shipment WHERE shipment_id in (select id from __SCHEMA__.shipment_details where tenant_id = __TENANT_ID__);
+
+INSERT INTO public.security_status  SELECT * FROM __SCHEMA__.security_status  WHERE shipment_id IN ( SELECT id FROM __SCHEMA__.shipment_details WHERE tenant_id = __TENANT_ID__);
+
