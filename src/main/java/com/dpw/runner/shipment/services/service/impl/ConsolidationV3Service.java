@@ -525,9 +525,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
         Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
-        if(consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getCoLoadCarrierName() != null){
-            throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None");
-        }
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
         consolidationValidationV3Util.checkCFSValidation(consolidationDetails, isCreate, shipmentDetails);
