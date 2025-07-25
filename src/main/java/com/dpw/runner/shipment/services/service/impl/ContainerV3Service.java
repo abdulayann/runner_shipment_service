@@ -207,6 +207,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if(containerRequest.getBookingId() != null && containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
             throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
         }
+        updateContainerRequestOnReefer(List.of(containerRequest));
 
         List<Containers> containersList = getSiblingContainers(containerRequest);
         containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
@@ -244,6 +245,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public BulkContainerResponse createBulk(List<ContainerV3Request> containerRequests, String module) throws RunnerException {
+        updateContainerRequestOnReefer(containerRequests);
         containerValidationUtil.validateCreateBulkRequest(containerRequests);
         containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(containerRequests);
         String requestId = LoggerHelper.getRequestIdFromMDC();
@@ -274,6 +276,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
+        updateContainerRequestOnReefer(containerRequestList);
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
@@ -397,6 +400,14 @@ public class ContainerV3Service implements IContainerV3Service {
                 if (containerV3Request.getHazardous() != null && !containerV3Request.getHazardous()) continue;
                 ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
                 validateAndProcessDGConsolidation(containerV3Request, consolidationDetails);
+            }
+        }
+    }
+
+    private void updateContainerRequestOnReefer(List<ContainerV3Request> containerV3Requests) {
+        for(ContainerV3Request containerRequest: containerV3Requests) {
+            if(Boolean.FALSE.equals(containerRequest.getIsReefer())) {
+                containerRequest.setMinimumFlashPoint(null);
             }
         }
     }

@@ -130,6 +130,7 @@ class PackingV3ServiceTest extends CommonMocks {
         request.setShipmentId(100L);
         request.setBookingId(200L);
         request.setConsolidationId(300L);
+        request.setIsTemperatureControlled(Boolean.FALSE);
 
         packing = new Packing();
         packing.setId(1L);
