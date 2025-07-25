@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -930,6 +931,7 @@ public class ReportService implements IReportService {
             pdfByteContent = getPdfByteContent(reportRequest, waterMarkRequired, pdfByteContent, font, shipmentDetails);
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name())) {
                 shipmentDetails.getAdditionalDetails().setPrintedOriginal(true);
+                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalTimeZoneHelper.getDateTime(LocalDateTime.now()));
             }
 
             updateShipmentDetailsForPrint(dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, shipmentDetails);
@@ -1006,8 +1008,11 @@ public class ReportService implements IReportService {
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL) && pdfByteContent != null) {
             Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
             ShipmentDetails shipmentDetails = null;
-            if (shipmentsRow.isPresent())
+            if (shipmentsRow.isPresent()) {
                 shipmentDetails = shipmentsRow.get();
+                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalTimeZoneHelper.getDateTime(LocalDateTime.now()));
+                shipmentDetails = shipmentDao.update(shipmentDetails, false);
+            }
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
