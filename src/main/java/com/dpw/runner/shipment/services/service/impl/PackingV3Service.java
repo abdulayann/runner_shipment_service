@@ -551,7 +551,9 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Delete packings from DB
         packingDao.deleteByIdIn(packingIds);
-
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packingRequestList.iterator().next().getBookingId());
+        }
         // Record audit logs for the deletion operation
         recordAuditLogs(packingsToDelete, null, DBOperationType.DELETE, parentResult);
 
