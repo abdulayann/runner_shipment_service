@@ -8,4 +8,5 @@ public class ContainerNumberCheckResponse implements IRunnerResponse {
     private boolean success;
     private Boolean isLastDigitCorrect;
     private Integer lastDigit;
+    private String warningMessage;
 }
