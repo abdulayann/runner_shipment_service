@@ -40,8 +40,8 @@ public class CustomerBookingBackupHandler {
     private final ICustomerBookingBackupRepository customerBookingRepository;
     private final ObjectMapper objectMapper;
     @Autowired
-    @Qualifier("asyncBackupHandlerExecutor")
-    private final ThreadPoolTaskExecutor asyncBackupHandlerExecutor;
+    @Qualifier("asyncBookingBackupHandlerExecutor")
+    private final ThreadPoolTaskExecutor asyncBookingBackupHandlerExecutor;
     private final V1ServiceImpl v1Service;
     private final PlatformTransactionManager transactionManager;
 
@@ -77,7 +77,7 @@ public class CustomerBookingBackupHandler {
                                 throw new BackupFailureException("Batch processing failed", e);
                             }
                         }, tenantId),
-                        asyncBackupHandlerExecutor))
+                        asyncBookingBackupHandlerExecutor))
                 .toList();
 
         try {
@@ -91,6 +91,7 @@ public class CustomerBookingBackupHandler {
 
     public void processAndBackupBookingsBatchData(Set<Long> customerBookingIds) {
 
+        log.info("Processing backup batch");
         List<CustomerBooking> customerBookings =
                 customerBookingDao.findCustomerBookingByIds(customerBookingIds);
 
@@ -128,7 +129,11 @@ public class CustomerBookingBackupHandler {
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                task.run();
+                // Execute with transaction
+                new TransactionTemplate(transactionManager).execute(status -> {
+                    task.run();
+                    return null;
+                });
             } finally {
                 v1Service.clearAuthContext();
             }
@@ -137,6 +142,6 @@ public class CustomerBookingBackupHandler {
 
     public CompletableFuture<Void> backupAsync(Integer tenantId) {
         return CompletableFuture.runAsync(wrapWithContext(() -> backup(tenantId), tenantId),
-                asyncBackupHandlerExecutor);
+                asyncBookingBackupHandlerExecutor);
     }
 }

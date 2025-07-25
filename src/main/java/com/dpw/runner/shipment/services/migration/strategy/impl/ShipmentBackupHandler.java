@@ -45,8 +45,8 @@ import static java.lang.Boolean.TRUE;
 public class ShipmentBackupHandler {
 
     @Autowired
-    @Qualifier("asyncBackupHandlerExecutor")
-    private final ThreadPoolTaskExecutor asyncBackupHandlerExecutor;
+    @Qualifier("asyncShipmentBackupHandlerExecutor")
+    private final ThreadPoolTaskExecutor asyncShipmentBackupHandlerExecutor;
     private static final int DEFAULT_BATCH_SIZE = 100;
     private final ObjectMapper objectMapper;
     private final IShipmentDao shipmentDao;
@@ -89,7 +89,7 @@ public class ShipmentBackupHandler {
                                 throw new BackupFailureException("Batch processing failed", e);
                             }
                         }, tenantId),
-                        asyncBackupHandlerExecutor))
+                        asyncShipmentBackupHandlerExecutor))
                 .toList();
         try {
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -101,7 +101,7 @@ public class ShipmentBackupHandler {
     }
 
     private void processAndBackupShipmentsBatchData(Set<Long> shipmentIds) {
-
+        log.info("Processing shipment batch");
         List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(shipmentIds);
         List<ShipmentBackupEntity> shipmentBackupEntities = shipmentDetails.stream()
                 .map(shipment -> {
@@ -140,7 +140,7 @@ public class ShipmentBackupHandler {
 
     public CompletableFuture<Void> backupAsync(Integer tenantId) {
         return CompletableFuture.runAsync(wrapWithContext(() -> backup(tenantId), tenantId),
-                asyncBackupHandlerExecutor);
+                asyncShipmentBackupHandlerExecutor);
     }
 
     private Runnable wrapWithContext(Runnable task, Integer tenantId) {
@@ -149,7 +149,13 @@ public class ShipmentBackupHandler {
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                task.run();
+
+                // Execute with transaction
+                new TransactionTemplate(transactionManager).execute(status -> {
+                    task.run();
+                    return null;
+                });
+
             } finally {
                 v1Service.clearAuthContext();
             }

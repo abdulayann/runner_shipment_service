@@ -43,13 +43,39 @@ public class AsyncConfig implements AsyncConfigurer {
 
 
     // Used for Async
-    @Bean(name = "asyncBackupHandlerExecutor")
-    public ThreadPoolTaskExecutor backupHandlerExecutor() {
+    @Bean(name = "asyncShipmentBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupShipmentHandlerExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(12);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(300);
-        executor.setThreadNamePrefix("BackupHandlerAsyncThread-");
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+      //  executor.setQueueCapacity(300);
+        executor.setThreadNamePrefix("BackupShipmentHandlerAsyncThread-");
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
+    }
+
+    // Used for Async
+    @Bean(name = "asyncConsoleBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupConsoleHandlerExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        //  executor.setQueueCapacity(300);
+        executor.setThreadNamePrefix("BackupConsoleHandlerAsyncThread-");
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
+    }
+
+    // Used for Async
+    @Bean(name = "asyncBookingBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupBookingHandlerExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        //  executor.setQueueCapacity(300);
+        executor.setThreadNamePrefix("BackupBookingHandlerAsyncThread-");
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
         executor.initialize();
         return executor;

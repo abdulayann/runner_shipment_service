@@ -28,11 +28,11 @@ public class TenantDataBackupServiceImpl implements TenantDataBackupService {
     @Override
     public void backupTenantData(Integer tenantId) {
         try {
-            CompletableFuture<Void> shipmentFuture = shipmentBackupHandler.backupAsync(tenantId);
+           // CompletableFuture<Void> shipmentFuture = shipmentBackupHandler.backupAsync(tenantId);
             CompletableFuture<Void> consolidationFuture = consolidationBackupHandler.backupAsync(tenantId);
-            CompletableFuture<Void> bookingFuture = customerBookingBackupHandler.backupAsync(tenantId);
-            CompletableFuture.allOf(shipmentFuture, consolidationFuture, bookingFuture).join();
-            log.info("Tenant backup successful for tenantId: {}", tenantId);
+            //CompletableFuture<Void> bookingFuture = customerBookingBackupHandler.backupAsync(tenantId);
+           // CompletableFuture.allOf(shipmentFuture, consolidationFuture, bookingFuture).join();
+            CompletableFuture.allOf(consolidationFuture).join();
         } catch (Exception e) {
             log.error("Error occurred during backup for tenantId: {}. Rolling back.", tenantId, e);
             self.cleanupFailedBackup(tenantId);
