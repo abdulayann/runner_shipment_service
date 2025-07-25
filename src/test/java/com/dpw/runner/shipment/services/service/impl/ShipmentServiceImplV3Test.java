@@ -5438,7 +5438,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5484,7 +5484,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5530,7 +5530,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5572,7 +5572,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5616,7 +5616,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
