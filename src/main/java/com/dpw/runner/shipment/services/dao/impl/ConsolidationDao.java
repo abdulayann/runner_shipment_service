@@ -539,26 +539,31 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             isMAWBNumberExist = true;
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
         if (isMAWBNumberExist){
-            if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(consolidationRequest.getId(), mawbStocksLink.getEntityId())) {
-                throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-            }  else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && !Objects.equals(mawbStocksLink.getEntityId(), consolidationRequest.getId())) {
-                var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
-                if (mawbStock.isEmpty()) {
-                    throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
-                }
-                if (validatedBorrowedFrom(consolidationRequest, mawbStock.get())) {
-                    throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None.");
-                }
-                if(StringUtility.isNotEmpty(mawbStock.get().getBorrowedFrom())) {
-                    consolidationRequest.setBorrowed(true);
-                    Parties borrowedParty = v1ServiceUtil.getOrganizationDataFromV1(mawbStock.get().getBorrowedFrom());
-                    consolidationRequest.setBorrowedFrom(borrowedParty);
-                }
-            }
+            mawbStockValidation(mawbStocksLink, consolidationRequest);
         } else {
             createNewMAWBEntry(consolidationRequest, correspondingCarrier != null ? correspondingCarrier.getItemValue() : consolidationRequest.getCarrierDetails().getShippingLine());
+        }
+    }
+
+    private void mawbStockValidation(MawbStocksLink mawbStocksLink , ConsolidationDetails consolidationRequest){
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(consolidationRequest.getId(), mawbStocksLink.getEntityId())) {
+            throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
+        }  else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && !Objects.equals(mawbStocksLink.getEntityId(), consolidationRequest.getId())) {
+            var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
+            if (mawbStock.isEmpty()) {
+                throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
+            }
+            if (validatedBorrowedFrom(consolidationRequest, mawbStock.get())) {
+                throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None.");
+            }
+            if(StringUtility.isNotEmpty(mawbStock.get().getBorrowedFrom())) {
+                consolidationRequest.setBorrowed(true);
+                Parties borrowedParty = v1ServiceUtil.getOrganizationDataFromV1(mawbStock.get().getBorrowedFrom());
+                consolidationRequest.setBorrowedFrom(borrowedParty);
+            }
         }
     }
 
