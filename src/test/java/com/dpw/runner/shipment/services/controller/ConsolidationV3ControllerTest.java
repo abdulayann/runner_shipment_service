@@ -1,12 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -25,6 +23,8 @@ import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingSche
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -240,6 +241,16 @@ class ConsolidationV3ControllerTest {
     var response = controller.getDGShipment(id);
 
     assertNotNull(response);
+  }
+
+  @Test
+  void exportConsolidationList() throws IOException, IllegalAccessException, RunnerException {
+    // Mock
+    doNothing().when(consolidationV3Service).exportExcel(any(), any());
+    // Test
+    controller.exportConsolidationList(new MockHttpServletResponse(), ListCommonRequest.builder().build());
+    // Assert
+    assertTrue(true);
   }
 }
 

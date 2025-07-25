@@ -28,7 +28,9 @@ import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.ResponseEntity;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -80,4 +82,6 @@ public interface IConsolidationV3Service {
     Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
     ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request);
     CheckDGShipmentV3 getDGShipment(Long consoleId);
+
+    void exportExcel(HttpServletResponse response, ListCommonRequest listCommonRequest) throws IOException, IllegalAccessException, RunnerException;
 }

@@ -8,11 +8,13 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionConsolidation;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -42,6 +44,9 @@ import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Re
 import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingScheduleResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -53,6 +58,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -79,6 +85,7 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -90,7 +97,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
@@ -118,6 +127,12 @@ class ConsolidationV3ServiceTest extends CommonMocks {
 
   @Mock
   private JsonHelper jsonHelper;
+
+  @Mock
+  private CustomConsolidationDetailsRepositoryImpl customConsolidationDetailsRepository;
+
+  @Mock
+  private IApplicationConfigService applicationConfigService;
 
   @Mock
   private KafkaProducer producer;
@@ -5575,6 +5590,68 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationV3Service.setBookingNumberInShipment(console, null, shipment, true);
 
     assertThat(shipment.getBookingNumber()).isEqualTo("BK987");
+  }
+
+  @Test
+  void testAddRelationShipFields(){
+    List<ConsolidationLiteResponse> consolidationLiteResponseList = new ArrayList<>();
+    boolean isShipmentLevelContainer = true;
+
+    ConsolidationLiteResponse consolidationLiteResponse = ConsolidationLiteResponse.builder()
+            .id(1l)
+            .build();
+    consolidationLiteResponseList.add(consolidationLiteResponse);
+
+    ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+    consolidationDetails1.setId(1l);
+
+    IContainerLiteResponse iContainerLiteResponse = mock(IContainerLiteResponse.class);
+    when(iContainerLiteResponse.getConsolidationId()).thenReturn(1l);
+
+    IShipmentContainerLiteResponse iShipmentContainerLiteResponse = mock(IShipmentContainerLiteResponse.class);
+    when(iShipmentContainerLiteResponse.getConsolId()).thenReturn(1l);
+    when(iShipmentContainerLiteResponse.getShipId()).thenReturn(1l);
+
+    when(containerDao.findAllLiteContainer(anyList())).thenReturn(List.of(iContainerLiteResponse));
+    when(consolidationDetailsDao.findShipmentDetailsWithContainersByConsolidationIds(anyList()))
+            .thenReturn(List.of(iShipmentContainerLiteResponse));
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails1);
+    when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+
+    consolidationV3Service.addRelationShipFields(consolidationLiteResponseList, isShipmentLevelContainer);
+    verify(containerDao).findAllLiteContainer(anyList());
+  }
+
+  @Test
+  void testExportExcel_Success() throws IOException, IllegalAccessException, RunnerException {
+    Runnable mockRunnable = mock(Runnable.class);
+    when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+      Runnable argument = invocation.getArgument(0);
+      argument.run();
+      return mockRunnable;
+    });
+    ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1, "=");
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    ConsolidationDetails consolidationDetails1 = testConsol;
+    ConsolidationLiteResponse liteResponse = new ConsolidationLiteResponse();
+    UsersDto usersDto = UserContext.getUser();
+    usersDto.setEnableTimeZone(false);
+    UserContext.setUser(usersDto);
+    PermissionsContext.setPermissions(List.of("Operations:Consolidations:AIR:Create"));
+
+    ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails1, ConsolidationListResponse.class);
+
+    when(customConsolidationDetailsRepository.findAllLiteConsol(any(), any())).thenReturn(new PageImpl<>(List.of(liteResponse)));
+    mockShipmentSettings();
+    when(jsonHelper.convertValue(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
+    when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+    when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(new ConsolidationDetails());
+    when(containerDao.findAllLiteContainer(anyList())).thenReturn(new ArrayList<>());
+    when(consolidationDetailsDao.findIShipmentsByConsolidationIds(anyList())).thenReturn(new ArrayList<>());
+    when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
+    consolidationV3Service.exportExcel(response, listCommonRequest);
+
+    assertEquals(200,response.getStatus());
   }
 
 

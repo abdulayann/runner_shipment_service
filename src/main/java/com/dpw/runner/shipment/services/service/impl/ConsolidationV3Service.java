@@ -7,12 +7,13 @@ import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
@@ -38,6 +39,10 @@ import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationSailingSche
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentLiteResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -56,6 +61,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -69,6 +75,8 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -86,10 +94,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,6 +112,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
@@ -126,6 +139,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     private IPartiesDao partiesDao;
+    @Autowired
+    private CustomConsolidationDetailsRepositoryImpl customConsolidationDetailsRepository;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private ConsolidationValidationV3Util consolidationValidationV3Util;
@@ -3468,6 +3485,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         consolidationRes.setShipmentIds(shipmentIds);
     }
 
+    private void updateHouseBillsShippingIds(ConsolidationDetails consol, ConsolidationExcelExportResponse consolidationRes) {
+        var shipments = consol.getShipmentsList();
+        List<String> shipmentIds = null;
+        List<String> houseBills = null;
+        if (shipments != null)
+            shipmentIds = shipments.stream().map(ShipmentDetails::getShipmentId).toList();
+        if (shipmentIds != null)
+            houseBills = shipments.stream().map(ShipmentDetails::getHouseBill).filter(Objects::nonNull).toList();
+        consolidationRes.setHouseBills(houseBills);
+        consolidationRes.setShipmentIds(shipmentIds);
+    }
+
     private record ContainerCounts(Long container20Count, Long container40Count, Long container20GPCount, Long container20RECount, Long container40GPCount, Long container40RECount, Long containerCount) {
     }
 
@@ -4767,6 +4796,328 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .isAnyContainerDG(isAnyContainerDG)
                 .isDGShipmentPresent(isDgShipmentPresent)
                 .build();
+    }
+
+    @Override
+    public void exportExcel(HttpServletResponse response, ListCommonRequest request) throws IOException, IllegalAccessException, RunnerException {
+
+        applyPermissionFilter(request);
+        Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+        Page<ConsolidationLiteResponse> consolidationDetailsPageLite = customConsolidationDetailsRepository.findAllLiteConsol(tuple.getLeft(), tuple.getRight());
+
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        boolean isShipmentLevelContainer = shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer();
+        List<ConsolidationDetails> consolidationDetailsList = addRelationShipFields(consolidationDetailsPageLite.getContent(), isShipmentLevelContainer);
+
+        List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(consolidationDetailsList, isShipmentLevelContainer);
+
+        log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        Map<String, Integer> headerMap = new HashMap<>();
+        for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {
+            headerMap.put(ConsolidationConstants.CONSOLIDATION_HEADER.get(i), i);
+        }
+        try(Workbook workbook = new XSSFWorkbook()) {
+            Sheet sheet = workbook.createSheet("ConsolidationList");
+            makeHeadersInSheet(sheet, workbook);
+
+            for (int i = 0; i < consoleResponse.size(); i++) {
+                Row itemRow = sheet.createRow(i + 1);
+                ConsolidationListResponse consol = (ConsolidationListResponse) consoleResponse.get(i);
+                LocalTimeZoneHelper.transformTimeZone(consol);
+                itemRow.createCell(headerMap.get("Consolidation Type")).setCellValue(getValueOrDefault(consol.getConsolidationType(), ""));
+
+                itemRow.createCell(headerMap.get("Consolidation Number")).setCellValue(getValueOrDefault(consol.getConsolidationNumber(), ""));
+
+                itemRow.createCell(headerMap.get("Transport Mode")).setCellValue(getValueOrDefault(consol.getTransportMode(), ""));
+
+                itemRow.createCell(headerMap.get("Cargo Type")).setCellValue(getValueOrDefault(consol.getShipmentType(), ""));
+
+                addItemRowForCarrierDetailsDate(itemRow, headerMap, consol);
+
+                itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getIsDomestic(), ""));
+
+                itemRow.createCell(headerMap.get("Created By")).setCellValue(getValueOrDefault(consol.getCreatedBy(), ""));
+
+                itemRow.createCell(headerMap.get("Voyage/Flight No")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getVoyage() != null ? consol.getCarrierDetails().getVoyage() : "");
+
+                itemRow.createCell(headerMap.get("Payment Terms")).setCellValue(getValueOrDefault(consol.getPayment(), ""));
+
+                itemRow.createCell(headerMap.get("Carrier")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getShippingLine() != null ? consol.getCarrierDetails().getShippingLine() : "");
+
+                itemRow.createCell(headerMap.get("Domestic")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("HBL / HAWB")).setCellValue(consol.getHouseBills() != null && !consol.getHouseBills().isEmpty() ? consol.getHouseBills().get(0) : "");
+
+                itemRow.createCell(headerMap.get("Estimated Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getEstimatedTerminalCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("Terminal Cutoff")).setCellValue(getStringValueOrDefault(consol.getTerminalCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getBookingCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("Shipping Instruction Cutoff")).setCellValue(getStringValueOrDefault(consol.getShipInstructionCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("Hazardous Booking Cutoff")).setCellValue(getStringValueOrDefault(consol.getHazardousBookingCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("VGM Cutoff")).setCellValue(getStringValueOrDefault(consol.getVerifiedGrossMassCutoff(), ""));
+
+                itemRow.createCell(headerMap.get("Reefer Cutoff")).setCellValue(getStringValueOrDefault(consol.getReeferCutoff(), ""));
+
+
+                itemRow.createCell(headerMap.get("Booking Type")).setCellValue(getValueOrDefault(consol.getBookingType(), ""));
+
+                itemRow.createCell(headerMap.get("Reference Number")).setCellValue(getValueOrDefault(consol.getReferenceNumber(), ""));
+
+                itemRow.createCell(headerMap.get("Carrier Booking Status")).setCellValue(getValueOrDefault(consol.getBookingStatus(), ""));
+
+                itemRow.createCell(headerMap.get("Carrier Booking Number")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
+
+                itemRow.createCell(headerMap.get("Container Count")).setCellValue(getStringValueOrDefault(consol.getContainerCount(), ""));
+
+                addPolPodItemRow(itemRow, headerMap, consol);
+
+                itemRow.createCell(headerMap.get("MBL / MAWB")).setCellValue(getValueOrDefault(consol.getBookingNumber(), ""));
+
+                addItemRowForCarrierDetailsUnLocation(itemRow, headerMap, consol);
+            }
+
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
+            String timestamp = currentTime.format(formatter);
+            String filenameWithTimestamp = "Consolidations_" + timestamp + Constants.XLSX;
+
+            Integer exportExcelLimit = getExportExcelLimit();
+            if (consoleResponse.size() > exportExcelLimit) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            }else {
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                        "attachment; filename=" + filenameWithTimestamp);
+
+                try (OutputStream outputStream = response.getOutputStream()) {
+                    workbook.write(outputStream);
+                }
+            }
+        }
+
+    }
+
+    private Integer getExportExcelLimit(){
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        return StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT : Integer.parseInt(configuredLimitValue);
+    }
+
+    private void addItemRowForCarrierDetailsUnLocation(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {
+        itemRow.createCell(headerMap.get("POL Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("originPort_code")) : "");
+        itemRow.createCell(headerMap.get("POD Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destinationPort_code")) : "");
+        itemRow.createCell(headerMap.get("Origin Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin_code")) : "");
+        itemRow.createCell(headerMap.get("Destination Code")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination_code")) : "");
+        itemRow.createCell(headerMap.get("Origin")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("origin_name")) : "");
+        itemRow.createCell(headerMap.get("Destination")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? String.valueOf(consol.getCarrierDetails().getUnlocationData().get("destination_name")) : "");
+    }
+
+    private void addPolPodItemRow(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {
+        itemRow.createCell(headerMap.get("POL")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("originPort_name") : "");
+        itemRow.createCell(headerMap.get("POD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getUnlocationData() != null ? consol.getCarrierDetails().getUnlocationData().get("destinationPort_name") : "");
+    }
+
+    private void addItemRowForCarrierDetailsDate(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {
+        itemRow.createCell(headerMap.get("ETA")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getEta() != null ? consol.getCarrierDetails().getEta().toString() : "");
+        itemRow.createCell(headerMap.get("ATA")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getAta() != null ? consol.getCarrierDetails().getAta().toString() : "");
+        itemRow.createCell(headerMap.get("ETD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getEtd() != null ? consol.getCarrierDetails().getEtd().toString() : "");
+        itemRow.createCell(headerMap.get("ATD")).setCellValue(consol.getCarrierDetails() != null && consol.getCarrierDetails().getAtd() != null ? consol.getCarrierDetails().getAtd().toString() : "");
+    }
+
+    public static String getStringValueOrDefault(Object value, String defaultValue) {
+        return value != null ? value.toString() : defaultValue;
+    }
+
+    private void makeHeadersInSheet(Sheet sheet, Workbook workbook) {
+        Row headerRow = sheet.createRow(0);
+        List<String> consolidationHeader = ConsolidationConstants.CONSOLIDATION_HEADER;
+
+        CellStyle boldStyle = workbook.createCellStyle();
+        Font boldFont = workbook.createFont();
+        boldFont.setBold(true);
+        boldStyle.setFont(boldFont);
+
+        for (int i = 0; i < consolidationHeader.size(); i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(consolidationHeader.get(i));
+            cell.setCellStyle(boldStyle);
+        }
+    }
+
+    private void applyPermissionFilter(ListCommonRequest listCommonRequest) throws RunnerException {
+        List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
+        if (permissionList == null || permissionList.isEmpty())
+            throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
+        permissionList.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
+        List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
+
+        FilterCriteria criteria1 = null;
+        if (listCommonRequest.getFilterCriteria() != null && !listCommonRequest.getFilterCriteria().isEmpty()) {
+            criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
+        }
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if (criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && !criteria2.getInnerFilter().isEmpty()))) {
+            if (criteria1 != null && !criteria1.getInnerFilter().isEmpty()) {
+                criteria2.setLogicOperator("AND");
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+            } else
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+        }
+    }
+
+    public static <T> T getValueOrDefault(T value, T defaultValue) {
+        return value != null ? value : defaultValue;
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ConsolidationDetails> lst, boolean isShipmentLevelContainer) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
+        List<ConsolidationExcelExportResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationExportListResponses(lst);
+        Map<Long, ConsolidationExcelExportResponse> responseMap = listResponses.stream()
+                .collect(Collectors.toMap(ConsolidationExcelExportResponse::getId, response -> response));
+
+        lst.forEach(consolidationDetails -> {
+            ConsolidationExcelExportResponse res = responseMap.get(consolidationDetails.getId());
+            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
+                res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
+            updateHouseBillsShippingIds(consolidationDetails, res);
+            containerCountUpdate(consolidationDetails, res, isShipmentLevelContainer);
+
+            consolidationListResponses.add(jsonHelper.convertValue(res, ConsolidationListResponse.class));
+        });
+        consolidationListResponses.forEach(responseList::add);
+        this.getMasterDataForList(lst, responseList, true, false);
+        return responseList;
+    }
+
+    public List<ConsolidationDetails> addRelationShipFields(List<ConsolidationLiteResponse> consolidationLiteResponseList, boolean isShipmentLevelContainer){
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+
+        List<Long> consolidationIds = consolidationLiteResponseList.stream()
+                .map(ConsolidationLiteResponse::getId)
+                .toList();
+
+        List<IContainerLiteResponse> containerLiteResponseList = containerDao.findAllLiteContainer(consolidationIds);
+
+        Map<Long, Set<ShipmentDetails>> consolidationShipmentMap;
+
+        if(isShipmentLevelContainer){
+            List<IShipmentContainerLiteResponse> shipmentContainerLiteResponses = consolidationDetailsDao.findShipmentDetailsWithContainersByConsolidationIds(consolidationIds);
+            consolidationShipmentMap = populateConsolidationShipmentMap(shipmentContainerLiteResponses);
+        }else {
+            List<IShipmentLiteResponse> shipmentLiteResponseList = consolidationDetailsDao.findIShipmentsByConsolidationIds(
+                    consolidationIds);
+            consolidationShipmentMap = shipmentLiteResponseList.stream()
+                    .collect(Collectors.groupingBy(IShipmentLiteResponse::getConsolId,
+                            Collectors.mapping(this::mapToShipment, Collectors.toSet())));
+        }
+
+        Map<Long, List<Containers>> consolidationContainerMap = containerLiteResponseList.stream()
+                .collect(Collectors.groupingBy(IContainerLiteResponse::getConsolidationId,
+                        Collectors.mapping(this::mapToContainer, Collectors.toList())));
+
+        for(ConsolidationLiteResponse consolidationLiteResponse : consolidationLiteResponseList){
+            ConsolidationDetails consolidationDetails = jsonHelper.convertValue(consolidationLiteResponse, ConsolidationDetails.class);
+            consolidationDetails.setCarrierDetails(mapCustomCarrierToCarrier(consolidationLiteResponse));
+            consolidationDetails.setContainersList(consolidationContainerMap.get(consolidationLiteResponse.getId()));
+            consolidationDetails.setShipmentsList(consolidationShipmentMap.get(consolidationDetails.getId()));
+            consolidationDetailsList.add(consolidationDetails);
+        }
+
+        return consolidationDetailsList;
+    }
+
+    private void containerCountUpdate(ConsolidationDetails consolidationDetails, ConsolidationExcelExportResponse response, boolean isShipmentLevelContainer) {
+        Set<String> containerNumber = new HashSet<>();
+        List<Containers> containersList = getContainersList(consolidationDetails, isShipmentLevelContainer);
+        ContainerCounts containerCounts = getContainerCounts(containersList, containerNumber);
+        if(containerCounts!=null) {
+            response.setContainer20Count(containerCounts.container20Count());
+            response.setContainer40Count(containerCounts.container40Count());
+            response.setContainer20GPCount(containerCounts.container20GPCount());
+            response.setContainer20RECount(containerCounts.container20RECount());
+            response.setContainer40GPCount(containerCounts.container40GPCount());
+            response.setContainer40RECount(containerCounts.container40RECount());
+            response.setContainerCount(containerCounts.containerCount());
+            response.setContainerNumbers(containerNumber);
+        }
+    }
+
+    private ShipmentDetails mapToShipment(IShipmentLiteResponse shipmentLiteResponse){
+        return ShipmentDetails.builder()
+                .houseBill(shipmentLiteResponse.getHouseBill())
+                .shipmentId(shipmentLiteResponse.getShipmentId())
+                .build();
+    }
+
+    private Containers mapToContainer(IContainerLiteResponse containerLiteResponse){
+        Containers containers = new Containers();
+        containers.setConsolidationId(containerLiteResponse.getConsolidationId());
+        containers.setContainerCode(containerLiteResponse.getContainerCode());
+        return containers;
+    }
+
+    private CarrierDetails mapCustomCarrierToCarrier(ConsolidationLiteResponse consolidationLiteResponse) {
+        CarrierDetails carrierDetails = jsonHelper.convertValue(consolidationLiteResponse, CarrierDetails.class);
+        carrierDetails.setId(consolidationLiteResponse.getCarrierId());
+        return carrierDetails;
+    }
+
+    private Map<Long, Set<ShipmentDetails>> populateConsolidationShipmentMap(List<IShipmentContainerLiteResponse> responses) {
+        // Initialize the map
+        Map<Long, Set<ShipmentDetails>> consolidationShipmentMap = new HashMap<>();
+
+        // Group responses by consolidation ID
+        Map<Long, List<IShipmentContainerLiteResponse>> groupedByConsolId = responses.stream()
+                .filter(response -> response.getConsolId() != null) // Filter out null ConsolId
+                .collect(Collectors.groupingBy(IShipmentContainerLiteResponse::getConsolId));
+
+        // Process each group to build ShipmentDetails and populate the map
+        for (Map.Entry<Long, List<IShipmentContainerLiteResponse>> entry : groupedByConsolId.entrySet()) {
+            Long consolId = entry.getKey();
+            List<IShipmentContainerLiteResponse> groupedResponses = entry.getValue();
+
+            // Map grouped responses to ShipmentDetails
+            Set<ShipmentDetails> shipmentDetailsList = groupedResponses.stream()
+                    .filter(response -> response.getShipId() != null) // Filter out null Shipment
+                    .collect(Collectors.groupingBy(IShipmentContainerLiteResponse::getShipId)) // Group by Shipment ID
+                    .entrySet()
+                    .stream()
+                    .map(shipmentEntry -> {
+                        Long shipmentId = shipmentEntry.getKey(); // id of shipment
+                        List<IShipmentContainerLiteResponse> shipmentResponses = shipmentEntry.getValue();
+
+                        // Build Container list
+                        Set<Containers> containers = shipmentResponses.stream()
+                                .map(response -> {
+                                    Containers container = new Containers();
+                                    container.setContainerCode(response.getContainerCode());
+                                    container.setContainerCount(response.getContainerCount());
+                                    container.setContainerNumber(response.getContainerNumber());
+                                    return container;
+                                })
+                                .collect(Collectors.toSet());
+
+                        // Create ShipmentDetails
+                        ShipmentDetails details = new ShipmentDetails();
+                        details.setShipmentId(shipmentResponses.get(0).getShipmentId());
+                        details.setHouseBill(shipmentResponses.get(0).getHouseBill()); // Assuming houseBill is the same for all entries of a shipment
+                        details.setId(shipmentId); // Assuming shipId is the same for all entries of a shipment
+                        details.setContainersList(containers);
+
+                        return details;
+                    })
+                    .collect(Collectors.toSet());
+
+            // Add to the consolidation map
+            consolidationShipmentMap.put(consolId, shipmentDetailsList);
+        }
+
+        return consolidationShipmentMap;
     }
 
     private boolean hasHazardousContainer(ConsolidationDetails console) {

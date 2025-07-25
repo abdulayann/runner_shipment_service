@@ -36,7 +36,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+import java.io.IOException;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
@@ -216,4 +218,12 @@ public class ConsolidationV3Controller {
         return ResponseHelper.buildSuccessResponse(consolidationV3Service.getDGShipment(id));
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.EXPORT_SUCCESSFUL),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.EXPORT_LIST)
+    public void exportConsolidationList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException, IOException, IllegalAccessException {
+         consolidationV3Service.exportExcel(response, listCommonRequest);
+    }
 }
