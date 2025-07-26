@@ -2336,6 +2336,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setConsolRef(console.getConsolidationNumber());
         shipmentDetails.setJobType(console.getConsolidationType());
         shipmentDetails.setBookingAgent(console.getBookingAgent());
+        serviceTypeAutoPopulation(console, shipmentDetails);
 
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
@@ -2348,7 +2349,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             //Editable Fields
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
+
         }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
             shipmentDetails.setShipmentType(console.getContainerCategory());
@@ -2357,7 +2358,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
-            serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
             setIncoTerms(console, oldEntity, shipmentDetails, fromAttachShipment);
@@ -4112,22 +4112,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
     }
 
-    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails) {
-        if (oldEntity == null) {
-            String deliveryMode = consolidationDetails.getDeliveryMode();
-            String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
-            if (isServiceTypeValid(serviceType)) {
-                //autoFlow
-                shipmentDetails.setServiceType(serviceType);
-            }
-        } else {
+    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ShipmentDetails shipmentDetails) {
             String deliveryMode = consolidationDetails.getDeliveryMode();
             String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
 
-            if (shipmentDetails.getServiceType() == null || !Objects.equals(serviceType, shipmentDetails.getServiceType()) || isServiceTypeValid(serviceType)) {
+            if (!Objects.equals(serviceType, shipmentDetails.getServiceType()) && isServiceTypeValid(serviceType)) {
                 //Validate new deliveryCode
                     shipmentDetails.setServiceType(serviceType);
-            }
         }
     }
     protected String getIdentifierFromHBLDeliveryModeMasterData(String deliveryMode) {
