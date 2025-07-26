@@ -2173,6 +2173,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 !Objects.equals(console.getCarrierBookingRef(), oldEntity.getCarrierBookingRef()) ||
                 !Objects.equals(console.getBookingNumber(), oldEntity.getBookingNumber()) ||
                 !Objects.equals(console.getConsolidationType(), oldEntity.getConsolidationType()) ||
+                !Objects.equals(console.getIncoterms(), oldEntity.getIncoterms()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                         (!Objects.equals(console.getCarrierDetails().getVoyage(), oldEntity.getCarrierDetails().getVoyage()) ||
                                 !Objects.equals(console.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()) ||
@@ -2273,11 +2274,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     protected void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
-        if(fromAttachShipment != null && !fromAttachShipment){
-            String oldBookingNumber = Objects.isNull(oldEntity) ? null : oldEntity.getBookingNumber();
-            String newBookingNumber = shipmentDetails.getBookingNumber();
+        if(Boolean.FALSE.equals(fromAttachShipment)){
+            String oldBookingNumber = oldEntity.getBookingNumber();
+            String newBookingNumber = console.getBookingNumber();
 
-            if(Objects.equals(oldBookingNumber, newBookingNumber)){
+            if(isFieldChanged(oldBookingNumber, newBookingNumber)){
                 shipmentDetails.setBookingNumber(console.getBookingNumber());
             }
         }else{
@@ -2341,6 +2342,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             shipmentDetails.setMasterBill(console.getBol());
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
 
             //Editable Fields
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
@@ -2404,11 +2406,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
-        if(fromAttachShipment != null && !fromAttachShipment){
-            String oldIncoTerms = Objects.isNull(oldEntity) ? null : oldEntity.getIncoterms(); // old consolidation value
-            String newIncoTerms = shipmentDetails.getIncoterms(); //shipment current
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+            String oldIncoTerms = oldEntity.getIncoterms();
+            String newIncoTerms = console.getIncoterms();
 
-            if(Objects.equals(oldIncoTerms, newIncoTerms)){
+            if(isFieldChanged(oldIncoTerms, newIncoTerms)){
                 shipmentDetails.setIncoterms(console.getIncoterms());
             }
         }else{
@@ -2418,11 +2420,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
-        if(fromAttachShipment != null && !fromAttachShipment){
-            String oldPartner = Objects.isNull(oldEntity) ? null : oldEntity.getPartner();
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+            String oldPartner = oldEntity.getPartner();
             String newPartner = consolidationDetails.getPartner();
 
-            if(newPartner != null && !newPartner.equals(oldPartner)){
+            if(isFieldChanged(oldPartner, newPartner)){
                 shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
                 shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
@@ -2432,17 +2434,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void setColoadBookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
-        if(fromAttachShipment != null && !fromAttachShipment) {
-                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+                if(isFieldChanged(oldEntity.getCoLoadCarrierName(), consolidationDetails.getCoLoadCarrierName())){
                     shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 }
-                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadMBL(), shipmentDetails.getCoLoadBlNumber())){
+                if(isFieldChanged(oldEntity.getCoLoadMBL(), consolidationDetails.getCoLoadMBL())){
                     shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
                 }
-                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadBookingReference(), shipmentDetails.getCoLoadBkgNumber())){
+                if(isFieldChanged(oldEntity.getCoLoadBookingReference(), consolidationDetails.getCoLoadBookingReference())){
                     shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
                 }
-        }else{
+        } else{
             shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
             shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
             shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
@@ -2451,8 +2453,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
 
     private boolean isFieldChanged(String oldValue, String newValue) {
-        return oldValue != null ? !oldValue.equals(newValue) : newValue != null;
+        return !Objects.equals(oldValue, newValue);
     }
+
     /**
      * Updates the export and import broker information in the shipment details based on the consolidation's sending and receiving agents, but only if the consolidation is **not**
      * marked as an inter-branch console.
