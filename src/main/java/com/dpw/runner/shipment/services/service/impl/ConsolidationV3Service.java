@@ -4121,18 +4121,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 shipmentDetails.setServiceType(serviceType);
             }
         } else {
-            String oldDeliveryMode = oldEntity.getDeliveryMode();
-            String oldServiceType = getIdentifierFromHBLDeliveryModeMasterData(oldDeliveryMode);
+            String deliveryMode = consolidationDetails.getDeliveryMode();
+            String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
 
-            //Different serviceType no need to flow
-            if (shipmentDetails.getServiceType() == null || !Objects.equals(oldServiceType, shipmentDetails.getServiceType())) {
+            if (shipmentDetails.getServiceType() == null || !Objects.equals(serviceType, shipmentDetails.getServiceType()) || isServiceTypeValid(serviceType)) {
                 //Validate new deliveryCode
-                String deliveryMode = consolidationDetails.getDeliveryMode();
-                String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
-                if (isServiceTypeValid(serviceType)) {
-                    //autoFlow
                     shipmentDetails.setServiceType(serviceType);
-                }
             }
         }
     }
