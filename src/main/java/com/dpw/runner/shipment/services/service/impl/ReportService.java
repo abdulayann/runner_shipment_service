@@ -447,17 +447,21 @@ public class ReportService implements IReportService {
 
     @NotNull
     private byte[] printTransportInstructionLegsData(List<TiLegs> tiLegsList, ReportRequest reportRequest, Map<String, Object> dictionary, DocPages pages) throws DocumentException, IOException {
+        dictionary.put(ReportConstants.HAS_LEGS, false);
+        dictionary.put(ReportConstants.HAS_CONTAINERS, false);
+        dictionary.put(ReportConstants.HAS_PACKAGE_DETAILS, false);
+        dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
+        dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
             for (TiLegs tilegs : tiLegsList) {
-                Map<String, Object> legsDictionary = new HashMap<>();
+                Map<String, Object> legsDictionary = new HashMap<>(dictionary);
                 transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsTruckDriverDataIntoDictionary(tilegs, legsDictionary);
-                legsDictionary.putAll(dictionary);
 
                 futures.add(executorService.submit(() -> {
                     byte[] mainDocPage = getFromDocumentService(legsDictionary, pages.getMainPageId());

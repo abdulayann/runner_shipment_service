@@ -736,6 +736,7 @@ class ShipmentDaoTest extends CommonMocks {
                         .build())
                 .jobType("DRT")
                 .direction("EXP")
+                .partner("CLD")
                 .additionalDetails(additionalDetails)
                 .build();
 

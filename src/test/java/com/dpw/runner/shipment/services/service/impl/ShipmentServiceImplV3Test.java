@@ -1452,7 +1452,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -1513,7 +1512,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockResponse.setData(getMockListContractResponse());
         when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -1565,7 +1563,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockResponse.setData(getMockListContractResponse());
         when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -1625,7 +1622,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockResponse.setData(getMockListContractResponse());
         when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -1689,7 +1685,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         mockResponse.setData(getMockListContractResponse());
         when(npmServiceAdapter.fetchContract(any())).thenReturn(ResponseEntity.ok(mockResponse));
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -1893,7 +1888,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -1935,7 +1929,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
-        doThrow(ValidationException.class).when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
 
         assertThrows(ValidationException.class, () -> shipmentServiceImplV3.create(commonRequestModel));
     }
@@ -1965,7 +1958,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -2017,7 +2009,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -2068,7 +2059,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(mockShipment));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipmentSettings();
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         doNothing().when(shipmentValidationV3Util).processDGValidations(any(), any(), any());
         mockTenantSettings();
@@ -4645,7 +4635,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         when(hblDao.findByShipmentId(100L)).thenReturn(hbls);
 
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         mockTenantSettings();
 
@@ -4682,7 +4671,6 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
 
-        doNothing().when(shipmentValidationV3Util).validateStaleShipmentUpdateError(any(), anyBoolean());
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
 
         ValidationException exception = assertThrows(
@@ -5453,7 +5441,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5499,7 +5487,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5545,7 +5533,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5587,7 +5575,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);
@@ -5631,7 +5619,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
                 shipmentDetailsPage.getTotalElements()
         );
         // Execute the method under test
-        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> result = shipmentServiceImplV3.attachListShipment(commonRequestModel, true);
 
         // Assert
         assertEquals(expectedResponse, result);

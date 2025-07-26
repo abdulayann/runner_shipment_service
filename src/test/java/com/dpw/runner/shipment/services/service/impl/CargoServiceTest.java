@@ -265,8 +265,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -314,8 +314,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(2.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -356,8 +356,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
     }
 
@@ -401,8 +401,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -449,8 +449,8 @@ class CargoServiceTest {
 
         assertEquals(2, response.getContainers());
         assertEquals(BigDecimal.valueOf(4.0), response.getTeuCount());
-        assertEquals(BigDecimal.valueOf(100), response.getWeight());
-        assertEquals(BigDecimal.valueOf(2), response.getVolume());
+        assertEquals(BigDecimal.valueOf(100.0), response.getWeight());
+        assertEquals(BigDecimal.valueOf(2.0), response.getVolume());
         assertEquals(10, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(100.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(150), response.getVolumetricWeight());
@@ -501,7 +501,7 @@ class CargoServiceTest {
         assertEquals(BigDecimal.valueOf(2.0), response.getTeuCount());
         assertEquals(BigDecimal.ZERO, response.getWeight());
         assertEquals(BigDecimal.valueOf(10.0), response.getChargable());
-        assertEquals(BigDecimal.valueOf(3), response.getVolume());
+        assertEquals(BigDecimal.valueOf(3.0), response.getVolume());
         assertEquals(5, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(480), response.getVolumetricWeight());
         assertEquals("KG", response.getVolumetricWeightUnit());
