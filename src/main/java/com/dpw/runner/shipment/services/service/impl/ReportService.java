@@ -2595,7 +2595,7 @@ public class ReportService implements IReportService {
                 return this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
-                throw new ValidationException(e.getMessage());
+                throw new ValidationException("Failed to generate the document. Kindly retry.");
             }
         } else {
             log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
