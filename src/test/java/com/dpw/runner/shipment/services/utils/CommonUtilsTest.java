@@ -4892,4 +4892,56 @@ class CommonUtilsTest {
         response.setIsQuoted(isQuoted);
         return response;
     }
+
+    @Test
+    void testIsRoadFCLorFTL_FCL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_FTL() {
+        assertTrue(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "FTL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidTransportMode() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsRoadFCLorFTL_InvalidCargoType() {
+        assertFalse(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_Valid() {
+        assertTrue(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "FCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidCargoType() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, "LCL"));
+    }
+
+    @Test
+    void testIsSeaFCL_InvalidTransportMode() {
+        assertFalse(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_AIR, "FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FCL() {
+        assertTrue(commonUtils.isFCLorFTL("FCL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_FTL() {
+        assertTrue(commonUtils.isFCLorFTL("FTL"));
+    }
+
+    @Test
+    void testIsFCLorFTL_Invalid() {
+        assertFalse(commonUtils.isFCLorFTL("LCL"));
+        assertFalse(commonUtils.isFCLorFTL(null));
+        assertFalse(commonUtils.isFCLorFTL(""));
+    }
 }

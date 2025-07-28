@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -2824,6 +2825,18 @@ public class CommonUtils {
 
     public boolean isLCLorLTL(String cargoType) {
         return (Constants.SHIPMENT_TYPE_LCL.equals(cargoType) || CARGO_TYPE_LTL.equals(cargoType));
+    }
+
+    public boolean isRoadFCLorFTL(String transportMode, String cargoType) {
+        return Constants.TRANSPORT_MODE_ROA.equals(transportMode) && isFCLorFTL(cargoType);
+    }
+
+    public boolean isSeaFCL(String transportMode, String cargoType) {
+        return Constants.TRANSPORT_MODE_SEA.equals(transportMode) && CARGO_TYPE_FCL.equals(cargoType);
+    }
+
+    public boolean isFCLorFTL(String cargoType) {
+        return (CARGO_TYPE_FCL.equals(cargoType) || CARGO_TYPE_FTL.equals(cargoType));
     }
 
     public String getPacksUnit(String curUnit, String entityPacksUnit) {

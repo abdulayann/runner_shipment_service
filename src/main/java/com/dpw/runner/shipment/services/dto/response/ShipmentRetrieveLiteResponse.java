@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
@@ -256,4 +257,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private Integer slac;
     private List<RoutingsLiteResponse> routingsLiteResponses;
+    private Boolean isVolumeEditable = Boolean.FALSE;
+    private Boolean isCargoSummaryEditable = Boolean.FALSE;
+    private ShipmentSummaryWarningsResponse summaryWarningsResponse;
 }
