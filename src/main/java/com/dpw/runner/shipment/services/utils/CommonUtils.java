@@ -2853,7 +2853,7 @@ public class CommonUtils {
         return getShipmentSettingFromContext().getVolumeChargeableUnit();
     }
     public static String setTransportInfoStatusMessage(CarrierDetails carrierDetails, TransportInfoStatus transportInfoStatus, List<Routings> mainCarriageRoutings) {
-        if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+        if (TransportInfoStatus.IH.equals(transportInfoStatus) && !CommonUtils.listIsNullOrEmpty(mainCarriageRoutings)) {
             Routings firstLeg = mainCarriageRoutings.get(0);
             Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
             String polMessage = Constants.EMPTY_STRING;
