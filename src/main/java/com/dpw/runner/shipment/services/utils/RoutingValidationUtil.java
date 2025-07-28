@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -32,6 +33,10 @@ public class RoutingValidationUtil {
     private IConsolidationService consolidationService;
     @Autowired
     private ICustomerBookingService customerBookingService;
+
+    @Autowired
+    private IRoutingsDao routingsV3Dao;
+
 
     public void validateUpdateRequest(RoutingsRequest request) {
         if (request == null) {
@@ -116,6 +121,18 @@ public class RoutingValidationUtil {
         Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(routingsRequest.getShipmentId());
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
+        }
+        checkIfMainCarriageAllowed(routingsRequest, shipmentDetails.get());
+    }
+
+    private void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest, ShipmentDetails shipmentDetails) {
+        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE) {
+            if (shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
+                int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
+                if (inheritCarriage == 0) {
+                    throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
+                }
+            }
         }
     }
 
