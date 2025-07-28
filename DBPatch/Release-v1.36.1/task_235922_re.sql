@@ -1,0 +1,153 @@
+
+
+ update parties set
+  org_code = 'FRC00032181',
+  address_code = 'FRO00033249',
+  org_id = '148697',
+  address_id = '241845',
+  updated_at = NOW(),
+  org_data =
+  '{
+                   "Email": "lena.pawel@dosieren.net",
+                   "ReceivableTermsDate": 2,
+                   "TaxVendor": false,
+                   "Guid": "7750332c-ea1e-45f7-928c-54da1c89a890",
+                   "ForworderAgent": false,
+                   "RailCarrier": false,
+                   "CurrencyCode": "EUR",
+                   "UpdateDate": "2025-05-17T07:49:14.000",
+                   "UpdateUserId": 1712,
+                   "Carrier": false,
+                   "WareHouse": false,
+                   "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                   "Consigner": true,
+                   "EmailInvoice": false,
+                   "ZipPostCode": "2285",
+                   "City": "Breitstetten",
+                   "SeaCarrier": false,
+                   "IsSuspended": false,
+                   "AirCarrier": false,
+                   "State": "Lower Austria",
+                   "Country": "AUT",
+                   "FusionCreditlimitOverrideApproved": false,
+                   "Id": 148697,
+                   "IsCreditEnabled": true,
+                   "IsWalkInCustomer": false,
+                   "ImportExportClearanceLock": false,
+                   "IsActive": 1,
+                   "InsertDate": "2025-04-14T20:09:13.000",
+                   "CustomerIdentifier": "1847866_001",
+                   "Payables": false,
+                   "VatRegNumber": "ATU69166127",
+                   "Source": "CRP",
+                   "IsV2PaymentTerm": false,
+                   "Consignee": true,
+                   "PANNumber": "FN426629x",
+                   "Phone": "22168478",
+                   "RoadCarrier": false,
+                   "IsClientEInvoiceEnabled": false,
+                   "OrganizationCode": "FRC00032181",
+                   "value": "FRC00032181",
+                   "Receivables": true,
+                   "Broker": false,
+                   "TransportClient": false,
+                   "CompanyId": 372,
+                   "label": "GONANO Dosiertechnik GmbH",
+                   "Address1": "Franzensdorfer Strasse 40\t\t\t\t\t\t\t\t\t",
+                   "InsertUserId": 1712,
+                   "ActiveClient": true,
+                   "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+                   "IsGSA": false,
+                   "Services": false,
+                   "TenantId": 442,
+                   "ExtraParam": "",
+                   "FullName": "GONANO Dosiertechnik GmbH",
+                   "IsParnter": false,
+                   "EnableBulkInvoice": false
+               }',
+  address_data =
+  '{
+                   "AddressShortCode": "FRO00033249",
+                   "Email": "lena.pawel@dosieren.net",
+                   "OrgFullName": "GONANO Dosiertechnik GmbH",
+                   "OrgSource": "CRP",
+                   "ZipPostCode": "2285",
+                   "OrgReceivables": true,
+                   "City": "Breitstetten",
+                   "label": "FRO00033249",
+                   "Address1": "Franzensdorfer Strasse 40\t\t\t\t\t\t\t\t\t",
+                   "OrgGuid": "7750332c-ea1e-45f7-928c-54da1c89a890",
+                   "CompanyName": "GONANO Dosiertechnik GmbH",
+                   "TaxRegNumber": "ATU69166127",
+                   "State": "Lower Austria",
+                   "OrgOrganizationCode": "FRC00032181",
+                   "Country": "AUT",
+                   "Id": 241845,
+                   "OrgActiveClient": true,
+                   "AddressType": 2,
+                   "value": "FRO00033249",
+                   "OrgPayables": false
+    }'
+  where id IN ('1073557');
+
+
+ update parties set
+  org_code = 'FRC00037428',
+  address_code = 'FRO00039059',
+  org_id = '154571',
+  address_id = '257673',
+  updated_at = NOW(),
+  org_data =
+  '{
+       "Id": 154571,
+       "City": "NINGO",
+       "Guid": "e0f3f7a7-2344-48d9-859c-a86d5496ff66",
+       "Email": "",
+       "State": "Zhejiang",
+       "label": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+       "value": "FRC00037428",
+       "Country": "CHN",
+       "Address1": "SANXING VILLAGE, GULIN TOWN, YINZHOU DISTRICT",
+       "Address2": "",
+       "FullName": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+       "Payables": false,
+       "CompanyId": 372,
+       "Receivables": false,
+       "ZipPostCode": "315010",
+       "ForworderAgent": false,
+       "OrganizationCode": "FRC00037428",
+       "InsertUserIdUsername": "p100serviceaccountegypt@dpworld.com",
+       "UpdateUserIdUsername": "p100serviceaccountegypt@dpworld.com"
+   }',
+  address_data =
+  '{
+       "Id": 257673,
+       "City": "NINGO",
+       "Guid": "0048087a-da65-4af5-98ce-83d08a2cd8aa",
+       "Email": "",
+       "State": "Zhejiang",
+       "Country": "CHN",
+       "OrgGuid": "e0f3f7a7-2344-48d9-859c-a86d5496ff66",
+       "Address1": "SANXING VILLAGE, GULIN TOWN, YINZHOU DISTRICT",
+       "Address2": "",
+       "OrgSource": "CRP",
+       "AddressType": 2,
+       "CompanyName": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+       "OrgFullName": "FLUMATIC LIQUID CONTROL EQUIPMENT CO.,LTD",
+       "OrgPayables": false,
+       "ZipPostCode": "315010",
+       "KnownConsignor": false,
+       "OrgReceivables": false,
+       "RegulatedAgent": false,
+       "OrgActiveClient": true,
+       "AddressShortCode": "FRO00039059",
+       "OrgOrganizationCode": "FRC00037428"
+   }'
+  where id IN ('1073559');
+
+
+  update shipment_details set client_dps_address_id = 84580, updated_at = NOW()
+  where id IN (70233);
+
+  update shipment_details set consignor_dps_address_id = 93789, updated_at = NOW()
+  where id IN (70233);
