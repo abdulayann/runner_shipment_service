@@ -1278,8 +1278,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @SuppressWarnings("java:S125")
     protected void beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean isImportFile, ConsoleShipmentData consoleShipmentData) throws RunnerException, JsonMappingException {
-        shipmentValidationV3Util.validateStaleShipmentUpdateError(shipmentDetails, isCreate);
-
         /* Future to populate unloc code in shipment child entities*/
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
@@ -4082,7 +4080,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel, boolean getMasterData) {
         AttachListShipmentRequest request = (AttachListShipmentRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
         if (!consolidationDetails.isPresent()) {
@@ -4098,7 +4096,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             commonUtils.setInterBranchContextForHub();
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoListForAttachListShipment(shipmentDetailsPage.getContent(), true, request),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsPage.getContent(), getMasterData, request),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements());
     }
