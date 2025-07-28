@@ -2,9 +2,13 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -43,9 +47,11 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
@@ -339,7 +345,7 @@ class SeawayBillReportTest extends CommonMocks {
         V1TenantSettingsResponse tenantSettings = TenantSettingsDetailsContext.getCurrentTenantSettings();
         tenantSettings.setIsModuleValidationEnabled(Boolean.FALSE);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
-        assertDoesNotThrow(() -> seawayBillReport.validatePrinting(123L));
+        assertThrows(ReportException.class, () -> seawayBillReport.validatePrinting(123L));
     }
 
     @Test
@@ -389,6 +395,7 @@ class SeawayBillReportTest extends CommonMocks {
     @Test
     void testValidatePrinting_ShipmentValidationWithSeaTransportAndNoMissingFields() {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
@@ -404,6 +411,7 @@ class SeawayBillReportTest extends CommonMocks {
     @Test
     void testValidatePrinting_ShipmentValidationWithDifferentJobType() {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().weightDecimalPlace(2).volumeDecimalPlace(3).build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
@@ -416,6 +424,67 @@ class SeawayBillReportTest extends CommonMocks {
         verify(shipmentService, never()).validateContainerDetails(any(), anyList());
     }
 
+    @Test
+    void testValidatePrinting_UnassignedPackage_FlagTrue_ThrowsWarning() {
+        // Setup shipment
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        // Unassigned package
+        Packing unassigned = new Packing(); unassigned.setContainerId(null);
+        shipmentDetails.setPackingList(List.of(unassigned));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().allowUnassignedBlInvGeneration(true).build());
+
+        ReportExceptionWarning ex = assertThrows(ReportExceptionWarning.class,
+                () -> seawayBillReport.validatePrinting(123L));
+        assertEquals("Unassigned packages found — review Seaway for possible cargo discrepancies.", ex.getMessage());
+    }
+
+    @Test
+    void testValidatePrinting_UnassignedPackage_FlagFalse_ThrowsError() {
+        // Setup shipment
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        // Unassigned package
+        Packing unassigned = new Packing(); unassigned.setContainerId(null);
+        shipmentDetails.setPackingList(List.of(unassigned));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().allowUnassignedBlInvGeneration(false).build());
+
+        ReportException ex = assertThrows(ReportException.class,
+                () -> seawayBillReport.validatePrinting(123L));
+        assertEquals("Unassigned packages found — Cannot Generate Seaway Bill.", ex.getMessage());
+    }
+
+    @Test
+    void testValidatePrinting_AllPackagesAssigned_NoException() {
+        // Setup shipment
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+
+        // All packages are assigned
+        Packing p1 = new Packing(); p1.setContainerId(101L);
+        Packing p2 = new Packing(); p2.setContainerId(102L);
+        shipmentDetails.setPackingList(List.of(p1, p2));
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(TenantSettingsDetailsContext.getCurrentTenantSettings());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().allowUnassignedBlInvGeneration(true).build());
+
+        assertDoesNotThrow(() -> seawayBillReport.validatePrinting(123L));
+    }
 
     @Test
     void populateDictionary() {
