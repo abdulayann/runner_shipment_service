@@ -40,6 +40,7 @@ public class EntityTransferConstants {
     public static final String CURRENCY_CODE = "CurrenyCode";
     public static final String GUID = "Guid";
     public static final String SELECT_SENDTOBRANCH_OR_SENDTOORG = "Please select atleast one send to branch or send to org option";
+    public static final String SELECT_SENDTOBRANCH_OR_SENDTOORG_V3 = "Please select at least one branch to initiate the file transfer";
     public static final String APPROVAL_ROLE_NOT_ASSIGNED = "Approval role not assigned to tenant: ";
     public static final String APPROVAL_ROLE_ACTION_NOT_ALLOWED = "Action not allowed. Only users with ShipmentInPipeline Modify permission can accept or reassign this transfer.";
     public static final String CHARGE_CODE = "ChargeCode";

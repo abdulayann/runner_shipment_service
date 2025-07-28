@@ -208,5 +208,6 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String secondarySalesAgentEmail;
     private String destinationPrimarySalesAgentEmail;
     private String destinationSecondarySalesAgentEmail;
+    private Integer slac;
 
 }

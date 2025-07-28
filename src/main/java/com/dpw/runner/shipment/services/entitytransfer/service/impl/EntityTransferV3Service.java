@@ -180,7 +180,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         List<String> additionalDocs = sendShipmentRequest.getAdditionalDocs();
         List<String> sendToOrg = sendShipmentRequest.getSendToOrg();
         if((sendToBranch == null || sendToBranch.isEmpty()) && (sendToOrg == null || sendToOrg.isEmpty())){
-            throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
+            throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG_V3);
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
         if (shipmentDetails.isEmpty()) {
