@@ -862,16 +862,16 @@ public class ReportService implements IReportService {
 
         String releaseType = shipment.getAdditionalDetails().getReleaseType();
 
-        if (SEAWAY_BILL.equals(reportInfo) && !"SWB".equals(releaseType)) {
+        if (SEAWAY_BILL.equals(reportInfo) && !SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
 
         if (HOUSE_BILL.equals(reportInfo)) {
             String printType = reportRequest.getPrintType();
             List<String> validPrintType = List.of(ORIGINAL, DRAFT);
-            boolean isOriginalBill = "OBL".equals(releaseType);
-            if ((SURRENDER.equalsIgnoreCase(printType) && !"OBO".equals(releaseType))
-                    || ("OBO".equals(releaseType) && !SURRENDER.equalsIgnoreCase(printType))
+            boolean isOriginalBill = HOUSE_BILL_RELEASE_TYPE.equals(releaseType);
+            if ((SURRENDER.equalsIgnoreCase(printType) && !SURRENDER_RELEASE_TYPE.equals(releaseType))
+                    || (SURRENDER_RELEASE_TYPE.equals(releaseType) && !SURRENDER.equalsIgnoreCase(printType))
                     || (isOriginalBill && !validPrintType.contains(printType.toUpperCase()))
                     || (validPrintType.contains(printType.toUpperCase()) && !isOriginalBill)) {
                 throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
