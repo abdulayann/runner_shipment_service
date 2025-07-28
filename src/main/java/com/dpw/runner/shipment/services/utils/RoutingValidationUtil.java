@@ -127,7 +127,7 @@ public class RoutingValidationUtil {
 
     private void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest, ShipmentDetails shipmentDetails) {
         if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
+                shipmentDetails.getConsolRef() != null) {
             int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
             if (inheritCarriage == 0) {
                 throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");

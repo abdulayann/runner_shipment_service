@@ -153,7 +153,7 @@ class RoutingValidationUtilTest {
     @Test
     void testValidateModule_Shipment5() {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
-        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolidationList(Set.of(ConsolidationDetails.builder().build())).build()));
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("123").build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(false).build()));
         assertThrows(ValidationException.class, () -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
     }
@@ -162,7 +162,7 @@ class RoutingValidationUtilTest {
     @Test
     void testValidateModule_Shipment7() {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
-        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolidationList(Set.of(ConsolidationDetails.builder().build())).build()));
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("1234").build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of());
         assertThrows(ValidationException.class, () -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
     }
@@ -171,7 +171,7 @@ class RoutingValidationUtilTest {
     @Test
     void testValidateModule_Shipment6() {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
-        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolidationList(Set.of(ConsolidationDetails.builder().build())).build()));
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("12345").build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(true).build()));
         assertDoesNotThrow(() -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
     }
