@@ -658,10 +658,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private boolean validatedBorrowedFrom(ShipmentDetails shipmentRequest, MawbStocks mawbStocks) {
         if (StringUtility.isEmpty(mawbStocks.getBorrowedFrom())) return false;
-        if(shipmentRequest.getAdditionalDetails() == null) return false;
-        if (Objects.isNull(shipmentRequest.getAdditionalDetails().getBorrowedFrom())) return false;
-        if (StringUtility.isEmpty(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode())) return false;
-        return !Objects.equals(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode(), mawbStocks.getBorrowedFrom());
+        return !StringUtility.isEmpty(shipmentRequest.getPartner());
     }
 
     private CarrierResponse getCorrespondingCarrier(ShipmentDetails shipmentRequest, String oldMasterBill) {
