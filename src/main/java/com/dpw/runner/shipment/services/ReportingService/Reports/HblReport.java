@@ -226,12 +226,14 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -288,10 +290,10 @@ public class HblReport extends IReport {
     public void validatePrinting(Long shipmentId, String printType) {
         V1TenantSettingsResponse tenantSettings;
         tenantSettings = getCurrentTenantSettings();
+        ShipmentDetails shipment = getShipmentDetails(shipmentId);
+        ShipmentSettingsDetails shipmentSettingFromContext = getShipmentSettings();
 
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-            ShipmentDetails shipment = getShipmentDetails(shipmentId);
-
             if (shipment == null) {
                 throw new ReportException("No shipment found with id: " + shipmentId);
             }
@@ -306,6 +308,26 @@ public class HblReport extends IReport {
             }
             processMissingFields(tenantSettings, shipment);
         }
+
+        if (ReportConstants.SURRENDER.equalsIgnoreCase(printType)
+                || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
+                || ReportConstants.COPY.equalsIgnoreCase(printType)) {
+            Boolean allowUnassignedBlInvGeneration = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+            List<Packing> packingList = shipment.getPackingList();
+            if (ObjectUtils.isNotEmpty(packingList)) {
+                boolean hasUnassignedPackage = packingList.stream()
+                        .anyMatch(p -> p.getContainerId() == null);
+
+                if (hasUnassignedPackage) {
+                    if (Boolean.TRUE.equals(allowUnassignedBlInvGeneration)) {
+                        throw new ReportExceptionWarning("Unassigned packages found — review BL for possible cargo discrepancies.");
+                    } else {
+                        throw new ReportException("Unassigned packages found — Cannot Generate BL.");
+                    }
+                }
+            }
+        }
+
     }
 
     private void processMissingFields(V1TenantSettingsResponse tenantSettings, ShipmentDetails shipment) {

@@ -24,8 +24,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.SeawayBillModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -75,14 +78,14 @@ public class SeawayBillReport extends IReport {
 
     public void validatePrinting(Long shipmentId) {
         tenantSettings = getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingFromContext = commonUtils.getShipmentSettingFromContext();
+        ShipmentDetails shipment = getShipmentDetails(shipmentId);
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + shipmentId);
+        }
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
-            ShipmentDetails shipment = getShipmentDetails(shipmentId);
-            if(shipment==null){
-                throw new ReportException("No shipment found with id: " + shipmentId);
-            }
-
             if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
                     && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
                     && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
@@ -102,6 +105,22 @@ public class SeawayBillReport extends IReport {
                 throw new ReportException(missingFieldsDescription);
             }
         }
+
+        Boolean allowUnassignedBlInvGeneration = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+        List<Packing> packingList = shipment.getPackingList();
+        if (ObjectUtils.isNotEmpty(packingList)) {
+            boolean hasUnassignedPackage = packingList.stream()
+                    .anyMatch(p -> p.getContainerId() == null);
+
+            if (hasUnassignedPackage) {
+                if (Boolean.TRUE.equals(allowUnassignedBlInvGeneration)) {
+                    throw new ReportExceptionWarning("Unassigned packages found — review Seaway for possible cargo discrepancies.");
+                } else {
+                    throw new ReportException("Unassigned packages found — Cannot Generate Seaway Bill.");
+                }
+            }
+        }
+
     }
 
     @Override
