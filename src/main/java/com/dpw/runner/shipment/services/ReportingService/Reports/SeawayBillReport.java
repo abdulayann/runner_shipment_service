@@ -106,16 +106,25 @@ public class SeawayBillReport extends IReport {
             }
         }
 
+        // Fetch the flag from shipment settings to determine if unassigned packages are allowed during document generation
         Boolean allowUnassignedBlInvGeneration = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+
+        // Retrieve the list of packages (packings) for the shipment
         List<Packing> packingList = shipment.getPackingList();
+
+        // Proceed only if the packing list is not empty
         if (ObjectUtils.isNotEmpty(packingList)) {
+
+            // Check if any package does not have a container assigned
             boolean hasUnassignedPackage = packingList.stream()
                     .anyMatch(p -> p.getContainerId() == null);
 
             if (hasUnassignedPackage) {
                 if (Boolean.TRUE.equals(allowUnassignedBlInvGeneration)) {
+                    // Flag is ON → Allow generation with a warning for potential cargo mismatch
                     throw new ReportExceptionWarning("Unassigned packages found — review Seaway for possible cargo discrepancies.");
                 } else {
+                    // Flag is OFF → Block generation with an error message
                     throw new ReportException("Unassigned packages found — Cannot Generate Seaway Bill.");
                 }
             }
