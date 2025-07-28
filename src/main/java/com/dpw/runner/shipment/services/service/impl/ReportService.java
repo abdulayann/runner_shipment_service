@@ -63,23 +63,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.DocDetails;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
-import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.TiLegs;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.DocDetailsTypes;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
@@ -836,6 +820,7 @@ public class ReportService implements IReportService {
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
         } else if (report instanceof SeawayBillReport vSeawayBillReport) {
+            validateReleaseTypeForReport(reportRequest);
             dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.FHBL);
         } else if (report instanceof HawbReport vHawbReport) {
@@ -849,6 +834,7 @@ public class ReportService implements IReportService {
 
     private Map<String, Object> getDataRetrivedForHblReport(IReport report, ReportRequest reportRequest, HblReport vHblReport) throws RunnerException {
         Map<String, Object> dataRetrived;
+        validateReleaseTypeForReport(reportRequest);
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
 
             // Verify if the specified implication (HBLPR) exists for the report's ID.
@@ -866,6 +852,46 @@ public class ReportService implements IReportService {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
         return dataRetrived;
+    }
+
+
+    public void validateReleaseTypeForReport(ReportRequest reportRequest) {
+        String reportInfo = reportRequest.getReportInfo();
+        ShipmentDetails shipment = getValidatedShipment(reportRequest, reportInfo);
+        if (shipment == null) return;
+
+        String releaseType = shipment.getAdditionalDetails().getReleaseType();
+
+        if (SEAWAY_BILL.equals(reportInfo) && !"SWB".equals(releaseType)) {
+            throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
+        }
+
+        if (HOUSE_BILL.equals(reportInfo)) {
+            String printType = reportRequest.getPrintType();
+            List<String> validPrintType = List.of(ORIGINAL, DRAFT);
+            boolean isOriginalBill = "OBL".equals(releaseType);
+            if ((SURRENDER.equalsIgnoreCase(printType) && !"OBO".equals(releaseType))
+                    || ("OBO".equals(releaseType) && !SURRENDER.equalsIgnoreCase(printType))
+                    || (isOriginalBill && !validPrintType.contains(printType.toUpperCase()))
+                    || (validPrintType.contains(printType.toUpperCase()) && !isOriginalBill)) {
+                throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
+            }
+        }
+    }
+
+    private ShipmentDetails getValidatedShipment(ReportRequest reportRequest, String reportInfo) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if(shipmentSettingsDetails == null || shipmentSettingsDetails.getIsRunnerV3Enabled() == null
+                || !Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) || !List.of(SEAWAY_BILL, HOUSE_BILL).contains(reportInfo))
+            return null;
+        ShipmentDetails shipment = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))
+                .orElseThrow(() -> new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE));
+        AdditionalDetails details = shipment.getAdditionalDetails();
+
+        if(details == null || (details.getReleaseType() == null || details.getReleaseType().trim().isEmpty())) {
+            throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
+        }
+        return shipment;
     }
 
     private Map<String, Object> getDataRetrivedForDeliveryOrderReport(IReport report, ReportRequest reportRequest, DeliveryOrderReport vDeliveryOrderReport) throws RunnerException {

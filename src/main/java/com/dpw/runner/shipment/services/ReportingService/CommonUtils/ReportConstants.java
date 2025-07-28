@@ -1476,4 +1476,6 @@ public class ReportConstants {
 
     public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
     public static final String HAS_PACKS = "HasPacks1";
+
+    public static final String NOT_VALID_RELEASE_TYPE = "Release Type is not Valid";
 }
