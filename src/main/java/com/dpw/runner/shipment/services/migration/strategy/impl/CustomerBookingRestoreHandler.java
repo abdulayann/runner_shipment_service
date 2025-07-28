@@ -26,40 +26,29 @@ import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepositor
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Generated
 public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
-    @Autowired
-    @Lazy
-    private CustomerBookingRestoreHandler lazyProxySelf;
-    private static final int DEFAULT_BATCH_SIZE = 100;
     private final ICustomerBookingBackupRepository backupRepository;
     private final ICustomerBookingRepository customerBookingDao;
-    private final ThreadPoolTaskExecutor rollbackTaskExecutor;
     private final ObjectMapper objectMapper;
     private final IContainerRepository containerDao;
     private final IPackingRepository packingDao;
@@ -76,6 +65,7 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
 
         Set<Long> allBackupBookingIds = backupRepository.findCustomerBookingIdsByTenantId(tenantId);
         if (allBackupBookingIds.isEmpty()) {
+            log.info("gvchgds");
             return;
         }
         Set<Long> allOriginalBookingIds = customerBookingDao.findAllCustomerBookingIdsByTenantId(tenantId);
@@ -86,27 +76,19 @@ public class CustomerBookingRestoreHandler implements RestoreServiceHandler {
             customerBookingDao.deleteCustomerBookingIds(idsToDelete);
         }
 
-        Lists.partition(new ArrayList<>(allBackupBookingIds), DEFAULT_BATCH_SIZE).forEach(batch -> {
-            List<CompletableFuture<Void>> futures = batch.stream().map(bookingId ->
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            lazyProxySelf.restoreCustomerBookingData(bookingId, tenantId);
-                        } finally {
-                            v1Service.clearAuthContext();
-                        }
-                    }, rollbackTaskExecutor)).toList();
-
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).exceptionally(ex -> {
-                log.error("Customer booking failed", ex);
-                return null;
-            }).join();
-        });
+        for (Long bookingId : allBackupBookingIds) {
+            try {
+                restoreCustomerBookingData(bookingId, tenantId);
+            } catch (Exception e) {
+                log.error("Failed to restore Booking id: {}", bookingId, e);
+                throw new RestoreFailureException("Failed to restore Booking: " + bookingId, e);
+            }
+        }
     }
 
-
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void restoreCustomerBookingData(Long bookingId, Integer tenantId) {
         try {
+            log.info("Restoration started for customer booking for tenantId : {}", tenantId);
             v1Service.setAuthContext();
             TenantContext.setCurrentTenant(tenantId);
             UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());

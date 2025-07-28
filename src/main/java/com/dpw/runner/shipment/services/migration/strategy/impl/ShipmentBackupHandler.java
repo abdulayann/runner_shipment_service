@@ -13,104 +13,102 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ShipmentBackupEntity;
-import com.dpw.runner.shipment.services.migration.repository.IShipmentBackupRepository;
-
-
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.lang.Boolean.TRUE;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Generated
 public class ShipmentBackupHandler {
 
     @Autowired
+    @Lazy
+    ShipmentBackupHandler self;
+    @Autowired
     @Qualifier("asyncShipmentBackupHandlerExecutor")
     private final ThreadPoolTaskExecutor asyncShipmentBackupHandlerExecutor;
-    private static final int DEFAULT_BATCH_SIZE = 100;
+    private static final int DEFAULT_BATCH_SIZE = 10;
+
     private final ObjectMapper objectMapper;
     private final IShipmentDao shipmentDao;
     private final IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
-    private final IShipmentBackupRepository shipmentBackupRepository;
     private final V1ServiceImpl v1Service;
     private final INetworkTransferDao networkTransferDao;
-    private final PlatformTransactionManager transactionManager;
 
-
-    public void backup(Integer tenantId) {
-
-        log.info("Starting shipment backup for tenantId: {}", tenantId);
-        long startTime = System.currentTimeMillis();
+    public List<ShipmentBackupEntity> backup(Integer tenantId) {
         Set<Long> shipmentIds = shipmentDao.findShipmentIdsByTenantId(tenantId);
         log.info("Count of shipment Ids : {}", shipmentIds.size());
+
         if (shipmentIds.isEmpty()) {
             log.info("No shipment records found for tenant: {}", tenantId);
-            return;
+            return Collections.emptyList();
         }
-        TransactionTemplate batchTxTemplate = new TransactionTemplate(transactionManager);
-        batchTxTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
 
-        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(shipmentIds), DEFAULT_BATCH_SIZE)
-                .stream()
-                .map(batch -> CompletableFuture.runAsync(
-                        wrapWithContext(() -> {
-                            try {
-                                batchTxTemplate.execute(status -> {
-                                    try {
-                                        processAndBackupShipmentsBatchData(new HashSet<>(batch));
-                                        return null;
-                                    } catch (Exception e) {
-                                        status.setRollbackOnly();
-                                        throw e;
-                                    }
-                                });
-                            } catch (Exception e) {
-                                log.error("Batch processing failed (size {}): {}", batch.size(), e.getMessage());
-                                throw new BackupFailureException("Batch processing failed", e);
-                            }
-                        }, tenantId),
-                        asyncShipmentBackupHandlerExecutor))
-                .toList();
+        List<CompletableFuture<List<ShipmentBackupEntity>>> futures =
+                Lists.partition(new ArrayList<>(shipmentIds), DEFAULT_BATCH_SIZE)
+                        .stream()
+                        .map(batch -> CompletableFuture.supplyAsync(wrapWithContext(() ->
+                                        self.processAndBackupShipmentsBatchData(new HashSet<>(batch)), tenantId),
+                                asyncShipmentBackupHandlerExecutor
+                        )).toList();
+
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+
         try {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            log.info("Shipment completed : {}", System.currentTimeMillis() - startTime);
+            allFutures.get(2, TimeUnit.HOURS);
+            return futures.stream()
+                    .map(future -> {
+                        try {
+                            return future.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new CompletionException(e.getCause());
+                        }
+                    })
+                    .flatMap(List::stream)
+                    .toList();
+
+        } catch (TimeoutException e) {
+            futures.forEach(f -> f.cancel(true));
+            throw new BackupFailureException("Shipment Backup processing timed out", e);
         } catch (Exception e) {
-            log.error("Backup failed for tenant {} : {}", tenantId, e.getMessage(), e);
-            throw new BackupFailureException("Backup failed for tenant: " + tenantId, e);
+            futures.forEach(f -> f.cancel(true));
+            throw new BackupFailureException("Shipment Backup failed", e instanceof CompletionException ? e.getCause() : e);
         }
     }
 
-    private void processAndBackupShipmentsBatchData(Set<Long> shipmentIds) {
-        log.info("Processing shipment batch");
+    @Transactional(readOnly = true)
+    public List<ShipmentBackupEntity> processAndBackupShipmentsBatchData(Set<Long> shipmentIds) {
+        log.info("Shipment batch process .....");
         List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(shipmentIds);
-        List<ShipmentBackupEntity> shipmentBackupEntities = shipmentDetails.stream()
+        return shipmentDetails.stream()
                 .map(shipment -> {
                     List<PickupDeliveryDetails> pickupDetails = pickupDeliveryDetailsDao.findByShipmentId(shipment.getId());
                     List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityNTList(shipment.getId(), Constants.SHIPMENT);
                     return mapToBackupEntity(shipment, pickupDetails, networkTransfers);
                 })
-                .toList();
-        shipmentBackupRepository.saveAll(shipmentBackupEntities);
+                .collect(Collectors.toList());
     }
 
     private ShipmentBackupEntity mapToBackupEntity(ShipmentDetails shipment, List<PickupDeliveryDetails> pickupDetails, List<NetworkTransfer> networkTransfers) {
@@ -138,32 +136,16 @@ public class ShipmentBackupHandler {
         }
     }
 
-    public CompletableFuture<Void> backupAsync(Integer tenantId) {
-        return CompletableFuture.runAsync(wrapWithContext(() -> backup(tenantId), tenantId),
-                asyncShipmentBackupHandlerExecutor);
-    }
-
-    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+    private <T> Supplier<T> wrapWithContext(Supplier<T> task, Integer tenantId) {
         return () -> {
             try {
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-
-                // Execute with transaction
-                new TransactionTemplate(transactionManager).execute(status -> {
-                    task.run();
-                    return null;
-                });
-
+                return task.get();
             } finally {
                 v1Service.clearAuthContext();
             }
         };
-    }
-
-    @Transactional
-    public void rollback(Integer tenantId) {
-        shipmentBackupRepository.deleteByTenantId(tenantId);
     }
 }

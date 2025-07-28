@@ -50,4 +50,6 @@ public interface INetworkTransferDao {
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
     List<Long> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId);
     List<NetworkTransfer> findNteByIds(List<Long> ids);
+
+    List<NetworkTransfer> findByEntityIdsAndEntityType(Set<Long> consolidationIds, String consolidation);
 }

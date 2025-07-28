@@ -14,7 +14,8 @@ import java.util.concurrent.*;
 
 @Configuration
 @EnableAsync
-@Slf4j @Generated
+@Slf4j
+@Generated
 public class AsyncConfig implements AsyncConfigurer {
 
     // Used for Async
@@ -29,12 +30,11 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
-    @Bean(name = "rollbackTaskExecutor")
+    @Bean(name = "asyncRestoreHandlerExecutor")
     public ThreadPoolTaskExecutor rollbackTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(10);
-        executor.setMaxPoolSize(20);
-        executor.setQueueCapacity(100);
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(5);
         executor.setThreadNamePrefix("RestoreThread-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
         executor.initialize();
@@ -43,26 +43,47 @@ public class AsyncConfig implements AsyncConfigurer {
 
 
     // Used for Async
-    @Bean(name = "asyncShipmentBackupHandlerExecutor")
-    public ThreadPoolTaskExecutor backupShipmentHandlerExecutor() {
+    @Bean(name = "asyncBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupHandlerExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(10);
-      //  executor.setQueueCapacity(300);
-        executor.setThreadNamePrefix("BackupShipmentHandlerAsyncThread-");
+        executor.setMaxPoolSize(5);
+        executor.setThreadNamePrefix("BackupHandlerAsyncThread-");
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
         executor.initialize();
         return executor;
     }
 
     // Used for Async
+    @Bean(name = "asyncShipmentBackupHandlerExecutor")
+    public ThreadPoolTaskExecutor backupShipmentHandlerExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(10);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(100);
+        executor.setThreadNamePrefix("BackupShipmentHandlerAsyncThread-");
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(60);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
+        executor.initialize();
+        return executor;
+    }
+
+
+    // Used for Async
     @Bean(name = "asyncConsoleBackupHandlerExecutor")
     public ThreadPoolTaskExecutor backupConsoleHandlerExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
+        executor.setCorePoolSize(10);
         executor.setMaxPoolSize(10);
-        //  executor.setQueueCapacity(300);
+        executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("BackupConsoleHandlerAsyncThread-");
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(60);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
         executor.initialize();
         return executor;
@@ -72,10 +93,14 @@ public class AsyncConfig implements AsyncConfigurer {
     @Bean(name = "asyncBookingBackupHandlerExecutor")
     public ThreadPoolTaskExecutor backupBookingHandlerExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5);
-        executor.setMaxPoolSize(10);
-        //  executor.setQueueCapacity(300);
+        executor.setCorePoolSize(8);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(100);
         executor.setThreadNamePrefix("BackupBookingHandlerAsyncThread-");
+        executor.setAllowCoreThreadTimeOut(true);
+        executor.setKeepAliveSeconds(60);
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
         executor.setRejectedExecutionHandler((r, executor1) -> log.warn(SyncingConstants.TASK_REJECTION_WARNING_MSG));
         executor.initialize();
         return executor;

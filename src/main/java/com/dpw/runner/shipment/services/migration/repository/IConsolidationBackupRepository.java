@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -13,12 +14,15 @@ public interface IConsolidationBackupRepository extends JpaRepository<Consolidat
     void deleteByTenantId(Integer tenantId);
 
     @Query(value = "SELECT c.consolidation_id FROM consolidation_backup c WHERE c.tenant_id = ?1 and c.is_deleted = false", nativeQuery = true)
+    @Transactional
     List<Long> findConsolidationIdsByTenantId(Integer tenantId);
 
     @Query(value = "SELECT * FROM consolidation_backup c WHERE c.consolidation_id = ?1", nativeQuery = true)
+    @Transactional
     ConsolidationBackupEntity findConsolidationsById(Long consolidationId);
 
     @Modifying
+    @Transactional
     @Query(value = "UPDATE consolidation_backup SET is_deleted = true WHERE id = ?1", nativeQuery = true)
     void makeIsDeleteTrueToMarkRestoreSuccessful(Long id);
 }

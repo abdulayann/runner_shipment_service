@@ -87,4 +87,8 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
 
     @Query(value = "SELECT * FROM network_transfer WHERE id IN ?1", nativeQuery = true)
     List<NetworkTransfer> findNteByIds(List<Long> id);
+
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE entity_id in ?1 AND entity_type = ?2", nativeQuery = true)
+    List<NetworkTransfer> findByEntityIdAndEntityType(Set<Long> entityIdList, String entityType);
 }

@@ -25,22 +25,18 @@ import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepositor
 import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentOrderRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ITruckDriverDetailsRepository;
+import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -48,11 +44,9 @@ import java.util.stream.Stream;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Generated
 public class ShipmentRestoreHandler implements RestoreServiceHandler {
 
-    @Autowired
-    @Lazy
-    private ShipmentRestoreHandler self;
     private final ObjectMapper objectMapper;
     private final PackingDao packingDao;
     private final IPackingRepository packingRepository;
@@ -82,10 +76,10 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
     private final PickupDeliveryDetailsDao pickupDeliveryDetailsDao;
     private final IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
     private final ShipmentDao shipmentDao;
-    private final ThreadPoolTaskExecutor rollbackTaskExecutor;
-    private final  ShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    private final ShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private NetworkTransferDao networkTransferDao;
     private INetworkTransferRepository networkTransferRepository;
+    private final V1ServiceImpl v1Service;
 
 
     public ShipmentDetails restoreShipmentDetails(Long shipmentId, Map<Long, List<Long>> containerShipmentMap, ConsolidationDetails consolidationDetails) throws JsonProcessingException {
@@ -101,12 +95,13 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         if (consolidationDetails != null) {
             shipmentDetails.setConsolidationList(Set.of(consolidationDetails));
         }
-        List<NetworkTransfer> networkTransferList = shipmentBackupDetails.getNetworkTransferDetails()!=null && !shipmentBackupDetails.getNetworkTransferDetails().isEmpty() ?objectMapper.readValue(shipmentBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {}): new ArrayList<>();
+        List<NetworkTransfer> networkTransferList = shipmentBackupDetails.getNetworkTransferDetails() != null && !shipmentBackupDetails.getNetworkTransferDetails().isEmpty() ? objectMapper.readValue(shipmentBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {
+        }) : new ArrayList<>();
         processContainerToShipmentMapping(shipmentId, shipmentDetails, containerShipmentMap);
 
         var containerList = shipmentDetails.getContainersList().stream().filter(x -> shipmentsContainersMapping.contains(x.getId())).collect(Collectors.toSet());
         shipmentDetails.setContainersList(containerList);
-        List <Long> partiesIds = getAllPartiesIds(shipmentDetails);
+        List<Long> partiesIds = getAllPartiesIds(shipmentDetails);
         validateAndSetPartiesDetails(shipmentId, partiesIds, shipmentDetails);
         List<Long> packingIds = shipmentDetails.getPackingList().stream().map(Packing::getId).filter(Objects::nonNull).toList();
         validateAndSetPackingDetails(shipmentId, packingIds, shipmentDetails);
@@ -332,32 +327,21 @@ public class ShipmentRestoreHandler implements RestoreServiceHandler {
         }
         Set<Long> nonAttachedShipmentIds = shipmentBackupDao.findNonAttachedShipmentIdsByTenantId(tenantId);
 
-        Lists.partition(new ArrayList<>(nonAttachedShipmentIds), 100).forEach(batch -> {
-            List<CompletableFuture<Void>> futures = batch.stream().map(shipmentId ->
-                    CompletableFuture.runAsync(() -> {
-                        try {
-                            self.restoreShipmentTransaction(shipmentId,tenantId);
-                        } catch (Exception e) {
-                            log.error("Failed shipment restore {}: {}", shipmentId, e.getMessage());
-                            throw new RestoreFailureException("Rollback failed", e);
-                        } finally {
-                            TenantContext.setCurrentTenant(tenantId);
-                            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                        }
-                    }, rollbackTaskExecutor)).toList();
-
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).exceptionally(ex -> {
-                log.error("Batch failed", ex);
-                return null;
-            }).join();
-        });
+        for (Long shipmentId : nonAttachedShipmentIds) {
+            try {
+                restoreShipmentTransaction(shipmentId, tenantId);
+            } catch (Exception e) {
+                log.error("Failed to restore Shipment id: {}", shipmentId, e);
+                throw new RestoreFailureException("Failed to restore Shipment: " + shipmentId, e);
+            }
+        }
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void restoreShipmentTransaction(Long shipmentId, Integer tenantId) throws JsonProcessingException {
         TenantContext.setCurrentTenant(tenantId);
         UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
         restoreShipmentDetails(shipmentId, null, null);
+        v1Service.clearAuthContext();
     }
 
     public static List<Long> ensureNonEmptyIds(List<Long> ids) {

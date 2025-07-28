@@ -6,7 +6,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
+import com.dpw.runner.shipment.services.exception.exceptions.RestoreFailureException;
 import com.dpw.runner.shipment.services.migration.dao.impl.ConsolidationBackupDao;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
 import com.dpw.runner.shipment.services.migration.strategy.interfaces.RestoreServiceHandler;
@@ -20,17 +20,13 @@ import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepositor
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,13 +34,10 @@ import java.util.stream.Stream;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Generated
 public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
-    @Autowired
-    @Lazy
-    private ConsolidationRestoreHandler self;
     private final ObjectMapper objectMapper;
-    private final ThreadPoolTaskExecutor asyncExecutor;
     private final ConsolidationBackupDao consolidationBackupDao;
     private final ConsolidationDao consolidationDao;
     private final ReferenceNumbersDao referenceNumbersDao;
@@ -71,6 +64,7 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
 
     @Override
     public void restore(Integer tenantId) {
+
         log.info("Starting consolidation restore for tenantId: {}", tenantId);
 
         List<Long> consolidationIds = consolidationBackupDao.findConsolidationIdsByTenantId(tenantId);
@@ -81,27 +75,17 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
         consolidationDao.deleteAdditionalConsolidationsByConsolidationIdAndTenantId(consolidationIds, tenantId);
         consolidationDao.revertSoftDeleteByByConsolidationIdAndTenantId(consolidationIds, tenantId);
 
-
-        List<CompletableFuture<Void>> futures = consolidationIds.stream()
-                .map(consolidationId -> CompletableFuture.runAsync(
-                        () -> {
-                            try {
-                                TenantContext.setCurrentTenant(tenantId);
-                                UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                                self.processAndRestoreConsolidation(consolidationId, tenantId);
-                            } finally {
-                                TenantContext.removeTenant();
-                                UserContext.removeUser();
-                            }
-                        },
-                        asyncExecutor))
-                .toList();
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        for (Long consolidationId : consolidationIds) {
+            try {
+                processAndRestoreConsolidation(consolidationId, tenantId);
+            } catch (Exception e) {
+                log.error("Failed to restore consolidation id: {}", consolidationId, e);
+                throw new RestoreFailureException("Failed to restore consolidation: " + consolidationId, e);
+            }
+        }
         log.info("Completed consolidation backup for tenant: {}", tenantId);
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void processAndRestoreConsolidation(Long consolidationId, Integer tenantId) {
         try {
             TenantContext.setCurrentTenant(tenantId);
@@ -138,14 +122,17 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
             validateAndRestoreRoutingDetails(consolidationId, routingsIds, consolidationDetails);
             List<Long> jobsIds = consolidationDetails.getJobsList().stream().map(Jobs::getId).filter(Objects::nonNull).toList();
             validateAndStoreJobsDetails(consolidationId, jobsIds, consolidationDetails);
-            List<NetworkTransfer> networkTransferList = consolidationBackupDetails.getNetworkTransferDetails()!=null && !consolidationBackupDetails.getNetworkTransferDetails().isEmpty() ? objectMapper.readValue(consolidationBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {}): new ArrayList<>();
+            List<NetworkTransfer> networkTransferList = consolidationBackupDetails.getNetworkTransferDetails() != null && !consolidationBackupDetails.getNetworkTransferDetails().isEmpty() ? objectMapper.readValue(consolidationBackupDetails.getNetworkTransferDetails(), new TypeReference<List<NetworkTransfer>>() {
+            }) : new ArrayList<>();
             validateAndSetNetworkTransferDetails(networkTransferList, consolidationId);
             validateAndRestoreTriangularPartnerDetails(consolidationId);
             consolidationDao.save(consolidationDetails);
             consolidationBackupDao.makeIsDeleteTrueToMarkRestoreSuccessful(consolidationBackupDetails.getId());
         } catch (Exception e) {
             log.error("Failed to backup consolidation id: {} with exception: ", consolidationId, e);
-            throw new BackupFailureException("Failed to backup consolidation id: " + consolidationId, e);
+            throw new RestoreFailureException("Failed to backup consolidation id: " + consolidationId, e);
+        } finally {
+            v1Service.clearAuthContext();
         }
     }
 
@@ -173,15 +160,12 @@ public class ConsolidationRestoreHandler implements RestoreServiceHandler {
                 }
             }
 
-            // New record (or mismatched guid): remove id and save
-            incoming.setId(null);
+             incoming.setId(null);
             toSaveList.add(incoming);
         }
 
-        // All remaining in dbMap are to be deleted
         List<Long> toDeleteIds = new ArrayList<>(dbMap.keySet());
 
-        // Persist
         networkTransferRepository.saveAll(toSaveList);
         networkTransferRepository.deleteAllById(toDeleteIds);
     }

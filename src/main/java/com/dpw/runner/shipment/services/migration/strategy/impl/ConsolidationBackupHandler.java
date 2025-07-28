@@ -13,21 +13,21 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.BackupFailureException;
 import com.dpw.runner.shipment.services.migration.entity.ConsolidationBackupEntity;
-import com.dpw.runner.shipment.services.migration.repository.IConsolidationBackupRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import lombok.Generated;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,15 +36,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Generated
 public class ConsolidationBackupHandler {
 
-    private static final int DEFAULT_BATCH_SIZE = 100;
-    private final IConsolidationBackupRepository consolidationBackupRepository;
+    private static final int DEFAULT_BATCH_SIZE = 200;
     private final IConsolidationDetailsDao consolidationDetailsDao;
     private final IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private final ObjectMapper objectMapper;
@@ -52,59 +57,57 @@ public class ConsolidationBackupHandler {
     @Qualifier("asyncConsoleBackupHandlerExecutor")
     private final ThreadPoolTaskExecutor asyncConsoleBackupHandlerExecutor;
     private final V1ServiceImpl v1Service;
-    private final PlatformTransactionManager transactionManager;
     private final INetworkTransferDao networkTransferDao;
+    @Autowired
+    @Lazy
+    ConsolidationBackupHandler self;
 
+    public List<ConsolidationBackupEntity> backup(Integer tenantId) {
 
-    public void backup(Integer tenantId) {
-        long startTime = System.currentTimeMillis();
         log.info("Starting consolidation backup for tenantId: {}", tenantId);
         Set<Long> consolidationIds = consolidationDetailsDao.findConsolidationIdsByTenantId(tenantId);
         log.info("Count of consolidation Ids : {}", consolidationIds.size());
         if (consolidationIds.isEmpty()) {
             log.info("No consolidation records found for tenant: {}", tenantId);
-            return;
+            return Collections.emptyList();
         }
 
-        TransactionTemplate batchTxTemplate = new TransactionTemplate(transactionManager);
-        batchTxTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        List<CompletableFuture<List<ConsolidationBackupEntity>>> futures =
+                Lists.partition(new ArrayList<>(consolidationIds), DEFAULT_BATCH_SIZE)
+                        .stream()
+                        .map(batch -> CompletableFuture.supplyAsync(wrapWithContext(() ->
+                                        self.processAndBackupConsolidationsBatchData(new HashSet<>(batch)), tenantId),
+                                asyncConsoleBackupHandlerExecutor
+                        )).toList();
 
-        List<CompletableFuture<Void>> futures = Lists.partition(new ArrayList<>(consolidationIds), DEFAULT_BATCH_SIZE)
-                .stream()
-                .map(batch -> CompletableFuture.runAsync(
-                        wrapWithContext(() -> {
-                            try {
-                                batchTxTemplate.execute(status -> {
-                                    try {
-                                        processAndBackupConsolidationsBatchData(new HashSet<>(batch));
-                                        return null;
-                                    } catch (Exception e) {
-                                        status.setRollbackOnly();
-                                        throw e;
-                                    }
-                                });
-                            } catch (Exception e) {
-                                log.error("Batch processing failed (size {}): {}", batch.size(), e.getMessage());
-                                throw new BackupFailureException("Batch processing failed", e);
-                            }
-                        }, tenantId),
-                        asyncConsoleBackupHandlerExecutor)).toList();
+        CompletableFuture<Void> allFutures = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
 
         try {
-            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-            log.info("Consolidation completed : {}", System.currentTimeMillis() - startTime);
+            allFutures.get(1, TimeUnit.HOURS);
+            return futures.stream()
+                    .map(future -> {
+                        try {
+                            return future.get();
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new CompletionException(e.getCause());
+                        }
+                    })
+                    .flatMap(List::stream)
+                    .toList();
+
+        } catch (TimeoutException e) {
+            futures.forEach(f -> f.cancel(true));
+            throw new BackupFailureException("Backup processing timed out", e);
         } catch (Exception e) {
-            log.error("Backup failed for tenant {}", tenantId, e);
-            throw new BackupFailureException("Backup failed for tenant: " + tenantId, e);
+            futures.forEach(f -> f.cancel(true));
+            throw new BackupFailureException("Backup failed", e instanceof CompletionException ? e.getCause() : e);
         }
     }
 
-    private void processAndBackupConsolidationsBatchData(Set<Long> consolidationIds) {
-
-        log.info("Processing console batch");
-        long startTime1 = System.currentTimeMillis();
+    @Transactional(readOnly = true)
+    public List<ConsolidationBackupEntity> processAndBackupConsolidationsBatchData(Set<Long> consolidationIds) {
+        log.info("Processing consolidation batch: ");
         List<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationsByIds(consolidationIds);
-        log.info("fetch console details: {}", System.currentTimeMillis() - startTime1);
 
 
         Map<Long, List<ConsoleShipmentMapping>> consoleMappingsByConsolidationId =
@@ -112,21 +115,15 @@ public class ConsolidationBackupHandler {
                         .stream()
                         .collect(Collectors.groupingBy(ConsoleShipmentMapping::getConsolidationId));
 
+        List<NetworkTransfer> allTransfers = networkTransferDao.findByEntityIdsAndEntityType(consolidationIds, Constants.CONSOLIDATION);
         Map<Long, List<NetworkTransfer>> networkTransferMappingsByConsolidationId =
-                consolidationIds.stream()
-                        .flatMap(consolidationId -> networkTransferDao.findByEntityNTList(consolidationId, Constants.CONSOLIDATION).stream())
-                        .collect(Collectors.groupingBy(NetworkTransfer::getEntityId));
-        long startTime = System.currentTimeMillis();
+                allTransfers.stream().collect(Collectors.groupingBy(NetworkTransfer::getEntityId));
 
-        List<ConsolidationBackupEntity> backupEntities = consolidationDetails.stream()
+        return consolidationDetails.stream()
                 .map((detail -> mapToBackupEntity(detail,
                         consoleMappingsByConsolidationId.getOrDefault(detail.getId(), Collections.emptyList()),
                         networkTransferMappingsByConsolidationId.getOrDefault(detail.getId(), Collections.emptyList()))))
                 .toList();
-        log.info("map To Entity time : {}", System.currentTimeMillis() - startTime);
-
-        consolidationBackupRepository.saveAll(backupEntities);
-        log.info("Save all : {}", System.currentTimeMillis() - startTime);
     }
 
     private ConsolidationBackupEntity mapToBackupEntity(ConsolidationDetails consolidationDetail, List<ConsoleShipmentMapping> consoleMappings,
@@ -138,9 +135,7 @@ public class ConsolidationBackupHandler {
             consolidationBackupEntity.setConsolidationGuid(consolidationDetail.getGuid());
             Set<ShipmentDetails> shipmentList = consolidationDetail.getShipmentsList();
             consolidationDetail.setShipmentsList(null);
-            long startTime = System.currentTimeMillis();
             consolidationBackupEntity.setConsolidationDetails(objectMapper.writeValueAsString(consolidationDetail));
-            log.info("ObjectMapper time : {}", System.currentTimeMillis() - startTime);
             consolidationDetail.setShipmentsList(shipmentList);
             consolidationBackupEntity.setConsoleShipmentMapping(objectMapper.writeValueAsString(consoleMappings));
             consolidationBackupEntity.setNetworkTransferDetails(objectMapper.writeValueAsString(networkTransfers));
@@ -151,28 +146,13 @@ public class ConsolidationBackupHandler {
         }
     }
 
-    @Transactional
-    public void rollback(Integer tenantId) {
-        consolidationBackupRepository.deleteByTenantId(tenantId);
-    }
-
-
-    public CompletableFuture<Void> backupAsync(Integer tenantId) {
-        return CompletableFuture.runAsync(wrapWithContext(() -> backup(tenantId), tenantId),
-                asyncConsoleBackupHandlerExecutor);
-    }
-
-    private Runnable wrapWithContext(Runnable task, Integer tenantId) {
+    private <T> Supplier<T> wrapWithContext(Supplier<T> task, Integer tenantId) {
         return () -> {
             try {
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
-                // Execute with transaction
-                new TransactionTemplate(transactionManager).execute(status -> {
-                    task.run();
-                    return null;
-                });
+                return task.get();
             } finally {
                 v1Service.clearAuthContext();
             }
