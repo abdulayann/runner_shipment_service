@@ -14,7 +14,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -26,16 +26,16 @@ import java.util.stream.Collectors;
 
 
 @Component
+@AllArgsConstructor
 public class RoutingValidationUtil {
-    @Autowired
-    private IShipmentServiceV3 shipmentService;
-    @Autowired
-    private IConsolidationService consolidationService;
-    @Autowired
-    private ICustomerBookingService customerBookingService;
 
-    @Autowired
-    private IRoutingsDao routingsV3Dao;
+    private final IShipmentServiceV3 shipmentService;
+
+    private final IConsolidationService consolidationService;
+
+    private final ICustomerBookingService customerBookingService;
+
+    private final IRoutingsDao routingsV3Dao;
 
 
     public void validateUpdateRequest(RoutingsRequest request) {
