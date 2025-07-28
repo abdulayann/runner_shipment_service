@@ -126,14 +126,14 @@ public class RoutingValidationUtil {
     }
 
     private void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest, ShipmentDetails shipmentDetails) {
-        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE) {
-            if (shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
-                int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
-                if (inheritCarriage == 0) {
-                    throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
-                }
+        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
+                shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()) {
+            int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
+            if (inheritCarriage == 0) {
+                throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
             }
         }
+
     }
 
     public void validateRoutingsRequest(List<RoutingsRequest> requests, String module) {
