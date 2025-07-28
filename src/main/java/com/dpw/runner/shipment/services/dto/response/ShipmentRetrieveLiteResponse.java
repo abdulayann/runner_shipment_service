@@ -256,6 +256,9 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String transportInfoStatusMessage;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private Integer slac;
+    private Boolean isVolumeEditable = Boolean.FALSE;
+    private Boolean isCargoSummaryEditable = Boolean.FALSE;
+    private ShipmentSummaryWarningsResponse summaryWarningsResponse;
     private List<RoutingsLiteResponse> routingsLiteResponses;
     private Boolean isVolumeEditable = Boolean.FALSE;
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
