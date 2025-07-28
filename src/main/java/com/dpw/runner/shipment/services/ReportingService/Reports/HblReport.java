@@ -309,19 +309,30 @@ public class HblReport extends IReport {
             processMissingFields(tenantSettings, shipment);
         }
 
+        // Check if the current print type is for any type of HBL: Surrender, Original, or Copy
         if (ReportConstants.SURRENDER.equalsIgnoreCase(printType)
                 || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
                 || ReportConstants.COPY.equalsIgnoreCase(printType)) {
+
+            // Retrieve the flag from context that allows/disallows document generation with unassigned packages
             Boolean allowUnassignedBlInvGeneration = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+
+            // Get the list of packings associated with the shipment
             List<Packing> packingList = shipment.getPackingList();
+
+            // Proceed only if the packing list is not empty
             if (ObjectUtils.isNotEmpty(packingList)) {
+
+                // Check if any package is not assigned to a container
                 boolean hasUnassignedPackage = packingList.stream()
                         .anyMatch(p -> p.getContainerId() == null);
 
                 if (hasUnassignedPackage) {
                     if (Boolean.TRUE.equals(allowUnassignedBlInvGeneration)) {
+                        // Flag is ON → Allow generation but throw a warning to alert user of discrepancies
                         throw new ReportExceptionWarning("Unassigned packages found — review BL for possible cargo discrepancies.");
                     } else {
+                        // Flag is OFF → Block generation and throw an error to enforce data integrity
                         throw new ReportException("Unassigned packages found — Cannot Generate BL.");
                     }
                 }
