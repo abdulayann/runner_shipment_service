@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Getter
@@ -23,15 +22,15 @@ public class TILegsContainersModel implements Serializable {
     @JsonProperty("TI_ContainerPackages")
     private String noOfPackages;
     @JsonProperty("TI_GrossWeight")
-    private BigDecimal grossWeight;
+    private String grossWeight;
     @JsonProperty("TI_GrossWeightUnit")
     private String grossWeightUnit;
     @JsonProperty("TI_NetWeight")
-    private BigDecimal netWeight;
+    private String netWeight;
     @JsonProperty("TI_NetWeightUnit")
     private String netWeightUnit;
     @JsonProperty("TI_GrossVolume")
-    private BigDecimal volume;
+    private String volume;
     @JsonProperty("TI_GrossVolumeUnit")
     private String volumeUnit;
     @JsonProperty("TI_ContainerDangerous")

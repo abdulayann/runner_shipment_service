@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TILegsPackagesMo
 import com.dpw.runner.shipment.services.ReportingService.Models.TILegsReferenceModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TILegsTruckDriverModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.TiContainers;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiPackages;
@@ -23,12 +24,17 @@ import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
+import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.convertToVolumeNumberFormat;
+import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.convertToWeightNumberFormat;
 
 @Component
 public class TransportInstructionReportHelper {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
 
     public void addTransportInstructionLegsDataIntoDictionary(TiLegs tilegs, Map<String, Object> legsDictionary) {
@@ -90,25 +96,35 @@ public class TransportInstructionReportHelper {
 
     public void addTransportInstructionLegsPackagesDataIntoDictionary(TiLegs tilegs, Map<String, Object> legsDictionary) {
         List<TiPackages> tiPackages = tilegs.getTiPackages();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if (!CommonUtils.listIsNullOrEmpty(tiPackages)) {
             legsDictionary.put(ReportConstants.HAS_PACKAGE_DETAILS, true);
             List<TILegsPackagesModel> tiLegsPackagesModels = tiPackages.stream()
                     .map(packages -> modelMapper.map(packages, TILegsPackagesModel.class))
                     .toList();
+            tiLegsPackagesModels.forEach(tiLegsPackagesModel -> {
+                tiLegsPackagesModel.setGrossWeight(convertToWeightNumberFormat(tiLegsPackagesModel.getGrossWeight(), v1TenantSettingsResponse));
+                tiLegsPackagesModel.setNetWeight(convertToWeightNumberFormat(tiLegsPackagesModel.getNetWeight(), v1TenantSettingsResponse));
+                tiLegsPackagesModel.setVolume(convertToVolumeNumberFormat(tiLegsPackagesModel.getVolume(), v1TenantSettingsResponse));
+            });
             legsDictionary.put(ReportConstants.TI_PACKAGES, tiLegsPackagesModels);
         }
     }
 
     public void addTransportInstructionLegsContainersDataIntoDictionary(TiLegs tilegs, Map<String, Object> legsDictionary) {
         List<TiContainers> tiContainers = tilegs.getTiContainers();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if (!CommonUtils.listIsNullOrEmpty(tiContainers)) {
             legsDictionary.put(ReportConstants.HAS_CONTAINERS, true);
             List<TILegsContainersModel> tiLegsContainersModels = tiContainers.stream()
                     .map(containers -> modelMapper.map(containers, TILegsContainersModel.class))
                     .toList();
-
+            tiLegsContainersModels.forEach(tiLegsContainersModel -> {
+                tiLegsContainersModel.setGrossWeight(convertToWeightNumberFormat(tiLegsContainersModel.getGrossWeight(), v1TenantSettingsResponse));
+                tiLegsContainersModel.setNetWeight(convertToWeightNumberFormat(tiLegsContainersModel.getNetWeight(), v1TenantSettingsResponse));
+                tiLegsContainersModel.setVolume(convertToVolumeNumberFormat(tiLegsContainersModel.getVolume(), v1TenantSettingsResponse));
+            });
             legsDictionary.put(ReportConstants.TI_CONTAINERS, tiLegsContainersModels);
-
         }
     }
 }
