@@ -916,7 +916,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setSummaryVolume(IReport.convertToVolumeNumberFormat(aggregationResult.sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
         response.setSummaryDGShipments(getSummaryDGShipments(shipmentDetailsList));
         response.setSummaryContainer(getSummaryContainer(consolidationDetails.getContainersList(), assignedContainerIds));
-        response.setSummaryDgPacks(getSummaryDgPacks(consolidationDetails.getPackingList()));
+        response.setSummaryDgPacks(getSummaryDgPacks(aggregationResult.packingList));
         response.setTotalPacks(aggregationResult.packs);
         response.setPackType(aggregationResult.packsType);
         if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode) || TRANSPORT_MODE_ROA.equalsIgnoreCase(transportMode)) {
@@ -967,6 +967,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         int shipmentCount;
         BigDecimal chargeable;
         BigDecimal weightVolume;
+        List<Packing> packingList;
     }
 
     private AggregationResult aggregateShipments(String transportMode, Set<ShipmentDetails> shipments, String weightUnit, String volumeUnit) throws RunnerException {
@@ -978,6 +979,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         result.packs = 0;
         result.packsType = null;
         result.shipmentCount = 0;
+        result.packingList = new ArrayList<>();
 
         if (ObjectUtils.isNotEmpty(shipments)) {
             for (ShipmentDetails sd : shipments) {
@@ -987,6 +989,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         new BigDecimal(convertUnit(Constants.VOLUME, sd.getVolume(), sd.getVolumeUnit(), volumeUnit).toString()));
                 result.packs += (sd.getNoOfPacks() != null ? sd.getNoOfPacks() : 0);
                 result.packsType = determinePackType(result.packsType, sd.getPacksUnit());
+                if(sd.getPackingList() != null) result.packingList.addAll(sd.getPackingList());
 
                 // chargeable and weight volume sum
                 if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode) || TRANSPORT_MODE_ROA.equalsIgnoreCase(transportMode)) {
