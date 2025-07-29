@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -24,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.mockito.Mockito.*;
 
@@ -38,6 +40,9 @@ class RoutingValidationUtilTest {
     private IConsolidationService consolidationService;
     @Mock
     private ICustomerBookingService customerBookingService;
+    @Mock
+    private IRoutingsDao routingsV3Dao;
+
     @InjectMocks
     private RoutingValidationUtil routingValidationUtil;
 
@@ -132,6 +137,42 @@ class RoutingValidationUtilTest {
     void testValidateModule_Shipment3() {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().shipmentId(1L).build();
         when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        assertDoesNotThrow(() -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+    }
+
+    /* No console attached  : Adding should allow  */
+    @Test
+    void testValidateModule_Shipment4() {
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(true).build()));
+        assertDoesNotThrow(() -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+    }
+
+    /* console attached with no inherit  : Adding should not allow  */
+    @Test
+    void testValidateModule_Shipment5() {
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("123").build()));
+        lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(false).build()));
+        assertThrows(ValidationException.class, () -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+    }
+
+    /* console attached with no CARRIAGE : Adding should not allow  */
+    @Test
+    void testValidateModule_Shipment7() {
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("1234").build()));
+        lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of());
+        assertThrows(ValidationException.class, () -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+    }
+
+    /* console attached with  inherit  : Adding should allow  */
+    @Test
+    void testValidateModule_Shipment6() {
+        RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
+        lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("12345").build()));
+        lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(true).build()));
         assertDoesNotThrow(() -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
     }
 
