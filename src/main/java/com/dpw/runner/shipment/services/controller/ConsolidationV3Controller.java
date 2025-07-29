@@ -193,10 +193,11 @@ public class ConsolidationV3Controller {
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ALL_SHIPMENT_COUNT, response = UpstreamDateUpdateResponse.class)})
     @GetMapping(ApiConstants.AIB_SHIPMENT_COUNT)
-    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@RequestParam() Long id) {
+    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@RequestParam() Long id,
+                                                                           @RequestHeader(value = "x-source", required = false) String xSource) {
         log.info("{} Request received for aibAttachedPendingShipmentCount for consolidation: {}", LoggerHelper.getRequestIdFromMDC(), id);
         try {
-            return consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(id).build());
+            return consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(id).build(), xSource);
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
