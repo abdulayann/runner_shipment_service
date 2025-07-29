@@ -1481,4 +1481,6 @@ public class ReportConstants {
     public static final String SEAWAY_BILL_RELEASE_TYPE = "SWB";
     public static final String SURRENDER_RELEASE_TYPE = "OBO";
     public static final String HOUSE_BILL_RELEASE_TYPE = "OBL";
+
+    public static final String CARRIER_BOOKING_NUMBER = "CarrierBookingNumber";
 }
