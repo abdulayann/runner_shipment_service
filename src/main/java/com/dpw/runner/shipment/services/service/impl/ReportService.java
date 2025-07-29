@@ -457,14 +457,13 @@ public class ReportService implements IReportService {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
             for (TiLegs tilegs : tiLegsList) {
-                Map<String, Object> legsDictionary = new HashMap<>(dictionary);
-                transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
-                transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
-                transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
-                transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
-                transportInstructionReport.addTransportInstructionLegsTruckDriverDataIntoDictionary(tilegs, legsDictionary);
-
                 futures.add(executorService.submit(() -> {
+                    Map<String, Object> legsDictionary = new HashMap<>(dictionary);
+                    transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
+                    transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
+                    transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
+                    transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
+                    transportInstructionReport.addTransportInstructionLegsTruckDriverDataIntoDictionary(tilegs, legsDictionary);
                     byte[] mainDocPage = getFromDocumentService(legsDictionary, pages.getMainPageId());
                     if (mainDocPage == null) {
                         throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
@@ -1585,7 +1584,7 @@ public class ReportService implements IReportService {
                 mainPageId = getMainOrLastPageId(row.getManifestPrint(), adminRow.getManifestPrint());
                 isLogoFixed = getIsLogoFixed(row.getManifestPrint());
                 break;
-            case ReportConstants.TRANSPORT_ORDER:
+            case ReportConstants.TRANSPORT_ORDER, TRANSPORT_ORDER_V3:
                 mainPageId = getMainOrLastPageId(row.getTransportOrderRoad(), adminRow.getTransportOrderRoad());
                 isLogoFixed = getIsLogoFixed(row.getTransportOrderRoad());
                 break;
