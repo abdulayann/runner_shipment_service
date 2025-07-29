@@ -36,9 +36,9 @@ public class SectionDetailsServiceImpl implements ISectionDetailsService {
   @Override
   public SectionDetailsResponse create(SectionDetailsRequest request) {
 
-    if (sectionDetailsRepository.existsBySectionCode(request.getSectionCode())) {
+    if (sectionDetailsRepository.existsBySectionName(request.getSectionName())) {
       throw new SectionDetailsException(
-          SectionDetailsConstant.SECTION_ALREADY_EXIST + request.getSectionCode());
+          SectionDetailsConstant.SECTION_ALREADY_EXIST + request.getSectionName());
     }
     SectionDetails entity = modelMapper.map(request, SectionDetails.class);
 
@@ -72,8 +72,8 @@ public class SectionDetailsServiceImpl implements ISectionDetailsService {
         .orElseThrow(
             () -> new SectionDetailsException(SectionDetailsConstant.NOT_FOUND + request.getId()));
 
-    existingEntity.setSectionCode(request.getSectionCode());
     existingEntity.setSectionName(request.getSectionName());
+    existingEntity.setSectionDescription(request.getSectionDescription());
     // Validate and set SectionFields
     Set<SectionFields> sectionFields = validateAndFetchSectionFields(request.getSectionFieldIds());
     existingEntity.setSectionFields(sectionFields);
