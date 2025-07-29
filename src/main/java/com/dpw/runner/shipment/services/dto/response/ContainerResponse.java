@@ -133,4 +133,8 @@ public class ContainerResponse implements IRunnerResponse {
     private BigDecimal humidity;
     private BigDecimal vents;
     private String assignedContainer;
+    private Long packagesPerContainer;
+    private String containerPackageType;
+    private BigDecimal cargoWeightPerContainer;
+    private String containerWeightUnit;
 }

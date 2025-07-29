@@ -140,4 +140,8 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   private BigDecimal humidity;
   private BigDecimal vents;
   private BigDecimal teu;
+  private Long packagesPerContainer;
+  private String containerPackageType;
+  private BigDecimal cargoWeightPerContainer;
+  private String containerWeightUnit;
 }

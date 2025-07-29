@@ -454,6 +454,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    //todo: inline save
     @Override
     public void updateContainerInfoInBooking(Long bookingId) throws RunnerException {
         Optional<CustomerBooking> optionalBooking = customerBookingDao.findById(bookingId);
@@ -470,6 +471,8 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setContainers(containerCount);
             customerBooking.setTeuCount(teuCount);
             customerBooking.setContainersList(containersList);
+            customerBooking.setPackages(getTotalContainerPackages(containersList));
+            customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
             customerBookingDao.save(customerBooking);
         }
     }
@@ -2317,6 +2320,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
+    //todo: create, update
     public void updateCargoInformation(CustomerBooking booking, Map<String, BigDecimal> codeTeuMap) throws RunnerException {
         List<Containers> containers = new ArrayList<>();
         List<Packing> packings = new ArrayList<>();
@@ -2343,6 +2347,31 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         customerBooking.setContainers(getTotalContainerCount(customerBooking.getContainersList()));
         customerBooking.setTeuCount(getTotalTeu(containersList, codeTeuMap));
+        customerBooking.setPackages(getTotalContainerPackages(containersList));
+        customerBooking.setGrossWeight(getTotalCargoWeight(containersList));
+    }
+
+    private BigDecimal getTotalCargoWeight(List<Containers> containersList) {
+        BigDecimal totalCargoWeight = BigDecimal.ZERO;
+
+        for (Containers container : containersList) {
+            BigDecimal containerCount = BigDecimal.valueOf(container.getContainerCount());
+            BigDecimal weightPerContainer = container.getCargoWeightPerContainer();
+            BigDecimal totalLineCargoWeight = containerCount.multiply(weightPerContainer);
+
+            totalCargoWeight = totalCargoWeight.add(totalLineCargoWeight);
+        }
+
+        return totalCargoWeight;
+    }
+
+    private Long getTotalContainerPackages(List<Containers> containersList) {
+        long totalLinePackages, totalCargoSummaryPackages = 0L;
+        for(Containers container: containersList) {
+            totalLinePackages = container.getContainerCount() * container.getPackagesPerContainer();
+            totalCargoSummaryPackages += totalLinePackages;
+        }
+        return totalCargoSummaryPackages;
     }
 
     private Map<String, BigDecimal> getCodeTeuMapping() {
@@ -2368,6 +2397,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
                 .setScale(1, RoundingMode.UNNECESSARY);
     }
 
+    //todo: inline save
     public void calculateCargoDetails(List<Packing> packings, CustomerBooking customerBooking) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
