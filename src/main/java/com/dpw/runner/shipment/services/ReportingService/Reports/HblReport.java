@@ -95,57 +95,66 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId, String printType) {
-        V1TenantSettingsResponse tenantSettings;
-        tenantSettings = getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
         ShipmentDetails shipment = getShipmentDetails(shipmentId);
         ShipmentSettingsDetails shipmentSettingFromContext = getShipmentSettings();
 
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-            if (shipment == null) {
-                throw new ReportException("No shipment found with id: " + shipmentId);
-            }
+            validateOriginalPrintType(shipmentId, shipment, tenantSettings);
+        }
 
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection()) || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
+        if (isBlRelatedPrintType(printType)) {
+            validateUnassignedPackages(shipment, shipmentSettingFromContext);
+        }
+    }
+
+    private void validateOriginalPrintType(Long shipmentId, ShipmentDetails shipment, V1TenantSettingsResponse tenantSettings) {
+        if (shipment == null) {
+            throw new ReportException("No shipment found with id: " + shipmentId);
+        }
+
+        if (isSeaFclExportOrCtsShipment(shipment)) {
+            Hbl hblObject = getHbl(shipmentId);
+            shipmentService.validateHblContainerNumberCondition(shipment);
+            hblService.validateHblContainerNumberCondition(hblObject);
+        }
+
+        processMissingFields(tenantSettings, shipment);
+    }
+
+    private boolean isSeaFclExportOrCtsShipment(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && (Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                || Constants.DIRECTION_CTS.equalsIgnoreCase(shipment.getDirection()))
                 && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                && ObjectUtils.isNotEmpty(shipment.getJobType()) && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-                Hbl hblObject = getHbl(shipmentId);
-                shipmentService.validateHblContainerNumberCondition(shipment);
-                hblService.validateHblContainerNumberCondition(hblObject);
-            }
-            processMissingFields(tenantSettings, shipment);
-        }
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
+    }
 
-        // Check if the current print type is for any type of HBL: Surrender, Original, or Copy
-        if (ReportConstants.SURRENDER.equalsIgnoreCase(printType)
+    private boolean isBlRelatedPrintType(String printType) {
+        return ReportConstants.SURRENDER.equalsIgnoreCase(printType)
                 || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
-                || ReportConstants.COPY.equalsIgnoreCase(printType)) {
+                || ReportConstants.COPY.equalsIgnoreCase(printType);
+    }
 
-            // Retrieve the flag from context that allows/disallows document generation with unassigned packages
-            Boolean allowUnassignedBlInvGeneration = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+    private void validateUnassignedPackages(ShipmentDetails shipment, ShipmentSettingsDetails shipmentSettingFromContext) {
+        List<Packing> packingList = shipment.getPackingList();
 
-            // Get the list of packings associated with the shipment
-            List<Packing> packingList = shipment.getPackingList();
-
-            // Proceed only if the packing list is not empty
-            if (ObjectUtils.isNotEmpty(packingList)) {
-
-                // Check if any package is not assigned to a container
-                boolean hasUnassignedPackage = packingList.stream()
-                        .anyMatch(p -> p.getContainerId() == null);
-
-                if (hasUnassignedPackage) {
-                    if (Boolean.TRUE.equals(allowUnassignedBlInvGeneration)) {
-                        // Flag is ON → Allow generation but throw a warning to alert user of discrepancies
-                        throw new ReportExceptionWarning("Unassigned packages found — review BL for possible cargo discrepancies.");
-                    } else {
-                        // Flag is OFF → Block generation and throw an error to enforce data integrity
-                        throw new ReportException("Unassigned packages found — Cannot Generate BL.");
-                    }
-                }
-            }
+        if (ObjectUtils.isEmpty(packingList)) {
+            return; // No packings → Nothing to validate
         }
 
+        boolean hasUnassignedPackage = packingList.stream()
+                .anyMatch(p -> p.getContainerId() == null);
+
+        if (hasUnassignedPackage) {
+            Boolean allowUnassigned = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+            if (Boolean.TRUE.equals(allowUnassigned)) {
+                throw new ReportExceptionWarning("Unassigned packages found — review BL for possible cargo discrepancies.");
+            } else {
+                throw new ReportException("Unassigned packages found — Cannot Generate BL.");
+            }
+        }
     }
 
     private void processMissingFields(V1TenantSettingsResponse tenantSettings, ShipmentDetails shipment) {

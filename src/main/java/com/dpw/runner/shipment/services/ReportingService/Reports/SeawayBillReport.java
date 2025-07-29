@@ -77,59 +77,67 @@ public class SeawayBillReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId) {
-        tenantSettings = getCurrentTenantSettings();
+        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
         ShipmentSettingsDetails shipmentSettingFromContext = commonUtils.getShipmentSettingFromContext();
+        ShipmentDetails shipment = getShipmentDetailsOrThrow(shipmentId);
+
+        if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+            validateShipmentModules(shipment);
+        }
+
+        validateUnassignedPackagesForSeaway(shipment, shipmentSettingFromContext);
+    }
+
+    private ShipmentDetails getShipmentDetailsOrThrow(Long shipmentId) {
         ShipmentDetails shipment = getShipmentDetails(shipmentId);
         if (shipment == null) {
             throw new ReportException("No shipment found with id: " + shipmentId);
         }
+        return shipment;
+    }
 
-        if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+    private void validateShipmentModules(ShipmentDetails shipment) {
+        if (shouldValidateModules(shipment)) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
-            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
-                    && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
-                    && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
-                    || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
-                    && ObjectUtils.isNotEmpty(shipment.getJobType())
-                    && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
-
-                shipmentService.validateCarrierDetails(shipment, missingFields);
-                shipmentService.validateContainerDetails(shipment, missingFields);
-
-            }
+            shipmentService.validateCarrierDetails(shipment, missingFields);
+            shipmentService.validateContainerDetails(shipment, missingFields);
 
             if (ObjectUtils.isNotEmpty(missingFields)) {
-                String missingFieldsDescription = missingFields.stream()
+                String errorMessage = missingFields.stream()
                         .map(ModuleValidationFieldType::getDescription)
                         .collect(Collectors.joining(" | "));
-                throw new ReportException(missingFieldsDescription);
+                throw new ReportException(errorMessage);
             }
         }
+    }
 
-        // Fetch the flag from shipment settings to determine if unassigned packages are allowed during document generation
-        Boolean allowUnassignedBlInvGeneration = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+    private boolean shouldValidateModules(ShipmentDetails shipment) {
+        return Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
+                || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
+    }
 
-        // Retrieve the list of packages (packings) for the shipment
+    private void validateUnassignedPackagesForSeaway(ShipmentDetails shipment, ShipmentSettingsDetails shipmentSettingFromContext) {
         List<Packing> packingList = shipment.getPackingList();
 
-        // Proceed only if the packing list is not empty
-        if (ObjectUtils.isNotEmpty(packingList)) {
-
-            // Check if any package does not have a container assigned
-            boolean hasUnassignedPackage = packingList.stream()
-                    .anyMatch(p -> p.getContainerId() == null);
-
-            if (hasUnassignedPackage) {
-                if (Boolean.TRUE.equals(allowUnassignedBlInvGeneration)) {
-                    // Flag is ON → Allow generation with a warning for potential cargo mismatch
-                    throw new ReportExceptionWarning("Unassigned packages found — review Seaway for possible cargo discrepancies.");
-                } else {
-                    // Flag is OFF → Block generation with an error message
-                    throw new ReportException("Unassigned packages found — Cannot Generate Seaway Bill.");
-                }
-            }
+        if (ObjectUtils.isEmpty(packingList)) {
+            return; // No packings → Nothing to validate
         }
 
+        boolean hasUnassignedPackage = packingList.stream()
+                .anyMatch(p -> p.getContainerId() == null);
+
+        if (hasUnassignedPackage) {
+            Boolean allowUnassigned = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
+            if (Boolean.TRUE.equals(allowUnassigned)) {
+                throw new ReportExceptionWarning("Unassigned packages found — review Seaway for possible cargo discrepancies.");
+            } else {
+                throw new ReportException("Unassigned packages found — Cannot Generate Seaway Bill.");
+            }
+        }
     }
 
     @Override
