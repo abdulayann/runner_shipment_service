@@ -998,6 +998,9 @@ public class ContainerV3Service implements IContainerV3Service {
         ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
         response.setLastDigit(null);
         response.setIsLastDigitCorrect(null);
+        // Convert to UPPERCASE
+        containerNumber = containerNumber.toUpperCase();
+
         if (containerNumber.length() != 10 && containerNumber.length() != 11) {
             checkUnavailableContainerMD(containerNumber, response); // unavailable cont master data would be around 4-5 characters max (acc. to story), so only checking if it's not 10 or 11
             return response;
@@ -1055,6 +1058,13 @@ public class ContainerV3Service implements IContainerV3Service {
         if (containerNumber.length() == 11 && (containerNumber.charAt(10) < 48 || containerNumber.charAt(10) > 57)) {
             response.setSuccess(false);
             return response;
+        }
+        // Validate 4th character must be U, J, or Z (warning only)
+        char fourthChar = containerNumber.charAt(3);
+        if (fourthChar != 'U' && fourthChar != 'J' && fourthChar != 'Z') {
+            response.setWarningMessage("Invalid Container Number. The fourth character must be U, J, or Z.");
+            // Still allow proceeding with success
+            response.setSuccess(true);
         }
         return null;
     }
