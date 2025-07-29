@@ -1,39 +1,19 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.BL_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_IMPORT_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MBL_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.NUMBER_OF_SHIPMENTS_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SENDER_USER_NAME_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SENT_DATE_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_IMPORT_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBERS_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_BRANCH_PLACEHOLDER;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.ALREADY_ACCEPTED_NETWORK_TRANSFER;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -83,10 +63,26 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.TaskType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.AcceptedFileRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckEntityExistRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckTaskExistRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.PostArValidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendFileToExternalRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.AcceptedFileResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ArValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckEntityExistResponse;
@@ -127,15 +123,6 @@ import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.transaction.Transactional;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -153,6 +140,52 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import javax.transaction.Transactional;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BL_NUMBER_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_IMPORT_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_NUMBER_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DEFAULT_GROUPED_SHIPMENT_RECEIVED_BODY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.MBL_NUMBER_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NUMBER_OF_SHIPMENTS_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SENDER_USER_NAME_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SENT_DATE_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_IMPORT_EMAIL_TYPE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBERS_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_NUMBER_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_BRANCH_PLACEHOLDER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_RAI;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Service
 @Slf4j
@@ -455,6 +488,7 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentDetails shipment = shipmentDetails.get();
         var entityTransferPayload = prepareShipmentPayload(shipment);
         entityTransferPayload.setDirection(Constants.IMP);
+        entityTransferPayload.setAdditionalDocs(sendFileToExternalRequest.getAdditionalDocs());
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
         prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
 
@@ -468,8 +502,12 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         ConsolidationDetails console = consolidationDetails.get();
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .additionalDocs(sendFileToExternalRequest.getAdditionalDocs())
+                .shipAdditionalDocs(sendFileToExternalRequest.getShipAdditionalDocs())
+                .build();
 
-        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, new SendConsolidationRequest());
+        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, sendConsolidationRequest);
         entityTransferPayload.setShipmentType(Constants.IMP);
         if(!entityTransferPayload.getShipmentsList().isEmpty()) {
             for (var ship : entityTransferPayload.getShipmentsList()) {
@@ -492,6 +530,7 @@ public class EntityTransferService implements IEntityTransferService {
         BridgeRequest request = BridgeRequest.builder()
                 .requestCode(sendFileToExternalRequest.getSendToBranch())
                 .transactionId(UUID.randomUUID().toString())
+                .referenceId(entityNumber)
                 .payload(networkTransfer)
                 .build();
         log.info("OutBound File Transfer Bridge Service Request: {}", jsonHelper.convertToJson(request));
