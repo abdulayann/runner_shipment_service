@@ -2955,8 +2955,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentsCount = shipmentDetailsList.stream().count();
+            isSeaExportWithLclAttached = shipmentDetailsList.stream().anyMatch(this::isSeaExportAndLclAttached);
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                isSeaExportWithLclAttached = isSeaExportAndLclAttached(shipmentDetails);
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
                 packs = packs + (shipmentDetails.getNoOfPacks() != null ? shipmentDetails.getNoOfPacks() : 0);
