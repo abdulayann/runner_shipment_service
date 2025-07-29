@@ -608,6 +608,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture, containerTeuFuture).join();
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+        setBookingId(shipmentDetails.get(), response);
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
         // set dps implications
         response.setImplicationList(implications);
@@ -617,6 +618,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setBookingId(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse){
+            shipmentRetrieveLiteResponse.setBookingId(getShipmentToBookingIdsMap(
+                    List.of(shipmentDetails)).get(shipmentDetails.getId()));
     }
 
     private void setConsoleAndNteInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
@@ -1278,8 +1284,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     @SuppressWarnings("java:S125")
     protected void beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentV3Request shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, boolean isImportFile, ConsoleShipmentData consoleShipmentData) throws RunnerException, JsonMappingException {
-        shipmentValidationV3Util.validateStaleShipmentUpdateError(shipmentDetails, isCreate);
-
         /* Future to populate unloc code in shipment child entities*/
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
@@ -3971,7 +3975,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Nullable
     private static ResponseEntity<IRunnerResponse> checkAlreadyExistingConsole(Long consoleId, ConsoleShipmentMapping consoleShip) {
         if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
-            return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
+            return ResponseHelper.buildFailedResponse(ErrorConstants.CONSOLE_ALREADY_EXISTS);
         }
         if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
             return ResponseHelper.buildSuccessResponse();
@@ -4034,7 +4038,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void setColoadingStation(ShipmentDetails request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }
@@ -4082,7 +4086,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> attachListShipment(CommonRequestModel commonRequestModel, boolean getMasterData) {
         AttachListShipmentRequest request = (AttachListShipmentRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId());
         if (!consolidationDetails.isPresent()) {
@@ -4098,7 +4102,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             commonUtils.setInterBranchContextForHub();
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
         return ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoListForAttachListShipment(shipmentDetailsPage.getContent(), true, request),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsPage.getContent(), getMasterData, request),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements());
     }

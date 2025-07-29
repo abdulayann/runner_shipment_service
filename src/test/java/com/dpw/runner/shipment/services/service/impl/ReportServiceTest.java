@@ -1,10 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -70,6 +66,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
@@ -93,6 +90,7 @@ import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -347,7 +345,7 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -453,7 +451,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -478,7 +476,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -503,7 +501,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -528,7 +526,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -562,7 +560,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -596,7 +594,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.SPECIAL_HANDLING_CODE, "EAW");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -629,7 +627,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -664,7 +662,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -675,8 +673,6 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
-
-        Awb mockAwb = new Awb();
 
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
@@ -713,7 +709,7 @@ class ReportServiceTest extends CommonMocks {
         });
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -737,7 +733,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
-        Awb mockAwb = new Awb();
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
@@ -760,7 +755,7 @@ class ReportServiceTest extends CommonMocks {
             return mockRunnable;
         });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -794,7 +789,7 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -830,7 +825,7 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(shipmentService).updateDateAndStatus(any(), any(), any());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -905,7 +900,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -979,7 +974,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1051,7 +1046,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1098,7 +1093,7 @@ class ReportServiceTest extends CommonMocks {
         when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(List.of(hbl));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1137,7 +1132,7 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1176,7 +1171,7 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1216,7 +1211,7 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1241,8 +1236,8 @@ class ReportServiceTest extends CommonMocks {
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        when(self.getDocumentData(any())).thenReturn(ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build());
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1270,8 +1265,8 @@ class ReportServiceTest extends CommonMocks {
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        when(self.getDocumentData(any())).thenReturn(ReportResponse.builder().content(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))).build());
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1306,7 +1301,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1341,7 +1336,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1372,7 +1367,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1407,7 +1402,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1442,7 +1437,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1477,7 +1472,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1512,7 +1507,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1543,7 +1538,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1578,7 +1573,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1613,7 +1608,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1648,7 +1643,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1686,9 +1681,9 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1726,9 +1721,9 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1763,7 +1758,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1798,7 +1793,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1829,7 +1824,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
     @Test
@@ -1863,7 +1858,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
     @Test
@@ -1900,7 +1895,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1935,7 +1930,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -1966,7 +1961,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2001,7 +1996,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2032,7 +2027,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         verify(eventService, times(0)).saveEvent(any());
         assertNotNull(data);
     }
@@ -2068,7 +2063,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
         verify(eventService, times(0)).saveEvent(any());
     }
@@ -2104,7 +2099,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2139,7 +2134,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2174,7 +2169,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2209,7 +2204,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2244,7 +2239,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2279,7 +2274,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2314,7 +2309,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2345,7 +2340,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2384,7 +2379,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2484,7 +2479,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2520,7 +2515,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2555,7 +2550,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2590,7 +2585,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2625,7 +2620,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2660,7 +2655,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2695,7 +2690,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2730,7 +2725,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2765,7 +2760,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2800,7 +2795,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2835,7 +2830,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2869,7 +2864,7 @@ class ReportServiceTest extends CommonMocks {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2943,7 +2938,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -2979,7 +2974,7 @@ class ReportServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3012,7 +3007,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3047,7 +3042,7 @@ class ReportServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3281,12 +3276,6 @@ class ReportServiceTest extends CommonMocks {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
-//        when(reportService1.executorService.submit(any(Runnable.class)))
-//            .thenAnswer(invocation -> {
-//                Runnable runnable = invocation.getArgument(0);
-//                runnable.run(); // Execute immediately for testing
-//                return CompletableFuture.completedFuture(null);
-//            });
         // Mock GetFromDocumentService to return null
         doReturn(null).when(reportService1).getFromDocumentService(any(Map.class), anyString());
 
@@ -3423,8 +3412,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint() {
         ReportRequest newReportRequest = new ReportRequest();
         newReportRequest.setReportId("1");
         newReportRequest.setPrintType("ORIGINAL");
@@ -3687,7 +3675,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void getPreAlertEmailTemplateData(){
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getPreAlertEmailTemplateData(1L, 2L));
     }
 
@@ -3727,15 +3715,13 @@ class ReportServiceTest extends CommonMocks {
         dataRetrieved.put(ReportConstants.DIRECTION, "EXP");
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
+        assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATION, Constants.SHIPMENT})  // Runs test for both true and false cases
+    @ValueSource(strings = {Constants.CONSOLIDATION, Constants.SHIPMENT})  // Runs test for both true and false cases
     void testPushFileToDocumentMasterForTO(String entityName) {
         reportRequest.setReportInfo(ReportConstants.TRANSPORT_ORDER);
         reportRequest.setEntityName(entityName);
@@ -3746,11 +3732,10 @@ class ReportServiceTest extends CommonMocks {
         dataRetrieved.put(ReportConstants.DIRECTION, "EXP");
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
     @Test
@@ -3763,11 +3748,11 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
 
@@ -3780,11 +3765,10 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
     @Test
@@ -3797,10 +3781,8 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
+        assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
@@ -3814,11 +3796,10 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
-        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+        var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+        assertNotNull(response);
     }
 
     @Test
@@ -3845,17 +3826,8 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
-        Runnable mockRunnable = mock(Runnable.class);
-
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
         reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
 
         verify(documentManagerService, times(1)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
@@ -3871,18 +3843,8 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        Runnable mockRunnable = mock(Runnable.class);
 
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
-        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
-
+        assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
@@ -3906,7 +3868,7 @@ class ReportServiceTest extends CommonMocks {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         reportRequest.setReportInfo(ReportConstants.BOOKING_ORDER);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3952,7 +3914,7 @@ class ReportServiceTest extends CommonMocks {
         when(awbLabelReport.getData(any())).thenReturn(dataRetrived);
         reportRequest.setCopyCountForAWB(2);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -3997,7 +3959,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.FCR_DOCUMENT);
         Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().preAlertEmailAndLogs(true).build());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -4050,7 +4012,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintCustomLabel(true);
         reportRequest.setTotalHawbPieces(1);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -4082,7 +4044,7 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setTotalHawbPieces(1);
         reportRequest.setCombiLabel(true);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
-        byte[] data = reportService.getDocumentData(commonRequestModel);
+        var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
@@ -4182,10 +4144,10 @@ class ReportServiceTest extends CommonMocks {
         }
 
         // Convert URL to Path
-        Path path = Paths.get(resource.toURI());
+        Path path1 = Paths.get(resource.toURI());
 
         // Read all bytes
-        byte[] sampleDoc = Files.readAllBytes(path);
+        byte[] sampleDoc = Files.readAllBytes(path1);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(new ResponseEntity<>(sampleDoc, HttpStatus.OK));
 
         Map<String, Object> data = new HashMap<>();
@@ -4197,7 +4159,7 @@ class ReportServiceTest extends CommonMocks {
         assertEquals(2, pdfBytes.size());
     }
     @Test
-    void testPrintForPartiesAndBarcode_Failure() throws Exception {
+    void testPrintForPartiesAndBarcode_Failure() {
         reportRequest.setPrintingFor_str("1,2");
         reportRequest.setPrintBarcode(true);
         when(docPages.getMainPageId()).thenReturn("main-page-id");
@@ -4391,6 +4353,167 @@ class ReportServiceTest extends CommonMocks {
         List<Map<String, Object>> originAgent = (List<Map<String, Object>>) dict.get("C_OriginAgent");
         assertNotNull(originAgent);
         assertEquals("SHIPPER LTD.", originAgent.get(0).get("C_FullName"));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidHbl(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidHbl2(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidSeaBill(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("SWB");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidSurrenderBill(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid2(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid3(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid4(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid5(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid6(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid7(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid8(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid9(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
     }
 
 
