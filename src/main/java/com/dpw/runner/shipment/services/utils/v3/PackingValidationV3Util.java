@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -106,15 +105,6 @@ public class PackingValidationV3Util {
 
         if (!missingIdRequests.isEmpty()) {
             throw new DataRetrievalFailureException("All packing delete requests must have a id.");
-        }
-    }
-
-    public void validateRequest(PackingV3Request packingRequest) {
-        if(packingRequest.getMinTemp() == null && StringUtility.isNotEmpty(packingRequest.getMinTempUnit())) {
-            throw new ValidationException("Please Enter Min Temp Value");
-        }
-        if(packingRequest.getMaxTemp() == null && StringUtility.isNotEmpty(packingRequest.getMaxTempUnit())) {
-            throw new ValidationException("Please Enter Max Temp Value");
         }
     }
 
