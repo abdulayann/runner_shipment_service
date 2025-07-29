@@ -1477,5 +1477,5 @@ public class ReportConstants {
     public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
     public static final String HAS_PACKS = "HasPacks1";
 
-    public static final String CARRIER_BOOKING_NUMBER = "Carrierbookingnumber";
+    public static final String CARRIER_BOOKING_NUMBER = "CarrierBookingNumber";
 }
