@@ -5579,8 +5579,14 @@ if (unitConversionUtilityMockedStatic != null) {
 
   @Test
   void testIsSeaExportWithLclAttachedFlagSet() throws Exception {
-    shipmentDetails.setShipmentType("LCL");
-    List<ShipmentDetails> shipmentDetailsList = List.of(shipmentDetails);
+//    shipmentDetails.setShipmentType("LCL");
+    ShipmentDetails lclShipment = new ShipmentDetails();
+    lclShipment.setShipmentType("LCL");
+    ShipmentDetails fclShipment = new ShipmentDetails();
+    fclShipment.setShipmentType("FCL");
+    ShipmentDetails lseShipment = new ShipmentDetails();
+    lseShipment.setShipmentType("LSE");
+    List<ShipmentDetails> shipmentDetailsList = List.of(lclShipment, fclShipment, lseShipment);
     shipmentSettingsDetails.setWeightChargeableUnit("KG");
     shipmentSettingsDetails.setVolumeChargeableUnit("M3");
     when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
@@ -5589,6 +5595,6 @@ if (unitConversionUtilityMockedStatic != null) {
     ShipmentWtVolResponse response = consolidationV3Service.calculateShipmentWtVol(
             "SEA", shipmentDetailsList, Collections.emptyList()
     );
-    assertTrue(response.getIsFtlOrFclAttached());
+    assertTrue(response.getIsNonFtlOrFclAttached());
   }
 }
