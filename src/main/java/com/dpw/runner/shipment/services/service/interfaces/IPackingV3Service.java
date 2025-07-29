@@ -8,20 +8,20 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPackAssignmentRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.http.auth.AuthenticationException;
 
 public interface IPackingV3Service {
 
@@ -62,5 +62,7 @@ public interface IPackingV3Service {
 
     Map<Long, ContainerInfoProjection> getContainerIdNumberMap(Set<Long> containerIds);
     ContainerResponse assignPackagesContainers(AssignContainerRequest request) throws RunnerException;
+    ContainerResponse assignShipmentPackagesContainers(ShipmentPackAssignmentRequest request) throws RunnerException;
     void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException;
+    void unAssignShipmentPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException;
 }

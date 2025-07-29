@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPackAssignmentRequest;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -206,6 +207,19 @@ public class PackingV3Controller {
     @PostMapping(UN_ASSIGN_PACKAGES)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
         packingV3Service.unAssignPackageContainers(request);
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @PostMapping(ASSIGN_PACKAGES_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> assignContainersAtShipmentLevel(@RequestBody @Valid ShipmentPackAssignmentRequest request) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(packingV3Service.assignShipmentPackagesContainers(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = PackingV3Controller.ContainerResponseClass.class)})
+    @PostMapping(UN_ASSIGN_PACKAGES_SHIPMENT)
+    public ResponseEntity<IRunnerResponse> unAssignContainersAtShipmentLevel(@RequestBody @Valid UnAssignPackageContainerRequest request) throws RunnerException {
+        packingV3Service.unAssignShipmentPackageContainers(request);
         return ResponseHelper.buildSuccessResponse();
     }
 

@@ -132,13 +132,13 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONTAINER));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_CONTAINER));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONTAINER));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})

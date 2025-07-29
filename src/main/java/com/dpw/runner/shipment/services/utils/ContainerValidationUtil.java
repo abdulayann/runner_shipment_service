@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -104,7 +105,7 @@ public class ContainerValidationUtil {
 
 
     public void validateCanAssignPackageToContainer(ShipmentDetails shipmentDetails, String module) {
-        if(Constants.PACKING.equals(module)) {
+        if(Constants.CONSOLIDATION_PACKING.equals(module) || Constants.SHIPMENT_PACKING.equals(module)) {
             String msg = getErrorMessage(shipmentDetails.getContainersList());
             throw new ValidationException(msg);
         }
@@ -132,14 +133,38 @@ public class ContainerValidationUtil {
     public void validateBeforeAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap, AssignContainerRequest request, String module) {
         if(shipmentDetailsMap.values().size() > 1) {
             for(ShipmentDetails shipmentDetails: shipmentDetailsMap.values()) {
-                if(Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
-                    if(Constants.PACKING.equals(module)) {
+                if(checkIfShipmentIsFclOrFtl(shipmentDetails)) {
+                    if(Constants.CONSOLIDATION_PACKING.equals(module) || Constants.SHIPMENT_PACKING.equals(module)) {
                         fclAndLclThrowErrorMessage(shipmentDetailsMap, request);
                     } else
                         throw new ValidationException("Container being or already assigned to FCL/FTL Shipment should be linked to only one shipment");
                 }
             }
         }
+        if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), shipmentDetailsMap, module))
+            throw new ValidationException("Use Shipment screen to assign value to FCL container.");
+    }
+
+    public boolean checkIfShipmentIsFclOrFtl(ShipmentDetails shipmentDetails) {
+        return Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) || Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType());
+    }
+
+    public void validateBeforeUnAssignContainer(Map<Long, ShipmentDetails> shipmentDetailsMap, UnAssignContainerRequest request, String module) {
+        if(fclRequestNotAllowedAtConsole(request.getShipmentPackIds().keySet(), shipmentDetailsMap, module))
+            throw new ValidationException("Use Shipment screen to unassign value to FCL container.");
+
+    }
+
+    private boolean fclRequestNotAllowedAtConsole(Set<Long> shipmentIds, Map<Long, ShipmentDetails> shipmentDetailsMap, String module) {
+        if(Constants.CONSOLIDATION_PACKING.equals(module) || Constants.CONSOLIDATION_CONTAINER.equals(module)) {
+            for(Long shipmentId: shipmentIds) {
+                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(shipmentId);
+                if(checkIfShipmentIsFclOrFtl(shipmentDetails)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void fclAndLclThrowErrorMessage(Map<Long, ShipmentDetails> shipmentDetailsMap, AssignContainerRequest request) {

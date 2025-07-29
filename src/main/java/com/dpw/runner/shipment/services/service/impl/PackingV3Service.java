@@ -22,10 +22,7 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -1446,7 +1443,30 @@ public class PackingV3Service implements IPackingV3Service {
         if(request.getShipmentPackIds().size() > 1) {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
         }
-        return containerV3Service.assignContainers(request, Constants.PACKING);
+        return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING);
+    }
+
+    @Override
+    public ContainerResponse assignShipmentPackagesContainers(ShipmentPackAssignmentRequest request) throws RunnerException {
+        if(listIsNullOrEmpty(request.getPackingIds())) {
+            throw new ValidationException("No Packing Ids provided.");
+        }
+        List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
+        if(listIsNullOrEmpty(packingList)) {
+            throw new ValidationException("No Packing found with Ids: " + request.getPackingIds());
+        }
+        if(packingList.stream().map(Packing::getShipmentId).distinct().count() > 1) {
+            throw new ValidationException("Please select Packages of single shipment only for assignment.");
+        }
+        Long shipmentId = packingList.get(0).getShipmentId();
+        ShipmentDetails shipmentDetails = shipmentService.findById(shipmentId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
+        if(!Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) && !Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+            throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
+        }
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(shipmentId, request.getPackingIds()));
+        return containerV3Service.assignContainers(assignContainerRequest, SHIPMENT_PACKING);
     }
 
     @Override
@@ -1477,7 +1497,39 @@ public class PackingV3Service implements IPackingV3Service {
             unAssignContainerRequests.add(unAssignContainerRequest);
         }
         for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
-            containerV3Service.unAssignContainers(unAssignContainerRequest, Constants.PACKING);
+            containerV3Service.unAssignContainers(unAssignContainerRequest, Constants.CONSOLIDATION_PACKING);
+        }
+    }
+
+    @Override
+    public void unAssignShipmentPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException {
+        List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
+        List<UnAssignContainerRequest> unAssignContainerRequests = new ArrayList<>();
+        Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
+        Set<Long> shipmentIds = new HashSet<>();
+        for(Packing packing: packingList) {
+            if(packing.getContainerId() == null) {
+                throw new ValidationException("Container Id is null for packing with Id: " + packing.getId());
+            }
+            containerIdPacksIdMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
+            containerIdPacksIdMap.get(packing.getContainerId()).add(packing);
+            shipmentIds.add(packing.getShipmentId());
+        }
+        if(shipmentIds.size() > 1)
+            throw new ValidationException("Please select Packages of only one shipment for unAssign action");
+        for(Map.Entry<Long, List<Packing>> entry: containerIdPacksIdMap.entrySet()) {
+            UnAssignContainerRequest unAssignContainerRequest = new UnAssignContainerRequest();
+            unAssignContainerRequest.setContainerId(entry.getKey());
+            Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+            for(Packing packing: entry.getValue()) {
+                shipmentPackIds.computeIfAbsent(packing.getShipmentId(), k -> new ArrayList<>());
+                shipmentPackIds.get(packing.getShipmentId()).add(packing.getId());
+            }
+            unAssignContainerRequest.setShipmentPackIds(shipmentPackIds);
+            unAssignContainerRequests.add(unAssignContainerRequest);
+        }
+        for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
+            containerV3Service.unAssignContainers(unAssignContainerRequest, SHIPMENT_PACKING);
         }
     }
 
