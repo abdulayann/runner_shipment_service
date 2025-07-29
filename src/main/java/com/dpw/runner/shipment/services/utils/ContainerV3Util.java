@@ -1,40 +1,51 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
+import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
+import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
@@ -47,8 +58,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -84,7 +97,21 @@ public class ContainerV3Util {
     private MasterDataKeyUtils masterDataKeyUtils;
 
     @Autowired
+    private CSVParsingUtil<Containers> parser;
+
+    @Autowired
+    private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Autowired
+    private ContainerV3FacadeService containerV3FacadeService;
+
+    @Qualifier("asyncHsCodeValidationExecutor")
+    @Autowired
+    private ThreadPoolTaskExecutor hsCodeValidationExecutor;
+
     private ObjectMapper objectMapper;
+
+    static final int BATCH_SIZE = 100;
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -461,4 +488,101 @@ public class ContainerV3Util {
         return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
+        if (request == null || request.getConsolidationId() == null || request.getConsolidationId() == 0) {
+            throw new ValidationException("Please add the container and then try again.");
+        }
+        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+        Map<UUID, Containers> containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        Map<UUID, Long> guidToIdMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Containers::getId, (existing, replacement) -> existing));
+        Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
+        Map<String, Set<String>> masterDataMap = new HashMap<>();
+        List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
+        Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
+        containersList.forEach(container -> {
+            if (container.getGuid() != null && guidToIdMap.containsKey(container.getGuid())) {
+                container.setId(guidToIdMap.get(container.getGuid()));
+            }
+            if (container.getContainerCode() != null && codeTeuMap.containsKey(container.getContainerCode())) {
+                container.setTeu(codeTeuMap.get(container.getContainerCode()));
+            }
+            container.setConsolidationId(request.getConsolidationId());
+        });
+        validateHsCode(containersList);
+        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
+
+        for (int i = 0; i < requests.size(); i++) {
+            try {
+                containerV3FacadeService.createUpdateContainer(List.of(requests.get(i)), CONSOLIDATION);
+            } catch (Exception e) {
+                throw new RunnerException(String.format("Error processing row %d: %s", i + 1, e.getMessage()), e);
+            }
+        }
+    }
+
+    public void validateHsCode(List<Containers> containersList) {
+        if (!containersList.isEmpty()) {
+            Set<String> validHsCode = getValidHsCodes(syncCommodityAndHsCode(containersList));
+            for (int i = 0; i < containersList.size(); i++) {
+                String hsCode = containersList.get(i).getHsCode();
+                if (StringUtils.isNotBlank(hsCode) && !validHsCode.contains(hsCode)) {
+                    throw new ValidationException(String.format(ContainerConstants.HS_CODE_OR_COMMODITY_IS_INVALID, i + 1));
+                }
+            }
+        }
+    }
+
+    public static Set<String> syncCommodityAndHsCode(List<Containers> containersList) {
+        Set<String> hsCodeList = new HashSet<>();
+        for (Containers container : containersList) {
+            String hsCode = container.getHsCode();
+            String commodityCode = container.getCommodityCode();
+            if (StringUtils.isBlank(commodityCode) && StringUtils.isNotBlank(hsCode)) {
+                container.setCommodityCode(hsCode);
+            } else if (StringUtils.isBlank(hsCode) && StringUtils.isNotBlank(commodityCode)) {
+                container.setHsCode(commodityCode);
+            }
+            if (StringUtils.isNotBlank(container.getHsCode())) {
+                hsCodeList.add(container.getHsCode());
+            }
+        }
+        return hsCodeList;
+    }
+
+    public Set<String> getValidHsCodes(Set<String> hsCode) {
+        if (hsCode.isEmpty()) {
+            return new HashSet<>();
+        }
+        List<String> hsCodeList = new ArrayList<>(hsCode);
+        List<List<String>> batches = new ArrayList<>();
+        for (int i = 0; i < hsCodeList.size(); i += BATCH_SIZE) {
+            batches.add(hsCodeList.subList(i, Math.min(i + BATCH_SIZE, hsCodeList.size())));
+        }
+        try {
+            List<CompletableFuture<Set<String>>> futures = batches.stream()
+                    .map(batch -> CompletableFuture.supplyAsync(() -> {
+                        V1DataResponse response = parser.getCommodityDataResponse(new ArrayList<>(batch));
+                        if (response != null && response.entities instanceof List<?>) {
+                            List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
+                            if (commodityList != null && !commodityList.isEmpty()) {
+                                return commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).filter(Objects::nonNull).collect(Collectors.toSet());
+                            }
+                        }
+                        return Collections.<String>emptySet();
+                    }, hsCodeValidationExecutor))
+                    .toList();
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            return futures.stream().map(CompletableFuture::join).flatMap(Set::stream).collect(Collectors.toSet());
+        } catch (Exception e) {
+            log.error("Error during HS code validation batch processing {}", e.getMessage());
+            return new HashSet<>();
+        }
+    }
+
+    public Map<String, BigDecimal> getCodeTeuMapping() throws RunnerException {
+        DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
+        List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
+        return containerTypes.stream().collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
+    }
 }

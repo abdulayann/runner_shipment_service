@@ -60,6 +60,7 @@ public class ContainerConstants {
     public static final String KEY_UPDATED_AT = "updatedAt";
     public static final String KEY_CONTAINER_CODE = "containerCode";
     public static final String CONTAINER_ALREADY_ASSIGNED_MSG = "Shipment already Assigned to Container - ";
+    public static final String HS_CODE_OR_COMMODITY_IS_INVALID = "HsCode/Commodity is invalid at row: %d";
 
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(KEY_CONTAINER_NUMBER,
