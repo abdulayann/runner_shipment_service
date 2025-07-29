@@ -73,7 +73,7 @@ where
 update
 	shipment_details
 set
-	client_dps_address_id = 93638,
+	client_dps_address_id = 97909,
 	updated_at = NOW()
 where
 	id = 81651;
