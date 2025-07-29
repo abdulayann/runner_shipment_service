@@ -53,8 +53,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao
 import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerEntityFileRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
@@ -2545,14 +2548,12 @@ public class ReportService implements IReportService {
         log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
-        // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
         if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
             log.info("{} | {} Processing pushFileToDocumentMaster process as Shipment3.0Flag enabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE);
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
 
-            // Generate FileName, childType & DocType based on request Type
             switch (reportRequest.getReportInfo()) {
                 case FCR_DOCUMENT:
                     filename = StringUtility.convertToString(dataRetrieved.get(FCR_NO)) + DocumentConstants.DOT_PDF;
@@ -2586,6 +2587,92 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
+
+                //Custom Naming Logic for V3 Document Names
+                try {
+                    if (!List.of("FCR", "TI").contains(docType)) {
+                        String shipmentNumberOrConsol = (String) dataRetrieved.get("shipment_id");
+                        if (shipmentNumberOrConsol == null) {
+                            shipmentNumberOrConsol = (String) dataRetrieved.get("consol_number");
+                        }
+                        if (shipmentNumberOrConsol == null) {
+                            shipmentNumberOrConsol = (String) dataRetrieved.get("booking_number");
+                        }
+
+                        // Map (docType + optional childType) to displayName
+                        Map<String, String> docNamingMap = Map.ofEntries(
+                                Map.entry("AwbLabel", "Air Label"),
+                                Map.entry("Mawb_Original", "MAWB"),
+                                Map.entry("Mawb_Draft", "MAWB"),
+                                Map.entry("Hawb_Original", "HAWB"),
+                                Map.entry("Hawb_Draft", "HAWB"),
+                                Map.entry("CSD", "Consignment Security Declaration (CSD)"),
+                                Map.entry("CargoManifestAirExportShipment", "Cargo Manifest"),
+                                Map.entry("CargoManifestAirExportConsolidation", "Cargo Manifest"),
+                                Map.entry("CargoManifestAirImportShipment", "Cargo Manifest"),
+                                Map.entry("CargoManifestAirImportConsolidation", "Cargo Manifest"),
+                                Map.entry("ArrivalNotice", "Cargo Arrival Notice"),
+                                Map.entry("PickupOrder", "Pickup Order"),
+                                Map.entry("DeliveryOrder", "Delivery Order"),
+                                Map.entry("PreAlert", "Pre Alert"),
+                                Map.entry("FCR Document", "FCR Document"),
+                                Map.entry("HBL_Sea Waybill", "HBL"),
+                                Map.entry("HBL_Original", "HBL"),
+                                Map.entry("HBL_Draft", "HBL"),
+                                Map.entry("HBL_Surrender", "HBL"),
+                                Map.entry("ExportShipmentManifest", "Cargo Manifest"),
+                                Map.entry("ImportShipmentManifest", "Cargo Manifest"),
+                                Map.entry("BookingConfirmation", "Booking Confirmation"),
+                                Map.entry("CustomsInstructions", "Customs Clearance Instructions")
+                        );
+
+                        String docKey = docType + (childType != null ? ("_" + childType) : "");
+                        String baseDocName = docNamingMap.getOrDefault(docKey, docType);
+
+                        StringBuilder fileNameBuilder = new StringBuilder(baseDocName.replaceAll("\\s+", "").toUpperCase());
+                        if (childType != null && !childType.isBlank()) {
+                            fileNameBuilder.append("_").append(childType);
+                        }
+                        if (shipmentNumberOrConsol != null) {
+                            fileNameBuilder.append("_").append(shipmentNumberOrConsol);
+                        }
+
+                        String baseFileName = fileNameBuilder.toString();
+                        String customFileName = baseFileName + DocumentConstants.DOT_PDF;
+
+                        // Fetch existing filenames
+                        String entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS.equals(reportRequest.getEntityName())
+                                ? Constants.SHIPMENTS_WITH_SQ_BRACKETS
+                                : Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
+
+                        DocumentManagerEntityFileRequest entityFileRequest = DocumentManagerEntityFileRequest.builder()
+                                .entityType(entityType)
+                                .entityKey(String.valueOf(reportRequest.getReportId()))
+                                .tenantId(Long.valueOf(TenantContext.getCurrentTenant()))
+                                .build();
+
+                        DocumentManagerMultipleEntityFileRequest fileFetchRequest = DocumentManagerMultipleEntityFileRequest.builder()
+                                .entities(List.of(entityFileRequest))
+                                .build();
+
+
+                        var response = documentManagerService.fetchMultipleFilesWithTenant(fileFetchRequest);
+                        List<String> existingFileNames = response.getData().stream()
+                                .map(DocumentManagerEntityFileResponse::getFileName)
+                                .filter(Objects::nonNull)
+                                .toList();
+
+                        int count = 1;
+                        while (existingFileNames.contains(customFileName)) {
+                            customFileName = baseFileName + "(" + count++ + ")" + DocumentConstants.DOT_PDF;
+                        }
+
+                        docUploadRequest.setFileName(customFileName);
+                        log.info("Custom file name generated: {}", customFileName);
+                    }
+                } catch (Exception e) {
+                    log.error("Error generating custom document filename: {}", e.getMessage(), e);
+                }
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
