@@ -77,6 +77,6 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
 
     @Override
     public void revertSoftDeleteByshipmentOrderIdsAndShipmentId(List<Long> shipmentOrderIds, Long shipmentId) {
-        shipmentOrderRepository.revertSoftDeleteByshipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
+        shipmentOrderRepository.revertSoftDeleteByShipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
     }
 }

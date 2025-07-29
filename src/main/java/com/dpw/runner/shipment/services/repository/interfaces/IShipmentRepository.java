@@ -295,6 +295,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
 
     @Modifying
+    @Transactional
     @Query(value = "Update shipment_details set is_deleted = true WHERE id IN ?1", nativeQuery = true)
     void deleteShipmentDetailsByIds(Set<Long> ids);
 

@@ -141,7 +141,7 @@ public class ConsolidationBackupHandler {
             consolidationBackupEntity.setNetworkTransferDetails(objectMapper.writeValueAsString(networkTransfers));
             return consolidationBackupEntity;
         } catch (Exception e) {
-            log.error("Failed to create backup entity for consolidation id: {}", consolidationDetail.getId(), e);
+            log.error("Failed to create backup entity for consolidation id: {} : {}", consolidationDetail.getId(), e.getMessage());
             throw new BackupFailureException("Error creating backup for consolidation id: " + consolidationDetail.getId(), e);
         }
     }
