@@ -2590,82 +2590,30 @@ public class ReportService implements IReportService {
 
                 //Custom Naming Logic for V3 Document Names
                 try {
-                    if (!List.of("FCR", "TI").contains(docType)) {
-                        String shipmentNumberOrConsol = (String) dataRetrieved.get("shipment_id");
-                        if (shipmentNumberOrConsol == null) {
-                            shipmentNumberOrConsol = (String) dataRetrieved.get("consol_number");
-                        }
-                        if (shipmentNumberOrConsol == null) {
-                            shipmentNumberOrConsol = (String) dataRetrieved.get("booking_number");
-                        }
-
-                        // Map (docType + optional childType) to displayName
+                    if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
+                        // Map docType to displayName
                         Map<String, String> docNamingMap = Map.ofEntries(
-                                Map.entry("AwbLabel", "Air Label"),
-                                Map.entry("Mawb_Original", "MAWB"),
-                                Map.entry("Mawb_Draft", "MAWB"),
-                                Map.entry("Hawb_Original", "HAWB"),
-                                Map.entry("Hawb_Draft", "HAWB"),
+                                Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
+                                Map.entry(ReportConstants.MAWB, "MAWB"),
+                                Map.entry(ReportConstants.HAWB, "HAWB"),
                                 Map.entry("CSD", "Consignment Security Declaration (CSD)"),
-                                Map.entry("CargoManifestAirExportShipment", "Cargo Manifest"),
-                                Map.entry("CargoManifestAirExportConsolidation", "Cargo Manifest"),
-                                Map.entry("CargoManifestAirImportShipment", "Cargo Manifest"),
-                                Map.entry("CargoManifestAirImportConsolidation", "Cargo Manifest"),
-                                Map.entry("ArrivalNotice", "Cargo Arrival Notice"),
-                                Map.entry("PickupOrder", "Pickup Order"),
-                                Map.entry("DeliveryOrder", "Delivery Order"),
-                                Map.entry("PreAlert", "Pre Alert"),
-                                Map.entry("FCR Document", "FCR Document"),
-                                Map.entry("HBL_Sea Waybill", "HBL"),
-                                Map.entry("HBL_Original", "HBL"),
-                                Map.entry("HBL_Draft", "HBL"),
-                                Map.entry("HBL_Surrender", "HBL"),
-                                Map.entry("ExportShipmentManifest", "Cargo Manifest"),
-                                Map.entry("ImportShipmentManifest", "Cargo Manifest"),
-                                Map.entry("BookingConfirmation", "Booking Confirmation"),
-                                Map.entry("CustomsInstructions", "Customs Clearance Instructions")
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, "Cargo Manifest"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, "Cargo Manifest"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, "Cargo Manifest"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, "Cargo Manifest"),
+                                Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
+                                Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
+                                Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
+                                Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
+                                Map.entry(ReportConstants.HBL, "HBL"),
+                                Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, "Cargo Manifest"),
+                                Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, "Cargo Manifest"),
+                                Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
+                                Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
                         );
 
-                        String docKey = docType + (childType != null ? ("_" + childType) : "");
-                        String baseDocName = docNamingMap.getOrDefault(docKey, docType);
-
-                        StringBuilder fileNameBuilder = new StringBuilder(baseDocName.replaceAll("\\s+", "").toUpperCase());
-                        if (childType != null && !childType.isBlank()) {
-                            fileNameBuilder.append("_").append(childType);
-                        }
-                        if (shipmentNumberOrConsol != null) {
-                            fileNameBuilder.append("_").append(shipmentNumberOrConsol);
-                        }
-
-                        String baseFileName = fileNameBuilder.toString();
-                        String customFileName = baseFileName + DocumentConstants.DOT_PDF;
-
-                        // Fetch existing filenames
-                        String entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS.equals(reportRequest.getEntityName())
-                                ? Constants.SHIPMENTS_WITH_SQ_BRACKETS
-                                : Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
-
-                        DocumentManagerEntityFileRequest entityFileRequest = DocumentManagerEntityFileRequest.builder()
-                                .entityType(entityType)
-                                .entityKey(String.valueOf(reportRequest.getReportId()))
-                                .tenantId(Long.valueOf(TenantContext.getCurrentTenant()))
-                                .build();
-
-                        DocumentManagerMultipleEntityFileRequest fileFetchRequest = DocumentManagerMultipleEntityFileRequest.builder()
-                                .entities(List.of(entityFileRequest))
-                                .build();
-
-
-                        var response = documentManagerService.fetchMultipleFilesWithTenant(fileFetchRequest);
-                        List<String> existingFileNames = response.getData().stream()
-                                .map(DocumentManagerEntityFileResponse::getFileName)
-                                .filter(Objects::nonNull)
-                                .toList();
-
-                        int count = 1;
-                        while (existingFileNames.contains(customFileName)) {
-                            customFileName = baseFileName + "(" + count++ + ")" + DocumentConstants.DOT_PDF;
-                        }
+                        String baseDocName = docNamingMap.getOrDefault(docType, docType);
+                        String customFileName = baseDocName.replaceAll("\\s+", "").toUpperCase() + DocumentConstants.DOT_PDF;
 
                         docUploadRequest.setFileName(customFileName);
                         log.info("Custom file name generated: {}", customFileName);
@@ -2673,7 +2621,10 @@ public class ReportService implements IReportService {
                 } catch (Exception e) {
                     log.error("Error generating custom document filename: {}", e.getMessage(), e);
                 }
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
+
+                // Upload Document
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() ->
+                        this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
             }
@@ -2681,7 +2632,6 @@ public class ReportService implements IReportService {
             log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
         }
     }
-
     private void setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;
         String shipmentType;
