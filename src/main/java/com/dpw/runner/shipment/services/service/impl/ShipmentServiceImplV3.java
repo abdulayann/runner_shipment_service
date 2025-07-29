@@ -608,6 +608,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture, containerTeuFuture).join();
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+        setBookingId(shipmentDetails.get(), response);
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
         // set dps implications
         response.setImplicationList(implications);
@@ -617,6 +618,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setBookingId(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse){
+            shipmentRetrieveLiteResponse.setBookingId(getShipmentToBookingIdsMap(
+                    List.of(shipmentDetails)).get(shipmentDetails.getId()));
     }
 
     private void setConsoleAndNteInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
