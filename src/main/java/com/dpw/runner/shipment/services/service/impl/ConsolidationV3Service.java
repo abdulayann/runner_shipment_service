@@ -4712,11 +4712,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @return AllShipmentCountResponse containing attached self/inter branch shipments & pending for attachment shipments.
      */
     @Override
-    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request) {
+    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException {
         Long attachedShipSelfBranch = 0L;
         Long attachedShipInterBranch = 0L;
         Long pendingForAttachment = 0L;
-        var consoleDetails = consolidationDetailsDao.findById(request.getId());
+        Optional<ConsolidationDetails> consoleDetails;
+
+        if(Objects.equals(xSource, NETWORK_TRANSFER)){
+            consoleDetails = retrieveForNte(request.getId());
+        }else {
+            consoleDetails = consolidationDetailsDao.findById(request.getId());
+        }
 
         if (consoleDetails.isEmpty()) {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
