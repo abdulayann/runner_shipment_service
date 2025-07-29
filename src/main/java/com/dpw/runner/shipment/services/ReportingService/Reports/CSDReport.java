@@ -93,6 +93,7 @@ public class CSDReport extends IReport{
             if (csdModel.getShipmentModel() != null) {
                 this.populateShipmentReportData(dictionary, null, csdModel.getShipmentModel().getId());
                 this.getPackingDetails(csdModel.getShipmentModel(), dictionary);
+                this.getContainerDetails(csdModel.getShipmentModel(), dictionary);
             }
         }
 

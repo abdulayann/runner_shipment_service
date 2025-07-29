@@ -101,6 +101,7 @@ public class TransportOrderReport extends IReport{
         if(transportOrderModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, transportOrderModel.shipmentDetails.getId());
             this.getPackingDetails(transportOrderModel.shipmentDetails, dictionary);
+            this.getContainerDetails(transportOrderModel.shipmentDetails, dictionary);
         }
         return dictionary;
     }

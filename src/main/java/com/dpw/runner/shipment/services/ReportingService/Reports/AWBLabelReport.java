@@ -160,6 +160,7 @@ public class AWBLabelReport extends IReport{
             processShipment(awbLabelModel, dictionary, unlocations);
             this.populateShipmentReportData(dictionary, null, awbLabelModel.getShipment().getId());
             this.getPackingDetails(awbLabelModel.getShipment(), dictionary);
+            this.getContainerDetails(awbLabelModel.getShipment(), dictionary);
         }
 
         if (awbLabelModel.getConsolidation() != null) {

@@ -107,6 +107,7 @@ public class PickupOrderReport extends IReport {
         if (pickUpOrderReportModel.hblModel.getShipment() != null) {
             this.populateShipmentReportData(dictionary, null, pickUpOrderReportModel.hblModel.getShipment() .getId());
             this.getPackingDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
+            this.getContainerDetails(pickUpOrderReportModel.hblModel.getShipment(), dictionary);
         }
 
         if (pickUpOrderReportModel.hblModel.getConsolidation() != null) {

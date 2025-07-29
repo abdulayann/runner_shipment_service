@@ -3911,6 +3911,18 @@ public abstract class IReport {
         dict.put(GROSS_WEIGHT, container.getGrossWeight());
         dict.put(GROSS_VOLUME, container.getGrossVolume());
         dict.put(PACKS_UNIT, container.getPacksType());
+        populateDictionaryFromContainer(jsonHelper.convertValue(container, ContainerModel.class), dictionary);
+    }
+
+    public void getContainerDetails(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        List<ContainerModel> containerModelList = shipmentModel.getContainersList();
+        for(ContainerModel containerModel: containerModelList) {
+            populateDictionaryFromContainer(containerModel, dictionary);
+        }
+    }
+
+    private void populateDictionaryFromContainer(ContainerModel container, Map<String, Object> dictionary) {
         dictionary.put(MARKS_N_NUMS, container.getMarksNums());
         dictionary.put(GOODS_DESCRIPTION, container.getDescriptionOfGoods());
         dictionary.put(PACKS, container.getPacks());
@@ -5482,24 +5494,5 @@ public abstract class IReport {
                 }
             }
         }
-    }
-
-    public List<Map<String, Object>> populatePacksAndContainerTags(ShipmentModel shipment, Map<String, Object> dictionary) {
-            if(shipment.getPackingList() == null || shipment.getPackingList().isEmpty()) {
-                dictionary.put(HAS_PACKS, false);
-                return null;
-            }
-
-            List<Map<String, Object>> packsDictionary = new ArrayList<>();
-            Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
-            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-            for(var pack : shipment.getPackingList()) {
-                packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
-            }
-
-            dictionary.put(HAS_PACKS, true);
-            dictionary.put(S_SHIPMENT_PACKS, packsDictionary);
-            return packsDictionary;
-
     }
 }

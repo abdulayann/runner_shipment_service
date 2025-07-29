@@ -99,6 +99,7 @@ public class CargoManifestAirShipmentReport extends IReport{
         dictionary.put(CM_PACKS_UNIT, Constants.PIECES);
         this.populateShipmentReportData(dictionary, null, cargoManifestAirShipmentModel.getShipmentDetails().getId());
         this.getPackingDetails(cargoManifestAirShipmentModel.getShipmentDetails(), dictionary);
+        this.getContainerDetails(cargoManifestAirShipmentModel.getShipmentDetails(), dictionary);
         return dictionary;
     }
 }
