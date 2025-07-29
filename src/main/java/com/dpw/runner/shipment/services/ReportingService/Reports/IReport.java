@@ -462,6 +462,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -2724,6 +2725,39 @@ public abstract class IReport {
         return null;
     }
 
+    /**
+     * Formats and returns a list of address details in a structured line-by-line format.
+     * <p>
+     * The returned list will include:
+     * <ul>
+     *   <li>Name</li>
+     *   <li>Address line 1</li>
+     *   <li>Address line 2 (if present)</li>
+     *   <li>A single line combining state, city, and country (in that order, separated by commas)</li>
+     *   <li>Zip code (if present)</li>
+     *   <li>Phone number (if present)</li>
+     * </ul>
+     * <p>
+     * Example output:
+     * <pre>
+     * John Doe
+     * 123 Main Street
+     * Apt 4B
+     * California, Los Angeles, USA
+     * 90001
+     * +1-123-456-7890
+     * </pre>
+     *
+     * @param name     Name of the person or entity
+     * @param address1 Primary address line (required if name is empty)
+     * @param address2 Secondary address line (optional)
+     * @param country  Country name or code (optional)
+     * @param state    State or region (optional)
+     * @param city     City (optional)
+     * @param zipCode  Postal or ZIP code (optional)
+     * @param phone    Phone number (optional)
+     * @return A list of formatted address lines or {@code null} if both name and address1 are empty
+     */
     public static List<String> getFormattedDetails(String name, String address1,String address2, String country, String state, String city, String zipCode, String phone)
     {
         if(StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
@@ -2756,6 +2790,82 @@ public abstract class IReport {
         if (!Strings.isNullOrEmpty(phone)) details.add(phone);
         return details;
     }
+
+    /**
+     * Formats and returns a list of address details in a human-readable structure.
+     *
+     * <p><strong>Output Format:</strong></p>
+     * <pre>
+     * Name
+     * Address1
+     * Address2            (only if present)
+     * City, State, Zip, Country
+     * Phone               (only if present)
+     * </pre>
+     *
+     * @param name      the name or party name (mandatory if address1 is empty)
+     * @param address1  the first line of address (mandatory if name is empty)
+     * @param address2  the second line of address (optional)
+     * @param country   the country (optional)
+     * @param state     the state or region (optional)
+     * @param city      the city (optional)
+     * @param zipCode   the zip/postal code (optional)
+     * @param phone     the contact phone number (optional)
+     * @return List of formatted address lines, or {@code null} if both name and address1 are empty
+     */
+    public static List<String> getFormattedDetailsV2(String name, String address1, String address2,
+            String country, String state, String city,
+            String zipCode, String phone) {
+
+        if (StringUtility.isEmpty(name) && StringUtility.isEmpty(address1)) {
+            return null;
+        }
+
+        List<String> details = new ArrayList<>();
+
+        // Add name and primary address line
+        details.add(name);
+        details.add(address1);
+
+        // Add secondary address line if present
+        if (!StringUtility.isEmpty(address2)) {
+            details.add(address2);
+        }
+
+        // Compose the city/state/zip/country line
+        StringBuilder locationLine = new StringBuilder();
+
+        if (!Strings.isNullOrEmpty(city)) {
+            locationLine.append(city);
+        }
+
+        if (!Strings.isNullOrEmpty(state)) {
+            if (!locationLine.isEmpty()) locationLine.append(", ");
+            locationLine.append(state);
+        }
+
+        if (!Strings.isNullOrEmpty(zipCode)) {
+            if (!locationLine.isEmpty()) locationLine.append(", ");
+            locationLine.append(zipCode);
+        }
+
+        if (!Strings.isNullOrEmpty(country)) {
+            if (!locationLine.isEmpty()) locationLine.append(", ");
+            locationLine.append(country);
+        }
+
+        if (!locationLine.isEmpty()) {
+            details.add(locationLine.toString());
+        }
+
+        // Add phone if present
+        if (!Strings.isNullOrEmpty(phone)) {
+            details.add(phone);
+        }
+
+        return details;
+    }
+
 
     /**
      Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
@@ -5094,10 +5204,15 @@ public abstract class IReport {
         String city = addressData != null ? (String) addressData.get(PartiesConstants.CITY) : null;
         String state = addressData != null ? (String) addressData.get(PartiesConstants.STATE) : null;
         String zip = addressData != null ? (String) addressData.get(PartiesConstants.ZIP_POST_CODE) : null;
-        String country = addressData != null ? (String) addressData.get(PartiesConstants.COUNTRY) : null;
+        String country = null;
+        if (addressData != null) {
+            String countryCode = (String) addressData.get(PartiesConstants.COUNTRY);
+            String countryName = ISO3166.getCountryNameByCode(countryCode);
+            country = !Constants.EMPTY_STRING.equals(countryName) ? countryName : countryCode;
+        }
 
         // Use getFormattedDetails to format all values
-        List<String> formatted = getFormattedDetails(
+        List<String> formatted = getFormattedDetailsV2(
                 orgName, address1, address2, country, state,
                 city, zip, null
         );

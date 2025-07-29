@@ -653,7 +653,7 @@ public class ShipmentDao implements IShipmentDao {
         if (isMAWBNumberExist) {
             if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) // If MasterBill number is already Consumed.
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-            else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && !Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId())) {
+            else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && (!Objects.equals(mawbStocksLink.getEntityId(), shipmentRequest.getId()) ||  mawbStocksLink.getEntityId() == null)) {
                 var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
                 if(mawbStock.isEmpty()){
                     throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
