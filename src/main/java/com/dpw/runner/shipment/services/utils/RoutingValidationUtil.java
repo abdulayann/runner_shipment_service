@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -14,7 +13,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
-import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -26,17 +25,13 @@ import java.util.stream.Collectors;
 
 
 @Component
-@AllArgsConstructor
 public class RoutingValidationUtil {
-
-    private final IShipmentServiceV3 shipmentService;
-
-    private final IConsolidationService consolidationService;
-
-    private final ICustomerBookingService customerBookingService;
-
-    private final IRoutingsDao routingsV3Dao;
-
+    @Autowired
+    private IShipmentServiceV3 shipmentService;
+    @Autowired
+    private IConsolidationService consolidationService;
+    @Autowired
+    private ICustomerBookingService customerBookingService;
 
     public void validateUpdateRequest(RoutingsRequest request) {
         if (request == null) {
@@ -122,18 +117,6 @@ public class RoutingValidationUtil {
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
         }
-        checkIfMainCarriageAllowed(routingsRequest, shipmentDetails.get());
-    }
-
-    private void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest, ShipmentDetails shipmentDetails) {
-        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                shipmentDetails.getConsolRef() != null) {
-            int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
-            if (inheritCarriage == 0) {
-                throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
-            }
-        }
-
     }
 
     public void validateRoutingsRequest(List<RoutingsRequest> requests, String module) {
