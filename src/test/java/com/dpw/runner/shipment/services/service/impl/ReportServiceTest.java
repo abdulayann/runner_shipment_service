@@ -1,10 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -94,6 +90,7 @@ import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -677,8 +674,6 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
 
-        Awb mockAwb = new Awb();
-
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
         shipmentSettingsDetails2.setTenantId(44);
@@ -738,7 +733,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
-        Awb mockAwb = new Awb();
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
@@ -1687,7 +1681,7 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1727,7 +1721,7 @@ class ReportServiceTest extends CommonMocks {
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -3282,12 +3276,6 @@ class ReportServiceTest extends CommonMocks {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
-//        when(reportService1.executorService.submit(any(Runnable.class)))
-//            .thenAnswer(invocation -> {
-//                Runnable runnable = invocation.getArgument(0);
-//                runnable.run(); // Execute immediately for testing
-//                return CompletableFuture.completedFuture(null);
-//            });
         // Mock GetFromDocumentService to return null
         doReturn(null).when(reportService1).getFromDocumentService(any(Map.class), anyString());
 
@@ -3424,8 +3412,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint() {
         ReportRequest newReportRequest = new ReportRequest();
         newReportRequest.setReportId("1");
         newReportRequest.setPrintType("ORIGINAL");
@@ -3688,7 +3675,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void getPreAlertEmailTemplateData(){
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         assertThrows(RunnerException.class, () -> reportService.getPreAlertEmailTemplateData(1L, 2L));
     }
 
@@ -3761,6 +3748,7 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+
         when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
 
         var response = reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
@@ -3839,8 +3827,6 @@ class ReportServiceTest extends CommonMocks {
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
         when(documentManagerService.pushSystemGeneratedDocumentToDocMaster(any(), any(), any())).thenReturn(new DocumentManagerResponse<>());
-        Runnable mockRunnable = mock(Runnable.class);
-
 
         reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
 
@@ -3857,7 +3843,6 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        Runnable mockRunnable = mock(Runnable.class);
 
         assertThrows(ValidationException.class, () -> reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved));
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
@@ -4159,10 +4144,10 @@ class ReportServiceTest extends CommonMocks {
         }
 
         // Convert URL to Path
-        Path path = Paths.get(resource.toURI());
+        Path path1 = Paths.get(resource.toURI());
 
         // Read all bytes
-        byte[] sampleDoc = Files.readAllBytes(path);
+        byte[] sampleDoc = Files.readAllBytes(path1);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(new ResponseEntity<>(sampleDoc, HttpStatus.OK));
 
         Map<String, Object> data = new HashMap<>();
@@ -4174,7 +4159,7 @@ class ReportServiceTest extends CommonMocks {
         assertEquals(2, pdfBytes.size());
     }
     @Test
-    void testPrintForPartiesAndBarcode_Failure() throws Exception {
+    void testPrintForPartiesAndBarcode_Failure() {
         reportRequest.setPrintingFor_str("1,2");
         reportRequest.setPrintBarcode(true);
         when(docPages.getMainPageId()).thenReturn("main-page-id");
@@ -4368,6 +4353,167 @@ class ReportServiceTest extends CommonMocks {
         List<Map<String, Object>> originAgent = (List<Map<String, Object>>) dict.get("C_OriginAgent");
         assertNotNull(originAgent);
         assertEquals("SHIPPER LTD.", originAgent.get(0).get("C_FullName"));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidHbl(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidHbl2(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidSeaBill(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("SWB");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_ValidSurrenderBill(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid2(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid3(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(false).build());
+        mockShipmentSettings();
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid4(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HAWB);
+        mockedReportRequest.setPrintType(ReportConstants.ORIGINAL);
+        assertDoesNotThrow(()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid5(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid6(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid7(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid8(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.SURRENDER);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
+    }
+
+    @Test
+    void testValidateReleaseTypeForReport_Invalid9(){
+        ReportRequest mockedReportRequest = reportRequest;
+        mockedReportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        mockedReportRequest.setPrintType(ReportConstants.DRAFT);
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setReleaseType("OBO");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().additionalDetails(additionalDetails).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        mockShipmentSettings();
+        assertThrows(ReportException.class, ()->reportService.validateReleaseTypeForReport(mockedReportRequest));
     }
 
 
