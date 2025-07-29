@@ -511,6 +511,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Transactional
     public RoutingsResponse update(CommonRequestModel commonRequestModel, String module) throws RunnerException {
         RoutingsRequest request = (RoutingsRequest) commonRequestModel.getData();
+        routingValidationUtil.checkIfMainCarriageAllowed(request);
         routingValidationUtil.validateUpdateRequest(request);
         routingValidationUtil.validateModule(request, module);
         Optional<Routings> oldEntity = routingsDao.findById(request.getId());
@@ -939,13 +940,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             throw new ValidationException("Transport pol/pod info status can not be IH");
         }
         List<Routings> routingsList = new ArrayList<>();
-        if(Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
+        if (Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
             Optional<ShipmentDetails> shipmentDetailsEntity = shipmentServiceV3.findById(request.getEntityId());
             if (shipmentDetailsEntity.isEmpty()) {
                 throw new ValidationException("Invalid shipment id");
             }
-           routingsList = shipmentDetailsEntity.get().getRoutingsList();
-        } else if(Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
+            routingsList = shipmentDetailsEntity.get().getRoutingsList();
+        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             Optional<ConsolidationDetails> consolidationDetails = consolidationV3Service.findById(request.getEntityId());
             if (consolidationDetails.isEmpty()) {
                 throw new ValidationException("Invalid consolidation id");

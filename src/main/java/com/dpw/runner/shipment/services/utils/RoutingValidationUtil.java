@@ -122,18 +122,21 @@ public class RoutingValidationUtil {
         if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
         }
-        checkIfMainCarriageAllowed(routingsRequest, shipmentDetails.get());
     }
 
-    private void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest, ShipmentDetails shipmentDetails) {
-        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE &&
-                shipmentDetails.getConsolRef() != null) {
-            int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
-            if (inheritCarriage == 0) {
-                throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
+    public void checkIfMainCarriageAllowed(RoutingsRequest routingsRequest) {
+        if (routingsRequest.getId() == null && routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(routingsRequest.getShipmentId());
+            if (shipmentDetails.isEmpty()) {
+                throw new ValidationException("Please provide the valid shipment id");
+            }
+            if (shipmentDetails.get().getConsolRef() != null) {
+                int inheritCarriage = routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId()).stream().filter(Routings::getInheritedFromConsolidation).toList().size();
+                if (inheritCarriage == 0) {
+                    throw new ValidationException("Adding a Main Carriage can not be allowed if attached console does not have Main Carriage");
+                }
             }
         }
-
     }
 
     public void validateRoutingsRequest(List<RoutingsRequest> requests, String module) {

@@ -146,7 +146,7 @@ class RoutingValidationUtilTest {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
         lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(true).build()));
-        assertDoesNotThrow(() -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+        assertDoesNotThrow(() -> routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest));
     }
 
     /* console attached with no inherit  : Adding should not allow  */
@@ -155,7 +155,7 @@ class RoutingValidationUtilTest {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
         lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("123").build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(false).build()));
-        assertThrows(ValidationException.class, () -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+        assertThrows(ValidationException.class, () -> routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest));
     }
 
     /* console attached with no CARRIAGE : Adding should not allow  */
@@ -164,7 +164,7 @@ class RoutingValidationUtilTest {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
         lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("1234").build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of());
-        assertThrows(ValidationException.class, () -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+        assertThrows(ValidationException.class, () -> routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest));
     }
 
     /* console attached with  inherit  : Adding should allow  */
@@ -173,7 +173,7 @@ class RoutingValidationUtilTest {
         RoutingsRequest routingsRequest = RoutingsRequest.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).shipmentId(1L).build();
         lenient().when(shipmentService.findById(routingsRequest.getShipmentId())).thenReturn(Optional.of(ShipmentDetails.builder().consolRef("12345").build()));
         lenient().when(routingsV3Dao.findByShipmentId(routingsRequest.getShipmentId())).thenReturn(List.of(Routings.builder().carriage(RoutingCarriage.MAIN_CARRIAGE).inheritedFromConsolidation(true).build()));
-        assertDoesNotThrow(() -> routingValidationUtil.validateModule(routingsRequest, Constants.SHIPMENT));
+        assertDoesNotThrow(() -> routingValidationUtil.checkIfMainCarriageAllowed(routingsRequest));
     }
 
     @Test
