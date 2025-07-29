@@ -299,6 +299,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .containerCount(1L)
                 .commodityGroup("Metals")
                 .consolidationId(101L)
+                .hazardous(Boolean.FALSE)
                 .build();
 
         List<ContainerV3Request> containerRequests = List.of(request1, request2);
