@@ -217,7 +217,7 @@ class ConsolidationV3ControllerTest {
 
   @Test
   void testAibAttachedPendingShipmentCount() throws AuthenticationException, RunnerException {
-    when(consolidationV3Service.aibAttachedPendingShipmentCount(any(), null)).thenThrow(new RuntimeException());
+    when(consolidationV3Service.aibAttachedPendingShipmentCount(any(), eq(null))).thenThrow(new RuntimeException());
 
     var response = controller.aibAttachedPendingShipmentCount(1L, null);
     assertNotNull(response);
@@ -226,7 +226,7 @@ class ConsolidationV3ControllerTest {
 
   @Test
   void testAibAttachedPendingShipmentCount1() throws AuthenticationException, RunnerException {
-    when(consolidationV3Service.aibAttachedPendingShipmentCount(any(), null)).thenReturn(ResponseEntity.ok(AllShipmentCountResponse.builder().build()));
+    when(consolidationV3Service.aibAttachedPendingShipmentCount(any(), eq(null))).thenReturn(ResponseEntity.ok(AllShipmentCountResponse.builder().build()));
 
     var response = controller.aibAttachedPendingShipmentCount(1L, null);
     assertNotNull(response);
