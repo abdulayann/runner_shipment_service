@@ -525,9 +525,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
         Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
-        if(consolidationDetails.getBorrowedFrom() != null && consolidationDetails.getCoLoadCarrierName() != null){
-            throw new ValidationException("Entered MAWB is linked with Borrowed from Party, please amend the Partner details to None");
-        }
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
         consolidationValidationV3Util.checkCFSValidation(consolidationDetails, isCreate, shipmentDetails);
@@ -2175,6 +2172,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 !CollectionUtils.isEmpty(console.getRoutingsList()) ||
                 !Objects.equals(console.getCarrierBookingRef(), oldEntity.getCarrierBookingRef()) ||
                 !Objects.equals(console.getBookingNumber(), oldEntity.getBookingNumber()) ||
+                !Objects.equals(console.getConsolidationType(), oldEntity.getConsolidationType()) ||
+                !Objects.equals(console.getIncoterms(), oldEntity.getIncoterms()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                         (!Objects.equals(console.getCarrierDetails().getVoyage(), oldEntity.getCarrierDetails().getVoyage()) ||
                                 !Objects.equals(console.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()) ||
@@ -2274,9 +2273,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments;
     }
 
-    private void setBookingNumberInShipment(ConsolidationDetails console, ShipmentDetails sd) {
-        if(!isStringNullOrEmpty(console.getBookingNumber()))
-            sd.setBookingNumber(console.getBookingNumber());
+    protected void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+        if(Boolean.FALSE.equals(fromAttachShipment)){
+            String oldBookingNumber = oldEntity.getBookingNumber();
+            String newBookingNumber = console.getBookingNumber();
+
+            if(isFieldChanged(oldBookingNumber, newBookingNumber)){
+                shipmentDetails.setBookingNumber(console.getBookingNumber());
+            }
+        }else{
+            shipmentDetails.setBookingNumber(console.getBookingNumber());
+        }
     }
 
     /**
@@ -2328,36 +2335,33 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         String transportMode = console.getTransportMode();
         shipmentDetails.setConsolRef(console.getConsolidationNumber());
         shipmentDetails.setJobType(console.getConsolidationType());
+        shipmentDetails.setBookingAgent(console.getBookingAgent());
+        serviceTypeAutoPopulation(console, shipmentDetails);
 
         if(TRANSPORT_MODE_SEA.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
-            shipmentDetails.setJobType(console.getConsolidationType());
             shipmentDetails.setPartner(console.getPartner());
 
             shipmentDetails.setMasterBill(console.getBol());
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
 
             //Editable Fields
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            setBookingNumberInShipment(console, shipmentDetails);
-            serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
+
         }else if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode)){
             //Non-Editable Fields
             shipmentDetails.setShipmentType(console.getContainerCategory());
             shipmentDetails.setPartner(console.getPartner());
             shipmentDetails.setMasterBill(console.getBol());
-            shipmentDetails.setIncoterms(console.getIncoterms());
             updateCarrierDetailsForLinkedShipments(console, shipmentDetails);
 
             //Editable Fields
-            setBookingNumberInShipment(console, shipmentDetails);
-            serviceTypeAutoPopulation(console, oldEntity, shipmentDetails);
             setColoadBookingFields(console, oldEntity, shipmentDetails, fromAttachShipment);
             partnerRelatedFieldAutopopulation(console, oldEntity, shipmentDetails, fromAttachShipment);
-            if(shipmentDetails.getAdditionalDetails() != null){
-                shipmentDetails.getAdditionalDetails().setEfreightStatus(console.getEfreightStatus());
-            }
+            setIncoTerms(console, oldEntity, shipmentDetails, fromAttachShipment);
+            setBookingNumberInShipment(console, oldEntity, shipmentDetails, fromAttachShipment);
         }
 
         if(dgStatusChangeInShipments.containsKey(shipmentDetails.getId())) {
@@ -2402,18 +2406,26 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         updateNonInterBranchConsoleData(console, shipmentDetails);
     }
 
+    protected void setIncoTerms(ConsolidationDetails console, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails, Boolean fromAttachShipment) {
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+            String oldIncoTerms = oldEntity.getIncoterms();
+            String newIncoTerms = console.getIncoterms();
+
+            if(isFieldChanged(oldIncoTerms, newIncoTerms)){
+                shipmentDetails.setIncoterms(console.getIncoterms());
+            }
+        }else{
+            shipmentDetails.setIncoterms(console.getIncoterms());
+        }
+    }
+
     private void partnerRelatedFieldAutopopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
-        if(fromAttachShipment != null && fromAttachShipment){
-            String oldPartner = Objects.isNull(oldEntity) ? null : oldEntity.getPartner();
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+            String oldPartner = oldEntity.getPartner();
             String newPartner = consolidationDetails.getPartner();
 
-            if(newPartner != null && !newPartner.equals(oldPartner)){
-                // first set null
-                shipmentDetails.setCoLoadCarrierName(null);
-                shipmentDetails.setCoLoadBlNumber(null);
-                shipmentDetails.setCoLoadBkgNumber(null);
-
+            if(isFieldChanged(oldPartner, newPartner)){
                 shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
                 shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
@@ -2423,26 +2435,28 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void setColoadBookingFields(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails,
         Boolean fromAttachShipment){
-        if(fromAttachShipment != null && fromAttachShipment) {
-                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadCarrierName(), shipmentDetails.getCoLoadCarrierName())){
+        if (Boolean.FALSE.equals(fromAttachShipment)) {
+                if(isFieldChanged(oldEntity.getCoLoadCarrierName(), consolidationDetails.getCoLoadCarrierName())){
                     shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
                 }
-                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadMBL(), shipmentDetails.getCoLoadBlNumber())){
+                if(isFieldChanged(oldEntity.getCoLoadMBL(), consolidationDetails.getCoLoadMBL())){
                     shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
                 }
-                if(!isFieldChanged(Objects.isNull(oldEntity) ? null : oldEntity.getCoLoadBookingReference(), shipmentDetails.getCoLoadBkgNumber())){
+                if(isFieldChanged(oldEntity.getCoLoadBookingReference(), consolidationDetails.getCoLoadBookingReference())){
                     shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
                 }
-        }else{
+        } else{
             shipmentDetails.setCoLoadCarrierName(consolidationDetails.getCoLoadCarrierName());
             shipmentDetails.setCoLoadBlNumber(consolidationDetails.getCoLoadMBL());
             shipmentDetails.setCoLoadBkgNumber(consolidationDetails.getCoLoadBookingReference());
         }
     }
 
+
     private boolean isFieldChanged(String oldValue, String newValue) {
-        return oldValue != null ? !oldValue.equals(newValue) : newValue != null;
+        return !Objects.equals(oldValue, newValue);
     }
+
     /**
      * Updates the export and import broker information in the shipment details based on the consolidation's sending and receiving agents, but only if the consolidation is **not**
      * marked as an inter-branch console.
@@ -4098,28 +4112,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             !Objects.equals(consol.getLatDate(), oldEntity.getLatDate());
     }
 
-    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ShipmentDetails shipmentDetails) {
-        if (oldEntity == null) {
+    private void serviceTypeAutoPopulation(ConsolidationDetails consolidationDetails, ShipmentDetails shipmentDetails) {
             String deliveryMode = consolidationDetails.getDeliveryMode();
             String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
-            if (isServiceTypeValid(serviceType)) {
-                //autoFlow
-                shipmentDetails.setServiceType(serviceType);
-            }
-        } else {
-            String oldDeliveryMode = oldEntity.getDeliveryMode();
-            String oldServiceType = getIdentifierFromHBLDeliveryModeMasterData(oldDeliveryMode);
 
-            //Different serviceType no need to flow
-            if (shipmentDetails.getServiceType() == null || Objects.equals(oldServiceType, shipmentDetails.getServiceType())) {
+            if (!Objects.equals(serviceType, shipmentDetails.getServiceType()) && isServiceTypeValid(serviceType)) {
                 //Validate new deliveryCode
-                String deliveryMode = consolidationDetails.getDeliveryMode();
-                String serviceType = getIdentifierFromHBLDeliveryModeMasterData(deliveryMode);
-                if (isServiceTypeValid(serviceType)) {
-                    //autoFlow
                     shipmentDetails.setServiceType(serviceType);
-                }
-            }
         }
     }
     protected String getIdentifierFromHBLDeliveryModeMasterData(String deliveryMode) {
