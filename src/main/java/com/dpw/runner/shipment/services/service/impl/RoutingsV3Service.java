@@ -955,6 +955,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         routingsList.sort(Comparator.comparingLong(Routings::getLeg));
         List<RoutingsRequest> routingsRequests = jsonHelper.convertValue(routingsList, new TypeReference<List<RoutingsRequest>>() {
         });
+        if (!CollectionUtils.isEmpty(routingsRequests)) {
+            for (RoutingsRequest routingsRequest : routingsRequests) {
+                if (routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode()) && StringUtility.isNotEmpty(routingsRequest.getFlightNumber())) {
+                    routingsRequest.setVoyage(routingsRequest.getFlightNumber());
+                }
+            }
+        }
         BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
         bulkUpdateRoutingsRequest.setTransportInfoStatus(request.getTransportInfoStatus());
         bulkUpdateRoutingsRequest.setRoutings(routingsRequests);
