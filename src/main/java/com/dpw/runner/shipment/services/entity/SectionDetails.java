@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entity;
 
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.HashSet;
 import java.util.Set;
@@ -12,24 +12,22 @@ import javax.persistence.ManyToMany;
 import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "section_details")
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class SectionDetails extends BaseEntity {
-
-  @Column(nullable = false, unique = true)
-  private String sectionCode;
+public class SectionDetails extends MultiTenancy {
 
   @Column(nullable = false)
   private String sectionName;
+
+  @Column(nullable = false)
+  private String sectionDescription;
 
   @ManyToMany
   @JoinTable(
