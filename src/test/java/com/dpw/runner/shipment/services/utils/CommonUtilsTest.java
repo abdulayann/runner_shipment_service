@@ -17,7 +17,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.QuoteContractsDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
@@ -172,6 +174,9 @@ class CommonUtilsTest {
 
     @Mock
     private ConsolidationDao consolidationDetailsDao;
+
+    @Mock
+    private QuoteContractsDao quoteContractsDao;
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
@@ -4784,5 +4789,58 @@ class CommonUtilsTest {
         assertNotNull(result, "Request should not be null.");
         assertEquals(3, result.getCriteriaRequests().size(), "CriteriaRequests should contain 1 item.");
         assertTrue(result.getCriteriaRequests().get(0) instanceof List, "First item in criteriaRequests should be a List.");
+    }
+
+    @Test
+    void testUpdateContainerTypeWithQuoteId_withMatchingCodes_setsIsQuotedTrue() {
+        String quoteId = "Q123";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("20GP")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertTrue(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    @Test
+    void testUpdateContainerTypeWithQuoteId_withNoMatchingCodes_allIsQuotedFalse() {
+        String quoteId = "Q999";
+        DependentServiceResponse response = new DependentServiceResponse();
+        Object rawData = new Object();
+        response.setData(rawData);
+
+        List<ContainerTypeMasterResponse> masterList = List.of(
+                buildResponse("20GP", false),
+                buildResponse("40HC", false)
+        );
+
+        List<QuoteContracts> contracts = List.of(
+                QuoteContracts.builder().containerTypes(List.of("45HC")).build()
+        );
+        when(jsonHelper.convertValueToList(rawData, ContainerTypeMasterResponse.class)).thenReturn(masterList);
+        when(quoteContractsDao.findByContractId(quoteId)).thenReturn(contracts);
+        commonUtils.updateContainerTypeWithQuoteId(response, quoteId);
+        List<ContainerTypeMasterResponse> result = (List<ContainerTypeMasterResponse>) response.getData();
+
+        assertFalse(result.get(0).getIsQuoted());
+        assertFalse(result.get(1).getIsQuoted());
+    }
+
+    private ContainerTypeMasterResponse buildResponse(String code, boolean isQuoted) {
+        ContainerTypeMasterResponse response = new ContainerTypeMasterResponse();
+        response.setCode(code);
+        response.setIsQuoted(isQuoted);
+        return response;
     }
 }
