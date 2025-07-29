@@ -2951,11 +2951,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Integer consoleDgContCount = 0;
         BigDecimal consoleTeus = BigDecimal.ZERO;
         Long shipmentsCount = 0L;
-        Boolean isSeaExportWithLclAttached = false;
+        Boolean isFtlOrFclAttached = false;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentsCount = shipmentDetailsList.stream().count();
-            isSeaExportWithLclAttached = shipmentDetailsList.stream().anyMatch(this::isSeaExportAndLclAttached);
+            isFtlOrFclAttached = shipmentDetailsList.stream().anyMatch(this::isFtlOrFclAttached);
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
@@ -2994,13 +2994,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .dgPacks(dgPacks)
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
-                .isSeaExportWithLclAttached(isSeaExportWithLclAttached)
+                .isFtlOrFclAttached(isFtlOrFclAttached)
                 .build();
     }
-    private boolean isSeaExportAndLclAttached(ShipmentDetails shipmentDetails) {
-        return   TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()) &&
-                        CARGO_TYPE_LCL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")) &&
-                        DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection());
+    private boolean isFtlOrFclAttached(ShipmentDetails shipmentDetails) {
+        return   (!CARGO_TYPE_FCL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")) && !CARGO_TYPE_FTL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")));
     }
 
     public String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
