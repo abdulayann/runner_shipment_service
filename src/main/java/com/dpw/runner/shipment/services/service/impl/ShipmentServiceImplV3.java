@@ -641,6 +641,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture.allOf(pendingNotificationFuture, implicationListFuture, containerTeuFuture).join();
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
+        setBookingId(shipmentDetails.get(), response);
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
         // set dps implications
         response.setImplicationList(implications);
@@ -652,6 +653,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setBookingId(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse){
+            shipmentRetrieveLiteResponse.setBookingId(getShipmentToBookingIdsMap(
+                    List.of(shipmentDetails)).get(shipmentDetails.getId()));
     }
 
     private void setShipmentSummaryWarnings(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) throws RunnerException {
@@ -4033,7 +4039,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Nullable
     private static ResponseEntity<IRunnerResponse> checkAlreadyExistingConsole(Long consoleId, ConsoleShipmentMapping consoleShip) {
         if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
-            return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
+            return ResponseHelper.buildFailedResponse(ErrorConstants.CONSOLE_ALREADY_EXISTS);
         }
         if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
             return ResponseHelper.buildSuccessResponse();
@@ -4096,7 +4102,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void setColoadingStation(ShipmentDetails request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }

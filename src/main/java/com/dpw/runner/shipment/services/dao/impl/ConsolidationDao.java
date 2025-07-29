@@ -394,6 +394,18 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
+    private void addAgentOrganisationIdValidationErrors(ConsolidationDetails request, Set<String> errors) {
+        if (request.getSendingAgent() != null && request.getReceivingAgent() != null) {
+
+            String sendingAgentOrganisationId = request.getSendingAgent().getOrgId();
+
+            if (sendingAgentOrganisationId != null && sendingAgentOrganisationId.equals(
+                    request.getReceivingAgent().getOrgId())) {
+                errors.add("Origin Agent and Destination Agent cannot be same Organisation.");
+            }
+        }
+    }
+
     private void addMBLNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
         if(!isStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
@@ -551,7 +563,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(consolidationRequest.getId(), mawbStocksLink.getEntityId())) {
             throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
-        }  else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && !Objects.equals(mawbStocksLink.getEntityId(), consolidationRequest.getId())) {
+        }  else if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) && (!Objects.equals(mawbStocksLink.getEntityId(), consolidationRequest.getId()) || mawbStocksLink.getEntityId() == null)) {
             var mawbStock = mawbStocksDao.findById(mawbStocksLink.getParentId());
             if (mawbStock.isEmpty()) {
                 throw new DataRetrievalFailureException("No stock entry found for given mawb number stock link");
@@ -861,6 +873,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
         // Duplicate party types not allowed
         addPartyTypeValidationErrors(request, errors);
+
+        // Duplicate Agent Organisations not allowed
+        addAgentOrganisationIdValidationErrors(request, errors);
 
         // Shipment restricted unlocations validation
         addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);
