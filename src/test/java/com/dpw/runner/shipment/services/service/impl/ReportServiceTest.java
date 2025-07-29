@@ -304,6 +304,7 @@ class ReportServiceTest extends CommonMocks {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setEnableTimeZone(false);
         UserContext.setUser(mockUser);
     }
 
@@ -338,13 +339,15 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails2.setSeawayMainPage("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         // Mock
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
