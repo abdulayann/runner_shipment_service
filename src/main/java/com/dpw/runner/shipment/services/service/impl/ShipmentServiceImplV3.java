@@ -108,6 +108,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.RoutingsLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
@@ -614,9 +615,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         setConsoleAndNteInfo(shipmentId, response);
         setDgPackCountAndType(shipmentDetailsEntity, response);
         setMainCarriageFlag(shipmentDetailsEntity, response);
+        setRoutingsLiteRespnse(shipmentDetailsEntity, response);
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setRoutingsLiteRespnse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+        if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsEntity.getRoutingsList())) {
+            List<RoutingsLiteResponse> routingsLiteResponses = jsonHelper.convertValueToList(shipmentDetailsEntity.getRoutingsList(), RoutingsLiteResponse.class);
+            response.setRoutingsLiteResponses(routingsLiteResponses);
+        }
     }
 
     private void setConsoleAndNteInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
