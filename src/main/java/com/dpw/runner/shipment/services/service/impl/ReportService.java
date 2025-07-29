@@ -453,6 +453,13 @@ public class ReportService implements IReportService {
         dictionary.put(ReportConstants.HAS_PACKAGE_DETAILS, false);
         dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
         dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
+        Optional<PickupDeliveryDetails> pickupDeliveryDetailsEntity = pickupDeliveryDetailsService.findById(Long.valueOf(reportRequest.getTransportInstructionId()));
+       if (pickupDeliveryDetailsEntity.isPresent()) {
+           PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
+           setTransporterPartyTags(pickupDeliveryDetails, dictionary);
+           setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
+           setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
+       }
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
@@ -479,6 +486,62 @@ public class ReportService implements IReportService {
                 throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
             return mainDocPage;
+        }
+    }
+
+    private void setTransporterPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        Parties transporterDetail = pickupDeliveryDetails.getTransporterDetail();
+        if (!Objects.isNull(transporterDetail)) {
+            Map<String, Object> orgData = transporterDetail.getOrgData();
+            if (orgData != null) {
+                dictionary.put(ReportConstants.TI_TRANSPORTER_NAME, orgData.get(FULL_NAME));
+                dictionary.put(ReportConstants.TI_TRANSPORTER_EMAIL, orgData.get(EMAIL));
+            }
+            Map<String, Object> addressData = transporterDetail.getAddressData();
+            if (addressData != null) {
+                dictionary.put(ReportConstants.TI_TRANSPORTER_CONTACT, addressData.get(CONTACT_KEY));
+                dictionary.put(ReportConstants.TI_TRANSPORTER_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+            }
+        }
+    }
+    private void setImportAgentPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        List<Parties> parties = pickupDeliveryDetails.getPartiesList();
+        if (!CommonUtils.listIsNullOrEmpty(parties)) {
+            Optional<Parties> importAgent = parties.stream()
+                    .filter(party -> ReportConstants.IMA_TYPE.equals(party.getType()))
+                    .findFirst();
+            if(importAgent.isPresent()) {
+                Map<String, Object> orgData = importAgent.get().getOrgData();
+                if (orgData != null) {
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_NAME, orgData.get(FULL_NAME));
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_EMAIL, orgData.get(EMAIL));
+                }
+                Map<String, Object> addressData = importAgent.get().getAddressData();
+                if (addressData != null) {
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                }
+            }
+        }
+    }
+    private void setExportAgentPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        List<Parties> parties = pickupDeliveryDetails.getPartiesList();
+        if (!CommonUtils.listIsNullOrEmpty(parties)) {
+            Optional<Parties> exportAgent = parties.stream()
+                    .filter(party -> ReportConstants.EXA_TYPE.equals(party.getType()))
+                    .findFirst();
+            if (exportAgent.isPresent()) {
+                Map<String, Object> orgData = exportAgent.get().getOrgData();
+                if (orgData != null) {
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_NAME, orgData.get(FULL_NAME));
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_EMAIL, orgData.get(EMAIL));
+                }
+                Map<String, Object> addressData = exportAgent.get().getAddressData();
+                if (addressData != null) {
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                }
+            }
         }
     }
 
