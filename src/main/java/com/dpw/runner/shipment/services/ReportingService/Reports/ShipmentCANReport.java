@@ -148,8 +148,8 @@ public class ShipmentCANReport extends IReport {
 
         if(shipmentCANModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, shipmentCANModel.shipmentDetails.getId());
-            this.getPackingDetails(shipmentCANModel.shipmentDetails, dictionary);
             this.getContainerDetails(shipmentCANModel.shipmentDetails, dictionary);
+            this.getPackingDetails(shipmentCANModel.shipmentDetails, dictionary);
         }
 
         return dictionary;

@@ -692,8 +692,8 @@ public class HblReport extends IReport {
 
         if (hblModel.shipment != null) {
             this.populateShipmentReportData(dictionary, null, hblModel.shipment.getId());
-            this.getPackingDetails(hblModel.getShipment(), dictionary);
             this.getContainerDetails(hblModel.getShipment(), dictionary);
+            this.getPackingDetails(hblModel.getShipment(), dictionary);
         }
 
         return dictionary;

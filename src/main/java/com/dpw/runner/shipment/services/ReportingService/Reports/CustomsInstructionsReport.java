@@ -104,8 +104,8 @@ public class CustomsInstructionsReport extends IReport{
 
         if(customsInstructionsModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, customsInstructionsModel.shipmentDetails.getId());
-            this.getPackingDetails(customsInstructionsModel.shipmentDetails, dictionary);
             this.getContainerDetails(customsInstructionsModel.shipmentDetails, dictionary);
+            this.getPackingDetails(customsInstructionsModel.shipmentDetails, dictionary);
         }
         return dictionary;
     }

@@ -3929,6 +3929,9 @@ public abstract class IReport {
         dictionary.put(GROSS_WEIGHT, container.getGrossWeight());
         dictionary.put(GROSS_VOLUME, container.getGrossVolume());
         dictionary.put(PACKS_UNIT, container.getPacksType());
+        dictionary.put(CONTAINER_NUM, container.getContainerNumber());
+        dictionary.put(CONTAINER_TYPE_CODE, container.getContainerCode());
+        dictionary.put(CARRIER_SEAL_NUMBER, container.getCarrierSealNumber());
     }
 
 
