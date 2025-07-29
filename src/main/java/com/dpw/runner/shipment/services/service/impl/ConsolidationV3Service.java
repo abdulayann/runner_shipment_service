@@ -2951,10 +2951,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Integer consoleDgContCount = 0;
         BigDecimal consoleTeus = BigDecimal.ZERO;
         Long shipmentsCount = 0L;
+        Boolean isSeaExportWithLclAttached = false;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentsCount = shipmentDetailsList.stream().count();
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                if (TRANSPORT_MODE_SEA.equalsIgnoreCase(shipmentDetails.getTransportMode()) &&
+                        CARGO_TYPE_LCL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")) &&  DIRECTION_EXP.equalsIgnoreCase(shipmentDetails.getDirection())  ) {
+                    isSeaExportWithLclAttached = true;
+                }
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
                 packs = packs + (shipmentDetails.getNoOfPacks() != null ? shipmentDetails.getNoOfPacks() : 0);
@@ -2992,6 +2997,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .dgPacks(dgPacks)
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
+                .isSeaExportWithLclAttached(isSeaExportWithLclAttached)
                 .build();
     }
 
@@ -4769,4 +4775,5 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments != null && shipments.stream()
                 .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
     }
+
 }
