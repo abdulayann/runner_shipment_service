@@ -46,6 +46,7 @@ public class ContainerConstants {
     public static final String TABLE_SHIPMENTS_LIST = "shipmentsList";
     // Keys for TABLES_NAMES
     public static final String KEY_CONTAINER_NUMBER = "containerNumber";
+    public static final String KEY_SHIPMENT_ID = "shipmentId";
     public static final String KEY_PACKS = "packs";
     public static final String KEY_PACKS_TYPE = "packsType";
     public static final String KEY_COMMODITY_CODE = "commodityCode";
@@ -65,6 +66,8 @@ public class ContainerConstants {
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
             Map.entry(KEY_CONTAINER_NUMBER,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_NUMBER).isContainsText(true).build()),
+            Map.entry(KEY_SHIPMENT_ID,
+                    RunnerEntityMapping.builder().tableName(TABLE_SHIPMENTS_LIST).dataType(String.class).fieldName(KEY_SHIPMENT_ID).isContainsText(true).build()),
             Map.entry(KEY_PACKS,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_PACKS).isContainsText(true).build()),
             Map.entry(KEY_PACKS_TYPE,
