@@ -21,6 +21,7 @@ public class DocumentConstants {
     public static final String FILE_DOWNLOAD = "/download";
     public static final String FETCH_DOC_TYPE = "/fetch/doc-types";
     public static final String DOCUMENT_ID = "Document Id";
+    public static final String CARGO_MANIFEST_DISPLAY_NAME = "Cargo Manifest";
 
     public static final String FILE_NAME = "Filename_";
     public static final String DASH = "_";

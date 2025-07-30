@@ -149,6 +149,7 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
 @Service
@@ -2618,50 +2619,7 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
-                // Custom Naming Logic for V3 Document Names
-                try {
-                    if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
-                        // Map docType to displayName
-                        Map<String, String> docNamingMap = Map.ofEntries(
-                                Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
-                                Map.entry(ReportConstants.MAWB, "MAWB"),
-                                Map.entry(ReportConstants.HAWB, "HAWB"),
-                                Map.entry("CSD", "Consignment Security Declaration (CSD)"),
-                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, "Cargo Manifest"),
-                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, "Cargo Manifest"),
-                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, "Cargo Manifest"),
-                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, "Cargo Manifest"),
-                                Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
-                                Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
-                                Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
-                                Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
-                                Map.entry(ReportConstants.HBL, "HBL"),
-                                Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, "Cargo Manifest"),
-                                Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, "Cargo Manifest"),
-                                Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
-                                Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
-                        );
-
-                        String baseDocName = docNamingMap.getOrDefault(docType, docType);
-                        String customFileName;
-
-                        // Add child type for specific document types
-                        if (docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) {
-                            customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
-                                    + DocumentConstants.DASH
-                                    + StringUtility.convertToString(childType).toUpperCase()
-                                    + DocumentConstants.DOT_PDF;
-                        } else {
-                            customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
-                                    + DocumentConstants.DOT_PDF;
-                        }
-
-                        docUploadRequest.setFileName(customFileName);
-                        log.info("Custom file name generated: {}", customFileName);
-                    }
-                } catch (Exception e) {
-                    log.error("Error generating custom document filename: {}", e.getMessage(), e);
-                }
+                applyCustomNaming(docUploadRequest, docType, childType);
                 return this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
@@ -2671,6 +2629,52 @@ public class ReportService implements IReportService {
             log.info("{} | {} Ending pushFileToDocumentMaster process for tenantID {} as Shipment3.0Flag disabled.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant());
         }
         return null;
+    }
+    private void applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType) {
+        // Custom Naming Logic for V3 Document Names
+        try {
+            if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
+                // Map docType to displayName
+                Map<String, String> docNamingMap = Map.ofEntries(
+                        Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
+                        Map.entry(ReportConstants.MAWB, "MAWB"),
+                        Map.entry(ReportConstants.HAWB, "HAWB"),
+                        Map.entry("CSD", "Consignment Security Declaration (CSD)"),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
+                        Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
+                        Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
+                        Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
+                        Map.entry(ReportConstants.HBL, "HBL"),
+                        Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
+                        Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
+                );
+
+                String baseDocName = docNamingMap.getOrDefault(docType, docType);
+                String customFileName;
+
+                // Add child type for specific document types
+                if (docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) {
+                    customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
+                            + DocumentConstants.DASH
+                            + StringUtility.convertToString(childType).toUpperCase()
+                            + DocumentConstants.DOT_PDF;
+                } else {
+                    customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
+                            + DocumentConstants.DOT_PDF;
+                }
+
+                docUploadRequest.setFileName(customFileName);
+                log.info("Custom file name generated: {}", customFileName);
+            }
+        } catch (Exception e) {
+            log.error("Error generating custom document filename: {}", e.getMessage(), e);
+        }
     }
 
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
