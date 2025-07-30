@@ -49,10 +49,14 @@ public class ContainerV3Request extends CommonRequest implements IRunnerRequest 
   @Max(value = 1, message = "Container count cannot be more than 1")
   @Min(value = 1, message = "Container count cannot be less than 1")
   private Long containerCount = 1L;
+  @Size(max = 100, message = "max size is 100 for carrier_seal_number")
   private String carrierSealNumber;
+  @Size(max = 100, message = "max size is 100 for shipper_seal_number")
   private String shipperSealNumber;
   private String terminalOperatorSealNumber;
+  @Size(max = 100, message = "max size is 100 for veterinary_seal_number")
   private String veterinarySealNumber;
+  @Size(max = 100, message = "max size is 100 for customs_seal_number")
   private String customsSealNumber;
   private String customsReleaseCode;
   private String containerStuffingLocation;
