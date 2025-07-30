@@ -5023,31 +5023,72 @@ public abstract class IReport {
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicShipmentFields(Map<String, Object> dictionary, ShipmentDetails details) {
         Map<String, Object> masterDataMap = shipmentServiceImplV3.getAllMasterData(details.getId(), SHIPMENT);
+        Map<String, String> orderDpwMap = extractOrderDpwMap(masterDataMap);
+        Map<String, String> orgMap = extractOrgMap(masterDataMap);
 
-        Map<String, Map<String, String>> masterList = masterDataMap != null
-                ? (Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST)
-                : null;
-        Map<String, String> orderDpwMap = masterList != null ? masterList.get(CacheConstants.ORDER_DPW) : null;
-        Map<String, String> orgMap = masterDataMap != null
+        addControlFields(dictionary, details);
+        addPartnerFields(dictionary, details, orderDpwMap, orgMap);
+        addCutoffFields(dictionary, details);
+        addAdditionalFields(dictionary, details);
+    }
+
+    private Map<String, String> extractOrderDpwMap(Map<String, Object> masterDataMap) {
+        if (masterDataMap == null) return null;
+
+        Map<String, Map<String, String>> masterList =
+                (Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST);
+
+        return masterList != null ? masterList.get(CacheConstants.ORDER_DPW) : null;
+    }
+
+    private Map<String, String> extractOrgMap(Map<String, Object> masterDataMap) {
+        return masterDataMap != null
                 ? (Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)
                 : null;
+    }
 
+    private void addControlFields(Map<String, Object> dictionary, ShipmentDetails details) {
         dictionary.put(S_CONTROLLED, details.getControlled());
         dictionary.put(S_CONTROLLED_REF_NO, details.getControlledReferenceNumber());
         dictionary.put(S_INCOTERM_LOCATION, details.getIncotermsLocation());
-        dictionary.put(S_PARTNER_DROP_DOWN, orderDpwMap != null ? orderDpwMap.get(details.getPartner()) : null);
-        dictionary.put(S_CO_LOADER_NAME, orgMap != null && details.getBookingAgent() != null ? orgMap.get(details.getBookingAgent().toString()) : null);
+        dictionary.put(S_REEFER_FLAG, details.getIsReefer());
+    }
+
+    private void addPartnerFields(Map<String, Object> dictionary, ShipmentDetails details,
+                                  Map<String, String> orderDpwMap, Map<String, String> orgMap) {
+        dictionary.put(S_PARTNER_DROP_DOWN,
+                orderDpwMap != null ? orderDpwMap.get(details.getPartner()) : null);
+
+        String bookingAgentName = getOrgValue(orgMap, details.getBookingAgent());
+        dictionary.put(S_CO_LOADER_NAME, bookingAgentName);
+        dictionary.put(S_BOOKING_AGENT, bookingAgentName);
+
+        // Co-loader fields
         dictionary.put(S_CO_LOADER_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_CO_LOADER_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_CO_LOADER_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_BOOKING_AGENT, orgMap != null && details.getBookingAgent() != null ? orgMap.get(details.getBookingAgent().toString()) : null);
+
+        // Booking agent fields (same values as co-loader)
         dictionary.put(S_BOOKING_AGENT_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_BOOKING_AGENT_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_BOOKING_AGENT_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_PICKUP_AT_ORIGIN, orgMap != null && details.getPickupAtOrigin() != null ? orgMap.get(details.getPickupAtOrigin().toString()) : null);
-        dictionary.put(S_DELIVERY_AT_DESTINATION, orgMap != null && details.getDeliveryAtDestination() != null ? orgMap.get(details.getDeliveryAtDestination().toString()) : null);
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, orgMap != null && details.getBrokerageAtOrigin() != null ? orgMap.get(details.getBrokerageAtOrigin().toString()) : null);
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, orgMap != null && details.getBrokerageAtDestination() != null ? orgMap.get(details.getBrokerageAtDestination().toString()) : null);
+
+        // Location fields
+        dictionary.put(S_PICKUP_AT_ORIGIN,
+                getOrgValue(orgMap, details.getPickupAtOrigin()));
+        dictionary.put(S_DELIVERY_AT_DESTINATION,
+                getOrgValue(orgMap, details.getDeliveryAtDestination()));
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN,
+                getOrgValue(orgMap, details.getBrokerageAtOrigin()));
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION,
+                getOrgValue(orgMap, details.getBrokerageAtDestination()));
+    }
+
+    private String getOrgValue(Map<String, String> orgMap, Object id) {
+        return orgMap != null && id != null ? orgMap.get(id.toString()) : null;
+    }
+
+    private void addCutoffFields(Map<String, Object> dictionary, ShipmentDetails details) {
         dictionary.put(S_TERMINAL, details.getTerminalCutoff());
         dictionary.put(S_VGM, details.getVerifiedGrossMassCutoff());
         dictionary.put(S_SI, details.getShippingInstructionCutoff());
@@ -5056,20 +5097,33 @@ public abstract class IReport {
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
         dictionary.put(S_REEFER, convertToDPWDateFormat(details.getReeferCutoff()));
         dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime()));
-        dictionary.put(S_REEFER_FLAG, details.getIsReefer());
+    }
 
+    private void addAdditionalFields(Map<String, Object> dictionary, ShipmentDetails details) {
         AdditionalDetails additional = details.getAdditionalDetails();
-        dictionary.put(S_BOE_NUMBER, additional != null ? additional.getBOENumber() : null);
-        dictionary.put(S_BOE_DATE, additional != null ? additional.getBOEDate() : null);
-        dictionary.put(S_OWNERSHIP, additional != null && additional.getOwnership() != null
-                ? additional.getOwnership().getDescription()
-                : null);
-        dictionary.put(S_OWNERSHIP_NAME, additional != null ? additional.getOwnershipName() : null);
-        dictionary.put(S_PASSED_BY, additional != null && additional.getPassedBy() != null
-                ? additional.getPassedBy().getDescription()
-                : null);
-        dictionary.put(S_PASSED_BY_PERSON, additional != null ? additional.getPassedByPerson() : null);
-        //dictionary.put(S_BORROWED_FROM, additional != null ? additional.getBorrowedFrom().getOrgData().get("FullName") : null);
+        if (additional == null) {
+            addNullAdditionalFields(dictionary);
+            return;
+        }
+
+        dictionary.put(S_BOE_NUMBER, additional.getBOENumber());
+        dictionary.put(S_BOE_DATE, additional.getBOEDate());
+        dictionary.put(S_OWNERSHIP_NAME, additional.getOwnershipName());
+        dictionary.put(S_PASSED_BY_PERSON, additional.getPassedByPerson());
+
+        dictionary.put(S_OWNERSHIP,
+                additional.getOwnership() != null ? additional.getOwnership().getDescription() : null);
+        dictionary.put(S_PASSED_BY,
+                additional.getPassedBy() != null ? additional.getPassedBy().getDescription() : null);
+    }
+
+    private void addNullAdditionalFields(Map<String, Object> dictionary) {
+        dictionary.put(S_BOE_NUMBER, null);
+        dictionary.put(S_BOE_DATE, null);
+        dictionary.put(S_OWNERSHIP, null);
+        dictionary.put(S_OWNERSHIP_NAME, null);
+        dictionary.put(S_PASSED_BY, null);
+        dictionary.put(S_PASSED_BY_PERSON, null);
     }
 
     // Adds reference numbers into the map using their type as a key suffix
