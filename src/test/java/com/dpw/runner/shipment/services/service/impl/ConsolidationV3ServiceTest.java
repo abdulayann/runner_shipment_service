@@ -5577,5 +5577,24 @@ if (unitConversionUtilityMockedStatic != null) {
     assertThat(shipment.getBookingNumber()).isEqualTo("BK987");
   }
 
-
+  @Test
+  void testIsSeaExportWithLclAttachedFlagSet() throws Exception {
+//    shipmentDetails.setShipmentType("LCL");
+    ShipmentDetails lclShipment = new ShipmentDetails();
+    lclShipment.setShipmentType("LCL");
+    ShipmentDetails fclShipment = new ShipmentDetails();
+    fclShipment.setShipmentType("FCL");
+    ShipmentDetails lseShipment = new ShipmentDetails();
+    lseShipment.setShipmentType("LSE");
+    List<ShipmentDetails> shipmentDetailsList = List.of(lclShipment, fclShipment, lseShipment);
+    shipmentSettingsDetails.setWeightChargeableUnit("KG");
+    shipmentSettingsDetails.setVolumeChargeableUnit("M3");
+    when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
+    when(UnitConversionUtility.convertUnit(any(), any(), any(), any()))
+            .thenReturn(new BigDecimal("100"));
+    ShipmentWtVolResponse response = consolidationV3Service.calculateShipmentWtVol(
+            "SEA", shipmentDetailsList, Collections.emptyList()
+    );
+    assertTrue(response.getIsNonFtlOrFclAttached());
+  }
 }
