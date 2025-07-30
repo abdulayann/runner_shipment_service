@@ -279,6 +279,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             shipmentDetails.getCarrierDetails().setAta(null);
             shipmentDetails.getCarrierDetails().setEta(null);
             shipmentDetails.getCarrierDetails().setEtd(null);
+            shipmentDetails.setTransportInfoStatus(TransportInfoStatus.YES);
         }
     }
 
@@ -290,6 +291,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             consolidationDetails.getCarrierDetails().setAta(null);
             consolidationDetails.getCarrierDetails().setEta(null);
             consolidationDetails.getCarrierDetails().setEtd(null);
+            consolidationDetails.setTransportInfoStatus(TransportInfoStatus.YES);
         }
     }
 
