@@ -13,8 +13,10 @@ import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.MdmContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -46,8 +48,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -654,6 +658,118 @@ class ContainerV3UtilTest extends CommonMocks {
         assertEquals(2, result.size());
         assertEquals(BigDecimal.ONE, result.get("TYPE1"));
         assertEquals(BigDecimal.valueOf(2), result.get("TYPE2"));
+    }
+
+    @Test
+    void createOrUpdateContainers_shouldProcessAllRequestsSuccessfully() throws RunnerException {
+        List<ContainerV3Request> requests = List.of(
+                new ContainerV3Request(),
+                new ContainerV3Request(),
+                new ContainerV3Request()
+        );
+        containerV3Util.createOrUpdateContainers(requests);
+        verify(containerV3FacadeService, times(3))
+                .createUpdateContainer(anyList(), eq("CONSOLIDATION"));
+    }
+
+    @Test
+    void createOrUpdateContainers_shouldThrowRunnerException_whenSingleRequestFails() throws RunnerException {
+        List<ContainerV3Request> requests = List.of(
+                new ContainerV3Request(),
+                new ContainerV3Request(),
+                new ContainerV3Request()
+        );
+        when(containerV3FacadeService.createUpdateContainer(List.of(requests.get(0)), "CONSOLIDATION"))
+                .thenReturn(new BulkContainerResponse());
+        when(containerV3FacadeService.createUpdateContainer(List.of(requests.get(1)), "CONSOLIDATION"))
+                .thenThrow(new RuntimeException("Database error"));
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            containerV3Util.createOrUpdateContainers(requests);
+        });
+        assertEquals("Error processing row 2: Database error", exception.getMessage());
+        verify(containerV3FacadeService, times(2))
+                .createUpdateContainer(anyList(), eq("CONSOLIDATION"));
+    }
+
+    @Test
+    void createOrUpdateContainers_shouldHandleEmptyList() throws RunnerException {
+        List<ContainerV3Request> requests = Collections.emptyList();
+        containerV3Util.createOrUpdateContainers(requests);
+        verifyNoInteractions(containerV3FacadeService);
+    }
+
+    @Test
+    void createOrUpdateContainers_shouldIncludeOriginalException() throws RunnerException {
+        List<ContainerV3Request> requests = List.of(new ContainerV3Request());
+        RuntimeException originalException = new RuntimeException("Original error");
+        doThrow(originalException).when(containerV3FacadeService)
+                .createUpdateContainer(anyList(), eq("CONSOLIDATION"));
+        RunnerException thrownException = assertThrows(RunnerException.class, () -> {
+            containerV3Util.createOrUpdateContainers(requests);
+        });
+        assertSame(originalException, thrownException.getCause());
+        assertEquals("Error processing row 1: Original error", thrownException.getMessage());
+    }
+
+    @Test
+    void testCreateOrUpdateContainers_AllSuccess() throws RunnerException {
+        List<ContainerV3Request> requests = List.of(new ContainerV3Request(), new ContainerV3Request());
+        when(containerV3FacadeService.createUpdateContainer(anyList(), eq("CONSOLIDATION")))
+                .thenReturn(new BulkContainerResponse());
+        containerV3Util.createOrUpdateContainers(requests);
+        verify(containerV3FacadeService, times(2))
+                .createUpdateContainer(anyList(), eq("CONSOLIDATION"));
+    }
+
+    @Test
+    void testCreateOrUpdateContainers_ThrowsRunnerExceptionOnFailure() throws RunnerException {
+        ContainerV3Request valid = new ContainerV3Request();
+        ContainerV3Request failing = new ContainerV3Request();
+        List<ContainerV3Request> requests = List.of(valid, failing);
+        when(containerV3FacadeService.createUpdateContainer(
+                argThat(list -> list != null && list.size() == 1 && list.get(0) == valid),
+                eq("CONSOLIDATION"))
+        ).thenReturn(null);
+        when(containerV3FacadeService.createUpdateContainer(
+                argThat(list -> list != null && list.size() == 1 && list.get(0) == failing),
+                eq("CONSOLIDATION"))
+        ).thenThrow(new RuntimeException("Some DB error"));
+        RunnerException exception = assertThrows(RunnerException.class, () -> {
+            containerV3Util.createOrUpdateContainers(requests);
+        });
+        assertTrue(exception.getMessage().contains("Error processing row 2"));
+        assertTrue(exception.getMessage().contains("Some DB error"));
+    }
+
+    @Test
+    void testCreateOrUpdateContainers_EmptyList_NoInteraction() throws RunnerException {
+        containerV3Util.createOrUpdateContainers(Collections.emptyList());
+        verifyNoInteractions(containerV3FacadeService);
+    }
+
+    @Test
+    void testSetIdAndTeuInContainers() throws Exception {
+        UUID guid = UUID.randomUUID();
+        String code = "20GP";
+        Long expectedId = 123L;
+        BigDecimal expectedTeu = new BigDecimal("1.0");
+        Long consolidationId = 999L;
+        Containers container = new Containers();
+        container.setGuid(guid);
+        container.setContainerCode(code);
+        List<Containers> containers = List.of(container);
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(consolidationId);
+        Map<UUID, Long> guidToIdMap = Map.of(guid, expectedId);
+        Map<String, BigDecimal> codeTeuMap = Map.of(code, expectedTeu);
+        Method method = ContainerV3Util.class.getDeclaredMethod("setIdAndTeuInContainers",
+                BulkUploadRequest.class, List.class, Map.class, Map.class);
+        method.setAccessible(true);
+        method.invoke(null, request, containers, guidToIdMap, codeTeuMap);
+        Containers updated = containers.get(0);
+        assertEquals(expectedId, updated.getId());
+        assertEquals(expectedTeu, updated.getTeu());
+        assertEquals(consolidationId, updated.getConsolidationId());
     }
 
     private Containers createTestContainer() {
