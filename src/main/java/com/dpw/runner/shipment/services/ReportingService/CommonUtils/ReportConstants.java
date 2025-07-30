@@ -52,6 +52,23 @@ public class ReportConstants {
     public static final String TI_TRANSPORTER_ADDRESS = "TI_TransporterAddress";
     public static final String CONTACT_KEY = "ContactPhone";
     public static final String TI_TRANSPORTER_CONTACT = "TI_TransporterContact";
+    public static final String TI_ORIGIN_EMAIL = "TI_OriginEmail";
+    public static final String TI_ORIGIN_CONTACT = "TI_OriginContact";
+    public static final String TI_DESINATION_EMAIL = "TI_DestinationEmail";
+    public static final String TI_DESTINATION_CONTACT = "TI_DestinationContact";
+    public static final String COMM = ",";
+    public static final String TI_ORIGIN_ADDRESS = "TI_Origin_Address";
+    public static final String TI_DESTINATION_ADDRESS = "TI_Destination_Address";
+    public static final String TI_DESTINATION = "TI_Destination";
+    public static final String TI_ORIGIN = "TI_Origin";
+    public static final String TI_ESTIMATED_PICKUP = "TI_Estimated_Pickup";
+    public static final String TI_ESTIMATED_DELIVERY = "TI_Estimated_Delivery";
+    public static final String TI_TRUCK_NUMBER_PLATE = "TI_TruckNumberPlate";
+    public static final String TI_TRAILER_NUMBER_PLATE = "TI_TrailerNumberPlate";
+    public static final String TI_DRIVER_NAME = "TI_DriverName";
+    public static final String TI_DRIVER_MOBILE_NUMBER = "TI_MobileNumber";
+    public static final String TI_DRIVER_ID = "TI_DriverID";
+    public static final String TI_CONTAINER_NUM = "TI_ContainerNumber";
 
 
     private ReportConstants(){}

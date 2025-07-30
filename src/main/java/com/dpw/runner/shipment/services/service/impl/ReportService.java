@@ -500,7 +500,8 @@ public class ReportService implements IReportService {
             Map<String, Object> addressData = transporterDetail.getAddressData();
             if (addressData != null) {
                 dictionary.put(ReportConstants.TI_TRANSPORTER_CONTACT, addressData.get(CONTACT_KEY));
-                dictionary.put(ReportConstants.TI_TRANSPORTER_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                String address = commonUtils.getAddress(addressData);
+                dictionary.put(ReportConstants.TI_TRANSPORTER_ADDRESS, address);
             }
         }
     }
@@ -519,7 +520,8 @@ public class ReportService implements IReportService {
                 Map<String, Object> addressData = importAgent.get().getAddressData();
                 if (addressData != null) {
                     dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
-                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                    String address =  commonUtils.getAddress(addressData);
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, address);
                 }
             }
         }
@@ -539,7 +541,8 @@ public class ReportService implements IReportService {
                 Map<String, Object> addressData = exportAgent.get().getAddressData();
                 if (addressData != null) {
                     dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
-                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, addressData.get(ReportConstants.ADDRESS_LABEL));
+                    String address =  commonUtils.getAddress(addressData);
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, address);
                 }
             }
         }

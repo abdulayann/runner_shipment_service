@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -165,7 +166,6 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING_ADDITIONAL_PARTY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.PACKAGES;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
@@ -2418,7 +2418,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
     }
 
     private String getPackUnit(Set<String> packTypes) {
-        return (packTypes.size() == 1) ? packTypes.iterator().next() : PACKAGES;
+        return (packTypes.size() == 1) ? packTypes.iterator().next() : PackingConstants.PKG;
     }
 
     private void calculateVW(CustomerBooking customerBooking) throws RunnerException {
