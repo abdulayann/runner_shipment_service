@@ -176,7 +176,7 @@ public class ConsolidationValidationV3Util {
         }
 
         // Additional validations specific to the consolidation as a whole
-        validateAirDgHazardousForConsole(consolidationDetails, shipmentIds, fromConsolidation, existingShipments, anyInterBranchShipment);
+        validateAirDgHazardousForConsole(consolidationDetails, shipmentIds, fromConsolidation, existingShipments, anyInterBranchShipment, anyDGShipment);
         // Permission check for DG shipments
         validateAirSecurityAndDGForAttachDetach(consolidationDetails, anyDGShipment);
     }
@@ -219,10 +219,11 @@ public class ConsolidationValidationV3Util {
             List<Long> shipmentIds,
             boolean fromConsolidation,
             int existingShipments,
-            boolean anyInterBranchShipment) throws RunnerException {
+            boolean anyInterBranchShipment, boolean anyDGShipment) throws RunnerException {
 
         // Check if the consolidation is Air DG
-        if (checkForAirDGFlag(consolidationDetails) && Boolean.TRUE.equals(consolidationDetails.getHazardous())) {
+        if (checkForAirDGFlag(consolidationDetails) &&
+                (Boolean.TRUE.equals(consolidationDetails.getHazardous()) || anyDGShipment)) {
 
             // Rule 1: Air DG consolidation cannot have more than one shipment
             if (existingShipments + shipmentIds.size() > 1) {
