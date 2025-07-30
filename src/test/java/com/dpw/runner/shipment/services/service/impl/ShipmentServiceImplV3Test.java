@@ -93,25 +93,7 @@ import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentOrder;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
@@ -638,6 +620,77 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
         when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
+        ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
+        when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
+        VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(BigDecimal.TEN);
+        volumeWeightChargeable.setChargeableUnit("Kg");
+        volumeWeightChargeable.setVolumeWeight(BigDecimal.TEN);
+        volumeWeightChargeable.setVolumeWeightUnit("m3");
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        V1TenantSettingsResponse tenantSettings = new V1TenantSettingsResponse();
+        tenantSettings.setDefaultPackUnit("BAG");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettings);
+
+        when(orderManagementAdapter.getOrderByGuid(any())).thenReturn(shipmentDetails1);
+        when(packingV3Service.updateBulk(any(), any())).thenReturn(BulkPackingResponse.builder().packingResponseList(Collections.singletonList(new PackingResponse())).build());
+        ShipmentDetailsV3Response response = shipmentServiceImplV3.createShipmentInV3(customerBookingV3Request);
+        assertNull(response);
+    }
+
+    @Test
+    void createShipmentInV3TestWithCustomerBookingNotes() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingV3Request packingV3Request = PackingV3Request.builder().packs("2").packsType("BAG").commodity("FAK").build();
+        packingV3Request.setWeight(BigDecimal.valueOf(11.5));
+        packingV3Request.setVolume(BigDecimal.valueOf(11));
+        packingV3Request.setLengthUnit("M");
+        ReferenceNumbersRequest referenceNumbersRequest = ReferenceNumbersRequest.builder().build();
+        referenceNumbersRequest.setReferenceNumber("SHP2411-A1PG00784");
+        referenceNumbersRequest.setType("CRR");
+        referenceNumbersRequest.setShipmentId(16787L);
+        referenceNumbersRequest.setCountryOfIssue("IND");
+        CustomerBookingV3Request customerBookingV3Request = CustomerBookingV3Request.builder().id(1L).transportType(Constants.TRANSPORT_MODE_SEA).cargoType(Constants.CARGO_TYPE_FCL).carrierDetails(CarrierDetailRequest.builder().build()).orderManagementId("eaf227f3-de85-42b4-8180-cf48ccf568f9").build();
+        customerBookingV3Request.setPackingList(Collections.singletonList(packingV3Request));
+        customerBookingV3Request.setReferenceNumbersList(Collections.singletonList(referenceNumbersRequest));
+        customerBookingV3Request.setGrossWeight(BigDecimal.valueOf(13222211));
+        customerBookingV3Request.setVolume(BigDecimal.valueOf(6565576));
+        customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
+
+        ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
+        Notes notes = Notes.builder().label("Label").assignedTo("abc@yopmail.com").entityId(1L).entityType("CustomerBooking").text("text").build();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        Parties importBroker = Parties.builder().orgCode("1223").build();
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(importBroker);
+        additionalDetails.setExportBroker(importBroker);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").build().setReferenceNumbersList(Collections.singletonList(referenceNumbers)).setAdditionalDetails(additionalDetails).setGoodsDescription("Abcd");
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setShipmentOrders(Collections.singletonList(shipmentOrder));
+        shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails1.setCarrierDetails(CarrierDetails.builder().build());
+
+        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().id(123L).containersList(List.of(ContainerRequest.builder().id(1L).containerCount(2L).commodityGroup("FAK").build())).build());
+        doReturn(Pair.of(ConsolidationDetails.builder().build(), null)).when(consolidationV3Service).createConsolidationForBooking(any(), any());
+
+        ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
+
+        when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
+
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
+        when(jsonHelper.convertValueToList(any(), eq(ReferenceNumbers.class))).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(Containers.builder().build()));
+        when(jsonHelper.convertValueToList(any(), eq(Notes.class))).thenReturn(List.of(notes));
+        when(referenceNumbersDao.saveEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(referenceNumbers));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails1);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails1);
+        when(notesDao.saveAll(any())).thenReturn(List.of(notes));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(List.of(notes));
         ShipmentDetailsV3Response shipmentDetailsV3Response = jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class);
         when(jsonHelper.convertValue(shipmentDetails1, ShipmentDetailsV3Response.class)).thenReturn(shipmentDetailsV3Response);
         VolumeWeightChargeable volumeWeightChargeable = new VolumeWeightChargeable();
