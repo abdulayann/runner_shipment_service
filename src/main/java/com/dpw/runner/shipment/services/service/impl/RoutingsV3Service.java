@@ -574,7 +574,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllUnlocationInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
             var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllMasterDataInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
             var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllVesselInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
-            CompletableFuture.allOf(locationDataFuture, masterDataFuture, vesselDataFuture).join();
+            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllCarrierInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
+            CompletableFuture.allOf(locationDataFuture, masterDataFuture, vesselDataFuture, carrierFuture).join();
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.ROUTING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_ROUTING_LIST, ex.getLocalizedMessage());
@@ -941,13 +942,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             throw new ValidationException("Transport pol/pod info status can not be IH");
         }
         List<Routings> routingsList = new ArrayList<>();
-        if(Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
+        if (Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
             Optional<ShipmentDetails> shipmentDetailsEntity = shipmentServiceV3.findById(request.getEntityId());
             if (shipmentDetailsEntity.isEmpty()) {
                 throw new ValidationException("Invalid shipment id");
             }
-           routingsList = shipmentDetailsEntity.get().getRoutingsList();
-        } else if(Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
+            routingsList = shipmentDetailsEntity.get().getRoutingsList();
+        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             Optional<ConsolidationDetails> consolidationDetails = consolidationV3Service.findById(request.getEntityId());
             if (consolidationDetails.isEmpty()) {
                 throw new ValidationException("Invalid consolidation id");
