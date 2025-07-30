@@ -455,6 +455,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -566,6 +567,8 @@ public abstract class IReport {
     @Autowired
     private IPackingService packingService;
 
+    @Autowired
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
     @Autowired
     private CommonUtils commonUtils;
 
@@ -5346,22 +5349,23 @@ public abstract class IReport {
 
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicShipmentFields(Map<String, Object> dictionary, ShipmentDetails details) {
+        Map<String, Object> masterDataMap = shipmentServiceImplV3.getAllMasterData(details.getId(), SHIPMENT);
         dictionary.put(S_CONTROLLED, details.getControlled());
         dictionary.put(S_CONTROLLED_REF_NO, details.getControlledReferenceNumber());
         dictionary.put(S_INCOTERM_LOCATION, details.getIncotermsLocation());
-        dictionary.put(S_PARTNER_DROP_DOWN, details.getPartner());
-        dictionary.put(S_CO_LOADER_NAME, details.getCoLoadCarrierName());
+        dictionary.put(S_PARTNER_DROP_DOWN,  ((Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST)).get(CacheConstants.ORDER_DPW).get(details.getPartner()));
+        dictionary.put(S_CO_LOADER_NAME, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBookingAgent().toString()));
         dictionary.put(S_CO_LOADER_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_CO_LOADER_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_CO_LOADER_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_BOOKING_AGENT, details.getBookingAgent());
+        dictionary.put(S_BOOKING_AGENT, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBookingAgent().toString()));
         dictionary.put(S_BOOKING_AGENT_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_BOOKING_AGENT_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_BOOKING_AGENT_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_PICKUP_AT_ORIGIN, details.getPickupAtOrigin());
-        dictionary.put(S_DELIVERY_AT_DESTINATION, details.getDeliveryAtDestination());
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, details.getBrokerageAtOrigin());
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, details.getBrokerageAtDestination());
+        dictionary.put(S_PICKUP_AT_ORIGIN, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getPickupAtOrigin().toString()));
+        dictionary.put(S_DELIVERY_AT_DESTINATION, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getDeliveryAtDestination().toString()));
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBrokerageAtOrigin().toString()));
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBrokerageAtDestination().toString()));
         dictionary.put(S_TERMINAL, details.getTerminalCutoff());
         dictionary.put(S_VGM, details.getVerifiedGrossMassCutoff());
         dictionary.put(S_SI, details.getShippingInstructionCutoff());
@@ -5369,7 +5373,7 @@ public abstract class IReport {
         dictionary.put(S_LAT_FULL_EQ_DELI, details.getLatestFullEquipmentDeliveredToCarrier());
         dictionary.put(S_EAR_DROP_OFF, details.getEarliestDropOffFullEquipmentToCarrier());
         dictionary.put(S_REEFER, details.getIsReefer());
-        dictionary.put(S_LAT, details.getLatestArrivalTime());
+        dictionary.put(S_LAT, convertToDPWDateFormat(details.getLatestArrivalTime()));
         dictionary.put(S_BOE_NUMBER, details.getAdditionalDetails().getBOENumber());
         dictionary.put(S_BOE_DATE, details.getAdditionalDetails().getBOEDate());
         dictionary.put(S_OWNERSHIP, details.getAdditionalDetails().getOwnership() != null ? details.getAdditionalDetails().getOwnership().getDescription() : null);

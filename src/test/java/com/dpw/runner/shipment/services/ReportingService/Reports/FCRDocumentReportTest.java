@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ContainerService;
 import com.dpw.runner.shipment.services.service.impl.PackingService;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,6 +72,9 @@ class FCRDocumentReportTest {
 
     @Mock
     private PackingService packingService;
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails shipmentDetails;
@@ -239,6 +243,14 @@ class FCRDocumentReportTest {
         mockGetUnlocation(getUnlocationResponse());
         when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        Map<String, Object> mapMock = new HashMap<>();
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));
         fcrDocumentReport.setPlaceOfIssue("LOCAB");
         Map<String, Object> data = fcrDocumentReport.getData(id);
@@ -373,6 +385,15 @@ class FCRDocumentReportTest {
         packingModel2.setPacks("20");
         packingModels.add(packingModel2);
         shipmentModel.setPackingList(packingModels);
+
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        Map<String, Object> mapMock = new HashMap<>();
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
         referenceNumbersModel.setType(ReportConstants.MO_RN);
