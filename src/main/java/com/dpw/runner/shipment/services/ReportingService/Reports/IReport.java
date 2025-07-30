@@ -5350,22 +5350,24 @@ public abstract class IReport {
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicShipmentFields(Map<String, Object> dictionary, ShipmentDetails details) {
         Map<String, Object> masterDataMap = shipmentServiceImplV3.getAllMasterData(details.getId(), SHIPMENT);
+        Map<String, String> orgsMap = (Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS);
         dictionary.put(S_CONTROLLED, details.getControlled());
         dictionary.put(S_CONTROLLED_REF_NO, details.getControlledReferenceNumber());
         dictionary.put(S_INCOTERM_LOCATION, details.getIncotermsLocation());
-        dictionary.put(S_PARTNER_DROP_DOWN,  ((Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST)).get(CacheConstants.ORDER_DPW).get(details.getPartner()));
-        dictionary.put(S_CO_LOADER_NAME, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBookingAgent().toString()));
+        dictionary.put(S_PARTNER_DROP_DOWN,
+                ((Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST)).get(CacheConstants.ORDER_DPW) != null ? ((Map<String, Map<String, String>>) masterDataMap.get(CacheConstants.MASTER_LIST)).get(CacheConstants.ORDER_DPW).get(details.getPartner()) : null);
+        dictionary.put(S_CO_LOADER_NAME, orgsMap != null ? orgsMap.get(StringUtility.convertToString(details.getBookingAgent())) : null);
         dictionary.put(S_CO_LOADER_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_CO_LOADER_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_CO_LOADER_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_BOOKING_AGENT, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBookingAgent().toString()));
+        dictionary.put(S_BOOKING_AGENT, orgsMap != null ? orgsMap.get(StringUtility.convertToString(details.getBookingAgent())) : null);
         dictionary.put(S_BOOKING_AGENT_BKG_NO, details.getCoLoadBkgNumber());
         dictionary.put(S_BOOKING_AGENT_BL_NO, details.getCoLoadBlNumber());
         dictionary.put(S_BOOKING_AGENT_AWB_NO, details.getCoLoadBlNumber());
-        dictionary.put(S_PICKUP_AT_ORIGIN, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getPickupAtOrigin().toString()));
-        dictionary.put(S_DELIVERY_AT_DESTINATION, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getDeliveryAtDestination().toString()));
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBrokerageAtOrigin().toString()));
-        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, ((Map<String, String>) masterDataMap.get(CacheConstants.ORGANIZATIONS)).get(details.getBrokerageAtDestination().toString()));
+        dictionary.put(S_PICKUP_AT_ORIGIN, orgsMap != null ? orgsMap.get(StringUtility.convertToString(details.getPickupAtOrigin())) : null);
+        dictionary.put(S_DELIVERY_AT_DESTINATION, orgsMap != null ? orgsMap.get(StringUtility.convertToString(details.getDeliveryAtDestination())) : null);
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_ORIGIN, orgsMap != null ? orgsMap.get(StringUtility.convertToString(details.getBrokerageAtOrigin())) : null);
+        dictionary.put(S_CUSTOM_BROKERAGE_AT_DESTINATION, orgsMap != null ? orgsMap.get(StringUtility.convertToString(details.getBrokerageAtDestination())) : null);
         dictionary.put(S_TERMINAL, details.getTerminalCutoff());
         dictionary.put(S_VGM, details.getVerifiedGrossMassCutoff());
         dictionary.put(S_SI, details.getShippingInstructionCutoff());
