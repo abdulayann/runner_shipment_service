@@ -96,15 +96,6 @@ public class CustomerBookingValidationsV3 {
         if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
             validateParty(entity.getConsignee(), "Consignee detail");
         }
-        CarrierDetails carrier = entity.getCarrierDetails();
-        if(!Set.of(Constants.TRANSPORT_MODE_RAI, Constants.TRANSPORT_MODE_ROA).contains(entity.getTransportType())) {
-            validateMandatory(carrier.getOriginPort(), "POL");
-            validateMandatory(carrier.getDestinationPort(), "POD");
-        }
-        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-
-        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) && (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty()))
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
     }
 
     private void validateOnPendingForCreditCheck(CustomerBooking entity) {
@@ -119,14 +110,13 @@ public class CustomerBookingValidationsV3 {
         CarrierDetails carrier = entity.getCarrierDetails();
         validateMandatory(carrier.getOrigin(), "Origin");
         validateMandatory(carrier.getDestination(), "Destination");
-        if (!Set.of(Constants.TRANSPORT_MODE_AIR, Constants.TRANSPORT_MODE_RAI, Constants.TRANSPORT_MODE_ROA).contains(entity.getTransportType())) {
+        if (Set.of(Constants.TRANSPORT_MODE_AIR, Constants.TRANSPORT_MODE_SEA).contains(entity.getTransportType()) && Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS, Constants.DIRECTION_IMP).contains(entity.getDirection())) {
             validateMandatory(carrier.getOriginPort(), "POL");
             validateMandatory(carrier.getDestinationPort(), "POD");
         }
 
         validateMandatory(entity.getTransportType(), "Transport Mode");
         validateMandatory(entity.getCargoType(), "Cargo Type");
-        validateCargoContents(entity);
     }
 
     private void validateMandatory(Object value, String fieldName) {
@@ -138,16 +128,6 @@ public class CustomerBookingValidationsV3 {
     private void validateParty(Parties party, String fieldName) {
         if (party == null || party.getOrgCode() == null || party.getAddressCode() == null) {
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, fieldName));
-        }
-    }
-
-    private void validateCargoContents(CustomerBooking entity) {
-        String cargoType = entity.getCargoType();
-        if (Set.of(Constants.CARGO_TYPE_FCL, Constants.CARGO_TYPE_FTL).contains(cargoType) && entity.getContainersList().isEmpty()) {
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one container"));
-        }
-        if (Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(cargoType) && entity.getPackingList().isEmpty()) {
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one Package"));
         }
     }
 }

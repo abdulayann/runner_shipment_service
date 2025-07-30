@@ -308,8 +308,6 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutCargoType));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutCargoType));
-        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOutContainers));
-        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOutPackings));
         assertDoesNotThrow(() -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOriginPortAndTransportType_ROA));
         assertDoesNotThrow(() -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOriginPortAndDestinationPortAndTransportType_ROA));
         customerBookingValidationsV3.onSave(oldEntity,newEntity);
@@ -417,7 +415,6 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().FetchRatesMandate(true).build());
         mockTenantSettings();
-        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutBookingCharges));
         customerBookingValidationsV3.onSave(oldEntity,newEntity_withBookingCharges);
 
     }
