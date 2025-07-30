@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import com.dpw.runner.shipment.services.repository.interfaces.ISectionVisibilityRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -45,6 +47,9 @@ class SectionDetailsServiceImplTest {
 
   @Mock
   private ISectionDetailsRepository iSectionDetailsRepository;
+
+  @Mock
+  private ISectionVisibilityRepository sectionVisibilityRepository;
 
   @Mock
   private ModelMapper modelMapper;
@@ -131,15 +136,12 @@ class SectionDetailsServiceImplTest {
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
-    sectionDetails.setSectionVisibilities(Set.of(sectionVisibility));
     sectionDetails.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setUpdatedBy("2020-03-01");
 
-    HashSet<SectionDetails> sectionDetails2 = new HashSet<>();
-    sectionDetails2.add(sectionDetails);
-
     Optional<SectionDetails> ofResult = Optional.of(sectionDetails);
     when(iSectionDetailsRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+    when(sectionVisibilityRepository.findBySectionDetailsId(anyLong())).thenReturn(List.of(sectionVisibility));
     SectionDetailsException exception = assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.delete(1L));
     verify(iSectionDetailsRepository).findById(Mockito.<Long>any());
@@ -244,7 +246,6 @@ class SectionDetailsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
 
@@ -306,7 +307,6 @@ class SectionDetailsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
     when(iSectionDetailsRepository.existsBySectionName(any())).thenReturn(false);
@@ -349,7 +349,6 @@ class SectionDetailsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
     when(iSectionDetailsRepository.existsBySectionName(any())).thenReturn(false);
