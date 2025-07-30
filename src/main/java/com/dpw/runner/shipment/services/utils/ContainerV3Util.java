@@ -500,6 +500,13 @@ public class ContainerV3Util {
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
+        setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
+        validateHsCode(containersList);
+        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
+        createOrUpdateContainers(requests);
+    }
+
+    private static void setIdAndTeuInContainers(BulkUploadRequest request, List<Containers> containersList, Map<UUID, Long> guidToIdMap, Map<String, BigDecimal> codeTeuMap) {
         containersList.forEach(container -> {
             if (container.getGuid() != null && guidToIdMap.containsKey(container.getGuid())) {
                 container.setId(guidToIdMap.get(container.getGuid()));
@@ -509,9 +516,9 @@ public class ContainerV3Util {
             }
             container.setConsolidationId(request.getConsolidationId());
         });
-        validateHsCode(containersList);
-        List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
+    }
 
+    public void createOrUpdateContainers(List<ContainerV3Request> requests) throws RunnerException {
         for (int i = 0; i < requests.size(); i++) {
             try {
                 containerV3FacadeService.createUpdateContainer(List.of(requests.get(i)), CONSOLIDATION);
