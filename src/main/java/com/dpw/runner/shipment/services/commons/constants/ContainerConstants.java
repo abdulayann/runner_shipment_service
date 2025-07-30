@@ -21,8 +21,10 @@ public class ContainerConstants {
     public static final String GET_CONTAINERS = "/get/containers";
     public static final String ASSIGN_CONTAINERS = "/assignContainers";
     public static final String ASSIGN_PACKAGES = "/assignPackages";
+    public static final String ASSIGN_PACKAGES_SHIPMENT = "/shipment-assignPackages";
     public static final String UN_ASSIGN_CONTAINERS = "/unAssignContainers";
     public static final String UN_ASSIGN_PACKAGES = "/unAssignPackages";
+    public static final String UN_ASSIGN_PACKAGES_SHIPMENT = "/shipment-unAssignPackages";
     public static final String ASSIGN_SUCCESS = "Container Assignment Successful";
     public static final String UN_ASSIGN_SUCCESS = "Container Detachment Successful";
     public static final String LIST_BY_MODULE_GUID_AND_MODULE_TYPE = "/listByModuleGuidAndModuleType";
@@ -41,6 +43,7 @@ public class ContainerConstants {
     public static final String SHIPMENT_CONTAINERS = "/shipment-containers";
     public static final String CONSOLIDATION_CONTAINERS = "/consolidation-containers";
     public static final String CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT = "/consolidation-containers-assign-package";
+    public static final String SHIPMENT_CONTAINERS_FOR_PACKAGE_ASSIGNMENT = "/shipment-containers-assign-package";
     // Table names
     public static final String TABLE_CONTAINERS = "containers";
     public static final String TABLE_SHIPMENTS_LIST = "shipmentsList";
@@ -93,7 +96,9 @@ public class ContainerConstants {
             Map.entry(KEY_UPDATED_AT,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Long.class).fieldName(KEY_UPDATED_AT).build()),
             Map.entry(KEY_CONTAINER_CODE,
-                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build())
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build()),
+            Map.entry(TABLE_SHIPMENTS_LIST,
+                    RunnerEntityMapping.builder().tableName(TABLE_SHIPMENTS_LIST).dataType(Long.class).fieldName(TABLE_SHIPMENTS_LIST).build())
 
     );
 

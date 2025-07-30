@@ -60,6 +60,8 @@ public class Constants {
     public static final String TENANT_SETTINGS = "TENANT_SETTINGS";
     public static final String ROUTING = "ROUTING";
     public static final String PACKING = "PACKING";
+    public static final String CONSOLIDATION_PACKING = "CONSOLIDATION_PACKING";
+    public static final String SHIPMENT_PACKING = "SHIPMENT_PACKING";
     public static final String REFERENCE_NUMBERS = "REFERENCE_NUMBERS";
     public static final String TOTAL_PACKAGES_TYPE = "TOTAL_PACKAGES_TYPE";
     public static final String DG_PACKAGES_TYPE = "DG_PACKAGES_TYPE";
@@ -67,6 +69,8 @@ public class Constants {
     public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
+    public static final String CONSOLIDATION_CONTAINER = "CONSOLIDATION_CONTAINER";
+    public static final String SHIPMENT_CONTAINER = "SHIPMENT_CONTAINER";
     public static final String CONTAINER_INTERNAL_CALL = "CONTAINER_INTERNAL_CALL";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";

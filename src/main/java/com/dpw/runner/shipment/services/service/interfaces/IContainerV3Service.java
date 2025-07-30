@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -46,7 +47,7 @@ public interface IContainerV3Service {
             Set<Long> interBranchRequestedShipIds);
 
     ContainerResponse assignContainers(AssignContainerRequest request, String module) throws RunnerException;
-    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module) throws RunnerException;
+    ContainerResponse unAssignContainers(UnAssignContainerRequest request, String module, UnAssignContainerParams unAssignContainerParams) throws RunnerException;
 
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
     void updateAttachedContainersData(List<Long> containerIds) throws RunnerException;
@@ -55,6 +56,6 @@ public interface IContainerV3Service {
 
     List<ContainerInfoProjection> getContainers(List<Long> containerIds);
     void pushContainersToDependentServices(List<Containers> containersList);
-    ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request) throws RunnerException;
+    ContainerListResponse fetchConsolidationContainersForPackageAssignment(ListCommonRequest request, String module) throws RunnerException;
     void addPackageDataToContainer(Containers container, Packing packing) throws RunnerException;
 }
