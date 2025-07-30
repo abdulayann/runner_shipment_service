@@ -2586,7 +2586,56 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
+
+                // Custom Naming Logic for V3 Document Names
+                try {
+                    if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
+                        // Map docType to displayName
+                        Map<String, String> docNamingMap = Map.ofEntries(
+                                Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
+                                Map.entry(ReportConstants.MAWB, "MAWB"),
+                                Map.entry(ReportConstants.HAWB, "HAWB"),
+                                Map.entry("CSD", "Consignment Security Declaration (CSD)"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, "Cargo Manifest"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, "Cargo Manifest"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, "Cargo Manifest"),
+                                Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, "Cargo Manifest"),
+                                Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
+                                Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
+                                Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
+                                Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
+                                Map.entry(ReportConstants.HBL, "HBL"),
+                                Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, "Cargo Manifest"),
+                                Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, "Cargo Manifest"),
+                                Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
+                                Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
+                        );
+
+                        String baseDocName = docNamingMap.getOrDefault(docType, docType);
+                        String customFileName;
+
+                        // Add child type for specific document types
+                        if (docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) {
+                            customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
+                                    + DocumentConstants.DASH
+                                    + StringUtility.convertToString(childType).toUpperCase()
+                                    + DocumentConstants.DOT_PDF;
+                        } else {
+                            customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
+                                    + DocumentConstants.DOT_PDF;
+                        }
+
+                        docUploadRequest.setFileName(customFileName);
+                        log.info("Custom file name generated: {}", customFileName);
+                    }
+                } catch (Exception e) {
+                    log.error("Error generating custom document filename: {}", e.getMessage(), e);
+                }
+
+                // Changed from CompletableFuture to direct call
+                masterDataUtils.withMdc(() ->
+                        this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)
+                ).run();
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
             }
