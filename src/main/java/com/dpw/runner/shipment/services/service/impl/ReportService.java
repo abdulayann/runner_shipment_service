@@ -2660,12 +2660,12 @@ public class ReportService implements IReportService {
 
                 // Add child type for specific document types
                 if (docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) {
-                    customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
+                    customFileName = baseDocName.replaceAll("\\s+", "").toUpperCase()
                             + DocumentConstants.DASH
                             + StringUtility.convertToString(childType).toUpperCase()
                             + DocumentConstants.DOT_PDF;
                 } else {
-                    customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase()
+                    customFileName = baseDocName.replaceAll("\\s+", "").toUpperCase()
                             + DocumentConstants.DOT_PDF;
                 }
 
