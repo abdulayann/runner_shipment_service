@@ -829,6 +829,11 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
+    public Boolean getAllowAttachMentFromConsol(Long consolidationId) {
+        return consolidationRepository.getAllowAttachMentFromConsol(consolidationId);
+    }
+
+    @Override
     public void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId) {
         consolidationRepository.updateConsolidationAttachmentFlag(enableFlag, consolidationId);
     }

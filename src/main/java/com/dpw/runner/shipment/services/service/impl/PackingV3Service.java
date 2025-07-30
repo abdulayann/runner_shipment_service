@@ -22,10 +22,7 @@ import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -82,8 +79,7 @@ import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
@@ -1457,11 +1453,34 @@ public class PackingV3Service implements IPackingV3Service {
         if(request.getShipmentPackIds().size() > 1) {
             throw new ValidationException("Please select Packages of single shipment only for assignment.");
         }
-        return containerV3Service.assignContainers(request, Constants.PACKING);
+        return containerV3Service.assignContainers(request, Constants.CONSOLIDATION_PACKING);
     }
 
     @Override
-    public void unAssignPackageContainers(UnAssignPackageContainerRequest request) throws RunnerException {
+    public ContainerResponse assignShipmentPackagesContainers(ShipmentPackAssignmentRequest request) throws RunnerException {
+        if(listIsNullOrEmpty(request.getPackingIds())) {
+            throw new ValidationException("No Packing Ids provided.");
+        }
+        List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
+        if(listIsNullOrEmpty(packingList)) {
+            throw new ValidationException("No Packing found with Ids: " + request.getPackingIds());
+        }
+        if(packingList.stream().map(Packing::getShipmentId).distinct().count() > 1) {
+            throw new ValidationException("Please select Packages of single shipment only for assignment.");
+        }
+        Long shipmentId = packingList.get(0).getShipmentId();
+        ShipmentDetails shipmentDetails = shipmentService.findById(shipmentId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
+        if(!Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType()) && !Constants.CARGO_TYPE_FTL.equalsIgnoreCase(shipmentDetails.getShipmentType())) {
+            throw new ValidationException("Shipment level package assignment is only allowed for FCL/FTL shipments.");
+        }
+        AssignContainerRequest assignContainerRequest = new AssignContainerRequest();
+        assignContainerRequest.setContainerId(request.getContainerId());
+        assignContainerRequest.setShipmentPackIds(Map.of(shipmentId, request.getPackingIds()));
+        return containerV3Service.assignContainers(assignContainerRequest, SHIPMENT_PACKING);
+    }
+
+    @Override
+    public void unAssignPackageContainers(UnAssignPackageContainerRequest request, String module) throws RunnerException {
         List<Packing> packingList = packingDao.findByIdIn(request.getPackingIds());
         List<UnAssignContainerRequest> unAssignContainerRequests = new ArrayList<>();
         Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
@@ -1487,8 +1506,17 @@ public class PackingV3Service implements IPackingV3Service {
             unAssignContainerRequest.setShipmentPackIds(shipmentPackIds);
             unAssignContainerRequests.add(unAssignContainerRequest);
         }
+        UnAssignContainerParams unAssignContainerParams = new UnAssignContainerParams();
         for(UnAssignContainerRequest unAssignContainerRequest: unAssignContainerRequests) {
-            containerV3Service.unAssignContainers(unAssignContainerRequest, Constants.PACKING);
+            containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams);
+        }
+        // update shipments and consolidations data only for FCL/FTL shipments
+        if(!setIsNullOrEmpty(unAssignContainerParams.getFclOrFtlShipmentIds())) {
+            for(Long shipmentId: unAssignContainerParams.getFclOrFtlShipmentIds()) {
+                ShipmentDetails shipmentDetails = unAssignContainerParams.getShipmentDetailsMap().get(shipmentId);
+                shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+            }
+            consolidationV3Service.updateConsolidationCargoSummary(unAssignContainerParams.getConsolidationDetails(), unAssignContainerParams.getOldShipmentWtVolResponse());
         }
     }
 
