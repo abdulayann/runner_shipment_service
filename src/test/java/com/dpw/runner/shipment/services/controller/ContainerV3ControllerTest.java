@@ -37,7 +37,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ContainerV3ControllerTest {
@@ -204,12 +204,6 @@ class ContainerV3ControllerTest {
   }
 
   @Test
-  void uploadCSV2() throws IOException {
-    var responseEntity = containerV3Controller.uploadCSV(BulkUploadRequest.builder().file(new BASE64DecodedMultipartFile(StringUtility.getRandomString(11).getBytes())).build());
-    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-  }
-
-  @Test
   void uploadCSV_shouldReturnExpectationFailed_onUploadError() throws IOException, RunnerException {
     MultipartFile file = new BASE64DecodedMultipartFile("dummy content".getBytes());
     BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
@@ -218,5 +212,15 @@ class ContainerV3ControllerTest {
     ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request);
     assertEquals(HttpStatus.EXPECTATION_FAILED, response.getStatusCode());
   }
+
+  @Test
+  void uploadCSV2() throws IOException, RunnerException {
+    MultipartFile file = new BASE64DecodedMultipartFile(StringUtility.getRandomString(11).getBytes());
+    BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
+    doNothing().when(containerV3Util).uploadContainers(any());
+    var responseEntity = containerV3Controller.uploadCSV(request);
+    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+  }
+
 }
 

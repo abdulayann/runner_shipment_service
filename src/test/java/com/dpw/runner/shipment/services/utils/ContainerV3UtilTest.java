@@ -772,6 +772,14 @@ class ContainerV3UtilTest extends CommonMocks {
         assertEquals(consolidationId, updated.getConsolidationId());
     }
 
+    @Test
+    void testGetValidHsCodes_whenEmptyInput_thenReturnsEmptySet() {
+        Set<String> emptyHsCodes = new HashSet<>();
+        Set<String> result = containerV3Util.getValidHsCodes(emptyHsCodes);
+        assertNotNull(result);
+        assertTrue(result.isEmpty(), "Expected result to be empty for empty input set");
+    }
+
     private Containers createTestContainer() {
         Containers container = new Containers();
         container.setGuid(UUID.randomUUID());
