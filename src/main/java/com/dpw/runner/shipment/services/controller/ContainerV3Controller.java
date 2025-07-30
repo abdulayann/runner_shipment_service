@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -132,19 +133,26 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> assignContainers(@RequestBody @Valid AssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONTAINER));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.assignContainers(request, Constants.CONSOLIDATION_CONTAINER));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = UN_ASSIGN_SUCCESS, response = ContainerResponseClass.class)})
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONTAINER));
+        return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONSOLIDATION_CONTAINER, new UnAssignContainerParams()));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
     @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
     public ResponseEntity<IRunnerResponse> fetchConsolidationContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
-        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest);
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest, CONSOLIDATION);
+        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
+    public ResponseEntity<IRunnerResponse> fetchShipmentContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest, SHIPMENT);
         return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 

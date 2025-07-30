@@ -4517,6 +4517,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    @Override
+    public void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException {
+        CargoDetailsResponse cargoDetailsResponse = calculateShipmentSummary(shipmentDetails.getTransportMode(), shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
+        if (cargoDetailsResponse != null)
+            updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
+    }
+
     public CargoDetailsResponse calculateShipmentSummary(String transportMode, List<Packing> packingList, Set<Containers> containers) throws RunnerException {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean isPacksAvailable = !CommonUtils.listIsNullOrEmpty(packingList);

@@ -2926,6 +2926,9 @@ public class CommonUtils {
         return (Constants.SHIPMENT_TYPE_LCL.equals(cargoType) || CARGO_TYPE_LTL.equals(cargoType));
     }
 
+    public boolean isSeaFCLOrRoadFTL(String transportMode, String cargoType) {
+        return isSeaFCL(transportMode, cargoType) || isRoadFCLorFTL(transportMode, cargoType);
+    }
     public boolean isRoadFCLorFTL(String transportMode, String cargoType) {
         return Constants.TRANSPORT_MODE_ROA.equals(transportMode) && isFCLorFTL(cargoType);
     }
