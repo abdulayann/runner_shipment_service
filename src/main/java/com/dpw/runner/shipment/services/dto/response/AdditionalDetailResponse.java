@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateSerializer;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
@@ -15,6 +16,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -120,6 +122,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private LocalDateTime dateOfIssue;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shippedOnboard;
     private String goodsCO;
     private String BOENumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
