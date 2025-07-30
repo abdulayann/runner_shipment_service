@@ -2612,9 +2612,8 @@ public class ReportService implements IReportService {
                                 Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
                         );
 
-                        String baseDocName = docNamingMap.getOrDefault(docType, docType);
-                        String customFileName = baseDocName.replaceAll("\\s+", "").toUpperCase() + DocumentConstants.DOT_PDF;
-
+                       String baseDocName = docNamingMap.getOrDefault(docType, docType);
+                        String customFileName = baseDocName.replaceAll("\\s+", "_").toUpperCase() + DocumentConstants.DOT_PDF;
                         docUploadRequest.setFileName(customFileName);
                         log.info("Custom file name generated: {}", customFileName);
                     }
