@@ -103,6 +103,7 @@ public class ManifestShipmentReport extends IReport{
 
         if (manifestShipmentModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, manifestShipmentModel.getShipmentDetails().getId());
+            this.getContainerDetails(manifestShipmentModel.getShipmentDetails(), dictionary);
             this.getPackingDetails(manifestShipmentModel.getShipmentDetails(), dictionary);
         }
         return dictionary;

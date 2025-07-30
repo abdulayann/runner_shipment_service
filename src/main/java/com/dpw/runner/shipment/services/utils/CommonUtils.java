@@ -357,15 +357,11 @@ public class CommonUtils {
 
     public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
         ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = null;
-        PdfCopy copy = null;
-        doc = new Document();
-        copy = new PdfSmartCopy(doc, ms);
+        Document doc = new Document();
+        PdfCopy copy =  new PdfCopy(doc, ms);
         doc.open();
-
         for (byte[] dataByte : pdfByteContent) {
-            PdfReader reader = null;
-            reader = new PdfReader(dataByte);
+            PdfReader reader = new PdfReader(dataByte);
             copy.addDocument(reader);
             reader.close();
         }

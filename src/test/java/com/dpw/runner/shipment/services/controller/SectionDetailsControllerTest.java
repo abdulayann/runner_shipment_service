@@ -42,9 +42,9 @@ class SectionDetailsControllerTest {
   void testCreate() {
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
+    sectionDetailsRequest.setSectionDescription("Section Description");
     sectionDetailsRequest.setSectionFieldIds(new ArrayList<>());
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionName("Section Name");
     var responseEntity = sectionDetailsController.create(sectionDetailsRequest);
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
   }
@@ -54,9 +54,9 @@ class SectionDetailsControllerTest {
     when(iSectionDetailsService.create(any())).thenThrow(
         new SectionDetailsException("RuntimeException"));
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
-    sectionDetailsRequest.setSectionName("Section Description");
+    sectionDetailsRequest.setSectionDescription("Section Description");
     sectionDetailsRequest.setSectionFieldIds(new ArrayList<>());
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionName("Section Name");
     var responseEntity = sectionDetailsController.create(sectionDetailsRequest);
     assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
   }
@@ -65,9 +65,9 @@ class SectionDetailsControllerTest {
   void testUpdate() {
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
+    sectionDetailsRequest.setSectionDescription("Section Description");
     sectionDetailsRequest.setSectionFieldIds(new ArrayList<>());
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionName("Section Name");
     var responseEntity = sectionDetailsController.update(sectionDetailsRequest);
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
   }
@@ -78,9 +78,9 @@ class SectionDetailsControllerTest {
         new SectionDetailsException("RuntimeException"));
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
+    sectionDetailsRequest.setSectionDescription("Section Description");
     sectionDetailsRequest.setSectionFieldIds(new ArrayList<>());
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionName("Section Name");
     var responseEntity = sectionDetailsController.update(sectionDetailsRequest);
     assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
   }

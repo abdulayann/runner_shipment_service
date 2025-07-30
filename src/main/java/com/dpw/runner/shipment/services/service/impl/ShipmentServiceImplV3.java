@@ -108,6 +108,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.RoutingsLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
@@ -615,9 +616,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         setConsoleAndNteInfo(shipmentId, response);
         setDgPackCountAndType(shipmentDetailsEntity, response);
         setMainCarriageFlag(shipmentDetailsEntity, response);
+        setRoutingsLiteRespnse(shipmentDetailsEntity, response);
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setRoutingsLiteRespnse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+        if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsEntity.getRoutingsList())) {
+            List<RoutingsLiteResponse> routingsLiteResponses = jsonHelper.convertValueToList(shipmentDetailsEntity.getRoutingsList(), RoutingsLiteResponse.class);
+            response.setRoutingsLiteResponses(routingsLiteResponses);
+        }
     }
 
     private void setBookingId(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse){
@@ -1814,7 +1823,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void validateBeforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
-            throw new ValidationException("Shipper & Consignee parties can't be selected as same.");
+            throw new ValidationException(ErrorConstants.SAME_SHIPPER_CONSIGNEE);
 
         if (!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {

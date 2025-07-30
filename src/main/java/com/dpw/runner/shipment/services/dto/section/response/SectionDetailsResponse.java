@@ -17,6 +17,6 @@ public class SectionDetailsResponse implements IRunnerResponse {
 
   private Long id;
   private String sectionName;
-  private String sectionCode;
+  private String sectionDescription;
   private List<SectionFieldsResponse> sectionFieldsResponses;
 }
