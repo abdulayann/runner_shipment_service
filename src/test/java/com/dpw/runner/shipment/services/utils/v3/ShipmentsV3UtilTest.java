@@ -4,12 +4,29 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerResult;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
-import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
@@ -21,7 +38,11 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventsV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.jupiter.api.AfterEach;
@@ -38,20 +59,29 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import java.util.concurrent.Executors;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -472,6 +502,419 @@ class ShipmentsV3UtilTest extends CommonMocks {
         boolean includeGuid = true;
         assertDoesNotThrow(() -> shipmentsV3Util.afterSaveforEt(shipmentDetails, null, true, mockShipmentRequest, shipmentSettingsDetails, includeGuid));
 
+    }
+
+    @Test
+    void testGenerateSummaryResponseWarnings_NoWarnings() throws RunnerException {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setWeightUnit("KG");
+        shipment.setVolumeUnit("M3");
+
+        CargoDetailsResponse packsSummary = CargoDetailsResponse.builder()
+                .noOfPacks(10)
+                .packsUnit("PKG")
+                .weight(BigDecimal.valueOf(100))
+                .weightUnit("KG")
+                .volume(BigDecimal.valueOf(20))
+                .volumeUnit("M3")
+                .build();
+
+        CargoDetailsResponse containerSummary = CargoDetailsResponse.builder()
+                .noOfPacks(10)
+                .packsUnit("PKG")
+                .weight(BigDecimal.valueOf(100))
+                .weightUnit("KG")
+                .volume(BigDecimal.valueOf(20))
+                .volumeUnit("M3")
+                .build();
+
+        ShipmentSummaryWarningsResponse warnings =
+                shipmentsV3Util.generateSummaryResponseWarnings(shipment, packsSummary, containerSummary);
+
+        assertNotNull(warnings);
+        assertNull(warnings.getPackagesWarning());
+        assertNull(warnings.getWeightWarning());
+        assertNull(warnings.getVolumeWarning());
+    }
+
+    @Test
+    void testGenerateSummaryResponseWarnings_PackagesMismatch() throws RunnerException {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setWeightUnit("KG");
+        shipment.setVolumeUnit("M3");
+
+        CargoDetailsResponse packsSummary = CargoDetailsResponse.builder()
+                .noOfPacks(8)
+                .packsUnit("PKG")
+                .weight(BigDecimal.valueOf(100))
+                .weightUnit("KG")
+                .volume(BigDecimal.valueOf(20))
+                .volumeUnit("M3")
+                .build();
+
+        CargoDetailsResponse containerSummary = CargoDetailsResponse.builder()
+                .noOfPacks(10)
+                .packsUnit("PKG")
+                .weight(BigDecimal.valueOf(100))
+                .weightUnit("KG")
+                .volume(BigDecimal.valueOf(20))
+                .volumeUnit("M3")
+                .build();
+
+        ShipmentSummaryWarningsResponse warnings =
+                shipmentsV3Util.generateSummaryResponseWarnings(shipment, packsSummary, containerSummary);
+
+        assertNotNull(warnings);
+        assertNotNull(warnings.getPackagesWarning());
+        assertEquals("10 PKG", warnings.getPackagesWarning().getContainerValue());
+        assertEquals("8 PKG", warnings.getPackagesWarning().getPackageValue());
+        assertEquals("2 PKG", warnings.getPackagesWarning().getDifference());
+
+        // Weight and volume warnings should be null since values match
+        assertNull(warnings.getWeightWarning());
+        assertNull(warnings.getVolumeWarning());
+    }
+
+    @Test
+    void testGenerateSummaryResponseWarnings_WeightAndVolumeWarnings() throws RunnerException {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setWeightUnit("KG");
+        shipment.setVolumeUnit("M3");
+
+        CargoDetailsResponse packsSummary = CargoDetailsResponse.builder()
+                .noOfPacks(10)
+                .packsUnit("PKG")
+                .weight(BigDecimal.valueOf(150))
+                .weightUnit("KG")
+                .volume(BigDecimal.valueOf(25))
+                .volumeUnit("M3")
+                .build();
+
+        CargoDetailsResponse containerSummary = CargoDetailsResponse.builder()
+                .noOfPacks(10)
+                .packsUnit("PKG")
+                .weight(BigDecimal.valueOf(100))
+                .weightUnit("KG")
+                .volume(BigDecimal.valueOf(20))
+                .volumeUnit("M3")
+                .build();
+
+        ShipmentSummaryWarningsResponse warnings =
+                shipmentsV3Util.generateSummaryResponseWarnings(shipment, packsSummary, containerSummary);
+
+        assertNotNull(warnings);
+        assertNull(warnings.getPackagesWarning());
+
+        assertNotNull(warnings.getWeightWarning());
+        assertTrue(warnings.getWeightWarning().getShowWarning());
+        assertEquals("100 KG", warnings.getWeightWarning().getContainerValue());
+        assertEquals("150 KG", warnings.getWeightWarning().getPackageValue());
+        assertEquals("50 KG", warnings.getWeightWarning().getDifference());
+
+        assertNotNull(warnings.getVolumeWarning());
+        assertTrue(warnings.getVolumeWarning().getShowWarning());
+        assertEquals("20 M3", warnings.getVolumeWarning().getContainerValue());
+        assertEquals("25 M3", warnings.getVolumeWarning().getPackageValue());
+        assertEquals("5 M3", warnings.getVolumeWarning().getDifference());
+    }
+
+    @Test
+    void testResolveUnit_AllSameUnits_ReturnsThatUnit() {
+        List<String> units = List.of("KG", "KG", "KG");
+        String branchDefaultUnit = "LB";
+
+        String result = shipmentsV3Util.resolveUnit(units, branchDefaultUnit);
+
+        assertEquals("KG", result);
+    }
+
+    @Test
+    void testResolveUnit_MultipleDifferentUnits_ReturnsBranchDefault() {
+        List<String> units = List.of("KG", "LB", "KG");
+        String branchDefaultUnit = "LB";
+
+        String result = shipmentsV3Util.resolveUnit(units, branchDefaultUnit);
+
+        assertEquals("LB", result);
+    }
+
+    @Test
+    void testResolveUnit_NullValuesFilteredOut() {
+        List<String> units = List.of("KG", "KG");
+        String branchDefaultUnit = "LB";
+
+        String result = shipmentsV3Util.resolveUnit(units, branchDefaultUnit);
+
+        assertEquals("KG", result);
+    }
+
+    @Test
+    void testResolveUnit_EmptyList_ReturnsBranchDefault() {
+        List<String> units = Collections.emptyList();
+        String branchDefaultUnit = "LB";
+
+        String result = shipmentsV3Util.resolveUnit(units, branchDefaultUnit);
+
+        assertEquals("LB", result);
+    }
+
+    @Test
+    void testBuildShipmentResponse_AllValuesSet_WithNonZeroPacks() {
+        VolumeWeightChargeable vw = new VolumeWeightChargeable();
+        vw.setChargeable(BigDecimal.valueOf(100));
+        vw.setChargeableUnit("KG");
+        vw.setVolumeWeight(BigDecimal.valueOf(200));
+        vw.setVolumeWeightUnit("M3");
+
+        ContainerResult containerResult = new ContainerResult(5, 1, BigDecimal.valueOf(3));
+
+        CargoDetailsResponse response = shipmentsV3Util.buildShipmentResponse(
+                10, 2, "PKG", "DG-PKG",
+                vw, containerResult,
+                BigDecimal.valueOf(1000), "KG",
+                BigDecimal.valueOf(20), "M3"
+        );
+
+        assertNotNull(response);
+        assertEquals(10, response.getNoOfPacks());
+        assertEquals("PKG", response.getPacksUnit());
+        assertEquals(2, response.getDgPacks());
+        assertEquals("DG-PKG", response.getDgPacksUnit());
+        assertEquals(5, response.getContainers());
+        assertEquals(BigDecimal.valueOf(3), response.getTeuCount());
+        assertEquals(BigDecimal.valueOf(100), response.getChargable());
+        assertEquals("KG", response.getChargeableUnit());
+        assertEquals(BigDecimal.valueOf(200), response.getVolumetricWeight());
+        assertEquals("M3", response.getVolumetricWeightUnit());
+    }
+
+    @Test
+    void testBuildShipmentResponse_PacksZero_SetsNoOfPacksNull() {
+        VolumeWeightChargeable vw = new VolumeWeightChargeable();
+
+        ContainerResult containerResult = new ContainerResult(5, 0, BigDecimal.ZERO);
+
+        CargoDetailsResponse response = shipmentsV3Util.buildShipmentResponse(
+                0, null, "PKG", "DG-PKG",
+                vw, containerResult,
+                BigDecimal.ZERO, "KG",
+                BigDecimal.ZERO, "M3"
+        );
+
+        assertNull(response.getNoOfPacks());
+    }
+
+    @Test
+    void testGenerateWarning_NoMismatch_ReturnsNull() throws RunnerException {
+        BigDecimal val = BigDecimal.valueOf(100);
+        String unit = "KG";
+        String shipmentUnit = "KG";
+
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                val, unit,
+                val, unit,
+                Constants.MASS,
+                shipmentUnit);
+
+        assertNull(warning);
+    }
+
+    @Test
+    void testGenerateWarning_Mismatch_ReturnsWarningDetail() throws RunnerException {
+        BigDecimal packVal = BigDecimal.valueOf(150);
+        BigDecimal contVal = BigDecimal.valueOf(100);
+        String packUnit = "KG";
+        String contUnit = "KG";
+        String shipmentUnit = "KG";
+
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                packVal, packUnit,
+                contVal, contUnit,
+                Constants.MASS,
+                shipmentUnit);
+
+        assertNotNull(warning);
+        assertTrue(warning.getShowWarning());
+
+        assertEquals("100 KG", warning.getContainerValue());
+        assertEquals("150 KG", warning.getPackageValue());
+        assertEquals("50 " + shipmentUnit, warning.getDifference());
+    }
+
+    @Test
+    void testGetPacksType_ListWithMixedHazardous() {
+        Packing safePacking = new Packing();
+        safePacking.setPacksType("PKG1");
+        safePacking.setHazardous(false);
+
+        Packing dangerousPacking = new Packing();
+        dangerousPacking.setPacksType("PKG2");
+        dangerousPacking.setHazardous(true);
+
+        List<Packing> packingList = Arrays.asList(safePacking, dangerousPacking);
+
+        // Both units distinct → fallback to branch default "PKG" expected for both (due to distinct units)
+        // But here we have 2 different units → will fallback to PackingConstants.PKG for both i.e. "PKG"
+        List<String> result = shipmentsV3Util.getPacksType(packingList);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("PKG", result.get(0)); // packs unit resolved
+        assertEquals("PKG2", result.get(1)); // dg packs unit resolved
+    }
+
+    @Test
+    void testGetPacksType_SetContainersWithHazardous() {
+        Containers safeContainer = new Containers();
+        safeContainer.setId(1L);
+        safeContainer.setPacksType("PKG1");
+        safeContainer.setHazardous(false);
+
+        Containers dgContainer = new Containers();
+        dgContainer.setId(2L);
+        dgContainer.setPacksType("PKG2");
+        dgContainer.setHazardous(true);
+
+        Set<Containers> containersSet = new HashSet<>(Arrays.asList(safeContainer, dgContainer));
+
+        List<String> result = shipmentsV3Util.getPacksType(containersSet);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("PKG", result.get(0)); // packs unit resolved
+        assertEquals("PKG2", result.get(1)); // dg packs unit resolved
+    }
+
+    @Test
+    void testGetContainerResult_NullOrEmptySet_ReturnsEmptyResult() {
+        ContainerResult result = shipmentsV3Util.getContainerResult(null);
+        assertNotNull(result);
+        assertEquals(0, result.getContainerCount());
+
+        result = shipmentsV3Util.getContainerResult(Collections.emptySet());
+        assertNotNull(result);
+        assertEquals(0, result.getContainerCount());
+    }
+
+    @Test
+    void testGetContainerResult_WithContainers() {
+        Containers container1 = new Containers();
+        container1.setId(1L);
+        container1.setContainerCount(2L);
+        container1.setTeu(BigDecimal.valueOf(2));
+        container1.setHazardous(true);
+
+        Containers container2 = new Containers();
+        container2.setId(2L);
+        container2.setContainerCount(3L);
+        container2.setTeu(BigDecimal.valueOf(1));
+        container2.setHazardous(false);
+
+        Set<Containers> containersSet = Set.of(container1, container2);
+
+        ContainerResult result = shipmentsV3Util.getContainerResult(containersSet);
+
+        assertEquals(5, result.getContainerCount());
+        assertEquals(1, result.getDgContCount());
+        assertEquals(BigDecimal.valueOf(3), result.getTeuCount());
+    }
+
+    @Test
+    void testCalculateWeightFromContainersFallBack() throws RunnerException {
+        Containers container1 = new Containers();
+        container1.setId(1L);
+        container1.setContainerCount(2L);
+        container1.setHazardous(true);
+        container1.setTeu(BigDecimal.valueOf(2));
+        container1.setGrossWeight(BigDecimal.valueOf(100));
+        container1.setGrossWeightUnit("KG");
+
+        Containers container2 = new Containers();
+        container2.setId(2L);
+        container2.setContainerCount(3L);
+        container2.setHazardous(false);
+        container2.setTeu(BigDecimal.valueOf(1));
+        container2.setGrossWeight(BigDecimal.valueOf(50));
+        container2.setGrossWeightUnit("KG");
+
+        Set<Containers> containers = Set.of(container1, container2);
+
+        ContainerResult result = shipmentsV3Util.calculateWeightFromContainersFallBack(containers, "KG");
+
+        assertEquals(5, result.getContainerCount());
+        assertEquals(2, result.getDgContCount());
+        assertEquals(BigDecimal.valueOf(3), result.getTeuCount());
+        assertEquals(BigDecimal.valueOf(150.0), result.getTotalWeight());
+    }
+
+    @Test
+    void testGenerateWarning_nullPackValAndContVal_returnsNull() throws RunnerException {
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                null, "KG", null, "KG", Constants.MASS, "KG");
+        assertNull(warning);
+    }
+
+    @Test
+    void testGenerateWarning_nullPackVal_returnsNull() throws RunnerException {
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                null, "KG", BigDecimal.TEN, "KG", Constants.MASS, "KG");
+        assertNull(warning);
+    }
+
+    @Test
+    void testGenerateWarning_nullContVal_returnsNull() throws RunnerException {
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                BigDecimal.TEN, "KG", null, "KG", Constants.MASS, "KG");
+        assertNull(warning);
+    }
+
+    @Test
+    void testGenerateWarning_equalValuesAfterConversion_returnsNull() throws RunnerException {
+        BigDecimal value = BigDecimal.valueOf(10);
+
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                value, "KG",
+                value, "KG",
+                Constants.MASS,
+                "KG");
+
+        assertNull(warning);
+    }
+
+    @Test
+    void testGenerateWarning_unequalValuesAfterConversion_returnsWarning() throws RunnerException {
+        BigDecimal packVal = BigDecimal.valueOf(15);
+        BigDecimal contVal = BigDecimal.valueOf(10);
+
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                packVal, "KG",
+                contVal, "KG",
+                Constants.MASS,
+                "KG");
+
+        assertNotNull(warning);
+        assertTrue(warning.getShowWarning());
+        assertEquals("10 KG", warning.getContainerValue());
+        assertEquals("15 KG", warning.getPackageValue());
+        assertEquals("5 KG", warning.getDifference());
+    }
+
+    // Additional test for stripTrailingZeros with decimal values and units
+    @Test
+    void testGenerateWarning_decimalValues_properFormatting() throws RunnerException {
+        BigDecimal packVal = new BigDecimal("15.0000");
+        BigDecimal contVal = new BigDecimal("10.5000");
+
+        ShipmentSummaryWarningsResponse.WarningDetail warning = shipmentsV3Util.generateWarning(
+                packVal, "KG",
+                contVal, "KG",
+                Constants.MASS,
+                "KG");
+
+        assertNotNull(warning);
+        assertEquals("10.5 KG", warning.getContainerValue());
+        assertEquals("15 KG", warning.getPackageValue());
+        assertEquals("4.5 KG", warning.getDifference());
     }
 
 }

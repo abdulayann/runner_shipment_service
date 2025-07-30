@@ -249,7 +249,13 @@ public class PackingV3Service implements IPackingV3Service {
         if (shipmentDetails == null)
             return Collections.emptyList();
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
-        if (!CollectionUtils.isEmpty(packings)) {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if (isSeaFCL || isRoadFCLorFTL) {
+            CargoDetailsResponse cargoDetailsResponse = shipmentService.calculateShipmentSummary(shipmentDetails.getTransportMode(), packings, shipmentDetails.getContainersList());
+            if (cargoDetailsResponse != null)
+                shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
+        } else if (!CollectionUtils.isEmpty(packings)) {
             CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
             cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
             cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());

@@ -1,35 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
-import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
@@ -47,7 +17,6 @@ import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -115,8 +84,10 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteRespons
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ContainerResult;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentSummaryWarningsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentWtVolResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -209,30 +180,6 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -258,6 +205,92 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKING;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.BOOKINGS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FTL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CLIENT_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNEE_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSIGNOR_PARTY;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DG_OCEAN_APPROVAL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EQ;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_MESSAGE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.PENDING_ACTION_TASK;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPPER_REFERENCE;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.VIEWS;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.roundOffAirShipment;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings({"ALL", "java:S1172"})
 @Service
@@ -614,6 +647,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setImplicationList(implications);
         setConsoleAndNteInfo(shipmentId, response);
         setDgPackCountAndType(shipmentDetailsEntity, response);
+        setCargoSummaryEditablbeFlags(shipmentDetailsEntity, response);
+        setShipmentSummaryWarnings(shipmentDetailsEntity, response);
         setMainCarriageFlag(shipmentDetailsEntity, response);
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
@@ -623,6 +658,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private void setBookingId(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse){
             shipmentRetrieveLiteResponse.setBookingId(getShipmentToBookingIdsMap(
                     List.of(shipmentDetails)).get(shipmentDetails.getId()));
+    }
+
+    private void setShipmentSummaryWarnings(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) throws RunnerException {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if (isSeaFCL || isRoadFCLorFTL) {
+            ShipmentSummaryWarningsResponse summaryWarningsResponse = getShipmentSummaryWarnings(shipmentDetails);
+            response.setSummaryWarningsResponse(summaryWarningsResponse);
+        }
     }
 
     private void setConsoleAndNteInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
@@ -674,6 +718,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.setIsEmptyWeightPackAvailable(isEmptyWeightPackAvailable);
             }
             response.setIsPacksAvailable(Boolean.TRUE);
+        }
+    }
+
+    protected void setCargoSummaryEditablbeFlags(ShipmentDetails shipmentDetails, ShipmentRetrieveLiteResponse response) {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if ((isSeaFCL || isRoadFCLorFTL) && !Boolean.TRUE.equals(response.getIsPacksAvailable())) {
+            if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+                boolean volumeMissingInContainers = false;
+                for (Containers containers: shipmentDetails.getContainersList()) {
+                    BigDecimal volume = Optional.ofNullable(containers.getGrossVolume()).orElse(BigDecimal.ZERO);
+                    if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                        volumeMissingInContainers = true;
+                        break;
+                    }
+                }
+                response.setIsVolumeEditable(volumeMissingInContainers);
+            } else {
+                response.setIsCargoSummaryEditable(true);
+            }
         }
     }
 
@@ -4411,7 +4475,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
         boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
-        if (packsAvailable) {
+        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if ((isSeaFCL || isRoadFCLorFTL)) {
+            applySeaRoadFCLCargoSummaryOverride(shipmentDetails, oldShipment, packsAvailable);
+        } else if (packsAvailable) {
             shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
             shipmentDetails.setWeight(oldShipment.getWeight());
             shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
@@ -4420,5 +4488,178 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
             shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
         }
+    }
+
+    protected void applySeaRoadFCLCargoSummaryOverride(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment, boolean packsAvailable) {
+        boolean allowOnlyVolumeOverride = false;
+        if (!Boolean.TRUE.equals(packsAvailable)) {
+            if (!CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+                for (Containers containers: shipmentDetails.getContainersList()) {
+                    BigDecimal volume = Optional.ofNullable(containers.getGrossVolume()).orElse(BigDecimal.ZERO);
+                    if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                        allowOnlyVolumeOverride = true;
+                        break;
+                    }
+                }
+            } else {
+                return;
+            }
+        }
+        if (allowOnlyVolumeOverride) {
+            shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
+            shipmentDetails.setPacksUnit(oldShipment.getPacksUnit());
+            shipmentDetails.setDgPacksCount(oldShipment.getDgPacksCount());
+            shipmentDetails.setDgPacksUnit(oldShipment.getDgPacksUnit());
+            shipmentDetails.setWeight(oldShipment.getWeight());
+            shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
+            shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
+            shipmentDetails.setVolumetricWeightUnit(oldShipment.getVolumetricWeightUnit());
+        }
+    }
+
+    public CargoDetailsResponse calculateShipmentSummary(String transportMode, List<Packing> packingList, Set<Containers> containers) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        boolean isPacksAvailable = !CommonUtils.listIsNullOrEmpty(packingList);
+        boolean isContainersAvailable = !CommonUtils.setIsNullOrEmpty(containers);
+
+        if (!isPacksAvailable && !isContainersAvailable)
+            return null;
+
+        return isPacksAvailable
+                ? calculateCargoSummaryFromPacks(transportMode, packingList, containers, shipmentSettingsDetails, false)
+                : calculateCargoSummaryFromContainers(transportMode, containers, shipmentSettingsDetails);
+    }
+
+    public ShipmentSummaryWarningsResponse getShipmentSummaryWarnings(ShipmentDetails shipmentDetails) throws RunnerException {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        boolean isPacksAvailable = !CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList());
+        boolean isContainersAvailable = !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList());
+
+        CargoDetailsResponse packsSummary = null;
+        CargoDetailsResponse containerSummary = null;
+        if (isPacksAvailable && isContainersAvailable) {
+            packsSummary = calculateCargoSummaryFromPacks(shipmentDetails.getTransportMode(), shipmentDetails.getPackingList(), shipmentDetails.getContainersList(), shipmentSettingsDetails, true);
+            containerSummary = calculateCargoSummaryFromContainers(shipmentDetails.getTransportMode(), shipmentDetails.getContainersList(), shipmentSettingsDetails);
+            return shipmentsV3Util.generateSummaryResponseWarnings(shipmentDetails, packsSummary, containerSummary);
+        }
+        return new ShipmentSummaryWarningsResponse();
+    }
+
+    public CargoDetailsResponse calculateCargoSummaryFromPacks(String transportMode, List<Packing> packingList, Set<Containers> containers, ShipmentSettingsDetails settingsDetails, boolean fromWarning) throws RunnerException {
+        List<String> weightUnits = packingList.stream()
+                .map(Packing::getWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        List<String> volumeUnits = packingList.stream()
+                .map(Packing::getVolumeUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        String weightUnit = shipmentsV3Util.resolveUnit(weightUnits, consolidationV3Service.determineWeightChargeableUnit(settingsDetails));
+        String volumeUnit = shipmentsV3Util.resolveUnit(volumeUnits, Constants.VOLUME_UNIT_M3);
+
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        int packs = 0;
+        int dgPacks = 0;
+        boolean weightMissingInPacks = false;
+        ContainerResult result = new ContainerResult();
+
+        for (Packing packing : packingList) {
+            int count = Integer.parseInt(packing.getPacks());
+            packs += count;
+
+            if (Boolean.TRUE.equals(packing.getHazardous())) {
+                dgPacks += count;
+            }
+
+            BigDecimal weight = Optional.ofNullable(packing.getWeight()).orElse(BigDecimal.ZERO);
+            BigDecimal volume = Optional.ofNullable(packing.getVolume()).orElse(BigDecimal.ZERO);
+
+            if (weight.compareTo(BigDecimal.ZERO) == 0) {
+                weightMissingInPacks = true;
+            }
+
+            totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, weight, packing.getWeightUnit(), weightUnit).toString()));
+            totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, volume, packing.getVolumeUnit(), volumeUnit).toString()));
+        }
+
+        // fallback to container weight if needed, skip when preparing Warning summary
+        if (!fromWarning && weightMissingInPacks && !CommonUtils.setIsNullOrEmpty(containers)) {
+            result = shipmentsV3Util.calculateWeightFromContainersFallBack(containers, weightUnit);
+            totalWeight = result.getTotalWeight();
+        }
+
+        List<String> packsTypes = shipmentsV3Util.getPacksType(packingList);
+        String packsType = packsTypes.get(0);
+        String dgPacksType = packsTypes.get(1);
+
+        if (!weightMissingInPacks)
+            result = shipmentsV3Util.getContainerResult(containers);
+
+        VolumeWeightChargeable vwOb = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, totalWeight, totalVolume);
+
+        return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vwOb, result, totalWeight, weightUnit, totalVolume, volumeUnit);
+    }
+
+    public CargoDetailsResponse calculateCargoSummaryFromContainers(String transportMode, Set<Containers> containersSet, ShipmentSettingsDetails settingsDetails) throws RunnerException {
+        if (CommonUtils.setIsNullOrEmpty(containersSet)) {
+            return new CargoDetailsResponse();
+        }
+
+        List<String> weightUnits = containersSet.stream()
+                .map(Containers::getGrossWeightUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        List<String> volumeUnits = containersSet.stream()
+                .map(Containers::getGrossVolumeUnit)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        String weightUnit = shipmentsV3Util.resolveUnit(weightUnits, consolidationV3Service.determineWeightChargeableUnit(settingsDetails));
+        String volumeUnit = shipmentsV3Util.resolveUnit(volumeUnits, Constants.VOLUME_UNIT_M3);
+
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        int packs = 0;
+        int dgPacks = 0;
+        int containerCount = 0;
+        int dgContainerCount = 0;
+        boolean volumeMissingInContainers = false;
+        BigDecimal teus = BigDecimal.ZERO;
+        String dgPacksType = null;
+
+        for (Containers c : containersSet) {
+            int packsCount = Optional.ofNullable(Integer.valueOf(c.getPacks())).orElse(0);
+            packs += packsCount;
+            containerCount += Math.toIntExact(c.getContainerCount());
+            if (Boolean.TRUE.equals(c.getHazardous())) {
+                dgContainerCount += Math.toIntExact(c.getContainerCount());
+                dgPacks += packsCount;
+            }
+            if(Objects.nonNull(c.getTeu()))
+                teus = teus.add(c.getTeu());
+
+            BigDecimal volume = Optional.ofNullable(c.getGrossVolume()).orElse(BigDecimal.ZERO);
+            if (volume.compareTo(BigDecimal.ZERO) == 0) {
+                volumeMissingInContainers = true;
+            }
+
+            totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, c.getGrossWeight(), c.getGrossWeightUnit(), weightUnit).toString()));
+            totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, volume, c.getGrossVolumeUnit(), volumeUnit).toString()));
+        }
+
+        List<String> packsTypes = shipmentsV3Util.getPacksType(containersSet);
+        String packsType = packsTypes.get(0);
+        if (dgPacks > 0)
+            dgPacksType = packsTypes.get(1);
+        ContainerResult result = new ContainerResult(containerCount, dgContainerCount, teus);
+
+        VolumeWeightChargeable vw = consolidationV3Service.calculateVolumeWeight(transportMode, weightUnit, volumeUnit, totalWeight, totalVolume);
+
+        return shipmentsV3Util.buildShipmentResponse(packs, dgPacks, packsType, dgPacksType, vw, result, totalWeight, weightUnit,
+                (!volumeMissingInContainers ? totalVolume : null), volumeUnit);
     }
 }

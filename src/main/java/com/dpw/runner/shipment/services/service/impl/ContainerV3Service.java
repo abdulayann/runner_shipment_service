@@ -200,46 +200,152 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ContainerResponse create(ContainerV3Request containerRequest, String module) throws RunnerException {
-        if (containerRequest.getBookingId() == null && containerRequest.getConsolidationId() == null && containerRequest.getShipmentsId() == null) {
-            throw new ValidationException("Either BookingId or ConsolidationId or ShipmentsId must be provided in the request.");
-        }
-
-        if(containerRequest.getBookingId() != null && containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
-            throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
-        }
-
-        List<Containers> containersList = getSiblingContainers(containerRequest);
-        containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
         String requestId = LoggerHelper.getRequestIdFromMDC();
-
         log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequest);
 
-        // Convert DTO to Entity
+        // Validate request parameters
+        validateContainerRequest(containerRequest);
+
+        // Process shipment-specific logic if module is SHIPMENT
+        ShipmentDetails shipmentDetails = null;
+        String consoleType = null;
+
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            shipmentDetails = processShipmentModule(containerRequest);
+            consoleType = shipmentDetails.getJobType();
+        }
+
+        // Validate container uniqueness
+        List<Containers> containersList = getSiblingContainers(containerRequest, module, consoleType);
+        containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
+
+        // Convert DTO to Entity and perform pre-save operations
         Containers container = jsonHelper.convertValue(containerRequest, Containers.class);
         log.debug("Converted container request to entity | Entity: {}", container);
 
-        // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(containerRequest.getConsolidationId(), containerBeforeSaveRequest, new ArrayList<>(List.of(containerRequest)), module);
+        containerBeforeSave(containerRequest.getConsolidationId(), containerBeforeSaveRequest);
 
-        // Save to DB
+        // Save container to database
         Containers savedContainer = containerDao.save(container);
-        log.info("Saved container entity to DB | Container ID: {} | Request ID: {}", savedContainer.getId(), requestId);
+        log.info("Saved container entity to DB | Container ID: {} | Request ID: {}",
+                savedContainer.getId(), requestId);
 
-        // update console achieved data
-        consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
-                containerBeforeSaveRequest.getShipmentWtVolResponse());
+        // Handle post-save operations
+        handlePostSaveOperations(savedContainer, containerRequest, containerBeforeSaveRequest, shipmentDetails, module);
 
-        handlePostSaveActions(savedContainer, containerRequest, module);
-
-        // Audit logging
+        // Record audit logs
         recordAuditLogs(null, List.of(savedContainer), DBOperationType.CREATE);
         log.info("Audit log recorded for container creation | Container ID: {}", savedContainer.getId());
 
+        // Convert and return response
         ContainerResponse response = jsonHelper.convertValue(savedContainer, ContainerResponse.class);
         log.info("Returning container response | Container ID: {} | Response: {}", savedContainer.getId(), response);
 
         return response;
+    }
+
+    private void validateContainerRequest(ContainerV3Request containerRequest) {
+        boolean hasBookingId = containerRequest.getBookingId() != null;
+        boolean hasConsolidationId = containerRequest.getConsolidationId() != null;
+        boolean hasShipmentsId = containerRequest.getShipmentsId() != null;
+
+        if (!hasBookingId && !hasConsolidationId && !hasShipmentsId) {
+            throw new ValidationException("Either BookingId, ConsolidationId, or ShipmentsId must be provided in the request.");
+        }
+
+        int providedIdsCount = (hasBookingId ? 1 : 0) + (hasConsolidationId ? 1 : 0) + (hasShipmentsId ? 1 : 0);
+        if (providedIdsCount > 1) {
+            throw new ValidationException("Only one of BookingId, ConsolidationId, or ShipmentsId should be provided, not multiple.");
+        }
+    }
+
+    private ShipmentDetails processShipmentModule(ContainerV3Request containerRequest) {
+        ShipmentDetails shipmentDetails = shipmentDao.findById(containerRequest.getShipmentsId())
+                .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerRequest.getShipmentsId()));
+
+        validateShipmentForContainer(shipmentDetails);
+        validateShipmentCargoType(shipmentDetails);
+
+        containerRequest.setConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+
+        return shipmentDetails;
+    }
+
+    private void validateShipmentForContainer(ShipmentDetails shipmentDetails) {
+        String consoleType = shipmentDetails.getJobType();
+
+        if (Objects.isNull(shipmentDetails.getConsolidationList()) && !SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
+            throw new ValidationException(String.format(
+                    "Shipment: %s must be attached with consolidation to create container",
+                    shipmentDetails.getShipmentId()));
+        }
+    }
+
+    private void validateShipmentCargoType(ShipmentDetails shipmentDetails) {
+        String transportMode = shipmentDetails.getTransportMode();
+        String shipmentType = shipmentDetails.getShipmentType();
+
+        boolean isSeaFCL = commonUtils.isSeaFCL(transportMode, shipmentType);
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(transportMode, shipmentType);
+
+        if (!isSeaFCL && !isRoadFCLorFTL) {
+            String expectedType = getExpectedCargoTypeForTransportMode(transportMode);
+            throw new ValidationException(String.format(
+                    "Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                    shipmentType, transportMode, expectedType));
+        }
+    }
+
+    private void handlePostSaveOperations(Containers savedContainer, ContainerV3Request containerRequest,
+                                          ContainerBeforeSaveRequest containerBeforeSaveRequest,
+                                          ShipmentDetails shipmentDetails, String module) throws RunnerException {
+
+        Optional.ofNullable(module)
+                .filter(SHIPMENT::equals)
+                .filter(m -> savedContainer.getId() != null)
+                .filter(m -> containerRequest.getShipmentsId() != null)
+                .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
+                        containerRequest.getId(),
+                        Set.of(containerRequest.getShipmentsId()),
+                        false
+                ));
+
+        List<Containers> shipmentContainers = new ArrayList<>();
+        // Update shipment cargo details if module is SHIPMENT
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentsId());
+            updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
+        }
+
+        processContainerDG(List.of(containerRequest), module, shipmentContainers, shipmentDetails);
+
+        // Update consolidation cargo summary
+        consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
+                containerBeforeSaveRequest.getShipmentWtVolResponse());
+
+        // Handle other post-save actions
+        handlePostSaveActions(savedContainer, containerRequest, module);
+    }
+
+    private void updateShipmentCargoDetails(ShipmentDetails shipmentDetails, Set<Containers> containersList) throws RunnerException {
+
+        CargoDetailsResponse cargoDetailsResponse = shipmentService.calculateShipmentSummary(
+                shipmentDetails.getTransportMode(),
+                shipmentDetails.getPackingList(),
+                containersList);
+
+        if (cargoDetailsResponse != null) {
+            shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
+        }
+    }
+
+    private String getExpectedCargoTypeForTransportMode(String transportMode) {
+        return switch (transportMode.toUpperCase()) {
+            case TRANSPORT_MODE_SEA -> "FCL";
+            case Constants.TRANSPORT_MODE_ROA -> "FCL or FTL";
+            default -> "Transport mode must be SEA/ROAD";
+        };
     }
 
     @Override
@@ -274,13 +380,24 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
-        // Validate the incoming request to ensure all mandatory fields are present
-        containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+        log.info("Starting container UpdateBulk | Request ID: {} | Request Body: {}", requestId, containerRequestList);
+
+        validateBulkUpdateRequest(containerRequestList);
 
         // Convert the request DTOs to entity models for persistence
         List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
+        log.debug("Converted updated container request to entity | Entity: {}", originalContainers);
 
-        List<Containers> containersList = getSiblingContainers(containerRequestList.get(0));
+        ShipmentDetails shipmentDetails = null;
+        String consoleType = null;
+
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            shipmentDetails = processShipmentModule(containerRequestList.get(0));
+            consoleType = shipmentDetails.getJobType();
+        }
+
+        List<Containers> containersList = getSiblingContainers(containerRequestList.get(0), module, consoleType);
 
         boolean isAutoSell = false;
 
@@ -295,19 +412,29 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module);
+        containerBeforeSave(containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest);
 
         for(ContainerV3Request containerRequest : containerRequestList){
-            List<Containers> containers = new ArrayList<>(getSiblingContainers(containerRequest));
+            List<Containers> containers = new ArrayList<>(containersList);
             if(containerRequest.getId() != null) {
-              containers.removeIf(container -> container.getId() != null && container.getId()
+                containers.removeIf(container -> container.getId() != null && container.getId()
                         .equals(containerRequest.getId()));
             }
 
             containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containers);
         }
+
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
+
+        List<Containers> shipmentContainers = new ArrayList<>();
+        // Update shipment cargo details if module is SHIPMENT
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
+        }
+
+        processContainerDG(containerRequestList, module, shipmentContainers, shipmentDetails);
 
         // update console achieved data
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
@@ -326,6 +453,10 @@ public class ContainerV3Service implements IContainerV3Service {
                 .containerResponseList(containerResponses)
                 .message(prepareBulkUpdateMessage(containerResponses))
                 .build();
+    }
+
+    private void validateBulkUpdateRequest(List<ContainerV3Request> containerRequestList) throws RunnerException {
+        containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
     }
 
     @Override
@@ -350,7 +481,7 @@ public class ContainerV3Service implements IContainerV3Service {
         containerValidationUtil.validateOpenForAttachment(containersToDelete);
 
         // Validate that the containers are not assigned to any active shipment or packing before deletion
-         validateNoAssignments(containerIds);
+         validateNoAssignments(containerIds, module);
 
         // Collect all unique shipment IDs that are associated with the containers to delete
         List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
@@ -363,6 +494,14 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Proceed with the deletion of the containers and any related associations (shipment, packing, etc.)
         deleteContainerAndAssociations(containerIds, shipmentIds);
+
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            Long shipmentId = containerRequestList.get(0).getShipmentsId();
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(shipmentId);
+            ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                    .orElseThrow(() -> new ValidationException("Shipment is not present with ID : " + shipmentId));
+            updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
+        }
 
         // update console achieved data
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
@@ -381,69 +520,84 @@ public class ContainerV3Service implements IContainerV3Service {
                 .build();
     }
 
-    private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
-        List<ContainerV3Request> containerV3Requests, String module) throws RunnerException {
+    private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest) throws RunnerException {
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
-        processContainerDG(containerV3Requests, module);
     }
 
-    private void processContainerDG(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
+    private void processContainerDG(List<ContainerV3Request> containerRequestList, String module, List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+        if(!containsHazardousContainer(containerRequestList)) return;
+
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            validateAndSaveDGShipment(containerRequestList);
+            validateAndSaveDGShipment(shipmentContainers, shipmentDetails);
         } else {
-            for (ContainerV3Request containerV3Request : containerRequestList) {
-                Long consolidationId = containerV3Request.getConsolidationId();
-                if (containerV3Request.getHazardous() != null && !containerV3Request.getHazardous()) continue;
+                Long consolidationId = containerRequestList.get(0).getConsolidationId();
                 ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-                validateAndProcessDGConsolidation(containerV3Request, consolidationDetails);
-            }
+                validateAndProcessDGConsolidation(containerRequestList, consolidationDetails);
+
         }
     }
 
-    private void validateAndProcessDGConsolidation(ContainerV3Request containerV3Request, ConsolidationDetails consolidationDetails) throws RunnerException {
+    private void validateAndProcessDGConsolidation(List<ContainerV3Request> containerRequestList, ConsolidationDetails consolidationDetails) throws RunnerException {
         if (TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
             consolidationDetails.setHazardous(true);
             if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
-                throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
+                throw new ValidationException("For Ocean LCL DG Consolidation, the Console type can only be AGT or CLD");
             }
             consolidationDetailsDao.update(consolidationDetails, false, false);
-            processDGShipmentDetailsFromContainer(containerV3Request);
+            processDGShipmentDetailsFromContainer(containerRequestList);
         }
     }
 
-    public void processDGShipmentDetailsFromContainer(ContainerV3Request containerV3Request) throws RunnerException {
-        if (containerV3Request.getId() != null) {
-            List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(
-                    containerV3Request.getId());
-            for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
-                Long shipmentId = shipmentsContainersMapping.getId();
-                Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(
-                        shipmentId);
-                if (optionalShipmentDetails.isPresent()) {
-                    ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
-                    shipmentDetails.setContainsHazardous(true);
-                    shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                    shipmentDao.save(shipmentDetails, false);
+    public void processDGShipmentDetailsFromContainer(List<ContainerV3Request> containerRequestList) throws RunnerException {
+        for(ContainerV3Request containerV3Request : containerRequestList) {
+            if (containerV3Request.getId() != null && containerV3Request.getHazardous()) {
+                List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(containerV3Request.getId());
+
+                for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+                    Long shipmentId = shipmentsContainersMapping.getId();
+                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
+                    if (optionalShipmentDetails.isPresent()) {
+                        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                        List<Containers> containersList = containerDao.findByShipmentId(shipmentId);
+                        updateOceanDGStatus(shipmentDetails, containersList);
+                    }
                 }
             }
         }
     }
 
-    public void validateAndSaveDGShipment(List<ContainerV3Request> containerRequestList) throws RunnerException {
-        for(ContainerV3Request containerV3Request : containerRequestList){
-            Long shipmentId = containerV3Request.getShipmentsId();
-            if(!Boolean.FALSE.equals(containerV3Request.getHazardous())) continue;
+    public void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
+            if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+                updateOceanDGStatus(shipmentDetails, shipmentContainers);
+            }
+    }
 
-            Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
-            if (optionalShipmentDetails.isPresent()) {
-                ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+
+    private boolean containsHazardousContainer(List<ContainerV3Request> containerRequestList) {
+        return containerRequestList.stream()
+                .anyMatch(request -> Boolean.TRUE.equals(request.getHazardous()));
+    }
+
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException {
+        if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(containersList)
+                || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
+
+        boolean isDG = false;
+        boolean isDGClass1Added = false;
+        for (Containers containers : containersList) {
+            if (Boolean.TRUE.equals(containers.getHazardous())) {
+                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(containers.getDgClass());
+                isDG = true;
+            }
+        }
+
+        if(isDG){
+            boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+            if(saveShipment) {
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
-                    callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
-                    shipmentDao.save(shipmentDetails, false);
-                }
+                String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
+                shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
             }
         }
     }
@@ -486,7 +640,7 @@ public class ContainerV3Service implements IContainerV3Service {
      * @param containerIds list of container IDs to be validated for deletion
      * @throws IllegalArgumentException if any container is found to be assigned and cannot be deleted
      */
-    private void validateNoAssignments(List<Long> containerIds) {
+    private void validateNoAssignments(List<Long> containerIds, String module) {
         // Fetch containers that are assigned to packages
         List<ContainerDeleteInfoProjection> packingOnly = containerDao.filterContainerIdsAttachedToPacking(containerIds);
 
@@ -500,6 +654,7 @@ public class ContainerV3Service implements IContainerV3Service {
         boolean hasShipmentCargoOnly = ObjectUtils.isNotEmpty(shipmentCargoOnly);
         boolean hasShipmentOnly = ObjectUtils.isNotEmpty(shipmentOnly);
 
+        if(CONSOLIDATION.equalsIgnoreCase(module)) {
         // If containers are assigned to both packing and shipment cargo
         if (hasPacking && hasShipmentCargoOnly) {
             // Merge both lists while removing duplicates based on containerId
@@ -517,27 +672,28 @@ public class ContainerV3Service implements IContainerV3Service {
             );
         }
 
+            // If containers are assigned only to shipment cargo
+            if (hasShipmentCargoOnly) {
+                throw new IllegalArgumentException(
+                        "Selected containers are assigned to Shipment Cargo. Please unassign them before deletion:\n" +
+                                formatAssignedContainersInfo(shipmentCargoOnly)
+                );
+            }
+
+            // If containers are assigned only to shipment
+            if (hasShipmentOnly) {
+                throw new IllegalArgumentException(
+                        "Selected containers are assigned to Shipment. Please unassign them before deletion:\n" +
+                                formatAssignedContainersInfo(shipmentOnly)
+                );
+            }
+        }
+
         // If containers are assigned only to packages
         if (hasPacking) {
             throw new IllegalArgumentException(
                     "Selected containers are assigned to Packages. Please unassign them before deletion:\n" +
                             formatAssignedContainersInfo(ObjectUtils.isNotEmpty(packingOnly) ? List.of(packingOnly.get(0)) : List.of())
-            );
-        }
-
-        // If containers are assigned only to shipment cargo
-        if (hasShipmentCargoOnly) {
-            throw new IllegalArgumentException(
-                    "Selected containers are assigned to Shipment Cargo. Please unassign them before deletion:\n" +
-                            formatAssignedContainersInfo(shipmentCargoOnly)
-            );
-        }
-
-        // If containers are assigned only to shipment
-        if (hasShipmentOnly) {
-            throw new IllegalArgumentException(
-                    "Selected containers are assigned to Shipment. Please unassign them before deletion:\n" +
-                            formatAssignedContainersInfo(shipmentOnly)
             );
         }
 
@@ -658,16 +814,22 @@ public class ContainerV3Service implements IContainerV3Service {
         return message;
     }
 
-    protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
-        if (containerRequest.getConsolidationId() != null) {
+    protected List<Containers> getSiblingContainers(ContainerV3Request containerRequest, String module, String consoleType) {
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            if (SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
+                return containerDao.findByShipmentId(containerRequest.getShipmentsId());
+            }
             return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
-        } else if (containerRequest.getShipmentsId() != null) {
-            Long shipmentId = containerRequest.getShipmentsId();
-            return containerDao.findByShipmentId(shipmentId);
-        } else if (containerRequest.getBookingId() != null) {
+        }
+        if (Objects.nonNull(containerRequest.getConsolidationId())) {
+            return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
+        }
+
+        if (Objects.nonNull(containerRequest.getBookingId())) {
             return containerDao.findByBookingIdIn(List.of(containerRequest.getBookingId()));
         }
-        return new ArrayList<>();
+
+        return Collections.emptyList();
     }
 
     /**
@@ -1161,17 +1323,6 @@ public class ContainerV3Service implements IContainerV3Service {
                 masterDataUtils.withMdc(() -> afterSave(container, true, true)),
                 executorService
         ));
-
-        Optional.ofNullable(module)
-            .filter(SHIPMENT::equals)
-            .filter(m -> container.getId() != null)
-            .filter(m -> request.getShipmentsId() != null)
-            .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
-                container.getId(),
-                Set.of(request.getShipmentsId()),
-                false
-            ));
-
 
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     }

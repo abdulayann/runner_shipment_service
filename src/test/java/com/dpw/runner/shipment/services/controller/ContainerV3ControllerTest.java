@@ -103,7 +103,7 @@ class ContainerV3ControllerTest {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
 
-    Mockito.when(containerV3Service.deleteBulk(requestList, "SHIPMENT")).thenReturn(response);
+    Mockito.when(containerV3Service.deleteBulk(requestList, "CONSOLIDATION")).thenReturn(response);
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulk(requestList);
 
