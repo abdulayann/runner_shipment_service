@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
-import com.dpw.runner.shipment.services.dto.response.ContainerTypeMasterResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
@@ -27,7 +26,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import javax.json.Json;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -41,11 +39,10 @@ public class MasterDataImpl implements IMasterDataService {
     private final IMDMServiceAdapter mdmServiceAdapter;
     private final ModelMapper modelMapper;
     private final V1ServiceUtil v1ServiceUtil;
-    private final JsonHelper jsonHelper;
 
     @Autowired
     public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
-    , IMDMServiceAdapter mdmServiceAdapter, ModelMapper modelMapper, V1ServiceUtil v1ServiceUtil, JsonHelper jsonHelper) {
+    , IMDMServiceAdapter mdmServiceAdapter, ModelMapper modelMapper, V1ServiceUtil v1ServiceUtil) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
@@ -53,7 +50,6 @@ public class MasterDataImpl implements IMasterDataService {
         this.mdmServiceAdapter = mdmServiceAdapter;
         this.modelMapper = modelMapper;
         this.v1ServiceUtil = v1ServiceUtil;
-        this.jsonHelper = jsonHelper;
     }
 
     @Override
