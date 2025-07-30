@@ -576,7 +576,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private boolean containsHazardousContainer(List<ContainerV3Request> containerRequestList) {
         return containerRequestList.stream()
-                .anyMatch(ContainerV3Request::getHazardous);
+                .anyMatch(request -> Boolean.TRUE.equals(request.getHazardous()));
     }
 
     protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException {
