@@ -4518,10 +4518,15 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException {
-        CargoDetailsResponse cargoDetailsResponse = calculateShipmentSummary(shipmentDetails.getTransportMode(), shipmentDetails.getPackingList(), shipmentDetails.getContainersList());
+    public void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException {
+        CargoDetailsResponse cargoDetailsResponse = calculateShipmentSummary(shipmentDetails.getTransportMode(), shipmentDetails.getPackingList(), new HashSet<>(containersList));
         if (cargoDetailsResponse != null)
             updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
+    }
+
+    @Override
+    public void calculateAndUpdateShipmentCargoSummary(ShipmentDetails shipmentDetails) throws RunnerException {
+        calculateAndUpdateShipmentCargoSummary(shipmentDetails, shipmentDetails.getContainersList().stream().toList());
     }
 
     public CargoDetailsResponse calculateShipmentSummary(String transportMode, List<Packing> packingList, Set<Containers> containers) throws RunnerException {

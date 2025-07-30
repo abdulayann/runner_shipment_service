@@ -1529,7 +1529,10 @@ public class ContainerV3Service implements IContainerV3Service {
         if(!setIsNullOrEmpty(assignContainerParams.getFclOrFtlShipmentIds())) {
             for(Long shipmentId: assignContainerParams.getFclOrFtlShipmentIds()) {
                 ShipmentDetails shipmentDetails = assignContainerParams.getShipmentDetailsMap().get(shipmentId);
-                shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails);
+                List<Containers> containersList = new ArrayList<>(shipmentDetails.getContainersList());
+                if(shipmentIdsForAttachment.contains(shipmentDetails.getId()))
+                    containersList.add(container);
+                shipmentService.calculateAndUpdateShipmentCargoSummary(shipmentDetails, containersList);
             }
             consolidationV3Service.updateConsolidationCargoSummary(assignContainerParams.getConsolidationDetails(), assignContainerParams.getOldShipmentWtVolResponse());
         }
