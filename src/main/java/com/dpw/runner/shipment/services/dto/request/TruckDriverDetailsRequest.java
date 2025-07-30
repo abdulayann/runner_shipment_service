@@ -28,7 +28,9 @@ public class TruckDriverDetailsRequest extends CommonRequest implements IRunnerR
     private String truckNumberPlate;
     @Size(max=50, message = "max size is 50 for trailer number")
     private String trailerNumberPlate;
+    @Size(max=50, message = "max size is 50 for truck or trailer type")
     private String truckOrTrailerType;
+    @Size(max=20, message = "max size is 20 for container type code")
     private String containerTypeCode;
     private Long containerId;
     private Long consolidationId;

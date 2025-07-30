@@ -5334,12 +5334,12 @@ if (unitConversionUtilityMockedStatic != null) {
   void testAibAttachedPendingShipmentCount() {
     var mockRequest = CommonGetRequest.builder().id(1L).build();
     when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
-    Exception e = assertThrows(DataRetrievalFailureException.class , () -> consolidationV3Service.aibAttachedPendingShipmentCount(mockRequest));
+    Exception e = assertThrows(DataRetrievalFailureException.class , () -> consolidationV3Service.aibAttachedPendingShipmentCount(mockRequest, null));
     assertNotNull(e.getMessage());
   }
 
   @Test
-  void testAibAttachedPendingShipmentCount1() {
+  void testAibAttachedPendingShipmentCount1() throws AuthenticationException, RunnerException {
     List<ConsoleShipmentMapping> mockConsoleShipMappings = Arrays.asList(
             ConsoleShipmentMapping.builder().build(),
             ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.APPROVE).build(),
@@ -5351,7 +5351,30 @@ if (unitConversionUtilityMockedStatic != null) {
     when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
     when(consoleShipmentMappingDao.findByConsolidationIdAll(anyLong())).thenReturn(mockConsoleShipMappings);
 
-    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build());
+    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build(), null);
+
+    assertNotNull(response);
+    assertEquals(HttpStatus.OK, response.getStatusCode());
+    assertNotNull(response.getBody());
+  }
+
+  @Test
+  void testAibAttachedPendingShipmentCount2() throws AuthenticationException, RunnerException {
+    List<ConsoleShipmentMapping> mockConsoleShipMappings = Arrays.asList(
+            ConsoleShipmentMapping.builder().build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.APPROVE).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.REJECT).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).build(),
+            ConsoleShipmentMapping.builder().requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build()
+    );
+
+    consolidationDetails.setTriangulationPartnerList(null);
+    consolidationDetails.setReceivingBranch(1L);
+    when(TenantContext.getCurrentTenant()).thenReturn(1);
+    when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+    when(consoleShipmentMappingDao.findByConsolidationIdAll(anyLong())).thenReturn(mockConsoleShipMappings);
+
+    var response = consolidationV3Service.aibAttachedPendingShipmentCount(CommonGetRequest.builder().id(1L).build(), NETWORK_TRANSFER);
 
     assertNotNull(response);
     assertEquals(HttpStatus.OK, response.getStatusCode());

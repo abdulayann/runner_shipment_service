@@ -255,4 +255,5 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String transportInfoStatusMessage;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private Integer slac;
+    private List<RoutingsLiteResponse> routingsLiteResponses;
 }
