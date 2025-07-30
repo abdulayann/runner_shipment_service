@@ -481,7 +481,7 @@ public class ContainerV3Service implements IContainerV3Service {
         containerValidationUtil.validateOpenForAttachment(containersToDelete);
 
         // Validate that the containers are not assigned to any active shipment or packing before deletion
-         validateNoAssignments(containerIds);
+         validateNoAssignments(containerIds, module);
 
         // Collect all unique shipment IDs that are associated with the containers to delete
         List<Long> shipmentIds = containersToDelete.stream().map(Containers::getShipmentsList)
@@ -494,6 +494,14 @@ public class ContainerV3Service implements IContainerV3Service {
 
         // Proceed with the deletion of the containers and any related associations (shipment, packing, etc.)
         deleteContainerAndAssociations(containerIds, shipmentIds);
+
+        if (SHIPMENT.equalsIgnoreCase(module)) {
+            Long shipmentId = containerRequestList.get(0).getShipmentsId();
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(shipmentId);
+            ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                    .orElseThrow(() -> new ValidationException("Shipment is not present with ID : " + shipmentId));
+            updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
+        }
 
         // update console achieved data
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
@@ -632,7 +640,7 @@ public class ContainerV3Service implements IContainerV3Service {
      * @param containerIds list of container IDs to be validated for deletion
      * @throws IllegalArgumentException if any container is found to be assigned and cannot be deleted
      */
-    private void validateNoAssignments(List<Long> containerIds) {
+    private void validateNoAssignments(List<Long> containerIds, String module) {
         // Fetch containers that are assigned to packages
         List<ContainerDeleteInfoProjection> packingOnly = containerDao.filterContainerIdsAttachedToPacking(containerIds);
 
@@ -646,6 +654,7 @@ public class ContainerV3Service implements IContainerV3Service {
         boolean hasShipmentCargoOnly = ObjectUtils.isNotEmpty(shipmentCargoOnly);
         boolean hasShipmentOnly = ObjectUtils.isNotEmpty(shipmentOnly);
 
+        if(CONSOLIDATION.equalsIgnoreCase(module)) {
         // If containers are assigned to both packing and shipment cargo
         if (hasPacking && hasShipmentCargoOnly) {
             // Merge both lists while removing duplicates based on containerId
@@ -663,27 +672,28 @@ public class ContainerV3Service implements IContainerV3Service {
             );
         }
 
+            // If containers are assigned only to shipment cargo
+            if (hasShipmentCargoOnly) {
+                throw new IllegalArgumentException(
+                        "Selected containers are assigned to Shipment Cargo. Please unassign them before deletion:\n" +
+                                formatAssignedContainersInfo(shipmentCargoOnly)
+                );
+            }
+
+            // If containers are assigned only to shipment
+            if (hasShipmentOnly) {
+                throw new IllegalArgumentException(
+                        "Selected containers are assigned to Shipment. Please unassign them before deletion:\n" +
+                                formatAssignedContainersInfo(shipmentOnly)
+                );
+            }
+        }
+
         // If containers are assigned only to packages
         if (hasPacking) {
             throw new IllegalArgumentException(
                     "Selected containers are assigned to Packages. Please unassign them before deletion:\n" +
                             formatAssignedContainersInfo(ObjectUtils.isNotEmpty(packingOnly) ? List.of(packingOnly.get(0)) : List.of())
-            );
-        }
-
-        // If containers are assigned only to shipment cargo
-        if (hasShipmentCargoOnly) {
-            throw new IllegalArgumentException(
-                    "Selected containers are assigned to Shipment Cargo. Please unassign them before deletion:\n" +
-                            formatAssignedContainersInfo(shipmentCargoOnly)
-            );
-        }
-
-        // If containers are assigned only to shipment
-        if (hasShipmentOnly) {
-            throw new IllegalArgumentException(
-                    "Selected containers are assigned to Shipment. Please unassign them before deletion:\n" +
-                            formatAssignedContainersInfo(shipmentOnly)
             );
         }
 
