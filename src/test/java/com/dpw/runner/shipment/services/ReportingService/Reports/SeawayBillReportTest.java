@@ -1,26 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS1;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ADDRESS2;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGES_SMALL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMPANY_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PHONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_VOLUME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GROSS_WEIGHT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVNO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NET_WEIGHT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TARE_WEIGHT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VGM_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -69,6 +49,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -131,6 +112,10 @@ class SeawayBillReportTest extends CommonMocks {
     @Mock
     private IHblDao hblDao;
 
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
+
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();
 
     @BeforeAll
@@ -173,6 +158,13 @@ class SeawayBillReportTest extends CommonMocks {
         mockedTenantMap.put("100", origin);
         mockedTenantMap.put("200", dest);
         mockedTenantMap.put("300", triang);
+
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void populateModel(SeawayBillModel seawayBillModel) {
@@ -444,6 +436,7 @@ class SeawayBillReportTest extends CommonMocks {
         containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.BL_GROSS_VOLUME_ALIAS, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.BL_GROSS_WEIGHT_ALIAS, BigDecimal.TEN);
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
 
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
@@ -482,6 +475,7 @@ class SeawayBillReportTest extends CommonMocks {
 
         doReturn(Arrays.asList(containerMap)).when(jsonHelper).convertValue(eq(seawayBillModel.shipment.getShipmentContainersList()), any(TypeReference.class));
 
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         Map<String, Object> dictionary = new HashMap<>();
         Map<String, Object> chargeMap = new HashMap<>();
