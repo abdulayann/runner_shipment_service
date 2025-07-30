@@ -1473,9 +1473,11 @@ public class ReportConstants {
     public static final String S_BOE_NUMBER = "S_BOENumber";
     public static final String S_BOE_DATE = "S_Date";
     public static final String S_OWNERSHIP = "S_Ownership";
-    public static final String S_OWNERSHIP_NAME = "S_Ownership Name";
+    public static final String S_OWNERSHIP_NAME = "S_OwnershipName";
     public static final String S_PASSED_BY = "S_PassedBy";
     public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
+    public static final String S_BORROWED_FROM = "S_BorrowedFrom";
+    public static final String S_REEFER_FLAG = "S_ReeferFlag";
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";
