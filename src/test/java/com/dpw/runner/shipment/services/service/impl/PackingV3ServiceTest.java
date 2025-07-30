@@ -10,10 +10,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Response;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
@@ -24,6 +26,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -31,13 +34,11 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
-import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.AfterEach;
@@ -75,7 +76,11 @@ class PackingV3ServiceTest extends CommonMocks {
     @Mock
     private IPackingDao packingDao;
     @Mock
+    private IShipmentDao shipmentDao;
+    @Mock
     private IContainerV3Service containerV3Service;
+    @Mock
+    private ICustomerBookingV3Service customerBookingV3Service;
     @Mock
     private JsonHelper jsonHelper;
     @Mock
@@ -96,6 +101,8 @@ class PackingV3ServiceTest extends CommonMocks {
     private HttpServletResponse httpServletResponse;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private ShipmentValidationV3Util shipmentValidationV3Util;
 
     private Packing packing;
     private PackingV3Request request;
@@ -664,7 +671,16 @@ class PackingV3ServiceTest extends CommonMocks {
 
         verify(packingDao, never()).saveAll(any());
     }
+    @Test
+    void testProcessPacksAfterShipmentAttachment_AirMode() {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+        shipmentDetails.setPackingList(List.of(new Packing()));
 
+        packingV3Service.processPacksAfterShipmentAttachment(1L, shipmentDetails);
+
+        verify(packingDao, times(1)).saveAll(any());
+    }
     @Test
     void testProcessPacksAfterShipmentAttachment_nullPackingList_shouldDoNothing() {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
@@ -849,7 +865,7 @@ class PackingV3ServiceTest extends CommonMocks {
     @Test
     void testUnAssignPackageContainers1() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
-        Packing packing = new Packing();
+        packing = new Packing();
         packing.setId(1L);
         packing.setShipmentId(1L);
         packing.setContainerId(1L);
@@ -858,4 +874,113 @@ class PackingV3ServiceTest extends CommonMocks {
         verify(containerV3Service).unAssignContainers(any(), any());
     }
 
+    @Test
+    void testSetPacksUnits_shouldSetOnlyDgPacksUnit_whenOnlyDgSetHasSingleValue() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        Set<String> uniquePacksUnits = new HashSet<>();
+        uniquePacksUnits.add("KG");
+        Set<String> dgPacksUnitSet = Set.of("KG");
+        packingV3Service.setPacksUnits(cargoDetailsResponse, uniquePacksUnits, dgPacksUnitSet);
+        assertEquals("KG",cargoDetailsResponse.getPacksUnit());
+        assertEquals("KG", cargoDetailsResponse.getDgPacksUnit(), "dgPacksUnit should be set to 'KG'");
+    }
+    @Test
+    void testSetPacksUnits_shouldSetDgPacksAndTotalPackUnit_whenOnlyDgSetHasSingleValue() {
+        CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+        Set<String> uniquePacksUnits = new HashSet<>();
+        uniquePacksUnits.add("KG");
+        Set<String> dgPacksUnitSet = Set.of("KG");
+        packingV3Service.setPacksUnits(cargoDetailsResponse, uniquePacksUnits, dgPacksUnitSet);
+        assertNotNull(cargoDetailsResponse.getPacksUnit());
+        assertEquals("KG", cargoDetailsResponse.getDgPacksUnit(), "dgPacksUnit should be set to 'KG'");
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_shouldUpdateShipment_whenDGPresentAndClass1False() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setContainsHazardous(false);
+        shipmentDetails.setId(123L);
+
+        Packing dgPacking = new Packing();
+        dgPacking.setHazardous(true);
+        dgPacking.setDGClass("3");
+
+        List<Packing> packingList = List.of(dgPacking);
+
+        when(commonUtils.checkIfDGClass1("3")).thenReturn(false);
+        lenient().when(commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, false)).thenReturn(true);
+
+        packingV3Service.updateOceanDGStatus(shipmentDetails, packingList);
+
+        verify(shipmentDao).updateDgStatusInShipment(true, null, 123L);
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_shouldUpdateWithClass1True() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setContainsHazardous(false);
+        shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_REQUESTED);
+        shipmentDetails.setId(999L);
+
+        Packing dgPacking = new Packing();
+        dgPacking.setHazardous(true);
+        dgPacking.setDGClass("1.1");
+
+        List<Packing> packingList = List.of(dgPacking);
+
+        when(commonUtils.checkIfDGClass1("1.1")).thenReturn(true);
+        lenient().when(commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, true)).thenReturn(true);
+
+        packingV3Service.updateOceanDGStatus(shipmentDetails, packingList);
+
+        verify(shipmentDao).updateDgStatusInShipment(true, "OCEAN_DG_REQUESTED", 999L);
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenTransportModeNotSea() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR");
+
+        packing = new Packing();
+        packing.setHazardous(true);
+
+        packingV3Service.updateOceanDGStatus(shipmentDetails, List.of(packing));
+
+        verifyNoInteractions(commonUtils, shipmentDao);
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenPackingListIsEmpty() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+
+        packingV3Service.updateOceanDGStatus(shipmentDetails, Collections.emptyList());
+
+        verifyNoInteractions(commonUtils, shipmentDao);
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenShipmentDetailsIsNull() throws RunnerException {
+        packing = new Packing();
+        packing.setHazardous(true);
+
+        packingV3Service.updateOceanDGStatus(null, List.of(packing));
+
+        verifyNoInteractions(commonUtils, shipmentDao);
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_shouldNotUpdate_whenNoHazardousPacking() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("SEA");
+
+        Packing nonDG = new Packing();
+        nonDG.setHazardous(false);
+
+        packingV3Service.updateOceanDGStatus(shipmentDetails, List.of(nonDG));
+
+        verifyNoInteractions(commonUtils, shipmentDao);
+    }
 }

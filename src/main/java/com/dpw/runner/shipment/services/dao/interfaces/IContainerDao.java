@@ -4,11 +4,10 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ContainerDeleteInfoProjection;
+import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import com.dpw.runner.shipment.services.projection.ContainerInfoProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -54,6 +53,8 @@ public interface IContainerDao {
 
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipmentCargo(List<Long> containerIds);
 
+    List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipment(List<Long> containerIds);
+
     List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds);
 
     List<ContainerDeleteInfoProjection> findContainersAttachedToBothPackingAndCargo(List<Long> containerIds);
@@ -61,4 +62,12 @@ public interface IContainerDao {
     List<Long> findContainerIdsAttachedToEitherPackingOrShipment(List<Long> containerIds);
 
     List<ContainerInfoProjection> findByContainerIds(List<Long> containerIds);
+
+    void deleteAdditionalDataByContainersIdsConsolidationId(List<Long> containersIds, Long consolidationId);
+
+    void revertSoftDeleteByContainersIdsAndConsolidationId(List<Long> containersIds, Long consolidationId);
+
+    void deleteAdditionalDataByContainersIdsBookingId(List<Long> containersIds, Long bookingId);
+
+    void revertSoftDeleteByContainersIdsAndBookingId(List<Long> containersIds, Long bookingId);
 }

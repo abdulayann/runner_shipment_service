@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.getConstrainViolationErrorMessage;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -7,13 +12,30 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.SortRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentSailingScheduleRequest;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.MawbStocks;
+import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -30,6 +52,20 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import javax.persistence.EntityManager;
+import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -39,15 +75,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
-import javax.persistence.EntityManager;
-import javax.validation.ConstraintViolationException;
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.*;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @SuppressWarnings("java:S3776")
 @Repository
@@ -264,6 +291,10 @@ public class ShipmentDao implements IShipmentDao {
     public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
         return shipmentRepository.findByShipmentId(shipmentNumber);
     }
+    @Override
+    public List<ShipmentDetails> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return shipmentRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
 
     @Override
     public void delete(ShipmentDetails shipmentDetails) {
@@ -298,7 +329,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
-    public List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<Long> shipmentIds) {
+    public List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<String> shipmentIds) {
         return shipmentRepository.findCustomerBookingProByShipmentIdIn(shipmentIds);
     }
 
@@ -631,10 +662,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private boolean validatedBorrowedFrom(ShipmentDetails shipmentRequest, MawbStocks mawbStocks) {
         if (StringUtility.isEmpty(mawbStocks.getBorrowedFrom())) return false;
-        if(shipmentRequest.getAdditionalDetails() == null) return false;
-        if (Objects.isNull(shipmentRequest.getAdditionalDetails().getBorrowedFrom())) return false;
-        if (StringUtility.isEmpty(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode())) return false;
-        return !Objects.equals(shipmentRequest.getAdditionalDetails().getBorrowedFrom().getOrgCode(), mawbStocks.getBorrowedFrom());
+        return !StringUtility.isEmpty(shipmentRequest.getPartner());
     }
 
     private CarrierResponse getCorrespondingCarrier(ShipmentDetails shipmentRequest, String oldMasterBill) {
@@ -903,7 +931,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private boolean checkContainsDGPackage(ShipmentDetails request) {
         List<Packing> packingList = request.getPackingList();
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()))
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && request.getId()!=null)
             packingList = packingDao.findByShipmentId(request.getId());
         if (CommonUtils.listIsNullOrEmpty(packingList))
             return false;
@@ -941,5 +969,35 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId) {
         shipmentRepository.updateDgPacksDetailsInShipment(dgPacks, dgPacksUnit, shipmentId);
+    }
+
+    @Override
+    public void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId){
+        shipmentRepository.updateDgStatusInShipment(isHazardous, oceanDGStatus, shipmentId);
+    }
+
+    @Override
+    public Set<Long> findShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId) {
+        shipmentRepository.revertSoftDeleteShipmentIdAndTenantId(shipmentIds, tenantId);
+    }
+
+    @Override
+    public Set<Long> findAllShipmentIdsByTenantId(Integer tenantId) {
+        return shipmentRepository.findAllShipmentIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public void deleteShipmentDetailsByIds(Set<Long> shipmentIds) {
+        shipmentRepository.deleteShipmentDetailsByIds(shipmentIds);
+    }
+
+    @Override
+    public void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId) {
+        shipmentRepository.deleteTriangularPartnerShipmentByShipmentId(shipmentId);
     }
 }

@@ -55,7 +55,7 @@ public class DpsConsumer {
                 if (dpsDto != null && dpsDto.getData() != null) {
                     DpsDataDto payload = dpsDto.getData();
 
-                    log.info("{} | Processing Dps message entity for rule execution id: {}", LoggerEvent.KAFKA_DPS, payload.getRuleExecutionId());
+                    log.info("{} | Processing Dps message entity for rule execution id: {}, for Shipment: {}", LoggerEvent.KAFKA_DPS, payload.getRuleExecutionId(), payload.getEntityId());
                     // Save the DPS event
                     dpsEventService.saveDpsEvent(dpsDto);
                 } else {

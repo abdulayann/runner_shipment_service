@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.RoutingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -14,9 +15,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
+import com.dpw.runner.shipment.services.dto.v3.response.VesselVoyageMessage;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
@@ -39,7 +42,9 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.NetworkTransferV3Util;
 import com.dpw.runner.shipment.services.utils.RoutingValidationUtil;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.RoutingV3Util;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -59,6 +64,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -140,8 +146,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             ParentResult parentResult = getParentDetails(List.of(routings), request.getEntityId(), module);
             // Audit logs
             recordAuditLogs(null, List.of(routings), DBOperationType.CREATE, parentResult);
+            VesselVoyageMessage vesselVoyageMessage = new VesselVoyageMessage();
             // afterSave
-            afterSave(Arrays.asList(routings), request.getEntityId(), module);
+            afterSave(Arrays.asList(routings), request.getEntityId(), module, TransportInfoStatus.YES, vesselVoyageMessage);
             log.info("Routing created successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -152,21 +159,26 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     @Transactional
-    public void afterSave(List<Routings> routingList, Long entityId, String module) throws RunnerException {
+    public void afterSave(List<Routings> routingList, Long entityId, String module, TransportInfoStatus transportInfoStatus, VesselVoyageMessage vesselVoyageMessage) throws RunnerException {
         List<Routings> mainCarriageList = routingList.stream()
                 .filter(routing -> routing.getCarriage() == RoutingCarriage.MAIN_CARRIAGE)
                 .toList();
-        if (!CollectionUtils.isEmpty(mainCarriageList) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
-            updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList);
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            Long shipmentId = entityId;
+            if (entityId == null) {
+                shipmentId = mainCarriageList.get(0).getShipmentId();
+            }
+            updateShipmentCarrierDetails(mainCarriageList, shipmentId, transportInfoStatus, vesselVoyageMessage);
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
             //updates routings to attached shipments
             Long consolidationId = entityId;
             if (entityId == null) {
                 consolidationId = mainCarriageList.get(0).getConsolidationId();
             }
-            updateConsolCarrierDetails(mainCarriageList);
             ConsolidationDetails consolidationDetails = consolidationV3Service.getConsolidationById(consolidationId);
+            vesselVoyageMessage.setMessage(getMessageValue(mainCarriageList, consolidationDetails.getCarrierDetails()));
             commonUtils.validateAirSecurityAndDGConsolidationPermissions(consolidationDetails);
+            updateConsolCarrierDetails(mainCarriageList, consolidationDetails, transportInfoStatus);
             Set<ShipmentDetails> shipmentsList = consolidationDetails.getShipmentsList();
 
             if (isInterBranchContextNeeded(consolidationDetails))
@@ -199,9 +211,85 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
                     bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
                     bulkUpdateRoutingsRequest.setEntityId(shipmentDetails.getId());
+                    bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.IH);
                     updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
                 }
             }
+        }
+    }
+
+    private String getMessageValue(List<Routings> mainCarriageList, CarrierDetails carrierDetails) {
+        if (!CollectionUtils.isEmpty(mainCarriageList)) {
+            Routings mainCarriageLeg = mainCarriageList.get(0);
+            if (mainCarriageList.size() > 1) {
+                Optional<Routings> routings = mainCarriageList.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
+                if (routings.isPresent()) {
+                    mainCarriageLeg = routings.get();
+                }
+            }
+            StringBuilder description = new StringBuilder();
+            checkIfVoyageVesselOrFlightNumberChanged(carrierDetails, mainCarriageLeg, description);
+            if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier()) && !Objects.equals(mainCarriageLeg.getCarrier(), carrierDetails.getShippingLine())) {
+                if (StringUtility.isEmpty(description.toString())) {
+                    description.append("Carrier");
+                } else {
+                    description.append("/Carrier");
+                }
+            }
+            if (!StringUtility.isEmpty(description.toString())) {
+                description.append(" are updated as per Routing Leg");
+                return "Route(s) updated successfully. " + description;
+            }
+        }
+        return Constants.EMPTY_STRING;
+    }
+
+    private static void checkIfVoyageVesselOrFlightNumberChanged(CarrierDetails carrierDetails, Routings mainCarriageLeg, StringBuilder description) {
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getVesselName()) && !Objects.equals(mainCarriageLeg.getVesselName(), carrierDetails.getVessel())) {
+            description.append("Vessel");
+        }
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getVoyage()) && !Objects.equals(mainCarriageLeg.getVoyage(), carrierDetails.getVoyage())) {
+            if (StringUtility.isEmpty(description.toString())) {
+                description.append("Voyage");
+            } else {
+                description.append("/Voyage");
+            }
+
+        }
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber()) && !Objects.equals(mainCarriageLeg.getFlightNumber(), carrierDetails.getFlightNumber())) {
+            if (StringUtility.isEmpty(description.toString())) {
+                description.append("Flight Number");
+            } else {
+                description.append("/Flight Number");
+            }
+
+        }
+    }
+
+    private void updateShipmentCarrierDetails(List<Routings> mainCarriageList, Long shipmentId, TransportInfoStatus transportInfoStatus, VesselVoyageMessage vesselVoyageMessage) {
+        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(shipmentId);
+        if (shipmentDetailsOptional.isEmpty())
+            return;
+        ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+        vesselVoyageMessage.setMessage(getMessageValue(mainCarriageList, shipmentDetails.getCarrierDetails()));
+        if (!CollectionUtils.isEmpty(mainCarriageList)) {
+            updateShipmentCarrierDetailsFromMainCarriage(mainCarriageList, shipmentDetails, transportInfoStatus);
+        } else {
+            shipmentDetails.getCarrierDetails().setAtd(null);
+            shipmentDetails.getCarrierDetails().setAta(null);
+            shipmentDetails.getCarrierDetails().setEta(null);
+            shipmentDetails.getCarrierDetails().setEtd(null);
+        }
+    }
+
+    private void updateConsolCarrierDetails(List<Routings> mainCarriageList, ConsolidationDetails consolidationDetails, TransportInfoStatus transportInfoStatus) {
+        if (!CollectionUtils.isEmpty(mainCarriageList)) {
+            updateConsolCarrierDetails(mainCarriageList, transportInfoStatus);
+        } else {
+            consolidationDetails.getCarrierDetails().setAtd(null);
+            consolidationDetails.getCarrierDetails().setAta(null);
+            consolidationDetails.getCarrierDetails().setEta(null);
+            consolidationDetails.getCarrierDetails().setEtd(null);
         }
     }
 
@@ -240,9 +328,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         }
     }
 
-    private void updateConsolCarrierDetails(List<Routings> mainCarriageList) {
+    private void updateConsolCarrierDetails(List<Routings> mainCarriageList, TransportInfoStatus transportInfoStatus) {
         if (!CollectionUtils.isEmpty(mainCarriageList)) {
-            updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList);
+            updateConsolidationCarrierDetailsFromMainCarriage(mainCarriageList, transportInfoStatus);
         }
     }
 
@@ -262,23 +350,19 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     /**
      * Updates shipment's carrier details from main carriage routing legs based on tenantSettings
      */
-    private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
-        Optional<ShipmentDetails> shipmentDetailsOptional = shipmentServiceV3.findById(mainCarriageRoutings.get(0).getShipmentId());
-        if (shipmentDetailsOptional.isEmpty())
-            return;
-        ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
+    private void updateShipmentCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings, ShipmentDetails shipmentDetails, TransportInfoStatus transportInfoStatus) {
         commonUtils.validateAirSecurityAndDGShipmentPermissions(shipmentDetails);
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(shipmentDetails.getCarrierDetails());
-        updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails);
+        updateCarrierDetails(shipmentDetails, mainCarriageRoutings, existingCarrierDetails, transportInfoStatus);
         carrierDetailsDao.update(shipmentDetails.getCarrierDetails());
     }
 
-    private void updateConsolidationCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings) {
+    private void updateConsolidationCarrierDetailsFromMainCarriage(List<Routings> mainCarriageRoutings, TransportInfoStatus transportInfoStatus) {
         Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationV3Service.findById(mainCarriageRoutings.get(0).getConsolidationId());
         if (consolidationDetailsOptional.isEmpty()) return;
         ConsolidationDetails consolidationDetails = consolidationDetailsOptional.get();
         CarrierDetails existingCarrierDetails = getNewCarrierDetails(consolidationDetails.getCarrierDetails());
-        updateCarrierDetails(consolidationDetails, mainCarriageRoutings, existingCarrierDetails);
+        updateCarrierDetails(consolidationDetails, mainCarriageRoutings, existingCarrierDetails, transportInfoStatus);
         carrierDetailsDao.update(consolidationDetails.getCarrierDetails());
     }
 
@@ -305,54 +389,122 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     /**
      * Updates the CarrierDetails fields using first and last main carriage legs.
      */
-    private void updateCarrierDetails(ConsolidationDetails consolidationDetails, List<Routings> mainCarriageRoutings, CarrierDetails existingCarrierDetails) {
+    private void updateCarrierDetails(ConsolidationDetails consolidationDetails, List<Routings> mainCarriageRoutings, CarrierDetails existingCarrierDetails, TransportInfoStatus transportInfoStatus) {
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
         Routings firstLeg = mainCarriageRoutings.get(0);
         Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
+        consolidationDetails.setTransportInfoStatus(transportInfoStatus);
+        if (Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode())) {
+            updateVesselAndVoyage(mainCarriageRoutings, carrierDetails, firstLeg);
+        } else if (Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode())) {
+            setCarrierAndFlightNumberForAir(carrierDetails, firstLeg);
+        }
+        if (TransportInfoStatus.YES.equals(transportInfoStatus) || TransportInfoStatus.IH.equals(transportInfoStatus)) {
+            if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+                if (Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort()) && Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
+                    consolidationDetails.setTransportInfoStatus(TransportInfoStatus.YES);
+                    updateCarrierDetailsPolAndPod(carrierDetails, firstLeg, lastLeg);
+                }
+            } else {
+                updateCarrierDetailsPolAndPod(carrierDetails, firstLeg, lastLeg);
+            }
+        }
 
         carrierDetails.setEtd(firstLeg.getEtd());
         carrierDetails.setAtd(firstLeg.getAtd());
-        carrierDetails.setOriginPort(firstLeg.getPol());
-        carrierDetails.setOriginLocCode(firstLeg.getOriginPortLocCode());
-
         carrierDetails.setEta(lastLeg.getEta());
         carrierDetails.setAta(lastLeg.getAta());
-        carrierDetails.setDestinationPort(lastLeg.getPod());
-        carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
         if (isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true)));
+    }
+
+    private static void updateCarrierDetailsPolAndPod(CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+        if (!StringUtility.isEmpty(firstLeg.getPol())) {
+            carrierDetails.setOriginPort(firstLeg.getPol());
+            carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
+        }
+        if (!StringUtility.isEmpty(lastLeg.getPod())) {
+            carrierDetails.setDestinationPort(lastLeg.getPod());
+            carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
+        }
     }
 
     /**
      * Updates the CarrierDetails fields using first and last main carriage legs.
      */
-    private void updateCarrierDetails(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, CarrierDetails existingCarrierDetails) {
+    private void updateCarrierDetails(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, CarrierDetails existingCarrierDetails, TransportInfoStatus transportInfoStatus) {
         CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
         Routings firstLeg = mainCarriageRoutings.get(0);
         Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
 
-        carrierDetails.setEtd(firstLeg.getEtd());
-        carrierDetails.setAtd(firstLeg.getAtd());
-        carrierDetails.setOriginPort(firstLeg.getPol());
-        carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
-        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsOriginPort())) {
+        updateCarrierDetailsBasedOnTransportInfoStatus(shipmentDetails, mainCarriageRoutings, transportInfoStatus, carrierDetails, firstLeg, lastLeg);
+        if (Boolean.TRUE.equals(carrierDetails.getIsSameAsOriginPort())) {
             carrierDetails.setOrigin(carrierDetails.getOriginPort());
             carrierDetails.setOriginLocCode(carrierDetails.getOriginPortLocCode());
             carrierDetails.setOriginCountry(carrierDetails.getOriginPortCountry());
         }
 
-        carrierDetails.setEta(lastLeg.getEta());
-        carrierDetails.setAta(lastLeg.getAta());
-        carrierDetails.setDestinationPort(lastLeg.getPod());
-        carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
-        if(Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())) {
+        if (Boolean.TRUE.equals(carrierDetails.getIsSameAsDestinationPort())) {
             carrierDetails.setDestination(carrierDetails.getDestinationPort());
             carrierDetails.setDestinationLocCode(carrierDetails.getDestinationPortLocCode());
             carrierDetails.setDestinationCountry(carrierDetails.getDestinationPortCountry());
         }
+        carrierDetails.setEtd(firstLeg.getEtd());
+        carrierDetails.setAtd(firstLeg.getAtd());
+        carrierDetails.setEta(lastLeg.getEta());
+        carrierDetails.setAta(lastLeg.getAta());
+
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (shipmentSettingsDetails != null && Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) && isValidDateChange(carrierDetails, existingCarrierDetails))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));
+    }
+
+    private static void updateCarrierDetailsBasedOnTransportInfoStatus(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, TransportInfoStatus transportInfoStatus, CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+        shipmentDetails.setTransportInfoStatus(transportInfoStatus);
+        if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+            updateVesselAndVoyage(mainCarriageRoutings, carrierDetails, firstLeg);
+        } else if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+            setCarrierAndFlightNumberForAir(carrierDetails, firstLeg);
+        }
+        if (TransportInfoStatus.YES.equals(transportInfoStatus) || TransportInfoStatus.IH.equals(transportInfoStatus)) {
+            if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+                if (Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort()) && Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
+                    shipmentDetails.setTransportInfoStatus(TransportInfoStatus.YES);
+                    updateCarrierDetailsPolAndPod(carrierDetails, firstLeg, lastLeg);
+                }
+            } else {
+                updateCarrierDetailsPolAndPod(carrierDetails, firstLeg, lastLeg);
+            }
+        }
+    }
+
+
+    private static void updateVesselAndVoyage(List<Routings> mainCarriageRoutings, CarrierDetails carrierDetails, Routings mainCarriageLeg) {
+        if (mainCarriageRoutings.size() > 1) {
+            Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
+            if (routings.isPresent()) {
+                mainCarriageLeg = routings.get();
+            }
+        }
+
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getVesselName())) {
+            carrierDetails.setVessel(mainCarriageLeg.getVesselName());
+        }
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getVoyage())) {
+            carrierDetails.setVoyage(mainCarriageLeg.getVoyage());
+        }
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier())) {
+            carrierDetails.setShippingLine(mainCarriageLeg.getCarrier());
+        }
+    }
+
+    private static void setCarrierAndFlightNumberForAir(CarrierDetails carrierDetails, Routings mainCarriageLeg) {
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber())) {
+            carrierDetails.setFlightNumber(mainCarriageLeg.getFlightNumber());
+        }
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier())) {
+            carrierDetails.setShippingLine(mainCarriageLeg.getCarrier());
+        }
     }
 
     @Override
@@ -374,8 +526,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             ParentResult parentResult = getParentDetails(List.of(routings), request.getEntityId(), module);
             // Audit logs
             recordAuditLogs(List.of(oldEntityData), List.of(routings), DBOperationType.UPDATE, parentResult);
+            VesselVoyageMessage vesselVoyageMessage = new VesselVoyageMessage();
             // afterSave operations
-            afterSave(Arrays.asList(routings), request.getEntityId(), module);
+            afterSave(Arrays.asList(routings), request.getEntityId(), module, TransportInfoStatus.YES, vesselVoyageMessage);
             log.info("Routing updated successfully for Id {} with Request Id {}", routings.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
@@ -482,6 +635,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         List<RoutingsResponse> routingsListResponses = new ArrayList<>();
         lst.forEach(route -> {
             var response = modelMapper.map(route, RoutingsResponse.class);
+            if (Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getMode())) {
+                response.setVoyage(response.getFlightNumber());
+            }
             routingsListResponses.add(response);
         });
         return routingsListResponses;
@@ -492,6 +648,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     public BulkRoutingResponse updateBulk(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         routingValidationUtil.validateBulkUpdateRoutingRequest(request, module);
         List<RoutingsRequest> incomingRoutings = request.getRoutings();
+        setFlightNumberInCaseAir(incomingRoutings);
         // Separate IDs and determine existing routing
         List<Long> incomingIds = getIncomingRoutingsIds(incomingRoutings);
         List<Routings> existingRoutings = new ArrayList<>();
@@ -533,16 +690,27 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
         // Convert to response
         List<RoutingsResponse> routingResponses = jsonHelper.convertValueToList(allSavedRouting, RoutingsResponse.class);
-
-        afterSave(allSavedRouting, request.getEntityId(), module);
+        VesselVoyageMessage vesselVoyageMessage = new VesselVoyageMessage();
+        afterSave(allSavedRouting, request.getEntityId(), module, request.getTransportInfoStatus(), vesselVoyageMessage);
 
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(request, module, allSavedRouting);
 
         return BulkRoutingResponse.builder()
                 .routingsResponseList(routingResponses)
-                .message(prepareBulkUpdateMessage(routingResponses))
+                .message(prepareBulkUpdateMessage(routingResponses, vesselVoyageMessage))
                 .build();
+    }
+
+    private void setFlightNumberInCaseAir(List<RoutingsRequest> incomingRoutings) {
+        if (!CollectionUtils.isEmpty(incomingRoutings)) {
+            for (RoutingsRequest routingsRequest : incomingRoutings) {
+                if (routingsRequest.getCarriage() == RoutingCarriage.MAIN_CARRIAGE && Constants.TRANSPORT_MODE_AIR.equals(routingsRequest.getMode())) {
+                    routingsRequest.setFlightNumber(routingsRequest.getVoyage());
+                    routingsRequest.setVoyage(null);
+                }
+            }
+        }
     }
 
     private void pushToDependentServices(BulkUpdateRoutingsRequest request, String module, List<Routings> routingsList) {
@@ -661,9 +829,11 @@ public class RoutingsV3Service implements IRoutingsV3Service {
         };
     }
 
-    private String prepareBulkUpdateMessage(List<RoutingsResponse> routingResponses) {
+    private String prepareBulkUpdateMessage(List<RoutingsResponse> routingResponses, VesselVoyageMessage vesselVoyageMessage) {
         String message;
-
+        if (StringUtility.isNotEmpty(vesselVoyageMessage.getMessage())) {
+            return vesselVoyageMessage.getMessage();
+        }
         // If more than one Route was updated, return a generic bulk success message
         if (routingResponses.size() > 1) {
             message = "Bulk edit success! All selected routes have been updated.";
@@ -760,6 +930,36 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     @Override
     public List<Routings> getRoutingsByConsolidationId(Long consolidationId) {
         return routingsDao.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    @Transactional
+    public BulkRoutingResponse updateTransportInfoStatus(UpdateTransportStatusRequest request) throws RunnerException {
+        if (TransportInfoStatus.IH.equals(request.getTransportInfoStatus())) {
+            throw new ValidationException("Transport pol/pod info status can not be IH");
+        }
+        List<Routings> routingsList = new ArrayList<>();
+        if(Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
+            Optional<ShipmentDetails> shipmentDetailsEntity = shipmentServiceV3.findById(request.getEntityId());
+            if (shipmentDetailsEntity.isEmpty()) {
+                throw new ValidationException("Invalid shipment id");
+            }
+           routingsList = shipmentDetailsEntity.get().getRoutingsList();
+        } else if(Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationV3Service.findById(request.getEntityId());
+            if (consolidationDetails.isEmpty()) {
+                throw new ValidationException("Invalid consolidation id");
+            }
+            routingsList = consolidationDetails.get().getRoutingsList();
+        }
+        routingsList.sort(Comparator.comparingLong(Routings::getLeg));
+        List<RoutingsRequest> routingsRequests = jsonHelper.convertValue(routingsList, new TypeReference<List<RoutingsRequest>>() {
+        });
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(request.getTransportInfoStatus());
+        bulkUpdateRoutingsRequest.setRoutings(routingsRequests);
+        bulkUpdateRoutingsRequest.setEntityId(request.getEntityId());
+        return updateBulk(bulkUpdateRoutingsRequest, request.getEntityType());
     }
 
     public Map<String, Object> getAllMasterDataForRoute(RoutingsResponse response) {

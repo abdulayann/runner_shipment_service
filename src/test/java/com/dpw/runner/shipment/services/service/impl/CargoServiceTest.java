@@ -94,6 +94,7 @@ class CargoServiceTest {
         CargoDetailsRequest request = createRequest("SHIPMENT", "1");
         ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
         Containers container1 = new Containers();
+        container1.setGuid(UUID.randomUUID());
         container1.setContainerCount(3L);
         container1.setContainerCode("40GP");
 
@@ -488,7 +489,7 @@ class CargoServiceTest {
         when(jsonHelper.convertValueToList(any(), eq(MdmContainerTypeResponse.class))).thenReturn(List.of(mdmContainerTypeResponse));
 
         VolumeWeightChargeable vwOb = new VolumeWeightChargeable();
-        vwOb.setChargeable(null);
+        vwOb.setChargeable(BigDecimal.TEN);
         vwOb.setChargeableUnit("KG");
         vwOb.setVolumeWeight(BigDecimal.valueOf(480));
         vwOb.setVolumeWeightUnit("KG");
@@ -498,8 +499,8 @@ class CargoServiceTest {
 
         assertEquals(1, response.getContainers());
         assertEquals(BigDecimal.valueOf(2.0), response.getTeuCount());
-        assertNull(response.getWeight());
-        assertNull(response.getChargable());
+        assertEquals(BigDecimal.ZERO, response.getWeight());
+        assertEquals(BigDecimal.valueOf(10.0), response.getChargable());
         assertEquals(BigDecimal.valueOf(3.0), response.getVolume());
         assertEquals(5, response.getNoOfPacks());
         assertEquals(BigDecimal.valueOf(480), response.getVolumetricWeight());
@@ -522,8 +523,8 @@ class CargoServiceTest {
         vwMock.setVolumeWeightUnit("KG");
 
         Mockito.when(consolidationService.calculateVolumeWeight(
-                eq("AIR"), eq("KG"), eq("M3"),
-                eq(new BigDecimal("120.4")), eq(new BigDecimal("2.5"))
+                ("AIR"), ("KG"), ("M3"),
+                (new BigDecimal("120.4")), (new BigDecimal("2.5"))
         )).thenReturn(vwMock);
 
         CargoChargeableResponse response = cargoService.calculateChargeable(request);
@@ -553,8 +554,8 @@ class CargoServiceTest {
         vwMock.setVolumeWeightUnit("KG");
 
         Mockito.when(consolidationService.calculateVolumeWeight(
-                eq("SEA"), eq("KG"), eq("M3"),
-                eq(new BigDecimal("500.0")), eq(new BigDecimal("10.0"))
+                ("SEA"), ("KG"), ("M3"),
+                (new BigDecimal("500.0")), (new BigDecimal("10.0"))
         )).thenReturn(vwMock);
 
         CargoChargeableResponse response = cargoService.calculateChargeable(request);

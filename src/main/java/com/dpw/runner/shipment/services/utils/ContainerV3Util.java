@@ -428,7 +428,7 @@ public class ContainerV3Util {
         container.setPacksType(null);
     }
 
-    public void addNoOfPackagesToContainerFromPacks(Containers container, String packs, String packsType) {
+    public void addNoOfPackagesValueToContainer(Containers container, String packs, String packsType) {
         if(isStringNullOrEmpty(packs))
             return;
         addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
@@ -444,6 +444,21 @@ public class ContainerV3Util {
         else if(!Objects.equals(packsType, container.getPacksType()))
             container.setPacksType(PKG);
         container.setPacks(String.valueOf(Integer.parseInt(isStringNullOrEmpty(container.getPacks()) ? "0" : container.getPacks()) + packs));
+    }
+
+    public void setWtVolUnits(Containers containers) {
+        if(isStringNullOrEmpty(containers.getGrossWeightUnit()))
+            containers.setGrossWeightUnit(commonUtils.getDefaultWeightUnit());
+        if(isStringNullOrEmpty(containers.getGrossVolumeUnit()))
+            containers.setGrossVolumeUnit(commonUtils.getDefaultVolumeUnit());
+    }
+    
+    public String getContainerNumberOrType(Long containerId) {
+        return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
+    }
+    
+    public String getContainerNumberOrType(Containers container) {
+        return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
     }
 
 }

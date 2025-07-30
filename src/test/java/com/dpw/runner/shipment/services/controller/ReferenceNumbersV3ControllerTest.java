@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.response.BulkReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReferenceNumbersV3Service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,9 +20,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -113,6 +117,41 @@ class ReferenceNumbersV3ControllerTest {
         when(referenceNumbersV3Service.list(any(), eq(null))).thenReturn(serviceList);
 
         ResponseEntity<IRunnerResponse> result = controller.list(request, null);
+
+        assertEquals(HttpStatus.OK, result.getStatusCode());
+        RunnerListResponse<?> actual = (RunnerListResponse<?>) result.getBody();
+
+        assertNotNull(actual);
+        assertEquals(2, actual.getData().size());
+        assertTrue(actual.getData().contains(ref1));
+        assertTrue(actual.getData().contains(ref2));
+    }
+
+    @Test
+    void testListV3_success() {
+        ListCommonRequest request = new ListCommonRequest();
+        request.setPageSize(2);
+        request.setPageNo(1);
+        ReferenceNumbersResponse ref1 = new ReferenceNumbersResponse();
+        ref1.setType("SRN");
+        ref1.setReferenceNumber("srn123");
+        ReferenceNumbersResponse ref2 = new ReferenceNumbersResponse();
+        ref1.setType("SRN");
+        ref1.setReferenceNumber("srn1234");
+        // Fill with some data
+        List<ReferenceNumbersResponse> serviceList = List.of(ref1, ref2);
+
+        // Create a mock response from the service
+        List<IRunnerResponse> responses = new ArrayList<>();
+        responses.addAll(serviceList);
+
+        when(referenceNumbersV3Service.listReferenceNumbers(request, null))
+                .thenReturn(ResponseHelper.buildListSuccessResponse(
+                        responses,
+                        1,
+                        1));
+
+        ResponseEntity<IRunnerResponse> result = controller.listV3(request, null);
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         RunnerListResponse<?> actual = (RunnerListResponse<?>) result.getBody();

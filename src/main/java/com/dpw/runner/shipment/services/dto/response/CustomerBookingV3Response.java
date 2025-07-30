@@ -2,12 +2,15 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -100,7 +103,7 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String rejectionRemarks;
     private String shipmentReferenceNumber;
     private String integrationSource;
-    private List<Parties> additionalParties;
+    private List<PartiesResponse> additionalParties;
     private String paymentTerms;
     private Boolean isReefer;
     private String incotermsLocation;
@@ -112,6 +115,7 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String controlledReferenceNumber;
     private String partner;
     private Long bookingAgent;
+    private String coLoadCarrierName;
     private String partnerBkgNumber;
     private String partnerBLOrAWBNumber;
     private String carrierBookingNumber;

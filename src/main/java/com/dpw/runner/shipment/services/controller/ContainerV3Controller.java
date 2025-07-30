@@ -74,7 +74,7 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_UPDATE_SUCCESSFUL, response = BulkContainerResponse.class)})
     @PutMapping(value = ApiConstants.API_UPDATE_BULK)
     public ResponseEntity<IRunnerResponse> updateBulk(@RequestBody List<ContainerV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, SHIPMENT));
+        return ResponseHelper.buildSuccessResponse(containerV3FacadeService.createUpdateContainer(request, CONSOLIDATION));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
@@ -90,7 +90,7 @@ public class ContainerV3Controller {
     }
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
-    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
+    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) {
         containerV3Util.downloadContainers(response, request);
     }
 
@@ -139,6 +139,13 @@ public class ContainerV3Controller {
     @PostMapping(UN_ASSIGN_CONTAINERS)
     public ResponseEntity<IRunnerResponse> unAssignContainers(@RequestBody @Valid UnAssignContainerRequest request) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.unAssignContainers(request, Constants.CONTAINER));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @PostMapping(ContainerConstants.CONSOLIDATION_CONTAINERS_FOR_PACKAGE_ASSIGNMENT)
+    public ResponseEntity<IRunnerResponse> fetchConsolidationContainersForPackageAssignment(@RequestBody @Valid ListCommonRequest listCommonRequest) throws RunnerException {
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainersForPackageAssignment(listCommonRequest);
+        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getNumberOfRecords());
     }
 
 }

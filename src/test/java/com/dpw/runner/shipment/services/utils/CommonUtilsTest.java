@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -4452,6 +4454,46 @@ class CommonUtilsTest {
         assertFalse(commonUtils.isLCLorLTL("FCL"));
     }
 
+    @Test
+    void testGetPacksUnit4() {
+        String packsUnit = commonUtils.getPacksUnit(null);
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetPacksUnit5() {
+        String packsUnit = commonUtils.getPacksUnit("PKG");
+        assertEquals("PKG", packsUnit);
+    }
+
+    @Test
+    void testGetDefaultWeightUnit() {
+        String weightUnit = commonUtils.getDefaultWeightUnit();
+        assertEquals("KG", weightUnit);
+    }
+
+    @Test
+    void testGetDefaultWeightUnit1() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit("KG");
+        when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(ShipmentSettingsDetailsContext.getCurrentTenantSettings()));
+        String weightUnit = commonUtils.getDefaultWeightUnit();
+        assertEquals("KG", weightUnit);
+    }
+
+    @Test
+    void testGetDefaultVolumeUnit() {
+        String volumeUnit = commonUtils.getDefaultVolumeUnit();
+        assertEquals("M3", volumeUnit);
+    }
+
+    @Test
+    void testGetDefaultVolumeUnit1() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit("M3");
+        when(shipmentSettingsDao.getSettingsByTenantIdWithCache(any())).thenReturn(Optional.of(ShipmentSettingsDetailsContext.getCurrentTenantSettings()));
+        String volumeUnit = commonUtils.getDefaultVolumeUnit();
+        assertEquals("M3", volumeUnit);
+    }
+
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setShipmentId("SHIP123");
@@ -4500,5 +4542,247 @@ class CommonUtilsTest {
         V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
         settings.setDPWDateFormat("yyyy-MM-dd HH:mm:ss");
         return settings;
+    }
+    @Test
+    void testSetTransportInfoStatusMessage_PolWarning() {
+         CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
+         List<Routings> mockMainCarriageRoutings= mock(List.class);
+        // Setup mock data
+        Routings firstLeg = mock(Routings.class);
+        Routings lastLeg = mock(Routings.class);
+        when(mockMainCarriageRoutings.get(0)).thenReturn(firstLeg);
+        when(mockMainCarriageRoutings.get(mockMainCarriageRoutings.size() - 1)).thenReturn(lastLeg);
+        when(firstLeg.getPol()).thenReturn("OriginPort");
+        when(mockCarrierDetails.getOriginPort()).thenReturn("DifferentOriginPort");
+        when(lastLeg.getPod()).thenReturn("DestinationPort");
+        when(mockCarrierDetails.getDestinationPort()).thenReturn("DestinationPort");
+
+        // Call the method under test
+        String result = CommonUtils.setTransportInfoStatusMessage(mockCarrierDetails, TransportInfoStatus.IH, mockMainCarriageRoutings);
+
+        // Verify the result
+        assertEquals(Constants.POL_WARNING_MESSAGE, result);
+    }
+
+    @Test
+    void testSetTransportInfoStatusMessage_PodWarning() {
+        CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        // Setup mock data
+        Routings firstLeg = mock(Routings.class);
+        Routings lastLeg = mock(Routings.class);
+        when(mockMainCarriageRoutings.get(0)).thenReturn(firstLeg);
+        when(mockMainCarriageRoutings.get(mockMainCarriageRoutings.size() - 1)).thenReturn(lastLeg);
+        when(firstLeg.getPol()).thenReturn("OriginPort");
+        when(mockCarrierDetails.getOriginPort()).thenReturn("OriginPort");
+        when(lastLeg.getPod()).thenReturn("DestinationPort");
+        when(mockCarrierDetails.getDestinationPort()).thenReturn("DifferentDestinationPort");
+
+        // Call the method under test
+        String result = CommonUtils.setTransportInfoStatusMessage(mockCarrierDetails, TransportInfoStatus.IH, mockMainCarriageRoutings);
+
+        // Verify the result
+        assertEquals(Constants.POD_WARNING_MESSAGE, result);
+    }
+
+    @Test
+    void testSetTransportInfoStatusMessage_PolPodWarning() {
+        CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        // Setup mock data
+        Routings firstLeg = mock(Routings.class);
+        Routings lastLeg = mock(Routings.class);
+        when(mockMainCarriageRoutings.get(0)).thenReturn(firstLeg);
+        when(mockMainCarriageRoutings.get(mockMainCarriageRoutings.size() - 1)).thenReturn(lastLeg);
+        when(firstLeg.getPol()).thenReturn("DifferentOriginPort");
+        when(mockCarrierDetails.getOriginPort()).thenReturn("OriginPort");
+        when(lastLeg.getPod()).thenReturn("DifferentDestinationPort");
+        when(mockCarrierDetails.getDestinationPort()).thenReturn("DestinationPort");
+
+        // Call the method under test
+        String result = CommonUtils.setTransportInfoStatusMessage(mockCarrierDetails, TransportInfoStatus.IH, mockMainCarriageRoutings);
+
+        // Verify the result
+        assertEquals(Constants.POL_POD_WARNING_MESSAGE, result);
+    }
+
+    @Test
+    void testSetTransportInfoStatusMessage_Empty() {
+        CarrierDetails mockCarrierDetails=  mock(CarrierDetails.class);
+        List<Routings> mockMainCarriageRoutings= mock(List.class);
+        // Setup mock data
+        Routings firstLeg = mock(Routings.class);
+        Routings lastLeg = mock(Routings.class);
+        when(mockMainCarriageRoutings.get(0)).thenReturn(firstLeg);
+        when(mockMainCarriageRoutings.get(mockMainCarriageRoutings.size() - 1)).thenReturn(lastLeg);
+        when(firstLeg.getPol()).thenReturn("OriginPort");
+        when(mockCarrierDetails.getOriginPort()).thenReturn("OriginPort");
+        when(lastLeg.getPod()).thenReturn("DestinationPort");
+        when(mockCarrierDetails.getDestinationPort()).thenReturn("DestinationPort");
+
+        // Call the method under test
+        String result = CommonUtils.setTransportInfoStatusMessage(mockCarrierDetails, TransportInfoStatus.IH, mockMainCarriageRoutings);
+
+        // Verify the result
+        assertEquals(Constants.EMPTY_STRING, result);
+    }
+    @Test
+    void testIsVesselVoyageAvailable_SeaMode() {
+        List<Routings> mockMainCarriageRoutings= mock(List.class);
+
+        // Setup mock data for sea mode
+        Routings routing = mock(Routings.class);
+        when(mockMainCarriageRoutings.get(0)).thenReturn(routing);
+        when(routing.getMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(routing.getVesselName()).thenReturn("VesselName");
+        when(routing.getVoyage()).thenReturn("Voyage123");
+
+        // Call the method under test
+        Boolean result = CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mockMainCarriageRoutings);
+
+        // Verify the result
+        assertTrue(result);
+    }
+
+    @Test
+    void testIsVesselVoyageAvailable_MissingVesselName() {
+        List<Routings> mockMainCarriageRoutings= mock(List.class);
+
+        // Setup mock data for sea mode
+        Routings routing = mock(Routings.class);
+        when(mockMainCarriageRoutings.get(0)).thenReturn(routing);
+        when(routing.getMode()).thenReturn(Constants.TRANSPORT_MODE_SEA);
+        when(routing.getVesselName()).thenReturn(null);
+
+        // Call the method under test
+        Boolean result = CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mockMainCarriageRoutings);
+
+        // Verify the result
+        assertFalse(result);
+    }
+
+    @Test
+    void testIsCarrierFlightNumberAvailable_AirMode() {
+        Routings routings1 = new Routings();
+        routings1.setLeg(2L);
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setMode(TRANSPORT_MODE_AIR);
+        routings1.setFlightNumber("Flight");
+        routings1.setCarrier("carrier");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
+        List<Routings> mockMainCarriageRoutings = new ArrayList<>();
+        mockMainCarriageRoutings.add(routings1);
+
+        // Call the method under test
+        Boolean result = CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mockMainCarriageRoutings);
+
+        // Verify the result
+        assertTrue(result);
+    }
+
+    @Test
+    void testIsCarrierFlightNumberAvailable_MissingCarrier() {
+        Routings routings1 = new Routings();
+        routings1.setLeg(2L);
+        routings1.setIsSelectedForDocument(Boolean.TRUE);
+        routings1.setId(2l);
+        routings1.setVesselName("vessel");
+        routings1.setVoyage("0123");
+        routings1.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings1.setPod("DEIMETA");
+        routings1.setDestinationPortLocCode("destportLoc");
+        List<Routings> mockMainCarriageRoutings = new ArrayList<>();
+        mockMainCarriageRoutings.add(routings1);
+
+        // Call the method under test
+        Boolean result = CommonUtils.isVesselVoyageOrCarrierFlightNumberAvailable(mockMainCarriageRoutings);
+
+        // Verify the result
+        assertFalse(result);
+    }
+
+    @Test
+    void getTaskIdHyperLinkV3Test(){
+        String url = commonUtils.getTaskIdHyperLinkV3("a", "b");
+        assertNotNull(url);
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithEmptyAddressIds() {
+        // Given
+        List<String> addressIds = Collections.emptyList();
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertTrue(result.isEmpty(), "The result map should be empty when addressIds is empty.");
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithNullAddressIds() {
+        // Given
+        List<String> addressIds = null;
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertTrue(result.isEmpty(), "The result map should be empty when addressIds is null.");
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithValidAddressIds() {
+        // Given
+        List<String> addressIds = Arrays.asList("1", "2");
+        V1DataResponse addressResponse = mock(V1DataResponse.class);
+        List<RAKCDetailsResponse> rakcDetailsList = Arrays.asList( RAKCDetailsResponse.builder().id(1L).orgId(1L).kCRANumber("Data1").build(), RAKCDetailsResponse.builder().id(2L).orgId(2L).kCRANumber("Data2").build());
+
+        when(iv1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+        when(jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class)).thenReturn(rakcDetailsList);
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertEquals(2, result.size(), "The result map should contain 2 entries.");
+        assertTrue(result.containsKey("1"));
+        assertTrue(result.containsKey("2"));
+        assertEquals("Data1", result.get("1").getKCRANumber());
+        assertEquals("Data2", result.get("2").getKCRANumber());
+    }
+
+    @Test
+     void testGetRAKCDetailsMap_WithEmptyRAKCDetailsResponse() {
+        // Given
+        List<String> addressIds = Arrays.asList("1", "2");
+        V1DataResponse addressResponse = mock(V1DataResponse.class);
+        List<RAKCDetailsResponse> rakcDetailsList = Collections.emptyList();
+
+        when(iv1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+        when(jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class)).thenReturn(rakcDetailsList);
+
+        // When
+        Map<String, RAKCDetailsResponse> result = commonUtils.getRAKCDetailsMap(addressIds);
+
+        // Then
+        assertTrue(result.isEmpty(), "The result map should be empty when RAKCDetailsResponse list is empty.");
+    }
+
+    @Test
+     void testConvertV1InCriteriaRequest() {
+        // Given
+        List<String> addressIds = Arrays.asList("1", "2");
+
+        // When
+        CommonV1ListRequest result = commonUtils.convertV1InCriteriaRequest("Id", addressIds);
+
+        // Then
+        assertNotNull(result, "Request should not be null.");
+        assertEquals(3, result.getCriteriaRequests().size(), "CriteriaRequests should contain 1 item.");
+        assertTrue(result.getCriteriaRequests().get(0) instanceof List, "First item in criteriaRequests should be a List.");
     }
 }

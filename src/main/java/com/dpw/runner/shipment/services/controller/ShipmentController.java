@@ -472,15 +472,23 @@ public class ShipmentController {
     })
     @PostMapping(ApiConstants.EXPORT_LIST)
     public void exportShipmentList(HttpServletResponse response, @RequestBody @Valid ListCommonRequest listCommonRequest) {
-        String responseMsg = "failure executing :(";
+        String responseMsg = "Failure executing :(";
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        log.info("Export shipment list request received. RequestId: {}, Request: {}", requestId, listCommonRequest);
+
         try {
-            shipmentService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(listCommonRequest);
+            log.debug("Built CommonRequestModel: {}", commonRequestModel);
+
+            shipmentService.exportExcel(response, commonRequestModel);
+
+            log.info("Shipment export completed successfully. RequestId: {}", requestId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error listing shipment for shipment";
-            log.error(responseMsg, e);
+                    : "Error exporting shipment list";
+            log.error("Exception occurred while exporting shipment list. RequestId: {}, Error: {}", requestId, responseMsg, e);
         }
-
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = RunnerResponse.class)})

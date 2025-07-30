@@ -162,51 +162,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARRIER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBN_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CBR;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CNEES;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMMODITY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONTACT_PERSON;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CONT_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_BRANCH_ADD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_EMAIL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DA_PHONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.DSTN;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMAIL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_DOCUMENT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FCR_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HOUSE_BILL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.LOAD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MASTER_BILL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MAWB;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.MODE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_BRANCH_ADD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_EMAIL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_NAME;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OA_PHONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.OBJECT_TYPE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PHONE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.POL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REFERENCE_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEAWAY_BILL;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NUMBER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PRE_ALERT_DOC;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
@@ -295,7 +251,7 @@ public class ReportService implements IReportService {
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
-
+    private static final String INVALID_REPORT_KEY = "This document is not yet configured, kindly reach out to the support team";
     @Autowired
     private ReportService self;
 
@@ -312,6 +268,9 @@ public class ReportService implements IReportService {
     public byte[] getDocumentData(CommonRequestModel request)
             throws DocumentException, IOException, RunnerException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = (ReportRequest) request.getData();
+
+        // set fromConsole or fromShipment flag true from entity Name
+        setFromConsoleOrShipment(reportRequest);
 
         // Generate combined shipment report via consolidation
         byte[] dataForCombinedReport = getDataForCombinedReport(reportRequest);
@@ -338,29 +297,14 @@ public class ReportService implements IReportService {
         }
 
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+        validateForInvalidReport(report);
+
         validateDpsForMawbReport(report, reportRequest, isOriginalPrint);
 
         Map<String, Object> dataRetrived;
-
-        if (report instanceof AWBLabelReport awbLabelReport1) {
-            awbLabelReport1.setMawb(reportRequest.isFromConsolidation());
-            awbLabelReport1.setRemarks(reportRequest.getRemarks());
-            awbLabelReport1.setCombi(reportRequest.isCombiLabel());
-            awbLabelReport1.setCustomLabel(reportRequest.getPrintCustomLabel() != null && reportRequest.getPrintCustomLabel());
-        }
-        if (report instanceof FCRDocumentReport fcrDocumentReport) {
-            fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
-            fcrDocumentReport.setPackIds(reportRequest.getPackIds());
-            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
-            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
-        }
-        // user story 135668
-        setPrintWithoutTranslation(report, reportRequest);
-        updateCustomDataCargoManifestAirReport(report, reportRequest);
-
-        if (report instanceof CSDReport csdReport) {
-            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
-        }
+        setReportParametersFromRequest(report, reportRequest);
+        // Update Original Printed Date in AWB
+        Awb awb = this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
         //LATER - Need to handle for new flow
         dataRetrived = getDocumentDataForReports(report, reportRequest);
 
@@ -374,10 +318,10 @@ public class ReportService implements IReportService {
             var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
             pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
             return byteContent;
-        } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
-            return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report);
+        } else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
+            return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
-            return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report);
+            return getBytesForHawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, hbltype, objectType, tenantSettingsRow, report, awb);
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.BOOKING_ORDER)) {
             return getBytesForBookingOrderReport(dataRetrived, reportRequest);
         }
@@ -430,11 +374,34 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
+    private void setReportParametersFromRequest(IReport report, ReportRequest reportRequest) {
+        if (report instanceof AWBLabelReport awbLabelReport1) {
+            awbLabelReport1.setMawb(reportRequest.isFromConsolidation());
+            awbLabelReport1.setRemarks(reportRequest.getRemarks());
+            awbLabelReport1.setCombi(reportRequest.isCombiLabel());
+            awbLabelReport1.setCustomLabel(reportRequest.getPrintCustomLabel() != null && reportRequest.getPrintCustomLabel());
+        }
+        if (report instanceof FCRDocumentReport fcrDocumentReport) {
+            fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
+            fcrDocumentReport.setPackIds(reportRequest.getPackIds());
+            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
+            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
+        }
+        // user story 135668
+        setPrintWithoutTranslation(report, reportRequest);
+        updateCustomDataCargoManifestAirReport(report, reportRequest);
+
+        if (report instanceof CSDReport csdReport) {
+            csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
+        }
+    }
+
     @Nullable
     private byte[] getBytesForTransportInstructions(ReportRequest reportRequest, ShipmentSettingsDetails tenantSettingsRow, Map<String, Object> dataRetrived, String objectType) throws DocumentException, IOException {
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER_V3) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER_V3) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.TRANSPORT_ORDER_V3)) {
             byte[] transportInstructionPdf = getBytesForTransportInstruction(dataRetrived, reportRequest, objectType);
-            if (transportInstructionPdf != null && transportInstructionPdf.length > 1 && ReportConstants.PICKUP_ORDER_V3.equalsIgnoreCase(reportRequest.getReportInfo())) {
+            if (transportInstructionPdf.length > 1
+                    && ReportConstants.PICKUP_ORDER_V3.equalsIgnoreCase(reportRequest.getReportInfo())) {
                 createAutoEvent(reportRequest.getReportId(), ReportConstants.PICKUP_ORDER_GEN, tenantSettingsRow);
             }
             return transportInstructionPdf;
@@ -480,17 +447,21 @@ public class ReportService implements IReportService {
 
     @NotNull
     private byte[] printTransportInstructionLegsData(List<TiLegs> tiLegsList, ReportRequest reportRequest, Map<String, Object> dictionary, DocPages pages) throws DocumentException, IOException {
+        dictionary.put(ReportConstants.HAS_LEGS, false);
+        dictionary.put(ReportConstants.HAS_CONTAINERS, false);
+        dictionary.put(ReportConstants.HAS_PACKAGE_DETAILS, false);
+        dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
+        dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
             for (TiLegs tilegs : tiLegsList) {
-                Map<String, Object> legsDictionary = new HashMap<>();
+                Map<String, Object> legsDictionary = new HashMap<>(dictionary);
                 transportInstructionReport.addTransportInstructionLegsDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsContainersDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsTruckDriverDataIntoDictionary(tilegs, legsDictionary);
-                legsDictionary.putAll(dictionary);
 
                 futures.add(executorService.submit(() -> {
                     byte[] mainDocPage = getFromDocumentService(legsDictionary, pages.getMainPageId());
@@ -520,6 +491,17 @@ public class ReportService implements IReportService {
                 throw new GenericException(e.getMessage());
             }
         }
+    }
+    private void setFromConsoleOrShipment(ReportRequest reportRequest) {
+        if(reportRequest.getEntityName() != null && Boolean.TRUE.equals(reportRequest.isSetParentEntityFlag())) {
+            reportRequest.setFromConsolidation(Objects.equals(reportRequest.getEntityName(), Constants.CONSOLIDATION));
+            reportRequest.setFromShipment(Objects.equals(reportRequest.getEntityName(), Constants.SHIPMENT));
+        }
+    }
+
+    private void validateForInvalidReport(IReport report) {
+        if (Objects.isNull(report))
+            throw new ValidationException(INVALID_REPORT_KEY);
     }
 
     private void processPreAlert(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived) {
@@ -566,8 +548,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void processPushAwbEventForMawb(ReportRequest reportRequest, Boolean isOriginalPrint) {
-        Optional<Awb> awb = Optional.ofNullable(this.setPrintTypeForAwb(reportRequest, isOriginalPrint));
+    private void processPushAwbEventForMawb(ReportRequest reportRequest, Boolean isOriginalPrint, Awb awb) {
 
         if (Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
             awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
@@ -577,7 +558,8 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
 
-            awb.ifPresent(value -> value.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED));
+            if (Objects.nonNull(awb))
+                awb.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED);
         }
     }
 
@@ -622,7 +604,7 @@ public class ReportService implements IReportService {
         return pdfByteContent;
     }
 
-    private byte[] getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, ShipmentSettingsDetails tenantSettingsRow, IReport report) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
+    private byte[] getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, ShipmentSettingsDetails tenantSettingsRow, IReport report, Awb awb) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
         updateCustomDataInDataRetrivedForHawb(reportRequest, dataRetrived);
 
         updateDateAndStatusForHawbPrint(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
@@ -669,7 +651,7 @@ public class ReportService implements IReportService {
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
-        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint, awb);
         triggerAutomaticTransfer(report, reportRequest);
 
         // Push document to document master
@@ -683,37 +665,7 @@ public class ReportService implements IReportService {
         if (!reportRequest.isPrintIATAChargeCode()) {
             dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
         }
-        if (!reportRequest.isPrintCSD()) {
-            dataRetrived.remove(RA_CSD);
-        }
-        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount()) {
-            dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
-            dataRetrived.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, Constants.EMPTY_STRING);
-            dataRetrived.put(ReportConstants.WT_CHARGE_P, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.WT_CHARGE_C, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_OTHERS_C));
-            dataRetrived.put(ReportConstants.VALUATION_CHARGES_C, ReportConstants.AS_AGREED_DISPLAY);
-            dataRetrived.put(ReportConstants.VALUATION_CHARGES_P, ReportConstants.AS_AGREED_DISPLAY);
-            dataRetrived.put(ReportConstants.TAX_C, ReportConstants.AS_AGREED_DISPLAY);
-            dataRetrived.put(ReportConstants.TAX_P, ReportConstants.AS_AGREED_DISPLAY);
-        }
-        if (reportRequest.getDisplayOtherAmount() != null && !reportRequest.getDisplayOtherAmount()) {
-            List<String> otherCharges = new ArrayList<>();
-            otherCharges.add(dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT).toString());
-            dataRetrived.put(ReportConstants.OTHER_CHARGES, otherCharges);
-            dataRetrived.put(ReportConstants.NEW_OTHER_CHARGES, otherCharges);
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_FREIGHT_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_FREIGHT_C));
-            dataRetrived.put(ReportConstants.AGENT_DUE_P, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.CARRIER_DUE_P, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.AGENT_DUE_C, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_C));
-            dataRetrived.put(ReportConstants.CARRIER_DUE_C, dataRetrived.get(ReportConstants.OTHER_AMOUNT_TEXT_C));
-        }
-        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(reportRequest.getDisplayOtherAmount())) {
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_OTHERS_C));
-        }
+        handleReportDisplayPreferences(reportRequest, dataRetrived);
         if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && !Boolean.TRUE.equals(reportRequest.getDisplayOtherAmount())) {
             dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
             dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
@@ -760,7 +712,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private byte[] getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report) throws DocumentException, IOException, RunnerException {
+    private byte[] getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report, Awb awb) throws DocumentException, IOException, RunnerException {
         updateCustomDataInDataRetrivedForMawb(reportRequest, dataRetrived);
         List<byte[]> pdfBytes = new ArrayList<>();
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
@@ -777,7 +729,7 @@ public class ReportService implements IReportService {
         }
         if (addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
             pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
-        } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+        } else if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
             pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
         } else if (addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
             pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
@@ -788,7 +740,7 @@ public class ReportService implements IReportService {
         }
 
         addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
-        processPushAwbEventForMawb(reportRequest, isOriginalPrint);
+        processPushAwbEventForMawb(reportRequest, isOriginalPrint, awb);
 
         triggerAutomaticTransfer(report, reportRequest);
         pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
@@ -814,6 +766,14 @@ public class ReportService implements IReportService {
         } else {
             dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
         }
+        handleReportDisplayPreferences(reportRequest, dataRetrived);
+        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(!reportRequest.getDisplayOtherAmount())) {
+            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
+            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
+        }
+    }
+
+    private static void handleReportDisplayPreferences(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
 
         if (!reportRequest.isPrintCSD()) {
             dataRetrived.remove(RA_CSD);
@@ -846,10 +806,6 @@ public class ReportService implements IReportService {
         if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(reportRequest.getDisplayOtherAmount())) {
             dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
             dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.TOTAL_OTHERS_C));
-        }
-        if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount() && reportRequest.getDisplayOtherAmount() != null && Boolean.TRUE.equals(!reportRequest.getDisplayOtherAmount())) {
-            dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
-            dataRetrived.put(ReportConstants.TOTAL_COLLECT, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
         }
     }
 
@@ -903,8 +859,8 @@ public class ReportService implements IReportService {
 
             dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
             createEvent(reportRequest, EventConstants.FHBL);
-        } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
-            dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
+        } else if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
+            dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), DRAFT);
             createEvent(reportRequest, EventConstants.DHBL);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
@@ -973,6 +929,8 @@ public class ReportService implements IReportService {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL) && disableOriginal) {
                 throw new ValidationException("HBl Original generation is disabled");
             }
+            if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT) && Boolean.TRUE.equals(shipmentDetails.getAdditionalDetails().getPrintedOriginal()))
+                throw new ValidationException("HBL Draft cannot be printed once Original is printed");
             pdfByteContent = getPdfByteContent(reportRequest, waterMarkRequired, pdfByteContent, font, shipmentDetails);
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name())) {
                 shipmentDetails.getAdditionalDetails().setPrintedOriginal(true);
@@ -993,7 +951,7 @@ public class ReportService implements IReportService {
     }
 
     private byte[] getPdfByteContent(ReportRequest reportRequest, boolean waterMarkRequired, byte[] pdfByteContent, BaseFont font, ShipmentDetails shipmentDetails) throws IOException, DocumentException {
-        if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+        if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
             if (waterMarkRequired) {
                 pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, font, ReportConstants.DRAFT_WATERMARK);
             }
@@ -1032,7 +990,7 @@ public class ReportService implements IReportService {
             String documentType = ReportConstants.SHIPMENT_HOUSE_BILL;
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 documentType = ReportConstants.ORIGINAL_HOUSE_BILL;
-            } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+            } else if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
                 documentType = ReportConstants.DRAFT_HOUSE_BILL;
             }
             DocUploadRequest docUploadRequest = new DocUploadRequest();
@@ -1152,6 +1110,7 @@ public class ReportService implements IReportService {
             if (!groupedShipments.isEmpty()) {
                 for (Map.Entry<String, List<Long>> entry : groupedShipments.entrySet()) {
                     reportRequest.setFromConsolidation(false);
+                    reportRequest.setSetParentEntityFlag(false);
                     reportRequest.setShipmentIds(entry.getValue());
                     dataByte = self.getDocumentData(CommonRequestModel.buildRequest(reportRequest));
                     if (dataByte != null) {
@@ -1188,6 +1147,7 @@ public class ReportService implements IReportService {
                 List<byte[]> dataByteList = new ArrayList<>();
                 for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                     reportRequest.setFromConsolidation(false);
+                    reportRequest.setSetParentEntityFlag(false);
                     reportRequest.setReportId(shipmentDetails.getId().toString());
                     dataByte = self.getDocumentData(CommonRequestModel.buildRequest(reportRequest));
                     if (dataByte != null) {
@@ -2186,32 +2146,36 @@ public class ReportService implements IReportService {
                     () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByteContent), filename,
                             docUploadRequest, finalGuid)), executorService);
 
+            if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
+                addCSDDocumentToDocumentMaster(reportRequest, docUploadRequest, guid);
 
-            if (reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())) {
-                addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
             }
         } catch (Exception ex) {
             log.error(ex.getMessage());
         }
     }
 
-    public void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid) {
+    public void addCSDDocumentToDocumentMaster(ReportRequest parentRequest, DocUploadRequest docUploadRequest, String guid) {
         ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId(reportId);
+        reportRequest.setReportId(parentRequest.getReportId());
         reportRequest.setReportInfo(CSD_REPORT);
-        if (Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(docUploadRequest.getEntityType())) {
+        reportRequest.setEntityName(parentRequest.getEntityName());
+        if(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(docUploadRequest.getEntityType())){
             reportRequest.setFromConsolidation(true);
         }
-        try {
-            CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        try{
+            CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
             DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
             csdDocumentUploadRequest.setDocType(CSD_REPORT);
             String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
 
             byte[] pdfByteContent = self.getDocumentData(commonRequestModel);
-            CompletableFuture.runAsync(masterDataUtils.withMdc(
-                    () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), filename,
-                            csdDocumentUploadRequest, guid)), executorService);
+            var shipmentSettings = commonUtils.getShipmentSettingFromContext();
+            if (shipmentSettings == null || !Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+                CompletableFuture.runAsync(masterDataUtils.withMdc(
+                        () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), filename,
+                                csdDocumentUploadRequest, guid)), executorService);
+            }
             MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
         } catch (Exception e) {
             MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "false");
@@ -2225,14 +2189,14 @@ public class ReportService implements IReportService {
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 documentType = ReportConstants.ORIGINAL_HAWB;
-            } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+            } else if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
                 documentType = ReportConstants.DRAFT_HAWB;
             }
         } else if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
             documentType = ReportConstants.MAWB;
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 documentType = ReportConstants.ORIGINAL_MAWB;
-            } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+            } else if (reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
                 documentType = ReportConstants.DRAFT_MAWB;
             }
         }
@@ -2301,7 +2265,7 @@ public class ReportService implements IReportService {
                 awb = awbDao.updateAwbPrintInformation(null, Long.parseLong(reportRequest.getReportId()), PrintType.ORIGINAL_PRINTED, isOriginalPrint, originalPrintedAt);
             else
                 awb = awbDao.updateAwbPrintInformation(Long.parseLong(reportRequest.getReportId()), null, PrintType.ORIGINAL_PRINTED, isOriginalPrint, originalPrintedAt);
-        } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
+        } else if ((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && reportRequest.getPrintType().equalsIgnoreCase(DRAFT)) {
             if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && !reportRequest.isFromShipment())
                 awb = awbDao.updateAwbPrintInformation(null, Long.parseLong(reportRequest.getReportId()), PrintType.DRAFT_PRINTED, isOriginalPrint, null);
             else
@@ -2605,7 +2569,7 @@ public class ReportService implements IReportService {
                     break;
                 case SEAWAY_BILL:
                     filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
-                    childType = SEAWAY_BILL;
+                    childType = SEA_WAYBILL;
                     docType = DocumentConstants.HBL;
                     break;
                 case HAWB, MAWB:
@@ -2694,26 +2658,26 @@ public class ReportService implements IReportService {
 
     // Adds simple scalar fields and nested allocation/quantity-related values
     private void addBasicConsolidationFields(Map<String, Object> dict, ConsolidationDetails details) {
-        dict.put(ReportConstants.C_D_Reefer, details.getReefer());
+        dict.put(ReportConstants.C_D_REEFER, details.getReefer());
         dict.put(ReportConstants.C_D_DG, details.getHazardous());
 
         // Add container and package counts from allocation section if available
         Allocations al = details.getAllocations();
         if (al != null) {
-            dict.put(ReportConstants.C_CA_DGContainer, al.getDgContainerCount());
-            dict.put(ReportConstants.C_CA_DGPackages, al.getDgPacks());
+            dict.put(ReportConstants.C_CA_DGCONTAINER, al.getDgContainerCount());
+            dict.put(ReportConstants.C_CA_DGPACKAGES, al.getDgPacks());
         }
 
         // Add achieved quantities section if available
         AchievedQuantities aq = details.getAchievedQuantities();
         if (aq != null) {
-            dict.put(ReportConstants.C_C_DGPackagesType, aq.getDgPacksType());
-            dict.put(ReportConstants.C_C_DGContainer, aq.getDgContainerCount());
-            dict.put(ReportConstants.C_C_DGPackages, aq.getDgPacks());
-            dict.put(ReportConstants.C_C_SLACCount, aq.getSlacCount());
+            dict.put(ReportConstants.C_C_DGPACKAGESTYPE, aq.getDgPacksType());
+            dict.put(ReportConstants.C_C_DGCONTAINER, aq.getDgContainerCount());
+            dict.put(ReportConstants.C_C_DGPACKAGES, aq.getDgPacks());
+            dict.put(ReportConstants.C_C_SLACCOUNT, aq.getSlacCount());
         }
 
-        dict.put(ReportConstants.C_C_AdditionalTerms, details.getAdditionalTerms()); // terms
+        dict.put(ReportConstants.C_C_ADDITIONAL_TERMS, details.getAdditionalTerms()); // terms
     }
 
     // Adds reference numbers into the map using their type as a key suffix
@@ -2749,18 +2713,18 @@ public class ReportService implements IReportService {
 
         // Add last routing info
         if (last != null) {
-            dict.put(ReportConstants.C_LastVessel, last.getVesselName());
-            dict.put(ReportConstants.C_LastVoyage, last.getVoyage());
-            dict.put(ReportConstants.C_LastCarrier, last.getCarrier());
-            dict.put(ReportConstants.C_LastFlightNumber, last.getFlightNumber());
+            dict.put(ReportConstants.C_LASTVESSEL, last.getVesselName());
+            dict.put(ReportConstants.C_LASTVOYAGE, last.getVoyage());
+            dict.put(ReportConstants.C_LASTCARRIER, last.getCarrier());
+            dict.put(ReportConstants.C_LASTFLIGHTNUMBER, last.getFlightNumber());
         }
 
         // Add first routing info
         if (first != null) {
-            dict.put(ReportConstants.C_FirstVessel, first.getVesselName());
-            dict.put(ReportConstants.C_FirstVoyage, first.getVoyage());
-            dict.put(ReportConstants.C_FirstCarrier, first.getCarrier());
-            dict.put(ReportConstants.C_FirstFlightNumber, first.getFlightNumber());
+            dict.put(ReportConstants.C_FIRSTVESSEL, first.getVesselName());
+            dict.put(ReportConstants.C_FIRSTVOYAGE, first.getVoyage());
+            dict.put(ReportConstants.C_FIRSTCARRIER, first.getCarrier());
+            dict.put(ReportConstants.C_FIRSTFLIGHTNUMBER, first.getFlightNumber());
         }
     }
 

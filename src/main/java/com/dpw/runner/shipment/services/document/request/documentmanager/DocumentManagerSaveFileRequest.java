@@ -33,4 +33,5 @@ public class DocumentManagerSaveFileRequest {
     private String transportMode;
     private String shipmentType;
     private String consolidationType;
+    private Boolean overrideRuleDocName;
 }

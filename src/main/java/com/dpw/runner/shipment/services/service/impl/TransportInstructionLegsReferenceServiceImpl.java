@@ -12,6 +12,8 @@ import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegs
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsReferenceResponse;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.TiReferences;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -21,11 +23,14 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsReferenceService;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -34,14 +39,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Service
 @Slf4j
 public class TransportInstructionLegsReferenceServiceImpl implements ITransportInstructionLegsReferenceService {
+    private static final String TI_LEGS_DOES_NOT_EXIST = "Transport Instruction Legs does not exist for tiId: ";
     @Autowired
     private ITiLegRepository tiLegRepository;
     @Autowired
@@ -52,6 +62,13 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
     private IAuditLogService auditLogService;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+    @Autowired
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
 
     @Override
     public TransportInstructionLegsReferenceResponse create(TransportInstructionLegsReferenceRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
@@ -60,8 +77,8 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         log.info("Starting Transport Instruction Legs reference creation | Request ID: {} | Request Body: {}", requestId, request);
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         validateTransportInstructionLegsReferenceNumbers(request);
         // Convert DTO to Entity
@@ -95,8 +112,8 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         }
         Long tiLegId = request.getTiLegId();
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         validateTransportInstructionLegsReferenceNumbers(request);
         // Convert DTO to Entity
@@ -119,7 +136,7 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
     }
 
     @Override
-    public TransportInstructionLegsReferenceListResponse list(ListCommonRequest request) {
+    public TransportInstructionLegsReferenceListResponse list(ListCommonRequest request, boolean getMasterData) {
         // construct specifications for filter request
         Pair<Specification<TiReferences>, Pageable> tuple = fetchData(request, TiReferences.class);
         Page<TiReferences> tiLegsReferencePage = tiReferenceDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -127,6 +144,10 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         TransportInstructionLegsReferenceListResponse transportInstructionLegsReferenceListResponse = new TransportInstructionLegsReferenceListResponse();
         if (tiLegsReferencePage != null) {
             List<TransportInstructionLegsReferenceResponse> responseList = convertEntityListToDtoList(tiLegsReferencePage.getContent());
+            if (getMasterData) {
+                Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+                transportInstructionLegsReferenceListResponse.setMasterData(masterDataResponse);
+            }
             transportInstructionLegsReferenceListResponse.setTiLegsReferenceResponses(responseList);
             transportInstructionLegsReferenceListResponse.setTotalPages(tiLegsReferencePage.getTotalPages());
             transportInstructionLegsReferenceListResponse.setTotalCount(tiLegsReferencePage.getTotalElements());
@@ -139,7 +160,7 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
     public TransportInstructionLegsReferenceResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
 
         Optional<TiReferences> tiReferences = tiReferenceDao.findById(id);
-        if (!tiReferences.isPresent()) {
+        if (tiReferences.isEmpty()) {
             throw new ValidationException("Invalid Ti legs reference Id: " + id);
         }
         TiReferences tiReferenceEntity = tiReferences.get();
@@ -160,7 +181,7 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
     @Override
     public TransportInstructionLegsReferenceResponse retrieveById(Long id) {
         Optional<TiReferences> tiReferences = tiReferenceDao.findById(id);
-        if (!tiReferences.isPresent()) {
+        if (tiReferences.isEmpty()) {
             throw new ValidationException("Invalid Ti legs reference Id: " + id);
         }
         return jsonHelper.convertValue(tiReferences.get(), TransportInstructionLegsReferenceResponse.class);
@@ -179,8 +200,8 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         }
 
         Optional<TiLegs> tiLegs = tiLegRepository.findById(tiLegId);
-        if (!tiLegs.isPresent()) {
-            throw new ValidationException("Transport Instruction Legs does not exist for tiId: " + tiLegId);
+        if (tiLegs.isEmpty()) {
+            throw new ValidationException(TI_LEGS_DOES_NOT_EXIST + tiLegId);
         }
         request.getReferences()
                 .forEach(this::validateTransportInstructionLegsReferenceNumbers);
@@ -254,5 +275,20 @@ public class TransportInstructionLegsReferenceServiceImpl implements ITransportI
         } else if (StringUtility.isEmpty(transportInstructionLegsReferenceRequest.getType()) && StringUtility.isEmpty(transportInstructionLegsReferenceRequest.getReference())) {
             throw new ValidationException("Missing both type and reference number");
         }
+    }
+
+    private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsReferenceResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var dropModeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> transportInstructionValidationUtil.addAllTiReferenceNumberMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(dropModeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.TI_LEGS_REFERENCE_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_MESSAGE, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_TI_LEGS_REFERENCE_LIST, ex.getMessage());
+            }
+        }
+        return masterDataResponse;
     }
 }

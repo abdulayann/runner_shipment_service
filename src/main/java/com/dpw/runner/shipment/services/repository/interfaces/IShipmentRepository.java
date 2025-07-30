@@ -162,6 +162,12 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
 
+    @Query(value = "SELECT sd.* FROM shipment_details sd "+
+            "LEFT JOIN console_shipment_mapping csm " +
+            "ON sd.id = csm.shipment_id " +
+            "WHERE csm.shipment_id IS NULL and sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
+    List<ShipmentDetails> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+
     @Modifying
     @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)
     int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
@@ -254,10 +260,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = """
             select cb.id as id,
-            sd.id as shipmentId
-             from ShipmentDetails sd inner join CustomerBooking cb on cb.bookingNumber = sd.bookingReference where sd.id in (:shipmentIdList)
+            cb.shipmentEntityIdV2 as shipmentId
+             from CustomerBooking cb where cb.shipmentEntityIdV2 in (:shipmentIdList)
             """)
-    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(@Param("shipmentIdList") List<Long> shipmentIdList);
+    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(@Param("shipmentIdList") List<String> shipmentIdList);
 
     @Modifying
     @Transactional
@@ -265,5 +271,36 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
             "s.dgPacksCount = :dgPacks, " +
             "s.dgPacksUnit = :dgPacksUnit " +
             "WHERE s.id = :shipmentId")
-    void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+    void updateDgPacksDetailsInShipment(@Param("dgPacks") Integer dgPacks, @Param("dgPacksUnit") String dgPacksUnit, @Param("shipmentId") Long shipmentId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_details s " +
+            "SET contains_hazardous = :isHazardous, " +
+            "ocean_dg_status = :oceanDGStatus " +
+            "WHERE id = :shipmentId", nativeQuery = true)
+    void updateDgStatusInShipment(@Param("isHazardous") Boolean isHazardous,
+                                  @Param("oceanDGStatus") String oceanDGStatus,
+                                  @Param("shipmentId") Long shipmentId);
+
+    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1 and is_deleted = false", nativeQuery = true)
+    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE shipment_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId);
+
+    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1", nativeQuery = true)
+    Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "Update shipment_details set is_deleted = true WHERE id IN ?1", nativeQuery = true)
+    void deleteShipmentDetailsByIds(Set<Long> ids);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM triangulation_partner_shipment WHERE shipment_id = ?1", nativeQuery = true)
+    void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
 }

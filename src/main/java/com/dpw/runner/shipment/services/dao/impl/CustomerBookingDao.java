@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.VersionContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -13,8 +14,11 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
+import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidationsV3;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +48,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Autowired
     private CustomerBookingValidations customValidations;
     @Autowired
+    private CustomerBookingValidationsV3 customerBookingValidationsV3;
+    @Autowired
     private CacheManager cacheManager;
     @Autowired
     private ObjectMapper objectMapper;
@@ -69,7 +75,11 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 throw new ValidationException(String.format("Booking with booking number: %s already exists.", customerBooking.getBookingNumber()));
             }
         }
-        customValidations.onSave(old, customerBooking); //Custom Validations
+        if (VersionContext.getVersion().equalsIgnoreCase("V2")) {
+            customValidations.onSave(old, customerBooking);
+        } else {
+            customerBookingValidationsV3.onSave(old, customerBooking);
+        }
         var resp = customerBookingRepository.save(customerBooking);
 
         // ----- Cache update section -----
@@ -230,5 +240,30 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Override
     public Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber) {
         return customerBookingRepository.findByShipmentReferenceNumber(shipmentReferenceNumber);
+    }
+
+    @Override
+    public List<CustomerBooking> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+        return customerBookingRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
+    }
+
+    @Override
+    public Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findCustomerBookingIdsByTenantId(tenantId);
+    }
+
+    @Override
+    public List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids) {
+        return customerBookingRepository.findCustomerBookingByIds(ids);
+    }
+
+    @Override
+    public void deleteCustomerBookingIds(Set<Long> ids) {
+         customerBookingRepository.deleteCustomerBookingIds(ids);
+    }
+
+    @Override
+    public Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId) {
+        return customerBookingRepository.findAllCustomerBookingIdsByTenantId(tenantId);
     }
 }

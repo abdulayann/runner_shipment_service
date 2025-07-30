@@ -42,8 +42,9 @@ class ContainerV3ServiceUtilTest {
 
   @Test
   void testValidateUpdateBulkRequest_withEmptyList_shouldThrowException() {
+    List<ContainerV3Request> emptyList = List.of();
     Exception exception = assertThrows(IllegalArgumentException.class,
-        () -> containerValidationUtil.validateUpdateBulkRequest(List.of()));
+        () -> containerValidationUtil.validateUpdateBulkRequest(emptyList));
 
     assertEquals("Bulk update request cannot be null or empty.", exception.getMessage());
   }

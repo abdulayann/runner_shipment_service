@@ -17,6 +17,8 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 public interface IShipmentDao {
     ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException;
@@ -24,6 +26,7 @@ public interface IShipmentDao {
     Page<ShipmentDetails> findAll(Specification<ShipmentDetails> spec, Pageable pageable);
     Optional<ShipmentDetails> findById(Long id);
     List<ShipmentDetails> findByShipmentId(String shipmentNumber);
+    List<ShipmentDetails> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
     void delete(ShipmentDetails shipmentDetails);
     List<ShipmentDetails> saveAll(List<ShipmentDetails> shipments) throws RunnerException;
 
@@ -33,8 +36,7 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId);
     List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId);
 
-    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<Long> shipmentIds);
-
+    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(List<String> shipmentIds);
     Long findMaxId();
     void saveJobStatus(Long id, String jobStatus);
     void saveStatus(Long id, Integer status);
@@ -74,4 +76,13 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByIdIn(List<Long> shipmentIds);
 
     void updateDgPacksDetailsInShipment(Integer dgPacks, String dgPacksUnit, Long shipmentId);
+
+    void updateDgStatusInShipment(Boolean isHazardous, String oceanDGStatus, Long shipmentId);
+    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
+
+    void revertSoftDeleteShipmentIdAndTenantId(List<Long> allShipmentIdsFromContainerMap, Integer tenantId);
+    Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
+    void deleteShipmentDetailsByIds(Set<Long> ids);
+
+    void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
 }

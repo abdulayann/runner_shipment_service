@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.commons.constants;
 public class ApiConstants {
 
     public static final String API_DEFAULT_BOOKING = "/getDefaultBooking";
+    public static final String SHIPMENT_API_UPDATE_TRANSPORT_INFO_STATUS = "/update/transport-status";
 
     private ApiConstants(){}
     public static final String BOOKING_API_CREATE_CONTAINERS = "/create/booking/containers";
@@ -179,6 +180,7 @@ public class ApiConstants {
 
     public static final String CANCEL = "/cancel";
     public static final String LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS = "/listBranchesByDefaultOrgAndAddress";
+    public static final String FETCH_TENANT_DATA_WITH_TENANT_ID = "/getDefaultOrgAddressFromTenantId";
     public static final String MATCHING_RULES_BY_GUID = "/get-matching-rules/guid";
     public static final String MATCHING_RULES_BY_GUID_AND_EXECUTION_STATE = "/get-matching-rules";
 
@@ -203,5 +205,6 @@ public class ApiConstants {
 
     public static final String AIB_ACTION = "/aib/action";
     public static final String AIB_NOTIFICATIONS = "/aib/notification";
+    public static final String AIB_SHIPMENT_COUNT = "/aib/shipment-count";
 
 }

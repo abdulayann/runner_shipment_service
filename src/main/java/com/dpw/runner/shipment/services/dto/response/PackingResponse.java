@@ -66,6 +66,7 @@ public class PackingResponse implements IRunnerResponse {
     private String vinNumber;
     private Long containerId;
     private String containerNumber;
+    private String containerCode;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
@@ -74,6 +75,9 @@ public class PackingResponse implements IRunnerResponse {
     private String chargeableUnit;
     private String customsReleaseCode;
     private String shipmentNumber;
+    private Long shipmentContainerAssignedToShipmentCargo;
+    private String shipmentContainerNumberAssignedToShipmentCargo;
+    private String shipmentContainerCodeAssignedToShipmentCargo;
     private Boolean shipmentHazardous;
     private Long innerPacksId;
     private Long innerPacksCount;

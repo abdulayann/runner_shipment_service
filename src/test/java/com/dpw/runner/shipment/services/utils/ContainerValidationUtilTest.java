@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -177,7 +178,7 @@ class ContainerValidationUtilTest extends CommonMocks {
     void testValidateCanAssignPackageToContainer2() {
         testShipment.setId(2L);
         testShipment.setContainerAssignedToShipmentCargo(null);
-        assertDoesNotThrow(() -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment, Constants.CONTAINER));
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateCanAssignPackageToContainer(testShipment, Constants.CONTAINER));
     }
 
     @Test
@@ -185,7 +186,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         testShipment.setId(1L);
         testShipment.setContainerAssignedToShipmentCargo(1L);
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        AssignContainerRequest request = new AssignContainerRequest();
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
     }
 
     @Test
@@ -196,7 +198,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
-        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        AssignContainerRequest request = new AssignContainerRequest();
+        assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
     }
 
     @Test
@@ -207,7 +210,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
-        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap));
+        AssignContainerRequest request = new AssignContainerRequest();
+        assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(shipmentDetailsMap, request, Constants.CONTAINER));
     }
 
     @Test
@@ -338,6 +342,54 @@ class ContainerValidationUtilTest extends CommonMocks {
 
         // Act & Assert - should not throw when DAO returns null
         assertDoesNotThrow(() -> containerValidationUtil.validateOpenForAttachment(containersToDelete));
+    }
+
+    @Test
+    void testFclAndLclThrowErrorMessage() {
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, testShipment);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+        shipmentDetails.setId(2L);
+        shipmentDetailsMap.put(2L, shipmentDetails);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, List.of(1L));
+        request.setShipmentPackIds(shipmentPackIds);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
+    @Test
+    void testFclAndLclThrowErrorMessage2() {
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, testShipment);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setId(2L);
+        shipmentDetailsMap.put(2L, shipmentDetails);
+        testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, List.of(1L));
+        request.setShipmentPackIds(shipmentPackIds);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
+    @Test
+    void testFclAndLclThrowErrorMessage3() {
+        Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>();
+        shipmentDetailsMap.put(1L, testShipment);
+        ShipmentDetails shipmentDetails = objectMapper.convertValue(testShipment, ShipmentDetails.class);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        shipmentDetails.setId(2L);
+        shipmentDetailsMap.put(2L, shipmentDetails);
+        testShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+        AssignContainerRequest request = new AssignContainerRequest();
+        Map<Long, List<Long>> shipmentPackIds = new HashMap<>();
+        shipmentPackIds.put(1L, List.of(1L));
+        request.setShipmentPackIds(shipmentPackIds);
+        assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
     }
 
 }

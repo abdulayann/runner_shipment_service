@@ -2321,4 +2321,34 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void getDefaultOrgAddressFromTenantTest() {
+        // Mock
+        when(iMasterDataService.getDefaultOrgAddressByTenantId(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.getDefaultOrgAddressFromTenant(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getDefaultOrgAddressFromTenantTest2() {
+        // Mock
+        when(iMasterDataService.getDefaultOrgAddressByTenantId(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.getDefaultOrgAddressFromTenant(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getDefaultOrgAddressFromTenantTest3() {
+        // Mock
+        when(iMasterDataService.getDefaultOrgAddressByTenantId(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.getDefaultOrgAddressFromTenant(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
 }

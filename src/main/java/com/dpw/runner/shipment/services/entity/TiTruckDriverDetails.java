@@ -48,5 +48,8 @@ public class TiTruckDriverDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.TRUCK_TYPE)
     private String truckOrTrailerType;
 
+    @Column(name = "driver_id")
+    @Size(max=50, message = "max size is 50 for driver_id")
+    private String driverId;
 }
 

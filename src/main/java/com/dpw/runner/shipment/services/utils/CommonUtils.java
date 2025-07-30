@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
@@ -30,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v3.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -1377,6 +1379,11 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
     }
 
+    public String getTaskIdHyperLinkV3(String shipmentId, String taskUuid) {
+        String link = baseUrl + "/v2/cr3/shipments/task/" + taskUuid;
+        return HTML_HREF_TAG_PREFIX + link + "'>" + shipmentId + HTML_HREF_TAG_SUFFIX;
+    }
+
     public String getConsolidationIdHyperLink(String consolidationId, Long id) {
         String link = baseUrl + "/v2/shipments/consolidations/edit/" + id;
         return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
@@ -1846,6 +1853,7 @@ public class CommonUtils {
             return TaskCreateResponse
                 .builder()
                 .tasksId(mdmTaskCreateResponse.getId().toString())
+                .taskGuid(mdmTaskCreateResponse.getUuid())
                 .build();
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
@@ -2825,5 +2833,77 @@ public class CommonUtils {
         else if(!isStringNullOrEmpty(entityPacksUnit) && !Objects.equals(curUnit, entityPacksUnit))
             curUnit = PackingConstants.PKG;
         return curUnit;
+    }
+
+    public String getPacksUnit(String curUnit) {
+        if(isStringNullOrEmpty(curUnit))
+            return PackingConstants.PKG;
+        return curUnit;
+    }
+
+    public String getDefaultWeightUnit() {
+        if(isStringNullOrEmpty(getShipmentSettingFromContext().getWeightChargeableUnit()))
+            return Constants.WEIGHT_UNIT_KG;
+        return getShipmentSettingFromContext().getWeightChargeableUnit();
+    }
+
+    public String getDefaultVolumeUnit() {
+        if(isStringNullOrEmpty(getShipmentSettingFromContext().getVolumeChargeableUnit()))
+            return VOLUME_UNIT_M3;
+        return getShipmentSettingFromContext().getVolumeChargeableUnit();
+    }
+    public static String setTransportInfoStatusMessage(CarrierDetails carrierDetails, TransportInfoStatus transportInfoStatus, List<Routings> mainCarriageRoutings) {
+        if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+            Routings firstLeg = mainCarriageRoutings.get(0);
+            Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
+            String polMessage = Constants.EMPTY_STRING;
+            String podMessage = Constants.EMPTY_STRING;
+            if (Objects.nonNull(carrierDetails) && !Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort())) {
+                polMessage = Constants.POL_WARNING_MESSAGE;
+            }
+            if (Objects.nonNull(carrierDetails) && !Objects.equals(lastLeg.getPod(), carrierDetails.getDestinationPort())) {
+                podMessage = Constants.POD_WARNING_MESSAGE;
+            }
+            if (StringUtility.isNotEmpty(polMessage) && StringUtility.isNotEmpty(podMessage)) {
+                return Constants.POL_POD_WARNING_MESSAGE;
+            } else if (StringUtility.isNotEmpty(polMessage)) {
+                return Constants.POL_WARNING_MESSAGE;
+            } else if (StringUtility.isNotEmpty(podMessage)) {
+                return Constants.POD_WARNING_MESSAGE;
+            }
+        }
+        return Constants.EMPTY_STRING;
+    }
+    public static Boolean isVesselVoyageOrCarrierFlightNumberAvailable(List<Routings> mainCarriageRoutings) {
+        Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
+        Routings route = mainCarriageRoutings.get(0);
+        if (routings.isPresent()) {
+            route = routings.get();
+        }
+        return (Constants.TRANSPORT_MODE_SEA.equals(route.getMode()) && StringUtility.isNotEmpty(route.getVesselName()) && StringUtility.isNotEmpty(route.getVoyage()))
+                || (TRANSPORT_MODE_AIR.equals(route.getMode()) && StringUtility.isNotEmpty(route.getCarrier()) && StringUtility.isNotEmpty(route.getFlightNumber()));
+    }
+    public Map<String, RAKCDetailsResponse> getRAKCDetailsMap(List<String> addressIds) {
+        if (CommonUtils.listIsNullOrEmpty(addressIds)) {
+            return Collections.emptyMap();
+        }
+
+        CommonV1ListRequest request = convertV1InCriteriaRequest("Id", addressIds);
+        V1DataResponse addressResponse = iv1Service.addressList(request);
+        List<RAKCDetailsResponse> rakcDetailsList =
+                jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class);
+
+        return CommonUtils.listIsNullOrEmpty(rakcDetailsList)
+                ? Collections.emptyMap()
+                : rakcDetailsList.stream().collect(Collectors.toMap(rakc -> String.valueOf(rakc.getId()), Function.identity()));
+    }
+
+    public CommonV1ListRequest convertV1InCriteriaRequest(String filterValue, List<?> values) {
+        List<String> itemType = new ArrayList<>();
+        itemType.add(filterValue);
+        List<List<?>> param = new ArrayList<>();
+        param.add(values);
+        List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
+        return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
     }
 }

@@ -126,8 +126,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     @Override
     public ResponseEntity<DocumentDownloadResponse> downloadDocument(CommonRequestModel commonRequestModel) {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-        var response = restClient.downloadDocument(request.getId());
-        return response;
+        return restClient.downloadDocument(request.getId());
     }
 
     @Override
@@ -181,6 +180,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
                     .transportMode(uploadRequest.getTransportMode())
                     .shipmentType(uploadRequest.getShipmentType())
                     .consolidationType(uploadRequest.getConsolidationType())
+                    .overrideRuleDocName(true)
                 .build());
             log.info("Time take to pushSystemGeneratedDocumentToDocMaster: {}ms", System.currentTimeMillis() - start);
         } catch (Exception ex) {

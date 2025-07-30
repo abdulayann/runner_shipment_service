@@ -107,7 +107,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
-import java.util.concurrent.CompletableFuture;
+
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -142,8 +142,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -3434,7 +3432,7 @@ class ReportServiceTest extends CommonMocks {
         newReportRequest.setReportInfo("HAWB");
 
         DocUploadRequest docUploadRequest = new DocUploadRequest();
-        reportService.addCSDDocumentToDocumentMaster("1", docUploadRequest, "123");
+        reportService.addCSDDocumentToDocumentMaster(newReportRequest, docUploadRequest, "123");
         assertNotNull(newReportRequest);
     }
 
@@ -4209,6 +4207,13 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
         assertThrows(GenericException.class,() -> reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages));
     }
+
+    @Test
+    void testReportPrintWithInvalidReportKey() {
+        reportRequest.setReportInfo("TEST");
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(reportRequest).build();
+        assertThrows(ValidationException.class,() -> reportService.getDocumentData(requestModel));
+    }
     private Runnable mockRunnable() {
         return null;
     }
@@ -4293,15 +4298,15 @@ class ReportServiceTest extends CommonMocks {
 
         reportService.populateConsolidationReportData(dict, details);
 
-        assertEquals(true, dict.get(ReportConstants.C_D_Reefer));
+        assertEquals(true, dict.get(ReportConstants.C_D_REEFER));
         assertEquals(false, dict.get(ReportConstants.C_D_DG));
-        assertEquals(3, dict.get(ReportConstants.C_CA_DGContainer));
-        assertEquals(7, dict.get(ReportConstants.C_CA_DGPackages));
-        assertEquals("BOX", dict.get(ReportConstants.C_C_DGPackagesType));
-        assertEquals(2, dict.get(ReportConstants.C_C_DGContainer));
-        assertEquals(5, dict.get(ReportConstants.C_C_DGPackages));
-        assertEquals(9, dict.get(ReportConstants.C_C_SLACCount));
-        assertEquals("Handle with care", dict.get(ReportConstants.C_C_AdditionalTerms));
+        assertEquals(3, dict.get(ReportConstants.C_CA_DGCONTAINER));
+        assertEquals(7, dict.get(ReportConstants.C_CA_DGPACKAGES));
+        assertEquals("BOX", dict.get(ReportConstants.C_C_DGPACKAGESTYPE));
+        assertEquals(2, dict.get(ReportConstants.C_C_DGCONTAINER));
+        assertEquals(5, dict.get(ReportConstants.C_C_DGPACKAGES));
+        assertEquals(9, dict.get(ReportConstants.C_C_SLACCOUNT));
+        assertEquals("Handle with care", dict.get(ReportConstants.C_C_ADDITIONAL_TERMS));
     }
 
     @Test
@@ -4347,13 +4352,13 @@ class ReportServiceTest extends CommonMocks {
 
         reportService.populateConsolidationReportData(dict, details);
 
-        assertEquals("First Vessel", dict.get(ReportConstants.C_FirstVessel));
-        assertEquals("Carrier1", dict.get(ReportConstants.C_FirstCarrier));
-        assertEquals("FL123", dict.get(ReportConstants.C_FirstFlightNumber));
+        assertEquals("First Vessel", dict.get(ReportConstants.C_FIRSTVESSEL));
+        assertEquals("Carrier1", dict.get(ReportConstants.C_FIRSTCARRIER));
+        assertEquals("FL123", dict.get(ReportConstants.C_FIRSTFLIGHTNUMBER));
 
-        assertEquals("Last Vessel", dict.get(ReportConstants.C_LastVessel));
-        assertEquals("Carrier2", dict.get(ReportConstants.C_LastCarrier));
-        assertEquals("FL999", dict.get(ReportConstants.C_LastFlightNumber));
+        assertEquals("Last Vessel", dict.get(ReportConstants.C_LASTVESSEL));
+        assertEquals("Carrier2", dict.get(ReportConstants.C_LASTCARRIER));
+        assertEquals("FL999", dict.get(ReportConstants.C_LASTFLIGHTNUMBER));
     }
 
     @Test

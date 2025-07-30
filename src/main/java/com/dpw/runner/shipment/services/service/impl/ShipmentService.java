@@ -1379,77 +1379,6 @@ public class ShipmentService implements IShipmentService {
                 build();
     }
 
-//    private ShipmentRequest getShipmentRequestFromBookingV3(CustomerBookingV3Request customerBookingRequest, Set<ConsolidationDetailsRequest> consolidationDetails, Set<ContainerRequest> containerList, boolean isRouteMasterEnabled, List<RoutingsRequest> customerBookingRequestRoutingList, List<Notes> notes) {
-//        return ShipmentRequest.builder().
-//                carrierDetails(CarrierDetailRequest.builder()
-//                        .origin(customerBookingRequest.getCarrierDetails().getOrigin())
-//                        .destination(customerBookingRequest.getCarrierDetails().getDestination())
-//                        .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
-//                        .vessel(customerBookingRequest.getCarrierDetails().getVessel())
-//                        .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
-//                        .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
-//                        .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
-//                        .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
-//                        .carrierCountry(customerBookingRequest.getCarrierDetails().getCarrierCountry())
-//                        .minTransitHours(customerBookingRequest.getCarrierDetails().getMinTransitHours())
-//                        .maxTransitHours(customerBookingRequest.getCarrierDetails().getMaxTransitHours())
-//                        .carrierAddedFromNpm(customerBookingRequest.getCarrierDetails().getCarrierAddedFromNpm())
-//                        .build()
-//                ).
-//                contractId(customerBookingRequest.getContractId()).
-//                parentContractId(customerBookingRequest.getParentContractId()).
-//                contractType(customerBookingRequest.getContractStatus()).
-//                noOfPacks(customerBookingRequest.getQuantity()).
-//                packsUnit(customerBookingRequest.getQuantityUnit()).
-//                weight(customerBookingRequest.getGrossWeight()).
-//                weightUnit(customerBookingRequest.getGrossWeightUnit()).
-//                volume(customerBookingRequest.getVolume()).
-//                volumeUnit(customerBookingRequest.getVolumeUnit()).
-//                volumetricWeight(customerBookingRequest.getWeightVolume()).
-//                volumetricWeightUnit(customerBookingRequest.getWeightVolumeUnit()).
-//                bookingReference(customerBookingRequest.getBookingNumber()).
-//                bookingCreatedDate(customerBookingRequest.getBookingDate()).
-//                shipmentCreatedOn(LocalDateTime.now()).
-//                client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry())).
-//                consignee(createPartiesRequest(customerBookingRequest.getConsignee(), customerBookingRequest.getConsigneeCountry())).
-//                consigner(createPartiesRequest(customerBookingRequest.getConsignor(), customerBookingRequest.getConsignorCountry())).
-//                additionalDetails(AdditionalDetailRequest.builder().
-//                        notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry())).
-//                        build()
-//                ).
-//                shipmentType(customerBookingRequest.getCargoType()).
-//                transportMode(customerBookingRequest.getTransportType()).
-//                direction(customerBookingRequest.getDirection()).
-//                jobType("STD").
-//                incoterms(customerBookingRequest.getIncoTerms()).
-//                serviceType(customerBookingRequest.getServiceMode()).
-//                status(4).
-//                fmcTlcId(customerBookingRequest.getFmcTlcId()).
-//                clientCountry(customerBookingRequest.getClientCountry()).
-//                consignorCountry(customerBookingRequest.getConsignorCountry()).
-//                consigneeCountry(customerBookingRequest.getConsigneeCountry()).
-//                notifyPartyCountry(customerBookingRequest.getNotifyPartyCountry()).
-//                salesBranch(customerBookingRequest.getSalesBranch()).
-//                primarySalesAgentEmail(customerBookingRequest.getPrimarySalesAgentEmail()).
-//                secondarySalesAgentEmail(customerBookingRequest.getSecondarySalesAgentEmail()).
-//                containersList(consolidationDetails != null && !consolidationDetails.isEmpty() ? containerList : null).
-//                packingList(getPackingListRequestV3(customerBookingRequest)).
-//                fileRepoList(customerBookingRequest.getFileRepoList()).
-//                routingsList(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) ? null : customerBookingRequestRoutingList).
-//                consolidationList(isConsoleCreationNeededV3(customerBookingRequest) ? consolidationDetails : null).
-//                referenceNumbersList(createReferenceNumbersList(customerBookingRequest.getReferenceNumbersList())).
-//                notesList(createNotes(notes)).
-//                sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
-//                source("API").
-//                bookingType("ONLINE").
-//                consolRef(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getReferenceNumber() : "").
-//                masterBill(consolidationDetails != null && !consolidationDetails.isEmpty() ? consolidationDetails.iterator().next().getBol() : null).
-//                freightLocalCurrency(UserContext.getUser().CompanyCurrency).
-//                currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
-//                autoUpdateWtVol(true).
-//                build();
-//    }
-
     private List<PackingRequest> getPackingListRequest(CustomerBookingRequest customerBookingRequest) {
         return customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
             setHeightWidthUnit(obj);
@@ -1464,21 +1393,6 @@ public class ShipmentService implements IShipmentService {
             return obj;
         }).collect(Collectors.toList()) : null;
     }
-
-//    private List<PackingRequest> getPackingListRequestV3(CustomerBookingV3Request customerBookingRequest) {
-//        return customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
-//            setHeightWidthUnit(obj);
-//            if(obj.getWeight() != null)
-//                obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
-//            if(obj.getVolume() != null)
-//                obj.setVolume(obj.getVolume().multiply(new BigDecimal(obj.getPacks())));
-//            if(TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBookingRequest.getTransportType())) {
-//                calculateWeightVolumeForPacks(obj);
-//            }
-//
-//            return obj;
-//        }).collect(Collectors.toList()) : null;
-//    }
 
     private void calculateWeightVolumeForPacks(PackingRequest obj) {
         try {
@@ -2434,7 +2348,7 @@ public class ShipmentService implements IShipmentService {
         if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             handleNewConsoleAttachment(shipmentDetails, isCreate);
         } else {
-            handleExistingConsoleOrRouting(shipmentDetails, oldShipmentDetails, isRouteMasterEnabled, mainCarriageRoutings);
+            handleExistingConsoleOrRouting(shipmentDetails, isRouteMasterEnabled, mainCarriageRoutings);
         }
     }
 
@@ -2469,7 +2383,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void handleExistingConsoleOrRouting(ShipmentDetails shipmentDetails, ShipmentDetails oldShipmentDetails, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) throws RunnerException {
+    private void handleExistingConsoleOrRouting(ShipmentDetails shipmentDetails, boolean isRouteMasterEnabled, List<Routings> mainCarriageRoutings) {
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
             shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
             shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
@@ -3153,11 +3067,10 @@ public class ShipmentService implements IShipmentService {
 
     private void processSyncV1AndAsyncFunctions(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, boolean syncConsole, Hbl hbl, List<UUID> deletedContGuids, List<Packing> packsForSync, ConsolidationDetails consolidationDetails) {
         // Syncing shipment to V1
-        CompletableFuture<Void> bookingUpdateFuture = null;
         syncShipment(shipmentDetails, hbl, deletedContGuids, packsForSync, consolidationDetails, syncConsole);
         log.info("shipment afterSave syncShipment..... ");
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
-            bookingUpdateFuture = CompletableFuture.runAsync(
+            CompletableFuture.runAsync(
                     masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipmentDetails)),
                     executorService
             );
@@ -3165,9 +3078,6 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity)), executorService);
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
-        if (bookingUpdateFuture != null) {
-            bookingUpdateFuture.join();
-        }
     }
 
     private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
@@ -4318,14 +4228,23 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
+        log.info("Export Excel process started. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
             throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
         }
         request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
+        log.info("Fetching data with tables included: {}", request.getIncludeTbls());
         Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
         Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+        if (shipmentDetailsPage == null || shipmentDetailsPage.isEmpty()) {
+            log.warn("No shipment data found for export. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
+        } else {
+            log.info("Shipment data fetched. Total records: {}", shipmentDetailsPage.getTotalElements());
+        }
+
         log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ShipmentConstants.SHIPMENT_HEADERS.size(); i++) {
@@ -4335,12 +4254,15 @@ public class ShipmentService implements IShipmentService {
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ShipmentList");
             makeHeadersInSheet(sheet, workbook);
+            log.info("Excel headers created successfully.");
 
             //Filling the data
             List<IRunnerResponse> shipmentListResponseData = convertEntityListToDtoListForExport(shipmentDetailsPage.getContent());
+            log.info("Converted entity list to DTOs for export. Total DTO records: {}", shipmentListResponseData.size());
             for (int i = 0; i < shipmentListResponseData.size(); i++) {
                 processShipmentListResponseData(sheet, i, shipmentListResponseData, headerMap);
             }
+            log.info("Filled data into Excel sheet. Total rows written (excluding header): {}", shipmentListResponseData.size());
 
             LocalDateTime currentTime = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
@@ -4348,11 +4270,16 @@ public class ShipmentService implements IShipmentService {
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
             String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
             Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+
+            log.info("Export Excel limit is: {}. Records to export: {}", exportExcelLimit, shipmentListResponseData.size());
+
             if (shipmentListResponseData.size() > exportExcelLimit) {
                 // Send the file via email
+                log.info("Record count exceeds export limit. Sending Excel via email.");
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
             } else {
                 // Download it
+                response.reset();
                 response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
                 response.setHeader("Content-Disposition",
                     "attachment; filename=" + filenameWithTimestamp);
@@ -4360,12 +4287,14 @@ public class ShipmentService implements IShipmentService {
                 try (OutputStream outputStream = new BufferedOutputStream(
                     response.getOutputStream(), 8192 * 10)) {
                     workbook.write(outputStream);
+                    log.info("Excel file written to response successfully.");
                 } catch (IOException e) {
-                    log.error("Time out " + e.getMessage());
+                    log.error("Unexpected error during Excel export: {}", e.getMessage(), e);
                 }
             }
         }
 
+        log.info("Export Excel process completed. Request ID: {}", LoggerHelper.getRequestIdFromMDC());
     }
 
     private void processShipmentListResponseData(Sheet sheet, int i, List<IRunnerResponse> shipmentListResponseData, Map<String, Integer> headerMap) throws IllegalAccessException {
@@ -4424,7 +4353,7 @@ public class ShipmentService implements IShipmentService {
         addPartyNamesItemRow(headerMap, itemRow, shipment);
         itemRow.createCell(headerMap.get("HBL Number")).setCellValue(shipment.getHouseBill());
         itemRow.createCell(headerMap.get("BOE Number")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getBOENumber() : "");
-        itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? shipment.getAdditionalDetails().getScreeningStatus() : "");
+        itemRow.createCell(headerMap.get("Screening Status")).setCellValue(shipment.getAdditionalDetails() != null ? String.join(",",  shipment.getAdditionalDetails().getScreeningStatus()): "");
         addDateTimeDeliveryItemRows(headerMap, itemRow, shipment);
         itemRow.createCell(headerMap.get("Goods Description")).setCellValue(shipment.getGoodsDescription());
         itemRow.createCell(headerMap.get("Gross Weight")).setCellValue(String.valueOf(shipment.getWeight()));
@@ -6633,12 +6562,28 @@ public class ShipmentService implements IShipmentService {
 
             this.createShipmentPayload(null, response);
 
+            setOriginBranchMasterData(response);
+
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    public void setOriginBranchMasterData(ShipmentDetailsResponse response) {
+        if(response.getOriginBranch()!=null && response.getTenantIdsData()!=null){
+            Map<String, Object> masterDataMap = new HashMap<>();
+            Map<String, String> tenantMap = new HashMap<>();
+
+            String originDisplayName = response.getTenantIdsData().get("originBranch_displayName");
+            if (originDisplayName != null) {
+                tenantMap.put(String.valueOf(response.getOriginBranch()), originDisplayName);
+                masterDataMap.put("Tenants", tenantMap);
+                response.setMasterDataMap(masterDataMap);
+            }
         }
     }
 
@@ -6657,6 +6602,8 @@ public class ShipmentService implements IShipmentService {
             PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
             if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
                 response.getAdditionalDetails().setExportBroker(partiesResponse);
+                if(partiesResponse.getOrgData()!=null && partiesResponse.getOrgData().get("TenantId")!=null)
+                    response.setOriginBranch(Long.valueOf(partiesResponse.getOrgData().get("TenantId").toString()));
             } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
                 response.getAdditionalDetails().setImportBroker(partiesResponse);
             }
@@ -9695,112 +9642,6 @@ public class ShipmentService implements IShipmentService {
         }
 
     }
-
-//    @Override
-//    public ResponseEntity<IRunnerResponse> createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
-//        Set<ConsolidationDetailsRequest> consolidationDetails = new HashSet<>();
-//        Set<ContainerRequest> containerList = new HashSet<>();
-//        List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
-//        boolean isRouteMasterEnabled = commonUtils.getShipmentSettingFromContext().getEnableRouteMaster();
-//        if(isConsoleCreationNeededV3(customerBookingRequest))
-//        {
-//            ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
-//                    carrierDetails(CarrierDetailRequest.builder()
-//                            .origin(customerBookingRequest.getCarrierDetails().getOrigin())
-//                            .destination(customerBookingRequest.getCarrierDetails().getDestination())
-//                            .shippingLine(customerBookingRequest.getCarrierDetails().getShippingLine())
-//                            .vessel(customerBookingRequest.getCarrierDetails().getVessel())
-//                            .voyage(customerBookingRequest.getCarrierDetails().getVoyage())
-//                            .originPort(customerBookingRequest.getCarrierDetails().getOriginPort())
-//                            .destinationPort(customerBookingRequest.getCarrierDetails().getDestinationPort())
-//                            .flightNumber(customerBookingRequest.getCarrierDetails().getFlightNumber())
-//                            .build()
-//                    ).
-//                    consolidationType("STD").
-//                    transportMode(customerBookingRequest.getTransportType()).
-//                    containerCategory(customerBookingRequest.getCargoType()).
-//                    shipmentType(customerBookingRequest.getDirection()).
-//                    referenceNumber(customerBookingRequest.getBookingNumber()).
-//                    departureDetails(ArrivalDepartureDetailsRequest.builder().
-//                            firstForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
-//                            lastForeignPort(customerBookingRequest.getCarrierDetails().getOrigin()).
-//                            type("Departure").
-//                            build()
-//                    ).
-//                    arrivalDetails(ArrivalDepartureDetailsRequest.builder().
-//                            firstForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
-//                            lastForeignPort(customerBookingRequest.getCarrierDetails().getDestination()).
-//                            type("Arrival").
-//                            build()
-//                    ).
-//                    containersList(customerBookingRequest.getContainersList()).
-//                    sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
-//                    build();
-//            // Set Department in case single department is available
-//            consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
-//                    consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
-//            ));
-//            // Generate default routes based on O-D pairs
-//            if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(isRouteMasterEnabled)) {
-//                var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
-//                consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
-//            }
-//
-//            ConsolidationDetailsResponse consolDetailsResponse = consolidationService.createConsolidationForBooking(CommonRequestModel.buildRequest(consolidationDetailsRequest));
-//            if(consolDetailsResponse != null)
-//            {
-//                ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class);
-//                containerList = consolRequest.getContainersList() != null ? new HashSet<>(consolRequest.getContainersList()) : null;
-//                consolRequest.setContainersList(null);
-//                consolidationDetails.add(consolRequest);
-//            }
-//        }
-//
-//        List<RoutingsRequest> customerBookingRequestRoutingList = getCustomerBookingRequestRoutingList(customerBookingRequest.getCarrierDetails(), customerBookingRequest.getTransportType());
-//        ShipmentRequest shipmentRequest = getShipmentRequestFromBookingV3(customerBookingRequest, consolidationDetails, containerList, isRouteMasterEnabled, customerBookingRequestRoutingList, notes);
-//        // Set Department in case single department is available
-//        shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
-//                shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
-//        ));
-//        AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
-//        shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
-//        shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
-//        shipmentRequest.setWeight(autoUpdateWtVolResponse.getWeight());
-//        shipmentRequest.setWeightUnit(autoUpdateWtVolResponse.getWeightUnit());
-//        shipmentRequest.setVolume(autoUpdateWtVolResponse.getVolume());
-//        shipmentRequest.setVolumeUnit(autoUpdateWtVolResponse.getVolumeUnit());
-//        shipmentRequest.setChargable(
-//                autoUpdateWtVolResponse.getChargable() != null
-//                        ? autoUpdateWtVolResponse.getChargable().setScale(10, RoundingMode.HALF_UP).stripTrailingZeros()
-//                        : null
-//        );
-//        shipmentRequest.setChargeableUnit(autoUpdateWtVolResponse.getChargeableUnit());
-//        shipmentRequest.setVolumetricWeight(autoUpdateWtVolResponse.getVolumetricWeight());
-//        shipmentRequest.setVolumetricWeightUnit(autoUpdateWtVolResponse.getVolumetricWeightUnit());
-//        shipmentRequest.setNetWeight(autoUpdateWtVolResponse.getNetWeight());
-//        shipmentRequest.setNetWeightUnit(autoUpdateWtVolResponse.getNetWeightUnit());
-//        shipmentRequest.setInnerPacks(autoUpdateWtVolResponse.getInnerPacks());
-//        shipmentRequest.setInnerPackUnit(autoUpdateWtVolResponse.getInnerPackUnit());
-//        shipmentRequest.setOrderManagementId(customerBookingRequest.getOrderManagementId());
-//        shipmentRequest.setOrderManagementNumber(customerBookingRequest.getOrderManagementNumber());
-//        if(!StringUtility.isEmpty(customerBookingRequest.getOrderManagementId())) {
-//            shipmentRequest.setShipmentOrders(Arrays.asList(ShipmentOrderRequest.builder().orderNumber(customerBookingRequest.getOrderManagementNumber()).orderGuid(UUID.fromString(customerBookingRequest.getOrderManagementId())).build()));
-//        }
-//
-//        if(customerBookingRequest.getOrderManagementId()!=null){
-//            ShipmentDetails shipmentDetails = null;
-//            shipmentDetails = orderManagementAdapter.getOrderByGuid(customerBookingRequest.getOrderManagementId());
-//
-//            if(shipmentDetails!=null){
-//                processShipmentRequestFromDetails(shipmentRequest, shipmentDetails);
-//            }
-//
-//        }
-//
-//        shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
-//        shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
-//        return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
-//    }
 
     private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();

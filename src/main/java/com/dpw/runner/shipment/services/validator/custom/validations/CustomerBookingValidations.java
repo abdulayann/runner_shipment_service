@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.Optional;
+
 @Service
 @Slf4j
 public class CustomerBookingValidations {
@@ -73,8 +74,8 @@ public class CustomerBookingValidations {
         // If TransportModeConfig flag is ON, this block will check for the valid transport mode
         // If oldEntity is null (Create) OR transport mode is getting updated (Update)
         if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && (Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType()))
-                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
-                throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
+                && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
+            throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
         }
     }
 
@@ -123,7 +124,6 @@ public class CustomerBookingValidations {
 
         if (Objects.isNull(entity.getCargoType()))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Cargo Type"));
-
 
     }
 

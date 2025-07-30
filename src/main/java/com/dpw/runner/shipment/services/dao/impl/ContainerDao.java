@@ -508,6 +508,12 @@ public class ContainerDao implements IContainerDao {
     }
 
     @Override
+    public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToShipment(List<Long> containerIds) {
+        return containerRepository.filterContainerIdsAttachedToShipment(containerIds);
+    }
+
+
+    @Override
     public List<ContainerDeleteInfoProjection> filterContainerIdsAttachedToPacking(List<Long> containerIds) {
         return containerRepository.filterContainerIdsAttachedToPacking(containerIds);
     }
@@ -525,6 +531,26 @@ public class ContainerDao implements IContainerDao {
     @Override
     public List<ContainerInfoProjection> findByContainerIds(List<Long> containerIds) {
         return containerRepository.findByContainerIds(containerIds);
+    }
+
+    @Override
+    public void deleteAdditionalDataByContainersIdsConsolidationId(List<Long> containersIds, Long consolidationId) {
+        containerRepository.deleteAdditionalDataByContainersIdsConsolidationId(containersIds, consolidationId);
+    }
+
+    @Override
+    public void revertSoftDeleteByContainersIdsAndConsolidationId(List<Long> containersIds, Long consolidationId) {
+        containerRepository.revertSoftDeleteByContainersIdsAndConsolidationId(containersIds, consolidationId);
+    }
+
+    @Override
+    public void deleteAdditionalDataByContainersIdsBookingId(List<Long> containersIds, Long bookingId) {
+        containerRepository.deleteAdditionalDataByContainersIdsBookingId(containersIds, bookingId);
+    }
+
+    @Override
+    public void revertSoftDeleteByContainersIdsAndBookingId(List<Long> containersIds, Long consolidationId) {
+        containerRepository.revertSoftDeleteByContainersIdsAndBookingId(containersIds, consolidationId);
     }
 
 }

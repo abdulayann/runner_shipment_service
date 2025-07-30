@@ -30,4 +30,6 @@ public class TransportInstructionLegsTruckDriverRequest implements IRunnerReques
     @Size(max = 20, message = "max size is 20 for trailer number plate")
     private String trailerNumberPlate;
     private String truckOrTrailerType;
+    @Size(max = 50, message = "max size is 50 for driver id")
+    private String driverId;
 }

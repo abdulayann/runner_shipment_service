@@ -1,11 +1,16 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +31,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 @Execution(CONCURRENT)
-class MasterDataKeyUtilsTest {
+class MasterDataKeyUtilsTest extends CommonMocks {
 
     @Mock
     CacheManager cacheManager;
@@ -40,6 +45,9 @@ class MasterDataKeyUtilsTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(
+                V1TenantSettingsResponse.builder().P100Branch(false).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
     }
 
     @Test
@@ -71,6 +79,28 @@ class MasterDataKeyUtilsTest {
         Map<String, Object> masterDataResponse = new HashMap<>();
         Cache cache = mock(Cache.class);
 
+        mockShipmentSettings();
+        when(keyGenerator.customCacheKeyForMasterData(anyString(),anyString())).thenReturn(new StringBuilder("xyz"));
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(EntityTransferUnLocations::new);
+
+        masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, null);
+
+        assertTrue(masterDataResponse.containsKey(CacheConstants.UNLOCATIONS));
+    }
+
+    @Test
+    void testSetMasterDataValue_Unlocations_v3() {
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+        Map<String, String> valueMap = new HashMap<>();
+        valueMap.put("key", "value");
+        fieldNameKeyMap.put("field", valueMap);
+
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        Cache cache = mock(Cache.class);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsRunnerV3Enabled(true);
+        mockShipmentSettings();
         when(keyGenerator.customCacheKeyForMasterData(anyString(),anyString())).thenReturn(new StringBuilder("xyz"));
         when(cacheManager.getCache(any())).thenReturn(cache);
         when(cache.get(any())).thenReturn(EntityTransferUnLocations::new);

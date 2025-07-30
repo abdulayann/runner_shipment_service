@@ -5,6 +5,10 @@ import com.dpw.runner.shipment.services.exception.exceptions.*;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpHeaders;
@@ -18,8 +22,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-
-import java.util.List;
 
 @ControllerAdvice
 @Slf4j
@@ -39,6 +41,15 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     })
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<IRunnerResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        String errorMessages = ex.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+        return ResponseHelper.buildFailedResponse(errorMessages, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler({DpsException.class})
@@ -69,6 +80,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(InvalidAuthenticationException.class)
     public final ResponseEntity<IRunnerResponse> handleAuthenticationException(InvalidAuthenticationException ex) {
         return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(V1ServiceException.class)
+    public ResponseEntity<IRunnerResponse> handleV1ServiceException(V1ServiceException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @Override
@@ -111,5 +127,10 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({SectionFieldsException.class})
     private ResponseEntity<IRunnerResponse> handleSectionFieldsException(final SectionFieldsException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({BackupFailureException.class, RestoreFailureException.class})
+    public final ResponseEntity<IRunnerResponse> handleBackupFailureException(final BackupFailureException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

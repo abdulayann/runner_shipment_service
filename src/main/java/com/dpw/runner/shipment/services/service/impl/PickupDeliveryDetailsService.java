@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
@@ -21,21 +22,19 @@ import com.dpw.runner.shipment.services.dto.request.TiReferencesRequest;
 import com.dpw.runner.shipment.services.dto.request.TiTruckDriverDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
-import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -53,8 +52,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -64,11 +61,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
@@ -87,16 +81,21 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private ExecutorService executorService;
 
     private IKafkaAsyncService kafkaAsyncService;
-    private IV1Service v1Service;
     private TransportInstructionValidationUtil transportInstructionValidationUtil;
     private IContainerV3Service containerV3Service;
     private static final Pattern DIMENSION_PATTERN = Pattern.compile(
             "^\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*[xX×]\\s*(\\d+(\\.\\d+)?)\\s*$"
     );
+    public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry(Constants.TRANSPORT_DETAIL_SHIPMENT_ID, RunnerEntityMapping.builder().tableName(Constants.PICKUP_DELIVERY_DETAILS).dataType(Long.class).fieldName(Constants.TRANSPORT_DETAIL_SHIPMENT_ID).isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_DETAIL_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.TRANSPORT_DETAIL).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_DETAIL_INSTRUCTION_TYPE, RunnerEntityMapping.builder().tableName(Constants.PICKUP_DELIVERY_DETAILS).dataType(InstructionType.class).fieldName(Constants.TRANSPORT_DETAIL_INSTRUCTION_TYPE).isContainsText(true).build()),
+            Map.entry(Constants.TRANSPORT_DETAIL_TI_REFERENCE, RunnerEntityMapping.builder().tableName(Constants.PICKUP_DELIVERY_DETAILS).dataType(String.class).fieldName(Constants.TRANSPORT_DETAIL_TI_REFERENCE).isContainsText(true).build())
+    );
 
     @Autowired
     public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, ExecutorService executorService,
-                                        KafkaAsyncService kafkaAsyncService, IV1Service v1Service, TransportInstructionValidationUtil transportInstructionValidationUtil, IContainerV3Service containerV3Service) {
+                                        KafkaAsyncService kafkaAsyncService, TransportInstructionValidationUtil transportInstructionValidationUtil, IContainerV3Service containerV3Service) {
         this.pickupDeliveryDetailsDao = pickupDeliveryDetailsDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -105,7 +104,6 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         this.masterDataUtils = masterDataUtils;
         this.executorService = executorService;
         this.kafkaAsyncService = kafkaAsyncService;
-        this.v1Service = v1Service;
         this.transportInstructionValidationUtil = transportInstructionValidationUtil;
         this.containerV3Service = containerV3Service;
     }
@@ -146,6 +144,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         validateTransportInstructionLegsPackagesDetails(request);
         PickupDeliveryDetails pickupDeliveryDetails = convertRequestToEntity(request);
         pickupDeliveryDetails.setId(oldEntity.get().getId());
+        pickupDeliveryDetails.setTiLegsList(oldEntity.get().getTiLegsList());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
             beforeSave(pickupDeliveryDetails);
@@ -589,7 +588,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 return ResponseHelper.buildFailedResponse("Request is empty for Pickup Delivery list with Request Id " + LoggerHelper.getRequestIdFromMDC());
             }
             // construct specifications for filter request
-            Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class);
+            Pair<Specification<PickupDeliveryDetails>, Pageable> tuple = fetchData(request, PickupDeliveryDetails.class, tableNames);
             Page<PickupDeliveryDetails> pickupDeliveryDetailsPage = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Pickup Delivery list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
@@ -684,7 +683,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             Map<String, RAKCDetailsResponse> rakcDetailsMap = new HashMap<>();
             if (Boolean.TRUE.equals(populateRAKC)) {
                 getAddressIds(pickupDeliveryDetails.get(), addressIds);
-                rakcDetailsMap = this.getRAKCDetailsMap(addressIds.stream().toList());
+                rakcDetailsMap = commonUtils.getRAKCDetailsMap(addressIds.stream().toList());
             }
             PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetails.get());
             if (Boolean.TRUE.equals(populateRAKC) && !rakcDetailsMap.isEmpty()) {
@@ -711,7 +710,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         if (Boolean.TRUE.equals(populateRAKC)) {
             Set<String> addressIds = new HashSet<>();
             lst.forEach(pickupDeliveryDetails -> getAddressIds(pickupDeliveryDetails, addressIds));
-            rakcDetailsMap = this.getRAKCDetailsMap(addressIds.stream().toList());
+            rakcDetailsMap = commonUtils.getRAKCDetailsMap(addressIds.stream().toList());
         } else {
             rakcDetailsMap = new HashMap<>();
         }
@@ -813,30 +812,5 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
             pickupDeliveryDetails.getDestinationDetail().setRAKCDetails(rakcDetailsMap.getOrDefault(pickupDeliveryDetails.getDestinationDetail().getAddressId(), null));
         }
-    }
-
-    private Map<String, RAKCDetailsResponse> getRAKCDetailsMap(List<String> addressIds) {
-        if (CommonUtils.listIsNullOrEmpty(addressIds)) {
-            return Collections.emptyMap();
-        }
-
-        CommonV1ListRequest request = convertV1InCriteriaRequest("Id", addressIds);
-        V1DataResponse addressResponse = v1Service.addressList(request);
-
-        List<RAKCDetailsResponse> rakcDetailsList =
-                jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class);
-
-        return CommonUtils.listIsNullOrEmpty(rakcDetailsList)
-                ? Collections.emptyMap()
-                : rakcDetailsList.stream().collect(Collectors.toMap(rakc -> String.valueOf(rakc.getId()), Function.identity()));
-    }
-
-    private CommonV1ListRequest convertV1InCriteriaRequest(String filterValue, List<?> values) {
-        List<String> itemType = new ArrayList<>();
-        itemType.add(filterValue);
-        List<List<?>> param = new ArrayList<>();
-        param.add(values);
-        List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
-        return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
     }
 }

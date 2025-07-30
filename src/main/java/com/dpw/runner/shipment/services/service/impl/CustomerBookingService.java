@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
@@ -228,6 +229,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         populateTotalRevenueDetails(customerBooking, request);
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
@@ -380,7 +382,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT) && !checkForCreditLimitManagement(customerBooking)){
             throw new RunnerException("Request for credit limit has not been approved. Hence cannot proceed.");
         }
-
+        customerBooking.setMigrationStatus(MigrationStatus.CREATED_IN_V2);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
 
@@ -575,12 +577,6 @@ public class CustomerBookingService implements ICustomerBookingService {
                 log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-
-            //Fetch all parties based on entity type and entity id and exclude certain parties and keep remaining ones as additional parties
-            List<Parties> allParties = partiesDao.findByEntityIdAndEntityType(customerBooking.get().getId(), "CUSTOMER_BOOKING");
-            List<String> excludedTypes = Arrays.asList("CLIENT", "CONSIGNOR", "CONSIGNEE", "NOTIFY PARTY");
-            List<Parties> additionalParties = allParties.stream().filter(party -> !excludedTypes.contains(party.getType())).toList();
-            customerBooking.get().setAdditionalParties(additionalParties);
 
             double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());

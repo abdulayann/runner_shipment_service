@@ -36,7 +36,7 @@ class EntityTransferV3ControllerTest {
     private EntityTransferV3Controller entityTransferController;
 
     @Test
-    void sendShipment() {
+    void sendShipment() throws RunnerException {
         // Mock
         when(entityTransferService.sendShipment(any())).thenReturn(new ArrayList<>());
         // Test
@@ -46,7 +46,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void sendShipment2() {
+    void sendShipment2() throws RunnerException {
         // Mock
         when(entityTransferService.sendShipment(any())).thenThrow(new RuntimeException());
         SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder().build();
@@ -55,7 +55,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void sendConsolidation() {
+    void sendConsolidation() throws RunnerException {
         // Mock
         when(entityTransferService.sendConsolidation(any())).thenReturn(new ArrayList<>());
         // Test
@@ -65,7 +65,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void sendConsolidation2() {
+    void sendConsolidation2() throws RunnerException {
         // Mock
         when(entityTransferService.sendConsolidation(any())).thenThrow(new RuntimeException());
 
@@ -74,7 +74,7 @@ class EntityTransferV3ControllerTest {
     }
 
     @Test
-    void sendConsolidation3() {
+    void sendConsolidation3() throws RunnerException {
         // Mock
         when(entityTransferService.sendConsolidation(any())).thenThrow(new RuntimeException("RuntimeException"));
         SendConsolidationRequest  sendConsolidationRequest = SendConsolidationRequest.builder().build();

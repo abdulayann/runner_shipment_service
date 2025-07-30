@@ -5,6 +5,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
@@ -55,6 +56,8 @@ public class PushToDownstreamService implements IPushToDownstreamService {
     @Autowired
     private IShipmentDao shipmentDao;
     @Autowired
+    private IContainerDao containerDao;
+    @Autowired
     private ICustomerBookingDao customerBookingDao;
     @Autowired
     private IV1Service v1Service;
@@ -89,77 +92,84 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         v1Service.setAuthContext();
         // Process the messages based on parent entity - "SHIPMENT", "CONSOLIDATION"
         if (Objects.equals(message.getParentEntityName(), Constants.SHIPMENT)) {
-            this.pushShipmentData(message.getParentEntityId(), message.getMeta().getIsCreate(), message.getMeta().getIsAutoSellRequired());
-
-            // Processing the Dependent Triggers for given parent trigger
-            if (message.getTriggers() != null) {
-                message.getTriggers().forEach(trigger -> {
-
-                    // Dependent Triggers for Shipment
-                    if (Objects.equals(trigger.getEntityName(), Constants.SHIPMENT)) {
-                        this.pushShipmentData(trigger.getEntityId(), false, false);
-                    }
-                });
-            }
-
+            processShipmentData(message);
         } else if (Constants.CONTAINER.equalsIgnoreCase(message.getParentEntityName())) {
-            if (Constants.CONTAINER_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
-                log.info("[InternalKafkaPush] Pushing container data | containerId={} | transactionId={}",
-                        message.getParentEntityId(), transactionId);
-
-                this.pushContainerData(message, transactionId);
-
-                // Processing the Dependent Triggers for given parent trigger
-                if (message.getTriggers() != null) {
-                    log.info("[InternalKafkaPush] Found {} dependent triggers for containerId={} | transactionId={}",
-                            message.getTriggers().size(), message.getParentEntityId(), transactionId);
-
-                    message.getTriggers().forEach(trigger -> {
-                        String triggerEntity = trigger.getEntityName();
-                        Long triggerEntityId = trigger.getEntityId();
-
-                        if (Objects.equals(triggerEntity, Constants.SHIPMENT)) {
-                            log.info("[InternalKafkaPush] Triggering shipment push | shipmentId={} | source=Container | transactionId={}",
-                                    triggerEntityId, transactionId);
-                            this.pushShipmentData(triggerEntityId, false, false);
-                        }
-
-                        if (Objects.equals(triggerEntity, Constants.CONSOLIDATION)) {
-
-                            log.info("[InternalKafkaPush] Triggering consolidation push | consolidationId={} | phase=AFTER_SAVE | transactionId={}",
-                                    triggerEntityId, transactionId);
-                            PushToDownstreamEventDto build1 = PushToDownstreamEventDto.builder()
-                                    .parentEntityId(trigger.getEntityId())
-                                    .parentEntityName(CONSOLIDATION)
-                                    .meta(Meta.builder()
-                                            .sourceInfo(Constants.CONSOLIDATION_AFTER_SAVE)
-                                            .isCreate(Boolean.FALSE)
-                                            .tenantId(message.getMeta().getTenantId()).build()).build();
-                            pushConsolidationDataToService(build1, transactionId);
-
-                            log.info("[InternalKafkaPush] Triggering consolidation push | consolidationId={} | phase=AFTER_SAVE_TO_TRACKING | transactionId={}",
-                                    triggerEntityId, transactionId);
-                            PushToDownstreamEventDto build2 = PushToDownstreamEventDto.builder()
-                                    .parentEntityId(trigger.getEntityId())
-                                    .parentEntityName(CONSOLIDATION)
-                                    .meta(Meta.builder()
-                                            .sourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING)
-                                            .isCreate(Boolean.FALSE)
-                                            .tenantId(message.getMeta().getTenantId()).build()).build();
-                            pushConsolidationDataToService(build2, transactionId);
-                        }
-                    });
-                } else {
-                    log.info("[InternalKafkaPush] No dependent triggers found for containerId={} | transactionId={}",
-                            message.getParentEntityId(), transactionId);
-                }
-            }
+            processContainerData(message, transactionId);
         } else if (Constants.CONSOLIDATION.equalsIgnoreCase(message.getParentEntityName())) {
             pushConsolidationDataToService(message, transactionId);
         } else if (Objects.equals(message.getParentEntityName(), Constants.CUSTOMER_BOOKING)) {
             this.pushCustomerBookingDataToPlatform(message, transactionId);
         } else if (Objects.equals(message.getParentEntityName(), Constants.TRANSPORT_INSTRUCTION)) {
             pushTransportInstructionDataToTIQueue(message, transactionId);
+        }
+    }
+
+    private void processContainerData(PushToDownstreamEventDto message, String transactionId) {
+
+        if (Constants.CONTAINER_AFTER_SAVE.equalsIgnoreCase(message.getMeta().getSourceInfo())) {
+            log.info("[InternalKafkaPush] Pushing container data | containerId={} | transactionId={}",
+                    message.getParentEntityId(), transactionId);
+
+            this.pushContainerData(message, transactionId);
+
+            // Processing the Dependent Triggers for given parent trigger
+            if (message.getTriggers() != null) {
+                log.info("[InternalKafkaPush] Found {} dependent triggers for containerId={} | transactionId={}",
+                        message.getTriggers().size(), message.getParentEntityId(), transactionId);
+
+                message.getTriggers().forEach(trigger -> {
+                    String triggerEntity = trigger.getEntityName();
+                    Long triggerEntityId = trigger.getEntityId();
+
+                    if (Objects.equals(triggerEntity, Constants.SHIPMENT)) {
+                        log.info("[InternalKafkaPush] Triggering shipment push | shipmentId={} | source=Container | transactionId={}",
+                                triggerEntityId, transactionId);
+                        this.pushShipmentData(triggerEntityId, false, false);
+                    }
+
+                    if (Objects.equals(triggerEntity, Constants.CONSOLIDATION)) {
+
+                        log.info("[InternalKafkaPush] Triggering consolidation push | consolidationId={} | phase=AFTER_SAVE | transactionId={}",
+                                triggerEntityId, transactionId);
+                        PushToDownstreamEventDto build1 = PushToDownstreamEventDto.builder()
+                                .parentEntityId(trigger.getEntityId())
+                                .parentEntityName(CONSOLIDATION)
+                                .meta(Meta.builder()
+                                        .sourceInfo(Constants.CONSOLIDATION_AFTER_SAVE)
+                                        .isCreate(Boolean.FALSE)
+                                        .tenantId(message.getMeta().getTenantId()).build()).build();
+                        pushConsolidationDataToService(build1, transactionId);
+
+                        log.info("[InternalKafkaPush] Triggering consolidation push | consolidationId={} | phase=AFTER_SAVE_TO_TRACKING | transactionId={}",
+                                triggerEntityId, transactionId);
+                        PushToDownstreamEventDto build2 = PushToDownstreamEventDto.builder()
+                                .parentEntityId(trigger.getEntityId())
+                                .parentEntityName(CONSOLIDATION)
+                                .meta(Meta.builder()
+                                        .sourceInfo(Constants.CONSOLIDATION_AFTER_SAVE_TO_TRACKING)
+                                        .isCreate(Boolean.FALSE)
+                                        .tenantId(message.getMeta().getTenantId()).build()).build();
+                        pushConsolidationDataToService(build2, transactionId);
+                    }
+                });
+            } else {
+                log.info("[InternalKafkaPush] No dependent triggers found for containerId={} | transactionId={}",
+                        message.getParentEntityId(), transactionId);
+            }
+        }
+    }
+
+    private void processShipmentData(PushToDownstreamEventDto message) {
+
+        this.pushShipmentData(message.getParentEntityId(), message.getMeta().getIsCreate(), message.getMeta().getIsAutoSellRequired());
+        // Processing the Dependent Triggers for given parent trigger
+        if (message.getTriggers() != null) {
+            message.getTriggers().forEach(trigger -> {
+                // Dependent Triggers for Shipment
+                if (Objects.equals(trigger.getEntityName(), Constants.SHIPMENT)) {
+                    this.pushShipmentData(trigger.getEntityId(), false, false);
+                }
+            });
         }
     }
 
@@ -212,6 +222,11 @@ public class PushToDownstreamService implements IPushToDownstreamService {
         String message = jsonHelper.convertToJson(kafkaResponse);
         log.debug("[InternalKafkaConsume] Kafka payload: {} | transactionId={}",
                 message, transactionId);
+
+        if(container.getConsolidationId() != null) {
+            List<Containers> containersList1 = containerDao.findByConsolidationId(container.getConsolidationId());
+            containerV3Service.pushContainersToDependentServices(containersList1);
+        }
 
         // Send message to Kafka
         producer.produceToKafka(message, containerKafkaQueue, transactionId);

@@ -208,4 +208,6 @@ public interface IV1Service {
     List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request);
 
     V1DataResponse fetchActiveUnlocation(Object request);
+
+    V1RetrieveResponse retrieveTenantByTenantId(Object request);
 }

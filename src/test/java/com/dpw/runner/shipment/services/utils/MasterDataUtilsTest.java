@@ -21,9 +21,11 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doReturn;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -103,7 +105,7 @@ import org.springframework.test.context.TestPropertySource;
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 @TestPropertySource("classpath:application-test.properties")
-class MasterDataUtilsTest {
+class MasterDataUtilsTest extends CommonMocks {
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -121,8 +123,6 @@ class MasterDataUtilsTest {
     CustomKeyGenerator keyGenerator;
     @Mock
     private ModelMapper modelMapper;
-    @Mock
-    private CommonUtils commonUtils;
     @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @Mock
@@ -148,6 +148,7 @@ class MasterDataUtilsTest {
     @BeforeEach
     void setup() throws NoSuchFieldException, IllegalAccessException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
         customerBooking = jsonTestUtility.getCustomerBooking();
 
@@ -1786,6 +1787,7 @@ class MasterDataUtilsTest {
         var inputFieldNameKeyMap = new HashMap<String, String>();
         inputFieldNameKeyMap.put("field", "value");
 
+        mockShipmentSettings();
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
@@ -1803,6 +1805,7 @@ class MasterDataUtilsTest {
         var inputFieldNameKeyMap = new HashMap<String, String>();
         inputFieldNameKeyMap.put("field", "value");
 
+        mockShipmentSettings();
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), anyString())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferUnLocations.builder().LocCode("LocCode").NameWoDiacritics("NameWoDiacritics").lookupDesc("lookupDesc").build());
@@ -2168,6 +2171,28 @@ class MasterDataUtilsTest {
 
         when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
         masterDataUtils.setLocationData(List.of(ConsolidationDetailsResponse.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData10() {
+        boolean isSuccess = true;
+        Cache cache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(cache);
+
+        when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
+
+        when(cache.get(any())).thenReturn(() -> EntityTransferMasterLists.builder().ValuenDesc("").build());
+        masterDataUtils.setLocationData(List.of(CustomerBookingV3Response.builder().carrierDetails(CarrierDetailResponse.builder().build()).build()), EntityTransferConstants.UNLOCATION_CODE);
+
+        assertTrue(isSuccess);
+    }
+
+    @Test
+    void setLocationData11() {
+        boolean isSuccess = true;
+        masterDataUtils.setLocationData(List.of(CustomerBookingV3Response.builder().build()), EntityTransferConstants.UNLOCATION_CODE);
 
         assertTrue(isSuccess);
     }

@@ -7,11 +7,14 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiLegDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -21,11 +24,15 @@ import com.dpw.runner.shipment.services.kafka.dto.PushToDownstreamEventDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ITransportInstructionLegsService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,10 +42,15 @@ import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -55,6 +67,15 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
     private IAuditLogService auditLogService;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private MasterDataUtils masterDataUtils;
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
+    @Autowired
+    private TransportInstructionValidationUtil transportInstructionValidationUtil;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     @Transactional
@@ -64,13 +85,20 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         log.info("Starting Transport Instruction Legs creation | Request ID: {} | Request Body: {}", requestId, request);
         Long tiId = request.getTiId();
         Optional<PickupDeliveryDetails> transportInstruction = pickupDeliveryDetailsRepository.findById(tiId);
-        if (!transportInstruction.isPresent()) {
+        if (transportInstruction.isEmpty()) {
             throw new ValidationException("Transport Instruction does not exist for tiId: " + tiId);
         }
         validateTransportInstructionLegs(request);
         // Convert DTO to Entity
         TiLegs tiLegs = jsonHelper.convertValue(request, TiLegs.class);
-        tiLegs.setSequence(Long.valueOf(transportInstruction.get().getTiLegsList() != null ? transportInstruction.get().getTiLegsList().size() : 0) + 1);
+        List<TiLegs> tiLegsList = transportInstruction.get().getTiLegsList();
+        if (!CollectionUtils.isEmpty(tiLegsList)) {
+            long sequence = 1L;
+            for (TiLegs leg : tiLegsList) {
+                leg.setSequence(sequence++);
+            }
+        }
+        tiLegs.setSequence((long) (tiLegsList != null ? tiLegsList.size() : 0) + 1);
         tiLegs.setPickupDeliveryDetailsId(tiId);
         log.debug("Converted Transport Instruction Legs request to entity | Entity: {}", tiLegs);
         // Save to DB
@@ -82,7 +110,7 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         log.info("Audit log recorded for Transport Instruction Legs creation | Transport Instruction Legs ID: {}", tiLegsEntity.getId());
 
         TransportInstructionLegsResponse response = jsonHelper.convertValue(tiLegsEntity, TransportInstructionLegsResponse.class);
-        log.info("Returning Transport Instruction Legs response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
+        log.info("Returning Transport Instruction Legs create response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
         // Triggering Event for shipment and console for DependentServices update
         triggerPushToDownStreamForTransportInstruction(tiLegsEntity.getPickupDeliveryDetailsId());
         return response;
@@ -124,14 +152,14 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         log.info("Audit log recorded for Transport Instruction Legs Update | Transport Instruction Legs ID: {}", tiLegsEntity.getId());
 
         TransportInstructionLegsResponse response = jsonHelper.convertValue(tiLegsEntity, TransportInstructionLegsResponse.class);
-        log.info("Returning Transport Instruction Legs response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
+        log.info("Returning Transport Instruction Legs update response | Transport Instruction Legs ID: {} | Response: {}", tiLegsEntity.getId(), response);
         // Triggering Event for shipment and console for DependentServices update
         triggerPushToDownStreamForTransportInstruction(tiLegsEntity.getPickupDeliveryDetailsId());
         return response;
     }
 
     @Override
-    public TransportInstructionLegsListResponse list(ListCommonRequest request) {
+    public TransportInstructionLegsListResponse list(ListCommonRequest request, boolean getMasterData) {
         // construct specifications for filter request
         Pair<Specification<TiLegs>, Pageable> tuple = fetchData(request, TiLegs.class);
         Page<TiLegs> tiLegsPage = tiLegsDao.findAll(tuple.getLeft(), tuple.getRight());
@@ -139,6 +167,23 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         TransportInstructionLegsListResponse transportInstructionLegsListResponse = new TransportInstructionLegsListResponse();
         if (tiLegsPage != null) {
             List<TransportInstructionLegsResponse> responseList = convertEntityListToDtoList(tiLegsPage.getContent());
+            if (getMasterData) {
+                Map<String, Object> masterDataResponse = this.getMasterDataForList(responseList, getMasterData);
+                transportInstructionLegsListResponse.setMasterData(masterDataResponse);
+            }
+            Map<String, RAKCDetailsResponse> rakcDetailsMap;
+            if (Boolean.TRUE.equals(request.getPopulateRAKC())) {
+                Set<String> addressIds = new HashSet<>();
+                responseList.forEach(transportInstructionLegsResponse -> getAddressIds(transportInstructionLegsResponse, addressIds));
+                rakcDetailsMap = commonUtils.getRAKCDetailsMap(addressIds.stream().toList());
+            } else {
+                rakcDetailsMap = new HashMap<>();
+            }
+            responseList.forEach(response -> {
+                if (Boolean.TRUE.equals(request.getPopulateRAKC()) && !rakcDetailsMap.isEmpty()) {
+                    this.populateRAKCDetails(response, rakcDetailsMap);
+                }
+            });
             transportInstructionLegsListResponse.setTiLegsResponses(responseList);
             transportInstructionLegsListResponse.setTotalPages(tiLegsPage.getTotalPages());
             transportInstructionLegsListResponse.setTotalCount(tiLegsPage.getTotalElements());
@@ -147,16 +192,47 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
         return transportInstructionLegsListResponse;
     }
 
+    private void populateRAKCDetails(TransportInstructionLegsResponse transportInstructionLegsResponse, Map<String, RAKCDetailsResponse> rakcDetailsMap) {
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getOrigin())) {
+            transportInstructionLegsResponse.getOrigin().setRAKCDetails(rakcDetailsMap.getOrDefault(transportInstructionLegsResponse.getOrigin().getAddressId(), null));
+        }
+
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getDestination())) {
+            transportInstructionLegsResponse.getDestination().setRAKCDetails(rakcDetailsMap.getOrDefault(transportInstructionLegsResponse.getDestination().getAddressId(), null));
+        }
+    }
+
+    private void getAddressIds(TransportInstructionLegsResponse transportInstructionLegsResponse, Set<String> addressIds) {
+
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getOrigin())) {
+            addressIds.add(transportInstructionLegsResponse.getOrigin().getAddressId());
+        }
+
+        if (CommonUtils.checkAddressNotNull(transportInstructionLegsResponse.getDestination())) {
+            addressIds.add(transportInstructionLegsResponse.getDestination().getAddressId());
+        }
+    }
+
     @Override
     @Transactional
     public TransportInstructionLegsResponse delete(Long id) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Optional<TiLegs> tiLegs = tiLegsDao.findById(id);
-        if (!tiLegs.isPresent()) {
+        if (tiLegs.isEmpty()) {
             throw new ValidationException("Invalid Ti legs Id: " + id);
         }
         TiLegs tiLegsEntity = tiLegs.get();
-        tiLegsDao.delete(tiLegsEntity);
-
+        Long pickupDeliveryId = tiLegsEntity.getPickupDeliveryDetailsId();
+        Optional<PickupDeliveryDetails> transportInstruction = pickupDeliveryDetailsRepository.findById(pickupDeliveryId);
+        if (transportInstruction.isPresent()) {
+            List<TiLegs> tiLegsList = transportInstruction.get().getTiLegsList();
+            tiLegsList.removeIf(tiLeg -> Objects.equals(tiLeg.getId(), id));
+            if (!CollectionUtils.isEmpty(tiLegsList)) {
+                long sequence = 1L;
+                for (TiLegs leg : tiLegsList) {
+                    leg.setSequence(sequence++);
+                }
+            }
+        }
         recordAuditLogs(tiLegsEntity, null, DBOperationType.DELETE);
 
         // Triggering Event for shipment and console for DependentServices update
@@ -273,5 +349,20 @@ public class TransportInstructionLegsServiceImpl implements ITransportInstructio
                 throw new ValidationException("Actual Delivery cannot be earlier than Actual Pickup.");
             }
         }
+    }
+
+    private Map<String, Object> getMasterDataForList(List<TransportInstructionLegsResponse> responseList, boolean getMasterData) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var dropModeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> transportInstructionValidationUtil.addAllTiLegsMasterDataInSingleCallList(responseList, masterDataResponse)), executorServiceMasterData);
+                CompletableFuture.allOf(dropModeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.TI_LEGS_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_MESSAGE, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_TI_LEGS_LIST, ex.getMessage());
+            }
+        }
+        return masterDataResponse;
     }
 }

@@ -67,6 +67,7 @@ public class Constants {
     public static final String PIECES = "Pieces";
     public static final String MULTI_PACK = "Multi Pack";
     public static final String CONTAINER = "CONTAINER";
+    public static final String CONTAINER_INTERNAL_CALL = "CONTAINER_INTERNAL_CALL";
     public static final String PACKAGES = "Packages";
     public static final String CARRIAGE = "CARRIAGE";
     public static final String PRE_CARRIAGE = "PreCarriage";
@@ -259,6 +260,7 @@ public class Constants {
     public static final String DECI = "DM";
     public static final String INCH = "IN";
     public static final String SHIPMENT_ADDRESSES = "SHIPMENT_ADDRESSES";
+    public static final String BOOKING_ADDITIONAL_PARTY = "BOOKING_ADDITIONAL_PARTY";
     public static final String CONSOLIDATION_ADDRESSES = "CONSOLIDATION_ADDRESSES";
     public static final String PICK_UP = "Pickup";
     public static final String DELIVERY = "Delivery";
@@ -644,6 +646,7 @@ public class Constants {
     public static final String MINUTE = "minute";
     public static final String SECOND = "second";
     public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
+    public static final String MIGRATION_API = "MIGRATION_API";
     public static final String NOTIFICATION_ENTITY = "Notification";
     public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
 
@@ -677,6 +680,24 @@ public class Constants {
 
     public static final String MACHINE_USER_NAME = "user.name";
     public static final String APPLICATION = "Application";
+    public static final String ERROR_MESSAGE = "Error occurred due to: ";
+    public static final String TRANSPORT_DETAIL = "transporterDetail";
+    public static final String TRANSPORT_DETAIL_ORG_CODE = "transporterDetailOrgCode";
+    public static final String PICKUP_DELIVERY_DETAILS = "PickupDeliveryDetails";
+    public static final String TRANSPORT_DETAIL_INSTRUCTION_TYPE = "type";
+    public static final String TRANSPORT_DETAIL_TI_REFERENCE = "tiReferenceNumber";
+    public static final String TRANSPORT_DETAIL_SHIPMENT_ID = "shipmentId";
+
+    public static final String CONSOLIDATION_NON_DG_MARKING_ERROR_MSG = "The consolidation contains DG package. Marking the consolidation as non DG is not allowed";
+    public static final String  CONSOLIDATION_REQUIRES_DG_SHIPMENT_ERROR_MSG =  "Consolidation cannot be marked as DG. Please attach at least one DG Shipment.";
+    public static final String REFERENCE_TYPE_FIELD = "type";
+    public static final String REFERENCE_NUMBERS_FIELD = "referenceNumber";
+    public static final String REFERENCE_NUMBERS_TABLE = "ReferenceNumbers";
+    public static final String REFERENCE_NUMBERS_SHIPMENT_ID_FIELD = "shipmentId";
+    public static final String POL_WARNING_MESSAGE = "POL in Routing is different from the Transport Details. Do you want to Update?";
+    public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
+    public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
+
     private Constants() {
     }
 

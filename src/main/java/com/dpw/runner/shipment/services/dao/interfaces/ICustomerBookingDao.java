@@ -1,12 +1,16 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface ICustomerBookingDao {
@@ -30,4 +34,10 @@ public interface ICustomerBookingDao {
     Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
+    List<CustomerBooking> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
+
+    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
+    List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
+    void deleteCustomerBookingIds(Set<Long> ids);
+    Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
 }

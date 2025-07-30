@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -169,6 +170,9 @@ public class EntityTransferV3ConsolidationDetails implements IEntityTranferBaseE
     private Boolean reefer = false;
     private Long bookingAgent; //booking agent
     private Boolean borrowed;
+    private Boolean isMigratedToV3 = false;
+
+    private MigrationStatus migrationStatus;
 
 
 }

@@ -7,6 +7,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public interface INetworkTransferDao {
@@ -40,9 +41,15 @@ public interface INetworkTransferDao {
 
     void updateStatus(Long id, String status);
 
+    void updateWithCustomMigrationStatus(NetworkTransfer networkTransfer);
+
     List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType);
 
     String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId);
     String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
+    List<Long> findNteForMigrationStatuses(List<String> migrationStatuses, Integer tenantId);
+    List<NetworkTransfer> findNteByIds(List<Long> ids);
+
+    List<NetworkTransfer> findByEntityIdsAndEntityType(Set<Long> consolidationIds, String consolidation);
 }

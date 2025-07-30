@@ -422,7 +422,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testPacking.setId(1L);
         testPacking.setShipmentId(1L);
         testPacking.setContainerId(1L);
-        containerV3Util.addNoOfPackagesToContainerFromPacks(testContainer, "1", "BKG");
+        containerV3Util.addNoOfPackagesValueToContainer(testContainer, "1", "BKG");
         assertNotNull(testContainer.getPacks());
     }
 
@@ -443,7 +443,7 @@ class ContainerV3UtilTest extends CommonMocks {
         testPacking.setId(1L);
         testPacking.setShipmentId(1L);
         testPacking.setContainerId(1L);
-        containerV3Util.addNoOfPackagesToContainerFromPacks(testContainer, "", "BKG");
+        containerV3Util.addNoOfPackagesValueToContainer(testContainer, "", "BKG");
         assertNull(testContainer.getPacks());
     }
 
@@ -487,5 +487,23 @@ class ContainerV3UtilTest extends CommonMocks {
         testPacking.setContainerId(1L);
         containerV3Util.addNoOfPackagesToContainer(testContainer, null, "BKG");
         assertNull(testContainer.getPacks());
+    }
+
+    @Test
+    void testSetWtVolUnits() {
+        Containers containers = new Containers();
+        when(commonUtils.getDefaultWeightUnit()).thenReturn("KG");
+        when(commonUtils.getDefaultVolumeUnit()).thenReturn("M3");
+        containerV3Util.setWtVolUnits(containers);
+        assertEquals("KG", containers.getGrossWeightUnit());
+    }
+
+    @Test
+    void testSetWtVolUnits1() {
+        Containers containers = new Containers();
+        containers.setGrossWeightUnit("KG");
+        containers.setGrossVolumeUnit("M3");
+        containerV3Util.setWtVolUnits(containers);
+        assertEquals("KG", containers.getGrossWeightUnit());
     }
 }

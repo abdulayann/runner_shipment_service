@@ -9,6 +9,7 @@ public class InterBranchContext {
     private static final ThreadLocal<InterBranchDto> currentContext = new ThreadLocal<>();
 
     public static InterBranchDto getContext() {
+
         return Objects.isNull(currentContext.get()) ? null : currentContext.get();
     }
 

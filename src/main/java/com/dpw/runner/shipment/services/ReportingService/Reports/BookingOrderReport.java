@@ -92,11 +92,9 @@ public class BookingOrderReport extends IReport {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(bookingOrderModel.getShipmentModel().getAdditionalDetails().getNotifyParty()));
         }
 
-        if (bookingOrderModel.getShipmentModel() != null) {
-            if (ObjectUtils.isNotEmpty(bookingOrderModel.getShipmentModel().getConsolidationList())) {
-                ConsolidationModel consolidationModel = bookingOrderModel.getShipmentModel().getConsolidationList().get(0);
-                this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
-            }
+        if (bookingOrderModel.getShipmentModel() != null && ObjectUtils.isNotEmpty(bookingOrderModel.getShipmentModel().getConsolidationList())) {
+            ConsolidationModel consolidationModel = bookingOrderModel.getShipmentModel().getConsolidationList().get(0);
+            this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());
         }
 
         if(bookingOrderModel.getShipmentModel() != null) {

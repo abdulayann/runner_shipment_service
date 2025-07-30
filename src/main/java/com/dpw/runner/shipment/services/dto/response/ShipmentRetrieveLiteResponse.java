@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
@@ -9,6 +10,7 @@ import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -115,7 +117,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private CarrierDetailResponse carrierDetails;
     private PickupDeliveryDetailsResponse deliveryDetails;
     private List<ReferenceNumbersResponse> referenceNumbersList;
-    private List<TruckDriverDetailsLiteResponse> truckDriverDetails;
+    private List<TruckDriverDetailsResponse> truckDriverDetails;
     private String jobStatus;
     private BigDecimal goodsValue;
     private String goodsValueCurrency;
@@ -249,5 +251,9 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String dgPacksUnit;
     private Boolean isEmptyWeightPackAvailable = Boolean.FALSE;
     private Boolean isInterBranchConsoleAttached;
-
+    private TransportInfoStatus transportInfoStatus;
+    private String transportInfoStatusMessage;
+    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
+    private Integer slac;
+    private MigrationStatus migrationStatus;
 }
