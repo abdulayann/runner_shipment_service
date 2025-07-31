@@ -501,6 +501,10 @@ public abstract class IReport {
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
 
+        dictionary.put(SHIPPED_ONBOARD_TEXT, shipment.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                shipment.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
+
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));

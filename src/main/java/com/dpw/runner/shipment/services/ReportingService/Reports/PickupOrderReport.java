@@ -12,6 +12,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_ADDRESS_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_ADDRESS_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_NAME_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
@@ -102,6 +104,10 @@ public class PickupOrderReport extends IReport {
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
         ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        dictionary.put(SHIPPED_ONBOARD_TEXT, pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
 
         ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
         if (pickUpOrderReportModel.hblModel.getShipment() != null) {

@@ -21,6 +21,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 
 @Component
@@ -75,6 +77,10 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.GOODS_VALUE_CURRENCY, shipmentModel.getGoodsValueCurrency());
         dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
+
+        dictionary.put(SHIPPED_ONBOARD_TEXT, shipmentModel.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                shipmentModel.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
 
         if(shipmentModel.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));

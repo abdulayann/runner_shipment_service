@@ -32,6 +32,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REVENUE_MEASUREMENT_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.REVENUE_TOTAL_UNIT_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SELL_EXCHANGE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TAXES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TAX_PERCENTAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TENANT_NAME;
@@ -136,6 +138,10 @@ public class ShipmentCANReport extends IReport {
             dictionary.put(FREIGHT, shipmentCANModel.consolidationModel.getPayment());
         }
         processBillChargesTags(allBillCharges, shipmentCANModel, v1TenantSettingsResponse, chargeTypesWithoutTranslation, dictionary);
+
+        dictionary.put(SHIPPED_ONBOARD_TEXT, shipmentCANModel.shipmentDetails.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                shipmentCANModel.shipmentDetails.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
 
         populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);

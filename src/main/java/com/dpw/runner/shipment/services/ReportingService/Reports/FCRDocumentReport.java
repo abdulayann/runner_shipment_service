@@ -6,6 +6,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PLACE_OF_ISSUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_DETAIL_DATE_OF_ISSUE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIP_CONSIGNEE_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIP_NOTIFY_PARTY_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.USA_LOC_CODE_PREFIX;
@@ -106,6 +108,11 @@ public class FCRDocumentReport extends IReport{
         populateFcrPlaceOfIssue(dictionary, unLocationsMap);
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
+
+        dictionary.put(SHIPPED_ONBOARD_TEXT, fcrDocumentModel.getShipmentModel().getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                fcrDocumentModel.getShipmentModel().getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
+
 
         if (fcrDocumentModel.getShipmentModel() != null && ObjectUtils.isNotEmpty(fcrDocumentModel.getShipmentModel().getConsolidationList())) {
             ConsolidationModel consolidationModel = fcrDocumentModel.getShipmentModel().getConsolidationList().get(0);

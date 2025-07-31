@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
@@ -181,6 +182,11 @@ public class AdditionalDetailModel implements IDocumentModel {
     @JsonProperty("DateOfReceipt")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime dateOfReceipt;
+    @JsonProperty("shippedOnboardText")
+    private String shippedOnboardText = "SHIPPEDONBOARD";
+    @JsonProperty("shippedOnboardDate")
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shippedOnboardDate;
     @JsonProperty("GoodsCO")
     private String goodsCO;
     @JsonProperty("BOENumber")

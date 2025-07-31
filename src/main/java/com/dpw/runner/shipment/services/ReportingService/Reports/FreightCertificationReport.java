@@ -5,6 +5,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.INVOICE_DATE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_AMOUNT_CURRENCY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.addTenantDetails;
@@ -134,6 +136,10 @@ public class FreightCertificationReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, freightCertificationModel.shipmentDetails.getFreightOverseasCurrency());
         processShipmentAddress(freightCertificationModel, dictionary);
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
+
+        dictionary.put(SHIPPED_ONBOARD_TEXT, freightCertificationModel.shipmentDetails.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                freightCertificationModel.shipmentDetails.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
 
         processBillingList(freightCertificationModel, dictionary);
 

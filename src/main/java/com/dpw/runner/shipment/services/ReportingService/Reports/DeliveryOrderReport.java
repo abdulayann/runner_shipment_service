@@ -30,6 +30,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORG_FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_ADDRESS_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ORIGIN_AGENT_NAME_IN_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_ADDRESS_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPER_NAME_IN_CAPS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VOLUME;
@@ -179,6 +181,9 @@ public class DeliveryOrderReport extends IReport{
 
         if(deliveryOrderModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(deliveryOrderModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+            dictionary.put(SHIPPED_ONBOARD_TEXT, deliveryOrderModel.shipmentDetails.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+            dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                    deliveryOrderModel.shipmentDetails.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
         }
         dictionary.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));

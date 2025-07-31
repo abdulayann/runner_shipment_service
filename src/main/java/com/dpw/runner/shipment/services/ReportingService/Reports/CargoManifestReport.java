@@ -88,6 +88,10 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.MAWB_NO, cargoManifestModel.shipmentDetails.getMasterBill());
         dictionary.put(ReportConstants.HAWB_NO, cargoManifestModel.shipmentDetails.getHouseBill());
         dictionary.put(ReportConstants.SHIPMENT_NO, cargoManifestModel.shipmentDetails.getShipmentId());
+        dictionary.put(SHIPPED_ONBOARD_TEXT, cargoManifestModel.shipmentDetails.getAdditionalDetails().getShippedOnboardText().toUpperCase());
+        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                cargoManifestModel.shipmentDetails.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
+
         Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
         Set<String> locCodes = new HashSet<>();
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin() != null) {
