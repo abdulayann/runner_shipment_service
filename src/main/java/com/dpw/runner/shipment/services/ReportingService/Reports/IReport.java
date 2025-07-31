@@ -417,7 +417,6 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -435,8 +434,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -1271,31 +1268,6 @@ public abstract class IReport {
         }
         dictionary.put(ReportConstants.CLIENT, client);
         dictionary.put(CLIENT_ADD_WITHOUT_CONTACT, clientWoCont);
-    }
-
-    public void validateUnassignedPackagesInternal(
-            ShipmentDetails shipment,
-            ShipmentSettingsDetails shipmentSettingFromContext,
-            String documentName,
-            String discrepancyNote) {
-
-        List<Packing> packingList = shipment.getPackingList();
-
-        if (ObjectUtils.isEmpty(packingList)) {
-            return; // No packings → Nothing to validate
-        }
-
-        boolean hasUnassignedPackage = packingList.stream()
-                .anyMatch(p -> p.getContainerId() == null);
-
-        if (hasUnassignedPackage) {
-            Boolean allowUnassigned = shipmentSettingFromContext.getAllowUnassignedBlInvGeneration();
-            if (Boolean.TRUE.equals(allowUnassigned)) {
-                throw new ReportExceptionWarning("Unassigned packages found — review " + discrepancyNote);
-            } else {
-                throw new ReportException("Unassigned packages found — Cannot Generate " + documentName + ".");
-            }
-        }
     }
 
     private void addOtherTagsAndProcessMasterData(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, PickupDeliveryDetailsModel delivery, PickupDeliveryDetailsModel pickup, AdditionalDetailModel additionalDetails, UnlocationsResponse placeOfIssue, UnlocationsResponse paidPlace, UnlocationsResponse destination, String tsDateTimeFormat, UnlocationsResponse pol, UnlocationsResponse pod) {
