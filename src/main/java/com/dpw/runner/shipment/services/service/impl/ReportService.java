@@ -1027,11 +1027,20 @@ public class ReportService implements IReportService {
         String releaseType = shipment.getAdditionalDetails().getReleaseType();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
-        if (SEAWAY_BILL.equals(reportInfo) && !SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
+        if (SEAWAY_BILL.equals(reportInfo)) {
+            handleSeawayBillValidation(reportRequest, shipment, shipmentSettingsDetails, releaseType);
+        } else if (HOUSE_BILL.equals(reportInfo)) {
+            handleHouseBillValidation(reportRequest, shipment, shipmentSettingsDetails, releaseType);
+        }
+    }
+
+    private void handleSeawayBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
+            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
+        if (!SEAWAY_BILL_RELEASE_TYPE.equals(releaseType)) {
             throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
 
-        if (SEAWAY_BILL.equals(reportInfo) && Boolean.TRUE.equals(reportRequest.getForValidation())) {
+        if (Boolean.TRUE.equals(reportRequest.getForValidation())) {
             validateUnassignedPackagesInternal(
                     shipment,
                     shipmentSettingsDetails,
@@ -1039,31 +1048,38 @@ public class ReportService implements IReportService {
                     "Seaway for possible cargo discrepancies."
             );
         }
+    }
 
-        if (HOUSE_BILL.equals(reportInfo)) {
-            String printType = reportRequest.getPrintType();
-            List<String> validPrintType = List.of(ORIGINAL, DRAFT);
-            boolean isOriginalBill = HOUSE_BILL_RELEASE_TYPE.equals(releaseType);
+    private void handleHouseBillValidation(ReportRequest reportRequest, ShipmentDetails shipment,
+            ShipmentSettingsDetails shipmentSettingsDetails, String releaseType) {
+        String printType = reportRequest.getPrintType();
+        List<String> validPrintTypes = List.of(ORIGINAL, DRAFT);
+        boolean isOriginalBill = HOUSE_BILL_RELEASE_TYPE.equals(releaseType);
+        String upperPrintType = printType != null ? printType.toUpperCase() : "";
 
-            if (Boolean.TRUE.equals(reportRequest.getForValidation()) &&
-                    ReportConstants.SURRENDER.equalsIgnoreCase(printType)
-                    || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
-                    || ReportConstants.COPY.equalsIgnoreCase(printType)) {
+        boolean isSurrenderMismatch =
+                (SURRENDER.equalsIgnoreCase(printType) && !SURRENDER_RELEASE_TYPE.equals(releaseType)) ||
+                        (SURRENDER_RELEASE_TYPE.equals(releaseType) && !SURRENDER.equalsIgnoreCase(printType));
 
-                validateUnassignedPackagesInternal(
-                        shipment,
-                        shipmentSettingsDetails,
-                        "BL",
-                        "BL for possible cargo discrepancies."
-                );
-            }
+        boolean isOriginalMismatch =
+                (isOriginalBill && !validPrintTypes.contains(upperPrintType)) ||
+                        (!isOriginalBill && validPrintTypes.contains(upperPrintType));
 
-            if ((SURRENDER.equalsIgnoreCase(printType) && !SURRENDER_RELEASE_TYPE.equals(releaseType))
-                    || (SURRENDER_RELEASE_TYPE.equals(releaseType) && !SURRENDER.equalsIgnoreCase(printType))
-                    || (isOriginalBill && !validPrintType.contains(printType.toUpperCase()))
-                    || (validPrintType.contains(printType.toUpperCase()) && !isOriginalBill)) {
-                throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
-            }
+        if (Boolean.TRUE.equals(reportRequest.getForValidation()) &&
+                (ReportConstants.SURRENDER.equalsIgnoreCase(printType)
+                        || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
+                        || ReportConstants.COPY.equalsIgnoreCase(printType))) {
+
+            validateUnassignedPackagesInternal(
+                    shipment,
+                    shipmentSettingsDetails,
+                    "BL",
+                    "BL for possible cargo discrepancies."
+            );
+        }
+
+        if (isSurrenderMismatch || isOriginalMismatch) {
+            throw new ReportException(ReportConstants.NOT_VALID_RELEASE_TYPE);
         }
     }
 
