@@ -462,6 +462,12 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "cargo_delivered_date")
     private LocalDateTime cargoDeliveredDate;
 
+    @Column(name = "est_pickup_date")
+    private LocalDateTime estimatedPickupDate;
+
+    @Column(name = "est_cargo_delivered_date")
+    private LocalDateTime estimatedCargoDeliveredDate;
+
     @Column(name = "custom_release_date")
     private LocalDateTime customReleaseDate;
 

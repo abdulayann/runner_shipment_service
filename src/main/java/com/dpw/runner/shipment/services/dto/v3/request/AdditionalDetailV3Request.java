@@ -145,6 +145,10 @@ public class AdditionalDetailV3Request extends CommonRequest implements IRunnerR
     private LocalDateTime pickupDate;
     @ExcludeTimeZone
     private LocalDateTime cargoDeliveredDate;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedPickupDate;
+    @ExcludeTimeZone
+    private LocalDateTime estimatedCargoDeliveredDate;
     private LocalDateTime customReleaseDate;
     private Boolean docTurnedOverToCustomer;
     private LocalDateTime proofOfDeliveryDate;
