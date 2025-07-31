@@ -289,14 +289,8 @@ public class HblReport extends IReport {
     public void validatePrinting(Long shipmentId, String printType) {
         V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
         ShipmentDetails shipment = getShipmentDetails(shipmentId);
-        ShipmentSettingsDetails shipmentSettingFromContext = getShipmentSettings();
-
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
             validateOriginalPrintType(shipmentId, shipment, tenantSettings);
-        }
-
-        if (isBlRelatedPrintType(printType)) {
-            validateUnassignedPackages(shipment, shipmentSettingFromContext);
         }
     }
 
@@ -321,21 +315,6 @@ public class HblReport extends IReport {
                 && Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
                 && ObjectUtils.isNotEmpty(shipment.getJobType())
                 && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
-    }
-
-    private boolean isBlRelatedPrintType(String printType) {
-        return ReportConstants.SURRENDER.equalsIgnoreCase(printType)
-                || ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
-                || ReportConstants.COPY.equalsIgnoreCase(printType);
-    }
-
-    private void validateUnassignedPackages(ShipmentDetails shipment, ShipmentSettingsDetails shipmentSettingFromContext) {
-        validateUnassignedPackagesInternal(
-                shipment,
-                shipmentSettingFromContext,
-                "BL",
-                "BL for possible cargo discrepancies."
-        );
     }
 
     private void processMissingFields(V1TenantSettingsResponse tenantSettings, ShipmentDetails shipment) {

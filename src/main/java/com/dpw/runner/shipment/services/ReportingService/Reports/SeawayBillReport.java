@@ -25,7 +25,6 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
@@ -76,14 +75,11 @@ public class SeawayBillReport extends IReport {
 
     public void validatePrinting(Long shipmentId) {
         tenantSettings = getCurrentTenantSettings();
-        ShipmentSettingsDetails shipmentSettingFromContext = commonUtils.getShipmentSettingFromContext();
         ShipmentDetails shipment = getShipmentDetailsOrThrow(shipmentId);
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             validateShipmentModules(shipment);
         }
-
-        validateUnassignedPackagesForSeaway(shipment, shipmentSettingFromContext);
     }
 
     private ShipmentDetails getShipmentDetailsOrThrow(Long shipmentId) {
@@ -116,15 +112,6 @@ public class SeawayBillReport extends IReport {
                 || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
                 && ObjectUtils.isNotEmpty(shipment.getJobType())
                 && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType());
-    }
-
-    private void validateUnassignedPackagesForSeaway(ShipmentDetails shipment, ShipmentSettingsDetails shipmentSettingFromContext) {
-        validateUnassignedPackagesInternal(
-                shipment,
-                shipmentSettingFromContext,
-                "Seaway Bill",
-                "Seaway for possible cargo discrepancies."
-        );
     }
 
     @Override
