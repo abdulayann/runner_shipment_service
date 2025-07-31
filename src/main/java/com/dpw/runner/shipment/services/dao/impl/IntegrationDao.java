@@ -22,7 +22,6 @@ public class IntegrationDao implements IIntegrationResponseDao {
 
     @Override
     public List<IntegrationResponse> getIntegrationResponses(IntegrationResponseRequest request) {
-        return integrationRespsonseRepository.findByEntityIdAndEntityType(request.getEntityId(),
-                request.getEntityType()).orElse(Collections.emptyList());
+        return integrationRespsonseRepository.findByEntityIdAndEntityType(request.getEntityId(), request.getEntityType()).orElse(Collections.emptyList());
     }
 }

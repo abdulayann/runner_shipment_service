@@ -251,4 +251,14 @@ public class ELDetailsDao implements IELDetailsDao {
             throw new RunnerException(e.getMessage());
         }
     }
+
+    @Override
+    public void deleteAdditionalElDetailsByShipmentId(List<Long> elDetailsIds, Long shipmentId) {
+        elDetailsRepository.deleteAdditionalElDetailsByShipmentId(elDetailsIds, shipmentId);
+    }
+
+    @Override
+    public void revertSoftDeleteByElDetailsIdsAndShipmentId(List<Long> elDetailsIds, Long shipmentId) {
+        elDetailsRepository.revertSoftDeleteByElDetailsIdsAndShipmentId(elDetailsIds, shipmentId);
+    }
 }

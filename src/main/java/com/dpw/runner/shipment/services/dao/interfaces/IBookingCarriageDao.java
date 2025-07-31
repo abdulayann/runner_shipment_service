@@ -20,4 +20,8 @@ public interface IBookingCarriageDao {
     List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId);
     List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId, Map<Long, BookingCarriage> oldEntityMap);
     List<BookingCarriage> updateEntityFromShipment(List<BookingCarriage> bookingCarriageList, Long shipmentId, List<BookingCarriage> oldEntityList) throws RunnerException;
+
+    void deleteAdditionalbookingCarriageByShipmentId(List<Long> bookingCarriageIds, Long shipmentId);
+
+    void revertSoftDeleteBybookingCarriageIdsAndShipmentId(List<Long> bookingCarriageIds, Long shipmentId);
 }

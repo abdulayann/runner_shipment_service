@@ -6,17 +6,23 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.ITiLegDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.TransportInstructionLegsRequest;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsListResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.TransportInstructionLegsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPickupDeliveryDetailsRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ITiLegRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.TransportInstructionValidationUtil;
@@ -49,8 +55,10 @@ import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -92,6 +100,10 @@ class TransportInstructionLegsServiceImplTest {
     ExecutorService executorServiceMasterData;
     @MockBean
     private TransportInstructionValidationUtil transportInstructionValidationUtil;
+    @MockBean
+    private IV1Service v1Service;
+    @MockBean
+    private CommonUtils commonUtils;
 
     @BeforeEach
     void setup() {
@@ -195,7 +207,19 @@ class TransportInstructionLegsServiceImplTest {
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
         TiLegs tiLegs = new TiLegs();
-        tiLegs.setPickupDeliveryDetailsId(1l);
+        tiLegs.setId(1L);
+        tiLegs.setPickupDeliveryDetailsId(1L);
+
+        TiLegs tiLegs1 = new TiLegs();
+        tiLegs1.setId(2L);
+        tiLegs1.setPickupDeliveryDetailsId(1L);
+        List<TiLegs> tiLegsList = new ArrayList<>();
+        tiLegsList.add(tiLegs);
+        tiLegsList.add(tiLegs1);
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        pickupDeliveryDetails.setId(1L);
+        pickupDeliveryDetails.setTiLegsList(tiLegsList);
+        when(pickupDeliveryDetailsRepository.findById(any())).thenReturn(Optional.of(pickupDeliveryDetails));
         when(iTiLegRepository.findById(any())).thenReturn(Optional.of(tiLegs));
         when(iTiLegDao.findById(Mockito.<Long>any())).thenReturn(Optional.of(tiLegs));
         doNothing().when(iTiLegDao).delete(any());
@@ -239,8 +263,17 @@ class TransportInstructionLegsServiceImplTest {
 
     @Test
     void testList() {
+        List<RAKCDetailsResponse> rakcDetailsResponses = new ArrayList<>();
+        rakcDetailsResponses.add(RAKCDetailsResponse.builder().id(10L).build());
+        PartiesResponse partiesResponse = PartiesResponse.builder().orgId("1L").addressId("10").build();
+        Map<String, RAKCDetailsResponse> rakcDetailsResponseMap = new HashMap<>();
+        rakcDetailsResponseMap.put("test", RAKCDetailsResponse.builder().id(10L).build());
         TransportInstructionLegsResponse response = new TransportInstructionLegsResponse();
-
+        response.setOrigin(partiesResponse);
+        response.setDestination(partiesResponse);
+        when(commonUtils.getRAKCDetailsMap(anyList())).thenReturn(rakcDetailsResponseMap);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
         when(jsonHelper.convertValue(Mockito.<TiLegs>any(),
                 Mockito.<Class<TransportInstructionLegsResponse>>any())).thenReturn(response);
         TiLegs tiLegs = new TiLegs();
@@ -257,13 +290,27 @@ class TransportInstructionLegsServiceImplTest {
         });
         when(iTiLegDao.findAll(Mockito.<Specification<TiLegs>>any(), Mockito.<Pageable>any()))
                 .thenReturn(pageImpl);
+        ListCommonRequest listCommonRequest= new ListCommonRequest();
+        listCommonRequest.setPopulateRAKC(true);
         TransportInstructionLegsListResponse actualListResult = transportInstructionLegsService
-                .list(new ListCommonRequest(), true);
+                .list(listCommonRequest, true);
         verify(iTiLegDao).findAll(Mockito.<Specification<TiLegs>>any(), Mockito.<Pageable>any());
         verify(jsonHelper).convertValue(Mockito.<TiLegs>any(),
                 Mockito.<Class<TransportInstructionLegsResponse>>any());
         assertEquals(1, actualListResult.getTotalPages().intValue());
         assertEquals(1, actualListResult.getTiLegsResponses().size());
         assertEquals(1L, actualListResult.getTotalCount().longValue());
+    }
+    @Test
+    void testCreate_Exception() {
+        TransportInstructionLegsRequest request = new TransportInstructionLegsRequest();
+        request.setTiId(1L);
+        when(pickupDeliveryDetailsRepository.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> transportInstructionLegsService.create(request));
+    }
+    @Test
+    void testDelete_Exception() {
+        when(iTiLegDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(ValidationException.class, () -> transportInstructionLegsService.delete(1L));
     }
 }
