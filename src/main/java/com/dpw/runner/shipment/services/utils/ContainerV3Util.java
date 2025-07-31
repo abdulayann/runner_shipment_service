@@ -7,10 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
@@ -61,7 +58,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -108,6 +105,9 @@ public class ContainerV3Util {
     @Qualifier("asyncHsCodeValidationExecutor")
     @Autowired
     private ThreadPoolTaskExecutor hsCodeValidationExecutor;
+
+    @Autowired
+    private IPackingDao packingDao;
 
     private ObjectMapper objectMapper;
 
@@ -205,8 +205,49 @@ public class ContainerV3Util {
                 result = result.stream().filter(containersList::contains).toList();
             }
         }
+        Map<String, Set<String>> containerToShipmentMap = collectAllShipmentNumber(result);
+        List<ContainersExcelModel> containersExcelModels = commonUtils.convertToList(result, ContainersExcelModel.class);
+        containersExcelModels.forEach(p -> {
+            if (containerToShipmentMap.containsKey(p.getGuid())) {
+                p.setShipmentNumbers(String.join(", ", containerToShipmentMap.get(p.getGuid())));
+            }
+        });
+        return containersExcelModels;
+    }
 
-        return commonUtils.convertToList(result, ContainersExcelModel.class);
+
+    private Map<String, Set<String>> collectAllShipmentNumber(List<Containers> result) {
+        List<ShipmentsContainersMapping> list = shipmentsContainersMappingDao.findByContainerIdIn(result.stream().map(Containers::getId).toList());
+        Map<Long, Set<Long>> containerToShipmentsMap = list.stream()
+                .collect(Collectors.groupingBy(
+                        ShipmentsContainersMapping::getContainerId,
+                        Collectors.mapping(ShipmentsContainersMapping::getShipmentId, Collectors.toSet())
+                ));
+
+        List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(list.stream().map(ShipmentsContainersMapping::getShipmentId).collect(Collectors.toSet()));
+        Map<Long, String> idToShipmentIdMap = shipmentDetails.stream()
+                .collect(Collectors.toMap(
+                        ShipmentDetails::getId,         // Key: id
+                        ShipmentDetails::getShipmentId  // Value: shipmentId
+                ));
+
+        Map<Long, Set<String>> containerToShipmentCodesMap = containerToShipmentsMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey, // containerId
+                        entry -> entry.getValue().stream() // Set<Long> shipmentIds
+                                .map(idToShipmentIdMap::get)   // map each Long ID to String shipment code
+                                .filter(Objects::nonNull)      // ignore nulls just in case
+                                .collect(Collectors.toSet())
+                ));
+        Map<Long, String> idToGuid = result.stream().collect(Collectors.toMap(p -> p.getId(), p -> p.getGuid().toString()));
+
+        Map<String, Set<String>> guidToShipmentCodesMap = containerToShipmentCodesMap.entrySet().stream()
+                .filter(entry -> idToGuid.containsKey(entry.getKey())) // Ensure GUID exists for the container ID
+                .collect(Collectors.toMap(
+                        entry -> idToGuid.get(entry.getKey()), // Convert container ID to GUID
+                        Map.Entry::getValue                    // Keep the shipment codes set
+                ));
+        return guidToShipmentCodesMap;
     }
 
     private void writeExcelToResponse(HttpServletResponse response, List<ContainersExcelModel> model, BulkDownloadRequest request) throws IOException, IllegalAccessException {
@@ -219,7 +260,7 @@ public class ContainerV3Util {
         response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filename);
 
         try (XSSFWorkbook workbook = new XSSFWorkbook();
-                OutputStream outputStream = response.getOutputStream()) {
+             OutputStream outputStream = response.getOutputStream()) {
 
             XSSFSheet sheet = workbook.createSheet("Containers");
             convertModelToExcel(model, sheet, request);
@@ -256,20 +297,20 @@ public class ContainerV3Util {
         Row headerRow = sheet.createRow(0);
         Field[] fields = ContainersExcelModel.class.getDeclaredFields();
 
-        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
+        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f -> f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c -> c));
 
-        if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
+        if (!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
             processUnlocationsRefGuid(modelList, unlocationsRefGuids);
         }
         List<Field> fieldsList = new ArrayList<>();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
+        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
                 || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
             fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownload);
-        else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+        else if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForAir);
         int i = 0;
-        for (var field : fieldsList){
+        for (var field : fieldsList) {
             Cell cell = headerRow.createCell(i++);
             cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
         }
@@ -289,13 +330,13 @@ public class ContainerV3Util {
     }
 
     private void processUnlocationsRefGuid(List<ContainersExcelModel> modelList, Set<String> unlocationsRefGuids) {
-        for (ContainersExcelModel model : modelList){
+        for (ContainersExcelModel model : modelList) {
             unlocationsRefGuids.add(model.getContainerStuffingLocation());
         }
-        if(!unlocationsRefGuids.isEmpty()) {
+        if (!unlocationsRefGuids.isEmpty()) {
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            for (ContainersExcelModel model : modelList){
-                if(keyMasterDataMap.containsKey(model.getContainerStuffingLocation())){
+            for (ContainersExcelModel model : modelList) {
+                if (keyMasterDataMap.containsKey(model.getContainerStuffingLocation())) {
                     var locCode = keyMasterDataMap.get(model.getContainerStuffingLocation()).LocCode;
                     model.setContainerStuffingLocation(locCode);
                 }
@@ -305,8 +346,8 @@ public class ContainerV3Util {
 
     private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
         List<Field> fields = new ArrayList<>();
-        for(var field: columnsName){
-            if(fieldNameMap.containsKey(field)) {
+        for (var field : columnsName) {
+            if (fieldNameMap.containsKey(field)) {
                 fields.add(fieldNameMap.get(field));
                 fieldNameMap.remove(field);
             }
@@ -400,41 +441,41 @@ public class ContainerV3Util {
     }
 
     public BigDecimal getAddedWeight(BigDecimal initialWeight, String initialWeightUnit, BigDecimal addedWeight, String addedWeightUnit) throws RunnerException {
-        if(isStringNullOrEmpty(initialWeightUnit)) {
+        if (isStringNullOrEmpty(initialWeightUnit)) {
             initialWeightUnit = commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit();
         }
-        if(Objects.isNull(initialWeight)) {
+        if (Objects.isNull(initialWeight)) {
             initialWeight = BigDecimal.ZERO;
         }
-        if(Objects.isNull(addedWeight) || BigDecimal.ZERO.equals(addedWeight) || isStringNullOrEmpty(addedWeightUnit)) {
+        if (Objects.isNull(addedWeight) || BigDecimal.ZERO.equals(addedWeight) || isStringNullOrEmpty(addedWeightUnit)) {
             return initialWeight;
         }
         return initialWeight.add(new BigDecimal(convertUnit(Constants.MASS, addedWeight, addedWeightUnit, initialWeightUnit).toString()));
     }
 
     public BigDecimal getAddedVolume(BigDecimal initialVolume, String initialVolumeUnit, BigDecimal addedVolume, String addedVolumeUnit) throws RunnerException {
-        if(isStringNullOrEmpty(initialVolumeUnit)) {
+        if (isStringNullOrEmpty(initialVolumeUnit)) {
             initialVolumeUnit = commonUtils.getShipmentSettingFromContext().getVolumeChargeableUnit();
         }
-        if(Objects.isNull(initialVolume)) {
+        if (Objects.isNull(initialVolume)) {
             initialVolume = BigDecimal.ZERO;
         }
-        if(Objects.isNull(addedVolume) || BigDecimal.ZERO.equals(addedVolume) || isStringNullOrEmpty(addedVolumeUnit)) {
+        if (Objects.isNull(addedVolume) || BigDecimal.ZERO.equals(addedVolume) || isStringNullOrEmpty(addedVolumeUnit)) {
             return initialVolume;
         }
         return initialVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, addedVolume, addedVolumeUnit, initialVolumeUnit).toString()));
     }
 
     public void setContainerNetWeight(Containers container) throws RunnerException {
-        if(container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO)
+        if (container.getTareWeight() != null && !Objects.equals(container.getTareWeight(), BigDecimal.ZERO)
                 && !isStringNullOrEmpty(container.getTareWeightUnit())) {
             container.setNetWeight(BigDecimal.ZERO);
-            if(isStringNullOrEmpty(container.getNetWeightUnit())) {
+            if (isStringNullOrEmpty(container.getNetWeightUnit())) {
                 container.setNetWeightUnit(
                         isStringNullOrEmpty(container.getGrossWeightUnit()) ?
                                 commonUtils.getShipmentSettingFromContext().getWeightChargeableUnit() : container.getGrossWeightUnit());
             }
-            if(container.getGrossWeight() == null || BigDecimal.ZERO.equals(container.getGrossWeight()) || isStringNullOrEmpty(container.getGrossWeightUnit())) {
+            if (container.getGrossWeight() == null || BigDecimal.ZERO.equals(container.getGrossWeight()) || isStringNullOrEmpty(container.getGrossWeightUnit())) {
                 container.setNetWeight(container.getTareWeight());
                 container.setNetWeightUnit(container.getTareWeightUnit());
                 return;
@@ -456,54 +497,129 @@ public class ContainerV3Util {
     }
 
     public void addNoOfPackagesValueToContainer(Containers container, String packs, String packsType) {
-        if(isStringNullOrEmpty(packs))
+        if (isStringNullOrEmpty(packs))
             return;
         addNoOfPackagesToContainer(container, Integer.parseInt(packs), packsType);
     }
 
     public void addNoOfPackagesToContainer(Containers container, Integer packs, String packsType) {
-        if(isStringNullOrEmpty(packsType) || packs == null || packs == 0)
+        if (isStringNullOrEmpty(packsType) || packs == null || packs == 0)
             return;
-        if(isStringNullOrEmpty(container.getPacks()))
+        if (isStringNullOrEmpty(container.getPacks()))
             container.setPacks(null);
-        if(isStringNullOrEmpty(container.getPacksType()))
+        if (isStringNullOrEmpty(container.getPacksType()))
             container.setPacksType(packsType);
-        else if(!Objects.equals(packsType, container.getPacksType()))
+        else if (!Objects.equals(packsType, container.getPacksType()))
             container.setPacksType(PKG);
         container.setPacks(String.valueOf(Integer.parseInt(isStringNullOrEmpty(container.getPacks()) ? "0" : container.getPacks()) + packs));
     }
 
     public void setWtVolUnits(Containers containers) {
-        if(isStringNullOrEmpty(containers.getGrossWeightUnit()))
+        if (isStringNullOrEmpty(containers.getGrossWeightUnit()))
             containers.setGrossWeightUnit(commonUtils.getDefaultWeightUnit());
-        if(isStringNullOrEmpty(containers.getGrossVolumeUnit()))
+        if (isStringNullOrEmpty(containers.getGrossVolumeUnit()))
             containers.setGrossVolumeUnit(commonUtils.getDefaultVolumeUnit());
     }
-    
+
     public String getContainerNumberOrType(Long containerId) {
         return getContainerNumberOrType(Objects.requireNonNull(containerDao.findById(containerId).orElse(null)));
     }
-    
+
     public String getContainerNumberOrType(Containers container) {
         return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
     }
 
+
     @Transactional(rollbackFor = Exception.class)
-    public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
-        if (request == null || request.getConsolidationId() == null || request.getConsolidationId() == 0) {
-            throw new ValidationException("Please add the container and then try again.");
-        }
-        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+    public void uploadContainers(BulkUploadRequest request, String module) throws IOException, RunnerException {
+        List<Containers> consolContainers = this.getContainerByModule(request, module);
+        Map<UUID, Map<String, Object>> prevData = validationContainerUploadInShipment(consolContainers);
         Map<UUID, Containers> containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
         Map<UUID, Long> guidToIdMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Containers::getId, (existing, replacement) -> existing));
         Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
+        Map<UUID, Map<String, Object>> postData = validationContainerUploadInShipment(containersList);
+        this.validateIfPacksOrVolume(prevData, postData, request, module, containersList);
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
-        createOrUpdateContainers(requests);
+        requests.forEach(p -> {
+            if (module.equalsIgnoreCase(SHIPMENT)) {
+                p.setShipmentsId(request.getShipmentId());
+            }
+            if (module.equalsIgnoreCase(CONSOLIDATION)) {
+                p.setConsolidationId(request.getConsolidationId());
+            }
+        });
+        createOrUpdateContainers(requests, module);
+    }
+
+
+    private void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList) {
+        boolean isValidationRequired = module.equalsIgnoreCase(CONSOLIDATION);
+        if (module.equalsIgnoreCase(SHIPMENT)) {
+            ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).orElseThrow(() -> new ValidationException("Shipment Id not exists"));
+            if (CARGO_TYPE_FCL.equals(shipmentDetails.getShipmentType())) {
+                isValidationRequired = !packingDao.findByContainerIdIn(containersList.stream().map(Containers::getId).toList()).isEmpty();
+            }
+        }
+        if (isValidationRequired) {
+            for (UUID containerId : to.keySet()) {
+                if (from.containsKey(containerId)) {
+                    Map<String, Object> containersTo = to.get(containerId);
+                    Map<String, Object> containersFrom = from.get(containerId);
+                    for (String key : containersTo.keySet()) {
+                        if (containersTo.get(key) instanceof BigDecimal) {
+                            if (((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
+                                throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+                            }
+                        } else if (!Objects.equals(containersTo.get(key), containersFrom.get(key))) {
+                            throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Map<UUID, Map<String, Object>> validationContainerUploadInShipment(List<Containers> consolContainers) {
+        Map<UUID, Map<String, Object>> map = new HashMap<>();
+        for (Containers containers : consolContainers) {
+            map.putIfAbsent(containers.getGuid(), new HashMap<>());
+            map.get(containers.getGuid()).put("grossVolume", containers.getGrossVolume());
+            map.get(containers.getGuid()).put("grossVolumeUnit", containers.getGrossVolumeUnit());
+            map.get(containers.getGuid()).put("grossWeight", containers.getGrossWeight());
+            map.get(containers.getGuid()).put("grossWeightUnit", containers.getGrossWeightUnit());
+            map.get(containers.getGuid()).put("packs", containers.getPacks());
+            map.get(containers.getGuid()).put("packsType", containers.getPacksType());
+        }
+        return map;
+    }
+
+    private List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
+        if (request == null) {
+            throw new ValidationException("Please add the container and then try again.");
+        }
+        if (module.equalsIgnoreCase(CONSOLIDATION)) {
+            if (request.getConsolidationId() == null || request.getConsolidationId() == 0) {
+                throw new ValidationException("Please add the consolidation and then try again.");
+            }
+            return containerDao.findByConsolidationId(request.getConsolidationId());
+        }
+        if (module.equalsIgnoreCase(SHIPMENT)) {
+            if (request.getShipmentId() == null || request.getShipmentId() == 0) {
+                throw new ValidationException("Please add the shipment Id and then try again.");
+            }
+            return containerDao.findByShipmentId(request.getShipmentId());
+        }
+        throw new ValidationException(String.format("Module: %s; not found", module));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
+        uploadContainers(request, CONSOLIDATION);
     }
 
     private static void setIdAndTeuInContainers(BulkUploadRequest request, List<Containers> containersList, Map<UUID, Long> guidToIdMap, Map<String, BigDecimal> codeTeuMap) {
@@ -514,14 +630,20 @@ public class ContainerV3Util {
             if (container.getContainerCode() != null && codeTeuMap.containsKey(container.getContainerCode())) {
                 container.setTeu(codeTeuMap.get(container.getContainerCode()));
             }
-            container.setConsolidationId(request.getConsolidationId());
+            if (request.getConsolidationId() != null) {
+                container.setConsolidationId(request.getConsolidationId());
+            }
         });
     }
 
     public void createOrUpdateContainers(List<ContainerV3Request> requests) throws RunnerException {
+        createOrUpdateContainers(requests, CONSOLIDATION);
+    }
+
+    public void createOrUpdateContainers(List<ContainerV3Request> requests, String module) throws RunnerException {
         for (int i = 0; i < requests.size(); i++) {
             try {
-                containerV3FacadeService.createUpdateContainer(List.of(requests.get(i)), CONSOLIDATION);
+                containerV3FacadeService.createUpdateContainer(List.of(requests.get(i)), module);
             } catch (Exception e) {
                 throw new RunnerException(String.format("Error processing row %d: %s", i + 1, e.getMessage()), e);
             }

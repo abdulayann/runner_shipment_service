@@ -94,11 +94,11 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, CONSOLIDATION));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
-    @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
-    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ContainerV3Request> request) throws RunnerException {
-        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
-    }
+//    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DELETE_SUCCESSFUL, response = BulkContainerResponse.class)})
+//    @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
+//    public ResponseEntity<IRunnerResponse> deleteBulkFromShipment(@RequestBody List<ContainerV3Request> request) throws RunnerException {
+//        return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request, SHIPMENT));
+//    }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
     @PostMapping(ApiConstants.API_VALIDATE_CONTAINER_NUMBER)
@@ -116,12 +116,12 @@ public class ContainerV3Controller {
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)
     })
     @PostMapping(ApiConstants.API_UPLOAD)
-    public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
+    public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request, @RequestParam String module) throws IOException {
         if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
         try {
-            containerV3Util.uploadContainers(request);
+            containerV3Util.uploadContainers(request, module);
             return ResponseHelper.buildSuccessResponse(ApiConstants.API_UPLOAD_CONTAINER_DETAILS_SUCCESS_MESSAGE);
         } catch (Exception e) {
             String responseMessage = e.getMessage() != null ? e.getMessage()
