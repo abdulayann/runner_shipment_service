@@ -11115,7 +11115,7 @@ ShipmentServiceTest extends CommonMocks {
         partiesResponse.setOrgData(orgData);
         V1RetrieveResponse v1RetrieveResponse = mock(V1RetrieveResponse.class);
         when(v1RetrieveResponse.getEntity()).thenReturn(address);
-        when(masterDataUtils.fetchUnlocationByOneIdentifier(eq("Id"), eq("123456")))
+        when(masterDataUtils.fetchUnlocationByOneIdentifier("Id","123456"))
                 .thenReturn(List.of(unloc));
         when(modelMapper.map(any(EntityTransferAddress.class), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
@@ -11150,7 +11150,7 @@ ShipmentServiceTest extends CommonMocks {
         partiesResponse.setOrgData(orgData);
         V1RetrieveResponse v1RetrieveResponse = mock(V1RetrieveResponse.class);
         when(v1RetrieveResponse.getEntity()).thenReturn(address);
-        when(masterDataUtils.fetchUnlocationByOneIdentifier(eq("Id"), eq("789012")))
+        when(masterDataUtils.fetchUnlocationByOneIdentifier("Id", "789012"))
                 .thenReturn(List.of(unloc));
         when(modelMapper.map(any(EntityTransferAddress.class), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1Service.retrieveTenant()).thenReturn(v1RetrieveResponse);
