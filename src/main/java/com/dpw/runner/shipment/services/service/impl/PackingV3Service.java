@@ -238,6 +238,7 @@ public class PackingV3Service implements IPackingV3Service {
         if(isDG){
             boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
             if(saveShipment) {
+                shipmentDetails.setContainsHazardous(true);
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
                 shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());

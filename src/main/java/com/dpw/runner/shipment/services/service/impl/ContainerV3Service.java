@@ -555,7 +555,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(containerV3Request.getId());
 
                 for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
-                    Long shipmentId = shipmentsContainersMapping.getId();
+                    Long shipmentId = shipmentsContainersMapping.getShipmentId();
                     Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
                     if (optionalShipmentDetails.isPresent()) {
                         ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
@@ -595,6 +595,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if(isDG){
             boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
             if(saveShipment) {
+                shipmentDetails.setContainsHazardous(true);
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
                 shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
