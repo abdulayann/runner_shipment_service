@@ -5110,6 +5110,8 @@ public abstract class IReport {
         dictionary.put(S_BOE_DATE, additional.getBOEDate());
         dictionary.put(S_OWNERSHIP_NAME, additional.getOwnershipName());
         dictionary.put(S_PASSED_BY_PERSON, additional.getPassedByPerson());
+        List<String> partyValueList = buildPartyMap(additional.getBorrowedFrom());
+        dictionary.put(S_BORROWED_FROM, !partyValueList.isEmpty() ? partyValueList.get(0) : "");
 
         dictionary.put(S_OWNERSHIP,
                 additional.getOwnership() != null ? additional.getOwnership().getDescription() : null);
