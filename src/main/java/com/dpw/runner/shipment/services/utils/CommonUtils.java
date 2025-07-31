@@ -14,11 +14,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.util.WorkbookMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
@@ -158,6 +156,9 @@ public class CommonUtils {
 
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    IQuoteContractsDao quoteContractsDao;
 
     @Autowired
     IMDMServiceAdapter mdmServiceAdapter;
@@ -356,15 +357,11 @@ public class CommonUtils {
 
     public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
         ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = null;
-        PdfCopy copy = null;
-        doc = new Document();
-        copy = new PdfSmartCopy(doc, ms);
+        Document doc = new Document();
+        PdfCopy copy =  new PdfCopy(doc, ms);
         doc.open();
-
         for (byte[] dataByte : pdfByteContent) {
-            PdfReader reader = null;
-            reader = new PdfReader(dataByte);
+            PdfReader reader = new PdfReader(dataByte);
             copy.addDocument(reader);
             reader.close();
         }
@@ -2905,5 +2902,19 @@ public class CommonUtils {
         param.add(values);
         List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
         return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
+    }
+
+    public void updateContainerTypeWithQuoteId(DependentServiceResponse dependentServiceResponse, String quoteId) {
+        List<ContainerTypeMasterResponse> containerTypeMasterResponses = jsonHelper.convertValueToList(dependentServiceResponse.getData(), ContainerTypeMasterResponse.class);
+        List<QuoteContracts> quoteContracts = quoteContractsDao.findByContractId(quoteId);
+        List<String> quotedContainerTypes = quoteContracts.stream()
+                .flatMap(qc -> qc.getContainerTypes().stream())
+                .toList();
+        containerTypeMasterResponses.forEach(response -> {
+            if (quotedContainerTypes.contains(response.getCode())) {
+                response.setIsQuoted(true);
+            }
+        });
+        dependentServiceResponse.setData(containerTypeMasterResponses);
     }
 }

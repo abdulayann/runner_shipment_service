@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+
+import com.dpw.runner.shipment.services.repository.interfaces.ISectionVisibilityRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -47,6 +49,9 @@ class SectionDetailsServiceImplTest {
   private ISectionDetailsRepository iSectionDetailsRepository;
 
   @Mock
+  private ISectionVisibilityRepository sectionVisibilityRepository;
+
+  @Mock
   private ModelMapper modelMapper;
 
   @Mock
@@ -58,20 +63,20 @@ class SectionDetailsServiceImplTest {
 
   @Test
   void testCreate() {
-    when(iSectionDetailsRepository.existsBySectionCode(Mockito.<String>any())).thenReturn(true);
+    when(iSectionDetailsRepository.existsBySectionName(Mockito.<String>any())).thenReturn(true);
     SectionDetailsRequest request = new SectionDetailsRequest();
     assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.create(request));
-    verify(iSectionDetailsRepository).existsBySectionCode(Mockito.<String>any());
+    verify(iSectionDetailsRepository).existsBySectionName(Mockito.<String>any());
   }
 
   @Test
   void testCreateException() {
-    when(iSectionDetailsRepository.existsBySectionCode(Mockito.<String>any())).thenReturn(false);
+    when(iSectionDetailsRepository.existsBySectionName(Mockito.<String>any())).thenReturn(false);
     SectionDetailsRequest request = new SectionDetailsRequest();
     assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.create(request));
-    verify(iSectionDetailsRepository).existsBySectionCode(Mockito.<String>any());
+    verify(iSectionDetailsRepository).existsBySectionName(Mockito.<String>any());
   }
 
   @Test
@@ -79,8 +84,8 @@ class SectionDetailsServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionCode("Section Description");
-    sectionDetails.setSectionName("Section Name");
+    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -91,7 +96,7 @@ class SectionDetailsServiceImplTest {
     doNothing().when(iSectionDetailsRepository).deleteById(Mockito.<Long>any());
     when(iSectionDetailsRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
     SectionDetailsResponse buildResult = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -126,20 +131,17 @@ class SectionDetailsServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionCode("Section Description");
-    sectionDetails.setSectionName("Section Name");
+    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
-    sectionDetails.setSectionVisibilities(Set.of(sectionVisibility));
     sectionDetails.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setUpdatedBy("2020-03-01");
 
-    HashSet<SectionDetails> sectionDetails2 = new HashSet<>();
-    sectionDetails2.add(sectionDetails);
-
     Optional<SectionDetails> ofResult = Optional.of(sectionDetails);
     when(iSectionDetailsRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+    when(sectionVisibilityRepository.findBySectionDetailsId(anyLong())).thenReturn(List.of(sectionVisibility));
     SectionDetailsException exception = assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.delete(1L));
     verify(iSectionDetailsRepository).findById(Mockito.<Long>any());
@@ -159,8 +161,8 @@ class SectionDetailsServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionCode("Section Description");
-    sectionDetails.setSectionName("Section Name");
+    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -169,7 +171,7 @@ class SectionDetailsServiceImplTest {
     sectionDetails.setUpdatedBy("2020-03-01");
     Optional<SectionDetails> ofResult = Optional.of(sectionDetails);
     SectionDetailsResponse buildResult = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -186,8 +188,8 @@ class SectionDetailsServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionCode("Section Description");
-    sectionDetails.setSectionName("Section Name");
+    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -195,7 +197,7 @@ class SectionDetailsServiceImplTest {
     sectionDetails.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setUpdatedBy("2020-03-01");
     SectionDetailsResponse buildResult = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -210,8 +212,8 @@ class SectionDetailsServiceImplTest {
   @Test
   void testUpdateException() {
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
-    sectionDetailsRequest.setSectionName("Section Description");
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionDescription("Section Description");
+    sectionDetailsRequest.setSectionName("Section Name");
     SectionDetailsException exception = assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.update(sectionDetailsRequest));
     assertEquals(SectionDetailsConstant.ID_CAN_NOT_NULL, exception.getMessage());
@@ -222,8 +224,8 @@ class SectionDetailsServiceImplTest {
   void testUpdateException1() {
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionDescription("Section Description");
+    sectionDetailsRequest.setSectionName("Section Name");
     when(iSectionDetailsRepository.findById(any())).thenReturn(Optional.empty());
     SectionDetailsException exception = assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.update(sectionDetailsRequest));
@@ -244,15 +246,14 @@ class SectionDetailsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
 
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionCode("Section Description");
-    sectionDetails.setSectionName("Section Name");
+    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -262,12 +263,12 @@ class SectionDetailsServiceImplTest {
 
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionDescription("Section Description");
+    sectionDetailsRequest.setSectionName("Section Name");
     sectionDetailsRequest.setSectionFieldIds(List.of(1L));
 
     SectionDetailsResponse buildResult = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -284,15 +285,15 @@ class SectionDetailsServiceImplTest {
   void testCreateValidation() {
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionDescription("Section Description");
+    sectionDetailsRequest.setSectionName("Section Name");
     sectionDetailsRequest.setSectionFieldIds(List.of(1L,2L));
 
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -306,15 +307,14 @@ class SectionDetailsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
-    when(iSectionDetailsRepository.existsBySectionCode(any())).thenReturn(false);
+    when(iSectionDetailsRepository.existsBySectionName(any())).thenReturn(false);
     when(sectionFieldsRepository.findAllById(anyIterable())).thenReturn(List.of(sectionFields));
     when(modelMapper.map(sectionDetailsRequest, SectionDetails.class)).thenReturn(sectionDetails);
     SectionDetailsException exception = assertThrows(SectionDetailsException.class,
         () -> sectionDetailsService.create(sectionDetailsRequest));
-    verify(iSectionDetailsRepository).existsBySectionCode(anyString());
+    verify(iSectionDetailsRepository).existsBySectionName(anyString());
     assertEquals(SectionDetailsConstant.SECTION_FIELD_INVALID_IDS,
         exception.getMessage());
   }
@@ -322,22 +322,22 @@ class SectionDetailsServiceImplTest {
   void testCreateSuccess() {
     SectionDetailsRequest sectionDetailsRequest = new SectionDetailsRequest();
     sectionDetailsRequest.setId(1L);
-    sectionDetailsRequest.setSectionName("Section Description");
-    sectionDetailsRequest.setSectionCode("Section Name");
+    sectionDetailsRequest.setSectionDescription("Section Description");
+    sectionDetailsRequest.setSectionName("Section Name");
     sectionDetailsRequest.setSectionFieldIds(List.of(1L));
 
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
     sectionDetails.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setUpdatedBy("2020-03-01");
     SectionDetailsResponse buildResult = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -349,16 +349,15 @@ class SectionDetailsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
-    when(iSectionDetailsRepository.existsBySectionCode(any())).thenReturn(false);
+    when(iSectionDetailsRepository.existsBySectionName(any())).thenReturn(false);
     when(sectionFieldsRepository.findAllById(anyIterable())).thenReturn(List.of(sectionFields));
     when(modelMapper.map(sectionDetailsRequest, SectionDetails.class)).thenReturn(sectionDetails);
     when(iSectionDetailsRepository.save(sectionDetails)).thenReturn(sectionDetails);
     when(modelMapper.map(sectionDetails, SectionDetailsResponse.class)).thenReturn(buildResult);
     sectionDetailsService.create(sectionDetailsRequest);
-    verify(iSectionDetailsRepository).existsBySectionCode(anyString());
+    verify(iSectionDetailsRepository).existsBySectionName(anyString());
     verify(iSectionDetailsRepository).save(any());
     verify(modelMapper, times(2)).map(any(), any());
   }

@@ -17,7 +17,7 @@ public interface IMasterDataService extends ICommonService{
 
     ResponseEntity<IRunnerResponse> updateContainerType(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listContainerType(CommonRequestModel commonRequestModel, String quoteId);
 
     ResponseEntity<IRunnerResponse> createVessel(CommonRequestModel commonRequestModel);
 

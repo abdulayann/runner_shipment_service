@@ -111,6 +111,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -302,6 +303,7 @@ class ReportServiceTest extends CommonMocks {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setEnableTimeZone(false);
         UserContext.setUser(mockUser);
     }
 
@@ -336,13 +338,15 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails2.setSeawayMainPage("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         // Mock
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         var data = reportService.getDocumentData(commonRequestModel);
@@ -1848,9 +1852,90 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        Parties transporter = new Parties();
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put(ReportConstants.CONTACT_KEY,"653847343");
+        addressData.put(ReportConstants.ADDRESS_LABEL,"addressLine1");
+
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(ReportConstants.FULL_NAME,"trasportername");
+        orgData.put(ReportConstants.EMAIL,"test@test.com");
+
+        transporter.setAddressCode("42 Main St");
+        transporter.setAddressData(addressData);
+        transporter.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        transporter.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        transporter.setEntityId(1L);
+        transporter.setEntityType("Entity Type");
+        transporter.setGuid(UUID.randomUUID());
+        transporter.setId(1L);
+        transporter.setIsAddressFreeText(true);
+        transporter.setIsDeleted(true);
+        transporter.setOrgCode("Org Code");
+        transporter.setOrgData(orgData);
+        transporter.setTenantId(1);
+        transporter.setType("Type");
+        transporter.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        transporter.setUpdatedBy("2020-03-01");
+
+        Parties importAgent = new Parties();
+        Map<String, Object> importAgentAddressData = new HashMap<>();
+        importAgentAddressData.put(ReportConstants.CONTACT_KEY,"653847343");
+        importAgentAddressData.put(ReportConstants.ADDRESS_LABEL,"addressLine1");
+
+        Map<String, Object> importAgentOrgData = new HashMap<>();
+        importAgentOrgData.put(ReportConstants.FULL_NAME,"ImportName");
+        importAgentOrgData.put(ReportConstants.EMAIL,"test@test.com");
+
+        importAgent.setAddressCode("42 Main St");
+        importAgent.setAddressData(importAgentAddressData);
+        importAgent.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        importAgent.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        importAgent.setEntityId(1L);
+        importAgent.setEntityType("Entity Type");
+        importAgent.setGuid(UUID.randomUUID());
+        importAgent.setId(1L);
+        importAgent.setIsAddressFreeText(true);
+        importAgent.setIsDeleted(true);
+        importAgent.setOrgCode("Org Code");
+        importAgent.setOrgData(importAgentOrgData);
+        importAgent.setTenantId(1);
+        importAgent.setType("IMA");
+        importAgent.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        importAgent.setUpdatedBy("2020-03-01");
+
+        Parties exportAgent = new Parties();
+        Map<String, Object> exportAgentAddressData = new HashMap<>();
+        exportAgentAddressData.put(ReportConstants.CONTACT_KEY,"653847343");
+        exportAgentAddressData.put(ReportConstants.ADDRESS_LABEL,"addressLine1");
+
+        Map<String, Object> exportAgentOrgData = new HashMap<>();
+        exportAgentOrgData.put(ReportConstants.FULL_NAME,"exportName");
+        exportAgentOrgData.put(ReportConstants.EMAIL,"test@test.com");
+
+        exportAgent.setAddressCode("42 Main St");
+        exportAgent.setAddressData(exportAgentAddressData);
+        exportAgent.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        exportAgent.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
+        exportAgent.setEntityId(1L);
+        exportAgent.setEntityType("Entity Type");
+        exportAgent.setGuid(UUID.randomUUID());
+        exportAgent.setId(1L);
+        exportAgent.setIsAddressFreeText(true);
+        exportAgent.setIsDeleted(true);
+        exportAgent.setOrgCode("Org Code");
+        exportAgent.setOrgData(exportAgentOrgData);
+        exportAgent.setTenantId(1);
+        exportAgent.setType("EXA");
+        exportAgent.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
+        exportAgent.setUpdatedBy("2020-03-01");
+
+        pickupDeliveryDetails.setTransporterDetail(transporter);
+        pickupDeliveryDetails.setPartiesList(List.of(exportAgent, importAgent));
         // Mock
         when(transportInstructionLegsService.findByTransportInstructionId(anyLong())).thenReturn(List.of(new TiLegs()));
-        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(new PickupDeliveryDetails()));
+        when(pickupDeliveryDetailsService.findById(anyLong())).thenReturn(Optional.of(pickupDeliveryDetails));
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
