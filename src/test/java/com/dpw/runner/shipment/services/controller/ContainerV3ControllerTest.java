@@ -141,7 +141,7 @@ class ContainerV3ControllerTest {
     AssignContainerRequest request = new AssignContainerRequest();
     ContainerResponse response = new ContainerResponse();
 
-    Mockito.when(containerV3Service.assignContainers(request, Constants.CONTAINER)).thenReturn(response);
+    Mockito.lenient().when(containerV3Service.assignContainers(request, Constants.CONTAINER)).thenReturn(response);
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.assignContainers(request);
 
