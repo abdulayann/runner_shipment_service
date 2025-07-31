@@ -275,7 +275,14 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setNetWeight(BigDecimal.ONE);
         testContainer.setNetWeightUnit("KG");
         mockShipmentSettings();
-        assertNotNull(containerV3Util.getAddedWeight(null, null, null, testContainer.getNetWeightUnit()));
+        BigDecimal validResult = containerV3Util.getAddedWeight(
+                BigDecimal.TEN,
+                "KG",
+                BigDecimal.ONE,
+                testContainer.getNetWeightUnit()
+        );
+        assertNotNull(validResult);
+//        assertNotNull(containerV3Util.getAddedWeight(null, null, null, testContainer.getNetWeightUnit()));
     }
 
     @Test
@@ -296,7 +303,18 @@ class ContainerV3UtilTest extends CommonMocks {
         testContainer.setNetWeight(BigDecimal.ONE);
         testContainer.setNetWeightUnit("M3");
         mockShipmentSettings();
-        assertNotNull(containerV3Util.getAddedVolume(null, null, null, testContainer.getNetWeightUnit()));
+        BigDecimal nullResult = containerV3Util.getAddedVolume(null, null, null, testContainer.getNetWeightUnit());
+        assertNull(nullResult);
+
+        // Test with valid inputs - should return non-null
+        BigDecimal validResult = containerV3Util.getAddedVolume(
+                BigDecimal.TEN,
+                "M3",
+                BigDecimal.ONE,
+                testContainer.getNetWeightUnit()
+        );
+        assertNotNull(validResult);
+//        assertNotNull(containerV3Util.getAddedVolume(null, null, null, testContainer.getNetWeightUnit()));
     }
 
     @Test

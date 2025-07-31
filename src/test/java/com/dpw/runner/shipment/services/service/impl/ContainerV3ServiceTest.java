@@ -678,6 +678,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
@@ -697,6 +698,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
@@ -716,6 +718,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
@@ -740,6 +743,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
@@ -765,6 +769,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
@@ -790,6 +795,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(packingDao.findByShipmentIdInAndContainerId(any(), any())).thenReturn(new ArrayList<>(List.of(testPacking, testPacking1)));
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
+        when(jsonHelper.convertValue(any(), eq(Containers.class))).thenReturn(new Containers());
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);

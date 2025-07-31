@@ -188,6 +188,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         testShipment.setContainerAssignedToShipmentCargo(1L);
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
         AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
         AssignContainerParams assignContainerParams = new AssignContainerParams();
         assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
         assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(assignContainerParams, request, Constants.CONTAINER));
@@ -202,6 +203,8 @@ class ContainerValidationUtilTest extends CommonMocks {
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
         AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
+        Mockito.when(commonUtils.isSeaFCLOrRoadFTL(Mockito.anyString(), Mockito.anyString())).thenReturn(true);
         AssignContainerParams assignContainerParams = new AssignContainerParams();
         assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
         assertThrows(ValidationException.class, () -> containerValidationUtil.validateBeforeAssignContainer(assignContainerParams, request, Constants.CONTAINER));
@@ -216,6 +219,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         Map<Long, ShipmentDetails> shipmentDetailsMap = new HashMap<>(Map.of(1L, testShipment));
         shipmentDetailsMap.put(2L, shipmentDetails);
         AssignContainerRequest request = new AssignContainerRequest();
+        request.setShipmentPackIds(Map.of(1L, List.of(1L)));
         AssignContainerParams assignContainerParams = new AssignContainerParams();
         assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
         assertDoesNotThrow(() -> containerValidationUtil.validateBeforeAssignContainer(assignContainerParams, request, Constants.CONTAINER));
