@@ -184,9 +184,7 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
-        dictionary.put(SHIPPED_ONBOARD_TEXT, hawbModel.shipmentDetails.getAdditionalDetails().getShippedOnboardText().toUpperCase());
-        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
-                hawbModel.shipmentDetails.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
+        populateShippedOnboardFields(hawbModel.shipmentDetails, dictionary);
 
         populateUserFields(hawbModel.usersDto, dictionary);
 

@@ -182,8 +182,6 @@ public class AdditionalDetailModel implements IDocumentModel {
     @JsonProperty("DateOfReceipt")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime dateOfReceipt;
-    @JsonProperty("shippedOnboardText")
-    private String shippedOnboardText = "SHIPPEDONBOARD";
     @JsonProperty("shippedOnboardDate")
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shippedOnboardDate;

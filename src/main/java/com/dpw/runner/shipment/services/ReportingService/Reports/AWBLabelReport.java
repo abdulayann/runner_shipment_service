@@ -198,10 +198,7 @@ public class AWBLabelReport extends IReport{
 
         dictionary.put(ReportConstants.HAWB_NUMBER, awbLabelModel.shipment.getHouseBill());
 
-        dictionary.put(SHIPPED_ONBOARD_TEXT, awbLabelModel.shipment.getAdditionalDetails().getShippedOnboardText().toUpperCase());
-        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
-                awbLabelModel.shipment.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
-
+        populateShippedOnboardFields(awbLabelModel.shipment, dictionary);
         if (awbLabelModel.tenant != null) {
             processTenantDetails(awbLabelModel, dictionary);
         }

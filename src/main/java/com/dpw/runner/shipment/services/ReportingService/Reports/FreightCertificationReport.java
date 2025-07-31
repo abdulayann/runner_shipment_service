@@ -137,10 +137,7 @@ public class FreightCertificationReport extends IReport{
         processShipmentAddress(freightCertificationModel, dictionary);
         populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
 
-        dictionary.put(SHIPPED_ONBOARD_TEXT, freightCertificationModel.shipmentDetails.getAdditionalDetails().getShippedOnboardText().toUpperCase());
-        dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
-                freightCertificationModel.shipmentDetails.getAdditionalDetails().getShippedOnboardDate(), "ddMMMyyyy".toUpperCase(), false));
-
+        populateShippedOnboardFields(freightCertificationModel.shipmentDetails, dictionary);
         processBillingList(freightCertificationModel, dictionary);
 
         if (freightCertificationModel.shipmentDetails != null && ObjectUtils.isNotEmpty(freightCertificationModel.shipmentDetails.getConsolidationList())) {
