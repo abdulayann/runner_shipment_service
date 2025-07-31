@@ -4267,7 +4267,7 @@ public class ShipmentService implements IShipmentService {
             LocalDateTime currentTime = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
+            String filenameWithTimestamp = "Shipments_listing_" + timestamp + Constants.XLSX;
             String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
             Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
 

@@ -19,7 +19,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.isNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -225,6 +233,34 @@ class RoutingV3UtilTest {
         verify(masterDataUtils).pushToCache(anyMap(), anyString(), anySet(), any(), anyMap());
     }
 
+    @Test
+    void addAllCarrierInSingleCallList() {
+        List<RoutingsResponse> routingListResponse = new ArrayList<>();
+        routingListResponse.add(RoutingsResponse.builder().id(1L).build());
+        Map<String, Object> masterDataMap = new HashMap<>();
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(Routings.class), anyMap(), anyString(), anyMap())).thenReturn(List.of(""));
+        routingV3Util.addAllCarrierInSingleCallList(routingListResponse, masterDataMap);
+        verify(masterDataKeyUtils).setMasterDataValue(anyMap(), anyString(), anyMap(), anyMap());
+    }
 
+    @Test
+    void addAllCarrierInSingleCallList1() {
+        List<RoutingsResponse> routingListResponse = new ArrayList<>();
+        routingListResponse.add(RoutingsResponse.builder().id(1L).build());
+        Map<String, String> masterData = new HashMap<>();
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(Routings.class), anyMap(), anyString(), anyMap())).thenReturn(List.of(""));
+        when(masterDataUtils.setMasterData(isNull(), anyString(), anyMap())).thenReturn(masterData);
+        routingV3Util.addAllCarrierInSingleCallList(routingListResponse, null);
+        verify(masterDataUtils).setMasterData(isNull(), anyString(), anyMap());
+    }
 
+    @Test
+    void addAllCarrierInSingleCallList2() {
+        List<RoutingsResponse> routingListResponse = new ArrayList<>();
+        routingListResponse.add(RoutingsResponse.builder().id(1L).build());
+        when(masterDataUtils.createInBulkCarriersRequest(any(), eq(Routings.class), anyMap(), anyString(), anyMap())).thenReturn(List.of(""));
+        when(masterDataUtils.setMasterData(isNull(), anyString(), anyMap())).thenThrow(RuntimeException.class);
+        routingV3Util.addAllCarrierInSingleCallList(routingListResponse, null);
+        verify(masterDataUtils).pushToCache(anyMap(), anyString(), anySet(), any(), anyMap());
+    }
 }

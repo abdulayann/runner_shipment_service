@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.RoutingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
@@ -29,6 +30,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
@@ -420,14 +422,33 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, null, true)));
     }
 
-    private static void updateCarrierDetailsPolAndPod(CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+    private void updateCarrierDetailsPolAndPod(CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+        Set<String> locationCodes = new HashSet<>();
+
         if (!StringUtility.isEmpty(firstLeg.getPol())) {
-            carrierDetails.setOriginPort(firstLeg.getPol());
-            carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
+            locationCodes.add(firstLeg.getPol());
         }
         if (!StringUtility.isEmpty(lastLeg.getPod())) {
-            carrierDetails.setDestinationPort(lastLeg.getPod());
-            carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
+            locationCodes.add(firstLeg.getPod());
+        }
+        if (!CollectionUtils.isEmpty(locationCodes)) {
+            Map<String, EntityTransferUnLocations> locationsMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            if (!StringUtility.isEmpty(firstLeg.getPol())) {
+                carrierDetails.setOriginPort(firstLeg.getPol());
+                carrierDetails.setOriginPortLocCode(firstLeg.getOriginPortLocCode());
+                EntityTransferUnLocations entityTransferUnLocations = locationsMap.get(firstLeg.getPol());
+                if (!Objects.isNull(entityTransferUnLocations)) {
+                    carrierDetails.setOriginPortCountry(entityTransferUnLocations.Country);
+                }
+            }
+            if (!StringUtility.isEmpty(lastLeg.getPod())) {
+                carrierDetails.setDestinationPort(lastLeg.getPod());
+                carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
+                EntityTransferUnLocations entityTransferUnLocations = locationsMap.get(firstLeg.getPod());
+                if (!Objects.isNull(entityTransferUnLocations)) {
+                    carrierDetails.setDestinationPortCountry(entityTransferUnLocations.Country);
+                }
+            }
         }
     }
 
@@ -461,7 +482,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(shipmentDetails, null, true)));
     }
 
-    private static void updateCarrierDetailsBasedOnTransportInfoStatus(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, TransportInfoStatus transportInfoStatus, CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
+    private void updateCarrierDetailsBasedOnTransportInfoStatus(ShipmentDetails shipmentDetails, List<Routings> mainCarriageRoutings, TransportInfoStatus transportInfoStatus, CarrierDetails carrierDetails, Routings firstLeg, Routings lastLeg) {
         shipmentDetails.setTransportInfoStatus(transportInfoStatus);
         if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
             updateVesselAndVoyage(mainCarriageRoutings, carrierDetails, firstLeg);
@@ -503,9 +524,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     private static void setCarrierAndFlightNumberForAir(CarrierDetails carrierDetails, Routings mainCarriageLeg) {
         if (StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber())) {
             carrierDetails.setFlightNumber(mainCarriageLeg.getFlightNumber());
-        }
-        if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier())) {
-            carrierDetails.setShippingLine(mainCarriageLeg.getCarrier());
         }
     }
 
@@ -574,7 +592,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllUnlocationInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
             var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllMasterDataInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
             var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllVesselInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
-            CompletableFuture.allOf(locationDataFuture, masterDataFuture, vesselDataFuture).join();
+            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> routingV3Util.addAllCarrierInSingleCallList(response, masterDataResponse)), executorServiceMasterData);
+            CompletableFuture.allOf(locationDataFuture, masterDataFuture, vesselDataFuture, carrierFuture).join();
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.ROUTING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_ROUTING_LIST, ex.getLocalizedMessage());
@@ -941,13 +960,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             throw new ValidationException("Transport pol/pod info status can not be IH");
         }
         List<Routings> routingsList = new ArrayList<>();
-        if(Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
+        if (Constants.SHIPMENT.equalsIgnoreCase(request.getEntityType())) {
             Optional<ShipmentDetails> shipmentDetailsEntity = shipmentServiceV3.findById(request.getEntityId());
             if (shipmentDetailsEntity.isEmpty()) {
                 throw new ValidationException("Invalid shipment id");
             }
-           routingsList = shipmentDetailsEntity.get().getRoutingsList();
-        } else if(Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
+            routingsList = shipmentDetailsEntity.get().getRoutingsList();
+        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(request.getEntityType())) {
             Optional<ConsolidationDetails> consolidationDetails = consolidationV3Service.findById(request.getEntityId());
             if (consolidationDetails.isEmpty()) {
                 throw new ValidationException("Invalid consolidation id");
