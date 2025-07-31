@@ -77,7 +77,7 @@ public class SeawayBillReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId) {
-        V1TenantSettingsResponse tenantSettings = getCurrentTenantSettings();
+        tenantSettings = getCurrentTenantSettings();
         ShipmentSettingsDetails shipmentSettingFromContext = commonUtils.getShipmentSettingFromContext();
         ShipmentDetails shipment = getShipmentDetailsOrThrow(shipmentId);
 
