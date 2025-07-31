@@ -55,6 +55,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TRANSPORT_ORDER_V3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TENANTID;
+import static com.dpw.runner.shipment.services.commons.constants.DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants.GUID;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
@@ -2831,23 +2832,75 @@ public class ReportService implements IReportService {
         return null;
     }
 
+    private String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
+        String customFileName = null;
+
+        try {
+            if (!List.of(ReportConstants.FCR_DOCUMENT, ReportConstants.TRANSPORT_ORDER).contains(docType)) {
+                Map<String, String> docNamingMap = Map.ofEntries(
+                        Map.entry(ReportConstants.AWB_LABEL, "Air Label"),
+                        Map.entry(ReportConstants.MAWB, "MAWB"),
+                        Map.entry(ReportConstants.HAWB, "HAWB"),
+                        Map.entry("CSD", "Consignment Security Declaration (CSD)"),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.ARRIVAL_NOTICE, "Cargo Arrival Notice"),
+                        Map.entry(ReportConstants.PICKUP_ORDER, "Pickup Order"),
+                        Map.entry(ReportConstants.DELIVERY_ORDER, "Delivery Order"),
+                        Map.entry(ReportConstants.PRE_ALERT, "Pre Alert"),
+                        Map.entry(ReportConstants.HBL, "HBL"),
+                        Map.entry(ReportConstants.EXPORT_SHIPMENT_MANIFEST, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.IMPORT_SHIPMENT_MANIFEST, DocumentConstants.CARGO_MANIFEST_DISPLAY_NAME),
+                        Map.entry(ReportConstants.BOOKING_CONFIRMATION, "Booking Confirmation"),
+                        Map.entry(ReportConstants.CUSTOMS_INSTRUCTIONS, "Customs Clearance Instructions")
+                );
+
+                String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
+                if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
+                    customFileName = baseDocName
+                            + DocumentConstants.DASH
+                            + StringUtility.convertToString(childType).toUpperCase() + identifier
+                            + DocumentConstants.DOT_PDF;
+                } else {
+                    customFileName = baseDocName + identifier + DocumentConstants.DOT_PDF;
+                }
+                docUploadRequest.setFileName(customFileName);
+                log.info("Custom file name generated: {}", customFileName);
+            }
+        } catch (Exception e) {
+            log.error("Error generating custom document filename: {}", e.getMessage(), e);
+        }
+        return customFileName;
+    }
+
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;
         String shipmentType;
         String consolidationType;
         String entityGuid;
         String entityType;
+        String identifier = null;
         log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
 
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
                 ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
+                // Safety validation
+                if (shipmentDetails.getShipmentId() == null) {
+                    throw new ValidationException("missing for shipment ID: " + reportRequest.getReportId());
+                }
                 transportMode = shipmentDetails.getTransportMode();
                 shipmentType = shipmentDetails.getDirection();
                 consolidationType = shipmentDetails.getJobType();
                 entityGuid = StringUtility.convertToString(shipmentDetails.getGuid());
                 entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+
+                if (shipmentDetails.getShipmentId() != null && !shipmentDetails.getShipmentId().isBlank()) {
+                    identifier = shipmentDetails.getShipmentId();
+                }
                 break;
 
             case Constants.CONSOLIDATION:
@@ -2857,21 +2910,39 @@ public class ReportService implements IReportService {
                 consolidationType = consolidationDetails.getConsolidationType();
                 entityGuid = StringUtility.convertToString(consolidationDetails.getGuid());
                 entityType = Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
+
+                if (consolidationDetails.getConsolidationNumber() != null && !consolidationDetails.getConsolidationNumber().isBlank()) {
+                    identifier = consolidationDetails.getConsolidationNumber();
+                }
                 break;
 
             default:
                 log.warn("{} | {} | Invalid Module Type: {}", LoggerHelper.getRequestIdFromMDC(), "setDocumentServiceParameters", reportRequest.getEntityName());
                 throw new IllegalArgumentException("Invalid Module Type: " + reportRequest.getEntityName());
         }
-
+        if (identifier == null) {
+            identifier = "UNKNOWN_DOCUMENT_ID";
+        }
         docUploadRequest.setEntityType(entityType);
         docUploadRequest.setKey(entityGuid);
         docUploadRequest.setTransportMode(transportMode);
         docUploadRequest.setShipmentType(shipmentType);
         docUploadRequest.setConsolidationType(consolidationType);
+
+        // Apply custom naming if applicable and override
+        try {
+            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier);
+            if (customFileName != null) {
+                docUploadRequest.setFileName(customFileName); // override default
+            }
+        } catch (Exception e) {
+            log.error("{} | Error generating custom file name: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
+        }
         log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
         var response = documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
-        return jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
+        Map<String, Object> result = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
+        result.put("pdfByteContent", pdfByteContent);
+        return result;
     }
 
     // Main orchestrator method that populates the data dump dictionary with all required details
