@@ -1278,8 +1278,8 @@ public class PackingV3Service implements IPackingV3Service {
         response.setNoOfPacks(totalPacks);
         response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
         response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-        response.setPacksUnit(Constants.PACKAGES);
-        response.setDgPacksUnit(Constants.PACKAGES);
+        response.setPacksUnit(PackingConstants.PKG);
+        response.setDgPacksUnit(PackingConstants.PKG);
         Set<String> uniquePacksUnits = new HashSet<>();
         if (!CollectionUtils.isEmpty(packings)) {
             populateSummaryDetails(packings, response, uniquePacksUnits, totalWeight, totalVolume, totalPacks);
