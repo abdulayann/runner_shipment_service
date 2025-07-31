@@ -16,6 +16,7 @@ public class PackingListResponse implements IRunnerResponse {
     private List<PackingResponse> packings = new ArrayList<>();
     private Long assignedPackageCount = 0L;
     private Long unassignedPackageCount = 0L;
+    private Boolean triggerMigrationWarning;
     @JsonIgnore
     private Integer totalPages = 0;
     @JsonIgnore

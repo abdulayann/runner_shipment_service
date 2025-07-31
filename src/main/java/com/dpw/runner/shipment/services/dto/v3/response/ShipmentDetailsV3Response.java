@@ -263,4 +263,5 @@ public class ShipmentDetailsV3Response implements IRunnerResponse {
     private Long originBranch;
     private Integer slac;
     private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

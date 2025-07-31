@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.PackingConstants;
 import com.dpw.runner.shipment.services.commons.enums.TILegType;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
@@ -110,6 +111,7 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         }
         // save shipment
         shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+        shipment.setTriggerMigrationWarning(true);
         shipmentRepository.save(shipment);
         log.info("Migration V2 to V3 complete for Shipment [id={}]", shipment.getId());
         return shipment;
@@ -122,8 +124,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         // Update Packs based on Auto Update Weight Volume flag
         transformContainerAndPacks(shipmentDetails, packingVsContainerGuid);
 
-        // Update Shipment Summary
-        updateShipmentCargoSummary(shipmentDetails);
+//         Update Shipment Summary
+//        updateShipmentCargoSummary(shipmentDetails);
 
         updateTransportInstruction(shipmentDetails);
 
@@ -135,6 +137,10 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     private void updateShipmentFields(ShipmentDetails shipmentDetails) {
         shipmentDetails.setCargoReadinessDate(shipmentDetails.getCargoReadyDate());
+        shipmentDetails.setTriggerMigrationWarning(true);
+        shipmentDetails.setIsLocked(false);
+        if(shipmentDetails.getAdditionalDetails() != null)
+            shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
 
         // migrated deprecated shipment status
         if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
@@ -175,22 +181,25 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void transformContainerAndPacks(ShipmentDetails shipmentDetails, Map<UUID, UUID> packingVsContainerGuid) {
-        if (Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol())) {
-            if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                createPacksWithContainerSummary(shipmentDetails, packingVsContainerGuid);
-            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                createPacksForUnassignedContainers(shipmentDetails, packingVsContainerGuid);
-            }
-
-        } else {
-            if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                redistributeSummaryToPacks(shipmentDetails);
-            } else if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                createPacksForContainerLineItems(shipmentDetails, packingVsContainerGuid);
-            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
-                removeExistingPacksAndCreateNewPacks(shipmentDetails, packingVsContainerGuid);
-            }
+        if (Constants.SHIPMENT_TYPE_LCL.equals(shipmentDetails.getShipmentType()) && !shipmentDetails.getContainersList().isEmpty()) {
+            createPacksForUnassignedContainers(shipmentDetails, packingVsContainerGuid);
         }
+//        if (Boolean.TRUE.equals(shipmentDetails.getAutoUpdateWtVol())) {
+//            if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+//                createPacksWithContainerSummary(shipmentDetails, packingVsContainerGuid);
+//            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+//                createPacksForUnassignedContainers(shipmentDetails, packingVsContainerGuid);
+//            }
+//
+//        } else {
+//            if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+//                redistributeSummaryToPacks(shipmentDetails);
+//            } else if (CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+//                createPacksForContainerLineItems(shipmentDetails, packingVsContainerGuid);
+//            } else if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.getPackingList()) && !CommonUtils.setIsNullOrEmpty(shipmentDetails.getContainersList())) {
+//                removeExistingPacksAndCreateNewPacks(shipmentDetails, packingVsContainerGuid);
+//            }
+//        }
     }
 
     private void redistributeSummaryToPacks(ShipmentDetails shipmentDetails) {
@@ -279,13 +288,14 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     private void createPackWithContainerInfo(Packing packing, Containers container) {
-        String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
-        packing.setPacks(count);
-        packing.setPacksType(commonUtils.getPacksUnit(container.getPacksType()));
-        packing.setWeight(container.getGrossWeight());
-        packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
-        packing.setVolume(container.getGrossVolume());
-        packing.setVolumeUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossVolumeUnit()) ? container.getGrossVolumeUnit() : commonUtils.getDefaultVolumeUnit());
+//        String count = !isStringNullOrEmpty(container.getPacks()) ? container.getPacks() : "1";
+        packing.setPacks("0");
+        packing.setPacksType(PackingConstants.PKG);
+//        packing.setWeight(container.getGrossWeight());
+//        packing.setWeightUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossWeightUnit()) ? container.getGrossWeightUnit() : commonUtils.getDefaultWeightUnit());
+//        packing.setVolume(container.getGrossVolume());
+//        packing.setVolumeUnit(!CommonUtils.isStringNullOrEmpty(container.getGrossVolumeUnit()) ? container.getGrossVolumeUnit() : commonUtils.getDefaultVolumeUnit());
+        // TODO: handle default commodity
         packing.setCommodity(container.getCommodityCode());
     }
 

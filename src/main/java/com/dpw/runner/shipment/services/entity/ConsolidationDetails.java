@@ -515,6 +515,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @Enumerated(EnumType.STRING)
     private MigrationStatus migrationStatus;
 
+    @Column(name = "trigger_migration_warning")
+    private Boolean triggerMigrationWarning = false;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

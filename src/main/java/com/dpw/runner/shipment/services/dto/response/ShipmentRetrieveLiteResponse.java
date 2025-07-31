@@ -257,4 +257,5 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Integer slac;
     private List<RoutingsLiteResponse> routingsLiteResponses;
     private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

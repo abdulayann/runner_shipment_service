@@ -763,6 +763,7 @@ public class PackingV3Service implements IPackingV3Service {
         Optional<ShipmentDetails> shipmentDetailsEntity = shipmentService.findById(Long.valueOf(request.getEntityId()));
         if (shipmentDetailsEntity.isPresent()) {
             ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
+            packingListResponse.setTriggerMigrationWarning(shipmentDetails.getTriggerMigrationWarning());
             packingListResponse.getPackings().forEach(packingResponse -> {
                 packingResponse.setShipmentNumber(shipmentDetails.getShipmentId());
                 if(Objects.nonNull(shipmentDetails.getContainerAssignedToShipmentCargo()))

@@ -815,6 +815,12 @@ public class ContainerV3Service implements IContainerV3Service {
         containerListResponse.setTotalPages(containerListResponse.getTotalPages());
         containerListResponse.setNumberOfRecords(containerListResponse.getNumberOfRecords());
 
+        Optional<ShipmentDetails> shipmentDetailsEntity = shipmentService.findById(Long.valueOf(request.getEntityId()));
+        if (shipmentDetailsEntity.isPresent()) {
+            ShipmentDetails shipmentDetails = shipmentDetailsEntity.get();
+            containerListResponse.setTriggerMigrationWarning(shipmentDetails.getTriggerMigrationWarning());
+        }
+
         return containerListResponse;
 
     }

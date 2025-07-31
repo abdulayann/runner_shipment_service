@@ -153,6 +153,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
             shp.setConsolidationList(new HashSet<>());
             shp.getConsolidationList().add(console);
             shp.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V2);
+            shp.setTriggerMigrationWarning(true);
 //            shp.setIsMigratedToV3(Boolean.TRUE);
         });
 
@@ -162,6 +163,7 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
         // Step 8: Mark consolidation itself as migrated and save
 //        console.setIsMigratedToV3(Boolean.TRUE);
         setMigrationStatusEnum(console, MigrationStatus.MIGRATED_FROM_V2);
+        console.setTriggerMigrationWarning(true);
         consolidationRepository.save(console);
 
         log.info("Migration complete for Consolidation [id={}]", consolidationId);
@@ -261,18 +263,21 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
 
         log.info("All shipments transformed to V3 for Consolidation [guid={}]", consolGuid);
 
-        // Step 7: Attach packings to correct containers using packingVsContainerGuid
-        assignPackingsToContainers(shipmentDetailsList, packingVsContainerGuid, guidVsContainer);
-        log.info("Packings assigned to containers for Consolidation [guid={}]", consolGuid);
+//        // Step 7: Attach packings to correct containers using packingVsContainerGuid
+//        assignPackingsToContainers(shipmentDetailsList, packingVsContainerGuid, guidVsContainer);
+//        log.info("Packings assigned to containers for Consolidation [guid={}]", consolGuid);
 
         // Step 8: Update console-level summary like weight/volume/counts/etc.
-        try {
-            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
-        } catch (Exception e) {
-            log.error("Failed to compute achieved quantities for Consolidation [guid={}]", consolGuid, e);
-            throw new IllegalArgumentException("Summary calculation failed", e);
-        }
+//        try {
+//            consolidationV3Service.calculateAchievedQuantitiesEntity(clonedConsole);
+//        } catch (Exception e) {
+//            log.error("Failed to compute achieved quantities for Consolidation [guid={}]", consolGuid, e);
+//            throw new IllegalArgumentException("Summary calculation failed", e);
+//        }
 
+        clonedConsole.setOpenForAttachment(true);
+        clonedConsole.setTriggerMigrationWarning(true);
+        clonedConsole.setIsLocked(false);
         log.info("Completed V2→V3 mapping for Consolidation [guid={}]", consolGuid);
         return clonedConsole;
     }
@@ -501,56 +506,98 @@ public class ConsolidationMigrationV3Service implements IConsolidationMigrationV
     }
 
     private void distributeMultiCountContainer(Containers original, Long count, List<Containers> resultContainers) {
+        // TODO: Change Distribution logic
         BigDecimal totalWeight = safeBigDecimal(original.getGrossWeight());
         BigDecimal totalVolume = safeBigDecimal(original.getGrossVolume());
+        BigDecimal totalPacks = BigDecimal.valueOf(Long.parseLong(original.getPacks()));
 
         // Divide weight and volume equally, remainder added to last container
         BigDecimal[] weightParts = totalWeight.divideAndRemainder(BigDecimal.valueOf(count));
         BigDecimal[] volumeParts = totalVolume.divideAndRemainder(BigDecimal.valueOf(count));
+        BigDecimal[] packsParts = totalPacks.divideAndRemainder(BigDecimal.valueOf(count));
 
         BigDecimal baseWeight = weightParts[0];
         BigDecimal weightRemainder = weightParts[1];
         BigDecimal baseVolume = volumeParts[0];
         BigDecimal volumeRemainder = volumeParts[1];
+        BigDecimal basePacks = packsParts[0];
+        BigDecimal packsRemainder = packsParts[1];
 
         // Step 1: Convert original container into a 1-count container with base values
         original.setContainerCount(1L);
         original.setGrossWeight(baseWeight);
+        if(weightRemainder.intValue() >= 1) {
+            original.setGrossWeight(baseWeight.add(BigDecimal.valueOf(1)));
+            weightRemainder = weightRemainder.subtract(BigDecimal.valueOf(1));
+        }
         original.setGrossVolume(baseVolume);
+        if(volumeRemainder.intValue() >= 1) {
+            original.setGrossVolume(baseVolume.add(BigDecimal.valueOf(1)));
+            volumeRemainder = volumeRemainder.subtract(BigDecimal.valueOf(1));
+        }
+        int packsCount = basePacks.intValue();
+        if(packsRemainder.intValue() >= 1) {
+            packsCount += 1;
+            packsRemainder = packsRemainder.subtract(BigDecimal.valueOf(1));
+        }
+        original.setPacks(String.valueOf(packsCount));
         resultContainers.add(original);
 
         // Step 2: Generate new containers for remaining (count - 1)
         for (int i = 1; i < count; i++) {
-            boolean isLast = (i == count - 1);
+//            boolean isLast = (i == count - 1);
 
             resultContainers.add(
                     createDistributedCopy(
                             original,
                             baseWeight,
                             baseVolume,
-                            isLast ? weightRemainder : BigDecimal.ZERO,
-                            isLast ? volumeRemainder : BigDecimal.ZERO
+                            weightRemainder,
+                            volumeRemainder,
+                            basePacks,
+                            packsRemainder
                     )
             );
+            if(weightRemainder.intValue() >= 1) {
+                weightRemainder = weightRemainder.subtract(BigDecimal.valueOf(1));
+            }
+            if(volumeRemainder.intValue() >= 1) {
+                volumeRemainder = volumeRemainder.subtract(BigDecimal.valueOf(1));
+            }
+            if(packsRemainder.intValue() >= 1) {
+                packsRemainder = packsRemainder.subtract(BigDecimal.valueOf(1));
+            }
         }
 
         log.info("Split container [guid={}] into {} parts", original.getGuid(), count);
     }
 
     private Containers createDistributedCopy(Containers sourceContainer, BigDecimal baseWeight, BigDecimal baseVolume,
-            BigDecimal weightRemainder, BigDecimal volumeRemainder) {
+            BigDecimal weightRemainder, BigDecimal volumeRemainder, BigDecimal basePacks, BigDecimal packsRemainder) {
         Containers newContainer = jsonHelper.convertValue(sourceContainer, Containers.class);
         newContainer.setId(null); // Ensure new identity
         newContainer.setGuid(UUID.randomUUID());
         newContainer.setContainerCount(1L);
-        newContainer.setGrossWeight(baseWeight.add(weightRemainder));
-        newContainer.setGrossVolume(baseVolume.add(volumeRemainder));
+
+        newContainer.setGrossWeight(baseWeight);
+        if(weightRemainder.intValue() >= 1) {
+            newContainer.setGrossWeight(baseWeight.add(BigDecimal.valueOf(1)));
+        }
+        newContainer.setGrossVolume(baseVolume);
+        if(volumeRemainder.intValue() >= 1) {
+            newContainer.setGrossVolume(baseVolume.add(BigDecimal.valueOf(1)));
+        }
+        int packsCount = basePacks.intValue();
+        if(packsRemainder.intValue() >= 1) {
+            packsCount += 1;
+        }
+        newContainer.setPacks(String.valueOf(packsCount));
 
         newContainer.setCreatedBy(sourceContainer.getCreatedBy());
         newContainer.setUpdatedBy(sourceContainer.getUpdatedBy());
 
-        log.info("Created split container [guid={}] with weight={} + {} and volume={} + {}",
-                newContainer.getGuid(), baseWeight, weightRemainder, baseVolume, volumeRemainder);
+        log.info("Created split container [guid={}] with weight={} + {} and volume={} + {} and packs={} + {}",
+                newContainer.getGuid(), baseWeight, weightRemainder, baseVolume, volumeRemainder, basePacks, packsRemainder);
 
         return newContainer;
     }
