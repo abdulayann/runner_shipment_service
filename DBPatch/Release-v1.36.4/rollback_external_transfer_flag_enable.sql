@@ -1,0 +1,2 @@
+UPDATE shipment_setting
+SET is_external_file_transfer_enabled = false
