@@ -3581,40 +3581,37 @@ public abstract class IReport {
         dictionary.put("ShipmentPacks2", shipmentPacksList);
     }
 
+
     private void processContainersData(List<ContainerModel> containerList,
-                                       V1TenantSettingsResponse v1TenantSettingsResponse,
+                                       V1TenantSettingsResponse settings,
                                        Map<String, Object> dictionary) {
 
         List<Map<String, Object>> shipmentContainersList = new ArrayList<>();
 
         for (ContainerModel container : containerList) {
             Map<String, Object> containerData = new HashMap<>();
-            String grossWeight = formatWeight(container.getGrossWeight(), v1TenantSettingsResponse);
-            String grossVolume = formatVolume(container.getGrossVolume(), v1TenantSettingsResponse);
 
-            containerData.put(CONTAINER_TYPE_CODE2, container.getContainerCode() != null ? container.getContainerCode() : "");
-            containerData.put(CONTAINER_NUMBER2, container.getContainerNumber() != null ? container.getContainerNumber() : "");
-            containerData.put(CARRIER_SEAL_NUMBER2, container.getCarrierSealNumber() != null ? container.getCarrierSealNumber() : "");
-            containerData.put(MARKS_NUMS2, container.getMarksNums() != null ? container.getMarksNums() : "");
-            containerData.put(GOODS_DESCRIPTION2, container.getDescriptionOfGoods() != null ? container.getDescriptionOfGoods() : "");
-            containerData.put(PACKS2, container.getPacks() != null ? (container.getPacks().isEmpty() ? "" : container.getPacks()) : "");
-            containerData.put(PACKS_UNIT2, container.getPacksType() != null ? container.getPacksType() : "");
-            containerData.put(GROSS_WEIGHT2, grossWeight);
-            containerData.put(GROSS_WEIGHT_UNIT2, StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
-            containerData.put(GROSS_VOLUME2, grossVolume);
-            containerData.put(GROSS_VOLUME_UNIT2, StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
+            String grossWeight = formatWeight(container.getGrossWeight(), settings);
+            String grossVolume = formatVolume(container.getGrossVolume(), settings);
 
-            dictionary.put(CONTAINER_TYPE_CODE2, container.getContainerCode() != null ? container.getContainerCode() : "");
-            dictionary.put(CONTAINER_NUMBER2, container.getContainerNumber() != null ? container.getContainerNumber() : "");
-            dictionary.put(CARRIER_SEAL_NUMBER2, container.getCarrierSealNumber() != null ? container.getCarrierSealNumber() : "");
-            dictionary.put(MARKS_NUMS2, container.getMarksNums() != null ? container.getMarksNums() : "");
-            dictionary.put(GOODS_DESCRIPTION2, container.getDescriptionOfGoods() != null ? container.getDescriptionOfGoods() : "");
-            dictionary.put(PACKS2, container.getPacks() != null ? (container.getPacks().isEmpty() ? "" : container.getPacks()) : "");
-            dictionary.put(PACKS_UNIT2,  container.getPacksType() != null ? container.getPacksType() : "");
-            dictionary.put(GROSS_WEIGHT2, grossWeight);
-            dictionary.put(GROSS_WEIGHT_UNIT2, StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
-            dictionary.put(GROSS_VOLUME2, grossVolume);
-            dictionary.put(GROSS_VOLUME_UNIT2, StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
+            // Put values into containerData and dictionary simultaneously
+            putValue(containerData, dictionary, CONTAINER_TYPE_CODE2, container.getContainerCode());
+            putValue(containerData, dictionary, CONTAINER_NUMBER2, container.getContainerNumber());
+            putValue(containerData, dictionary, CARRIER_SEAL_NUMBER2, container.getCarrierSealNumber());
+            putValue(containerData, dictionary, MARKS_NUMS2, container.getMarksNums());
+            putValue(containerData, dictionary, GOODS_DESCRIPTION2, container.getDescriptionOfGoods());
+
+            String packs = container.getPacks();
+            putValue(containerData, dictionary, PACKS2, (packs == null || packs.isEmpty()) ? "" : packs);
+            putValue(containerData, dictionary, PACKS_UNIT2, container.getPacksType());
+
+            putValue(containerData, dictionary, GROSS_WEIGHT2, grossWeight);
+
+            putValue(containerData, dictionary, GROSS_WEIGHT_UNIT2, isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
+
+            putValue(containerData, dictionary, GROSS_VOLUME2, grossVolume);
+
+            putValue(containerData, dictionary, GROSS_VOLUME_UNIT2, isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
 
             shipmentContainersList.add(containerData);
         }
@@ -3622,10 +3619,20 @@ public abstract class IReport {
         dictionary.put("ShipmentContainers2", shipmentContainersList);
     }
 
+    private void putValue(Map<String, Object> map1, Map<String, Object> map2, String key, String value) {
+        String safeValue = (value == null) ? "" : value;
+        map1.put(key, safeValue);
+        map2.put(key, safeValue);
+    }
+
+    private boolean isEmpty(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+
     private Map<String, Object> buildPacksGroupSummary(Map<String, Object> dictionary,
                                                        List<PackingModel> packsInGroup,
                                                        V1TenantSettingsResponse settings) {
-
         Set<String> marksSet = new LinkedHashSet<>();
         Set<String> descSet = new LinkedHashSet<>();
         Set<String> packUnits = new LinkedHashSet<>();
@@ -3637,102 +3644,99 @@ public abstract class IReport {
         Containers containerData = null;
         String containerNumber = null;
 
-        // Process packsInGroup only once
+        // Aggregate pack data and first container data
         for (PackingModel pack : packsInGroup) {
-            // Find container data once
             if (containerData == null && pack.getContainerId() != null) {
                 containerData = containerDao.findById(pack.getContainerId()).orElse(null);
             }
 
-            addIfNotEmpty(marksSet, pack.getMarksnNums() != null ? pack.getMarksnNums() : "");
-            addIfNotEmpty(descSet, pack.getGoodsDescription() != null ? pack.getGoodsDescription() : "");
-            addIfNotNull(packUnits, pack.getPacksType() != null ? pack.getPacksType() : "");
+            addIfNotBlank(marksSet, pack.getMarksnNums());
+            addIfNotBlank(descSet, pack.getGoodsDescription());
+            addIfNotNull(packUnits, pack.getPacksType());
 
-            totalPacks = totalPacks.add(nullSafeBigDecimal(pack.getPacks()));
-            totalWeight = totalWeight.add(nullSafeBigDecimal(pack.getWeight()));
-            totalVolume = totalVolume.add(nullSafeBigDecimal(pack.getVolume()));
+            totalPacks = totalPacks.add(safeBigDecimal(pack.getPacks()));
+            totalWeight = totalWeight.add(safeBigDecimal(pack.getWeight()));
+            totalVolume = totalVolume.add(safeBigDecimal(pack.getVolume()));
 
-            if (containerNumber == null && pack.getContainerNumber() != null) {
+            if (containerNumber == null && isNotBlank(pack.getContainerNumber())) {
                 containerNumber = pack.getContainerNumber();
             }
         }
 
-        // Override containerNumber from containerData if still null
-        if (containerData != null) {
-            containerNumber = firstNonNull(containerNumber, containerData.getContainerNumber());
-        }
-
-        String containerTypeCode = containerData != null ? containerData.getContainerCode() : null;
-        String carrierSealNumber = containerData != null ? containerData.getCarrierSealNumber() : null;
+        containerNumber = firstNonNull(containerNumber, containerData != null ? containerData.getContainerNumber() : null);
+        String containerTypeCode = containerData != null ? containerData.getContainerCode() : "";
+        String carrierSealNumber = containerData != null ? containerData.getCarrierSealNumber() : "";
 
         Map<String, Object> summary = new HashMap<>();
 
-        // Utility lambda to handle puts with dictionary and summary simultaneously
-        BiConsumer<String, Object> putBoth = (key, value) -> {
-            summary.put(key, value);
-            dictionary.put(key, value);
-        };
+        putBoth(summary, dictionary, CONTAINER_TYPE_CODE2, containerTypeCode);
+        putBoth(summary, dictionary, CONTAINER_NUMBER2, containerNumber != null ? containerNumber : "");
+        putBoth(summary, dictionary, CARRIER_SEAL_NUMBER2, carrierSealNumber);
 
-        putBoth.accept(CONTAINER_TYPE_CODE2, defaultIfNull(containerTypeCode));
-        putBoth.accept(CONTAINER_NUMBER2, defaultIfNull(containerNumber));
-        putBoth.accept(CARRIER_SEAL_NUMBER2, defaultIfNull(carrierSealNumber));
+        putBoth(summary, dictionary, PACKS_MARKS_NUMBER2, String.join(", ", marksSet));
+        putBoth(summary, dictionary, PACKS_GOODS_DESCRIPTION2, String.join("\n", descSet));
+        putBoth(summary, dictionary, PACKS2, formatIfPositive(totalPacks, 0, settings));
 
-        putBoth.accept(PACKS_MARKS_NUMBER2, String.join(", ", marksSet));
-        putBoth.accept(PACKS_GOODS_DESCRIPTION2, String.join("\n", descSet));
-        putBoth.accept(PACKS2, totalPacks.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(totalPacks, 0, settings) : "");
-
-        // pack unit logic simplified
         String packUnit = determinePackUnit(packUnits);
-        putBoth.accept(PACKS_UNIT2, packUnit);
+        putBoth(summary, dictionary, PACKS_UNIT2, packUnit);
 
-        String weightUnit = "KG";
-        String volumeUnit = "M3";
+        final String weightUnit = "KG";
+        final String volumeUnit = "M3";
 
-        putBoth.accept(GROSS_WEIGHT2, formatOrEmpty(totalWeight, settings));
-        putBoth.accept(GROSS_WEIGHT_UNIT2, totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
+        putBoth(summary, dictionary, GROSS_WEIGHT2, formatIfPositive(totalWeight, 2, settings));
+        putBoth(summary, dictionary, GROSS_WEIGHT_UNIT2, totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
 
-        putBoth.accept(GROSS_VOLUME2, formatOrEmpty(totalVolume, settings));
-        putBoth.accept(GROSS_VOLUME_UNIT2, totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
+        putBoth(summary, dictionary, GROSS_VOLUME2, formatIfPositive(totalVolume, 2, settings));
+        putBoth(summary, dictionary, GROSS_VOLUME_UNIT2, totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
 
         return summary;
     }
 
-    // Helper: add string to set if not null or empty after trim
-    private void addIfNotEmpty(Set<String> set, String value) {
+    // Helper to add non-null, non-blank trimmed strings to set
+    private void addIfNotBlank(Set<String> set, String value) {
         if (value != null && !value.trim().isEmpty()) {
-            set.add(value);
+            set.add(value.trim());
         }
     }
 
-    // Helper: add to set if not null
+    // Helper to add non-null values to set
     private <T> void addIfNotNull(Set<T> set, T value) {
         if (value != null) {
             set.add(value);
         }
     }
 
-    // Helper: safely convert object to BigDecimal or zero
-    private BigDecimal nullSafeBigDecimal(Object number) {
-        if (number == null) return BigDecimal.ZERO;
-        if (number instanceof BigDecimal) return (BigDecimal) number;
+    // Helper to safely convert to BigDecimal or zero if null or invalid
+    private BigDecimal safeBigDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+        if (value instanceof BigDecimal) return (BigDecimal) value;
         try {
-            return new BigDecimal(number.toString());
+            return new BigDecimal(value.toString());
         } catch (Exception e) {
             return BigDecimal.ZERO;
         }
     }
 
-    // Helper: pick first non-null or null
+    // Returns the first non-null value, else null
     private <T> T firstNonNull(T first, T second) {
         return first != null ? first : second;
     }
 
-    // Helper: return empty string if null
-    private String defaultIfNull(String str) {
-        return str != null ? str : "";
+    // Helper to put key-value in both maps
+    private void putBoth(Map<String, Object> map1, Map<String, Object> map2, String key, Object value) {
+        map1.put(key, value);
+        map2.put(key, value);
     }
 
-    // Helper: determine pack unit string based on set size
+    // Helper to format BigDecimal if positive, else empty string
+    private String formatIfPositive(BigDecimal value, int scale, V1TenantSettingsResponse settings) {
+        if (value.compareTo(BigDecimal.ZERO) > 0) {
+            return getDPWWeightVolumeFormat(value, scale, settings);
+        }
+        return "";
+    }
+
+    // Determine pack unit string based on how many units are in set
     private String determinePackUnit(Set<String> packUnits) {
         if (packUnits == null || packUnits.isEmpty()) {
             return PACKAGES;
@@ -3743,9 +3747,9 @@ public abstract class IReport {
         return PACKAGES;
     }
 
-    // Helper: format big decimal value or return empty string if zero or less
-    private String formatOrEmpty(BigDecimal value, V1TenantSettingsResponse settings) {
-        return value.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(value, 2, settings) : "";
+    // Helper to check non-blank string
+    private boolean isNotBlank(String str) {
+        return str != null && !str.trim().isEmpty();
     }
 
     // Helper methods for formatting
