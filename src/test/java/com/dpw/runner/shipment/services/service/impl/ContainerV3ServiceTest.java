@@ -21,7 +21,9 @@ import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -75,6 +77,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.NETWORK_TRANSFER;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
@@ -593,7 +596,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
         when(containerDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
-        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainers(ListCommonRequest.builder().entityId("1").build(), Constants.CONSOLIDATION);
+        ContainerListResponse containerListResponse = containerV3Service.fetchConsolidationContainers(ListCommonRequest.builder().entityId("1").build(), CONSOLIDATION);
         assertNotNull(containerListResponse);
     }
 
@@ -631,7 +634,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findById(any())).thenReturn(Optional.of(testContainer));
         when(packingDao.findByIdIn(any())).thenReturn(new ArrayList<>(List.of(testPacking)));
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(testShipment));
-        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any());
+        doReturn(new ContainerResponse()).when(self).unAssignContainers(any(), any(), any());
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
         ContainerResponse response = spyService.assignContainers(request, Constants.CONTAINER);
@@ -675,7 +678,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -694,7 +697,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -713,7 +716,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -737,7 +740,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -762,7 +765,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -787,7 +790,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of(testShipment, testShipment1));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(containerResponse);
-        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER);
+        ContainerResponse response = containerV3Service.unAssignContainers(request, Constants.CONTAINER, new UnAssignContainerParams());
         assertNotNull(response);
     }
 
@@ -914,15 +917,14 @@ class ContainerV3ServiceTest extends CommonMocks {
             AssignContainerRequest assignContainerRequest,
             List<Packing> assignedPacks
     ) throws RunnerException {
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assignContainerParams.setAssignedShipIds(assignedShipIds);
+        assignContainerParams.setAssignedPacks(assignedPacks);
         containerV3Service.assignContainerCalculationsAndLogic(
-                shipmentDetailsMap,
-                assignedShipIds,
+                assignContainerParams,
                 assignContainerRequest,
-                new ArrayList<>(),   // Assuming empty list for some param
                 testContainer,
-                new HashMap<>(),     // Assuming empty map for some param
-                assignedPacks,
-                new ArrayList<>(),   // Assuming empty list for some param
                 Constants.CONTAINER
         );
     }
@@ -938,7 +940,11 @@ class ContainerV3ServiceTest extends CommonMocks {
         Set<Long> assignedShipIds = Set.of(1L);
         testShipment.setPackingList(new ArrayList<>(List.of(testPacking)));
         Map<Long, ShipmentDetails> shipmentDetailsMap = Map.of(1L, testShipment);
-        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(shipmentDetailsMap, assignedShipIds, assignContainerRequest, new ArrayList<>(), testContainer, new HashMap<>(), assignedPacks, new ArrayList<>(), Constants.CONTAINER));
+        AssignContainerParams assignContainerParams = new AssignContainerParams();
+        assignContainerParams.setShipmentDetailsMap(shipmentDetailsMap);
+        assignContainerParams.setAssignedShipIds(assignedShipIds);
+        assignContainerParams.setAssignedPacks(assignedPacks);
+        assertDoesNotThrow(() -> containerV3Service.assignContainerCalculationsAndLogic(assignContainerParams, assignContainerRequest, testContainer, Constants.CONTAINER));
     }
 
     @Test
@@ -1132,7 +1138,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ListCommonRequest request = new ListCommonRequest();
         request.setEntityId("1");
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request, CONSOLIDATION));
     }
 
     @Test
@@ -1147,7 +1153,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(testContainer))));
         ContainerBaseResponse containerBaseResponse = new ContainerBaseResponse();
         when(commonUtils.setIncludedFieldsToResponse(any(), any(), any())).thenReturn(containerBaseResponse);
-        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request, CONSOLIDATION));
     }
 
     @Test
@@ -1321,7 +1327,7 @@ class ContainerV3ServiceTest extends CommonMocks {
 
         projections.add(shipmentDetailsProjection);
         when(shipmentService.findShipmentDetailsByAttachedContainerIds(any())).thenReturn(projections);
-        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+        assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request, CONSOLIDATION));
     }
 
     // Helper methods for test data creation
