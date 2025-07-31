@@ -1,2 +1,2 @@
 ALTER TABLE shipment_additional_details
-ADD COLUMN shipped_onboard TIMESTAMP;
+    ADD COLUMN IF NOT EXISTS shipped_onboard TIMESTAMP;
