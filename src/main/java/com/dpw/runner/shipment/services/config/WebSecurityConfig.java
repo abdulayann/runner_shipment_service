@@ -34,6 +34,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         "/swagger-ui.html",
         "/webjars/**",
         "/migration/consolidation/**",
+        "/api/restore",
         "/api/v2/enums/**",
         "/api/v2/events/push-tracking-events",
         "/api/v2/cache/**"

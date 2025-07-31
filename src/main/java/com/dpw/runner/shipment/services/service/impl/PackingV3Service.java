@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -141,6 +142,9 @@ public class PackingV3Service implements IPackingV3Service {
     @Autowired
     private IContainerV3Service containerV3Service;
 
+    @Autowired
+    private ShipmentValidationV3Util shipmentValidationV3Util;
+
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Data
@@ -218,7 +222,7 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> packingList) {
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> packingList) throws RunnerException {
         if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(packingList)
                 || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
 
@@ -232,12 +236,11 @@ public class PackingV3Service implements IPackingV3Service {
         }
 
         if(isDG){
-            boolean saveShipment = !Boolean.TRUE.equals(shipmentDetails.getContainsHazardous());
-            shipmentDetails.setContainsHazardous(true);
-            saveShipment = saveShipment || commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+            boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
             if(saveShipment) {
+                shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
-                shipmentDao.updateDgStatusInShipment(shipmentDetails.getContainsHazardous(), oceanDGStatus, shipmentDetails.getId());
+                shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
             }
         }
     }
@@ -545,7 +548,9 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Delete packings from DB
         packingDao.deleteByIdIn(packingIds);
-
+        if(Objects.equals(module, BOOKING)) {
+            customerBookingV3Service.updatePackingInfoInBooking(packingRequestList.iterator().next().getBookingId());
+        }
         // Record audit logs for the deletion operation
         recordAuditLogs(packingsToDelete, null, DBOperationType.DELETE, parentResult);
 
@@ -1076,7 +1081,7 @@ public class PackingV3Service implements IPackingV3Service {
             double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
 
             // Chargeable weight for sea is the greater of volume (in m³) vs weight in tons (derived by dividing kg by 100)
-            chargeableWeight = Math.max(wtInKg / 100, volInM3);
+            chargeableWeight = Math.max(wtInKg / 1000, volInM3);
 
             // Unit is now volume-based (m³) instead of weight-based
             packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
@@ -1285,7 +1290,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     private void populateSummaryDetails(List<Packing> packings, CargoDetailsResponse response, Set<String> uniquePacksUnits, BigDecimal totalWeight, BigDecimal totalVolume, Integer totalPacks) throws RunnerException {
         Set<String> dgPacksUnitSet = new HashSet<>();
-        Integer dgPacksCount = 0;
+        int dgPacksCount = 0;
         boolean skipWeightInCalculation = false;
         if (TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
             skipWeightInCalculation = packings.stream()
@@ -1319,6 +1324,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (!StringUtility.isEmpty(packing.getPacksType())) {
             if (packing.getHazardous() != null && packing.getHazardous()) {
                 dgPacksUnitSet.add(packing.getPacksType());
+                uniquePacksUnits.add(packing.getPacksType());
             } else {
                 uniquePacksUnits.add(packing.getPacksType());
             }
@@ -1450,6 +1456,9 @@ public class PackingV3Service implements IPackingV3Service {
         Map<Long, List<Packing>> containerIdPacksIdMap = new HashMap<>();
         Set<Long> shipmentIds = new HashSet<>();
         for(Packing packing: packingList) {
+            if(packing.getContainerId() == null) {
+                throw new ValidationException("Container Id is null for packing with Id: " + packing.getId());
+            }
             containerIdPacksIdMap.computeIfAbsent(packing.getContainerId(), k -> new ArrayList<>());
             containerIdPacksIdMap.get(packing.getContainerId()).add(packing);
             shipmentIds.add(packing.getShipmentId());

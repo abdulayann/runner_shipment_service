@@ -186,4 +186,22 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
             WHERE s.id = :consolidationId
             """)
     void updateConsolidationAttachmentFlag(@Param("enableFlag") Boolean enableFlag, @Param("consolidationId") Long consolidationId);
+
+    @Query(value = "SELECT c.id FROM consolidation_details c WHERE c.tenant_id = ?1", nativeQuery = true)
+    Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE consolidation_details SET is_deleted = true WHERE id NOT IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE consolidation_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
+    void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM triangulation_partner_consolidation WHERE consolidation_id = ?1", nativeQuery = true)
+    void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
 }

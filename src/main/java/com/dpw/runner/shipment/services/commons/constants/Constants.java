@@ -694,6 +694,9 @@ public class Constants {
     public static final String REFERENCE_NUMBERS_FIELD = "referenceNumber";
     public static final String REFERENCE_NUMBERS_TABLE = "ReferenceNumbers";
     public static final String REFERENCE_NUMBERS_SHIPMENT_ID_FIELD = "shipmentId";
+    public static final String POL_WARNING_MESSAGE = "POL in Routing is different from the Transport Details. Do you want to Update?";
+    public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
+    public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
 
     private Constants() {
     }

@@ -22,4 +22,8 @@ public interface ITruckDriverDetailsDao {
     List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId);
     List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId, Map<Long, TruckDriverDetails> oldEntityMap);
     List<TruckDriverDetails> updateEntityFromShipment(List<TruckDriverDetails> truckDriverDetailsList, Long shipmentId, List<TruckDriverDetails> oldEntityList) throws RunnerException;
+
+    void deleteAdditionalTruckDriverDetailsByShipmentId(List<Long> truckDriverDetailsIds, Long shipmentId);
+
+    void revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(List<Long> truckDriverDetailsIds, Long shipmentId);
 }

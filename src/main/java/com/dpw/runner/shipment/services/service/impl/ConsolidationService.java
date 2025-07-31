@@ -3749,26 +3749,30 @@ public class ConsolidationService implements IConsolidationService {
             double startTime = System.currentTimeMillis();
             setMasterDataForCreateConsolePayload(consolidationDetailsResponse, getMasterData);
             this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse);
-            if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
+            if(consolidationDetails != null && consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
-            if(consolidationDetailsResponse.getId() != null) {
-                var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
-                if (awb != null && !awb.isEmpty()) {
-                    if (awb.get(0).getAirMessageStatus() != null)
-                        consolidationDetailsResponse.setAwbStatus(awb.get(0).getAirMessageStatus());
-                    else
-                        consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
-                    if(awb.get(0).getLinkedHawbAirMessageStatus() != null)
-                        consolidationDetailsResponse.setLinkedHawbStatus(awb.get(0).getLinkedHawbAirMessageStatus());
-                }
-            }
+            setAwbStatus(consolidationDetailsResponse);
             // fetch NTE status
             this.fetchNTEstatusForReceivingBranch(consolidationDetailsResponse);
-            if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA))
+            if (consolidationDetails != null && Objects.equals(Constants.TRANSPORT_MODE_ROA, consolidationDetails.getTransportMode()))
                 fetchTruckerInfo(consolidationDetails.getId(), consolidationDetailsResponse);
         }  catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
+        }
+    }
+
+    private void setAwbStatus(ConsolidationDetailsResponse consolidationDetailsResponse){
+        if(consolidationDetailsResponse.getId() != null) {
+            var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
+            if (awb != null && !awb.isEmpty()) {
+                if (awb.get(0).getAirMessageStatus() != null)
+                    consolidationDetailsResponse.setAwbStatus(awb.get(0).getAirMessageStatus());
+                else
+                    consolidationDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
+                if(awb.get(0).getLinkedHawbAirMessageStatus() != null)
+                    consolidationDetailsResponse.setLinkedHawbStatus(awb.get(0).getLinkedHawbAirMessageStatus());
+            }
         }
     }
 

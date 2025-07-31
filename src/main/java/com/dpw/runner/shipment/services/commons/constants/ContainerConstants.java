@@ -58,6 +58,7 @@ public class ContainerConstants {
     public static final String KEY_SHIPMENT_TYPE = "shipmentType";
     public static final String KEY_CONSOLIDATION_ID = "consolidationId";
     public static final String KEY_UPDATED_AT = "updatedAt";
+    public static final String KEY_CONTAINER_CODE = "containerCode";
     public static final String CONTAINER_ALREADY_ASSIGNED_MSG = "Shipment already Assigned to Container - ";
 
     public static final Map<String, RunnerEntityMapping> TABLES_NAMES = Map.ofEntries(
@@ -86,7 +87,9 @@ public class ContainerConstants {
             Map.entry(KEY_CONSOLIDATION_ID,
                     RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Long.class).fieldName(KEY_CONSOLIDATION_ID).build()),
             Map.entry(KEY_UPDATED_AT,
-                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Long.class).fieldName(KEY_UPDATED_AT).build())
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(Long.class).fieldName(KEY_UPDATED_AT).build()),
+            Map.entry(KEY_CONTAINER_CODE,
+                    RunnerEntityMapping.builder().tableName(TABLE_CONTAINERS).dataType(String.class).fieldName(KEY_CONTAINER_CODE).isContainsText(true).build())
 
     );
 
