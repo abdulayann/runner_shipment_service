@@ -860,8 +860,8 @@ class PackingV3ServiceTest extends CommonMocks {
     @Test
     void testUnAssignPackageContainers() throws RunnerException {
         UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
-        packingV3Service.unAssignPackageContainers(request);
-        verify(containerV3Service, never()).unAssignContainers(any(), any());
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(containerV3Service, never()).unAssignContainers(any(), any(), any());
     }
 
     @Test
@@ -872,8 +872,8 @@ class PackingV3ServiceTest extends CommonMocks {
         packing.setShipmentId(1L);
         packing.setContainerId(1L);
         when(packingDao.findByIdIn(any())).thenReturn(List.of(packing));
-        packingV3Service.unAssignPackageContainers(request);
-        verify(containerV3Service).unAssignContainers(any(), any());
+        packingV3Service.unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        verify(containerV3Service).unAssignContainers(any(), any(), any());
     }
 
     @Test
