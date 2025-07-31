@@ -15,8 +15,7 @@ public class ContainerSummaryResponse implements IRunnerResponse {
     private String totalContainerVolume;
     private String summary;
     private Integer dgContainers;
-    private Long totalDgPackages;
-    private Long totalPackagesWithoutUnit;
+    private Integer totalDgPackages;
     private String totalNetWeight; // cargo weight
     private String assignedContainersCount;
     private List<GroupedContainerSummary> groupedContainersSummary;

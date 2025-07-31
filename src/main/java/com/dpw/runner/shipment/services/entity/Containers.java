@@ -75,7 +75,7 @@ public class Containers extends MultiTenancy {
     private String sealNumber;
 
     @Column(name = "description_of_goods")
-    @Size(max = 25000, message = "max size is 25000 for description_of_goods")
+    @Size(max = 2048, message = "max size is 2048 for description_of_goods")
     private String descriptionOfGoods;
 
     @Column(name = "net_weight")
@@ -223,7 +223,7 @@ public class Containers extends MultiTenancy {
     private String packsType;
 
     @Column(name = "marks_n_nums")
-    @Size(max=25000, message = "max size is 25000 for marks_n_nums")
+    @Size(max=50, message = "max size is 50 for marks_n_nums")
     private String marksNums;
 
     @Column(name = "inner_package_measurement_unit")

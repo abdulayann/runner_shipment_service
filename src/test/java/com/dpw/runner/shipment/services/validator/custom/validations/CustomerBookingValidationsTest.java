@@ -4,20 +4,21 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.MandatoryFieldException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.dpw.runner.shipment.services.CommonMocks;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -104,6 +105,36 @@ class CustomerBookingValidationsTest extends CommonMocks {
     }
 
     @Test
+    void testOnSave_PendingForKYC_without_transportType_throwsException() {
+        CustomerBooking oldEntity = CustomerBooking.builder().bookingNumber("num1").build();
+        CustomerBooking newEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").orgData(Collections.emptyMap()).build())
+                .isCustomerFreeText(true)
+                .isCustomerAddressFreeText(false)
+                .consignee(Parties.builder().orgCode("code").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .build();
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity , newEntity));
+    }
+
+    @Test
+    void testOnSave_PendingForKYC_Success() {
+        CustomerBooking oldEntity = CustomerBooking.builder().bookingNumber("num1").build();
+        CustomerBooking newEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").orgData(Collections.emptyMap()).build())
+                .isCustomerFreeText(true)
+                .isCustomerAddressFreeText(false)
+                .cargoType("FCL")
+                .transportType("SEA")
+                .consignee(Parties.builder().orgCode("code").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .build();
+        assertDoesNotThrow(() -> customerBookingValidations.onSave(oldEntity, newEntity));
+    }
+
+    @Test
     void testOnSave_PendingForCreditLimit() {
         CustomerBooking oldEntity = CustomerBooking.builder().bookingNumber("num1").build();
         CustomerBooking newEntity_withoutCustomer = CustomerBooking.builder().bookingNumber("num1")
@@ -169,10 +200,12 @@ class CustomerBookingValidationsTest extends CommonMocks {
                 .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 .consignee(Parties.builder().orgCode("code").build())
                 .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
-                .consignor(Parties.builder().orgCode("code2").build())
+                .consignor(Parties.builder().orgCode("code2").addressCode("addressCode2").build())
+                .direction("EXP")
                 .incoTerms("incoterms")
+                .serviceMode("P2P")
                 .transportType(Constants.TRANSPORT_MODE_ROA)
-                .carrierDetails(CarrierDetails.builder().originPort("origin Port").origin("origin").destination("destination").build())
+                .carrierDetails(CarrierDetails.builder().originPort("origin Port").destinationPort("destination port").origin("origin").destination("destination").build())
                 .cargoType("cargo_type")
                 .build();
 
@@ -180,8 +213,10 @@ class CustomerBookingValidationsTest extends CommonMocks {
                 .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 .consignee(Parties.builder().orgCode("code").build())
                 .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
-                .consignor(Parties.builder().orgCode("code2").build())
+                .consignor(Parties.builder().orgCode("code2").addressCode("addressCode2").build())
+                .direction("EXP")
                 .incoTerms("incoterms")
+                .serviceMode("P2P")
                 .transportType(Constants.TRANSPORT_MODE_ROA)
                 .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
                 .cargoType("cargo_type")
@@ -211,13 +246,57 @@ class CustomerBookingValidationsTest extends CommonMocks {
                 .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 .consignee(Parties.builder().orgCode("code").build())
                 .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
-                .consignor(Parties.builder().orgCode("code2").build())
+                .consignor(Parties.builder().orgCode("code2").addressCode("addressCode2").build())
+                .direction("EXP")
                 .incoTerms("incoterms")
+                .serviceMode("P2P")
+                .packingList(List.of(new Packing()))
                 .transportType(Constants.TRANSPORT_MODE_AIR)
-                .cargoType("cargo_type")
+                .cargoType("LCL")
                 .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
                 .build();
 
+        CustomerBooking newEntity_With_Containers = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                .consignee(Parties.builder().orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").addressCode("addressCode2").build())
+                .direction("EXP")
+                .incoTerms("incoterms")
+                .serviceMode("P2P")
+                .containersList(List.of(new Containers()))
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .cargoType("FCL")
+                .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
+                .build();
+
+        CustomerBooking newEntity_withOutContainers = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                .consignee(Parties.builder().orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").addressCode("addressCode2").build())
+                .direction("EXP")
+                .incoTerms("incoterms")
+                .serviceMode("P2P")
+                .containersList(new ArrayList<>())
+                .transportType(Constants.TRANSPORT_MODE_ROA)
+                .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
+                .cargoType("FCL")
+                .build();
+
+        CustomerBooking newEntity_withOutPackings = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
+                .consignee(Parties.builder().orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").addressCode("addressCode2").build())
+                .direction("EXP")
+                .incoTerms("incoterms")
+                .serviceMode("P2P")
+                .packingList(new ArrayList<>())
+                .transportType(Constants.TRANSPORT_MODE_ROA)
+                .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
+                .cargoType("LCL")
+                .build();
 
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCustomer));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutIncoTerms));
@@ -229,9 +308,12 @@ class CustomerBookingValidationsTest extends CommonMocks {
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCargoType));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withoutCargoType));
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withOutContainers));
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidations.onSave(oldEntity,newEntity_withOutPackings));
         assertDoesNotThrow(() -> customerBookingValidations.onSave(oldEntity,newEntity_withOriginPortAndTransportType_ROA));
         assertDoesNotThrow(() -> customerBookingValidations.onSave(oldEntity,newEntity_withOriginPortAndDestinationPortAndTransportType_ROA));
         customerBookingValidations.onSave(oldEntity,newEntity);
+        customerBookingValidations.onSave(oldEntity,newEntity_With_Containers);
     }
 
 

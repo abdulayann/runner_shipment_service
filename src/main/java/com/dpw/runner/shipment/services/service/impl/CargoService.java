@@ -130,10 +130,8 @@ public class CargoService implements ICargoService {
         boolean stopWeightCalculation = false;
         Set<String> distinctPackTypes = new HashSet<>();
         boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(response.getTransportMode());
-        response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-        response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         for (Packing packing : packings) {
-            totalVolume = addPackingVolume(totalVolume, packing, response.getVolumeUnit());
+            totalVolume = addPackingVolume(totalVolume, packing, response);
             if (!isStringNullOrEmpty(packing.getPacks())) {
                 totalPacks += Integer.parseInt(packing.getPacks());
             }
@@ -148,16 +146,19 @@ public class CargoService implements ICargoService {
                 totalWeight = totalWeight.add(weight);
             }
         }
+
+        response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         response.setVolume(totalVolume);
         response.setNoOfPacks(totalPacks);
         response.setPacksUnit(getPackUnit(distinctPackTypes));
         response.setWeight(totalWeight);
     }
 
-    private BigDecimal addPackingVolume(BigDecimal totalVolume, Packing packing, String volumeUnit) throws RunnerException {
+    private BigDecimal addPackingVolume(BigDecimal totalVolume, Packing packing, CargoDetailsResponse response) throws RunnerException {
         if (packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
             BigDecimal converted = new BigDecimal(
-                    convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), volumeUnit).toString()
+                    convertUnit(VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()
             );
             return totalVolume.add(converted);
         }

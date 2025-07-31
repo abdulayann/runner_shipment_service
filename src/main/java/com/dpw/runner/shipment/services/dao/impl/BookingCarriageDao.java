@@ -261,14 +261,4 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             throw new RunnerException(e.getMessage());
         }
     }
-
-    @Override
-    public void deleteAdditionalbookingCarriageByShipmentId(List<Long> bookingCarriageIds, Long shipmentId) {
-        bookingCarriageRepository.deleteAdditionalbookingCarriageByShipmentId(bookingCarriageIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteBybookingCarriageIdsAndShipmentId(List<Long> bookingCarriageIds, Long shipmentId) {
-        bookingCarriageRepository.revertSoftDeleteBybookingCarriageIdsAndShipmentId(bookingCarriageIds, shipmentId);
-    }
 }

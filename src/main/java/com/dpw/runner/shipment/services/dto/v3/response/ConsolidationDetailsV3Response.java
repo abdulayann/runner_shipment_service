@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.v3.response;
 
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
@@ -181,8 +180,5 @@ public class ConsolidationDetailsV3Response implements IRunnerResponse {
     private Long shipmentsCount;
     private Boolean isMainCarriageAvailable = Boolean.FALSE;
     private String incoterms;
-    private TransportInfoStatus transportInfoStatus;
-    private String transportInfoStatusMessage;
-    private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private MigrationStatus migrationStatus;
 }

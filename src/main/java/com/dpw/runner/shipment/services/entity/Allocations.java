@@ -95,7 +95,5 @@ public class Allocations extends MultiTenancy {
     @Column(name = "teu_count")
     private BigDecimal teuCount;
 
-    @Column(name = "slac_count")
-    private Integer slacCount;
 
 }

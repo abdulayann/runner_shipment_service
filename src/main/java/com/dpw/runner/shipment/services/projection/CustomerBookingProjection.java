@@ -4,5 +4,5 @@ public interface CustomerBookingProjection {
 
     Long getId();
 
-    String getShipmentId();
+    Long getShipmentId();
 }

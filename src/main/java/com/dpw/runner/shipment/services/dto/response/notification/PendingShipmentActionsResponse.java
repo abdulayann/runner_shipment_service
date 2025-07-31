@@ -34,7 +34,7 @@ public class PendingShipmentActionsResponse implements IPendingActionsResponse {
     private LocalDateTime lat;
 
     private String requestedBy;
-    private String requestedType;
+    private ShipmentRequestedType requestedType;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
     private Boolean hazardous;

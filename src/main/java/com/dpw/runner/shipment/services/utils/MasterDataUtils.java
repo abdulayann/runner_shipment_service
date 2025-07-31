@@ -1333,7 +1333,6 @@ public class MasterDataUtils{
 
     public Map<String, String> setMasterDataImpl (Map<String, String> fieldNameKeyMap, String masterDataType, boolean isBooking, Map<String, Object> cacheMap) {
         Map<String, String> fieldNameMasterDataMap = new HashMap<>();
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return fieldNameMasterDataMap;
 
@@ -1344,7 +1343,7 @@ public class MasterDataUtils{
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
-                        fieldNameMasterDataMap.put(key, Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled()) ? object.lookupDescV3 :object.lookupDesc);
+                        fieldNameMasterDataMap.put(key, object.lookupDesc);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);

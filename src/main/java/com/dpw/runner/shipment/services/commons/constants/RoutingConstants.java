@@ -14,7 +14,6 @@ public class RoutingConstants {
     public static final String ROUTING_NULL_FOR_ID_ERROR = "Routing is null for Id {}";
     public static final String ROUTING_ID_NULL_FOR_RETRIEVE = "Request Id is null for Routing retrieve with Request Id {}";
     public static final String ID_GUID_NULL_ERROR = "Id can't be null";
-    public static final String ROUTINGS_UPDATE_TRANSPORT_STATUS_SUCCESS = "Routings transport pol/pod status updated successfully !";
 
     private RoutingConstants() {}
 }

@@ -31,8 +31,4 @@ public interface IELDetailsDao {
     List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId, Map<Long, ELDetails> oldEntityMap);
 
     List<ELDetails> updateEntityFromShipment(List<ELDetails> elDetailsList, Long shipmentId, List<ELDetails> oldEntityList) throws RunnerException;
-
-    void deleteAdditionalElDetailsByShipmentId(List<Long> elDetailsIds, Long shipmentId);
-
-    void revertSoftDeleteByElDetailsIdsAndShipmentId(List<Long> elDetailsIds, Long shipmentId);
 }

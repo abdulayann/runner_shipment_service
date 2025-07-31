@@ -1,2 +1,0 @@
-ALTER TABLE IF EXISTS allocations
-    ADD COLUMN IF NOT EXISTS slac_count INTEGER;

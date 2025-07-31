@@ -17,7 +17,6 @@ import com.dpw.runner.shipment.services.migration.service.interfaces.ICustomerBo
 import com.dpw.runner.shipment.services.migration.service.interfaces.IMigrationV3Service;
 import com.dpw.runner.shipment.services.migration.service.interfaces.INetworkTransferMigrationService;
 import com.dpw.runner.shipment.services.migration.service.interfaces.IShipmentMigrationV3Service;
-import com.dpw.runner.shipment.services.migration.strategy.interfaces.TenantDataBackupService;
 import com.dpw.runner.shipment.services.migration.utils.NotesUtil;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepository;
 import com.dpw.runner.shipment.services.service.v1.impl.V1ServiceImpl;
@@ -74,14 +73,8 @@ public class MigrationV3Service implements IMigrationV3Service {
     @Autowired
     private V1ServiceImpl v1Service;
 
-    @Autowired
-    private TenantDataBackupService backupService;
-
     @Override
     public Map<String, Integer> migrateV2ToV3(Integer tenantId, Long consolId, Long bookingId) {
-
-        // Taking json backup for respective tenantID.
-        backupService.backupTenantData(tenantId);
         Map<String, Integer> map = new HashMap<>();
         // Step 1: Fetch all V2 consolidations for tenant
         List<Long> consolIds = fetchConsoleFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
@@ -204,4 +197,5 @@ public class MigrationV3Service implements IMigrationV3Service {
     private List<ShipmentDetails> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
         return shipmentDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
+
 }

@@ -61,14 +61,4 @@ public interface IConsolidationDetailsDao {
     String getBookingNumberFromConsol(Long consolidationId);
 
     void updateConsolidationAttachmentFlag(Boolean enableFlag, Long consolidationId);
-
-    Set<Long> findConsolidationIdsByTenantId(Integer tenantId);
-
-    ConsolidationDetails save(ConsolidationDetails consolidationDetails);
-
-    void deleteAdditionalConsolidationsByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
-
-    void revertSoftDeleteByByConsolidationIdAndTenantId(List<Long> consolidationIds, Integer tenantId);
-
-    void deleteTriangularPartnerConsolidationByConsolidationId(Long consolidationId);
 }

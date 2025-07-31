@@ -26,10 +26,10 @@ import lombok.Setter;
 public class SectionDetails extends BaseEntity {
 
   @Column(nullable = false, unique = true)
-  private String sectionCode;
+  private String sectionName;
 
   @Column(nullable = false)
-  private String sectionName;
+  private String sectionDescription;
 
   @ManyToMany
   @JoinTable(

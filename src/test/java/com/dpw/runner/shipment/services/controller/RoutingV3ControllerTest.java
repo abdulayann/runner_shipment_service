@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -101,14 +99,6 @@ class RoutingV3ControllerTest {
     void getAllMasterData() {
         when(routingService.getAllMasterData(any(), eq(null))).thenReturn(new HashMap<>());
         var response = routingController.getAllMasterData(1L, null);
-        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-    @Test
-    void shipmentUpdateTransportInfoStatus() throws RunnerException {
-        UpdateTransportStatusRequest updateTransportStatusRequest = new UpdateTransportStatusRequest();
-        updateTransportStatusRequest.setEntityId(1L);
-        updateTransportStatusRequest.setEntityType(Constants.SHIPMENT);
-        var response = routingController.shipmentConsolUpdateTransportInfoStatus(updateTransportStatusRequest);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }

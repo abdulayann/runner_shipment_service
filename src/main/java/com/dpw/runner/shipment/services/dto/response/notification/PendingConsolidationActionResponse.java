@@ -43,7 +43,7 @@ public class PendingConsolidationActionResponse implements IPendingActionsRespon
     private String requestedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime requestedOn;
-    private String requestedType;
+    private ShipmentRequestedType requestedType;
 
     private Boolean hazardous;
 

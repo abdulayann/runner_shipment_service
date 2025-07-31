@@ -59,9 +59,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 
@@ -313,12 +311,11 @@ class PickupDeliveryDetailsServiceTest {
         pickupDeliveryDetailsResponse.setSourceDetail(partiesResponse);
         pickupDeliveryDetailsResponse.setDestinationDetail(partiesResponse);
 
-        Map<String, RAKCDetailsResponse> rakcDetailsResponseMap = new HashMap<>();
-        rakcDetailsResponseMap.put("test", RAKCDetailsResponse.builder().id(10L).build());
-        when(commonUtils.getRAKCDetailsMap(anyList())).thenReturn(rakcDetailsResponseMap);
 
         when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(pickupDeliveryDetailsResponse);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
 
@@ -346,12 +343,11 @@ class PickupDeliveryDetailsServiceTest {
         pickupDeliveryDetailsResponse.setTransporterDetail(partiesResponse);
         pickupDeliveryDetailsResponse.setSourceDetail(partiesResponse);
         pickupDeliveryDetailsResponse.setIsDirectDelivery(true);
-        Map<String, RAKCDetailsResponse> rakcDetailsResponseMap = new HashMap<>();
-        rakcDetailsResponseMap.put("test", RAKCDetailsResponse.builder().id(10L).build());
-        when(commonUtils.getRAKCDetailsMap(anyList())).thenReturn(rakcDetailsResponseMap);
 
         when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(pickupDeliveryDetailsResponse);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
 
@@ -376,12 +372,11 @@ class PickupDeliveryDetailsServiceTest {
         pickupDeliveryDetailsResponse.setId(1L);
         pickupDeliveryDetailsResponse.setTransporterDetail(PartiesResponse.builder().orgId("1L").build());
         pickupDeliveryDetailsResponse.setSourceDetail(PartiesResponse.builder().addressId("10").build());
-        Map<String, RAKCDetailsResponse> rakcDetailsResponseMap = new HashMap<>();
-        rakcDetailsResponseMap.put("test", RAKCDetailsResponse.builder().id(10L).build());
-        when(commonUtils.getRAKCDetailsMap(anyList())).thenReturn(rakcDetailsResponseMap);
 
         when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(pickupDeliveryDetailsResponse);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
 
@@ -473,12 +468,11 @@ class PickupDeliveryDetailsServiceTest {
         pickupDeliveryDetailsResponse.setIsDirectDelivery(true);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        Map<String, RAKCDetailsResponse> rakcDetailsResponseMap = new HashMap<>();
-        rakcDetailsResponseMap.put("test", RAKCDetailsResponse.builder().id(10L).build());
-        when(commonUtils.getRAKCDetailsMap(anyList())).thenReturn(rakcDetailsResponseMap);
 
         when(pickupDeliveryDetailsDao.findById(anyLong())).thenReturn(Optional.of(entity));
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(new PickupDeliveryDetailsResponse());
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.retrieveByIdV2(commonRequestModel, true);
 

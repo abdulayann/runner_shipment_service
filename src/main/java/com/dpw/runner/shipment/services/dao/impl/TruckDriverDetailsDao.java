@@ -256,16 +256,6 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     }
 
     @Override
-    public void deleteAdditionalTruckDriverDetailsByShipmentId(List<Long> truckDriverDetailsIds, Long shipmentId) {
-        truckDriverDetailsRepository.deleteAdditionalTruckDriverDetailsByShipmentId(truckDriverDetailsIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(List<Long> truckDriverDetailsIds, Long shipmentId) {
-        truckDriverDetailsRepository.revertSoftDeleteByTruckDriverDetailsIdsAndShipmentId(truckDriverDetailsIds, shipmentId);
-    }
-
-    @Override
     public List<TruckDriverDetails> updateEntityFromConsole(List<TruckDriverDetails> truckDriverDetailsList, Long consolidationId) throws RunnerException {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();

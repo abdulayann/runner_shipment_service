@@ -19,9 +19,9 @@ import lombok.ToString;
 public class SectionDetailsRequest implements IRunnerRequest {
 
   private Long id;
-  @NotBlank(message = "Section code should not be blank")
-  private String sectionCode;
   @NotBlank(message = "Section name should not be blank")
   private String sectionName;
+  @NotBlank(message = "Section Description should not be blank")
+  private String sectionDescription;
   private List<Long> sectionFieldIds;
 }

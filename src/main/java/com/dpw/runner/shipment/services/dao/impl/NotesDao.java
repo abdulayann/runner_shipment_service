@@ -260,14 +260,4 @@ public class NotesDao implements INotesDao {
             throw new RunnerException(e.getMessage());
         }
     }
-
-    @Override
-    public void deleteAdditionalNotesByEntityIdAndEntityType(List<Long> notesIds, Long entityId, String entityType) {
-        notesRepository.deleteAdditionalNotesByEntityIdAndEntityType(notesIds, entityId, entityType);
-    }
-
-    @Override
-    public void revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(List<Long> notesIds, Long entityId, String entityType) {
-        notesRepository.revertSoftDeleteByNotesIdsAndEntityIdAndEntityType(notesIds, entityId, entityType);
-    }
 }

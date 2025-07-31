@@ -595,34 +595,4 @@ public class PackingDao implements IPackingDao {
         return packingRepository.existsPackingByShipmentId(shipmentId);
     }
 
-    @Override
-    public void deleteAdditionalPackingByConsolidationId(List<Long> packingIds, Long consolidationId) {
-        packingRepository.deleteAdditionalPackingByConsolidationId(packingIds, consolidationId);
-    }
-
-    @Override
-    public void revertSoftDeleteByPackingIdsAndConsolidationId(List<Long> packingIds, Long consolidationId) {
-        packingRepository.revertSoftDeleteByPackingIdsAndConsolidationId(packingIds, consolidationId);
-    }
-
-    @Override
-    public void deleteAdditionalPackingByCustomerBookingId(List<Long> packingIds, Long bookingId) {
-        packingRepository.deleteAdditionalPackingByCustomerBookingId(packingIds, bookingId);
-    }
-
-    @Override
-    public void revertSoftDeleteByPackingIdsAndBookingId(List<Long> packingIds, Long bookingId) {
-        packingRepository.revertSoftDeleteByPackingIdsAndBookingId(packingIds, bookingId);
-    }
-
-    @Override
-    public void deleteAdditionalPackingByShipmentId(List<Long> packingIds, Long shipmentId) {
-        packingRepository.deleteAdditionalPackingByShipmentId(packingIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteByPackingIdsAndShipmentId(List<Long> packingIds, Long shipmentId) {
-        packingRepository.revertSoftDeleteByPackingIdsAndShipmentId(packingIds, shipmentId);
-    }
-
 }

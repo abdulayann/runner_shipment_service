@@ -81,7 +81,6 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.MigrationStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -762,7 +761,7 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             log.info("Booking list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             long totalPages = customerBookingPage.getSize() == 0 ? 0 : (long) Math.ceil((double) customerBookingPage.getTotalElements() / customerBookingPage.getSize());
             return CustomerBookingV3ListResponse.builder()
-                    .customerBookingV3Responses(convertEntityListToDtoList(customerBookingPage.getContent(), getMasterData))
+                    .customerBookingV3Responses(convertEntityListToDtoList(customerBookingPage.getContent()))
                     .totalPages((int) totalPages)
                     .totalCount(customerBookingPage.getTotalElements())
                     .build();
@@ -774,19 +773,13 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
     }
 
-    private <T extends IRunnerResponse> List<T> convertEntityListToDtoList(List<CustomerBooking> lst, Boolean getMasterData) {
+    private <T extends IRunnerResponse> List<T> convertEntityListToDtoList(List<CustomerBooking> lst) {
         List<T> responseList = new ArrayList<>();
         lst.forEach(customerBooking -> {
             T response = modelMapper.map(customerBooking, (Class<T>) CustomerBookingV3Response.class);
             responseList.add(response);
         });
-        if(Boolean.TRUE.equals(getMasterData)) {
-            double startTime = System.currentTimeMillis();
-            var carrierDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchCarriersForList((List<IRunnerResponse>) responseList)), executorServiceMasterData);
-            var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData((List<IRunnerResponse>) responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
-            CompletableFuture.allOf(locationDataFuture, carrierDataFuture).join();
-            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.BOOKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
-        }
+        masterDataUtils.setLocationData((List<IRunnerResponse>) responseList, EntityTransferConstants.LOCATION_SERVICE_GUID);
         return responseList;
     }
 
@@ -2378,10 +2371,9 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         Set<String> distinctPackTypes = new HashSet<>();
         boolean isAirTransport = Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBooking.getTransportType());
         boolean stopWeightCalculation = false;
-        customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
-        customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+
         for (Packing packing : packings) {
-            totalVolume = addVolume(packing, totalVolume, customerBooking.getVolumeUnit());
+            totalVolume = addVolume(packing, totalVolume, customerBooking);
             if (!isStringNullOrEmpty(packing.getPacks())) {
                 totalPacks += Integer.parseInt(packing.getPacks());
             }
@@ -2399,12 +2391,14 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         customerBooking.setGrossWeight(totalWeight);
         customerBooking.setVolume(totalVolume);
         customerBooking.setPackages((long) totalPacks);
+        customerBooking.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
+        customerBooking.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         customerBooking.setPackageType(getPackUnit(distinctPackTypes));
     }
 
-    private BigDecimal addVolume(Packing p, BigDecimal totalVolume, String volumeUnit) throws RunnerException {
+    private BigDecimal addVolume(Packing p, BigDecimal totalVolume, CustomerBooking booking) throws RunnerException {
         if (p.getVolume() != null && !isStringNullOrEmpty(p.getVolumeUnit())) {
-            BigDecimal converted = new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), volumeUnit).toString());
+            BigDecimal converted = new BigDecimal(convertUnit(VOLUME, p.getVolume(), p.getVolumeUnit(), booking.getVolumeUnit()).toString());
             return totalVolume.add(converted);
         }
         return totalVolume;
@@ -2445,10 +2439,5 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
             customerBooking.setWeightVolume(vwOb.getVolumeWeight());
             customerBooking.setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
         }
-    }
-
-    private double roundOffAirShipment(double charge) {
-        return (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) ?
-                Math.floor(charge) + 0.5 : Math.ceil(charge);
     }
 }

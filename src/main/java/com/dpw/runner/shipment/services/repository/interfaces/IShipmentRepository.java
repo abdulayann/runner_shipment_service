@@ -10,12 +10,6 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,6 +18,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 
 @Repository
@@ -260,10 +261,10 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = """
             select cb.id as id,
-            cb.shipmentEntityIdV2 as shipmentId
-             from CustomerBooking cb where cb.shipmentEntityIdV2 in (:shipmentIdList)
+            sd.id as shipmentId
+             from ShipmentDetails sd inner join CustomerBooking cb on cb.bookingNumber = sd.bookingReference where sd.id in (:shipmentIdList)
             """)
-    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(@Param("shipmentIdList") List<String> shipmentIdList);
+    List<CustomerBookingProjection> findCustomerBookingProByShipmentIdIn(@Param("shipmentIdList") List<Long> shipmentIdList);
 
     @Modifying
     @Transactional
@@ -282,25 +283,4 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     void updateDgStatusInShipment(@Param("isHazardous") Boolean isHazardous,
                                   @Param("oceanDGStatus") String oceanDGStatus,
                                   @Param("shipmentId") Long shipmentId);
-
-    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1 and is_deleted = false", nativeQuery = true)
-    Set<Long> findShipmentIdsByTenantId(Integer tenantId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE shipment_details SET is_deleted = false WHERE id IN (?1) and tenant_id = ?2", nativeQuery = true)
-    void revertSoftDeleteShipmentIdAndTenantId(List<Long> shipmentIds, Integer tenantId);
-
-    @Query(value = "SELECT s.id FROM shipment_details s WHERE s.tenant_id = ?1", nativeQuery = true)
-    Set<Long> findAllShipmentIdsByTenantId(Integer tenantId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "Update shipment_details set is_deleted = true WHERE id IN ?1", nativeQuery = true)
-    void deleteShipmentDetailsByIds(Set<Long> ids);
-
-    @Modifying
-    @Transactional
-    @Query(value = "DELETE FROM triangulation_partner_shipment WHERE shipment_id = ?1", nativeQuery = true)
-    void deleteTriangularPartnerShipmentByShipmentId(Long shipmentId);
 }

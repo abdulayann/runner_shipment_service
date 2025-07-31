@@ -119,9 +119,9 @@ class SectionFieldsServiceImplTest {
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
-    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Description");
     sectionDetails.setSectionFields(new HashSet<>());
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setSectionVisibilities(new HashSet<>());
     sectionDetails.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setUpdatedBy("2020-03-01");

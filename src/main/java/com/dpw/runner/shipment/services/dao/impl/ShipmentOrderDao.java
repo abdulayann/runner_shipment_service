@@ -69,14 +69,4 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
 
         return shipmentOrderRepository.saveAll(shipmentOrders);
     }
-
-    @Override
-    public void deleteAdditionalShipmentOrderByShipmentId(List<Long> shipmentOrderIds, Long shipmentId) {
-        shipmentOrderRepository.deleteAdditionalShipmentOrderByShipmentId(shipmentOrderIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteByshipmentOrderIdsAndShipmentId(List<Long> shipmentOrderIds, Long shipmentId) {
-        shipmentOrderRepository.revertSoftDeleteByShipmentOrderIdsAndShipmentId(shipmentOrderIds, shipmentId);
-    }
 }

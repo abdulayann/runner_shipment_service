@@ -4,5 +4,5 @@ import com.dpw.runner.shipment.services.entity.SectionDetails;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ISectionDetailsRepository extends JpaRepository<SectionDetails, Long> {
-  boolean existsBySectionCode(String sectionCode);
+  boolean existsBySectionName(String sectionName);
 }

@@ -5,13 +5,13 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_N
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
@@ -31,6 +31,9 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -45,6 +48,20 @@ public class ShipmentValidationV3Util {
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
+
+    public void validateStaleShipmentUpdateError(ShipmentDetails shipmentDetails, boolean isCreate) {
+        if(!isCreate) {
+            // Check the shipment for attached consolidation, if the user is updating stale shipment and causing shipment to detach
+            List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
+            if (!CollectionUtils.isEmpty(consoleShipmentMappings)) {
+                consoleShipmentMappings = consoleShipmentMappings.stream().filter(i -> Boolean.TRUE.equals(i.getIsAttachmentDone())).toList();
+                if (CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !consoleShipmentMappings.isEmpty()
+                        && !Objects.isNull(consoleShipmentMappings.get(0).getRequestedType())) {
+                    throw new ValidationException(ShipmentConstants.STALE_SHIPMENT_UPDATE_ERROR);
+                }
+            }
+        }
+    }
 
     public void validTransportModeForTrasnportModeConfig(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, boolean isImportFile, V1TenantSettingsResponse tenantSettings) {
         if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && Boolean.FALSE.equals(isImportFile) && (isCreate || !Objects.equals(oldEntity.getTransportMode(), shipmentDetails.getTransportMode()))
@@ -105,6 +122,9 @@ public class ShipmentValidationV3Util {
         if (!TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Objects.nonNull(shipmentDetails.getCargoDeliveryDate())) {
             throw new ValidationException("Update not allowed for Cargo Delivery Date for non AIR shipments");
         }
+        // Validation for Partner fields
+        // Validation for DPS Implication
+        this.validateDPSImplication(shipmentDetails);
         // Validation for Controlled Value
         this.validationForControlledFields(shipmentDetails);
         // Validation for cutoffFields

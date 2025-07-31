@@ -1592,11 +1592,11 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if(shipmentDetails.getHouseBill()!=null)
             body = body.replace(BL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getHouseBill()));
         else
-            body = body.replace("<p><strong>BL Number</strong>: {#BL_NUMBER}</p>  ", "");
+            body = DEFAULT_SHIPMENT_V3_RECEIVED_BODY.replace("<p><strong>BL Number</strong>: {#BL_NUMBER}</p>  ", "");
         if(shipmentDetails.getMasterBill()!=null)
             body = body.replace(MBL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getMasterBill()));
         else
-            body = body.replace("<p><strong>MBL Number</strong>: {#MBL_NUMBER}</p> ", "");
+            body = DEFAULT_SHIPMENT_V3_RECEIVED_BODY.replace("<p><strong>MBL Number</strong>: {#MBL_NUMBER}</p> ", "");
         body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         body = body.replace(SHIPMENT_NUMBER_PLACEHOLDER, String.valueOf(shipmentDetails.getShipmentId()));
         body = setNamesInBody(shipmentDetails, body);

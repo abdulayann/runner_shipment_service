@@ -23,7 +23,4 @@ public interface IBookingChargesDao {
 
     List<BookingCharges> updateEntityFromBooking(List<BookingCharges> bookingChargesList, Long bookingId) throws RunnerException;
 
-    void deleteAdditionalPackingByCustomerBookingId(List<Long> bookingChargesIds, Long bookingId);
-
-    void revertSoftDeleteByPackingIdsAndBookingId(List<Long> bookingChargesIds, Long bookingId);
 }

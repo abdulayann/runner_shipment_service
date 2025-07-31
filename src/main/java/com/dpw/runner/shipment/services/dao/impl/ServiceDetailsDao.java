@@ -265,16 +265,6 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         return serviceDetailsRepository.findAllWithoutTenantFilter(spec, pageable);
     }
 
-    @Override
-    public void deleteAdditionalServiceDetailsByShipmentId(List<Long> serviceDetailsIds, Long shipmentId) {
-        serviceDetailsRepository.deleteAdditionalServiceDetailsByShipmentId(serviceDetailsIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteByServiceDetailsIdsAndShipmentId(List<Long> serviceDetailsIds, Long shipmentId) {
-        serviceDetailsRepository.revertSoftDeleteByServiceDetailsIdsAndShipmentId(serviceDetailsIds, shipmentId);
-    }
-
     public Optional<ServiceDetails> findByGuidWithQuery(UUID guid){
         return serviceDetailsRepository.findByGuidWithQuery(guid);
     }

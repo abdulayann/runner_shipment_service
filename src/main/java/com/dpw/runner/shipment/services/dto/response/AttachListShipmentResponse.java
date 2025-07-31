@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
-import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +20,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-@Generated
 public class AttachListShipmentResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
@@ -36,7 +34,6 @@ public class AttachListShipmentResponse implements IRunnerResponse {
     private String serviceType;
     private String masterBill;
     private String bookingReference;
-    private Long bookingId;
     private String consolRef;
     private Long salesAgent;
     private String paymentTerms;
@@ -47,16 +44,12 @@ public class AttachListShipmentResponse implements IRunnerResponse {
     private String additionalTerms;
     private String goodsDescription;
     private BigDecimal weight;
-    private String weightFormatted;
     private String weightUnit;
     private BigDecimal volume;
-    private String volumeFormatted;
     private String volumeUnit;
     private BigDecimal volumetricWeight;
-    private String volumetricWeightFormatted;
     private String volumetricWeightUnit;
     private BigDecimal chargable;
-    private String chargableFormatted;
     private String chargeableUnit;
     private BigDecimal netWeight;
     private String netWeightUnit;

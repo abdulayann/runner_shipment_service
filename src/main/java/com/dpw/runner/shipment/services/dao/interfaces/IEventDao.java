@@ -54,12 +54,4 @@ public interface IEventDao {
     List<Events> updateEventsList(List<Events> shipmentEvents);
 
     void updateAllEventDetails(List<Events> events);
-
-    void deleteAdditionalDataByEventsIdsConsolidationId(List<Long> eventsIds, Long consolidationId);
-
-    void revertSoftDeleteByEventsIds(List<Long> eventsIds);
-
-    void deleteAdditionalEventDetailsByEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType);
-
-    void revertSoftDeleteByEventDetailsIdsAndEntityIdAndEntityType(List<Long> eventsIds, Long entityId, String entityType);
 }

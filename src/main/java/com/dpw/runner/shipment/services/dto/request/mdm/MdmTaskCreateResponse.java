@@ -18,6 +18,4 @@ import lombok.Setter;
 public class MdmTaskCreateResponse implements IRunnerResponse {
     @JsonProperty("id")
     private Integer id;
-    @JsonProperty("uuid")
-    private String uuid;
 }

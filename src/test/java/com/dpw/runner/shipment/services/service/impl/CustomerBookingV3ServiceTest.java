@@ -241,7 +241,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Request request = new CustomerBookingV3Request();
         Packing packing = new Packing();
         packing.setWeight(BigDecimal.ONE);
-        packing.setWeightUnit("KG");
+        packing.setWeightUnit("Kg");
         Containers containers = new Containers();
         containers.setContainerCode("20FR");
         containers.setContainerCount(1L);
@@ -462,7 +462,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
                 .build();
         Packing packing = new Packing();
         packing.setWeight(BigDecimal.ONE);
-        packing.setWeightUnit("KG");
+        packing.setWeightUnit("Kg");
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LCL")
@@ -1017,7 +1017,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setVolume(BigDecimal.TEN);
         packing.setVolumeUnit("M3");
         packing.setWeight(BigDecimal.TEN);
-        packing.setWeightUnit("KG");
+        packing.setWeightUnit("Kg");
         // Mock
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
         when(containerDao.findByBookingIdIn(anyList())).thenReturn(Collections.emptyList());
@@ -1151,9 +1151,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
     @Test
     void testListWithNoResult() throws RunnerException {
         when(customerBookingDao.findAll(any(), any())).thenReturn(Page.empty());
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        doNothing().when(masterDataUtils).fetchCarriersForList(anyList());
-        doNothing().when(masterDataUtils).setLocationData(anyList(), anyString());
         // Test
         CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest(), Boolean.TRUE);
         // Assert
@@ -1166,9 +1163,6 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response customerBookingV3Response = new CustomerBookingV3Response();
         customerBookingV3Response.setId(2L);
         when(customerBookingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(customerBooking)));
-        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        doNothing().when(masterDataUtils).fetchCarriersForList(anyList());
-        doNothing().when(masterDataUtils).setLocationData(anyList(), anyString());
         // Test
         CustomerBookingV3ListResponse response = customerBookingService.list(new ListCommonRequest(), Boolean.TRUE);
         // Assert
@@ -2039,7 +2033,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         );
         Packing packing = new Packing();
         packing.setWeight(BigDecimal.ONE);
-        packing.setWeightUnit("KG");
+        packing.setWeightUnit("Kg");
         Containers containers = new Containers();
         containers.setContainerCode("CNT122");
         containers.setContainerCount(1L);
@@ -2470,7 +2464,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packingResponse.setPacks("2");
         packingResponse.setPacksType("Packages");
         packingResponse.setWeight(new BigDecimal(4));
-        packingResponse.setWeightUnit("KG");
+        packingResponse.setWeightUnit("Kg");
         packingResponse.setVolume(new BigDecimal(10));
         packingResponse.setVolumeUnit("M3");
         packingResponse.setLength(new BigDecimal(2));
@@ -2481,12 +2475,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packingResponse.setHeightUnit("M");
         packingResponse.setGoodsDescription("Description");
         packingResponse.setNetWeight(new BigDecimal(2));
-        packingResponse.setNetWeightUnit("KG");
+        packingResponse.setNetWeightUnit("Kg");
         packingResponse.setVolumeWeight(new BigDecimal(2));
         packingResponse.setVolumeWeightUnit("KgM3");
         packingResponse.setCommodityGroup("CommodityGroup");
         packingResponse.setChargeable(new BigDecimal(10));
-        packingResponse.setChargeableUnit("KG");
+        packingResponse.setChargeableUnit("Kg");
 
         RoutingsResponse routingsResponse = new RoutingsResponse();
         routingsResponse.setPol("POL");
@@ -3747,12 +3741,12 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         packing.setVolume(BigDecimal.TEN);
         packing.setVolumeUnit("M3");
         packing.setWeight(BigDecimal.TEN);
-        packing.setWeightUnit("KG");
+        packing.setWeightUnit("Kg");
         Packing packing1 = new Packing();
         packing1.setBookingId(2L);
         packing1.setVolume(BigDecimal.ONE);
         packing1.setVolumeUnit("M3");
-        packing1.setWeightUnit("KG");
+        packing1.setWeightUnit("Kg");
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking));
         when(packingDao.findByBookingIdIn(anyList())).thenReturn(List.of(packing, packing1));
         customerBookingService.updatePackingInfoInBooking(1L);

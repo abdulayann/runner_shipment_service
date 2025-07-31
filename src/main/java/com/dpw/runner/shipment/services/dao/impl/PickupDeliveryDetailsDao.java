@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -84,21 +83,6 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
     @Override
     public Long getTotalTransportInstructionCountIncludeDeleted(Long shipmentId) {
         return pickupDeliveryDetailsRepository.getTotalTransportInstructionCountIncludeDeleted(shipmentId);
-    }
-
-    @Override
-    public List<PickupDeliveryDetails> findByShipmentIdIn(Set<Long> shipmentIds) {
-        return pickupDeliveryDetailsRepository.findByShipmentIdIn(shipmentIds);
-    }
-
-    @Override
-    public void deleteAdditionalPickupDeliveryDetailsByShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId) {
-        pickupDeliveryDetailsRepository.deleteAdditionalPickupDeliveryDetailsByShipmentId(pickupDeliveryDetailsIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(List<Long> pickupDeliveryDetailsIds, Long shipmentId) {
-        pickupDeliveryDetailsRepository.revertSoftDeleteByPickupDeliveryDetailsIdsAndShipmentId(pickupDeliveryDetailsIds, shipmentId);
     }
 
     public List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {

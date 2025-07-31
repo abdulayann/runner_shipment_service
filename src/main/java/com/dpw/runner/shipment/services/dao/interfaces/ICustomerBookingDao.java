@@ -10,7 +10,6 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public interface ICustomerBookingDao {
@@ -35,9 +34,4 @@ public interface ICustomerBookingDao {
 
     Optional<CustomerBooking> findByShipmentReferenceNumber(String shipmentReferenceNumber);
     List<CustomerBooking> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId);
-
-    Set<Long> findCustomerBookingIdsByTenantId(Integer tenantId);
-    List<CustomerBooking> findCustomerBookingByIds(Set<Long> ids);
-    void deleteCustomerBookingIds(Set<Long> ids);
-    Set<Long> findAllCustomerBookingIdsByTenantId(Integer tenantId);
 }

@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.UpdateTransportStatusRequest;
 import com.dpw.runner.shipment.services.dto.response.RoutingListResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
@@ -36,6 +35,4 @@ public interface IRoutingsV3Service{
     void deleteInheritedRoutingsFromShipment(List<ShipmentDetails> shipmentDetailsToSave) throws RunnerException;
 
     List<Routings> getRoutingsByConsolidationId(Long consolidationId);
-
-    BulkRoutingResponse updateTransportInfoStatus(UpdateTransportStatusRequest request) throws RunnerException;
 }

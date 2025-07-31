@@ -510,37 +510,6 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
     }
 
-    @Override
-    public void deleteAdditionalDataByReferenceNumberIdsConsolidationId(List<Long> referenceNumberIds, Long consolidationId) {
-        referenceNumbersRepository.deleteAdditionalDataByReferenceNumberIdsConsolidationId(referenceNumberIds, consolidationId);
-    }
-
-    @Override
-    public void revertSoftDeleteByReferenceNumberIdsAndConsolidationId(List<Long> referenceNumberIds, Long consolidationId) {
-        referenceNumbersRepository.revertSoftDeleteByReferenceNumberIdsAndConsolidationId(referenceNumberIds, consolidationId);
-    }
-
-    @Override
-    public void deleteAdditionalDataByReferenceNumberIdsBookingId(List<Long> referenceNumberIds, Long bookingId) {
-        referenceNumbersRepository.deleteAdditionalDataByReferenceNumberIdsBookingId(referenceNumberIds, bookingId);
-    }
-
-    @Override
-    public void revertSoftDeleteByReferenceNumberIdsAndBookingId(List<Long> referenceNumberIds, Long bookingId) {
-        referenceNumbersRepository.revertSoftDeleteByReferenceNumberIdsAndBookingId(referenceNumberIds, bookingId);
-    }
-
-
-    @Override
-    public void deleteAdditionalreferenceNumbersByShipmentId(List<Long> referenceNumbersIds, Long shipmentId) {
-        referenceNumbersRepository.deleteAdditionalreferenceNumbersByShipmentId(referenceNumbersIds, shipmentId);
-    }
-
-    @Override
-    public void revertSoftDeleteByreferenceNumbersIdsAndShipmentId(List<Long> referenceNumbersIds, Long shipmentId) {
-        referenceNumbersRepository.revertSoftDeleteByreferenceNumbersIdsAndShipmentId(referenceNumbersIds, shipmentId);
-    }
-
     private Pair<String, String> prepareReferenceNumberDataForSave(ReferenceNumbers req) {
         String oldEntityJsonString = null;
         String operation = DBOperationType.CREATE.name();

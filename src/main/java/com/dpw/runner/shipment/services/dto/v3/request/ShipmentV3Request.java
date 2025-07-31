@@ -239,8 +239,6 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private Boolean isBorrowed;
     private Long originBranch;
     private Integer slac;
-    private Integer dgPacksCount;
-    private String dgPacksUnit;
     private MigrationStatus migrationStatus;
 
 }

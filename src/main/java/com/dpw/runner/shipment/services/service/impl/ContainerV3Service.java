@@ -880,7 +880,7 @@ public class ContainerV3Service implements IContainerV3Service {
         int dgContainers = 0;
         double netWeight = 0;
         long assignedContainers = 0;
-        double totalDgPackages = 0;
+        int totalDgPackages = 0;
         List<ContainerSummaryResponse.GroupedContainerSummary> groupedContainerSummaryList = new ArrayList<>();
         String toWeightUnit = Constants.WEIGHT_UNIT_KG;
         String toVolumeUnit = Constants.VOLUME_UNIT_M3;
@@ -944,17 +944,16 @@ public class ContainerV3Service implements IContainerV3Service {
             response.setSummary("");
         setContainerSummary(containersList, response);
         response.setDgContainers(dgContainers);
-        response.setTotalDgPackages((long) totalDgPackages);
-        response.setTotalPackagesWithoutUnit((long) totalPacks);
+        response.setTotalDgPackages(totalDgPackages);
         setAssignedContainerCount(containersList, isShipment, assignedContainers, v1TenantSettingsResponse, response);
         response.setGroupedContainersSummary(groupedContainerSummaryList);
         return response;
     }
 
-    double getTotalDGPacks(Containers containers, double totalDgPackages) {
+    int getTotalDGPacks(Containers containers, int totalDgPackages) {
         if(containers.getPacksList() != null) {
             for (Packing packing : containers.getPacksList()) {
-                if (Boolean.TRUE.equals(packing.getHazardous())) totalDgPackages += Long.valueOf(packing.getPacks());
+                if (Boolean.TRUE.equals(packing.getHazardous())) totalDgPackages++;
             }
         }
 
