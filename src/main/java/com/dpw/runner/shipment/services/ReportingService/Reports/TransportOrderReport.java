@@ -100,6 +100,7 @@ public class TransportOrderReport extends IReport{
             addTransportInstructionTags(dictionary, shipmentModel);
         if(transportOrderModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, transportOrderModel.shipmentDetails.getId());
+            this.getContainerDetails(transportOrderModel.shipmentDetails, dictionary);
             this.getPackingDetails(transportOrderModel.shipmentDetails, dictionary);
         }
         return dictionary;
@@ -143,7 +144,10 @@ public class TransportOrderReport extends IReport{
                 carrierSealNumbers = getCarrierSealNumbers(containerModel, carrierSealNumbers);
             }
             if(carrierSealNumbers != null) dictionary.put(ReportConstants.CARRIER_SEAL_NUMBER, carrierSealNumbers.toString());
-            if(containerNumbers != null) dictionary.put(ReportConstants.CONTAINER_NUM, containerNumbers.toString());
+            if(containerNumbers != null) {
+                dictionary.put(ReportConstants.CONTAINER_NUM, containerNumbers.toString());
+                dictionary.put(ReportConstants.TI_CONTAINER_NUM, containerNumbers.toString());
+            }
         }
     }
 

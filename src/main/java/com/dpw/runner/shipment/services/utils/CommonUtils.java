@@ -103,7 +103,9 @@ import java.util.stream.Collectors;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.COUNTRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EMPTY_STRING;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.HAWB_NUMBER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MAWB_NUMBER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ORIGIN_PORT;
@@ -356,15 +358,11 @@ public class CommonUtils {
 
     public static byte[] concatAndAddContent(List<byte[]> pdfByteContent) throws DocumentException, IOException {
         ByteArrayOutputStream ms = new ByteArrayOutputStream();
-        Document doc = null;
-        PdfCopy copy = null;
-        doc = new Document();
-        copy = new PdfSmartCopy(doc, ms);
+        Document doc = new Document();
+        PdfCopy copy =  new PdfCopy(doc, ms);
         doc.open();
-
         for (byte[] dataByte : pdfByteContent) {
-            PdfReader reader = null;
-            reader = new PdfReader(dataByte);
+            PdfReader reader = new PdfReader(dataByte);
             copy.addDocument(reader);
             reader.close();
         }
@@ -2853,11 +2851,11 @@ public class CommonUtils {
         return getShipmentSettingFromContext().getVolumeChargeableUnit();
     }
     public static String setTransportInfoStatusMessage(CarrierDetails carrierDetails, TransportInfoStatus transportInfoStatus, List<Routings> mainCarriageRoutings) {
-        if (TransportInfoStatus.IH.equals(transportInfoStatus)) {
+        if (TransportInfoStatus.IH.equals(transportInfoStatus) && !CommonUtils.listIsNullOrEmpty(mainCarriageRoutings)) {
             Routings firstLeg = mainCarriageRoutings.get(0);
             Routings lastLeg = mainCarriageRoutings.get(mainCarriageRoutings.size() - 1);
-            String polMessage = Constants.EMPTY_STRING;
-            String podMessage = Constants.EMPTY_STRING;
+            String polMessage = EMPTY_STRING;
+            String podMessage = EMPTY_STRING;
             if (Objects.nonNull(carrierDetails) && !Objects.equals(firstLeg.getPol(), carrierDetails.getOriginPort())) {
                 polMessage = Constants.POL_WARNING_MESSAGE;
             }
@@ -2872,7 +2870,7 @@ public class CommonUtils {
                 return Constants.POD_WARNING_MESSAGE;
             }
         }
-        return Constants.EMPTY_STRING;
+        return EMPTY_STRING;
     }
     public static Boolean isVesselVoyageOrCarrierFlightNumberAvailable(List<Routings> mainCarriageRoutings) {
         Optional<Routings> routings = mainCarriageRoutings.stream().filter(r -> Boolean.TRUE.equals(r.getIsSelectedForDocument())).findFirst();
@@ -2905,5 +2903,20 @@ public class CommonUtils {
         param.add(values);
         List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
         return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
+    }
+    public String getAddress(Map<String, Object> addressData) {
+        StringBuilder address = new StringBuilder(EMPTY_STRING);
+        String[] keys = {COMPANY_NAME, ADDRESS1, CITY, STATE, ReportConstants.COUNTRY, ZIP_POST_CODE};
+
+        for (String key : keys) {
+            String value = (String) addressData.getOrDefault(key, EMPTY_STRING);
+            if (StringUtility.isNotEmpty(value)) {
+                address.append(value).append(ReportConstants.COMM);
+            }
+        }
+
+        if (address.toString().endsWith(ReportConstants.COMM))
+            address = new StringBuilder(address.substring(0, address.length() - COMM.length()));
+        return address.toString();
     }
 }

@@ -210,6 +210,8 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private String secondarySalesAgentEmail;
     private String destinationPrimarySalesAgentEmail;
     private String destinationSecondarySalesAgentEmail;
+    private Integer slac;
+    private Boolean isFrob;
 
     private List<EntityTransferServiceDetails> servicesList;
     private Boolean isMigratedToV3 = false;

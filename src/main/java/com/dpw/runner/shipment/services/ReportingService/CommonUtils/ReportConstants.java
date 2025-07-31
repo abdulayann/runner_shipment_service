@@ -40,6 +40,36 @@ public class ReportConstants {
     public static final String DELIVERY_ORDER_V3 = "DeliveryOrderV3";
     public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
     public static final String CONTACT = "Contact";
+    public static final String TI_TRANSPORTER_NAME = "TI_TransporterName";
+    public static final String EXA_TYPE = "EXA";
+    public static final String TI_EXPORT_AGENT_NAME = "TI_ExportAgentName";
+    public static final String IMA_TYPE = "IMA";
+    public static final String TI_IMPORT_AGENT_NAME = "TI_ImportAgentName";
+    public static final String TI_TRANSPORTER_EMAIL = "TI_TransporterEmail";
+    public static final String TI_IMPORT_AGENT_EMAIL = "TI_ImportAgentEmail";
+    public static final String TI_EXPORT_AGENT_EMAIL = "TI_ExportAgentEmail";
+    public static final String ADDRESS_LABEL = "label";
+    public static final String TI_TRANSPORTER_ADDRESS = "TI_TransporterAddress";
+    public static final String CONTACT_KEY = "ContactPhone";
+    public static final String TI_TRANSPORTER_CONTACT = "TI_TransporterContact";
+    public static final String TI_ORIGIN_EMAIL = "TI_OriginEmail";
+    public static final String TI_ORIGIN_CONTACT = "TI_OriginContact";
+    public static final String TI_DESINATION_EMAIL = "TI_DestinationEmail";
+    public static final String TI_DESTINATION_CONTACT = "TI_DestinationContact";
+    public static final String COMM = ",";
+    public static final String TI_ORIGIN_ADDRESS = "TI_Origin_Address";
+    public static final String TI_DESTINATION_ADDRESS = "TI_Destination_Address";
+    public static final String TI_DESTINATION = "TI_Destination";
+    public static final String TI_ORIGIN = "TI_Origin";
+    public static final String TI_ESTIMATED_PICKUP = "TI_Estimated_Pickup";
+    public static final String TI_ESTIMATED_DELIVERY = "TI_Estimated_Delivery";
+    public static final String TI_TRUCK_NUMBER_PLATE = "TI_TruckNumberPlate";
+    public static final String TI_TRAILER_NUMBER_PLATE = "TI_TrailerNumberPlate";
+    public static final String TI_DRIVER_NAME = "TI_DriverName";
+    public static final String TI_DRIVER_MOBILE_NUMBER = "TI_MobileNumber";
+    public static final String TI_DRIVER_ID = "TI_DriverID";
+    public static final String TI_CONTAINER_NUM = "TI_ContainerNumber";
+
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
@@ -1460,9 +1490,11 @@ public class ReportConstants {
     public static final String S_BOE_NUMBER = "S_BOENumber";
     public static final String S_BOE_DATE = "S_Date";
     public static final String S_OWNERSHIP = "S_Ownership";
-    public static final String S_OWNERSHIP_NAME = "S_Ownership Name";
+    public static final String S_OWNERSHIP_NAME = "S_OwnershipName";
     public static final String S_PASSED_BY = "S_PassedBy";
     public static final String S_PASSED_BY_PERSON = "S_PassedByPerson";
+    public static final String S_BORROWED_FROM = "S_BorrowedFrom";
+    public static final String S_REEFER_FLAG = "S_ReeferFlag";
 
     public static final String S_LAST_VESSEL = "S_LastVessel";
     public static final String S_LAST_VOYAGE = "S_LastVoyage";

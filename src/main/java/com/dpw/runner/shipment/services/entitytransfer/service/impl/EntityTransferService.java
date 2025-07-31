@@ -3011,7 +3011,7 @@ public class EntityTransferService implements IEntityTransferService {
         String entityType = acceptedFileRequest.getEntityType();
         List<Integer> sendToBranch = acceptedFileRequest.getSendToBranch();
         if (sendToBranch == null || sendToBranch.isEmpty()) {
-            throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
+            throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG_V3);
         }
 
         List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityNTList(

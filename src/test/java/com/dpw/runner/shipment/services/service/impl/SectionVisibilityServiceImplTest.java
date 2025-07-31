@@ -114,8 +114,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -165,8 +165,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -321,8 +321,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -336,7 +336,7 @@ class SectionVisibilityServiceImplTest {
         .id(1L)
         .build();
     SectionDetailsResponse buildResult1 = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -408,8 +408,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -423,7 +423,7 @@ class SectionVisibilityServiceImplTest {
         .id(1L)
         .build();
     SectionDetailsResponse buildResult1 = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -460,8 +460,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -475,7 +475,7 @@ class SectionVisibilityServiceImplTest {
         .id(1L)
         .build();
     SectionDetailsResponse buildResult1 = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -512,8 +512,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
@@ -546,7 +546,7 @@ class SectionVisibilityServiceImplTest {
         .id(1L)
         .build();
     SectionDetailsResponse buildResult1 = SectionDetailsResponse.builder()
-        .sectionCode("Section Description")
+        .sectionDescription("Section Description")
         .sectionName("section Name")
         .id(1L)
         .build();
@@ -612,8 +612,8 @@ class SectionVisibilityServiceImplTest {
     SectionDetails sectionDetails = new SectionDetails();
     sectionDetails.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setCreatedBy("Jan 1, 2020 8:00am GMT+0100");
-    sectionDetails.setSectionName("Section Description");
-    sectionDetails.setSectionCode("Section Name");
+    sectionDetails.setSectionDescription("Section Description");
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);

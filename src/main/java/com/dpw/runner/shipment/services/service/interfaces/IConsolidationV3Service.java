@@ -81,6 +81,6 @@ public interface IConsolidationV3Service {
     void triggerPushToDownStream(ConsolidationDetails consolidationDetails, ConsolidationDetails oldConsolidationDetails,
                                  String sourceInfo);
     Optional<ConsolidationDetails> retrieveForNte(Long id) throws RunnerException, AuthenticationException;
-    ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request);
+    ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException;
     CheckDGShipmentV3 getDGShipment(Long consoleId);
 }

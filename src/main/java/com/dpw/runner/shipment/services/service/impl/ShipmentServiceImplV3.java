@@ -58,22 +58,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
@@ -81,22 +66,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRe
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.LogHistoryRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentConsoleAttachDetachV3Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmTaskApproveOrRejectRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -108,6 +78,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.FieldClassDto;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.RoutingsLiteResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
@@ -129,25 +100,7 @@ import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.dto.v3.response.ShipmentSailingScheduleResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Hbl;
-import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
-import com.dpw.runner.shipment.services.entity.OceanDGRequestLog;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -282,6 +235,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private ObjectMapper objectMapper;
     @Autowired
     private ShipmentDetailsMapper shipmentDetailsMapper;
+    @Autowired
+    private INotesDao notesDao;
 
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     private INotificationDao notificationDao;
@@ -614,9 +569,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         setConsoleAndNteInfo(shipmentId, response);
         setDgPackCountAndType(shipmentDetailsEntity, response);
         setMainCarriageFlag(shipmentDetailsEntity, response);
+        setRoutingsLiteRespnse(shipmentDetailsEntity, response);
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setRoutingsLiteRespnse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
+        if (!CommonUtils.listIsNullOrEmpty(shipmentDetailsEntity.getRoutingsList())) {
+            List<RoutingsLiteResponse> routingsLiteResponses = jsonHelper.convertValueToList(shipmentDetailsEntity.getRoutingsList(), RoutingsLiteResponse.class);
+            response.setRoutingsLiteResponses(routingsLiteResponses);
+        }
     }
 
     private void setConsoleAndNteInfo(Long shipmentId, ShipmentRetrieveLiteResponse response) {
@@ -1808,7 +1771,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     protected void validateBeforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
-            throw new ValidationException("Shipper & Consignee parties can't be selected as same.");
+            throw new ValidationException(ErrorConstants.SAME_SHIPPER_CONSIGNEE);
 
         if (!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
@@ -2366,6 +2329,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Override
     public ShipmentDetailsV3Response createShipmentInV3(CustomerBookingV3Request customerBookingRequest) throws RunnerException {
         Set<ConsolidationDetailsRequest> consolidationDetails = new HashSet<>();
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
+        List<NotesRequest> notesRequests = getNotesRequest(notes);
         Set<ContainerRequest> containerList = new HashSet<>();
         if (isConsoleCreationNeededV3(customerBookingRequest)) {
             ConsolidationDetailsV3Request consolidationDetailsV3Request = ConsolidationDetailsV3Request.builder().
@@ -2432,10 +2397,24 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
-        return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList, consolidationId);
+        return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest), customerBookingRequest, containerList, consolidationId, notesRequests);
     }
 
-    public ShipmentDetailsV3Response createFromBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId) {
+    private List<NotesRequest> getNotesRequest(List<Notes> notes){
+        if(notes == null) return null;
+        return notes.stream().filter(Objects::nonNull).map(note ->
+                NotesRequest.builder()
+                        .assignedTo(note.getAssignedTo())
+                        .label(note.getLabel())
+                        .text(note.getText())
+                        .insertUserDisplayName(note.getCreatedBy())
+                        .isPublic(note.getIsPublic())
+                        .insertDate(note.getCreatedAt())
+                        .entityType(Constants.CUSTOMER_BOOKING)
+                        .build()).toList();
+    }
+
+    public ShipmentDetailsV3Response createFromBooking(CommonRequestModel commonRequestModel, CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId, List<NotesRequest> notesRequests) {
         ShipmentV3Request request = (ShipmentV3Request) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is null for Shipment Create From Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -2486,6 +2465,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 List<Parties> updatedParties = partiesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(shipmentAddressList, Parties.class, false), shipmentId, Constants.SHIPMENT_ADDRESSES);
                 shipmentDetails.setShipmentAddresses(updatedParties);
             }
+            createNotes(notesRequests, shipmentId);
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
 
@@ -2507,6 +2487,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         return shipmentDetailsResponse;
     }
 
+    private void createNotes(List<NotesRequest> notesRequests, Long shipmentId) {
+        if (notesRequests != null) {
+            for(NotesRequest req : notesRequests) {
+                req.setEntityId(shipmentId);
+            }
+        }
+        if (notesRequests != null) {
+            List<Notes> notes = jsonHelper.convertValueToList(notesRequests, Notes.class);
+            notesDao.saveAll(notes);
+        }
+    }
 
     private void processPacksAndContainers(CustomerBookingV3Request customerBookingV3Request, Set<ContainerRequest> containerList, Long consolidationId, ShipmentDetails shipmentDetails) throws RunnerException {
 
@@ -3969,7 +3960,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     @Nullable
     private static ResponseEntity<IRunnerResponse> checkAlreadyExistingConsole(Long consoleId, ConsoleShipmentMapping consoleShip) {
         if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
-            return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
+            return ResponseHelper.buildFailedResponse(ErrorConstants.CONSOLE_ALREADY_EXISTS);
         }
         if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
             return ResponseHelper.buildSuccessResponse();
@@ -4032,7 +4023,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
     private void setColoadingStation(ShipmentDetails request) {
         var tenantSettings = commonUtils.getCurrentTenantSettings();
-        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getDirection(), Constants.DIRECTION_EXP)
+        if (Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR)
                 && Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())) {
             commonUtils.setInterBranchContextForColoadStation();
         }

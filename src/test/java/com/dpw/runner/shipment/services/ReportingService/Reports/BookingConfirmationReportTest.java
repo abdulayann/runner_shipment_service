@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,8 +43,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,6 +69,10 @@ class BookingConfirmationReportTest extends CommonMocks {
     private IContainerDao containerDao;
 
     Map<String, TenantModel> mockedTenantMap = new HashMap<>();
+
+    @Mock
+    private ShipmentServiceImplV3 shipmentServiceImplV3;
+    Map<String, Object> mapMock = new HashMap<>();
 
     @BeforeAll
     static void init() throws IOException {
@@ -108,6 +112,13 @@ class BookingConfirmationReportTest extends CommonMocks {
         mockedTenantMap.put("100", origin);
         mockedTenantMap.put("200", dest);
         mockedTenantMap.put("300", triang);
+
+        Map<String, String> nestedStringMap = new HashMap<>();
+        nestedStringMap.put("ijk", "lmn");
+        Map<String, Object> nestedMap = new HashMap<>();
+        nestedMap.put("ORDER_DPW", nestedStringMap);
+        mapMock.put("MasterLists", nestedMap);
+        mapMock.put("Organizations", nestedStringMap);
     }
 
     private void populateModel(BookingConfirmationModel bookingConfirmationModel) {
@@ -302,6 +313,7 @@ class BookingConfirmationReportTest extends CommonMocks {
         when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
         mockTenantSettings();
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         assertNotNull(bookingConfirmationReport.populateDictionary(bookingConfirmationModel));
     }
 
@@ -320,6 +332,7 @@ class BookingConfirmationReportTest extends CommonMocks {
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(shipmentServiceImplV3.getAllMasterData(any(), eq(SHIPMENT))).thenReturn(mapMock);
         when(masterDataUtils.fetchInTenantsList(any())).thenReturn(mockedTenantMap);
         mockTenantSettings();
         assertNotNull(bookingConfirmationReport.populateDictionary(bookingConfirmationModel));

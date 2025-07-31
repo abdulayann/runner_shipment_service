@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
@@ -31,6 +32,8 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private AirAuthorisingEntity securityStatusReceivedFrom;
     private String exemptionCodes;
     private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
 
 
     private String inspection;
@@ -136,4 +139,11 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private Boolean emptyContainerReturned;
     private Map<String, EntityTransferMasterLists> masterData;
     private Map<String, EntityTransferUnLocations> unlocationData;
+
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime pickupDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime cargoDeliveredDate;
 }

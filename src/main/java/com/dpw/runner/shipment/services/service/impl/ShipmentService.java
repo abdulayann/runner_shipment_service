@@ -4267,7 +4267,7 @@ public class ShipmentService implements IShipmentService {
             LocalDateTime currentTime = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
+            String filenameWithTimestamp = "Shipments_listing_" + timestamp + Constants.XLSX;
             String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
             Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
 
@@ -8421,7 +8421,7 @@ public class ShipmentService implements IShipmentService {
     @Nullable
     private static ResponseEntity<IRunnerResponse> checkAlreadyExistingConsole(Long consoleId, ConsoleShipmentMapping consoleShip) {
         if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
-            return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
+            return ResponseHelper.buildFailedResponse(ErrorConstants.CONSOLE_ALREADY_EXISTS);
         }
         if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
             return ResponseHelper.buildSuccessResponse();

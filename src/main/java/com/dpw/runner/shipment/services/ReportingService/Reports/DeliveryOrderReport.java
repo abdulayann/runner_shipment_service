@@ -222,6 +222,7 @@ public class DeliveryOrderReport extends IReport{
 
         if (deliveryOrderModel.shipmentDetails != null) {
             this.populateShipmentReportData(dictionary, null, deliveryOrderModel.shipmentDetails.getId());
+            this.getContainerDetails(deliveryOrderModel.shipmentDetails, dictionary);
             this.getPackingDetails(deliveryOrderModel.shipmentDetails, dictionary);
         }
 

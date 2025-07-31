@@ -218,6 +218,7 @@ public class HawbReport extends IReport{
 
         if (hawbModel.getShipmentDetails() != null) {
             this.populateShipmentReportData(dictionary, null, hawbModel.getShipmentDetails().getId());
+            this.getContainerDetails(hawbModel.getShipmentDetails(), dictionary);
             this.getPackingDetails(hawbModel.getShipmentDetails(), dictionary);
         }
         return dictionary;

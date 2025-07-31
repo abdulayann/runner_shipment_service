@@ -13,6 +13,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import javax.validation.Valid;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +27,7 @@ import java.util.UUID;
 @ValidCargoDeliveryDate
 @SuppressWarnings("java:S6539")
 public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
+    @Valid
     private AdditionalDetailV3Request additionalDetails;
     @Size(max=25000, message = "max size is 25000 for additional terms")
     private String additionalTerms;
@@ -37,6 +39,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String bookingReference;
     private String bookingType;
     private Boolean cargoFinanceBooking;
+    @Valid
     private CarrierDetailRequest carrierDetails;
     private BigDecimal chargable;
     private Boolean isChargableEditable;
@@ -105,6 +108,7 @@ public class ShipmentV3Request extends CommonRequest implements IRunnerRequest {
     private String transportMode;
     private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
+    @Valid
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private BigDecimal volume;
     @Size(max=10, message = "max size is 10 for volume unit")

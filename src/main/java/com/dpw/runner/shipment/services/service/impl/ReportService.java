@@ -43,6 +43,7 @@ import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -452,6 +453,13 @@ public class ReportService implements IReportService {
         dictionary.put(ReportConstants.HAS_PACKAGE_DETAILS, false);
         dictionary.put(ReportConstants.HAS_REFERENCE_DETAILS, false);
         dictionary.put(ReportConstants.HAS_TRUCK_DRIVERS, false);
+        Optional<PickupDeliveryDetails> pickupDeliveryDetailsEntity = pickupDeliveryDetailsService.findById(Long.valueOf(reportRequest.getTransportInstructionId()));
+       if (pickupDeliveryDetailsEntity.isPresent()) {
+           PickupDeliveryDetails pickupDeliveryDetails = pickupDeliveryDetailsEntity.get();
+           setTransporterPartyTags(pickupDeliveryDetails, dictionary);
+           setImportAgentPartyTags(pickupDeliveryDetails, dictionary);
+           setExportAgentPartyTags(pickupDeliveryDetails, dictionary);
+       }
         if (!CommonUtils.listIsNullOrEmpty(tiLegsList)) {
             List<Future<byte[]>> futures = new ArrayList<>();
             List<byte[]> pdfBytes = new ArrayList<>();
@@ -462,7 +470,6 @@ public class ReportService implements IReportService {
                 transportInstructionReport.addTransportInstructionLegsPackagesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsReferencesDataIntoDictionary(tilegs, legsDictionary);
                 transportInstructionReport.addTransportInstructionLegsTruckDriverDataIntoDictionary(tilegs, legsDictionary);
-
                 futures.add(executorService.submit(() -> {
                     byte[] mainDocPage = getFromDocumentService(legsDictionary, pages.getMainPageId());
                     if (mainDocPage == null) {
@@ -479,6 +486,65 @@ public class ReportService implements IReportService {
                 throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
             }
             return mainDocPage;
+        }
+    }
+
+    private void setTransporterPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        Parties transporterDetail = pickupDeliveryDetails.getTransporterDetail();
+        if (!Objects.isNull(transporterDetail)) {
+            Map<String, Object> orgData = transporterDetail.getOrgData();
+            if (orgData != null) {
+                dictionary.put(ReportConstants.TI_TRANSPORTER_NAME, orgData.get(FULL_NAME));
+                dictionary.put(ReportConstants.TI_TRANSPORTER_EMAIL, orgData.get(EMAIL));
+            }
+            Map<String, Object> addressData = transporterDetail.getAddressData();
+            if (addressData != null) {
+                dictionary.put(ReportConstants.TI_TRANSPORTER_CONTACT, addressData.get(CONTACT_KEY));
+                String address = commonUtils.getAddress(addressData);
+                dictionary.put(ReportConstants.TI_TRANSPORTER_ADDRESS, address);
+            }
+        }
+    }
+    private void setImportAgentPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        List<Parties> parties = pickupDeliveryDetails.getPartiesList();
+        if (!CommonUtils.listIsNullOrEmpty(parties)) {
+            Optional<Parties> importAgent = parties.stream()
+                    .filter(party -> ReportConstants.IMA_TYPE.equals(party.getType()))
+                    .findFirst();
+            if(importAgent.isPresent()) {
+                Map<String, Object> orgData = importAgent.get().getOrgData();
+                if (orgData != null) {
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_NAME, orgData.get(FULL_NAME));
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_EMAIL, orgData.get(EMAIL));
+                }
+                Map<String, Object> addressData = importAgent.get().getAddressData();
+                if (addressData != null) {
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
+                    String address =  commonUtils.getAddress(addressData);
+                    dictionary.put(ReportConstants.TI_IMPORT_AGENT_ADDRESS, address);
+                }
+            }
+        }
+    }
+    private void setExportAgentPartyTags(PickupDeliveryDetails pickupDeliveryDetails, Map<String, Object> dictionary) {
+        List<Parties> parties = pickupDeliveryDetails.getPartiesList();
+        if (!CommonUtils.listIsNullOrEmpty(parties)) {
+            Optional<Parties> exportAgent = parties.stream()
+                    .filter(party -> ReportConstants.EXA_TYPE.equals(party.getType()))
+                    .findFirst();
+            if (exportAgent.isPresent()) {
+                Map<String, Object> orgData = exportAgent.get().getOrgData();
+                if (orgData != null) {
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_NAME, orgData.get(FULL_NAME));
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_EMAIL, orgData.get(EMAIL));
+                }
+                Map<String, Object> addressData = exportAgent.get().getAddressData();
+                if (addressData != null) {
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_CONTACT, addressData.get(CONTACT_KEY));
+                    String address =  commonUtils.getAddress(addressData);
+                    dictionary.put(ReportConstants.TI_EXPORT_AGENT_ADDRESS, address);
+                }
+            }
         }
     }
 
@@ -934,6 +1000,7 @@ public class ReportService implements IReportService {
             pdfByteContent = getPdfByteContent(reportRequest, waterMarkRequired, pdfByteContent, font, shipmentDetails);
             if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name())) {
                 shipmentDetails.getAdditionalDetails().setPrintedOriginal(true);
+                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalTimeZoneHelper.getDateTime(LocalDateTime.now()));
             }
 
             updateShipmentDetailsForPrint(dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint, shipmentDetails);
@@ -1010,8 +1077,11 @@ public class ReportService implements IReportService {
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SEAWAY_BILL) && pdfByteContent != null) {
             Optional<ShipmentDetails> shipmentsRow = shipmentDao.findById(Long.parseLong(reportRequest.getReportId()));
             ShipmentDetails shipmentDetails = null;
-            if (shipmentsRow.isPresent())
+            if (shipmentsRow.isPresent()) {
                 shipmentDetails = shipmentsRow.get();
+                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalTimeZoneHelper.getDateTime(LocalDateTime.now()));
+                shipmentDetails = shipmentDao.update(shipmentDetails, false);
+            }
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
@@ -1580,7 +1650,7 @@ public class ReportService implements IReportService {
                 mainPageId = getMainOrLastPageId(row.getManifestPrint(), adminRow.getManifestPrint());
                 isLogoFixed = getIsLogoFixed(row.getManifestPrint());
                 break;
-            case ReportConstants.TRANSPORT_ORDER:
+            case ReportConstants.TRANSPORT_ORDER, TRANSPORT_ORDER_V3:
                 mainPageId = getMainOrLastPageId(row.getTransportOrderRoad(), adminRow.getTransportOrderRoad());
                 isLogoFixed = getIsLogoFixed(row.getTransportOrderRoad());
                 break;
