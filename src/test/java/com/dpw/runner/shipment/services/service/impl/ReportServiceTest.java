@@ -1,6 +1,12 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -79,6 +85,7 @@ import com.dpw.runner.shipment.services.entity.DocDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
 import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
@@ -91,6 +98,7 @@ import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportExceptionWarning;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -105,7 +113,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
-
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -532,6 +539,155 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         var data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedNotAllowed_throwsException() {
+        Packing unassignedPacking = mock(Packing.class);
+        when(unassignedPacking.getContainerId()).thenReturn(null); // unassigned
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(unassignedPacking));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE);
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+        assertTrue(thrown.getMessage().contains("DocName"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedNotAllowed_nullSetting_throwsException() {
+        Packing unassignedPacking = mock(Packing.class);
+        when(unassignedPacking.getContainerId()).thenReturn(null); // unassigned
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(unassignedPacking));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(null);  // null treated like false
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+        assertTrue(thrown.getMessage().contains("DocName"));
+    }
+
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedAllowed_throwsWarning() {
+        Packing unassignedPacking = mock(Packing.class);
+        when(unassignedPacking.getContainerId()).thenReturn(null); // unassigned
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(unassignedPacking));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE);
+
+        ReportExceptionWarning thrown = assertThrows(ReportExceptionWarning.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Discrepancy"));
+
+        assertTrue(thrown.getMessage().contains("review"));
+        assertTrue(thrown.getMessage().contains("Discrepancy"));
+    }
+
+
+    @Test
+    void validateUnassignedPackagesInternal_allAssigned_noException() {
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE); // value doesn't matter here
+
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+
+    @Test
+    void validateUnassignedPackagesInternal_emptyPackingList_noException() {
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.emptyList());
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_noPackingList_noException() {
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(null);
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_packingListNoUnassigned_noException() {
+
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(1L);
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE); // True or False does not matter here
+
+        // No exception because containerId is not null on any packing
+        assertDoesNotThrow(() ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "Note"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedAllowed_throwsReportExceptionWarning() {
+
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(null); // unassigned package
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.TRUE);
+
+        ReportExceptionWarning thrown = assertThrows(ReportExceptionWarning.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocName", "DiscrepancyNote"));
+
+        assertTrue(thrown.getMessage().contains("review"));
+        assertTrue(thrown.getMessage().contains("DiscrepancyNote"));
+    }
+
+    @Test
+    void validateUnassignedPackagesInternal_unassignedNotAllowed_throwsReportException() {
+
+        Packing packing = mock(Packing.class);
+        when(packing.getContainerId()).thenReturn(null); // unassigned package
+
+        ShipmentDetails shipment = mock(ShipmentDetails.class);
+        when(shipment.getPackingList()).thenReturn(Collections.singletonList(packing));
+
+        ShipmentSettingsDetails settings = new ShipmentSettingsDetails();
+        settings.setAllowUnassignedBlInvGeneration(Boolean.FALSE);
+
+        ReportException thrown = assertThrows(ReportException.class, () ->
+                reportService.validateUnassignedPackagesInternal(shipment, settings, "DocumentName", "Note"));
+
+        assertTrue(thrown.getMessage().contains("Cannot Generate"));
+        assertTrue(thrown.getMessage().contains("DocumentName"));
     }
 
 
