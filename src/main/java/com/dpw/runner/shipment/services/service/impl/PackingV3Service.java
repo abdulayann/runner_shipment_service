@@ -211,7 +211,7 @@ public class PackingV3Service implements IPackingV3Service {
                            ShipmentWtVolResponse oldShipmentWtVolResponse) throws RunnerException {
         if (!CommonUtils.listIsNullOrEmpty(packings) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
             shipmentDetails = getShipment(shipmentDetails, packings.get(0).getShipmentId());
-            List<Packing> finalPackings = updateCargoDetailsInShipment(shipmentDetails);
+            List<Packing> finalPackings = updateCargoDetailsInShipment(packings, shipmentDetails);
             packingValidationV3Util.validatePackageAfterSave(shipmentDetails, finalPackings);
             if (checkIfLCLConsolidationEligible(shipmentDetails)) {
                 updateShipmentGateInDateAndStatusFromPacks(shipmentDetails, finalPackings);
@@ -219,7 +219,9 @@ public class PackingV3Service implements IPackingV3Service {
             updateOceanDGStatus(shipmentDetails, finalPackings);
             if(consolidationDetails != null)
                 consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
-            updateAttachedContainersData(packings, shipmentDetails);
+            boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+            if (!isSeaFCLOrRoadFTL)
+                updateAttachedContainersData(packings, shipmentDetails);
         }
     }
 
@@ -246,13 +248,13 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
-    private List<Packing> updateCargoDetailsInShipment(ShipmentDetails shipmentDetails) throws RunnerException {
+    private List<Packing> updateCargoDetailsInShipment(List<Packing> updatedPackings, ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null)
             return Collections.emptyList();
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
-        boolean isSeaFCL = commonUtils.isSeaFCL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
-        if (isSeaFCL || isRoadFCLorFTL) {
+        boolean isSeaFCLOrRoadFTL = commonUtils.isSeaFCLOrRoadFTL(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+        if (isSeaFCLOrRoadFTL) {
+            updateAttachedContainersData(updatedPackings, shipmentDetails);
             CargoDetailsResponse cargoDetailsResponse = shipmentService.calculateShipmentSummary(shipmentDetails.getTransportMode(), packings, shipmentDetails.getContainersList());
             if (cargoDetailsResponse != null)
                 shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
