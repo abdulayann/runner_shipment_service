@@ -2398,14 +2398,6 @@ public class ReportService implements IReportService {
         return shipmentDetails;
     }
 
-    private ConsolidationDetails getConsolidationDetails(ReportRequest reportRequest) {
-        if (reportRequest.isFromConsolidation() && StringUtility.isNotEmpty(reportRequest.getReportId())) {
-            return consolidationDetailsDao.findById(Long.parseLong(reportRequest.getReportId()))
-                    .orElse(new ConsolidationDetails());
-        }
-        return new ConsolidationDetails(); // Return empty object if not applicable
-    }
-
     public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails, Boolean isRunnerV3Enabled){
         if(!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())){
             for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
@@ -2677,36 +2669,51 @@ public class ReportService implements IReportService {
         return customFileName;
     }
 
-
-
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;
         String shipmentType;
         String consolidationType;
         String entityGuid;
         String entityType;
+        String identifier = null;
 
-        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
+        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ",
+                LoggerHelper.getRequestIdFromMDC(),
+                LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE,
+                jsonHelper.convertToJson(docUploadRequest));
+
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
-        ShipmentDetails shipmentDetails = null;
-        ConsolidationDetails consolidationDetails = null;
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
-                shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
+                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
+
+                // Safety validation
+                if (shipmentDetails.getShipmentId() == null) {
+                    throw new ValidationException("missing for shipment ID: " + reportRequest.getReportId());
+                }
+
                 transportMode = shipmentDetails.getTransportMode();
                 shipmentType = shipmentDetails.getDirection();
                 consolidationType = shipmentDetails.getJobType();
                 entityGuid = StringUtility.convertToString(shipmentDetails.getGuid());
                 entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
+
+                if (shipmentDetails.getShipmentId() != null && !shipmentDetails.getShipmentId().isBlank()) {
+                    identifier = shipmentDetails.getShipmentId();
+                }
                 break;
 
             case Constants.CONSOLIDATION:
-                consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
                 transportMode = consolidationDetails.getTransportMode();
                 shipmentType = consolidationDetails.getShipmentType();
                 consolidationType = consolidationDetails.getConsolidationType();
                 entityGuid = StringUtility.convertToString(consolidationDetails.getGuid());
                 entityType = Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
+
+                if (consolidationDetails.getConsolidationNumber() != null && !consolidationDetails.getConsolidationNumber().isBlank()) {
+                    identifier = consolidationDetails.getConsolidationNumber();
+                }
                 break;
 
             default:
@@ -2714,19 +2721,16 @@ public class ReportService implements IReportService {
                 throw new IllegalArgumentException("Invalid Module Type: " + reportRequest.getEntityName());
         }
 
+        if (identifier == null) {
+            identifier = "UNKNOWN_DOCUMENT_ID";
+        }
+
         docUploadRequest.setEntityType(entityType);
         docUploadRequest.setKey(entityGuid);
         docUploadRequest.setTransportMode(transportMode);
         docUploadRequest.setShipmentType(shipmentType);
         docUploadRequest.setConsolidationType(consolidationType);
-        String identifier;
-        if (shipmentDetails != null && shipmentDetails.getShipmentId() != null && !shipmentDetails.getShipmentId().isBlank()) {
-            identifier = shipmentDetails.getShipmentId();
-        } else if (consolidationDetails != null && consolidationDetails.getConsolidationNumber() != null && !consolidationDetails.getConsolidationNumber().isBlank()) {
-            identifier = consolidationDetails.getConsolidationNumber();
-        } else {
-            identifier = "UNKNOWN_DOCUMENT_ID";
-        }
+
         // Apply custom naming if applicable and override
         try {
             String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier);
@@ -2738,7 +2742,9 @@ public class ReportService implements IReportService {
         }
         log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
         var response = documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
-        return jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
+        Map<String, Object> result = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
+        result.put("pdfByteContent", pdfByteContent);
+        return result;
     }
 
     // Main orchestrator method that populates the data dump dictionary with all required details

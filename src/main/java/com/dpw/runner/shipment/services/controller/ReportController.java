@@ -52,7 +52,7 @@ public class ReportController {
         HttpStatus httpStatus = null;
         try {
             var response = reportService.getDocumentData(CommonRequestModel.buildRequest(request));
-            return ResponseHelper.buildFileResponse(response.getContent(), MediaType.APPLICATION_OCTET_STREAM, request.getReportInfo() + ".pdf", response.getDocumentServiceMap(), "DocMaster");
+            return ResponseHelper.buildDependentServiceResponse(response.getDocumentServiceMap(), 0, 0L);
         } catch (TranslationException e) {
             responseMsg = e.getMessage();
             httpStatus = HttpStatus.PRECONDITION_REQUIRED;
