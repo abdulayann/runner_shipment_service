@@ -46,6 +46,7 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String jobType;
     private String serviceType;
     private String masterBill;
+    private Long bookingId;
     private String bookingReference;
     private String consolRef;
     private Long salesAgent;
@@ -254,4 +255,5 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private String transportInfoStatusMessage;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private Integer slac;
+    private List<RoutingsLiteResponse> routingsLiteResponses;
 }

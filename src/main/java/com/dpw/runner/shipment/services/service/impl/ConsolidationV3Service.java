@@ -916,7 +916,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setSummaryVolume(IReport.convertToVolumeNumberFormat(aggregationResult.sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
         response.setSummaryDGShipments(getSummaryDGShipments(shipmentDetailsList));
         response.setSummaryContainer(getSummaryContainer(consolidationDetails.getContainersList(), assignedContainerIds));
-        response.setSummaryDgPacks(getSummaryDgPacks(consolidationDetails.getPackingList()));
+        response.setSummaryDgPacks(getSummaryDgPacks(aggregationResult.packingList));
         response.setTotalPacks(aggregationResult.packs);
         response.setPackType(aggregationResult.packsType);
         if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode) || TRANSPORT_MODE_ROA.equalsIgnoreCase(transportMode)) {
@@ -967,6 +967,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         int shipmentCount;
         BigDecimal chargeable;
         BigDecimal weightVolume;
+        List<Packing> packingList;
     }
 
     private AggregationResult aggregateShipments(String transportMode, Set<ShipmentDetails> shipments, String weightUnit, String volumeUnit) throws RunnerException {
@@ -978,6 +979,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         result.packs = 0;
         result.packsType = null;
         result.shipmentCount = 0;
+        result.packingList = new ArrayList<>();
 
         if (ObjectUtils.isNotEmpty(shipments)) {
             for (ShipmentDetails sd : shipments) {
@@ -987,6 +989,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                         new BigDecimal(convertUnit(Constants.VOLUME, sd.getVolume(), sd.getVolumeUnit(), volumeUnit).toString()));
                 result.packs += (sd.getNoOfPacks() != null ? sd.getNoOfPacks() : 0);
                 result.packsType = determinePackType(result.packsType, sd.getPacksUnit());
+                if(sd.getPackingList() != null) result.packingList.addAll(sd.getPackingList());
 
                 // chargeable and weight volume sum
                 if(TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode) || TRANSPORT_MODE_ROA.equalsIgnoreCase(transportMode)) {
@@ -2951,9 +2954,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         Integer consoleDgContCount = 0;
         BigDecimal consoleTeus = BigDecimal.ZERO;
         Long shipmentsCount = 0L;
+        Boolean isNonFtlOrFclAttached = false;
         Map<Long, Containers> containersMap = new HashMap<>();
         if (!listIsNullOrEmpty(shipmentDetailsList)) {
             shipmentsCount = shipmentDetailsList.stream().count();
+            isNonFtlOrFclAttached = shipmentDetailsList.stream().anyMatch(this::isNonFtlOrFclAttached);
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
                 sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
@@ -2992,7 +2997,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 .dgPacks(dgPacks)
                 .dgPacksType(dgPacksType)
                 .slacCount(slacCount)
+                .isNonFtlOrFclAttached(isNonFtlOrFclAttached)
                 .build();
+    }
+    private boolean isNonFtlOrFclAttached(ShipmentDetails shipmentDetails) {
+        return   (!CARGO_TYPE_FCL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")) && !CARGO_TYPE_FTL.equalsIgnoreCase(Optional.ofNullable(shipmentDetails.getShipmentType()).orElse("")));
     }
 
     public String getPacksType(ShipmentDetails shipmentDetails, String packsType) {
@@ -4709,11 +4718,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @return AllShipmentCountResponse containing attached self/inter branch shipments & pending for attachment shipments.
      */
     @Override
-    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request) {
+    public ResponseEntity<IRunnerResponse> aibAttachedPendingShipmentCount(@NotNull CommonGetRequest request, String xSource) throws AuthenticationException, RunnerException {
         Long attachedShipSelfBranch = 0L;
         Long attachedShipInterBranch = 0L;
         Long pendingForAttachment = 0L;
-        var consoleDetails = consolidationDetailsDao.findById(request.getId());
+        Optional<ConsolidationDetails> consoleDetails;
+
+        if(Objects.equals(xSource, NETWORK_TRANSFER)){
+            consoleDetails = retrieveForNte(request.getId());
+        }else {
+            consoleDetails = consolidationDetailsDao.findById(request.getId());
+        }
 
         if (consoleDetails.isEmpty()) {
             log.error(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, LoggerHelper.getRequestIdFromMDC());
@@ -4769,4 +4784,5 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return shipments != null && shipments.stream()
                 .anyMatch(shipment -> Boolean.TRUE.equals(shipment.getContainsHazardous()));
     }
+
 }

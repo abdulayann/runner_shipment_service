@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.response.ReportResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -42,7 +43,7 @@ class ReportControllerTest {
     void createReport()
         throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
-        when(reportService.getDocumentData(any())).thenReturn(StringUtility.getRandomString(100).getBytes());
+        when(reportService.getDocumentData(any())).thenReturn(ReportResponse.builder().content(StringUtility.getRandomString(100).getBytes()).build());
         // Test
         var responseEntity = reportController.createReport(new ReportRequest());
         // Assert

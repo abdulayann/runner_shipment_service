@@ -207,6 +207,7 @@ public class ContainerV3Service implements IContainerV3Service {
         if(containerRequest.getBookingId() != null && containerRequest.getConsolidationId() != null && containerRequest.getShipmentsId() != null){
             throw new ValidationException("Only one of BookingId or ConsolidationId or ShipmentsId should be provided, not all.");
         }
+        updateContainerRequestOnDgFlag(List.of(containerRequest));
 
         List<Containers> containersList = getSiblingContainers(containerRequest);
         containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
@@ -244,6 +245,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public BulkContainerResponse createBulk(List<ContainerV3Request> containerRequests, String module) throws RunnerException {
+        updateContainerRequestOnDgFlag(containerRequests);
         containerValidationUtil.validateCreateBulkRequest(containerRequests);
         containerValidationUtil.validateContainerNumberUniquenessForCreateBulk(containerRequests);
         String requestId = LoggerHelper.getRequestIdFromMDC();
@@ -274,6 +276,7 @@ public class ContainerV3Service implements IContainerV3Service {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public BulkContainerResponse updateBulk(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
+        updateContainerRequestOnDgFlag(containerRequestList);
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
@@ -998,6 +1001,9 @@ public class ContainerV3Service implements IContainerV3Service {
         ContainerNumberCheckResponse response = new ContainerNumberCheckResponse();
         response.setLastDigit(null);
         response.setIsLastDigitCorrect(null);
+        // Convert to UPPERCASE
+        containerNumber = containerNumber.toUpperCase();
+
         if (containerNumber.length() != 10 && containerNumber.length() != 11) {
             checkUnavailableContainerMD(containerNumber, response); // unavailable cont master data would be around 4-5 characters max (acc. to story), so only checking if it's not 10 or 11
             return response;
@@ -1055,6 +1061,13 @@ public class ContainerV3Service implements IContainerV3Service {
         if (containerNumber.length() == 11 && (containerNumber.charAt(10) < 48 || containerNumber.charAt(10) > 57)) {
             response.setSuccess(false);
             return response;
+        }
+        // Validate 4th character must be U, J, or Z (warning only)
+        char fourthChar = containerNumber.charAt(3);
+        if (fourthChar != 'U' && fourthChar != 'J' && fourthChar != 'Z') {
+            response.setWarningMessage("Invalid Container Number. The fourth character must be U, J, or Z.");
+            // Still allow proceeding with success
+            response.setSuccess(true);
         }
         return null;
     }
@@ -1909,6 +1922,23 @@ public class ContainerV3Service implements IContainerV3Service {
         });
 
         return containerListResponse;
+    }
+
+    private void updateContainerRequestOnDgFlag(List<ContainerV3Request> containerV3Requests) {
+        for(ContainerV3Request containerRequest: containerV3Requests) {
+            if(Boolean.FALSE.equals(containerRequest.getHazardous())) {
+                updateContainerRequestWithDgFalse(containerRequest);
+            }
+        }
+    }
+
+    private void updateContainerRequestWithDgFalse(ContainerV3Request containerRequest) {
+        containerRequest.setUnNumber(null);
+        containerRequest.setProperShippingName(null);
+        containerRequest.setDgClass(null);
+        containerRequest.setMarinePollutant(null);
+        containerRequest.setPackingGroup(null);
+        containerRequest.setMinimumFlashPoint(null);
     }
 
 }

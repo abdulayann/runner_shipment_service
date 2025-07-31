@@ -1,18 +1,15 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import java.util.HashSet;
-import java.util.Set;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.ManyToMany;
-import javax.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
 @Entity
 @Table(name = "section_fields")
@@ -23,15 +20,10 @@ import lombok.Setter;
 @Builder
 public class SectionFields extends BaseEntity {
 
-  @Column(nullable = false, unique = true)
-  private String fieldName;
+    @Column(nullable = false, unique = true)
+    private String fieldName;
 
-  @Column(nullable = false)
-  private String fieldDescription;
-
-  @ManyToMany(mappedBy = "sectionFields")
-  @JsonIgnore
-  private Set<SectionDetails> sectionDetails = new HashSet<>();
-
+    @Column(nullable = false)
+    private String fieldDescription;
 
 }

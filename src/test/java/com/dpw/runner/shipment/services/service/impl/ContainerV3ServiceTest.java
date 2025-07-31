@@ -299,6 +299,7 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .containerCount(1L)
                 .commodityGroup("Metals")
                 .consolidationId(101L)
+                .hazardous(Boolean.FALSE)
                 .build();
 
         List<ContainerV3Request> containerRequests = List.of(request1, request2);
@@ -879,6 +880,19 @@ class ContainerV3ServiceTest extends CommonMocks {
         assertFalse(response.isSuccess());
     }
 
+    @Test
+    void test_InvalidFourthCharacterInContainerNumber() {
+        String containerNumber = "ABCX1234560";
+        ContainerNumberCheckResponse response = containerV3Service.validateContainerNumber(containerNumber);
+        assertTrue(response.isSuccess(), "Should pass with a warning about 4th char only");
+        assertEquals("Invalid Container Number. The fourth character must be U, J, or Z.", response.getWarningMessage());
+    }
+    @Test
+    void testLowerCaseInputGetsUpperCased() {
+        String input = "abcu1234560"; // lowercase input
+        ContainerNumberCheckResponse response = containerV3Service.validateContainerNumber(input);
+        assertTrue(response.isSuccess());
+    }
     @Test
     void testDownloadContainers() {
         assertDoesNotThrow(() -> containerV3Service.downloadContainers(null, new BulkDownloadRequest()));

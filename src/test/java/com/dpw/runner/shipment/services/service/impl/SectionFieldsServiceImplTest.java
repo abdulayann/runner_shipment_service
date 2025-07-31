@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.section.response.SectionFieldsRespon
 import com.dpw.runner.shipment.services.entity.SectionDetails;
 import com.dpw.runner.shipment.services.entity.SectionFields;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
+import com.dpw.runner.shipment.services.repository.interfaces.ISectionDetailsRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.ISectionFieldsRepository;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -40,6 +42,9 @@ class SectionFieldsServiceImplTest {
 
   @Mock
   private ISectionFieldsRepository iSectionFieldsRepository;
+
+  @Mock
+  private ISectionDetailsRepository sectionDetailsRepository;
 
   @Mock
   private ModelMapper modelMapper;
@@ -67,7 +72,6 @@ class SectionFieldsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
     Optional<SectionFields> ofResult = Optional.of(sectionFields);
@@ -97,7 +101,6 @@ class SectionFieldsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(new HashSet<>());
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
     Optional<SectionFields> ofResult = Optional.of(sectionFields);
@@ -119,15 +122,11 @@ class SectionFieldsServiceImplTest {
     sectionDetails.setGuid(UUID.randomUUID());
     sectionDetails.setId(1L);
     sectionDetails.setIsDeleted(true);
-    sectionDetails.setSectionName("Section Description");
+    sectionDetails.setSectionDescription("Section Description");
     sectionDetails.setSectionFields(new HashSet<>());
-    sectionDetails.setSectionCode("Section Name");
-    sectionDetails.setSectionVisibilities(new HashSet<>());
+    sectionDetails.setSectionName("Section Name");
     sectionDetails.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionDetails.setUpdatedBy("2020-03-01");
-
-    HashSet<SectionDetails> sectionDetails2 = new HashSet<>();
-    sectionDetails2.add(sectionDetails);
 
     SectionFields sectionFields = new SectionFields();
     sectionFields.setCreatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
@@ -137,11 +136,11 @@ class SectionFieldsServiceImplTest {
     sectionFields.setGuid(UUID.randomUUID());
     sectionFields.setId(1L);
     sectionFields.setIsDeleted(true);
-    sectionFields.setSectionDetails(sectionDetails2);
     sectionFields.setUpdatedAt(LocalDate.of(1970, 1, 1).atStartOfDay());
     sectionFields.setUpdatedBy("2020-03-01");
     Optional<SectionFields> ofResult = Optional.of(sectionFields);
     when(iSectionFieldsRepository.findById(Mockito.<Long>any())).thenReturn(ofResult);
+    when(sectionDetailsRepository.findAllBySectionFieldId(anyLong())).thenReturn(List.of(sectionDetails));
     assertThrows(SectionFieldsException.class, () -> sectionFieldsServiceImpl.delete(1L));
     verify(iSectionFieldsRepository).findById(Mockito.<Long>any());
   }
