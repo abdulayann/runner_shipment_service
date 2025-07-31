@@ -257,6 +257,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -6587,7 +6588,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void setTenantAndDefaultAgent(ShipmentDetailsResponse response) {
+    public void setTenantAndDefaultAgent(ShipmentDetailsResponse response) {
         try {
             log.info("Fetching Tenant Model");
             TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
@@ -6595,7 +6596,13 @@ public class ShipmentService implements IShipmentService {
             response.setFreightLocalCurrency(currencyCode);
             List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
             if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
-                response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
+                if (Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode())
+                        || Constants.TRANSPORT_MODE_RAI.equals(response.getTransportMode())) {
+                    response.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(entityTransferAddress.getCity()));
+                } else {
+                    response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                }
                 response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
                 response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
             }
