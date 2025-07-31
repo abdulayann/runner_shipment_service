@@ -277,4 +277,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean isBorrowed;
     private Integer dgPacksCount;
     private String dgPacksUnit;
+
+    private Integer slac;
 }
