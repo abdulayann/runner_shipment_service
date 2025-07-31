@@ -3465,9 +3465,8 @@ public abstract class IReport {
         List<Map<String, Object>> packsDictionary = new ArrayList<>();
         Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        List<Map<String, List<Map<String, Object>>>> groupedDict = new ArrayList<>();
-        groupPacksDetails(shipment.getPackingList(), groupedDict, v1TenantSettingsResponse, dictionary);
-        dictionary.put(SHIPMENT_PACKS, groupedDict);
+        groupPacksDetails(shipment.getPackingList(), v1TenantSettingsResponse, dictionary, shipment.getContainersList());
+        dictionary.put(SHIPMENT_PACKS, shipment.getPackingList());
         for(var pack : shipment.getPackingList()) {
             packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
         }
@@ -3527,182 +3526,260 @@ public abstract class IReport {
         return dict;
     }
 
+
     public void groupPacksDetails(List<PackingModel> packingList,
-                                  List<Map<String, List<Map<String, Object>>>> groupedSummaryList,
-                                  V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
+                                  V1TenantSettingsResponse v1TenantSettingsResponse,
+                                  Map<String, Object> dictionary,
+                                  List<ContainerModel> containerList) {
 
-        Map<String, List<Map<String, Object>>> finalContainerNumberMap = new HashMap<>();
-        Map<String, List<Map<String, Object>>> finalContainerTypeMap = new HashMap<>();
-        List<Map<String, Object>> unassignedPacksList = new ArrayList<>();
+        boolean hasPacks = packingList != null && !packingList.isEmpty();
+        boolean hasContainers = containerList != null && !containerList.isEmpty();
 
-        for (PackingModel pack : packingList) {
-            Containers container = containerDao.findById(pack.getContainerId()).orElse(null);
-            Map<String, Object> dict = createBaseDict(pack, container);
-
-            if (pack.getContainerNumber() != null) {
-                finalContainerNumberMap
-                        .computeIfAbsent(pack.getContainerNumber(), k -> new ArrayList<>())
-                        .add(dict);
-            } else if (container != null && container.getContainerCode() != null) {
-                populateFromContainer(container, dict, dictionary);
-                finalContainerTypeMap
-                        .computeIfAbsent(container.getContainerCode(), k -> new ArrayList<>())
-                        .add(dict);
-            } else {
-                unassignedPacksList.add(dict);
-            }
-        }
-
-        processGroupedMap(finalContainerNumberMap, groupedSummaryList, v1TenantSettingsResponse, dictionary);
-        processGroupedMap(finalContainerTypeMap, groupedSummaryList, v1TenantSettingsResponse, dictionary);
-        processGroupedMap(Collections.singletonMap("", unassignedPacksList), groupedSummaryList, v1TenantSettingsResponse, dictionary);
-    }
-
-    private Map<String, Object> createBaseDict(PackingModel pack, Containers container) {
-        Map<String, Object> dict = new HashMap<>();
-        dict.put(CONTAINER_NUM, pack.getContainerNumber());
-        dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
-        dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
-        dict.put(PACKS_UNIT, pack.getPacksType());
-        dict.put(CARRIER_SEAL_NUMBER, container != null ? container.getCarrierSealNumber() : null);
-        dict.put(CONTAINER_TYPE_CODE, container != null ? container.getContainerCode() : null);
-
-        if (pack.getPacks() != null) {
-            dict.put(PACKS, new BigDecimal(pack.getPacks()));
-        }
-        if (pack.getWeight() != null) {
-            dict.put(GROSS_WEIGHT, pack.getWeight());
-        }
-        if (pack.getVolume() != null) {
-            dict.put(GROSS_VOLUME, pack.getVolume());
-        }
-
-        return dict;
-    }
-
-    private void populateFromContainer(Containers container, Map<String, Object> dict, Map<String, Object> dictionary) {
-        dict.put(MARKS_N_NUMS, container.getMarksNums());
-        dict.put(GOODS_DESCRIPTION, container.getDescriptionOfGoods());
-        dict.put(PACKS, container.getPacks());
-        dict.put(GROSS_WEIGHT, container.getGrossWeight());
-        dict.put(GROSS_VOLUME, container.getGrossVolume());
-        dict.put(PACKS_UNIT, container.getPacksType());
-        populateDictionaryFromContainer(jsonHelper.convertValue(container, ContainerModel.class), dictionary);
-    }
-
-    public void getContainerDetails(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
-
-        List<ContainerModel> containerModelList = shipmentModel.getContainersList();
-        for(ContainerModel containerModel: containerModelList) {
-            populateDictionaryFromContainer(containerModel, dictionary);
+        if (hasPacks) {
+            // Priority: If packs exist, show packs info grouped by container
+            processPacksData(packingList, v1TenantSettingsResponse, dictionary);
+            dictionary.put("HasPacks2", true);
+            dictionary.put("HasContainers2", false);
+        } else if (hasContainers) {
+            // Fallback: If only containers exist, show container info
+            processContainersData(containerList, v1TenantSettingsResponse, dictionary);
+            dictionary.put("HasPacks2", false);
+            dictionary.put("HasContainers2", true);
+        } else {
+            // Neither packs nor containers exist
+            dictionary.put("HasPacks2", false);
+            dictionary.put("HasContainers2", false);
         }
     }
 
-    private void populateDictionaryFromContainer(ContainerModel container, Map<String, Object> dictionary) {
-        dictionary.put(MARKS_N_NUMS, container.getMarksNums());
-        dictionary.put(GOODS_DESCRIPTION, container.getDescriptionOfGoods());
-        dictionary.put(PACKS, container.getPacks());
-        dictionary.put(GROSS_WEIGHT, container.getGrossWeight());
-        dictionary.put(GROSS_VOLUME, container.getGrossVolume());
-        dictionary.put(PACKS_UNIT, container.getPacksType());
-        dictionary.put(CONTAINER_NUM, container.getContainerNumber());
-        dictionary.put(CONTAINER_TYPE_CODE, container.getContainerCode());
-        dictionary.put(CARRIER_SEAL_NUMBER, container.getCarrierSealNumber());
-    }
+    private void processPacksData(List<PackingModel> packingList,
+                                  V1TenantSettingsResponse v1TenantSettingsResponse,
+                                  Map<String, Object> dictionary) {
 
+        // Group packs by container (using container ID for better accuracy)
+        Map<String, List<PackingModel>> packsGroupedByContainer = packingList.stream()
+                .collect(Collectors.groupingBy(pack -> {
+                    if (pack.getContainerNumber() != null) {
+                        return pack.getContainerNumber();
+                    } else {
+                        return "UNASSIGNED";
+                    }
+                }));
 
-    private void processGroupedMap(Map<String, List<Map<String, Object>>> groupedMap,
-                                   List<Map<String, List<Map<String, Object>>>> outputList,
-                                   V1TenantSettingsResponse settings, Map<String, Object> dictionary) {
+        List<Map<String, Object>> shipmentPacksList = new ArrayList<>();
 
-        Map<String, List<Map<String, Object>>> outputMap = new HashMap<>();
+        for (Map.Entry<String, List<PackingModel>> entry : packsGroupedByContainer.entrySet()) {
+            String groupKey = entry.getKey();
+            List<PackingModel> packsInGroup = entry.getValue();
 
-        for (Map.Entry<String, List<Map<String, Object>>> entry : groupedMap.entrySet()) {
-            Map<String, Object> summary = buildSummaryForGroup(entry.getKey(), entry.getValue(), settings, dictionary);
-            outputMap.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(summary);
+            Map<String, Object> groupedPackData = buildPacksGroupSummary(
+                    dictionary, packsInGroup, v1TenantSettingsResponse);
+            shipmentPacksList.add(groupedPackData);
         }
 
-        outputList.add(outputMap);
+        // Set the data for template consumption
+        dictionary.put("ShipmentPacks2", shipmentPacksList);
     }
 
-    private Map<String, Object> buildSummaryForGroup(String groupKey, List<Map<String, Object>> groupList, V1TenantSettingsResponse settings, Map<String, Object> dictionary) {
+    private void processContainersData(List<ContainerModel> containerList,
+                                       V1TenantSettingsResponse v1TenantSettingsResponse,
+                                       Map<String, Object> dictionary) {
+
+        List<Map<String, Object>> shipmentContainersList = new ArrayList<>();
+
+        for (ContainerModel container : containerList) {
+            Map<String, Object> containerData = new HashMap<>();
+            String grossWeight = formatWeight(container.getGrossWeight(), v1TenantSettingsResponse);
+            String grossVolume = formatVolume(container.getGrossVolume(), v1TenantSettingsResponse);
+
+            containerData.put("ContainerTypeCode2", container.getContainerCode());
+            containerData.put("ContainerNumber2", container.getContainerNumber());
+            containerData.put("CarrierSealNumber2", container.getCarrierSealNumber());
+            containerData.put("MarksnNums2", container.getMarksNums());
+            containerData.put("GoodsDescription2", container.getDescriptionOfGoods());
+            containerData.put("Packs2", container.getPacks().isEmpty() ? "" : container.getPacks());
+            containerData.put("PacksUnit2", container.getPacksType());
+            containerData.put("GrossWeight2", grossWeight);
+            containerData.put("GrossWeightUnit2", StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
+            containerData.put("GrossVolume2", grossVolume);
+            containerData.put("GrossVolumeUnit2", StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
+
+            dictionary.put("ContainerTypeCode2", container.getContainerCode());
+            dictionary.put("ContainerNumber2", container.getContainerNumber());
+            dictionary.put("CarrierSealNumber2", container.getCarrierSealNumber());
+            dictionary.put("MarksnNums2", container.getMarksNums());
+            dictionary.put("GoodsDescription2", container.getDescriptionOfGoods());
+            dictionary.put("Packs2", container.getPacks().isEmpty() ? "" : container.getPacks());
+            dictionary.put("PacksUnit2", container.getPacksType());
+            dictionary.put("GrossWeight2", grossWeight);
+            dictionary.put("GrossWeightUnit2", StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
+            dictionary.put("GrossVolume2", grossVolume);
+            dictionary.put("GrossVolumeUnit2", StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
+
+            shipmentContainersList.add(containerData);
+        }
+
+        dictionary.put("ShipmentContainers2", shipmentContainersList);
+    }
+
+    private Map<String, Object> buildPacksGroupSummary(Map<String, Object> dictionary,
+                                                       List<PackingModel> packsInGroup,
+                                                       V1TenantSettingsResponse settings) {
+
         Set<String> marksSet = new LinkedHashSet<>();
         Set<String> descSet = new LinkedHashSet<>();
+        Set<String> packUnits = new LinkedHashSet<>();
+
         BigDecimal totalPacks = BigDecimal.ZERO;
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
 
-        String sealNumber = null;
-        String containerType = null;
-        String packUnit = null;
+        // Container metadata (get from first pack's container)
+        String containerNumber = null;
+        String containerTypeCode = null;
+        String carrierSealNumber = null;
+        Containers containerData = null;
 
-        for (Map<String, Object> pack : groupList) {
-            collectTextField(pack, PACKS_MARKS_NUMBERS, marksSet);
-            collectTextField(pack, PACKS_GOODS_DESCRIPTION, descSet);
+        for (PackingModel pack : packsInGroup) {
+            // Get container data first (to combine with pack data)
+            if (pack.getContainerId() != null && containerData == null) {
+                containerData = containerDao.findById(pack.getContainerId()).orElse(null);
+            }
 
-            totalPacks = addIfPresent(pack, PACKS, totalPacks);
-            totalWeight = addIfPresent(pack, GROSS_WEIGHT, totalWeight);
-            totalVolume = addIfPresent(pack, GROSS_VOLUME, totalVolume);
+            // Collect pack-specific marks and numbers
+            if (pack.getMarksnNums() != null && !pack.getMarksnNums().trim().isEmpty()) {
+                marksSet.add(pack.getMarksnNums());
+            }
 
-            if (sealNumber == null) sealNumber = getFirstValue(pack, CARRIER_SEAL_NUMBER);
-            if (containerType == null) containerType = getFirstValue(pack, CONTAINER_TYPE_CODE);
-            if (packUnit == null) packUnit = getFirstValue(pack, PACKS_UNIT);
+            // Collect pack-specific goods description
+            if (pack.getGoodsDescription() != null && !pack.getGoodsDescription().trim().isEmpty()) {
+                descSet.add(pack.getGoodsDescription());
+            }
+
+            if (pack.getPacksType() != null) {
+                packUnits.add(pack.getPacksType());
+            }
+
+            // Sum up numerical values from packs
+            if (pack.getPacks() != null) {
+                totalPacks = totalPacks.add(new BigDecimal(pack.getPacks()));
+            }
+
+            if (pack.getWeight() != null) {
+                totalWeight = totalWeight.add(pack.getWeight());
+            }
+
+            if (pack.getVolume() != null) {
+                totalVolume = totalVolume.add(pack.getVolume());
+            }
+
+            // Get container number from pack if available
+            if (containerNumber == null && pack.getContainerNumber() != null) {
+                containerNumber = pack.getContainerNumber();
+            }
         }
 
+        // Now combine container data with pack data
+        if (containerData != null) {
+            containerTypeCode = containerData.getContainerCode();
+            carrierSealNumber = containerData.getCarrierSealNumber();
+
+            if (containerNumber == null) {
+                containerNumber = containerData.getContainerNumber();
+            }
+        }
+
+        // Build the summary object
         Map<String, Object> summary = new HashMap<>();
-        summary.put(CONTAINER_NUM, groupKey);
-        dictionary.put(CONTAINER_NUM, groupKey);
 
-        summary.put(CARRIER_SEAL_NUMBER, sealNumber);
-        dictionary.put(CARRIER_SEAL_NUMBER, sealNumber);
+        // Container information (from container metadata)
+        summary.put("ContainerTypeCode2", containerTypeCode != null ? containerTypeCode : "");
+        summary.put("ContainerNumber2", containerNumber != null ? containerNumber : "");
+        summary.put("CarrierSealNumber2", carrierSealNumber != null ? carrierSealNumber : "");
 
-        summary.put(CONTAINER_TYPE_CODE, containerType);
-        dictionary.put(CONTAINER_TYPE_CODE, containerType);
+        dictionary.put("ContainerTypeCode2", containerTypeCode != null ? containerTypeCode : "");
+        dictionary.put("ContainerNumber2", containerNumber != null ? containerNumber : "");
+        dictionary.put("CarrierSealNumber2", carrierSealNumber != null ? carrierSealNumber : "");
 
-        summary.put(PACKS_MARKS_NUMBERS, String.join(", ", marksSet));
-        dictionary.put(PACKS_MARKS_NUMBERS, String.join(", ", marksSet));
+        // Combined pack + container information
+        summary.put("PacksMarksNumber2", String.join(", ", marksSet));
+        summary.put("PacksGoodsDescription2", String.join("\n", descSet)); // Line breaks for descriptions
+        summary.put("Packs2", totalPacks.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(totalPacks, 0, settings) : "");
 
-        summary.put(PACKS_GOODS_DESCRIPTION, String.join(",\n", descSet));
-        dictionary.put(PACKS_GOODS_DESCRIPTION, String.join(",\n", descSet));
+        dictionary.put("PacksMarksNumber2", String.join(", ", marksSet));
+        dictionary.put("PacksGoodsDescription2", String.join("\n", descSet)); // Line breaks for descriptions
+        dictionary.put("Packs2", totalPacks.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(totalPacks, 0, settings) : "");
 
-        summary.put(PACKS, getDPWWeightVolumeFormat(totalPacks, 0, settings));
-        dictionary.put(PACKS, getDPWWeightVolumeFormat(totalPacks, 0, settings));
-
-        summary.put(GROSS_WEIGHT, getDPWWeightVolumeFormat(totalWeight, 2, settings));
-        dictionary.put(GROSS_WEIGHT, getDPWWeightVolumeFormat(totalWeight, 2, settings));
-
-        summary.put(GROSS_VOLUME, getDPWWeightVolumeFormat(totalVolume, 2, settings));
-        dictionary.put(GROSS_VOLUME, getDPWWeightVolumeFormat(totalVolume, 2, settings));
-
-        if(groupList.size() > 1) {
-            summary.put(PACKS_UNIT, Constants.PACKAGES);
-            dictionary.put(PACKS_UNIT, Constants.PACKAGES);
+        // Pack unit logic: if multiple different units, use "PACKAGES"
+        if (packUnits.size() > 1) {
+            summary.put("PacksUnit2", "PACKAGES");
+            dictionary.put("PacksUnit2", "PACKAGES");
+        } else if (packUnits.size() == 1) {
+            summary.put("PacksUnit2", packUnits.iterator().next());
+            dictionary.put("PacksUnit2", packUnits.iterator().next());
         } else {
-            summary.put(PACKS_UNIT, packUnit);
-            dictionary.put(PACKS_UNIT, packUnit);
+            summary.put("PacksUnit2", "PACKAGES");
+            dictionary.put("PacksUnit2", "PACKAGES");
         }
+
+        // Weight and volume with units
+        String weightUnit = getWeightUnit(settings);
+        String volumeUnit = getVolumeUnit(settings);
+
+        summary.put("GrossWeight2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ?
+                getDPWWeightVolumeFormat(totalWeight, 2, settings) : "");
+
+        summary.put("GrossWeightUnit2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
+
+        dictionary.put("GrossWeight2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ?
+                getDPWWeightVolumeFormat(totalWeight, 2, settings) : "");
+
+        dictionary.put("GrossWeightUnit2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
+
+        summary.put("GrossVolume2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ?
+                getDPWWeightVolumeFormat(totalVolume, 2, settings) : "");
+
+        summary.put("GrossVolumeUnit2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
+
+        dictionary.put("GrossVolume2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ?
+                getDPWWeightVolumeFormat(totalVolume, 2, settings) : "");
+
+        dictionary.put("GrossVolumeUnit2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
+
 
         return summary;
     }
 
-    private void collectTextField(Map<String, Object> map, String key, Set<String> collector) {
-        Object value = map.get(key);
-        if (value != null) {
-            collector.add(value.toString());
+    // Helper methods for formatting
+    private String formatWeight(BigDecimal weight, V1TenantSettingsResponse settings) {
+        if (weight == null || weight.compareTo(BigDecimal.ZERO) == 0) {
+            return "";
         }
+        return getDPWWeightVolumeFormat(weight, 2, settings);
     }
 
-    private BigDecimal addIfPresent(Map<String, Object> map, String key, BigDecimal currentTotal) {
-        Object value = map.get(key);
-        if (value instanceof BigDecimal) {
-            return currentTotal.add((BigDecimal) value);
+    private String formatVolume(BigDecimal volume, V1TenantSettingsResponse settings) {
+        if (volume == null || volume.compareTo(BigDecimal.ZERO) == 0) {
+            return "";
         }
-        return currentTotal;
+        return getDPWWeightVolumeFormat(volume, 2, settings);
     }
 
-    private String getFirstValue(Map<String, Object> map, String key) {
-        Object value = map.get(key);
-        return value != null ? value.toString() : null;
+    private String getWeightUnit(V1TenantSettingsResponse settings) {
+        return "KG";
+    }
+
+    private String getVolumeUnit(V1TenantSettingsResponse settings) {
+        return "M3";
+    }
+
+    // Updated method signature to include container list
+    public void getContainerDetails(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        List<ContainerModel> containerModelList = shipmentModel.getContainersList();
+        List<PackingModel> packingList = shipmentModel.getPackingList();
+
+        // Use the main grouping method with proper business logic
+        groupPacksDetails(packingList, getCurrentTenantSettings(), dictionary, containerModelList);
     }
 
     private void processStringUtilityTags(PackingModel pack, Map<String, Object> dict) {
