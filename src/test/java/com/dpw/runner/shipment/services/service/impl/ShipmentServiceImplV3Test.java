@@ -66,17 +66,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
-import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingShipmentActionsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ConsoleShipmentData;
@@ -4837,6 +4827,72 @@ class ShipmentServiceImplV3Test extends CommonMocks {
 
         assertTrue(result.isEmpty());
         verify(shipmentDao).getShipmentNumberFromId(shipmentIds);
+    }
+
+    @Test
+    void testRetrieveShipmentData_setShippedOnBoardField_Success() throws Exception {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.of(2025, 7, 20, 14, 0);
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipmentDetailsEntity.setCarrierDetails(carrierDetails);
+
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setStatus(0);
+        shipmentRetrieveLiteResponse.setAdditionalDetails(null);
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse actualResponse = shipmentServiceImplV3.retireveShipmentData(requestModel, "ANY");
+    }
+
+
+    @Test
+    void testRetrieveShipmentData_doesNotSetShippedOnBoardField_whenAtdIsNull() throws Exception {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+
+        shipmentDetailsEntity.setCarrierDetails(new CarrierDetails());
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setStatus(0);
+        shipmentRetrieveLiteResponse.setAdditionalDetails(new AdditionalDetailResponse());
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse actualResponse = shipmentServiceImplV3.retireveShipmentData(requestModel, "ANY");
+
+        assertNotNull(actualResponse.getAdditionalDetails());
+        assertNull(actualResponse.getAdditionalDetails().getShippedOnboard());
+    }
+
+    @Test
+    void testRetrieveShipmentData_doesNotSetShippedOnBoard_whenCarrierDetailsIsNull() throws Exception {
+        CommonGetRequest getRequest = CommonGetRequest.builder().id(123L).build();
+        CommonRequestModel requestModel = CommonRequestModel.builder().data(getRequest).build();
+        populateShipmentDetails();
+
+        shipmentDetailsEntity.setCarrierDetails(null);
+
+        ShipmentRetrieveLiteResponse shipmentRetrieveLiteResponse = new ShipmentRetrieveLiteResponse();
+        shipmentRetrieveLiteResponse.setStatus(0);
+        shipmentRetrieveLiteResponse.setAdditionalDetails(new AdditionalDetailResponse());
+
+        when(shipmentDao.findById(123L)).thenReturn(Optional.of(shipmentDetailsEntity));
+        when(modelMapper.map(any(), eq(ShipmentRetrieveLiteResponse.class))).thenReturn(shipmentRetrieveLiteResponse);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+
+        ShipmentRetrieveLiteResponse response = shipmentServiceImplV3.retireveShipmentData(requestModel, "ANY");
+
+        assertNotNull(response.getAdditionalDetails());
+        assertNull(response.getAdditionalDetails().getShippedOnboard());
     }
 
     @Test

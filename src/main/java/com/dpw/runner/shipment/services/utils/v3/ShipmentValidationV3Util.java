@@ -24,6 +24,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -99,6 +101,26 @@ public class ShipmentValidationV3Util {
         if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()))
             return false;
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
+    }
+
+    public void validateShippedOnBoardDate(ShipmentDetails shipmentDetails) {
+
+        LocalDateTime shippedOnboard = Objects.nonNull(shipmentDetails.getAdditionalDetails())
+                ? shipmentDetails.getAdditionalDetails().getShippedOnboard() : null;
+
+        if (Objects.nonNull(shippedOnboard) && Objects.nonNull(shipmentDetails.getCarrierDetails())) {
+            LocalDateTime actualTimeOfDeparture = shipmentDetails.getCarrierDetails().getAtd();
+
+            if (Objects.isNull(actualTimeOfDeparture)) {
+                throw new ValidationException("Shipped On Board cannot be set without Actual Time of Departure(ATD).");
+            }
+            if (shippedOnboard.isAfter(actualTimeOfDeparture)) {
+                throw new ValidationException("Shipped On Board must be before or same as ATD.");
+            }
+            if (shippedOnboard.isAfter(LocalDateTime.now())) {
+                throw new ValidationException("Shipped On Board cannot be a future date.");
+            }
+        }
     }
 
     public void validateShipmentCreateOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {

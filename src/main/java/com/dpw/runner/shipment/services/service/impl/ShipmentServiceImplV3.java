@@ -550,6 +550,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
         AtomicInteger pendingCount = new AtomicInteger(0);
         ShipmentDetails shipmentDetailsEntity = shipmentDetails.get();
+        setShippedOnBoardField(shipmentDetailsEntity);
         Long shipmentId = shipmentDetailsEntity.getId();
         UUID guid = shipmentDetailsEntity.getGuid();
         List<String> implications = new ArrayList<>();
@@ -574,6 +575,18 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         response.setContainerCount(shipmentRetrieveLiteResponse.getContainerCount());
         response.setTeuCount(shipmentRetrieveLiteResponse.getTeuCount());
         return response;
+    }
+
+    private void setShippedOnBoardField(ShipmentDetails shipmentDetails) {
+
+        // Auto-populate shippedOnBoardField if updated ATD is present in shipmentDetails
+        if (Objects.nonNull(shipmentDetails.getCarrierDetails())
+                && Objects.nonNull(shipmentDetails.getCarrierDetails().getAtd())) {
+            if (Objects.isNull(shipmentDetails.getAdditionalDetails())) {
+                shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+            }
+            shipmentDetails.getAdditionalDetails().setShippedOnboard(shipmentDetails.getCarrierDetails().getAtd());
+        }
     }
 
     private void setRoutingsLiteRespnse(ShipmentDetails shipmentDetailsEntity, ShipmentRetrieveLiteResponse response) {
@@ -1251,6 +1264,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
         shipmentsV3Util.processVoyageAndFlightNumber(shipmentDetails);
+        shipmentValidationV3Util.validateShippedOnBoardDate(shipmentDetails);
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));

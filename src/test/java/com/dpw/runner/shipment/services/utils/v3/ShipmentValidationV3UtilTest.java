@@ -14,12 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
@@ -662,6 +657,81 @@ class ShipmentValidationV3UtilTest extends CommonMocks {
         ShipmentDetails newShipment = ShipmentDetails.builder().direction("DOM").latestArrivalTime(LocalDateTime.now()).build();
 
         assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validationForCutOffFields(newShipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_NullShippedOnBoard() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setAdditionalDetails(new AdditionalDetails());
+        shipment.setCarrierDetails(new CarrierDetails());
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_NullATD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(LocalDateTime.now().minusDays(1));
+        shipment.setAdditionalDetails(additionalDetails);
+
+        shipment.setCarrierDetails(new CarrierDetails());
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_ShippedOnBoardAfterATD() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
+        LocalDateTime shippedOnBoard = actualTimeOfDeparture.plusHours(1);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_ShippedOnBoardInFuture() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
+        LocalDateTime shippedOnBoard = LocalDateTime.now().plusDays(1);
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+
+        assertThrows(ValidationException.class, () -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
+    }
+
+    @Test
+    void testValidateShippedOnBoardDate_Success() {
+        ShipmentDetails shipment = new ShipmentDetails();
+
+        LocalDateTime shippedOnBoard = LocalDateTime.now().minusDays(1);
+        LocalDateTime actualTimeOfDeparture = LocalDateTime.now();
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setShippedOnboard(shippedOnBoard);
+        shipment.setAdditionalDetails(additionalDetails);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(actualTimeOfDeparture);
+        shipment.setCarrierDetails(carrierDetails);
+
+        assertDoesNotThrow(() -> shipmentValidationV3Util.validateShippedOnBoardDate(shipment));
     }
 
     @Test
