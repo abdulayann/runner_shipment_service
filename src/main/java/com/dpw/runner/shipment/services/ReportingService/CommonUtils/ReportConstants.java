@@ -1489,6 +1489,24 @@ public class ReportConstants {
     public static final String S_FIRST_FLIGHT_NUMBER = "S_FirstFlightNumber";
     public static final String S_FIRST_CARRIER = "S_FirstCarrier";
 
-    public static final String S_SHIPMENT_PACKS =  "S_ShipmentPacks";
-    public static final String HAS_PACKS = "HasPacks1";
+    public static final String HAS_PACKS2 = "HasPacks2";
+    public static final String HAS_CONTAINERS2 = "HasContainers2";
+    public static final String CONTAINER_TYPE_CODE2 = "ContainerTypeCode2";
+    public static final String CONTAINER_NUMBER2 = "ContainerNumber2";
+    public static final String CARRIER_SEAL_NUMBER2 = "CarrierSealNumber2";
+    public static final String MARKS_NUMS2 = "MarksnNums2";
+    public static final String GOODS_DESCRIPTION2 = "GoodsDescription2";
+    public static final String PACKS_UNIT2 = "PacksUnit2";
+    public static final String GROSS_WEIGHT2 = "GrossWeight2";
+    public static final String GROSS_WEIGHT_UNIT2 = "GrossWeightUnit2";
+    public static final String PACKS2 = "Packs2";
+    public static final String GROSS_VOLUME2 = "GrossVolume2";
+    public static final String GROSS_VOLUME_UNIT2 = "GrossVolumeUnit2";
+
+    public static final String PACKS_MARKS_NUMBER2 = "PacksMarksNumber2";
+    public static final String PACKS_GOODS_DESCRIPTION2 = "PacksGoodsDescription2";
+    public static final String PACKAGES = "Packages";
+
+
+
 }

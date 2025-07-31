@@ -166,6 +166,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -3538,17 +3539,17 @@ public abstract class IReport {
         if (hasPacks) {
             // Priority: If packs exist, show packs info grouped by container
             processPacksData(packingList, v1TenantSettingsResponse, dictionary);
-            dictionary.put("HasPacks2", true);
-            dictionary.put("HasContainers2", false);
+            dictionary.put(HAS_PACKS2, true);
+            dictionary.put(HAS_CONTAINERS2, false);
         } else if (hasContainers) {
             // Fallback: If only containers exist, show container info
             processContainersData(containerList, v1TenantSettingsResponse, dictionary);
-            dictionary.put("HasPacks2", false);
-            dictionary.put("HasContainers2", true);
+            dictionary.put(HAS_PACKS2, false);
+            dictionary.put(HAS_CONTAINERS2, true);
         } else {
             // Neither packs nor containers exist
-            dictionary.put("HasPacks2", false);
-            dictionary.put("HasContainers2", false);
+            dictionary.put(HAS_PACKS2, false);
+            dictionary.put(HAS_CONTAINERS2, false);
         }
     }
 
@@ -3569,7 +3570,6 @@ public abstract class IReport {
         List<Map<String, Object>> shipmentPacksList = new ArrayList<>();
 
         for (Map.Entry<String, List<PackingModel>> entry : packsGroupedByContainer.entrySet()) {
-            String groupKey = entry.getKey();
             List<PackingModel> packsInGroup = entry.getValue();
 
             Map<String, Object> groupedPackData = buildPacksGroupSummary(
@@ -3592,29 +3592,29 @@ public abstract class IReport {
             String grossWeight = formatWeight(container.getGrossWeight(), v1TenantSettingsResponse);
             String grossVolume = formatVolume(container.getGrossVolume(), v1TenantSettingsResponse);
 
-            containerData.put("ContainerTypeCode2", container.getContainerCode());
-            containerData.put("ContainerNumber2", container.getContainerNumber());
-            containerData.put("CarrierSealNumber2", container.getCarrierSealNumber());
-            containerData.put("MarksnNums2", container.getMarksNums());
-            containerData.put("GoodsDescription2", container.getDescriptionOfGoods());
-            containerData.put("Packs2", container.getPacks().isEmpty() ? "" : container.getPacks());
-            containerData.put("PacksUnit2", container.getPacksType());
-            containerData.put("GrossWeight2", grossWeight);
-            containerData.put("GrossWeightUnit2", StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
-            containerData.put("GrossVolume2", grossVolume);
-            containerData.put("GrossVolumeUnit2", StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
+            containerData.put(CONTAINER_TYPE_CODE2, container.getContainerCode() != null ? container.getContainerCode() : "");
+            containerData.put(CONTAINER_NUMBER2, container.getContainerNumber() != null ? container.getContainerNumber() : "");
+            containerData.put(CARRIER_SEAL_NUMBER2, container.getCarrierSealNumber() != null ? container.getCarrierSealNumber() : "");
+            containerData.put(MARKS_NUMS2, container.getMarksNums() != null ? container.getMarksNums() : "");
+            containerData.put(GOODS_DESCRIPTION2, container.getDescriptionOfGoods() != null ? container.getDescriptionOfGoods() : "");
+            containerData.put(PACKS2, container.getPacks() != null ? (container.getPacks().isEmpty() ? "" : container.getPacks()) : "");
+            containerData.put(PACKS_UNIT2, container.getPacksType() != null ? container.getPacksType() : "");
+            containerData.put(GROSS_WEIGHT2, grossWeight);
+            containerData.put(GROSS_WEIGHT_UNIT2, StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
+            containerData.put(GROSS_VOLUME2, grossVolume);
+            containerData.put(GROSS_VOLUME_UNIT2, StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
 
-            dictionary.put("ContainerTypeCode2", container.getContainerCode());
-            dictionary.put("ContainerNumber2", container.getContainerNumber());
-            dictionary.put("CarrierSealNumber2", container.getCarrierSealNumber());
-            dictionary.put("MarksnNums2", container.getMarksNums());
-            dictionary.put("GoodsDescription2", container.getDescriptionOfGoods());
-            dictionary.put("Packs2", container.getPacks().isEmpty() ? "" : container.getPacks());
-            dictionary.put("PacksUnit2", container.getPacksType());
-            dictionary.put("GrossWeight2", grossWeight);
-            dictionary.put("GrossWeightUnit2", StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
-            dictionary.put("GrossVolume2", grossVolume);
-            dictionary.put("GrossVolumeUnit2", StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
+            dictionary.put(CONTAINER_TYPE_CODE2, container.getContainerCode() != null ? container.getContainerCode() : "");
+            dictionary.put(CONTAINER_NUMBER2, container.getContainerNumber() != null ? container.getContainerNumber() : "");
+            dictionary.put(CARRIER_SEAL_NUMBER2, container.getCarrierSealNumber() != null ? container.getCarrierSealNumber() : "");
+            dictionary.put(MARKS_NUMS2, container.getMarksNums() != null ? container.getMarksNums() : "");
+            dictionary.put(GOODS_DESCRIPTION2, container.getDescriptionOfGoods() != null ? container.getDescriptionOfGoods() : "");
+            dictionary.put(PACKS2, container.getPacks() != null ? (container.getPacks().isEmpty() ? "" : container.getPacks()) : "");
+            dictionary.put(PACKS_UNIT2,  container.getPacksType() != null ? container.getPacksType() : "");
+            dictionary.put(GROSS_WEIGHT2, grossWeight);
+            dictionary.put(GROSS_WEIGHT_UNIT2, StringUtility.isEmpty(grossWeight) ? "" : container.getGrossWeightUnit());
+            dictionary.put(GROSS_VOLUME2, grossVolume);
+            dictionary.put(GROSS_VOLUME_UNIT2, StringUtility.isEmpty(grossVolume) ? "" : container.getGrossVolumeUnit());
 
             shipmentContainersList.add(containerData);
         }
@@ -3634,120 +3634,118 @@ public abstract class IReport {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
 
-        // Container metadata (get from first pack's container)
-        String containerNumber = null;
-        String containerTypeCode = null;
-        String carrierSealNumber = null;
         Containers containerData = null;
+        String containerNumber = null;
 
+        // Process packsInGroup only once
         for (PackingModel pack : packsInGroup) {
-            // Get container data first (to combine with pack data)
-            if (pack.getContainerId() != null && containerData == null) {
+            // Find container data once
+            if (containerData == null && pack.getContainerId() != null) {
                 containerData = containerDao.findById(pack.getContainerId()).orElse(null);
             }
 
-            // Collect pack-specific marks and numbers
-            if (pack.getMarksnNums() != null && !pack.getMarksnNums().trim().isEmpty()) {
-                marksSet.add(pack.getMarksnNums());
-            }
+            addIfNotEmpty(marksSet, pack.getMarksnNums() != null ? pack.getMarksnNums() : "");
+            addIfNotEmpty(descSet, pack.getGoodsDescription() != null ? pack.getGoodsDescription() : "");
+            addIfNotNull(packUnits, pack.getPacksType() != null ? pack.getPacksType() : "");
 
-            // Collect pack-specific goods description
-            if (pack.getGoodsDescription() != null && !pack.getGoodsDescription().trim().isEmpty()) {
-                descSet.add(pack.getGoodsDescription());
-            }
+            totalPacks = totalPacks.add(nullSafeBigDecimal(pack.getPacks()));
+            totalWeight = totalWeight.add(nullSafeBigDecimal(pack.getWeight()));
+            totalVolume = totalVolume.add(nullSafeBigDecimal(pack.getVolume()));
 
-            if (pack.getPacksType() != null) {
-                packUnits.add(pack.getPacksType());
-            }
-
-            // Sum up numerical values from packs
-            if (pack.getPacks() != null) {
-                totalPacks = totalPacks.add(new BigDecimal(pack.getPacks()));
-            }
-
-            if (pack.getWeight() != null) {
-                totalWeight = totalWeight.add(pack.getWeight());
-            }
-
-            if (pack.getVolume() != null) {
-                totalVolume = totalVolume.add(pack.getVolume());
-            }
-
-            // Get container number from pack if available
             if (containerNumber == null && pack.getContainerNumber() != null) {
                 containerNumber = pack.getContainerNumber();
             }
         }
 
-        // Now combine container data with pack data
+        // Override containerNumber from containerData if still null
         if (containerData != null) {
-            containerTypeCode = containerData.getContainerCode();
-            carrierSealNumber = containerData.getCarrierSealNumber();
-
-            if (containerNumber == null) {
-                containerNumber = containerData.getContainerNumber();
-            }
+            containerNumber = firstNonNull(containerNumber, containerData.getContainerNumber());
         }
 
-        // Build the summary object
+        String containerTypeCode = containerData != null ? containerData.getContainerCode() : null;
+        String carrierSealNumber = containerData != null ? containerData.getCarrierSealNumber() : null;
+
         Map<String, Object> summary = new HashMap<>();
 
-        // Container information (from container metadata)
-        summary.put("ContainerTypeCode2", containerTypeCode != null ? containerTypeCode : "");
-        summary.put("ContainerNumber2", containerNumber != null ? containerNumber : "");
-        summary.put("CarrierSealNumber2", carrierSealNumber != null ? carrierSealNumber : "");
+        // Utility lambda to handle puts with dictionary and summary simultaneously
+        BiConsumer<String, Object> putBoth = (key, value) -> {
+            summary.put(key, value);
+            dictionary.put(key, value);
+        };
 
-        dictionary.put("ContainerTypeCode2", containerTypeCode != null ? containerTypeCode : "");
-        dictionary.put("ContainerNumber2", containerNumber != null ? containerNumber : "");
-        dictionary.put("CarrierSealNumber2", carrierSealNumber != null ? carrierSealNumber : "");
+        putBoth.accept(CONTAINER_TYPE_CODE2, defaultIfNull(containerTypeCode));
+        putBoth.accept(CONTAINER_NUMBER2, defaultIfNull(containerNumber));
+        putBoth.accept(CARRIER_SEAL_NUMBER2, defaultIfNull(carrierSealNumber));
 
-        // Combined pack + container information
-        summary.put("PacksMarksNumber2", String.join(", ", marksSet));
-        summary.put("PacksGoodsDescription2", String.join("\n", descSet)); // Line breaks for descriptions
-        summary.put("Packs2", totalPacks.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(totalPacks, 0, settings) : "");
+        putBoth.accept(PACKS_MARKS_NUMBER2, String.join(", ", marksSet));
+        putBoth.accept(PACKS_GOODS_DESCRIPTION2, String.join("\n", descSet));
+        putBoth.accept(PACKS2, totalPacks.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(totalPacks, 0, settings) : "");
 
-        dictionary.put("PacksMarksNumber2", String.join(", ", marksSet));
-        dictionary.put("PacksGoodsDescription2", String.join("\n", descSet)); // Line breaks for descriptions
-        dictionary.put("Packs2", totalPacks.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(totalPacks, 0, settings) : "");
+        // pack unit logic simplified
+        String packUnit = determinePackUnit(packUnits);
+        putBoth.accept(PACKS_UNIT2, packUnit);
 
-        // Pack unit logic: if multiple different units, use "PACKAGES"
-        if (packUnits.size() > 1) {
-            summary.put("PacksUnit2", "PACKAGES");
-            dictionary.put("PacksUnit2", "PACKAGES");
-        } else if (packUnits.size() == 1) {
-            summary.put("PacksUnit2", packUnits.iterator().next());
-            dictionary.put("PacksUnit2", packUnits.iterator().next());
-        } else {
-            summary.put("PacksUnit2", "PACKAGES");
-            dictionary.put("PacksUnit2", "PACKAGES");
-        }
+        String weightUnit = "KG";
+        String volumeUnit = "M3";
 
-        // Weight and volume with units
-        String weightUnit = getWeightUnit(settings);
-        String volumeUnit = getVolumeUnit(settings);
+        putBoth.accept(GROSS_WEIGHT2, formatOrEmpty(totalWeight, settings));
+        putBoth.accept(GROSS_WEIGHT_UNIT2, totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
 
-        summary.put("GrossWeight2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ?
-                getDPWWeightVolumeFormat(totalWeight, 2, settings) : "");
-
-        summary.put("GrossWeightUnit2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
-
-        dictionary.put("GrossWeight2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ?
-                getDPWWeightVolumeFormat(totalWeight, 2, settings) : "");
-
-        dictionary.put("GrossWeightUnit2", totalWeight.compareTo(BigDecimal.ZERO) > 0 ? weightUnit : "");
-
-        summary.put("GrossVolume2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ?
-                getDPWWeightVolumeFormat(totalVolume, 2, settings) : "");
-
-        summary.put("GrossVolumeUnit2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
-
-        dictionary.put("GrossVolume2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ?
-                getDPWWeightVolumeFormat(totalVolume, 2, settings) : "");
-
-        dictionary.put("GrossVolumeUnit2", totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
-
+        putBoth.accept(GROSS_VOLUME2, formatOrEmpty(totalVolume, settings));
+        putBoth.accept(GROSS_VOLUME_UNIT2, totalVolume.compareTo(BigDecimal.ZERO) > 0 ? volumeUnit : "");
 
         return summary;
+    }
+
+    // Helper: add string to set if not null or empty after trim
+    private void addIfNotEmpty(Set<String> set, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            set.add(value);
+        }
+    }
+
+    // Helper: add to set if not null
+    private <T> void addIfNotNull(Set<T> set, T value) {
+        if (value != null) {
+            set.add(value);
+        }
+    }
+
+    // Helper: safely convert object to BigDecimal or zero
+    private BigDecimal nullSafeBigDecimal(Object number) {
+        if (number == null) return BigDecimal.ZERO;
+        if (number instanceof BigDecimal) return (BigDecimal) number;
+        try {
+            return new BigDecimal(number.toString());
+        } catch (Exception e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    // Helper: pick first non-null or null
+    private <T> T firstNonNull(T first, T second) {
+        return first != null ? first : second;
+    }
+
+    // Helper: return empty string if null
+    private String defaultIfNull(String str) {
+        return str != null ? str : "";
+    }
+
+    // Helper: determine pack unit string based on set size
+    private String determinePackUnit(Set<String> packUnits) {
+        if (packUnits == null || packUnits.isEmpty()) {
+            return PACKAGES;
+        }
+        if (packUnits.size() == 1) {
+            return packUnits.iterator().next();
+        }
+        return PACKAGES;
+    }
+
+    // Helper: format big decimal value or return empty string if zero or less
+    private String formatOrEmpty(BigDecimal value, V1TenantSettingsResponse settings) {
+        return value.compareTo(BigDecimal.ZERO) > 0 ? getDPWWeightVolumeFormat(value, 2, settings) : "";
     }
 
     // Helper methods for formatting
@@ -3763,14 +3761,6 @@ public abstract class IReport {
             return "";
         }
         return getDPWWeightVolumeFormat(volume, 2, settings);
-    }
-
-    private String getWeightUnit(V1TenantSettingsResponse settings) {
-        return "KG";
-    }
-
-    private String getVolumeUnit(V1TenantSettingsResponse settings) {
-        return "M3";
     }
 
     // Updated method signature to include container list
