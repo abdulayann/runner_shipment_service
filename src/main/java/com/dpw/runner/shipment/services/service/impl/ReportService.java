@@ -261,9 +261,7 @@ public class ReportService implements IReportService {
         // Generate combined shipment report via consolidation
         byte[] dataForCombinedReport = getDataForCombinedReport(reportRequest);
         if (dataForCombinedReport != null) {
-            ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-            ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataForCombinedReport, new HashMap<>(), shipmentDetails, consolidationDetails);
+            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataForCombinedReport, new HashMap<>());
             return ReportResponse.builder().content(dataForCombinedReport).documentServiceMap(documentMasterResponse).build();
         }
 
@@ -273,9 +271,7 @@ public class ReportService implements IReportService {
         byte[] dataByteList = getCombinedDataForCargoManifestAir(reportRequest);
 
         if (dataByteList != null) {
-            ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-            ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataByteList, new HashMap<>(), shipmentDetails, consolidationDetails);
+            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, dataByteList, new HashMap<>());
             return ReportResponse.builder().content(dataByteList).documentServiceMap(documentMasterResponse).build();
         }
 
@@ -310,9 +306,7 @@ public class ReportService implements IReportService {
             DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), null, false);
             generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
             var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
-            ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-            ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
-            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived, shipmentDetails,consolidationDetails);
+            var documentMasterResponse = pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
             return ReportResponse.builder().content(byteContent).documentServiceMap(documentMasterResponse).build() ;
         } else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)) {
             return getBytesForMawb(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, report, awb);
@@ -365,10 +359,8 @@ public class ReportService implements IReportService {
         processPreAlert(reportRequest, pdfByteContent, dataRetrived);
 
         triggerAutomaticTransfer(report, reportRequest);
-        ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-        ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
         // Push document to document master
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived, shipmentDetails, consolidationDetails);
+        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
     }
 
@@ -428,10 +420,8 @@ public class ReportService implements IReportService {
         }
         byte[] finalDoc = printTransportInstructionLegsData(tiLegsList, reportRequest, dictionary, pages);
         processPreAlert(reportRequest, finalDoc, dictionary);
-        ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-        ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
         // Push document to document master
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, finalDoc, dictionary, shipmentDetails, consolidationDetails);
+        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, finalDoc, dictionary);
         return ReportResponse.builder().content(finalDoc).documentServiceMap(documentMasterResponse).build();
     }
 
@@ -597,11 +587,8 @@ public class ReportService implements IReportService {
 
         byte[] pdfByteContent = getFromDocumentService(dataRetrived, pages.getMainPageId());
         if (pdfByteContent == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-        ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-        ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
         // Push document to document master
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived, shipmentDetails, consolidationDetails);
-
+        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
     }
 
@@ -654,11 +641,8 @@ public class ReportService implements IReportService {
 
         processPushAwbEventForMawb(reportRequest, isOriginalPrint, awb);
         triggerAutomaticTransfer(report, reportRequest);
-        ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-        ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
-
         // Push document to document master
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived, shipmentDetails, consolidationDetails);
+        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
 
         //Update shipment issue date
         return ReportResponse.builder().content(pdfByteContent).documentServiceMap(documentMasterResponse).build();
@@ -747,9 +731,7 @@ public class ReportService implements IReportService {
         processPushAwbEventForMawb(reportRequest, isOriginalPrint, awb);
 
         triggerAutomaticTransfer(report, reportRequest);
-        ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
-        ConsolidationDetails consolidationDetails = getConsolidationDetails(reportRequest);
-        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived, shipmentDetails, consolidationDetails);
+        var documentMasterResponse = pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
         return ReportResponse.builder().content(pdfByteContentForMawb).documentServiceMap(documentMasterResponse).build();
     }
 
@@ -2597,7 +2579,7 @@ public class ReportService implements IReportService {
         return String.join(", ", response);
     }
 
-    public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved,  ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    public Map<String, Object> pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         log.info("{} | {} Starting pushFileToDocumentMaster process for request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(reportRequest));
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         log.info("{} | {} pushFileToDocumentMaster Shipment Settings Fetched for tenantId: {} --- With Shipments V3 Flag: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, TenantContext.getCurrentTenant(), shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()));
@@ -2642,11 +2624,6 @@ public class ReportService implements IReportService {
                 docUploadRequest.setDocType(docType);
                 docUploadRequest.setChildType(childType);
                 docUploadRequest.setFileName(filename);
-                // Apply custom naming if applicable and override
-                String customFileName = applyCustomNaming(docUploadRequest, docType, childType, shipmentDetails, consolidationDetails);
-                if (customFileName != null) {
-                    docUploadRequest.setFileName(customFileName); // override if custom name returned
-                }
                 return this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent);
             } catch (Exception e) {
                 log.error("{} | {} : {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, "pushFileToDocumentMaster", e.getMessage());
@@ -2657,7 +2634,7 @@ public class ReportService implements IReportService {
         }
         return null;
     }
-    private String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+    private String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
         String customFileName = null;
 
         try {
@@ -2683,7 +2660,6 @@ public class ReportService implements IReportService {
                 );
 
                 String baseDocName = docNamingMap.getOrDefault(docType, docType).replaceAll("\\s+", "").toUpperCase();
-                String identifier = shipOrConsolIdentifier(shipmentDetails, consolidationDetails);
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName
                             + DocumentConstants.DASH
@@ -2701,15 +2677,7 @@ public class ReportService implements IReportService {
         return customFileName;
     }
 
-    private String shipOrConsolIdentifier(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
-        if (shipmentDetails.getShipmentId() != null && !shipmentDetails.getShipmentId().isEmpty()) {
-            return shipmentDetails.getShipmentId();
-        }
-        if (consolidationDetails.getConsolidationNumber() != null && !consolidationDetails.getConsolidationNumber().isBlank()) {
-            return consolidationDetails.getConsolidationNumber();
-        }
-            return "UNKNOWN_DOCUMENT_ID";
-    }
+
 
     private Map<String, Object> setDocumentServiceParameters(ReportRequest reportRequest, DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
         String transportMode;
@@ -2717,12 +2685,14 @@ public class ReportService implements IReportService {
         String consolidationType;
         String entityGuid;
         String entityType;
-        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
 
+        log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
+        ShipmentDetails shipmentDetails = null;
+        ConsolidationDetails consolidationDetails = null;
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
+                shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
                 transportMode = shipmentDetails.getTransportMode();
                 shipmentType = shipmentDetails.getDirection();
                 consolidationType = shipmentDetails.getJobType();
@@ -2731,7 +2701,7 @@ public class ReportService implements IReportService {
                 break;
 
             case Constants.CONSOLIDATION:
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
+                consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
                 transportMode = consolidationDetails.getTransportMode();
                 shipmentType = consolidationDetails.getShipmentType();
                 consolidationType = consolidationDetails.getConsolidationType();
@@ -2749,6 +2719,23 @@ public class ReportService implements IReportService {
         docUploadRequest.setTransportMode(transportMode);
         docUploadRequest.setShipmentType(shipmentType);
         docUploadRequest.setConsolidationType(consolidationType);
+        String identifier;
+        if (shipmentDetails != null && shipmentDetails.getShipmentId() != null && !shipmentDetails.getShipmentId().isBlank()) {
+            identifier = shipmentDetails.getShipmentId();
+        } else if (consolidationDetails != null && consolidationDetails.getConsolidationNumber() != null && !consolidationDetails.getConsolidationNumber().isBlank()) {
+            identifier = consolidationDetails.getConsolidationNumber();
+        } else {
+            identifier = "UNKNOWN_DOCUMENT_ID";
+        }
+        // Apply custom naming if applicable and override
+        try {
+            String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier);
+            if (customFileName != null) {
+                docUploadRequest.setFileName(customFileName); // override default
+            }
+        } catch (Exception e) {
+            log.error("{} | Error generating custom file name: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), e);
+        }
         log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
         var response = documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
         return jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
