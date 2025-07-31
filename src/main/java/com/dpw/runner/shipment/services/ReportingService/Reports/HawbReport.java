@@ -44,8 +44,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RCP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPPED_ONBOARD_TEXT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SLAC_NEW;

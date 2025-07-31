@@ -553,8 +553,8 @@ public abstract class IReport {
 
         LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboardDate();
         if (Objects.nonNull(shippedOnboardDate)) {
-            dictionary.put(SHIPPED_ONBOARD_TEXT, SHIPPED_ONBOARD);
-            dictionary.put(SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
                     shippedOnboardDate, "ddMMMyyyy".toUpperCase(), false));
         }
     }
