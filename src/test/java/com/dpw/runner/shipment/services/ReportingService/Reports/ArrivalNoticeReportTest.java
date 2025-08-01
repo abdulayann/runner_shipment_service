@@ -26,8 +26,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.MeasurementBasis;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.Ownership;
-import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -279,17 +277,108 @@ class ArrivalNoticeReportTest extends CommonMocks {
         packingModel.setHeight(BigDecimal.TEN);
         packingModel.setPacks("10");
         packingModel.setContainerNumber("CONT1234567");
+        packingModel.setWeight(BigDecimal.TEN);
+        packingModel.setVolume(BigDecimal.TEN);
+        packingModel.setWeightUnit("MG");
+        packingModel.setVolumeUnit("CC");
         packingModels.add(packingModel);
 
         PackingModel packingModel2 = new PackingModel();
         packingModel2.setLength(BigDecimal.TEN);
         packingModel2.setWidth(BigDecimal.TEN);
         packingModel2.setHeight(BigDecimal.TEN);
+        packingModel2.setWeight(BigDecimal.TEN);
+        packingModel2.setVolume(BigDecimal.TEN);
+        packingModel2.setWeightUnit("LB");
+        packingModel2.setVolumeUnit("CF");
         packingModel2.setPacks("20");
         packingModels.add(packingModel2);
 
         PackingModel packingModel3 = new PackingModel();
+        packingModel3.setWeight(BigDecimal.TEN);
+        packingModel3.setVolume(BigDecimal.TEN);
+        packingModel3.setWeightUnit("OT");
+        packingModel3.setVolumeUnit("D3");
         packingModels.add(packingModel3);
+
+        PackingModel packingModel4 = new PackingModel();
+        packingModel4.setWeight(BigDecimal.TEN);
+        packingModel4.setVolume(BigDecimal.TEN);
+        packingModel4.setWeightUnit(null);
+        packingModel4.setVolumeUnit(null);
+        packingModels.add(packingModel4);
+
+        PackingModel packingModel5 = new PackingModel();
+        packingModel5.setWeight(BigDecimal.TEN);
+        packingModel5.setVolume(BigDecimal.TEN);
+        packingModel5.setWeightUnit("MT");
+        packingModel5.setVolumeUnit("CY");
+        packingModels.add(packingModel5);
+
+        PackingModel packingModel6 = new PackingModel();
+        packingModel6.setWeight(BigDecimal.TEN);
+        packingModel6.setVolume(BigDecimal.TEN);
+        packingModel6.setWeightUnit("KT");
+        packingModel6.setVolumeUnit("D3");
+        packingModels.add(packingModel6);
+
+        PackingModel packingModel7 = new PackingModel();
+        packingModel7.setWeight(BigDecimal.TEN);
+        packingModel7.setVolume(BigDecimal.TEN);
+        packingModel7.setWeightUnit("LT");
+        packingModel7.setVolumeUnit("GA");
+        packingModels.add(packingModel7);
+
+
+        PackingModel packingModel8 = new PackingModel();
+        packingModel8.setWeight(BigDecimal.TEN);
+        packingModel8.setVolume(BigDecimal.TEN);
+        packingModel8.setWeightUnit("KG");
+        packingModel8.setVolumeUnit("M3");
+        packingModels.add(packingModel8);
+
+        PackingModel packingModel9 = new PackingModel();
+        packingModel9.setWeight(BigDecimal.TEN);
+        packingModel9.setVolume(BigDecimal.TEN);
+        packingModel9.setWeightUnit("G");
+        packingModel9.setVolumeUnit("L");
+        packingModels.add(packingModel9);
+
+        PackingModel packingModel10 = new PackingModel();
+        packingModel10.setWeight(BigDecimal.TEN);
+        packingModel10.setVolume(BigDecimal.TEN);
+        packingModel10.setWeightUnit("HG");
+        packingModel10.setVolumeUnit("CY");
+        packingModels.add(packingModel10);
+
+        PackingModel packingModel11 = new PackingModel();
+        packingModel11.setWeight(BigDecimal.TEN);
+        packingModel11.setVolume(BigDecimal.TEN);
+        packingModel11.setWeightUnit("OG");
+        packingModel11.setVolumeUnit("ML");
+        packingModels.add(packingModel11);
+
+        PackingModel packingModel12 = new PackingModel();
+        packingModel12.setWeight(BigDecimal.TEN);
+        packingModel12.setVolume(BigDecimal.TEN);
+        packingModel12.setWeightUnit("DF");
+        packingModel12.setVolumeUnit("CI");
+        packingModels.add(packingModel12);
+
+        PackingModel packingModel13 = new PackingModel();
+        packingModel13.setWeight(BigDecimal.TEN);
+        packingModel13.setVolume(BigDecimal.TEN);
+        packingModel13.setWeightUnit("TT");
+        packingModel13.setVolumeUnit("GI");
+        packingModels.add(packingModel13);
+
+        PackingModel packingModel14 = new PackingModel();
+        packingModel14.setWeight(BigDecimal.TEN);
+        packingModel14.setVolume(BigDecimal.TEN);
+        packingModel14.setWeightUnit("TT");
+        packingModel14.setVolumeUnit("II");
+        packingModels.add(packingModel14);
+
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();

@@ -246,6 +246,7 @@ public abstract class IReport {
     @Autowired
     private CommonUtils commonUtils;
 
+    public static final String TEN_LAKH = "1000000";
 
     public abstract Map<String, Object> getData(Long id) throws RunnerException;
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
@@ -3655,8 +3656,8 @@ public abstract class IReport {
             addIfNotNull(packUnits, pack.getPacksType());
 
             totalPacks = totalPacks.add(safeBigDecimal(pack.getPacks()));
-            totalWeight = totalWeight.add(safeBigDecimal(pack.getWeight()));
-            totalVolume = totalVolume.add(safeBigDecimal(pack.getVolume()));
+            totalWeight = totalWeight.add(convertToKg(pack.getWeight(), pack.getWeightUnit()));
+            totalVolume = totalVolume.add(convertToM3(pack.getVolume(), pack.getVolumeUnit()));
 
             if (containerNumber == null && isNotBlank(pack.getContainerNumber())) {
                 containerNumber = pack.getContainerNumber();
@@ -3707,6 +3708,27 @@ public abstract class IReport {
     }
 
     // Helper to safely convert to BigDecimal or zero if null or invalid
+    private BigDecimal convertToKg(Object weightValue, String unit) {
+        BigDecimal weight = safeBigDecimal(weightValue);
+        if (weight.equals(BigDecimal.ZERO)) return BigDecimal.ZERO;
+
+        if (unit == null) return weight; // Assume KG if no unit
+
+        return switch (unit.toUpperCase()) {
+            case "KG" -> weight;
+            case "G" -> weight.divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
+            case "MG", "MC" -> weight.divide(new BigDecimal(TEN_LAKH), 6, RoundingMode.HALF_UP);
+            case "LB" -> weight.multiply(new BigDecimal("0.453592"));
+            case "OT" ->
+                    weight.multiply(new BigDecimal("28.3495")).divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
+            case "MT" -> weight.multiply(new BigDecimal("1000"));
+            case "KT" -> weight.multiply(new BigDecimal(TEN_LAKH));
+            case "LT" -> weight.multiply(new BigDecimal("1016.05"));
+            case "HG", "DT" -> weight.divide(new BigDecimal("10"), 6, RoundingMode.HALF_UP);
+            default -> weight; // Assume KG for unknown units
+        };
+    }
+
     private BigDecimal safeBigDecimal(Object value) {
         if (value == null) return BigDecimal.ZERO;
         if (value instanceof BigDecimal) return (BigDecimal) value;
@@ -3715,6 +3737,27 @@ public abstract class IReport {
         } catch (Exception e) {
             return BigDecimal.ZERO;
         }
+    }
+
+    private BigDecimal convertToM3(Object volumeValue, String unit) {
+        BigDecimal volume = safeBigDecimal(volumeValue);
+        if (volume.equals(BigDecimal.ZERO)) return BigDecimal.ZERO;
+
+        if (unit == null) return volume; // Assume M3 if no unit
+
+        return switch (unit.toUpperCase()) {
+            case "M3" -> volume;
+            case "L" -> volume.divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP);
+            case "ML" -> volume.divide(new BigDecimal(TEN_LAKH), 6, RoundingMode.HALF_UP);
+            case "CC" -> volume.divide(new BigDecimal(TEN_LAKH), 6, RoundingMode.HALF_UP); // Same as ML
+            case "CF" -> volume.multiply(new BigDecimal("0.0283168")); // Cubic feet
+            case "CI" -> volume.multiply(new BigDecimal("0.0000163871")); // Cubic inches
+            case "CY" -> volume.multiply(new BigDecimal("0.764555")); // Cubic yards
+            case "D3" -> volume.divide(new BigDecimal("1000"), 6, RoundingMode.HALF_UP); // Cubic decimeters (same as liters)
+            case "GA" -> volume.multiply(new BigDecimal("0.00378541")); // US Gallons
+            case "GI" -> volume.multiply(new BigDecimal("0.00454609")); // Imperial Gallons
+            default -> volume; // Assume M3 for unknown units
+        };
     }
 
     // Returns the first non-null value, else null
