@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -45,7 +46,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -523,5 +524,165 @@ class ContainerV3UtilTest extends CommonMocks {
         containers.setGrossVolumeUnit("M3");
         containerV3Util.setWtVolUnits(containers);
         assertEquals("KG", containers.getGrossWeightUnit());
+    }
+
+    @Test
+    void testSetWtVolUnitsWithPacking() throws RunnerException {
+        Containers container = new Containers();
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.TEN);
+        packing.setWeightUnit("KG");
+        packing.setVolume(BigDecimal.ONE);
+        packing.setVolumeUnit("M3");
+        packing.setPacks("5");
+        packing.setPacksType("BAG");
+
+        containerV3Util.setWtVolUnits(container, packing);
+
+        assertEquals("KG", container.getGrossWeightUnit());
+        assertEquals("M3", container.getGrossVolumeUnit());
+        assertEquals("BAG", container.getPacksType());
+    }
+
+    @Test
+    void testSetWtVolUnitsWithShipmentDetails() throws RunnerException {
+        Containers container = new Containers();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setWeight(BigDecimal.TEN);
+        shipmentDetails.setWeightUnit("KG");
+        shipmentDetails.setVolume(BigDecimal.ONE);
+        shipmentDetails.setVolumeUnit("M3");
+        shipmentDetails.setNoOfPacks(5);
+        shipmentDetails.setPacksUnit("BAG");
+
+        containerV3Util.setWtVolUnits(container, shipmentDetails);
+
+        assertEquals("KG", container.getGrossWeightUnit());
+        assertEquals("M3", container.getGrossVolumeUnit());
+        assertEquals("BAG", container.getPacksType());
+    }
+
+    @Test
+    void testSetContainerWeightUnit_WithNullSourceWeight_ShouldNotModifyContainer() throws RunnerException {
+
+        Containers container = new Containers();
+        container.setGrossWeight(BigDecimal.TEN);
+        container.setGrossWeightUnit("KG");
+
+        containerV3Util.setContainerWeightUnit(container, null, "LB");
+
+        assertEquals(BigDecimal.TEN, container.getGrossWeight());
+        assertEquals("KG", container.getGrossWeightUnit());
+        verifyNoInteractions(commonUtils);
+    }
+
+    @Test
+    void testSetContainerWeightUnit_WithNullGrossWeight_ShouldSetSourceWeightUnit() throws RunnerException {
+        // Arrange
+        Containers container = new Containers();
+        container.setGrossWeight(null);
+        container.setGrossWeightUnit("KG");
+
+        containerV3Util.setContainerWeightUnit(container, BigDecimal.ONE, "LB");
+
+        assertNull(container.getGrossWeight());
+        assertEquals("LB", container.getGrossWeightUnit());
+        verifyNoInteractions(commonUtils);
+    }
+    @Test
+    void testSetContainerWeightUnit_WithDifferentWeightUnits_ShouldConvertToDefaultUnit() throws RunnerException {
+
+        Containers container = new Containers();
+        container.setGrossWeight(new BigDecimal("10.0"));
+        container.setGrossWeightUnit("LB");
+
+        when(commonUtils.getDefaultWeightUnit()).thenReturn("KG");
+
+        // Mock the static method using MockedStatic
+        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
+                    eq(Constants.MASS),
+                    eq(new BigDecimal("10.0")),
+                    eq("LB"),
+                    eq("KG")
+            )).thenReturn(4.536); // 10 LB = 4.536 KG
+
+            containerV3Util.setContainerWeightUnit(container, BigDecimal.ONE, "TON");
+
+            assertEquals(new BigDecimal("4.536"), container.getGrossWeight());
+            assertEquals("KG", container.getGrossWeightUnit());
+        }
+    }
+
+    @Test
+    void testSetContainerVolumeUnit_WithDifferentVolumeUnits_ShouldConvertToDefaultUnit() throws RunnerException {
+        // Arrange
+        Containers container = new Containers();
+        container.setGrossVolume(new BigDecimal("35.31"));
+        container.setGrossVolumeUnit("FT3");
+
+        when(commonUtils.getDefaultVolumeUnit()).thenReturn("M3");
+
+        // Mock the static method using MockedStatic
+        try (MockedStatic<UnitConversionUtility> mockedStatic = mockStatic(UnitConversionUtility.class)) {
+            mockedStatic.when(() -> UnitConversionUtility.convertUnit(
+                    eq(Constants.VOLUME),
+                    eq(new BigDecimal("35.31")),
+                    eq("FT3"),
+                    eq("M3")
+            )).thenReturn(1.0); // 35.31 FT3 = 1.0 M3
+
+            // Act
+            containerV3Util.setContainerVolumeUnit(container, BigDecimal.ONE, "L");
+
+            // Assert
+            assertEquals(new BigDecimal("1.0"), container.getGrossVolume());
+            assertEquals("M3", container.getGrossVolumeUnit());
+
+            // Verify interactions
+            verify(commonUtils).getDefaultVolumeUnit();
+            mockedStatic.verify(() -> UnitConversionUtility.convertUnit(
+                    Constants.VOLUME,
+                    new BigDecimal("35.31"),
+                    "FT3",
+                    "M3"
+            ));
+        }
+    }
+
+
+
+    @Test
+    void testSetContainerPacksUnit() {
+        Containers container = new Containers();
+        container.setPacks("0");
+        container.setPacksType(null);
+
+        containerV3Util.setContainerPacksUnit(container, "5", "BAG");
+
+        assertEquals("BAG", container.getPacksType());
+    }
+
+    @Test
+    void testGetContainerNumberOrTypeWithContainerId() {
+        Containers container = new Containers();
+        container.setContainerNumber("12345");
+        container.setContainerCode("20GP");
+        when(containerDao.findById(anyLong())).thenReturn(Optional.of(container));
+
+        String result = containerV3Util.getContainerNumberOrType(1L);
+
+        assertEquals("12345", result);
+    }
+
+    @Test
+    void testGetContainerNumberOrTypeWithContainer() {
+        Containers container = new Containers();
+        container.setContainerNumber(null);
+        container.setContainerCode("20GP");
+
+        String result = containerV3Util.getContainerNumberOrType(container);
+
+        assertEquals("20GP", result);
     }
 }
