@@ -14,6 +14,8 @@ import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.AssignContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerParams;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContainerRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
@@ -149,6 +151,17 @@ class ContainerV3ControllerTest {
   }
 
   @Test
+  void testUnAssignContainers() throws RunnerException {
+
+    UnAssignContainerRequest request = new UnAssignContainerRequest();
+    ContainerResponse response = new ContainerResponse();
+    Mockito.when(containerV3Service.unAssignContainers(Mockito.eq(request), Mockito.eq(Constants.CONSOLIDATION_CONTAINER), Mockito.any(UnAssignContainerParams.class)))
+            .thenReturn(response);
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.unAssignContainers(request);
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
   void testFetchShipmentContainers() throws RunnerException {
     ListCommonRequest listCommonRequest = new ListCommonRequest();
     ContainerListResponse containerListResponse = new ContainerListResponse();
@@ -223,5 +236,41 @@ class ContainerV3ControllerTest {
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
   }
 
+
+  @Test
+  void testFetchConsolidationContainersForPackageAssignment() throws RunnerException {
+    ListCommonRequest listCommonRequest = new ListCommonRequest();
+    ContainerListResponse containerListResponse = new ContainerListResponse();
+    containerListResponse.setContainers(List.of(new ContainerBaseResponse()));
+    containerListResponse.setTotalPages(1);
+    containerListResponse.setNumberOfRecords(1L);
+
+    Mockito.when(containerV3Service.fetchConsolidationContainersForPackageAssignment(Mockito.any(), eq(Constants.CONSOLIDATION)))
+            .thenReturn(containerListResponse);
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.fetchConsolidationContainersForPackageAssignment(listCommonRequest);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+    IRunnerResponse body = result.getBody();
+    assertNotNull(body);
+  }
+
+  @Test
+  void testFetchShipmentContainersForPackageAssignment() throws RunnerException {
+    ListCommonRequest listCommonRequest = new ListCommonRequest();
+    ContainerListResponse containerListResponse = new ContainerListResponse();
+    containerListResponse.setContainers(List.of(new ContainerBaseResponse()));
+    containerListResponse.setTotalPages(1);
+    containerListResponse.setNumberOfRecords(1L);
+
+    Mockito.when(containerV3Service.fetchConsolidationContainersForPackageAssignment(Mockito.any(), eq(Constants.SHIPMENT)))
+            .thenReturn(containerListResponse);
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.fetchShipmentContainersForPackageAssignment(listCommonRequest);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+    IRunnerResponse body = result.getBody();
+    assertNotNull(body);
+  }
 }
 
