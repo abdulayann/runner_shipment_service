@@ -4312,7 +4312,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
         boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
         if (packsAvailable) {
-            boolean isEmptyWeightPackAvailable = shipmentDetails.getPackingList().stream()
+            List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
+            boolean isEmptyWeightPackAvailable = packings.stream()
                     .anyMatch(packing -> packing.getWeight() == null);
             shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
             BigDecimal weight = shipmentDetails.getWeight();

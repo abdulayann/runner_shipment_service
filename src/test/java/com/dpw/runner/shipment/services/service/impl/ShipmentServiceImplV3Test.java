@@ -5206,7 +5206,7 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         oldShipment.setVolumetricWeightUnit("KG");
 
         when(packingDao.checkPackingExistsForShipment(1L)).thenReturn(true);
-
+        when(packingDao.findByShipmentId(anyLong())).thenReturn(List.of(packing));
         shipmentServiceImplV3.setShipmentCargoFields(newShipment, oldShipment);
 
         assertEquals(10, newShipment.getNoOfPacks());
