@@ -269,38 +269,19 @@ public class ContainerV3Service implements IContainerV3Service {
         ShipmentDetails shipmentDetails = shipmentDao.findById(containerRequest.getShipmentsId())
                 .orElseThrow(() -> new ValidationException("Shipment not found for ID: " + containerRequest.getShipmentsId()));
 
-        validateShipmentForContainer(shipmentDetails);
-        validateShipmentCargoType(shipmentDetails);
+        containerValidationUtil.validateShipmentForContainer(shipmentDetails);
+        containerValidationUtil.validateShipmentCargoType(shipmentDetails);
 
-        containerRequest.setConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+        if(!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList())) {
+            containerRequest.setConsolidationId(shipmentDetails.getConsolidationList().iterator().next().getId());
+        }
 
         return shipmentDetails;
     }
 
-    private void validateShipmentForContainer(ShipmentDetails shipmentDetails) {
-        String consoleType = shipmentDetails.getJobType();
 
-        if (Objects.isNull(shipmentDetails.getConsolidationList()) && !SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
-            throw new ValidationException(String.format(
-                    "Shipment: %s must be attached with consolidation to create container",
-                    shipmentDetails.getShipmentId()));
-        }
-    }
 
-    private void validateShipmentCargoType(ShipmentDetails shipmentDetails) {
-        String transportMode = shipmentDetails.getTransportMode();
-        String shipmentType = shipmentDetails.getShipmentType();
 
-        boolean isSeaFCL = commonUtils.isSeaFCL(transportMode, shipmentType);
-        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(transportMode, shipmentType);
-
-        if (!isSeaFCL && !isRoadFCLorFTL) {
-            String expectedType = getExpectedCargoTypeForTransportMode(transportMode);
-            throw new ValidationException(String.format(
-                    "Invalid cargoType: %s for transportMode: %s. Expected: %s.",
-                    shipmentType, transportMode, expectedType));
-        }
-    }
 
     private void handlePostSaveOperations(Containers savedContainer, ContainerV3Request containerRequest,
                                           ContainerBeforeSaveRequest containerBeforeSaveRequest,
@@ -343,14 +324,6 @@ public class ContainerV3Service implements IContainerV3Service {
         if (cargoDetailsResponse != null) {
             shipmentService.updateCargoDetailsInShipment(shipmentDetails, cargoDetailsResponse);
         }
-    }
-
-    private String getExpectedCargoTypeForTransportMode(String transportMode) {
-        return switch (transportMode.toUpperCase()) {
-            case TRANSPORT_MODE_SEA -> "FCL";
-            case Constants.TRANSPORT_MODE_ROA -> "FCL or FTL";
-            default -> "Transport mode must be SEA/ROAD";
-        };
     }
 
     @Override
@@ -498,7 +471,7 @@ public class ContainerV3Service implements IContainerV3Service {
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
 
         // Proceed with the deletion of the containers and any related associations (shipment, packing, etc.)
-        deleteContainerAndAssociations(containerIds, new ArrayList<>(),  containersToDelete);
+        deleteContainerAndAssociations(containerIds,  containersToDelete);
 
         if (SHIPMENT.equalsIgnoreCase(module)) {
             // Shipment container only allowed to delete from shipment i.e shipmentIds size will always be 1
@@ -506,7 +479,7 @@ public class ContainerV3Service implements IContainerV3Service {
             ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
                     .orElseThrow(() -> new ValidationException("Shipment is not present with ID : " + shipmentId));
             List<Containers> shipmentContainers = containerDao.findByShipmentId(shipmentId);
-           // shipmentContainers.removeIf(container -> containerIds.contains(container.getId()));
+
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
 
@@ -533,7 +506,7 @@ public class ContainerV3Service implements IContainerV3Service {
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
     }
 
-    private void processContainerDG(List<ContainerV3Request> containerRequestList, String module, List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
+    protected void processContainerDG(List<ContainerV3Request> containerRequestList, String module, List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         if(!containsHazardousContainer(containerRequestList)) return;
 
@@ -560,7 +533,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     public void processDGShipmentDetailsFromContainer(List<ContainerV3Request> containerRequestList) throws RunnerException {
         for(ContainerV3Request containerV3Request : containerRequestList) {
-            if (containerV3Request.getId() != null && containerV3Request.getHazardous()) {
+            if (containerV3Request.getId() != null && Boolean.TRUE.equals(containerV3Request.getHazardous())) {
                 List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(containerV3Request.getId());
 
                 for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
@@ -576,7 +549,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    public void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
+    private void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
             if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
                 updateOceanDGStatus(shipmentDetails, shipmentContainers);
             }
@@ -727,7 +700,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     // Method to handle the deletion of containers and their associated entities
-    private void deleteContainerAndAssociations(List<Long> containerIds, List<Long> shipmentIds,  List<Containers> containersToDelete) {
+    private void deleteContainerAndAssociations(List<Long> containerIds,  List<Containers> containersToDelete) {
         // Remove containers from packing associations
         packingService.removeContainersFromPacking(containerIds);
 

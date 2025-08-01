@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
@@ -25,6 +27,9 @@ public class ContainerValidationUtil {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     /**
      * Validates a bulk update request for containers.
@@ -188,4 +193,38 @@ public class ContainerValidationUtil {
             throw new IllegalArgumentException("Changes in cargo is not allowed as Shipment Attachment Allowed value is Off");
         }
     }
+
+    public void validateShipmentForContainer(ShipmentDetails shipmentDetails) {
+        String consoleType = shipmentDetails.getJobType();
+
+        if (Objects.isNull(shipmentDetails.getConsolidationList()) && !SHIPMENT_TYPE_DRT.equalsIgnoreCase(consoleType)) {
+            throw new ValidationException(String.format(
+                    "Shipment: %s must be attached with consolidation to create container",
+                    shipmentDetails.getShipmentId()));
+        }
+    }
+
+    public void validateShipmentCargoType(ShipmentDetails shipmentDetails) {
+        String transportMode = shipmentDetails.getTransportMode();
+        String shipmentType = shipmentDetails.getShipmentType();
+
+        boolean isSeaFCL = commonUtils.isSeaFCL(transportMode, shipmentType);
+        boolean isRoadFCLorFTL = commonUtils.isRoadFCLorFTL(transportMode, shipmentType);
+
+        if (!isSeaFCL && !isRoadFCLorFTL) {
+            String expectedType = getExpectedCargoTypeForTransportMode(transportMode);
+            throw new ValidationException(String.format(
+                    "Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                    shipmentType, transportMode, expectedType));
+        }
+    }
+
+    private String getExpectedCargoTypeForTransportMode(String transportMode) {
+        return switch (transportMode.toUpperCase()) {
+            case TRANSPORT_MODE_SEA -> "FCL";
+            case Constants.TRANSPORT_MODE_ROA -> "FCL or FTL";
+            default -> "Transport mode must be SEA/ROAD";
+        };
+    }
+
 }
