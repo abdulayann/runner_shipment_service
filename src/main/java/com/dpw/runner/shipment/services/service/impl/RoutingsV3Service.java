@@ -231,13 +231,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             }
             StringBuilder description = new StringBuilder();
             checkIfVoyageVesselOrFlightNumberChanged(carrierDetails, mainCarriageLeg, description);
-            if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier()) && !Objects.equals(mainCarriageLeg.getCarrier(), carrierDetails.getShippingLine())) {
-                if (StringUtility.isEmpty(description.toString())) {
-                    description.append("Carrier");
-                } else {
-                    description.append("/Carrier");
-                }
-            }
             if (!StringUtility.isEmpty(description.toString())) {
                 description.append(" are updated as per Routing Leg");
                 return "Route(s) updated successfully. " + description;
