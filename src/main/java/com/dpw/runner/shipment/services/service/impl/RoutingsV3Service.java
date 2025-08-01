@@ -429,7 +429,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             locationCodes.add(firstLeg.getPol());
         }
         if (!StringUtility.isEmpty(lastLeg.getPod())) {
-            locationCodes.add(firstLeg.getPod());
+            locationCodes.add(lastLeg.getPod());
         }
         if (!CollectionUtils.isEmpty(locationCodes)) {
             Map<String, EntityTransferUnLocations> locationsMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
