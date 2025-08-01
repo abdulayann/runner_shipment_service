@@ -16,9 +16,10 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryV3Resp
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -61,6 +62,7 @@ import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Executors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PACKING;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
@@ -984,5 +986,148 @@ class PackingV3ServiceTest extends CommonMocks {
         packingV3Service.updateOceanDGStatus(shipmentDetails, List.of(nonDG));
 
         verifyNoInteractions(commonUtils, shipmentDao);
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_success() throws RunnerException {
+
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        request.setContainerId(100L);
+
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setShipmentId(10L);
+
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setShipmentId(10L);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+        when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerV3Service.assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING)))
+                .thenReturn(new ContainerResponse());
+
+        ContainerResponse response = packingV3Service.assignShipmentPackagesContainers(request);
+
+        assertNotNull(response);
+        verify(packingDao).findByIdIn(request.getPackingIds());
+        verify(shipmentService).findById(10L);
+        verify(containerV3Service).assignContainers(any(AssignContainerRequest.class), eq(SHIPMENT_PACKING));
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_noPackingIdsProvided_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(Collections.emptyList());
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        assertEquals("No Packing Ids provided.", exception.getMessage());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_noPackingFound_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(Collections.emptyList());
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        assertEquals("No Packing found with Ids: [1, 2]", exception.getMessage());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_multipleShipmentIds_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setShipmentId(100L);
+
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setShipmentId(200L);
+          List<Packing> packingList = List.of(
+               packing1, packing2 // Shipment ID 200
+        );
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(packingList);
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        assertEquals("Please select Packages of single shipment only for assignment.", exception.getMessage());
+    }
+
+    @Test
+    void testAssignShipmentPackagesContainers_invalidShipmentType_shouldThrowValidationException() {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        request.setPackingIds(List.of(1L));
+        Packing packing = new Packing();
+        packing.setId(1L);
+        packing.setShipmentId(100L); // Shipment ID 100
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setShipmentType("LCL"); // Invalid type
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing));
+        when(shipmentService.findById(100L)).thenReturn(Optional.of(shipmentDetails));
+        ValidationException exception = assertThrows(ValidationException.class, () -> packingV3Service.assignShipmentPackagesContainers(request));
+        assertEquals("Shipment level package assignment is only allowed for FCL/FTL shipments.", exception.getMessage());
+    }
+
+    @Test
+    void testUnAssignPackageContainers_nullContainerId_shouldThrowValidationException() {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setContainerId(null);
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setContainerId(100L);
+
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER);
+        });
+
+        assertEquals("Container Id is null for packing with Id: 1", exception.getMessage());
+    }
+
+    @Test
+    void testUnAssignPackageContainers_multipleShipmentIds_shouldThrowValidationException() {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setContainerId(100L);
+        packing1.setShipmentId(10L);
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setContainerId(101L);
+        packing2.setShipmentId(20L);
+
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+
+        ValidationException exception = assertThrows(ValidationException.class, () -> {
+            packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER);
+        });
+
+        assertEquals("Please select Packages of only one shipment for unAssign action", exception.getMessage());
+    }
+
+    @Test
+    void testUnAssignPackageContainers_validRequest_shouldProcessSuccessfully() {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        request.setPackingIds(List.of(1L, 2L));
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setContainerId(100L);
+        packing1.setShipmentId(10L);
+        Packing packing2 = new Packing();
+        packing2.setId(2L);
+        packing2.setContainerId(100L);
+        packing2.setShipmentId(10L);
+
+        when(packingDao.findByIdIn(request.getPackingIds())).thenReturn(List.of(packing1, packing2));
+
+        assertDoesNotThrow(() -> packingV3Service.unAssignPackageContainers(request, Constants.CONTAINER));
     }
 }
