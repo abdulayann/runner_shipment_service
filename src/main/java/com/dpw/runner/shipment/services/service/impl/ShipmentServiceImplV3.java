@@ -2670,7 +2670,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 additionalDetails(AdditionalDetailV3Request.builder().
                         notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry(), null)).
                         pickupDate(customerBookingRequest.getPickupAtOriginDate()).
-                        cargoDeliveredDate(customerBookingRequest.getEstimatedDeliveryAtDestinationDate()).
+                        cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestinationDate()).
                         estimatedPickupDate(customerBookingRequest.getEstimatedPickupAtOriginDate()).
                         build()
                 ).
@@ -2731,6 +2731,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 latestArrivalTime(customerBookingRequest.getLatestArrivalTime()).
                 estimatedBrokerageAtDestinationDate(customerBookingRequest.getEstimatedBrokerageAtDestinationDate()).
                 estimatedBrokerageAtOriginDate(customerBookingRequest.getEstimatedBrokerageAtOriginDate()).
+                cargoDeliveryDate(customerBookingRequest.getEstimatedDeliveryAtDestinationDate()).
                 build();
     }
 
