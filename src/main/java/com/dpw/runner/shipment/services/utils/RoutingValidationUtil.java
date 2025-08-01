@@ -77,16 +77,12 @@ public class RoutingValidationUtil {
 
     private void validateRoutingLegs(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
 
-        if (Objects.nonNull(etd) && Objects.nonNull(eta)) {
-            if (etd.isAfter(eta.plusHours(24))) {
-                throwDateValidationError("ETD cannot be more than ETA");
-            }
+        if (Objects.nonNull(etd) && Objects.nonNull(eta) && etd.isAfter(eta.plusHours(24))) {
+            throwDateValidationError("ETD cannot be more than ETA");
         }
 
-        if (Objects.nonNull(atd) && Objects.nonNull(ata)) {
-            if (ata.isBefore(atd.minusHours(24))) {
-                throwDateValidationError("ATA cannot be less than ATD");
-            }
+        if (Objects.nonNull(atd) && Objects.nonNull(ata) && ata.isBefore(atd.minusHours(24))) {
+            throwDateValidationError("ATA cannot be less than ATD");
         }
     }
 
