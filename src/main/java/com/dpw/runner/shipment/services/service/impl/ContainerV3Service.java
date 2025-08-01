@@ -433,7 +433,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .build();
     }
 
-    private void validateBulkUpdateRequest(List<ContainerV3Request> containerRequestList) throws RunnerException {
+    private void validateBulkUpdateRequest(List<ContainerV3Request> containerRequestList) {
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
     }
 
