@@ -250,6 +250,18 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     }
 
     private static void checkIfVoyageVesselOrFlightNumberChanged(CarrierDetails carrierDetails, Routings mainCarriageLeg, StringBuilder description) {
+        if (Constants.TRANSPORT_MODE_SEA.equals(mainCarriageLeg.getMode())) {
+            getWarningMessageForSea(carrierDetails, mainCarriageLeg, description);
+        } else if (Constants.TRANSPORT_MODE_AIR.equals(mainCarriageLeg.getMode()) && StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber()) && !Objects.equals(mainCarriageLeg.getFlightNumber(), carrierDetails.getFlightNumber())) {
+            if (StringUtility.isEmpty(description.toString())) {
+                description.append("Flight No.");
+            } else {
+                description.append("/Flight No.");
+            }
+        }
+    }
+
+    private static void getWarningMessageForSea(CarrierDetails carrierDetails, Routings mainCarriageLeg, StringBuilder description) {
         if (StringUtility.isNotEmpty(mainCarriageLeg.getVesselName()) && !Objects.equals(mainCarriageLeg.getVesselName(), carrierDetails.getVessel())) {
             description.append("Vessel");
         }
@@ -259,15 +271,13 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             } else {
                 description.append("/Voyage");
             }
-
         }
-        if (StringUtility.isNotEmpty(mainCarriageLeg.getFlightNumber()) && !Objects.equals(mainCarriageLeg.getFlightNumber(), carrierDetails.getFlightNumber())) {
+        if (StringUtility.isNotEmpty(mainCarriageLeg.getCarrier()) && !Objects.equals(mainCarriageLeg.getCarrier(), carrierDetails.getShippingLine())) {
             if (StringUtility.isEmpty(description.toString())) {
-                description.append("Flight Number");
+                description.append("Carrier");
             } else {
-                description.append("/Flight Number");
+                description.append("/Carrier");
             }
-
         }
     }
 
