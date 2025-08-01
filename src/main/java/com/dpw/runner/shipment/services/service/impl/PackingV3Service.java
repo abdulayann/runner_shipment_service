@@ -250,9 +250,13 @@ public class PackingV3Service implements IPackingV3Service {
             return Collections.emptyList();
         List<Packing> packings = packingDao.findByShipmentId(shipmentDetails.getId());
         if (!CollectionUtils.isEmpty(packings)) {
+            boolean isEmptyWeightPackAvailable = packings.stream()
+                    .anyMatch(packing -> packing.getWeight() == null);
             CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
-            cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
-            cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
+            if (!isEmptyWeightPackAvailable) {
+                cargoDetailsResponse.setWeight(shipmentDetails.getWeight());
+                cargoDetailsResponse.setWeightUnit(shipmentDetails.getWeightUnit());
+            }
             cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
             cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
             cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
