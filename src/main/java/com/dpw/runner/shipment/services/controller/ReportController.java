@@ -19,6 +19,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+
+import java.util.Map;
 import java.util.Optional;
 import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -52,7 +54,13 @@ public class ReportController {
         HttpStatus httpStatus = null;
         try {
             var response = reportService.getDocumentData(CommonRequestModel.buildRequest(request));
-            return ResponseHelper.buildDependentServiceResponse(response.getDocumentServiceMap(), 0, 0L);
+            Map<String, Object> documentMap = response.getDocumentServiceMap();
+            String fileName = request.getReportInfo() + ".pdf"; // Default filename
+            if (documentMap != null && documentMap.get("fileName") != null) {
+                fileName = documentMap.get("fileName").toString();   // Override if custom name present in documentMap
+            }
+            byte[] pdfBytes = (byte[]) documentMap.get("pdfByteContent");  //Get byte[] content from documentMap (added by service layer)
+            return ResponseHelper.buildFileResponse(pdfBytes, MediaType.APPLICATION_OCTET_STREAM, fileName, documentMap, "DocMaster");
         } catch (TranslationException e) {
             responseMsg = e.getMessage();
             httpStatus = HttpStatus.PRECONDITION_REQUIRED;
@@ -66,7 +74,6 @@ public class ReportController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
-
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_CREATE_TAGS_SHIPMENT)
     public ResponseEntity<IRunnerResponse> createDocumentTagsForShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
