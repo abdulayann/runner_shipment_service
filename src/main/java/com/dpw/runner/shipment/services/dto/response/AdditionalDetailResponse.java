@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -120,6 +121,9 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private LocalDateTime dateOfIssue;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
     private String goodsCO;
     private String BOENumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
