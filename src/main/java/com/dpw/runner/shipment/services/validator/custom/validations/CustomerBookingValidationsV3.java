@@ -90,11 +90,18 @@ public class CustomerBookingValidationsV3 {
     }
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
-        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
-            validateParty(entity.getConsignor(), "Shipper detail");
+        if(!Objects.equals(Constants.DIRECTION_DOM, entity.getDirection())) {
+            validateCargoContents(entity);
         }
-        if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
-            validateParty(entity.getConsignee(), "Consignee detail");
+    }
+
+    private void validateCargoContents(CustomerBooking entity) {
+        String cargoType = entity.getCargoType();
+        if (Set.of(Constants.CARGO_TYPE_FCL, Constants.CARGO_TYPE_FTL).contains(cargoType) && entity.getContainersList().isEmpty()) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one container"));
+        }
+        if (Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(cargoType) && entity.getPackingList().isEmpty()) {
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one Package"));
         }
     }
 
@@ -117,6 +124,12 @@ public class CustomerBookingValidationsV3 {
 
         validateMandatory(entity.getTransportType(), "Transport Mode");
         validateMandatory(entity.getCargoType(), "Cargo Type");
+        if (Set.of(Constants.DIRECTION_EXP, Constants.DIRECTION_CTS).contains(entity.getDirection())) {
+            validateParty(entity.getConsignor(), "Shipper detail");
+        }
+        if (Constants.DIRECTION_IMP.equals(entity.getDirection())) {
+            validateParty(entity.getConsignee(), "Consignee detail");
+        }
     }
 
     private void validateMandatory(Object value, String fieldName) {
