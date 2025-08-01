@@ -320,7 +320,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     mockShipmentSettings();
-    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
@@ -347,7 +347,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     mockShipmentSettings();
-    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(consolidationDetailsResponse);
@@ -372,7 +372,7 @@ if (unitConversionUtilityMockedStatic != null) {
     consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     mockShipmentSettings();
-    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationDetailsV3Response consolidationDetailsResponse = new ConsolidationDetailsV3Response();
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsV3Response.class))).thenReturn(consolidationDetailsResponse);
@@ -397,7 +397,7 @@ if (unitConversionUtilityMockedStatic != null) {
     ConsolidationDetails consoleDetails = testConsol;
 
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
-    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
     mockShipmentSettings();
@@ -416,7 +416,7 @@ if (unitConversionUtilityMockedStatic != null) {
     customerBookingV3Request.setPackingList(List.of(new PackingV3Request()));
 
     when(jsonHelper.convertValue(consolidationDetailsV3Request, ConsolidationDetails.class)).thenReturn(consoleDetails);
-    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(jsonHelper.convertValue(any(), eq(ContainerV3Request.class))).thenReturn(containerV3Request);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ShipmentSettingsDetailsContext.getCurrentTenantSettings().setMergeContainers(false);
@@ -4884,7 +4884,7 @@ if (unitConversionUtilityMockedStatic != null) {
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails);
     mockShipmentSettings();
     when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
-    when(consolidationDetailsDao.saveV3(any())).thenReturn(consolidationDetails);
+    when(consolidationDetailsDao.saveV3(any(), anyBoolean())).thenReturn(consolidationDetails);
     when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
     ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
     when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsResponse.class))).thenReturn(consolidationDetailsResponse);
