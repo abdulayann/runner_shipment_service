@@ -1,9 +1,13 @@
 package com.dpw.runner.shipment.services.controller;
 
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPackAssignmentRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignPackageContainerRequest;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -193,6 +197,30 @@ class PackingV3ControllerTest {
     void calculatePackSummaryForNte() throws AuthenticationException, RunnerException {
         CalculatePackSummaryRequest calculatePackSummaryRequest = new CalculatePackSummaryRequest();
         var response = packingV3Controller.calculatePackSummary(calculatePackSummaryRequest, "network_transfer");
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void assignContainersAtShipmentLevel() throws RunnerException {
+        ShipmentPackAssignmentRequest request = new ShipmentPackAssignmentRequest();
+        when(packingV3Service.assignShipmentPackagesContainers(request)).thenReturn(new ContainerResponse());
+        var response = packingV3Controller.assignContainersAtShipmentLevel(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void unAssignContainersAtShipmentLevel() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.SHIPMENT_PACKING);
+        var response = packingV3Controller.unAssignContainersAtShipmentLevel(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void unAssignContainers() throws RunnerException {
+        UnAssignPackageContainerRequest request = new UnAssignPackageContainerRequest();
+        doNothing().when(packingV3Service).unAssignPackageContainers(request, Constants.CONSOLIDATION_PACKING);
+        var response = packingV3Controller.unAssignContainers(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 }
