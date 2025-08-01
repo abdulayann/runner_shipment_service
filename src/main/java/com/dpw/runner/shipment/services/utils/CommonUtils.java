@@ -1546,6 +1546,24 @@ public class CommonUtils {
         return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
     }
 
+    public boolean checkIfDGFieldsChangedInPackingV3(Packing newPack, Packing oldPack) {
+        if (!oldPack.getHazardous().equals(newPack.getHazardous()))
+            return true;
+        if (!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
+            return true;
+        if (!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
+            return true;
+        if (!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
+            return true;
+        if (!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
+            return true;
+        if (!compareBigDecimals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
+            return true;
+        if (!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
+            return true;
+        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+    }
+
     public boolean compareBigDecimals(BigDecimal bd1, BigDecimal bd2) {
         // Check if both are null, they are considered equal
         if (Objects.equals(bd1, bd2)) {
