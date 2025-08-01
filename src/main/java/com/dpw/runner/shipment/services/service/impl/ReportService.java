@@ -2888,10 +2888,6 @@ public class ReportService implements IReportService {
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENT:
                 ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
-                // Safety validation
-                if (shipmentDetails.getShipmentId() == null) {
-                    throw new ValidationException("missing for shipment ID: " + reportRequest.getReportId());
-                }
                 transportMode = shipmentDetails.getTransportMode();
                 shipmentType = shipmentDetails.getDirection();
                 consolidationType = shipmentDetails.getJobType();
