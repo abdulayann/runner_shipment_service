@@ -146,6 +146,7 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
         CustomerBooking newEntity_withoutIncoTerms = CustomerBooking.builder().bookingNumber("num1")
                 .bookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT)
                 .consignee(Parties.builder().orgCode("code").build())
+                .direction("EXP")
                 .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
                 .consignor(Parties.builder().orgCode("code2").build())
                 .build();
@@ -308,8 +309,6 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutCargoType));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutCargoType));
-        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOutContainers));
-        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOutPackings));
         assertDoesNotThrow(() -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOriginPortAndTransportType_ROA));
         assertDoesNotThrow(() -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withOriginPortAndDestinationPortAndTransportType_ROA));
         customerBookingValidationsV3.onSave(oldEntity,newEntity);
@@ -409,15 +408,46 @@ class CustomerBookingValidationsV3Test extends CommonMocks {
                 .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
                 .build();
 
+        CustomerBooking newEntity_withoutContainers = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.READY_FOR_SHIPMENT)
+                .consignee(Parties.builder().addressCode("addressCode").orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .incoTerms("incoterms")
+                .bookingCharges(List.of(new BookingCharges()))
+                .cargoType("FCL")
+                .containersList(new ArrayList<>())
+                .direction(DIRECTION_IMP)
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .serviceMode("service mode")
+                .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
+                .build();
+
+        CustomerBooking newEntity_withoutPackages = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.READY_FOR_SHIPMENT)
+                .consignee(Parties.builder().addressCode("addressCode").orgCode("code").build())
+                .customer(Parties.builder().orgCode("cide").addressCode("addressCode").build())
+                .consignor(Parties.builder().orgCode("code2").build())
+                .incoTerms("incoterms")
+                .bookingCharges(List.of(new BookingCharges()))
+                .cargoType("LCL")
+                .packingList(new ArrayList<>())
+                .direction(DIRECTION_IMP)
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .serviceMode("service mode")
+                .carrierDetails(CarrierDetails.builder().destinationPort("destination port").originPort("origin Port").origin("origin").destination("destination").build())
+                .build();
+
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutConsignee));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutConsignor));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutServiceMode));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutCarrierDestinationPort));
         assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutCarrierOriginPort));
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutContainers));
+        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutPackages));
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().FetchRatesMandate(true).build());
         mockTenantSettings();
-        assertThrows(MandatoryFieldException.class , () -> customerBookingValidationsV3.onSave(oldEntity,newEntity_withoutBookingCharges));
         customerBookingValidationsV3.onSave(oldEntity,newEntity_withBookingCharges);
 
     }
