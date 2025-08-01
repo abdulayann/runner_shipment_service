@@ -59,7 +59,7 @@ public class ReportController {
             if (documentMap != null && documentMap.get("fileName") != null) {
                 fileName = documentMap.get("fileName").toString();   // Override if custom name present in documentMap
             }
-            byte[] pdfBytes = (byte[]) documentMap.get("pdfByteContent");  //Get byte[] content from documentMap (added by service layer)
+            byte[] pdfBytes = response.getContent();
             return ResponseHelper.buildFileResponse(pdfBytes, MediaType.APPLICATION_OCTET_STREAM, fileName, documentMap, "DocMaster");
         } catch (TranslationException e) {
             responseMsg = e.getMessage();
