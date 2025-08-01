@@ -5040,7 +5040,7 @@ public abstract class IReport {
         String country = null;
         if (addressData != null) {
             String countryCode = (String) addressData.get(PartiesConstants.COUNTRY);
-            String countryName = ISO3166.getCountryNameByCode(countryCode);
+            String countryName = ISO3166.getCountryNameByCode(countryCode != null ? countryCode : "");
             country = !Constants.EMPTY_STRING.equals(countryName) ? countryName : countryCode;
         }
 
@@ -5221,8 +5221,9 @@ public abstract class IReport {
         }
 
         dictionary.put(S_BOE_NUMBER, additional.getBOENumber());
-        dictionary.put(S_BOE_DATE, additional.getBOEDate());
-        dictionary.put(S_OWNERSHIP_NAME, additional.getOwnershipName());
+        dictionary.put(S_BOE_DATE, convertToDPWDateFormat(additional.getBOEDate()));
+        List<String> tenantPartyValueList = buildPartyMap(additional.getOwnershipOrg());
+        dictionary.put(S_OWNERSHIP_NAME, !tenantPartyValueList.isEmpty() ? tenantPartyValueList.get(0) : "");
         dictionary.put(S_PASSED_BY_PERSON, additional.getPassedByPerson());
         List<String> partyValueList = buildPartyMap(additional.getBorrowedFrom());
         dictionary.put(S_BORROWED_FROM, !partyValueList.isEmpty() ? partyValueList.get(0) : "");
