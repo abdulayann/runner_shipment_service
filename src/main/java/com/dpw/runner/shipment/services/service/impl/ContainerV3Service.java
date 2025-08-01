@@ -70,6 +70,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.annotation.PostConstruct;
+import javax.persistence.EntityManager;
 import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
@@ -195,6 +196,9 @@ public class ContainerV3Service implements IContainerV3Service {
     @Autowired
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
 
+    @Autowired
+    private EntityManager entityManager;
+
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Override
@@ -306,7 +310,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .filter(m -> savedContainer.getId() != null)
                 .filter(m -> containerRequest.getShipmentsId() != null)
                 .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
-                        containerRequest.getId(),
+                        savedContainer.getId(),
                         Set.of(containerRequest.getShipmentsId()),
                         false
                 ));
@@ -493,18 +497,22 @@ public class ContainerV3Service implements IContainerV3Service {
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
 
         // Proceed with the deletion of the containers and any related associations (shipment, packing, etc.)
-        deleteContainerAndAssociations(containerIds, shipmentIds);
+        deleteContainerAndAssociations(containerIds, new ArrayList<>(),  containersToDelete);
 
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            Long shipmentId = containerRequestList.get(0).getShipmentsId();
-            List<Containers> shipmentContainers =  containerDao.findByShipmentId(shipmentId);
+            // Shipment container only allowed to delete from shipment i.e shipmentIds size will always be 1
+            Long shipmentId = shipmentIds.get(0);
             ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
                     .orElseThrow(() -> new ValidationException("Shipment is not present with ID : " + shipmentId));
+            List<Containers> shipmentContainers = containerDao.findByShipmentId(shipmentId);
+           // shipmentContainers.removeIf(container -> containerIds.contains(container.getId()));
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
 
         // update console achieved data
-        consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId)
+                .orElseThrow(() -> new ValidationException("Consolidation not present with Id :" + consolidationId));
+        consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails,
                 containerBeforeSaveRequest.getShipmentWtVolResponse());
 
         if (Objects.equals(BOOKING, module)) {
@@ -645,17 +653,17 @@ public class ContainerV3Service implements IContainerV3Service {
         // Fetch containers that are assigned to packages
         List<ContainerDeleteInfoProjection> packingOnly = containerDao.filterContainerIdsAttachedToPacking(containerIds);
 
-        // Fetch containers that are assigned to shipment cargo
+        boolean hasPacking = ObjectUtils.isNotEmpty(packingOnly);
+
+        if(CONSOLIDATION.equalsIgnoreCase(module)) {
+            // Fetch containers that are assigned to shipment cargo
         List<ContainerDeleteInfoProjection> shipmentCargoOnly = containerDao.filterContainerIdsAttachedToShipmentCargo(containerIds);
 
         // Fetch containers that are assigned to shipment
         List<ContainerDeleteInfoProjection> shipmentOnly = containerDao.filterContainerIdsAttachedToShipment(containerIds);
 
-        boolean hasPacking = ObjectUtils.isNotEmpty(packingOnly);
         boolean hasShipmentCargoOnly = ObjectUtils.isNotEmpty(shipmentCargoOnly);
         boolean hasShipmentOnly = ObjectUtils.isNotEmpty(shipmentOnly);
-
-        if(CONSOLIDATION.equalsIgnoreCase(module)) {
         // If containers are assigned to both packing and shipment cargo
         if (hasPacking && hasShipmentCargoOnly) {
             // Merge both lists while removing duplicates based on containerId
@@ -718,15 +726,18 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     // Method to handle the deletion of containers and their associated entities
-    private void deleteContainerAndAssociations(List<Long> containerIds, List<Long> shipmentIds) {
+    private void deleteContainerAndAssociations(List<Long> containerIds, List<Long> shipmentIds,  List<Containers> containersToDelete) {
         // Remove containers from packing associations
         packingService.removeContainersFromPacking(containerIds);
 
-        // Detach the containers from any associated shipments
-        shipmentsContainersMappingDao.detachListShipments(containerIds, shipmentIds, false);
+        // container present in only one shipment , same container won't be avl in multiple shipments
+        List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
+        shipmentsContainersMappingDao.deleteAll(shipmentsContainersMappings);
 
         // Delete the containers from the database
-        containerDao.deleteAllById(containerIds);
+        containerRepository.deleteAll(containersToDelete);
+        //Clearing context , refetch the data
+        entityManager.clear();
     }
 
     private void recordAuditLogs(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
