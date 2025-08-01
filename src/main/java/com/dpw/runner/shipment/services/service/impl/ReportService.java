@@ -2832,7 +2832,7 @@ public class ReportService implements IReportService {
         return null;
     }
 
-    private String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
+    String applyCustomNaming(DocUploadRequest docUploadRequest, String docType, String childType, String identifier) {
         String customFileName = null;
 
         try {
@@ -2861,10 +2861,10 @@ public class ReportService implements IReportService {
                 if ((docType.equals(DocumentConstants.HBL) || docType.equals(ReportConstants.MAWB) || docType.equals(ReportConstants.HAWB)) && childType != null && !childType.isBlank()) {
                     customFileName = baseDocName
                             + DocumentConstants.DASH
-                            + StringUtility.convertToString(childType).toUpperCase() + identifier
+                            + StringUtility.convertToString(childType).toUpperCase() +DocumentConstants.DASH + identifier
                             + DocumentConstants.DOT_PDF;
                 } else {
-                    customFileName = baseDocName + identifier + DocumentConstants.DOT_PDF;
+                    customFileName = baseDocName + DocumentConstants.DASH + identifier + DocumentConstants.DOT_PDF;
                 }
                 docUploadRequest.setFileName(customFileName);
                 log.info("Custom file name generated: {}", customFileName);
@@ -2881,7 +2881,7 @@ public class ReportService implements IReportService {
         String consolidationType;
         String entityGuid;
         String entityType;
-        String identifier = null;
+        String identifier;
         log.info("{} | {} Starting setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
 
         // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
@@ -2893,10 +2893,7 @@ public class ReportService implements IReportService {
                 consolidationType = shipmentDetails.getJobType();
                 entityGuid = StringUtility.convertToString(shipmentDetails.getGuid());
                 entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
-
-                if (shipmentDetails.getShipmentId() != null && !shipmentDetails.getShipmentId().isBlank()) {
-                    identifier = shipmentDetails.getShipmentId();
-                }
+                identifier = shipmentDetails.getShipmentId();
                 break;
 
             case Constants.CONSOLIDATION:
@@ -2906,25 +2903,18 @@ public class ReportService implements IReportService {
                 consolidationType = consolidationDetails.getConsolidationType();
                 entityGuid = StringUtility.convertToString(consolidationDetails.getGuid());
                 entityType = Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
-
-                if (consolidationDetails.getConsolidationNumber() != null && !consolidationDetails.getConsolidationNumber().isBlank()) {
-                    identifier = consolidationDetails.getConsolidationNumber();
-                }
+                identifier = consolidationDetails.getConsolidationNumber();
                 break;
 
             default:
                 log.warn("{} | {} | Invalid Module Type: {}", LoggerHelper.getRequestIdFromMDC(), "setDocumentServiceParameters", reportRequest.getEntityName());
                 throw new IllegalArgumentException("Invalid Module Type: " + reportRequest.getEntityName());
         }
-        if (identifier == null) {
-            identifier = "UNKNOWN_DOCUMENT_ID";
-        }
         docUploadRequest.setEntityType(entityType);
         docUploadRequest.setKey(entityGuid);
         docUploadRequest.setTransportMode(transportMode);
         docUploadRequest.setShipmentType(shipmentType);
         docUploadRequest.setConsolidationType(consolidationType);
-
         // Apply custom naming if applicable and override
         try {
             String customFileName = applyCustomNaming(docUploadRequest, docUploadRequest.getDocType(), docUploadRequest.getChildType(), identifier);
@@ -2937,7 +2927,7 @@ public class ReportService implements IReportService {
         log.info("{} | {} Processing setDocumentServiceParameters process for Doc request {}.... ", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PUSH_DOCUMENT_TO_DOC_MASTER_VIA_REPORT_SERVICE, jsonHelper.convertToJson(docUploadRequest));
         var response = documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
         Map<String, Object> result = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(response.getData()));
-        result.put("pdfByteContent", pdfByteContent);
+        result.put("fileName", docUploadRequest.getFileName());
         return result;
     }
 

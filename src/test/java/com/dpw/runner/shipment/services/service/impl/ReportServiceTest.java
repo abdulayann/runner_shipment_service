@@ -51,6 +51,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DocumentConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -3712,6 +3713,27 @@ class ReportServiceTest extends CommonMocks {
         reportService.triggerAutomaticTransfer(hblReport, reportRequest);
         verify(shipmentDao, times(1)).findById(any());
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void applyCustomNaming_HblWithChildType_IncludesChildTypeInFilename() {
+        DocUploadRequest request = new DocUploadRequest();
+        String result = reportService.applyCustomNaming(request, DocumentConstants.HBL, "SEAWAY", "SHIP123");
+        assertEquals("HBL_SEAWAY_SHIP123.pdf", result);
+    }
+
+    @Test
+    void applyCustomNaming_MawbWithChildType_DraftChildType() {
+        DocUploadRequest request = new DocUploadRequest();
+        String result = reportService.applyCustomNaming(request, ReportConstants.MAWB, "Draft", "MAWB456");
+        assertEquals("MAWB_DRAFT_MAWB456.pdf", result);
+    }
+
+    @Test
+    void applyCustomNaming_StillFormsValidFilename() {
+        DocUploadRequest request = new DocUploadRequest();
+        String result = reportService.applyCustomNaming(request, ReportConstants.PICKUP_ORDER, null, "SHIP123");
+        assertEquals("PICKUPORDER_SHIP123.pdf", result);
     }
 
     @Test
