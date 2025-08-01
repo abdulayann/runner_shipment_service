@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -19,9 +18,8 @@ import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightCharg
 import com.dpw.runner.shipment.services.dto.mapper.ConsolidationMapper;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.BillingBulkSummaryBranchWiseRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.request.notification.AibNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.CheckDGShipmentV3;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
@@ -60,7 +58,6 @@ import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.*;
-
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -611,8 +608,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     void getConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException{
+        getConsolidation(consolidationDetails, false);
+    }
+
+    void getConsolidation(ConsolidationDetails consolidationDetails, boolean allowDGValueChange) throws RunnerException{
         generateConsolidationNumber(consolidationDetails);
-        consolidationDetails = consolidationDetailsDao.saveV3(consolidationDetails);
+        consolidationDetails = consolidationDetailsDao.saveV3(consolidationDetails, allowDGValueChange);
 
         // audit logs
         try {
@@ -4628,7 +4629,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             beforeSave(consolidationDetails, null, true);
 
-            getConsolidation(consolidationDetails);
+            getConsolidation(consolidationDetails, true);
 
             consolidationV3Util.afterSaveForET(consolidationDetails, null, request, true, shipmentSettingsDetails, false, true);
             syncShipmentDataInPlatform(consolidationDetails);
