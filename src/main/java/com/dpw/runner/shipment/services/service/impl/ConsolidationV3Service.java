@@ -690,7 +690,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, consolidationAddressRequest);
 
         syncShipmentDataInPlatform(consolidationDetails);
-
+        if(oldEntity!=null)
+            consolidationDetails.setTenantId(oldEntity.getTenantId());
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> networkTransferV3Util.triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
     }
@@ -1607,9 +1608,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Ensure request is valid and has required IDs
         consolidationValidationV3Util.validateConsolidationIdAndShipmentIds(consolidationId, shipmentIds);
-
+        ConsolidationDetails consolidationDetails;
         // Fetch the corresponding consolidation record from the database
-        ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
+        if(request.getConsolidationDetails()!=null)
+            consolidationDetails = request.getConsolidationDetails();
+        else
+            consolidationDetails = fetchConsolidationDetails(consolidationId);
 
         if(!Boolean.TRUE.equals(consolidationDetails.getOpenForAttachment()))
             throw new RunnerException("Attach/Detach not allowed");

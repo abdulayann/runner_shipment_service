@@ -257,5 +257,6 @@ public class ShipmentEtV3Request extends CommonRequest implements IRunnerRequest
 
     private Integer dgPacksCount;
     private String dgPacksUnit;
+    private Integer slac;
 
 }
