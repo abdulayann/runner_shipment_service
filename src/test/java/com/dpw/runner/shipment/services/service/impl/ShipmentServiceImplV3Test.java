@@ -5164,7 +5164,9 @@ class ShipmentServiceImplV3Test extends CommonMocks {
     void testSetShipmentCargoFields_whenPacksExist_shouldCopyFieldsFromOldShipment() {
         ShipmentDetails newShipment = new ShipmentDetails();
         newShipment.setId(1L);
-
+        Packing packing = new Packing();
+        packing.setWeight(BigDecimal.ONE);
+        newShipment.setPackingList(List.of(packing));
         ShipmentDetails oldShipment = new ShipmentDetails();
         oldShipment.setNoOfPacks(10);
         oldShipment.setWeight(BigDecimal.valueOf(100.0));
@@ -5184,6 +5186,32 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         assertEquals("KG", newShipment.getVolumetricWeightUnit());
     }
 
+    @Test
+    void testSetShipmentCargoFields_whenPacksExist_shouldNotCopyFieldsFromOldShipmentInAir() {
+        ShipmentDetails newShipment = new ShipmentDetails();
+        newShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipment.setWeight(BigDecimal.ONE);
+        newShipment.setWeightUnit("DT");
+        newShipment.setId(1L);
+        Packing packing = new Packing();
+        packing.setWeight(null);
+        newShipment.setPackingList(List.of(packing));
+        ShipmentDetails oldShipment = new ShipmentDetails();
+        oldShipment.setNoOfPacks(10);
+        oldShipment.setWeight(BigDecimal.valueOf(100.0));
+        oldShipment.setWeightUnit("KG");
+        oldShipment.setVolume(BigDecimal.valueOf(20.0));
+        oldShipment.setVolumeUnit("CBM");
+        oldShipment.setVolumetricWeight(BigDecimal.valueOf(120.0));
+        oldShipment.setVolumetricWeightUnit("KG");
+
+        when(packingDao.checkPackingExistsForShipment(1L)).thenReturn(true);
+
+        shipmentServiceImplV3.setShipmentCargoFields(newShipment, oldShipment);
+
+        assertEquals(10, newShipment.getNoOfPacks());
+        assertEquals("DT", newShipment.getWeightUnit());
+    }
     @Test
     void testSetShipmentCargoFields_whenPacksNotExist_shouldNotModifyShipment() {
         ShipmentDetails newShipment = new ShipmentDetails();

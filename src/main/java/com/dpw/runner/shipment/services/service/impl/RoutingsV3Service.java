@@ -209,6 +209,8 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                     int offset = 0;
                     insertNewConsolMainCarriageAtInheritedIndex(updatedRoutings, inheritedIndexes, consolidatedMainCarriages, offset);
 
+                    //update flight no back to voyage in case of air
+                    populateVoyageFromFlightNumberInAir(updatedRoutings);
                     // Step 5: Push to update
                     BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
                     bulkUpdateRoutingsRequest.setRoutings(jsonHelper.convertValueToList(updatedRoutings, RoutingsRequest.class));
@@ -218,6 +220,14 @@ public class RoutingsV3Service implements IRoutingsV3Service {
                 }
             }
         }
+    }
+
+    private static void populateVoyageFromFlightNumberInAir(List<Routings> updatedRoutings) {
+        updatedRoutings.forEach(routings -> {
+            if (Constants.TRANSPORT_MODE_AIR.equals(routings.getMode())) {
+                routings.setVoyage(routings.getFlightNumber());
+            }
+        });
     }
 
     private String getMessageValue(List<Routings> mainCarriageList, CarrierDetails carrierDetails) {

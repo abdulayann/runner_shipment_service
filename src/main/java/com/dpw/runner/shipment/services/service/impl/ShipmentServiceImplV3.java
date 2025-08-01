@@ -4397,9 +4397,17 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     protected void setShipmentCargoFields(ShipmentDetails shipmentDetails, ShipmentDetails oldShipment) {
         boolean packsAvailable = packingDao.checkPackingExistsForShipment(shipmentDetails.getId());
         if (packsAvailable) {
+            boolean isEmptyWeightPackAvailable = shipmentDetails.getPackingList().stream()
+                    .anyMatch(packing -> packing.getWeight() == null);
             shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
+            BigDecimal weight = shipmentDetails.getWeight();
+            String weightUnit = shipmentDetails.getWeightUnit();
             shipmentDetails.setWeight(oldShipment.getWeight());
             shipmentDetails.setWeightUnit(oldShipment.getWeightUnit());
+            if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && isEmptyWeightPackAvailable) {
+                shipmentDetails.setWeight(weight);
+                shipmentDetails.setWeightUnit(weightUnit);
+            }
             shipmentDetails.setVolume(oldShipment.getVolume());
             shipmentDetails.setVolumeUnit(oldShipment.getVolumeUnit());
             shipmentDetails.setVolumetricWeight(oldShipment.getVolumetricWeight());
