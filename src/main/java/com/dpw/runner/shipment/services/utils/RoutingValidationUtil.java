@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,6 +51,76 @@ public class RoutingValidationUtil {
         if (request.getId() == null) {
             throw new ValidationException("Routing ID is missing.");
         }
+    }
+
+    public void validateRoutingLegs(List<RoutingsRequest> incomingRoutings) {
+
+        for (RoutingsRequest routingsRequest : incomingRoutings) {
+            validateRoutingLegs(routingsRequest.getEtd(), routingsRequest.getEta(),
+                    routingsRequest.getAtd(), routingsRequest.getAta());
+
+            if (Objects.nonNull(routingsRequest.getAtd()) &&
+                    routingsRequest.getAtd().toLocalDate().isAfter(LocalDate.now())) {
+                throwDateValidationError("ATD cannot be more than Current Date");
+            }
+
+            if (Objects.nonNull(routingsRequest.getAta()) &&
+                    routingsRequest.getAta().toLocalDate().isAfter(LocalDate.now())) {
+                throwDateValidationError("ATA cannot be more than Current Date");
+            }
+        }
+    }
+
+    private void throwDateValidationError(String message) {
+        throw new ValidationException(message + ". Please Update the date entered correctly");
+    }
+
+    private void validateRoutingLegs(LocalDateTime etd, LocalDateTime eta, LocalDateTime atd, LocalDateTime ata) {
+
+        if (Objects.nonNull(etd) && Objects.nonNull(eta)) {
+            if (etd.isAfter(eta.plusHours(24))) {
+                throwDateValidationError("ETD cannot be more than ETA");
+            }
+        }
+
+        if (Objects.nonNull(atd) && Objects.nonNull(ata)) {
+            if (ata.isBefore(atd.minusHours(24))) {
+                throwDateValidationError("ATA cannot be less than ATD");
+            }
+        }
+    }
+
+    public void validateMainCarriageRoutingLegs(List<RoutingsRequest> routingsList) {
+        RoutingsRequest firstMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, true);
+        RoutingsRequest lastMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, false);
+
+        validateRoutingLegs(firstMainCarriageRoutingLeg.getEtd(), lastMainCarriageRoutingLeg.getEta(),
+                firstMainCarriageRoutingLeg.getAtd(), lastMainCarriageRoutingLeg.getAta());
+
+        if (lastMainCarriageRoutingLeg.getAta() != null &&
+                lastMainCarriageRoutingLeg.getAta().isAfter(LocalDateTime.now().plusHours(24))) {
+            throwDateValidationError("ATA cannot be more than Current Date");
+        }
+
+        if (firstMainCarriageRoutingLeg.getAtd() != null &&
+                firstMainCarriageRoutingLeg.getAtd().isAfter(LocalDateTime.now().plusHours(24))) {
+            throwDateValidationError("ATD cannot be more than Current Date");
+        }
+
+    }
+
+    private RoutingsRequest findMainCarriageLeg(List<RoutingsRequest> routingsList, boolean toFindFirstMainCarriageRoutingLeg) {
+
+        RoutingsRequest currMainCarriageRoutingLeg = null;
+        for (RoutingsRequest routingsRequest : routingsList) {
+            if (RoutingCarriage.MAIN_CARRIAGE.equals(routingsRequest.getCarriage())) {
+                if (toFindFirstMainCarriageRoutingLeg) return routingsRequest;
+                else currMainCarriageRoutingLeg = routingsRequest;
+            }
+        }
+        if (Objects.isNull(currMainCarriageRoutingLeg)) throw new ValidationException("Main Carriage Leg not found");
+
+        return currMainCarriageRoutingLeg;
     }
 
     public void validateUpdateBulkRequest(List<RoutingsRequest> routingListRequest, List<Routings> existingRoutings) {

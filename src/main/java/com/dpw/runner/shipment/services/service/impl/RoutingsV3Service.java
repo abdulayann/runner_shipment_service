@@ -651,6 +651,9 @@ public class RoutingsV3Service implements IRoutingsV3Service {
     public BulkRoutingResponse updateBulk(BulkUpdateRoutingsRequest request, String module) throws RunnerException {
         routingValidationUtil.validateBulkUpdateRoutingRequest(request, module);
         List<RoutingsRequest> incomingRoutings = request.getRoutings();
+        routingValidationUtil.validateRoutingLegs(incomingRoutings);
+        routingValidationUtil.validateMainCarriageRoutingLegs(incomingRoutings);
+
         setFlightNumberInCaseAir(incomingRoutings);
         // Separate IDs and determine existing routing
         List<Long> incomingIds = getIncomingRoutingsIds(incomingRoutings);
@@ -666,7 +669,6 @@ public class RoutingsV3Service implements IRoutingsV3Service {
 
         List<Routings> routingsList = reOrderRoutings(jsonHelper.convertValueToList(incomingRoutings, Routings.class), existingRoutings);
         // Separate into create and update requests
-
         List<Routings> allSavedRouting = routingsDao.saveAll(routingsList);
 
         ParentResult parentResult = getParentDetails(allSavedRouting, request.getEntityId(), module);
