@@ -1716,30 +1716,4 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(shipmentValidationV3Util, never()).processDGValidations(any(), any(), any());
         verify(shipmentDao, never()).updateDgStatusInShipment(anyBoolean(), any(), any());
     }
-//    @Test
-//    void testAssignContainerOnlyToShipment() {
-//        // Mock dependencies
-//        ShipmentDetails shipmentDetails = new ShipmentDetails();
-//        shipmentDetails.setTransportMode("SEA");
-//        shipmentDetails.setShipmentType("FCL");
-//        shipmentDetails.setId(1L);
-//
-//        Containers container = new Containers();
-//        container.setId(100L);
-//
-//        List<Long> shipmentIdsToSetContainerCargo = new ArrayList<>();
-//
-//        // Test case: No packages selected for FCL/FTL shipment
-//        ValidationException exception = Assertions.assertThrows(ValidationException.class, () -> {
-//            containerV3Service.assignContainerOnlyToShipment(shipmentDetails, container, shipmentIdsToSetContainerCargo);
-//        });
-//        Assertions.assertEquals("Please select atleast one package for FCL/FTL shipment.", exception.getMessage());
-//
-//        // Test case: Shipment cargo summary already assigned to a container
-//        shipmentDetails.setContainerAssignedToShipmentCargo(200L);
-//        exception = Assertions.assertThrows(ValidationException.class, () -> {
-//            containerV3Service.assignContainerOnlyToShipment(shipmentDetails, container, shipmentIdsToSetContainerCargo);
-//        });
-//        Assertions.assertTrue(exception.getMessage().contains("Container already assigned"));
-//    }
 }
