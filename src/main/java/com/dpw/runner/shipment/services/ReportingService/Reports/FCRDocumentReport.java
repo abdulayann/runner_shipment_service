@@ -107,6 +107,8 @@ public class FCRDocumentReport extends IReport{
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
 
+        populateShippedOnboardFields(fcrDocumentModel.getShipmentModel(), dictionary);
+
         if (fcrDocumentModel.getShipmentModel() != null && ObjectUtils.isNotEmpty(fcrDocumentModel.getShipmentModel().getConsolidationList())) {
             ConsolidationModel consolidationModel = fcrDocumentModel.getShipmentModel().getConsolidationList().get(0);
             this.populateConsolidationReportData(dictionary, null, consolidationModel.getId());

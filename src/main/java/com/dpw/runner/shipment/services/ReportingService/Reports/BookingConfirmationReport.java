@@ -85,6 +85,8 @@ public class BookingConfirmationReport extends IReport{
 
         dictionary.put(ReportConstants.MOVEMENT_TYPE, bookingConfirmationModel.hblModel.shipment.getTransportMode());
 
+        populateShippedOnboardFields(bookingConfirmationModel.hblModel.shipment, dictionary);
+
         List<ReferenceNumbersModel> referenceNumbers = bookingConfirmationModel.getReferenceNumbersList();
 
         if (referenceNumbers != null && !referenceNumbers.isEmpty()) {

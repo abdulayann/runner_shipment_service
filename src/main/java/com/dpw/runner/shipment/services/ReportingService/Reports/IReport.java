@@ -827,6 +827,8 @@ public abstract class IReport {
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
         processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
 
+        populateShippedOnboardFields(shipment, dictionary);
+
         dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
         dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
@@ -868,6 +870,18 @@ public abstract class IReport {
             dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null &&
                     pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
                     pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
+        }
+    }
+
+    public void populateShippedOnboardFields(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+
+        if (Objects.isNull(shipmentModel) || Objects.isNull(shipmentModel.getAdditionalDetails())) return;
+
+        LocalDateTime shippedOnboardDate = shipmentModel.getAdditionalDetails().getShippedOnboardDate();
+        if (Objects.nonNull(shippedOnboardDate)) {
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_TEXT, ReportConstants.SHIPPED_ONBOARD);
+            dictionary.put(ReportConstants.SHIPPED_ONBOARD_DATE_DDMMMYYYY, convertToDPWDateFormat(
+                    shippedOnboardDate, "ddMMMyyyy".toUpperCase(), false));
         }
     }
 

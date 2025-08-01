@@ -76,6 +76,8 @@ public class TransportOrderReport extends IReport{
         dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
 
+        populateShippedOnboardFields(shipmentModel, dictionary);
+
         if(shipmentModel.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         if(shipmentModel.getFreightLocalCurrency() != null && !shipmentModel.getFreightLocalCurrency().isEmpty())
