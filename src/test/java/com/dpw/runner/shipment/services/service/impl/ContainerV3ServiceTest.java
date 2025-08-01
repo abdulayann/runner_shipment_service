@@ -355,7 +355,7 @@ class ContainerV3ServiceTest extends CommonMocks {
             argument.run();
             return mockRunnable;
         });
-        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
         ContainerResponse response = containerV3Service.create(containerV3Request, "CONSOLIDATION");
@@ -367,7 +367,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
-        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class)));
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATION");
@@ -403,7 +403,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).
                 thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class), objectMapper.convertValue(testContainer, ContainerResponse.class)));
-        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATION");
         assertNotNull(response);
