@@ -3949,9 +3949,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     private void applyAirCutOffs(ConsolidationDetails oldConsolidation,
         ConsolidationDetails newConsolidation, ShipmentDetails shipmentDetails, Boolean fromAttachShipment){
         if (Boolean.TRUE.equals(fromAttachShipment)) {
-            if (newConsolidation.getLatDate() != null) {
                 shipmentDetails.setLatestArrivalTime(newConsolidation.getLatDate());
-            }
         } else {
             updateIfChanged(oldConsolidation.getLatDate(), newConsolidation.getLatDate(),
                 shipmentDetails::setLatestArrivalTime);
@@ -3968,30 +3966,15 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void applySeaCutoffsForAttachedShipment(ConsolidationDetails newConsolidation, ShipmentDetails shipmentDetails) {
-        if (newConsolidation.getTerminalCutoff() != null) {
             shipmentDetails.setTerminalCutoff(newConsolidation.getTerminalCutoff());
-        }
-        if (newConsolidation.getVerifiedGrossMassCutoff() != null) {
             shipmentDetails.setVerifiedGrossMassCutoff(newConsolidation.getVerifiedGrossMassCutoff());
-        }
-        if (newConsolidation.getShipInstructionCutoff() != null) {
             shipmentDetails.setShippingInstructionCutoff(newConsolidation.getShipInstructionCutoff());
-        }
-        if (newConsolidation.getHazardousBookingCutoff() != null) {
             shipmentDetails.setDgCutoff(newConsolidation.getHazardousBookingCutoff());
-        }
-        if (newConsolidation.getReeferCutoff() != null) {
             shipmentDetails.setReeferCutoff(newConsolidation.getReeferCutoff());
-        }
-        if (newConsolidation.getEarliestEmptyEquPickUp() != null) {
             shipmentDetails.setEarliestEmptyEquipmentPickUp(newConsolidation.getEarliestEmptyEquPickUp());
-        }
-        if (newConsolidation.getLatestFullEquDeliveredToCarrier() != null) {
             shipmentDetails.setLatestFullEquipmentDeliveredToCarrier(newConsolidation.getLatestFullEquDeliveredToCarrier());
-        }
-        if (newConsolidation.getEarliestDropOffFullEquToCarrier() != null) {
             shipmentDetails.setEarliestDropOffFullEquipmentToCarrier(newConsolidation.getEarliestDropOffFullEquToCarrier());
-        }
+
     }
 
     private void applySeaCutoffsUpdate(ConsolidationDetails oldConsolidation, ConsolidationDetails newConsolidation,
