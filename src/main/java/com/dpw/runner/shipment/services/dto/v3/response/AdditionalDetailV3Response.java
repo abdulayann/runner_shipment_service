@@ -122,6 +122,9 @@ public class AdditionalDetailV3Response implements IRunnerResponse {
     private LocalDateTime dateOfIssue;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime shippedOnboard;
     private String goodsCO;
     private String BOENumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
