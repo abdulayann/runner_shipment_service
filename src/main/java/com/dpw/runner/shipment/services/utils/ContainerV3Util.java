@@ -231,7 +231,7 @@ public class ContainerV3Util {
         List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(list.stream().map(ShipmentsContainersMapping::getShipmentId).collect(Collectors.toSet()));
         Map<Long, String> idToShipmentIdMap = shipmentDetails.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
         Map<Long, Set<String>> containerToShipmentCodesMap = containerToShipmentsMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().map(idToShipmentIdMap::get).collect(Collectors.toSet())));
-        Map<Long, String> idToGuid = result.stream().collect(Collectors.toMap(p -> p.getId(), p -> p.getGuid().toString()));
+        Map<Long, String> idToGuid = result.stream().filter(p -> p.getGuid() != null).collect(Collectors.toMap(Containers::getId, p -> p.getGuid().toString()));
         return containerToShipmentCodesMap.entrySet().stream().filter(entry -> idToGuid.containsKey(entry.getKey())).collect(Collectors.toMap(entry -> idToGuid.get(entry.getKey()), Map.Entry::getValue));
     }
 
