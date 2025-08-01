@@ -11102,6 +11102,9 @@ ShipmentServiceTest extends CommonMocks {
         response.setAdditionalDetails(additionalDetails);
         response.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         response.setDirection(Constants.DIRECTION_EXP);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsRunnerV3Enabled(Boolean.TRUE);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Chennai");
         TenantModel tenantModel = new TenantModel();
@@ -11137,6 +11140,9 @@ ShipmentServiceTest extends CommonMocks {
         response.setAdditionalDetails(additionalDetails);
         response.setTransportMode(Constants.TRANSPORT_MODE_RAI);
         response.setDirection(Constants.DIRECTION_EXP);
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setIsRunnerV3Enabled(Boolean.TRUE);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
         EntityTransferAddress address = new EntityTransferAddress();
         address.setCity("Mumbai");
         TenantModel tenantModel = new TenantModel();

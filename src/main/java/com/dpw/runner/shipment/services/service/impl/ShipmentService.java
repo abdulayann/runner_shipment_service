@@ -6591,14 +6591,16 @@ public class ShipmentService implements IShipmentService {
     public void setTenantAndDefaultAgent(ShipmentDetailsResponse response) {
         try {
             log.info("Fetching Tenant Model");
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
             String currencyCode = tenantModel.currencyCode;
             response.setFreightLocalCurrency(currencyCode);
             List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
             if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
                 EntityTransferAddress entityTransferAddress = commonUtils.getEntityTransferAddress(tenantModel);
-                if (Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode())
-                        || Constants.TRANSPORT_MODE_RAI.equals(response.getTransportMode())) {
+                if ((Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode())
+                        || Constants.TRANSPORT_MODE_RAI.equals(response.getTransportMode()))
+                        && Boolean.TRUE.equals(shipmentSettingsDetails.getIsRunnerV3Enabled())) {
                     response.getAdditionalDetails().setPlaceOfIssue(StringUtility.convertToString(entityTransferAddress.getCity()));
                 } else {
                     response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
