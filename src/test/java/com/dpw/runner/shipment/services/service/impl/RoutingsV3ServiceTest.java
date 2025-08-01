@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
 import com.dpw.runner.shipment.services.dto.request.BulkUpdateRoutingsRequest;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkRoutingResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -58,6 +60,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -106,6 +109,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
     private IConsolidationV3Service consolidationV3Service;
     @Mock
     private ICarrierDetailsDao carrierDetailsDao;
+    @Mock
+    private IAdditionalDetailDao additionalDetailDao;
     @Mock
     private DependentServiceHelper dependentServiceHelper;
     @Mock
@@ -166,6 +171,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         var resp = routingsService.create(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
@@ -205,6 +211,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.save(routings)).thenReturn(routings);
         when(jsonHelper.convertValue(any(), eq(RoutingsResponse.class))).thenReturn(response);
         when(shipmentServiceV3.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         var resp = routingsService.update(commonRequestModel, Constants.SHIPMENT);
         assertEquals(response.getId(), resp.getId());
     }
@@ -325,6 +332,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         doNothing().when(auditLogService).addAuditLog(any());
 
         BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
@@ -381,6 +389,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         doNothing().when(auditLogService).addAuditLog(any());
 
         BulkRoutingResponse result = routingsService.updateTransportInfoStatus(updateTransportStatusRequest);
@@ -438,6 +447,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings, routings1));
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         doNothing().when(auditLogService).addAuditLog(any());
 
         BulkRoutingResponse result = routingsService.updateTransportInfoStatus(updateTransportStatusRequest);
@@ -576,6 +586,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         when(consolidationV3Service.getConsolidationById(anyLong())).thenReturn(consolidationDetails);
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         doNothing().when(auditLogService).addAuditLog(any());
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
@@ -589,6 +600,84 @@ class RoutingsV3ServiceTest extends CommonMocks {
         assertNotNull(result.getRoutingsResponseList());
         assertEquals(1, result.getRoutingsResponseList().size());
         verify(auditLogService, atLeastOnce()).addAuditLog(any());
+    }
+
+    @Test
+    void testShipmentUpdateBulk_updateShippedOnBoard_nullAdditionalDetails() throws Exception {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setShipmentId(123L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setIsSelectedForDocument(true);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(LocalDateTime.now());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(carrierDetails)
+                .additionalDetails(null)
+                .routingsList(List.of(routings))
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .build();
+        shipmentDetails.setId(1l);
+
+        List<RoutingsRequest> requestList = List.of(routingsRequest);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        bulkUpdateRoutingsRequest.setEntityId(123L);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+
+        assertNotNull(result);
+        assertEquals(1, result.getRoutingsResponseList().size());
+    }
+
+    @Test
+    void testShipmentUpdateBulk_updateShippedOnBoard() throws Exception {
+        routingsRequest.setId(2L);
+        routings.setId(2L);
+        routings.setShipmentId(123L);
+        routings.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        routings.setIsSelectedForDocument(true);
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setAtd(LocalDateTime.now());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .carrierDetails(carrierDetails)
+                .additionalDetails(new AdditionalDetails())
+                .routingsList(List.of(routings))
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .build();
+        shipmentDetails.setId(1l);
+
+        List<RoutingsRequest> requestList = List.of(routingsRequest);
+        BulkUpdateRoutingsRequest bulkUpdateRoutingsRequest = new BulkUpdateRoutingsRequest();
+        bulkUpdateRoutingsRequest.setRoutings(requestList);
+        bulkUpdateRoutingsRequest.setTransportInfoStatus(TransportInfoStatus.YES);
+        bulkUpdateRoutingsRequest.setEntityId(123L);
+        RoutingsResponse response = RoutingsResponse.builder().id(2L).build();
+
+        when(routingsDao.findByIdIn(anyList())).thenReturn(List.of(routings));
+        when(jsonHelper.convertValueToList(anyList(), eq(Routings.class))).thenReturn(List.of(routings));
+        when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
+        when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(anyList(), eq(RoutingsResponse.class))).thenReturn(List.of(response));
+        doNothing().when(auditLogService).addAuditLog(any());
+
+        BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+
+        assertNotNull(result);
+        assertEquals(1, result.getRoutingsResponseList().size());
     }
 
     @Test
@@ -623,6 +712,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
 
         when(routingsDao.saveAll(anyList())).thenReturn(List.of(routings));
         when(shipmentServiceV3.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        when(additionalDetailDao.save(any(AdditionalDetails.class))).thenReturn(new AdditionalDetails());
         doNothing().when(auditLogService).addAuditLog(any());
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();

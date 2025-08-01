@@ -1251,6 +1251,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
         shipmentsV3Util.processVoyageAndFlightNumber(shipmentDetails);
+        shipmentValidationV3Util.validateShippedOnBoardDate(shipmentDetails);
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
