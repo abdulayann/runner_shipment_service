@@ -444,7 +444,7 @@ public class RoutingsV3Service implements IRoutingsV3Service {
             if (!StringUtility.isEmpty(lastLeg.getPod())) {
                 carrierDetails.setDestinationPort(lastLeg.getPod());
                 carrierDetails.setDestinationPortLocCode(lastLeg.getDestinationPortLocCode());
-                EntityTransferUnLocations entityTransferUnLocations = locationsMap.get(firstLeg.getPod());
+                EntityTransferUnLocations entityTransferUnLocations = locationsMap.get(lastLeg.getPod());
                 if (!Objects.isNull(entityTransferUnLocations)) {
                     carrierDetails.setDestinationPortCountry(entityTransferUnLocations.Country);
                 }
