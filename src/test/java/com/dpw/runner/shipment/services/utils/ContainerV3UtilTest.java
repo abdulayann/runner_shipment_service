@@ -29,6 +29,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
@@ -117,6 +118,9 @@ class ContainerV3UtilTest extends CommonMocks {
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
+    private IApplicationConfigService applicationConfigService;
 
     @InjectMocks
     @Spy
@@ -779,6 +783,21 @@ class ContainerV3UtilTest extends CommonMocks {
         assertNotNull(result);
         assertTrue(result.isEmpty(), "Expected result to be empty for empty input set");
     }
+
+    @Test
+    void testGetHsCodeBatchProcessLimit_withConfiguredValue() {
+        when(applicationConfigService.getValue("HS_CODE_BATCH_PROCESS_LIMIT")).thenReturn("200");
+        Integer result = containerV3Util.getHsCodeBatchProcessLimit();
+        assertEquals(200, result);
+    }
+
+    @Test
+    void testGetHsCodeBatchProcessLimit_withEmptyConfig_returnsDefault() {
+        when(applicationConfigService.getValue("HS_CODE_BATCH_PROCESS_LIMIT")).thenReturn("");
+        Integer result = containerV3Util.getHsCodeBatchProcessLimit();
+        assertEquals(100, result); // assuming BATCH_HS_CODE_PROCESS_LIMIT = 1000
+    }
+
 
     private Containers createTestContainer() {
         Containers container = new Containers();

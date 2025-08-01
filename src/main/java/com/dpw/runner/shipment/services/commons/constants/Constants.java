@@ -696,7 +696,7 @@ public class Constants {
     public static final String POL_WARNING_MESSAGE = "POL in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POD_WARNING_MESSAGE = "POD in Routing is different from the Transport Details. Do you want to Update?";
     public static final String POL_POD_WARNING_MESSAGE = "POL & POD in Routing are different from the Transport Details. Do you want to Update?";
-
+    public static final Integer BATCH_HS_CODE_PROCESS_LIMIT = 100;
     private Constants() {
     }
 

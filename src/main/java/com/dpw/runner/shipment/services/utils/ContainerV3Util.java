@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -61,7 +62,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.HS_CODE_BATCH_PROCESS_LIMIT;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PackingConstants.PKG;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -111,7 +113,8 @@ public class ContainerV3Util {
 
     private ObjectMapper objectMapper;
 
-    static final int BATCH_SIZE = 100;
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -556,6 +559,10 @@ public class ContainerV3Util {
         }
         return hsCodeList;
     }
+    public Integer getHsCodeBatchProcessLimit(){
+        String configuredLimitValue = applicationConfigService.getValue(HS_CODE_BATCH_PROCESS_LIMIT);
+        return StringUtility.isEmpty(configuredLimitValue) ? BATCH_HS_CODE_PROCESS_LIMIT : Integer.parseInt(configuredLimitValue);
+    }
 
     public Set<String> getValidHsCodes(Set<String> hsCode) {
         if (hsCode.isEmpty()) {
@@ -563,8 +570,9 @@ public class ContainerV3Util {
         }
         List<String> hsCodeList = new ArrayList<>(hsCode);
         List<List<String>> batches = new ArrayList<>();
-        for (int i = 0; i < hsCodeList.size(); i += BATCH_SIZE) {
-            batches.add(hsCodeList.subList(i, Math.min(i + BATCH_SIZE, hsCodeList.size())));
+        int batchSize = getHsCodeBatchProcessLimit();
+        for (int i = 0; i < hsCodeList.size(); i += batchSize) {
+            batches.add(hsCodeList.subList(i, Math.min(i + batchSize, hsCodeList.size())));
         }
         try {
             List<CompletableFuture<Set<String>>> futures = batches.stream()
