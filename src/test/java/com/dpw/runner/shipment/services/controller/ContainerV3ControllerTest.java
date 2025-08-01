@@ -102,6 +102,18 @@ class ContainerV3ControllerTest {
   }
 
   @Test
+  void testShipmentUpdateBulk() throws RunnerException {
+    List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
+    BulkContainerResponse response = new BulkContainerResponse();
+
+    Mockito.when(containerV3FacadeService.createUpdateContainer(requestList, "SHIPMENT")).thenReturn(response);
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.updateBulkShipment(requestList);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+  @Test
   void testDeleteBulk() throws RunnerException {
     List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
     BulkContainerResponse response = new BulkContainerResponse();
@@ -109,6 +121,19 @@ class ContainerV3ControllerTest {
     Mockito.when(containerV3Service.deleteBulk(requestList, "CONSOLIDATION")).thenReturn(response);
 
     ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulk(requestList);
+
+    assertEquals(HttpStatus.OK, result.getStatusCode());
+  }
+
+
+  @Test
+  void testDeleteBulkFromShipment() throws RunnerException {
+    List<ContainerV3Request> requestList = List.of(new ContainerV3Request());
+    BulkContainerResponse response = new BulkContainerResponse();
+
+    Mockito.when(containerV3Service.deleteBulk(requestList, "SHIPMENT")).thenReturn(response);
+
+    ResponseEntity<IRunnerResponse> result = containerV3Controller.deleteBulkFromShipment(requestList);
 
     assertEquals(HttpStatus.OK, result.getStatusCode());
   }

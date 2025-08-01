@@ -34,6 +34,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -238,7 +239,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 ConsolidationDetails.builder().openForAttachment(true).build()
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert
@@ -258,7 +259,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 ConsolidationDetails.builder().openForAttachment(false).build() // This should trigger exception
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L, 2L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert
@@ -280,7 +281,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 ConsolidationDetails.builder().openForAttachment(null).build() // null should be treated as false
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert
@@ -334,7 +335,7 @@ class ContainerValidationUtilTest extends CommonMocks {
         List<ConsolidationDetails> consolidationDetails = new ArrayList<>();
         consolidationDetails.add(null); // Add null object to list
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
                 .thenReturn(consolidationDetails);
 
         // Act & Assert - should not throw since null objects are filtered out
@@ -348,7 +349,7 @@ class ContainerValidationUtilTest extends CommonMocks {
                 Containers.builder().consolidationId(1L).build()
         );
 
-        Mockito.when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
+        when(consolidationDetailsDao.findConsolidationsByIds(Set.of(1L)))
                 .thenReturn(null); // DAO returns null
 
         // Act & Assert - should not throw when DAO returns null
@@ -401,6 +402,197 @@ class ContainerValidationUtilTest extends CommonMocks {
         shipmentPackIds.put(1L, List.of(1L));
         request.setShipmentPackIds(shipmentPackIds);
         assertThrows(ValidationException.class, () -> containerValidationUtil.fclAndLclThrowErrorMessage(shipmentDetailsMap, request));
+    }
+
+    @Test
+    void testValidateShipmentForContainer_WithConsolidationList_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setJobType("EXPORT");
+        shipmentDetails.setShipmentId("SHIP001");
+        shipmentDetails.setConsolidationList(Set.of(new ConsolidationDetails())); // Non-null consolidation list
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentForContainer(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentForContainer_WithDRTJobType_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT); // DRT job type
+        shipmentDetails.setShipmentId("SHIP002");
+        shipmentDetails.setConsolidationList(null); // Null consolidation list but DRT type
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentForContainer(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentForContainer_WithNullConsolidationAndNonDRTJobType_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setJobType("EXPORT"); // Non-DRT job type
+        shipmentDetails.setShipmentId("SHIP003");
+        shipmentDetails.setConsolidationList(null); // Null consolidation list
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentForContainer(shipmentDetails));
+
+        assertEquals("Shipment: SHIP003 must be attached with consolidation to create container",
+                exception.getMessage());
+    }
+
+// Test for validateShipmentCargoType method
+
+    @Test
+    void testValidateShipmentCargoType_WithSeaFCL_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility method to return true for Sea FCL
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithRoadFCLorFTL_ShouldPass() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility method to return true for Road FCL/FTL
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, Constants.CARGO_TYPE_FCL)).thenReturn(true);
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithInvalidSeaCargoType_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL); // Invalid for SEA
+
+        // Mock the utility methods to return false
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertEquals(String.format("Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                        Constants.SHIPMENT_TYPE_LCL, Constants.TRANSPORT_MODE_SEA, "FCL"),
+                exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithInvalidRoadCargoType_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL); // Invalid for ROAD
+
+        // Mock the utility methods to return false
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertEquals(String.format("Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                        Constants.SHIPMENT_TYPE_LCL, Constants.TRANSPORT_MODE_ROA, "FCL or FTL"),
+                exception.getMessage());
+    }
+
+    @Test
+    void testValidateShipmentCargoType_WithInvalidTransportMode_ShouldThrowException() {
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("AIR"); // Invalid transport mode
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility methods to return false
+        when(commonUtils.isSeaFCL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL("AIR", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertEquals(String.format("Invalid cargoType: %s for transportMode: %s. Expected: %s.",
+                        Constants.CARGO_TYPE_FCL, "AIR", "Transport mode must be SEA/ROAD"),
+                exception.getMessage());
+    }
+
+// Test for getExpectedCargoTypeForTransportMode method coverage (private method tested through public method)
+
+    @Test
+    void testGetExpectedCargoTypeForTransportMode_SeaTransportMode_ReturnsFC() {
+        // This tests the private method through the public validateShipmentCargoType method
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA.toLowerCase()); // Test case sensitivity
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+
+        // Mock the utility methods to return false to trigger the exception path
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_SEA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertTrue(exception.getMessage().contains("Expected: FCL"));
+    }
+
+    @Test
+    void testGetExpectedCargoTypeForTransportMode_RoadTransportMode_ReturnsFCLorFTL() {
+        // This tests the private method through the public validateShipmentCargoType method
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_ROA.toLowerCase()); // Test case sensitivity
+        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
+
+        // Mock the utility methods to return false to trigger the exception path
+        when(commonUtils.isSeaFCL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL(Constants.TRANSPORT_MODE_ROA.toLowerCase(), Constants.SHIPMENT_TYPE_LCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertTrue(exception.getMessage().contains("Expected: FCL or FTL"));
+    }
+
+    @Test
+    void testGetExpectedCargoTypeForTransportMode_UnknownTransportMode_ReturnsDefaultMessage() {
+        // This tests the private method through the public validateShipmentCargoType method
+        // Arrange
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("UNKNOWN");
+        shipmentDetails.setShipmentType(Constants.CARGO_TYPE_FCL);
+
+        // Mock the utility methods to return false to trigger the exception path
+        when(commonUtils.isSeaFCL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+        when(commonUtils.isRoadFCLorFTL("UNKNOWN", Constants.CARGO_TYPE_FCL)).thenReturn(false);
+
+        // Act & Assert
+        ValidationException exception = assertThrows(ValidationException.class,
+                () -> containerValidationUtil.validateShipmentCargoType(shipmentDetails));
+
+        assertTrue(exception.getMessage().contains("Expected: Transport mode must be SEA/ROAD"));
     }
 
 }
