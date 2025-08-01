@@ -7,10 +7,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
@@ -50,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -115,6 +113,9 @@ public class ContainerV3Util {
 
     @Autowired
     private IApplicationConfigService applicationConfigService;
+    @Autowired
+    private IPackingDao packingDao;
+
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -168,6 +169,7 @@ public class ContainerV3Util {
         }
     }
 
+
     private List<ContainersExcelModel> fetchContainerExcelModel(BulkDownloadRequest request) throws RunnerException {
         List<Containers> result = new ArrayList<>();
 
@@ -208,9 +210,31 @@ public class ContainerV3Util {
                 result = result.stream().filter(containersList::contains).toList();
             }
         }
-
-        return commonUtils.convertToList(result, ContainersExcelModel.class);
+        return getContainersExcelModels(result);
     }
+
+    @NotNull
+    public List<ContainersExcelModel> getContainersExcelModels(List<Containers> result) {
+        Map<String, Set<String>> containerToShipmentMap = collectAllShipmentNumber(result);
+        List<ContainersExcelModel> containersExcelModels = commonUtils.convertToList(result, ContainersExcelModel.class);
+        containersExcelModels.forEach(p -> {
+            if (containerToShipmentMap.containsKey(p.getGuid())) {
+                p.setShipmentNumbers(String.join(", ", containerToShipmentMap.get(p.getGuid())));
+            }
+        });
+        return containersExcelModels;
+    }
+
+    public Map<String, Set<String>> collectAllShipmentNumber(List<Containers> result) {
+        List<ShipmentsContainersMapping> list = shipmentsContainersMappingDao.findByContainerIdIn(result.stream().map(Containers::getId).toList());
+        Map<Long, Set<Long>> containerToShipmentsMap = list.stream().collect(Collectors.groupingBy(ShipmentsContainersMapping::getContainerId, Collectors.mapping(ShipmentsContainersMapping::getShipmentId, Collectors.toSet())));
+        List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(list.stream().map(ShipmentsContainersMapping::getShipmentId).collect(Collectors.toSet()));
+        Map<Long, String> idToShipmentIdMap = shipmentDetails.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+        Map<Long, Set<String>> containerToShipmentCodesMap = containerToShipmentsMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().map(idToShipmentIdMap::get).collect(Collectors.toSet())));
+        Map<Long, String> idToGuid = result.stream().collect(Collectors.toMap(p -> p.getId(), p -> p.getGuid().toString()));
+        return containerToShipmentCodesMap.entrySet().stream().filter(entry -> idToGuid.containsKey(entry.getKey())).collect(Collectors.toMap(entry -> idToGuid.get(entry.getKey()), Map.Entry::getValue));
+    }
+
 
     private void writeExcelToResponse(HttpServletResponse response, List<ContainersExcelModel> model, BulkDownloadRequest request) throws IOException, IllegalAccessException {
         String timestamp = LocalDateTime.now()
@@ -492,21 +516,96 @@ public class ContainerV3Util {
     }
 
     @Transactional(rollbackFor = Exception.class)
-    public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
-        if (request == null || request.getConsolidationId() == null || request.getConsolidationId() == 0) {
-            throw new ValidationException("Please add the container and then try again.");
-        }
-        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+    public void uploadContainers(BulkUploadRequest request, String module) throws IOException, RunnerException {
+        List<Containers> consolContainers = this.getContainerByModule(request, module);
+        Map<UUID, Map<String, Object>> prevData = validationContainerUploadInShipment(consolContainers);
         Map<UUID, Containers> containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
         Map<UUID, Long> guidToIdMap = consolContainers.stream().collect(Collectors.toMap(Containers::getGuid, Containers::getId, (existing, replacement) -> existing));
         Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
+        Map<UUID, Map<String, Object>> postData = validationContainerUploadInShipment(containersList);
+        this.validateIfPacksOrVolume(prevData, postData, request, module, containersList);
         Map<String, BigDecimal> codeTeuMap = getCodeTeuMapping();
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
-        createOrUpdateContainers(requests);
+        setShipmentOrConsoleId(request, module, requests);
+        createOrUpdateContainers(requests, module);
+    }
+    public List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
+        if (request == null) {
+            throw new ValidationException("Please add the container and then try again.");
+        }
+        if (module.equalsIgnoreCase(CONSOLIDATION)) {
+            if (request.getConsolidationId() == null || request.getConsolidationId() == 0) {
+                throw new ValidationException("Please add the consolidation and then try again.");
+            }
+            return containerDao.findByConsolidationId(request.getConsolidationId());
+        }
+        if (module.equalsIgnoreCase(SHIPMENT)) {
+            if (request.getShipmentId() == null || request.getShipmentId() == 0) {
+                throw new ValidationException("Please add the shipment Id and then try again.");
+            }
+            return containerDao.findByShipmentId(request.getShipmentId());
+        }
+        throw new ValidationException(String.format("Module: %s; not found", module));
+    }
+    @Transactional(rollbackFor = Exception.class)
+    public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
+        uploadContainers(request, CONSOLIDATION);
+    }
+    public void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList) {
+        boolean isValidationRequired = module.equalsIgnoreCase(CONSOLIDATION);
+        if (module.equalsIgnoreCase(SHIPMENT)) {
+            ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).orElseThrow(() -> new ValidationException("Shipment Id not exists"));
+            if (CARGO_TYPE_FCL.equals(shipmentDetails.getShipmentType())) {
+                isValidationRequired = !packingDao.findByContainerIdIn(containersList.stream().map(Containers::getId).toList()).isEmpty();
+            }
+        }
+        if (isValidationRequired) {
+            for (UUID containerId : to.keySet()) {
+                if (from.containsKey(containerId)) {
+                    Map<String, Object> containersTo = to.get(containerId);
+                    Map<String, Object> containersFrom = from.get(containerId);
+                    validateBeforeAndAfterValues(containerId, containersTo, containersFrom);
+                }
+            }
+        }
+    }
+    public static void validateBeforeAndAfterValues(UUID containerId, Map<String, Object> containersTo, Map<String, Object> containersFrom) {
+        for (String key : containersTo.keySet()) {
+            if (containersTo.get(key) instanceof BigDecimal) {
+                if (((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
+                    throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+                }
+            } else if (!Objects.equals(containersTo.get(key), containersFrom.get(key))) {
+                throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+            }
+        }
+    }
+    public Map<UUID, Map<String, Object>> validationContainerUploadInShipment(List<Containers> consolContainers) {
+        Map<UUID, Map<String, Object>> map = new HashMap<>();
+        for (Containers containers : consolContainers) {
+            map.putIfAbsent(containers.getGuid(), new HashMap<>());
+            map.get(containers.getGuid()).put("grossVolume", containers.getGrossVolume());
+            map.get(containers.getGuid()).put("grossVolumeUnit", containers.getGrossVolumeUnit());
+            map.get(containers.getGuid()).put("grossWeight", containers.getGrossWeight());
+            map.get(containers.getGuid()).put("grossWeightUnit", containers.getGrossWeightUnit());
+            map.get(containers.getGuid()).put("packs", containers.getPacks());
+            map.get(containers.getGuid()).put("packsType", containers.getPacksType());
+        }
+        return map;
+    }
+    public static void setShipmentOrConsoleId(BulkUploadRequest request, String module, List<ContainerV3Request> requests) {
+        requests.forEach(p -> {
+            if (module.equalsIgnoreCase(SHIPMENT)) {
+                p.setShipmentsId(request.getShipmentId());
+            }
+            if (module.equalsIgnoreCase(CONSOLIDATION)) {
+                p.setConsolidationId(request.getConsolidationId());
+            }
+        });
     }
 
     private static void setIdAndTeuInContainers(BulkUploadRequest request, List<Containers> containersList, Map<UUID, Long> guidToIdMap, Map<String, BigDecimal> codeTeuMap) {
@@ -521,10 +620,10 @@ public class ContainerV3Util {
         });
     }
 
-    public void createOrUpdateContainers(List<ContainerV3Request> requests) throws RunnerException {
+    public void createOrUpdateContainers(List<ContainerV3Request> requests, String module) throws RunnerException {
         for (int i = 0; i < requests.size(); i++) {
             try {
-                containerV3FacadeService.createUpdateContainer(List.of(requests.get(i)), CONSOLIDATION);
+                containerV3FacadeService.createUpdateContainer(List.of(requests.get(i)), module);
             } catch (Exception e) {
                 throw new RunnerException(String.format("Error processing row %d: %s", i + 1, e.getMessage()), e);
             }
@@ -599,5 +698,8 @@ public class ContainerV3Util {
         DependentServiceResponse mdmResponse = mdmServiceAdapter.getContainerTypes();
         List<MdmContainerTypeResponse> containerTypes = jsonHelper.convertValueToList(mdmResponse.getData(), MdmContainerTypeResponse.class);
         return containerTypes.stream().collect(Collectors.toMap(MdmContainerTypeResponse::getCode, MdmContainerTypeResponse::getTeu));
+    }
+    public void createOrUpdateContainers(List<ContainerV3Request> requests) throws RunnerException {
+        createOrUpdateContainers(requests, CONSOLIDATION);
     }
 }
