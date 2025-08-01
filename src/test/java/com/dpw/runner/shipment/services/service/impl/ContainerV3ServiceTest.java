@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
+import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingV3Request;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
@@ -43,6 +44,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -50,6 +52,7 @@ import com.dpw.runner.shipment.services.utils.v3.ConsolidationValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,10 +61,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -158,6 +158,9 @@ class ContainerV3ServiceTest extends CommonMocks {
 
     @Mock
     private IShipmentsContainersMappingDao iShipmentsContainersMappingDao;
+
+    @Mock
+    private CSVParsingUtil<Containers> parser;
 
 
 
@@ -1302,6 +1305,108 @@ class ContainerV3ServiceTest extends CommonMocks {
         projections.add(shipmentDetailsProjection);
         when(shipmentService.findShipmentDetailsByAttachedContainerIds(any())).thenReturn(projections);
         assertNotNull(containerV3Service.fetchConsolidationContainersForPackageAssignment(request));
+    }
+
+    @Test
+    void collectAllShipmentNumber_success() {
+        Containers container1 = new Containers();
+        container1.setId(101L);
+        container1.setGuid(UUID.fromString("11786111-11111"));
+        Containers container2 = new Containers();
+        container2.setId(102L);
+        container2.setGuid(UUID.fromString("2222-7876-22"));
+        List<Containers> containersList = List.of(container1, container2);
+        List<ShipmentsContainersMapping> mappings = getShipmentsContainersMappings();
+        when(shipmentsContainersMappingDao.findByContainerIdIn(List.of(101L, 102L))).thenReturn(mappings);
+        ShipmentDetails shipment201 = new ShipmentDetails();
+        shipment201.setId(201L);
+        shipment201.setShipmentId("SHP201");
+        ShipmentDetails shipment202 = new ShipmentDetails();
+        shipment202.setId(202L);
+        shipment202.setShipmentId("SHP202");
+        ShipmentDetails shipment203 = new ShipmentDetails();
+        shipment203.setId(203L);
+        shipment203.setShipmentId("SHP203");
+        List<ShipmentDetails> shipmentDetailsList = List.of(shipment201, shipment202, shipment203);
+        when(shipmentDao.findShipmentsByIds(Set.of(201L, 202L, 203L))).thenReturn(shipmentDetailsList);
+        Map<String, Set<String>> result = containerV3Util.collectAllShipmentNumber(containersList);
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        Set<String> shipmentsForContainer1 = result.get("11786111-11111");
+        assertNotNull(shipmentsForContainer1);
+        assertEquals(2, shipmentsForContainer1.size());
+        assertTrue(shipmentsForContainer1.contains("SHP201"));
+        assertTrue(shipmentsForContainer1.contains("SHP202"));
+        Set<String> shipmentsForContainer2 = result.get("2222-7876-22");
+        assertNotNull(shipmentsForContainer2);
+        assertEquals(1, shipmentsForContainer2.size());
+        assertTrue(shipmentsForContainer2.contains("SHP203"));
+    }
+
+    @NotNull
+    private static List<ShipmentsContainersMapping> getShipmentsContainersMappings() {
+        ShipmentsContainersMapping mapping1 = new ShipmentsContainersMapping();
+        mapping1.setContainerId(101L);
+        mapping1.setShipmentId(201L);
+        ShipmentsContainersMapping mapping2 = new ShipmentsContainersMapping();
+        mapping2.setContainerId(101L);
+        mapping2.setShipmentId(202L);
+        ShipmentsContainersMapping mapping3 = new ShipmentsContainersMapping();
+        mapping3.setContainerId(102L);
+        mapping3.setShipmentId(203L);
+        return List.of(mapping1, mapping2, mapping3);
+    }
+
+    @Test
+    void coverCollectorsToMapInCollectAllShipmentNumber() {
+        Containers container = new Containers();
+        container.setId(1L);
+        container.setGuid(UUID.fromString("123e4567-e89b-12d3-a456-426614174000"));
+        List<Containers> containers = List.of(container);
+        ShipmentsContainersMapping map1 = new ShipmentsContainersMapping();
+        map1.setContainerId(1L);
+        map1.setShipmentId(101L);
+        ShipmentsContainersMapping map2 = new ShipmentsContainersMapping();
+        map2.setContainerId(1L);
+        map2.setShipmentId(102L);
+        List<ShipmentsContainersMapping> mappingList = List.of(map1, map2);
+        when(shipmentsContainersMappingDao.findByContainerIdIn(List.of(1L))).thenReturn(mappingList);
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(101L);
+        shipment1.setShipmentId("SHIP101");
+        List<ShipmentDetails> shipments = List.of(shipment1);
+        when(shipmentDao.findShipmentsByIds(Set.of(101L, 102L))).thenReturn(shipments);
+        Map<String, Set<String>> result = containerV3Util.collectAllShipmentNumber(containers);
+        assertNotNull(result);
+        assertTrue(result.containsKey("123e4567-e89b-12d3-a456-426614174000"));
+        Set<String> shipmentCodes = result.get("123e4567-e89b-12d3-a456-426614174000");
+        assertEquals(1, shipmentCodes.size());
+        assertTrue(shipmentCodes.contains("SHIP101"));
+    }
+
+    @Test
+    void getContainersExcelModels_shouldMapShipmentNumbersToExcelModels() {
+        Containers container = new Containers();
+        UUID guid = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+        container.setGuid(guid);
+        container.setId(1L);
+        List<Containers> inputList = List.of(container);
+        Map<String, Set<String>> containerToShipmentMap = Map.of(
+                guid.toString(), Set.of("SHIP001", "SHIP002")
+        );
+        ContainerV3Util spyUtil = Mockito.spy(containerV3Util);
+        doReturn(containerToShipmentMap).when(spyUtil).collectAllShipmentNumber(inputList);
+        ContainersExcelModel excelModel = new ContainersExcelModel();
+        excelModel.setGuid(guid.toString());
+        List<ContainersExcelModel> excelModels = new ArrayList<>();
+        excelModels.add(excelModel);
+        when(commonUtils.convertToList(inputList, ContainersExcelModel.class)).thenReturn(excelModels);
+        List<ContainersExcelModel> result = spyUtil.getContainersExcelModels(inputList);
+        assertEquals(1, result.size());
+        ContainersExcelModel model = result.get(0);
+        assertEquals(guid.toString(), model.getGuid());
+        assertEquals("SHIP001, SHIP002", model.getShipmentNumbers());
+        verify(commonUtils).convertToList(inputList, ContainersExcelModel.class);
     }
 
     // Helper methods for test data creation

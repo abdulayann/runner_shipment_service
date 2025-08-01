@@ -35,6 +35,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
@@ -205,6 +206,11 @@ public class ContainerV3Util {
                 result = result.stream().filter(containersList::contains).toList();
             }
         }
+        return getContainersExcelModels(result);
+    }
+
+    @NotNull
+    public List<ContainersExcelModel> getContainersExcelModels(List<Containers> result) {
         Map<String, Set<String>> containerToShipmentMap = collectAllShipmentNumber(result);
         List<ContainersExcelModel> containersExcelModels = commonUtils.convertToList(result, ContainersExcelModel.class);
         containersExcelModels.forEach(p -> {
@@ -215,39 +221,14 @@ public class ContainerV3Util {
         return containersExcelModels;
     }
 
-
-    private Map<String, Set<String>> collectAllShipmentNumber(List<Containers> result) {
+    public Map<String, Set<String>> collectAllShipmentNumber(List<Containers> result) {
         List<ShipmentsContainersMapping> list = shipmentsContainersMappingDao.findByContainerIdIn(result.stream().map(Containers::getId).toList());
-        Map<Long, Set<Long>> containerToShipmentsMap = list.stream()
-                .collect(Collectors.groupingBy(
-                        ShipmentsContainersMapping::getContainerId,
-                        Collectors.mapping(ShipmentsContainersMapping::getShipmentId, Collectors.toSet())
-                ));
-
+        Map<Long, Set<Long>> containerToShipmentsMap = list.stream().collect(Collectors.groupingBy(ShipmentsContainersMapping::getContainerId, Collectors.mapping(ShipmentsContainersMapping::getShipmentId, Collectors.toSet())));
         List<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentsByIds(list.stream().map(ShipmentsContainersMapping::getShipmentId).collect(Collectors.toSet()));
-        Map<Long, String> idToShipmentIdMap = shipmentDetails.stream()
-                .collect(Collectors.toMap(
-                        ShipmentDetails::getId,         // Key: id
-                        ShipmentDetails::getShipmentId  // Value: shipmentId
-                ));
-
-        Map<Long, Set<String>> containerToShipmentCodesMap = containerToShipmentsMap.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey, // containerId
-                        entry -> entry.getValue().stream() // Set<Long> shipmentIds
-                                .map(idToShipmentIdMap::get)   // map each Long ID to String shipment code
-                                .filter(Objects::nonNull)      // ignore nulls just in case
-                                .collect(Collectors.toSet())
-                ));
+        Map<Long, String> idToShipmentIdMap = shipmentDetails.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+        Map<Long, Set<String>> containerToShipmentCodesMap = containerToShipmentsMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().map(idToShipmentIdMap::get).collect(Collectors.toSet())));
         Map<Long, String> idToGuid = result.stream().collect(Collectors.toMap(p -> p.getId(), p -> p.getGuid().toString()));
-
-        Map<String, Set<String>> guidToShipmentCodesMap = containerToShipmentCodesMap.entrySet().stream()
-                .filter(entry -> idToGuid.containsKey(entry.getKey())) // Ensure GUID exists for the container ID
-                .collect(Collectors.toMap(
-                        entry -> idToGuid.get(entry.getKey()), // Convert container ID to GUID
-                        Map.Entry::getValue                    // Keep the shipment codes set
-                ));
-        return guidToShipmentCodesMap;
+        return containerToShipmentCodesMap.entrySet().stream().filter(entry -> idToGuid.containsKey(entry.getKey())).collect(Collectors.toMap(entry -> idToGuid.get(entry.getKey()), Map.Entry::getValue));
     }
 
     private void writeExcelToResponse(HttpServletResponse response, List<ContainersExcelModel> model, BulkDownloadRequest request) throws IOException, IllegalAccessException {
@@ -529,7 +510,6 @@ public class ContainerV3Util {
         return isStringNullOrEmpty(container.getContainerNumber()) ? container.getContainerCode() : container.getContainerNumber();
     }
 
-
     @Transactional(rollbackFor = Exception.class)
     public void uploadContainers(BulkUploadRequest request, String module) throws IOException, RunnerException {
         List<Containers> consolContainers = this.getContainerByModule(request, module);
@@ -545,6 +525,10 @@ public class ContainerV3Util {
         setIdAndTeuInContainers(request, containersList, guidToIdMap, codeTeuMap);
         validateHsCode(containersList);
         List<ContainerV3Request> requests = ContainersMapper.INSTANCE.toContainerV3RequestList(containersList);
+        setShipmentOrConsoleId(request, module, requests);
+        createOrUpdateContainers(requests, module);
+    }
+    public static void setShipmentOrConsoleId(BulkUploadRequest request, String module, List<ContainerV3Request> requests) {
         requests.forEach(p -> {
             if (module.equalsIgnoreCase(SHIPMENT)) {
                 p.setShipmentsId(request.getShipmentId());
@@ -553,11 +537,8 @@ public class ContainerV3Util {
                 p.setConsolidationId(request.getConsolidationId());
             }
         });
-        createOrUpdateContainers(requests, module);
     }
-
-
-    private void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList) {
+    public void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList) {
         boolean isValidationRequired = module.equalsIgnoreCase(CONSOLIDATION);
         if (module.equalsIgnoreCase(SHIPMENT)) {
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).orElseThrow(() -> new ValidationException("Shipment Id not exists"));
@@ -570,21 +551,23 @@ public class ContainerV3Util {
                 if (from.containsKey(containerId)) {
                     Map<String, Object> containersTo = to.get(containerId);
                     Map<String, Object> containersFrom = from.get(containerId);
-                    for (String key : containersTo.keySet()) {
-                        if (containersTo.get(key) instanceof BigDecimal) {
-                            if (((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
-                                throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
-                            }
-                        } else if (!Objects.equals(containersTo.get(key), containersFrom.get(key))) {
-                            throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
-                        }
-                    }
+                    validateBeforeAndAfterValues(containerId, containersTo, containersFrom);
                 }
             }
         }
     }
-
-    private Map<UUID, Map<String, Object>> validationContainerUploadInShipment(List<Containers> consolContainers) {
+    public static void validateBeforeAndAfterValues(UUID containerId, Map<String, Object> containersTo, Map<String, Object> containersFrom) {
+        for (String key : containersTo.keySet()) {
+            if (containersTo.get(key) instanceof BigDecimal) {
+                if (((BigDecimal) containersTo.get(key)).compareTo((BigDecimal) containersFrom.get(key)) > 0) {
+                    throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+                }
+            } else if (!Objects.equals(containersTo.get(key), containersFrom.get(key))) {
+                throw new ValidationException(String.format("%s, Cannot be Changes as Package, Weight and Volume Details Update not allowed in Upload. for container GUID: %s", key, containerId));
+            }
+        }
+    }
+    public Map<UUID, Map<String, Object>> validationContainerUploadInShipment(List<Containers> consolContainers) {
         Map<UUID, Map<String, Object>> map = new HashMap<>();
         for (Containers containers : consolContainers) {
             map.putIfAbsent(containers.getGuid(), new HashMap<>());
@@ -597,8 +580,7 @@ public class ContainerV3Util {
         }
         return map;
     }
-
-    private List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
+    public List<Containers> getContainerByModule(BulkUploadRequest request, String module) {
         if (request == null) {
             throw new ValidationException("Please add the container and then try again.");
         }
@@ -616,13 +598,12 @@ public class ContainerV3Util {
         }
         throw new ValidationException(String.format("Module: %s; not found", module));
     }
-
     @Transactional(rollbackFor = Exception.class)
     public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
         uploadContainers(request, CONSOLIDATION);
     }
 
-    private static void setIdAndTeuInContainers(BulkUploadRequest request, List<Containers> containersList, Map<UUID, Long> guidToIdMap, Map<String, BigDecimal> codeTeuMap) {
+    public static void setIdAndTeuInContainers(BulkUploadRequest request, List<Containers> containersList, Map<UUID, Long> guidToIdMap, Map<String, BigDecimal> codeTeuMap) {
         containersList.forEach(container -> {
             if (container.getGuid() != null && guidToIdMap.containsKey(container.getGuid())) {
                 container.setId(guidToIdMap.get(container.getGuid()));

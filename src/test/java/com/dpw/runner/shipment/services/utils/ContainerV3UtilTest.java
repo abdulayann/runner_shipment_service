@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dao.impl.PackingDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
@@ -118,6 +119,9 @@ class ContainerV3UtilTest extends CommonMocks {
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
 
+    @Mock
+    private PackingDao packingDao;
+
     @InjectMocks
     @Spy
     private ContainerV3Util containerV3Util;
@@ -163,6 +167,8 @@ class ContainerV3UtilTest extends CommonMocks {
         request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         request.setConsolidationId("3");
         request.setShipmentId("6");
+        UUID validGuid = UUID.randomUUID();
+        testContainer.setGuid(validGuid);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
@@ -178,16 +184,17 @@ class ContainerV3UtilTest extends CommonMocks {
         request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         request.setConsolidationId("3");
         request.setShipmentId("6");
-
+        UUID validGuid = UUID.randomUUID();
+        testContainer.setGuid(validGuid);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class)))
                 .thenReturn(List.of(new ContainersExcelModel()));
-
         assertDoesNotThrow(() -> containerV3Util.downloadContainers(response, request));
         assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", response.getContentType());
     }
+
 
     @Test
     void downloadContainers_shipmentNotFound_shouldReturnJsonError() throws Exception {
@@ -249,18 +256,18 @@ class ContainerV3UtilTest extends CommonMocks {
         MockHttpServletResponse response = new MockHttpServletResponse();
         BulkDownloadRequest request = new BulkDownloadRequest();
         request.setShipmentId("6");
-
+        UUID guid = UUID.randomUUID();
+        testContainer.setGuid(guid);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(shipmentsContainersMappingDao.findByShipmentId(any()))
                 .thenReturn(List.of(new ShipmentsContainersMapping(1L, 2L)));
-        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(containerDao.findAll(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(testContainer)));
         when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class)))
                 .thenThrow(new RuntimeException("Mapping failed"));
         when(mockObjectMapper.writeValueAsString(any()))
                 .thenReturn("{\"success\":false,\"message\":\"Failed to generate Excel file. Please try again.\"}");
-
         containerV3Util.downloadContainers(response, request);
-
         assertEquals(500, response.getStatus());
         assertTrue(response.getContentType().startsWith("application/json"));
         assertTrue(response.getContentAsString().contains("Failed to generate Excel"));
@@ -778,6 +785,182 @@ class ContainerV3UtilTest extends CommonMocks {
         Set<String> result = containerV3Util.getValidHsCodes(emptyHsCodes);
         assertNotNull(result);
         assertTrue(result.isEmpty(), "Expected result to be empty for empty input set");
+    }
+
+    @Test
+    void validationContainerUploadInShipment_shouldReturnCorrectMap() {
+        UUID guid1 = UUID.randomUUID();
+        Containers container1 = new Containers();
+        container1.setGuid(guid1);
+        container1.setGrossVolume(new BigDecimal("10.5"));
+        container1.setGrossVolumeUnit("CBM");
+        container1.setGrossWeight(new BigDecimal("100.2"));
+        container1.setGrossWeightUnit("KG");
+        container1.setPacks("5");
+        container1.setPacksType("BOX");
+        List<Containers> containersList = List.of(container1);
+        Map<UUID, Map<String, Object>> result = containerV3Util.validationContainerUploadInShipment(containersList);
+        assertNotNull(result);
+        assertTrue(result.containsKey(guid1));
+        Map<String, Object> details = result.get(guid1);
+        assertEquals(new BigDecimal("10.5"), details.get("grossVolume"));
+        assertEquals("CBM", details.get("grossVolumeUnit"));
+        assertEquals(new BigDecimal("100.2"), details.get("grossWeight"));
+        assertEquals("KG", details.get("grossWeightUnit"));
+        assertEquals("5", details.get("packs"));
+        assertEquals("BOX", details.get("packsType"));
+    }
+
+    @Test
+    void getContainerByModule_shouldReturnContainersOrThrowValidationException() {
+        BulkUploadRequest requestWithConsolidation = new BulkUploadRequest();
+        requestWithConsolidation.setConsolidationId(123L);
+        BulkUploadRequest requestWithShipment = new BulkUploadRequest();
+        requestWithShipment.setShipmentId(456L);
+        List<Containers> consolidationContainers = List.of(new Containers());
+        List<Containers> shipmentContainers = List.of(new Containers());
+        when(containerDao.findByConsolidationId(123L)).thenReturn(consolidationContainers);
+        when(containerDao.findByShipmentId(456L)).thenReturn(shipmentContainers);
+        ValidationException ex1 = assertThrows(ValidationException.class, () -> containerV3Util.getContainerByModule(null, "CONSOLIDATION"));
+        assertEquals("Please add the container and then try again.", ex1.getMessage());
+        BulkUploadRequest req2 = new BulkUploadRequest();
+        ValidationException ex2 = assertThrows(ValidationException.class, () -> containerV3Util.getContainerByModule(req2, "CONSOLIDATION"));
+        assertEquals("Please add the consolidation and then try again.", ex2.getMessage());
+        List<Containers> resultConsol = containerV3Util.getContainerByModule(requestWithConsolidation, "CONSOLIDATION");
+        assertSame(consolidationContainers, resultConsol);
+        BulkUploadRequest req4 = new BulkUploadRequest();
+        ValidationException ex4 = assertThrows(ValidationException.class, () -> containerV3Util.getContainerByModule(req4, "SHIPMENT"));
+        assertEquals("Please add the shipment Id and then try again.", ex4.getMessage());
+        List<Containers> resultShip = containerV3Util.getContainerByModule(requestWithShipment, "SHIPMENT");
+        assertSame(shipmentContainers, resultShip);
+        ValidationException ex6 = assertThrows(ValidationException.class, () -> containerV3Util.getContainerByModule(requestWithShipment, "UNKNOWN_MODULE"));
+        assertEquals("Module: UNKNOWN_MODULE; not found", ex6.getMessage());
+    }
+
+    @Test
+    void validateBeforeAndAfterValues_shouldNotThrow_whenValuesAreEqual() {
+        UUID containerId = UUID.randomUUID();
+        Map<String, Object> from = new HashMap<>();
+        from.put("grossWeight", new BigDecimal("10.0"));
+        from.put("packs", "ABC");
+        Map<String, Object> to = new HashMap<>();
+        to.put("grossWeight", new BigDecimal("10.0"));
+        to.put("packs", "ABC");
+        assertDoesNotThrow(() -> ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from));
+    }
+
+    @Test
+    void validateBeforeAndAfterValues_shouldThrow_whenBigDecimalIncreased() {
+        UUID containerId = UUID.randomUUID();
+        Map<String, Object> from = Map.of("grossWeight", new BigDecimal("10.0"));
+        Map<String, Object> to = Map.of("grossWeight", new BigDecimal("20.0"));
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from)
+        );
+        assertTrue(ex.getMessage().contains("grossWeight"));
+    }
+
+    @Test
+    void validateBeforeAndAfterValues_shouldThrow_whenNonBigDecimalDiffers() {
+        UUID containerId = UUID.randomUUID();
+        Map<String, Object> from = Map.of("packs", "ABC");
+        Map<String, Object> to = Map.of("packs", "XYZ");
+        ValidationException ex = assertThrows(ValidationException.class, () ->
+                ContainerV3Util.validateBeforeAndAfterValues(containerId, to, from)
+        );
+        assertTrue(ex.getMessage().contains("packs"));
+    }
+
+    @Test
+    void validateIfPacksOrVolume_shouldCallValidationForConsolidation() {
+        BulkUploadRequest request = new BulkUploadRequest();
+        UUID guid = UUID.randomUUID();
+        Containers container = new Containers();
+        container.setId(1L);
+        Map<UUID, Map<String, Object>> from = Map.of(guid, Map.of("packs", "A"));
+        Map<UUID, Map<String, Object>> to = Map.of(guid, Map.of("packs", "A"));
+        List<Containers> containersList = List.of(container);
+        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(from, to, request, "CONSOLIDATION", containersList));
+    }
+
+    @Test
+    void validateIfPacksOrVolume_shouldThrowWhenShipmentNotFound() {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setShipmentId(1L);
+        when(shipmentDao.findById(1L)).thenReturn(Optional.empty());
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> callValidateIfPacksOrVolume(request)
+        );
+        assertEquals("Shipment Id not exists", ex.getMessage());
+    }
+    private void callValidateIfPacksOrVolume(BulkUploadRequest request) {
+        containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of());
+    }
+
+    @Test
+    void validateIfPacksOrVolume_shouldSkipValidation_whenPackingDaoEmpty() {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setShipmentId(1L);
+        ShipmentDetails details = new ShipmentDetails();
+        details.setShipmentType("FCL");
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
+        when(packingDao.findByContainerIdIn(anyList())).thenReturn(Collections.emptyList());
+        assertDoesNotThrow(() -> containerV3Util.validateIfPacksOrVolume(Map.of(), Map.of(), request, "SHIPMENT", List.of(new Containers())));
+    }
+
+    @Test
+    void validateIfPacksOrVolume_shouldThrowWhenChangedValueDetectedInShipment() {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setShipmentId(1L);
+        UUID containerId = UUID.randomUUID();
+        ShipmentDetails details = new ShipmentDetails();
+        details.setShipmentType("FCL");
+        when(shipmentDao.findById(1L)).thenReturn(Optional.of(details));
+        when(packingDao.findByContainerIdIn(anyList())).thenReturn(List.of(new Packing()));
+        Map<UUID, Map<String, Object>> from = Map.of(containerId, Map.of("packs", "ABC"));
+        Map<UUID, Map<String, Object>> to = Map.of(containerId, Map.of("packs", "XYZ"));
+        List<Containers> containersList = List.of(new Containers() {{
+            setId(100L);
+        }});
+        ValidationException ex = assertThrows(
+                ValidationException.class,
+                () -> callValidateIfPacksOrVolume(from, to, request, containersList)
+        );
+        assertTrue(ex.getMessage().contains("packs"));
+    }
+
+    private void callValidateIfPacksOrVolume(
+            Map<UUID, Map<String, Object>> from,
+            Map<UUID, Map<String, Object>> to,
+            BulkUploadRequest request,
+            List<Containers> containersList
+    ) {
+        containerV3Util.validateIfPacksOrVolume(from, to, request, "SHIPMENT", containersList);
+    }
+
+    @Test
+    void setShipmentOrConsoleId_shouldSetIdsBasedOnModule() {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setShipmentId(101L);
+        request.setConsolidationId(202L);
+        ContainerV3Request req1 = new ContainerV3Request();
+        ContainerV3Request req2 = new ContainerV3Request();
+        List<ContainerV3Request> requests = Arrays.asList(req1, req2);
+        ContainerV3Util.setShipmentOrConsoleId(request, "SHIPMENT", requests);
+        for (ContainerV3Request r : requests) {
+            assertEquals(101L, r.getShipmentsId());
+            assertNull(r.getConsolidationId());
+        }
+        requests.forEach(r -> {
+            r.setShipmentsId(null);
+            r.setConsolidationId(null);
+        });
+        ContainerV3Util.setShipmentOrConsoleId(request, "CONSOLIDATION", requests);
+        for (ContainerV3Request r : requests) {
+            assertEquals(202L, r.getConsolidationId());
+            assertNull(r.getShipmentsId());
+        }
     }
 
     private Containers createTestContainer() {

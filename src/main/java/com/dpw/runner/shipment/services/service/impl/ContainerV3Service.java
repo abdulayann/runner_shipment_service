@@ -306,7 +306,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 .filter(m -> savedContainer.getId() != null)
                 .filter(m -> containerRequest.getShipmentsId() != null)
                 .ifPresent(m -> shipmentsContainersMappingDao.assignShipments(
-                        containerRequest.getId(),
+                        savedContainer.getId(),
                         Set.of(containerRequest.getShipmentsId()),
                         false
                 ));

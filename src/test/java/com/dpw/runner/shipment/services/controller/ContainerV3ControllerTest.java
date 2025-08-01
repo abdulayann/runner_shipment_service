@@ -191,7 +191,7 @@ class ContainerV3ControllerTest {
 
 
   @Test
-  void downloadCSV() throws RunnerException {
+  void downloadCSV() {
     boolean isSuccess = true;
     containerV3Controller.downloadCSV(new MockHttpServletResponse(), new BulkDownloadRequest());
     assertTrue(isSuccess);
@@ -199,7 +199,7 @@ class ContainerV3ControllerTest {
 
   @Test
   void uploadCSV() throws IOException {
-    var responseEntity = containerV3Controller.uploadCSV(BulkUploadRequest.builder().build());
+    var responseEntity = containerV3Controller.uploadCSV(BulkUploadRequest.builder().build(), "SHIPMENT");
     assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
   }
 
@@ -209,7 +209,7 @@ class ContainerV3ControllerTest {
     BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
     doThrow(new RuntimeException("RuntimeException"))
             .when(containerV3Util).uploadContainers(any());
-    ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request);
+    ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request, "SHIPMENT");
     assertEquals(HttpStatus.EXPECTATION_FAILED, response.getStatusCode());
   }
 
@@ -217,8 +217,8 @@ class ContainerV3ControllerTest {
   void uploadCSV2() throws IOException, RunnerException {
     MultipartFile file = new BASE64DecodedMultipartFile(StringUtility.getRandomString(11).getBytes());
     BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
-    doNothing().when(containerV3Util).uploadContainers(any());
-    var responseEntity = containerV3Controller.uploadCSV(request);
+    doNothing().when(containerV3Util).uploadContainers(any(), anyString());
+    var responseEntity = containerV3Controller.uploadCSV(request, "SHIPMENT");
     assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
   }
 
