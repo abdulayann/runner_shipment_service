@@ -88,15 +88,35 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     private IPickupDeliveryDetailsRepository pickupDeliveryDetailsRepository;
 
     private static final List<ShipmentStatus> deprecatedShipmentStatusesForV3 = List.of(ShipmentStatus.Booked, ShipmentStatus.Completed, ShipmentStatus.Confirmed, ShipmentStatus.InTransit, ShipmentStatus.Arrived);
+    public static final Map<String, String> airMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
+            Map.entry("F2P", "F2A"), Map.entry("P2P", "A2A"), Map.entry("A2A", "A2A"), Map.entry("F2A", "F2A"),
+            Map.entry("A2F", "A2F"), Map.entry("C2C", "C2C"), Map.entry("C2F", "C2F"), Map.entry("F2C", "F2C"),
+            Map.entry("P2C", "P2C"), Map.entry("P2F", "A2F"));
+
+    public static final Map<String, String> seaMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
+            Map.entry("F2P", "F2P"), Map.entry("P2P", "P2P"), Map.entry("A2A", "P2P"), Map.entry("F2A", "F2P"),
+            Map.entry("A2F", "P2F"), Map.entry("C2C", "C2C"), Map.entry("C2F", "C2F"), Map.entry("F2C", "F2C"),
+            Map.entry("P2C", "P2C"), Map.entry("P2F", "P2F"));
+
+    public static final Map<String, String> railMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
+            Map.entry("F2P", "F2P"), Map.entry("P2P", "P2P"), Map.entry("A2A", "P2P"), Map.entry("F2A", "F2P"),
+            Map.entry("A2F", "P2F"), Map.entry("C2C", "C2C"), Map.entry("C2F", "C2F"), Map.entry("F2C", "F2C"),
+            Map.entry("P2C", "P2C"), Map.entry("P2F", "P2F"));
+
+    public static final Map<String, String> roadMap = Map.ofEntries(Map.entry("C2P", "C2P"), Map.entry("F2F", "F2F"),
+            Map.entry("F2P", "F2P"), Map.entry("P2P", "P2P"), Map.entry("A2A", "P2P"), Map.entry("F2A", "F2P"),
+            Map.entry("A2F", "P2F"), Map.entry("C2C", "C2C"), Map.entry("C2F", "C2F"), Map.entry("F2C", "F2C"),
+            Map.entry("P2C", "P2C"), Map.entry("P2F", "P2F"));
+
 
     @Override
-    public ShipmentDetails migrateShipmentV2ToV3(ShipmentDetails shipmentDetails) throws RunnerException {
-        log.info("Starting V2 to V3 migration for Shipment [id={}]", shipmentDetails.getId());
+    public ShipmentDetails migrateShipmentV2ToV3(Long shipId) throws RunnerException {
+        log.info("Starting V2 to V3 migration for Shipment [id={}]", shipId);
         // Handle migration of all the shipments where there is no console attached.
-        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipId);
 
         if (shipmentDetails1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
+            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipId);
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         notesUtil.addNotesForShipment(shipment);
@@ -139,6 +159,8 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         shipmentDetails.setCargoReadinessDate(shipmentDetails.getCargoReadyDate());
         shipmentDetails.setTriggerMigrationWarning(true);
         shipmentDetails.setIsLocked(false);
+        migrateServiceTypes(shipmentDetails);
+
         if(shipmentDetails.getAdditionalDetails() != null)
             shipmentDetails.setBrokerageAtDestinationDate(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
 
@@ -146,6 +168,22 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
         if(shipmentDetails.getStatus() != null && deprecatedShipmentStatusesForV3.contains(ShipmentStatus.fromValue(shipmentDetails.getStatus()))) {
             shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
         }
+    }
+
+    private void migrateServiceTypes(ShipmentDetails shipmentDetails){
+        if (Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode())) {
+            shipmentDetails.setServiceType(airMap.containsKey(shipmentDetails.getServiceType())? airMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
+        }
+        if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
+            shipmentDetails.setServiceType(seaMap.containsKey(shipmentDetails.getServiceType())? seaMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
+        }
+        if (Constants.TRANSPORT_MODE_RAI.equals(shipmentDetails.getTransportMode())) {
+            shipmentDetails.setServiceType(railMap.containsKey(shipmentDetails.getServiceType())? railMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
+        }
+        if (Constants.TRANSPORT_MODE_ROA.equals(shipmentDetails.getTransportMode())) {
+            shipmentDetails.setServiceType(roadMap.containsKey(shipmentDetails.getServiceType())? roadMap.get(shipmentDetails.getServiceType()) : shipmentDetails.getServiceType());
+        }
+
     }
 
     private void updateTransportInstruction(ShipmentDetails shipmentDetails) {
@@ -352,11 +390,11 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
     }
 
     @Override
-    public ShipmentDetails migrateShipmentV3ToV2(ShipmentDetails shipmentDetails) throws RunnerException {
-        log.info("Starting V3 to V2 migration for Shipment [id={}]", shipmentDetails.getId());
-        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipmentDetails.getId());
+    public ShipmentDetails migrateShipmentV3ToV2(Long shipId) throws RunnerException {
+        log.info("Starting V3 to V2 migration for Shipment [id={}]", shipId);
+        Optional<ShipmentDetails> shipmentDetails1 = shipmentDao.findById(shipId);
         if (shipmentDetails1.isEmpty()) {
-            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipmentDetails.getId());
+            throw new DataRetrievalFailureException("No Shipment found with given id: " + shipId);
         }
         ShipmentDetails shipment = jsonHelper.convertValue(shipmentDetails1.get(), ShipmentDetails.class);
         Map<String, EntityTransferContainerType> containerTypeMap = fetchContainerTypeDetails(shipment.getContainersList());
@@ -468,14 +506,14 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
 
     public Map<String, Integer> migrateShipmentsV3ToV2ForTenant(Integer tenantId) {
         Map<String, Integer> stats = new HashMap<>();
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
+        List<Long> shipmentIds = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V3.name(), MigrationStatus.MIGRATED_FROM_V2.name()), tenantId);
 
-        log.info("[ShipmentMigration] Tenant [{}]: Found [{}] shipment(s) to migrate.", tenantId, shipmentDetailsList.size());
-        stats.put("Total Shipment", shipmentDetailsList.size());
+        log.info("[ShipmentMigration] Tenant [{}]: Found [{}] shipment(s) to migrate.", tenantId, shipmentIds.size());
+        stats.put("Total Shipment", shipmentIds.size());
 
         List<Future<Long>> futures = new ArrayList<>();
 
-        for (ShipmentDetails ship : shipmentDetailsList) {
+        shipmentIds.forEach(id -> {
             futures.add(trxExecutor.runInAsync(() -> {
                 try {
                     v1Service.setAuthContext();
@@ -483,35 +521,35 @@ public class ShipmentMigrationV3Service implements IShipmentMigrationV3Service {
                     UserContext.getUser().setPermissions(new HashMap<>());
 
                     return trxExecutor.runInTrx(() -> {
-                        log.info("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Starting migration...", tenantId, ship.getId());
+                        log.info("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Starting migration...", tenantId, id);
                         ShipmentDetails migrated = null;
                         try {
-                            migrated = migrateShipmentV3ToV2(ship);
+                            migrated = migrateShipmentV3ToV2(id);
                         } catch (RunnerException e) {
                             throw new RuntimeException(e);
                         }
-                        log.info("[ShipmentMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, ship.getId(), migrated.getId());
+                        log.info("[ShipmentMigration] [Tenant: {}, OldId: {}, NewId: {}] Migration successful.", tenantId, id, migrated.getId());
                         return migrated.getId();
                     });
                 } catch (Exception e) {
-                    log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, ship.getId(), e.getMessage(), e);
+                    log.error("[ShipmentMigration] [Tenant: {}, ShipmentId: {}] Migration failed: {}", tenantId, id, e.getMessage(), e);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
                 }
             }));
-        }
+        });
 
         List<Long> migratedIds = MigrationUtil.collectAllProcessedIds(futures);
         stats.put("Total Shipment Migrated", migratedIds.size());
 
         log.info("[ShipmentMigration] Tenant [{}]: {}/{} shipments migrated successfully.",
-                tenantId, migratedIds.size(), shipmentDetailsList.size());
+                tenantId, migratedIds.size(), shipmentIds.size());
 
         return stats;
     }
 
-    private List<ShipmentDetails> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
+    private List<Long> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
         return shipmentDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 

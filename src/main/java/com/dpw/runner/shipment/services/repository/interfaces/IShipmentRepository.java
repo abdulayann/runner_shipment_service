@@ -162,11 +162,11 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
 
-    @Query(value = "SELECT sd.* FROM shipment_details sd "+
+    @Query(value = "SELECT sd.id FROM shipment_details sd "+
             "LEFT JOIN console_shipment_mapping csm " +
             "ON sd.id = csm.shipment_id " +
             "WHERE csm.shipment_id IS NULL and sd.migration_status IN (:statuses) and sd.tenant_id = :tenantId and sd.is_deleted = false", nativeQuery = true)
-    List<ShipmentDetails> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
+    List<Long> findAllByMigratedStatuses(@Param("statuses") List<String> migrationStatuses, @Param("tenantId") Integer tenantId);
 
     @Modifying
     @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)

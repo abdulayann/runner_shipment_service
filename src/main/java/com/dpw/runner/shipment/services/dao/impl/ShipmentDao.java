@@ -292,7 +292,7 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.findByShipmentId(shipmentNumber);
     }
     @Override
-    public List<ShipmentDetails> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
+    public List<Long> findAllByMigratedStatuses(List<String> migrationStatuses, Integer tenantId) {
         return shipmentRepository.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 

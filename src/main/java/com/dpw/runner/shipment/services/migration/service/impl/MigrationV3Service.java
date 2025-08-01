@@ -127,15 +127,15 @@ public class MigrationV3Service implements IMigrationV3Service {
         log.info("Consolidation migration complete: {}/{} migrated for tenant [{}]", migratedConsolIds.size(), consolIds.size(), tenantId);
 
         // Step 2: Fetch all V2 shipments for tenant
-        List<ShipmentDetails> shipmentDetailsList = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
+        List<Long> shipmentIds = fetchShipmentFromDB(List.of(MigrationStatus.CREATED_IN_V2.name(), MigrationStatus.MIGRATED_FROM_V3.name()), tenantId);
 //        Optional<ShipmentDetails> shipmentByIdWithQuery = shipmentDao.findShipmentByIdWithQuery(consolId);
 //        List<ShipmentDetails> shipmentDetailsList = List.of(shipmentByIdWithQuery.get());
-        map.put("Total Shipment", shipmentDetailsList.size());
-        log.info("Starting Shipment migration for tenant [{}]. Found {} shipment(s).", tenantId, shipmentDetailsList.size());
+        map.put("Total Shipment", shipmentIds.size());
+        log.info("Starting Shipment migration for tenant [{}]. Found {} shipment(s).", tenantId, shipmentIds.size());
 
         List<Future<Long>> shipmentFutures = new ArrayList<>();
-        log.info("fetched {} shipments for Migrations", shipmentDetailsList.size());
-        for (ShipmentDetails ship : shipmentDetailsList) {
+        log.info("fetched {} shipments for Migrations", shipmentIds.size());
+        shipmentIds.forEach(id -> {
             // execute async
             Future<Long> future = trxExecutor.runInAsync(() -> {
                 try {
@@ -145,27 +145,27 @@ public class MigrationV3Service implements IMigrationV3Service {
 
                     return trxExecutor.runInTrx(() -> {
                         try {
-                            log.info("Migrating Shipment [id={}]", ship.getId());
-                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(ship);
-                            log.info("Successfully migrated Shipment [oldId={}, newId={}]", ship.getId(), migrated.getId());
+                            log.info("Migrating Shipment [id={}]", id);
+                            ShipmentDetails migrated = shipmentMigrationV3Service.migrateShipmentV2ToV3(id);
+                            log.info("Successfully migrated Shipment [oldId={}, newId={}]", id, migrated.getId());
                             return migrated.getId();
                         } catch (Exception e) {
-                            log.error("Shipment migration failed [id={}]: {}", ship.getId(), e.getMessage(), e);
+                            log.error("Shipment migration failed [id={}]: {}", id, e.getMessage(), e);
                             throw new IllegalArgumentException(e);
                         }
                     });
                 } catch (Exception e) {
-                    log.error("Async failure during shipment setup [id={}]", ship.getId(), e);
+                    log.error("Async failure during shipment setup [id={}]", id, e);
                     throw new IllegalArgumentException(e);
                 } finally {
                     v1Service.clearAuthContext();
                 }
             });
             shipmentFutures.add(future);
-        }
+        });
         List<Long> migratedShipmentIds = collectAllProcessedIds(shipmentFutures);
         map.put("Total Shipment Migrated", migratedShipmentIds.size());
-        log.info("Shipment migration complete: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentDetailsList.size(), tenantId);
+        log.info("Shipment migration complete: {}/{} migrated for tenant [{}]", migratedShipmentIds.size(), shipmentIds.size(), tenantId);
 
         Map<String, Integer> nteStats = networkTransferMigrationService.migrateNetworkTransferV2ToV3ForTenant(tenantId);
         map.putAll(nteStats);
@@ -201,7 +201,7 @@ public class MigrationV3Service implements IMigrationV3Service {
         return consolidationDetailsDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 
-    private List<ShipmentDetails> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
+    private List<Long> fetchShipmentFromDB(List<String> migrationStatuses, Integer tenantId) {
         return shipmentDao.findAllByMigratedStatuses(migrationStatuses, tenantId);
     }
 }
