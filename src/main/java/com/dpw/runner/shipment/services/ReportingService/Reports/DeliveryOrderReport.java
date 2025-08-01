@@ -179,6 +179,7 @@ public class DeliveryOrderReport extends IReport{
 
         if(deliveryOrderModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(deliveryOrderModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+            populateShippedOnboardFields(deliveryOrderModel.shipmentDetails, dictionary);
         }
         dictionary.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));

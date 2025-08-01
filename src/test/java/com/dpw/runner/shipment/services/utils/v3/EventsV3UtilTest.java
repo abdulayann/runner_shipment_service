@@ -32,7 +32,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -317,124 +316,6 @@ class EventsV3UtilTest extends CommonMocks {
         assertEquals(0, events.size());
     }
 
-    @Test
-    void testProcessCADEEvent() throws Exception {
-        Method processCADEEventMethod = EventsV3Util.class.getDeclaredMethod(
-                "processCADEEvent",
-                ShipmentDetails.class,
-                ShipmentDetails.class,
-                List.class,
-                Boolean.class,
-                Map.class);
-        processCADEEventMethod.setAccessible(true);
-
-        List<Events> events = new ArrayList<>();
-        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
-
-        processCADEEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        assertEquals(1, events.size());
-        assertEquals(EventConstants.CADE, events.get(0).getEventCode());
-
-        events.clear();
-        List<Events> dbEvents = new ArrayList<>();
-        Events dbEvent = createEvent(EventConstants.CADE);
-        dbEvents.add(dbEvent);
-        cargoesRunnerDbEvents.put(EventConstants.CADE, dbEvents);
-
-        processCADEEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        verify(eventDao).updateUserFieldsInEvent(dbEvent, true);
-        assertEquals(0, events.size());
-    }
-
-    @Test
-    void testProcessCADEEventWithImpShipment() throws Exception {
-        Method processCADEEventMethod = EventsV3Util.class.getDeclaredMethod(
-                "processCADEEvent",
-                ShipmentDetails.class,
-                ShipmentDetails.class,
-                List.class,
-                Boolean.class,
-                Map.class);
-        processCADEEventMethod.setAccessible(true);
-
-        shipmentDetails.setDirection(Constants.DIRECTION_IMP);
-        shipmentDetails.setSourceGuid(UUID.randomUUID());
-        List<Events> events = new ArrayList<>();
-        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
-
-        processCADEEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-        events.clear();
-        List<Events> dbEvents = new ArrayList<>();
-        Events dbEvent = createEvent(EventConstants.CADE);
-        dbEvents.add(dbEvent);
-        cargoesRunnerDbEvents.put(EventConstants.CADE, dbEvents);
-
-        processCADEEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        assertEquals(0, events.size());
-    }
-
-    @Test
-    void testProcessCACOEvent() throws Exception {
-        Method processCACOEventMethod = EventsV3Util.class.getDeclaredMethod(
-                "processCACOEvent",
-                ShipmentDetails.class,
-                ShipmentDetails.class,
-                List.class,
-                Boolean.class,
-                Map.class);
-        processCACOEventMethod.setAccessible(true);
-
-        List<Events> events = new ArrayList<>();
-        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
-
-        processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        assertEquals(1, events.size());
-        assertEquals(EventConstants.CACO, events.get(0).getEventCode());
-
-        events.clear();
-        List<Events> dbEvents = new ArrayList<>();
-        Events dbEvent = createEvent(EventConstants.CACO);
-        dbEvents.add(dbEvent);
-        cargoesRunnerDbEvents.put(EventConstants.CACO, dbEvents);
-
-        processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        verify(eventDao).updateUserFieldsInEvent(dbEvent, true);
-        assertEquals(0, events.size());
-    }
-
-    @Test
-    void testProcessCACOEventWithImpShipment() throws Exception {
-        Method processCACOEventMethod = EventsV3Util.class.getDeclaredMethod(
-                "processCACOEvent",
-                ShipmentDetails.class,
-                ShipmentDetails.class,
-                List.class,
-                Boolean.class,
-                Map.class);
-        processCACOEventMethod.setAccessible(true);
-
-        List<Events> events = new ArrayList<>();
-        Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
-        shipmentDetails.setDirection(Constants.DIRECTION_IMP);
-        shipmentDetails.setSourceGuid(UUID.randomUUID());
-
-        processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        events.clear();
-        List<Events> dbEvents = new ArrayList<>();
-        Events dbEvent = createEvent(EventConstants.CACO);
-        dbEvents.add(dbEvent);
-        cargoesRunnerDbEvents.put(EventConstants.CACO, dbEvents);
-
-        processCACOEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
-
-        assertEquals(0, events.size());
-    }
 
     @Test
     void testProcessCUREEvent() throws Exception {
@@ -450,18 +331,37 @@ class EventsV3UtilTest extends CommonMocks {
         List<Events> events = new ArrayList<>();
         Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
 
-        AdditionalDetails additionalDetails1 = new AdditionalDetails();
-        additionalDetails1.setCustomReleaseDate(now);
         ShipmentDetails details = new ShipmentDetails();
         details.setDirection("IMP");
-        details.setAdditionalDetails(additionalDetails1);
+        details.setBrokerageAtDestinationDate(now);
 
         processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
 
         assertEquals(1, events.size());
         assertEquals(EventConstants.CURE, events.get(0).getEventCode());
-
         events.clear();
+
+        details.setBrokerageAtDestinationDate(null);
+        details.setEstimatedBrokerageAtDestinationDate(now);
+        processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
+
+        assertEquals(1, events.size());
+        assertEquals(EventConstants.CURE, events.get(0).getEventCode());
+        assertNotNull(events.get(0).getEstimated());
+        assertNull(events.get(0).getActual());
+        events.clear();
+
+        details.setBrokerageAtDestinationDate(now);
+        details.setEstimatedBrokerageAtDestinationDate(now);
+        processCUREEventMethod.invoke(eventsV3Util, details, oldEntity, events, true, cargoesRunnerDbEvents);
+
+        assertEquals(1, events.size());
+        assertEquals(EventConstants.CURE, events.get(0).getEventCode());
+        assertNotNull(events.get(0).getEstimated());
+        assertNotNull(events.get(0).getActual());
+        events.clear();
+
+
         List<Events> dbEvents = new ArrayList<>();
         Events dbEvent = createEvent(EventConstants.CURE);
         dbEvents.add(dbEvent);
@@ -722,7 +622,6 @@ class EventsV3UtilTest extends CommonMocks {
 
         List<Events> events = new ArrayList<>();
         Map<String, List<Events>> cargoesRunnerDbEvents = new HashMap<>();
-
         shipmentDetails.setDirection(Constants.DIRECTION_EXP);
         processECCCEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
 
@@ -730,6 +629,21 @@ class EventsV3UtilTest extends CommonMocks {
         assertEquals(EventConstants.ECCC, events.get(0).getEventCode());
 
         events.clear();
+
+        shipmentDetails.setBrokerageAtOriginDate(null);
+        shipmentDetails.setEstimatedBrokerageAtOriginDate(now);
+        oldEntity.setEstimatedBrokerageAtOriginDate(now.minusDays(2));
+        processECCCEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        assertEquals(1, events.size());
+        events.clear();
+
+        shipmentDetails.setBrokerageAtOriginDate(now);
+        processECCCEventMethod.invoke(eventsV3Util, shipmentDetails, oldEntity, events, true, cargoesRunnerDbEvents);
+        assertEquals(1, events.size());
+        assertNotNull(events.get(0).getActual());
+        assertNotNull(events.get(0).getEstimated());
+        events.clear();
+
         List<Events> dbEvents = new ArrayList<>();
         Events dbEvent = createEvent(EventConstants.ECCC);
         dbEvents.add(dbEvent);

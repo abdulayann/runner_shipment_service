@@ -317,6 +317,9 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "date_of_receipt")
     private LocalDateTime dateOfReceipt;
 
+    @Column(name = "shipped_onboard")
+    private LocalDateTime shippedOnboard;
+
     @Column(name = "goods_co_id")
     @MasterData(type = MasterDataType.COUNTRIES)
     private String goodsCO;
@@ -461,6 +464,9 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "cargo_delivered_date")
     private LocalDateTime cargoDeliveredDate;
+
+    @Column(name = "est_pickup_date")
+    private LocalDateTime estimatedPickupDate;
 
     @Column(name = "custom_release_date")
     private LocalDateTime customReleaseDate;

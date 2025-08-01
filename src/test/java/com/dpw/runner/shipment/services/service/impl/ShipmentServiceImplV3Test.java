@@ -598,6 +598,10 @@ class ShipmentServiceImplV3Test extends CommonMocks {
         customerBookingV3Request.setGrossWeight(BigDecimal.valueOf(13222211));
         customerBookingV3Request.setVolume(BigDecimal.valueOf(6565576));
         customerBookingV3Request.setAdditionalParties(List.of(PartiesRequest.builder().orgCode("asdf").addressCode("afgd").orgId("1234").addressId("1234").build()));
+        customerBookingV3Request.setEstimatedBrokerageAtDestinationDate(LocalDateTime.now());
+        customerBookingV3Request.setEstimatedDeliveryAtDestinationDate(LocalDateTime.now());
+        customerBookingV3Request.setEstimatedPickupAtOriginDate(LocalDateTime.now());
+        customerBookingV3Request.setEstimatedBrokerageAtOriginDate(LocalDateTime.now());
 
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();

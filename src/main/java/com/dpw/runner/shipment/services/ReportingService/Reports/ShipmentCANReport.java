@@ -137,6 +137,7 @@ public class ShipmentCANReport extends IReport {
         }
         processBillChargesTags(allBillCharges, shipmentCANModel, v1TenantSettingsResponse, chargeTypesWithoutTranslation, dictionary);
 
+        populateShippedOnboardFields(shipmentCANModel.shipmentDetails, dictionary);
         populateRaKcData(dictionary, shipmentCANModel.shipmentDetails);
         populateIGMInfo(shipmentCANModel.shipmentDetails, dictionary);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);

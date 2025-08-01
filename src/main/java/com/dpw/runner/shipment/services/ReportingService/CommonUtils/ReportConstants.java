@@ -225,6 +225,9 @@ public class ReportConstants {
     public static final String DATE_OF_ISSUE_MDY = "DateofIssueMDY";
     public static final String DATE_OF_ISSUE_DMY = "DateofIssueDMY";
     public static final String DATE_OF_ISSUE_DMMY = "DateofIssueDMMY";
+    public static final String SHIPPED_ONBOARD = "SHIPPED ON BOARD";
+    public static final String SHIPPED_ONBOARD_TEXT = "ShippedOnboardText";
+    public static final String SHIPPED_ONBOARD_DATE_DDMMMYYYY = "ShippedOnboardDateDDMMMYYYY";
     public static final String DATE_TIME = "DateTime";
     public static final String HSN_NUMBER = "HsnNumber";
     public static final String HS_CODE = "HSCode";

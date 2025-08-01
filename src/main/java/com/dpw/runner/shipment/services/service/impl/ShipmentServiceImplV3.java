@@ -1280,6 +1280,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         CompletableFuture<Void> populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, oldEntity);
 
         shipmentsV3Util.processVoyageAndFlightNumber(shipmentDetails);
+        shipmentValidationV3Util.validateShippedOnBoardDate(shipmentDetails);
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
@@ -2699,6 +2700,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                         notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry(), null)).
                         pickupDate(customerBookingRequest.getPickupAtOriginDate()).
                         cargoDeliveredDate(customerBookingRequest.getDeliveryAtDestinationDate()).
+                        estimatedPickupDate(customerBookingRequest.getEstimatedPickupAtOriginDate()).
                         build()
                 ).
                 shipmentType(customerBookingRequest.getCargoType()).
@@ -2756,6 +2758,9 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 latestFullEquipmentDeliveredToCarrier(customerBookingRequest.getLatestFullEquipmentDeliveredToCarrier()).
                 earliestDropOffFullEquipmentToCarrier(customerBookingRequest.getEarliestDropOffFullEquipmentToCarrier()).
                 latestArrivalTime(customerBookingRequest.getLatestArrivalTime()).
+                estimatedBrokerageAtDestinationDate(customerBookingRequest.getEstimatedBrokerageAtDestinationDate()).
+                estimatedBrokerageAtOriginDate(customerBookingRequest.getEstimatedBrokerageAtOriginDate()).
+                cargoDeliveryDate(customerBookingRequest.getEstimatedDeliveryAtDestinationDate()).
                 build();
     }
 

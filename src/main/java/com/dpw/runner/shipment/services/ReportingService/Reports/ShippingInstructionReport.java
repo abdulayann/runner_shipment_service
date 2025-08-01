@@ -70,6 +70,7 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(PPCC, model.getShipment().getPaymentTerms());
         dictionary.put(CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now()));
 
+        populateShippedOnboardFields(model.getShipment(), dictionary);
 
         dictionary.put(JOB_NUMBER, model.getShipment().getShipmentId());
         dictionary.put(TRANSPORT_MODE, model.getShipment().getTransportMode());

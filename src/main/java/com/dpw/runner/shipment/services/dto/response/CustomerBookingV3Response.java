@@ -125,6 +125,10 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private String brokerageAtDestinationType;
     private LocalDateTime pickupAtOriginDate;
     private LocalDateTime deliveryAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime estimatedPickupAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime estimatedDeliveryAtDestinationDate;
     private Long pickupAtOrigin;
     private Long deliveryAtDestination;
     private Long brokerageAtOrigin;
@@ -133,6 +137,10 @@ public class CustomerBookingV3Response implements IRunnerResponse {
     private LocalDateTime brokerageAtOriginDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime brokerageAtDestinationDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime estimatedBrokerageAtOriginDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime estimatedBrokerageAtDestinationDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime terminalCutoff;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
