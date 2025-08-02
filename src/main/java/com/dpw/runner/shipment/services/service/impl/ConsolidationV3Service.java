@@ -3601,11 +3601,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(request.getConsolidationId());
         if(consol.isPresent())
-            return detachShipmentsHelper(consol.get(), request.getShipmentIds(), request.getRemarks());
+            return detachShipmentsHelper(consol.get(), request.getShipmentIds(), request.getRemarks(), request.getIsFromEt());
         return ResponseHelper.buildSuccessResponseWithWarning("Consol is null");
     }
 
-    public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, Set<Long> shipmentIds, String remarks, Boolean isFromEt) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = fetchAndValidateShipments(shipmentIds);
         Long consolidationId = consol.getId();
         ConsolidationDetails consolidationDetails = fetchConsolidationDetails(consolidationId);
@@ -3628,7 +3628,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
-                validateDetachedShipment(shipmentDetail);
+                validateShipmentContainersAndPack(isFromEt, shipmentDetail);
 
                 if(shipmentDetail != null) {
                     packingList = getPackingList(shipmentDetail, packingList);
@@ -3667,6 +3667,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         processInterConsoleDetachShipment(consol, shipmentIdList);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    private void validateShipmentContainersAndPack(Boolean isFromEt, ShipmentDetails shipmentDetail) {
+        if(!Boolean.TRUE.equals(isFromEt))
+            validateDetachedShipment(shipmentDetail);
     }
 
     protected void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){

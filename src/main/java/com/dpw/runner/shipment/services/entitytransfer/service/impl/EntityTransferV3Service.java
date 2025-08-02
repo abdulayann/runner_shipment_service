@@ -777,7 +777,7 @@ public class EntityTransferV3Service implements IEntityTransferV3Service {
         if(!CommonUtils.listIsNullOrEmpty(oldConsolidationDetailsList)) {
             Set<Long> detachShipIds = oldConsolidationDetailsList.get(0).getShipmentsList().stream().map(BaseEntity::getId).collect(Collectors.toSet());
             if(!detachShipIds.isEmpty()) {
-                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(oldConsolidationDetailsList.get(0).getId()).shipmentIds(detachShipIds).build();
+                ShipmentConsoleAttachDetachV3Request request = ShipmentConsoleAttachDetachV3Request.builder().consolidationId(oldConsolidationDetailsList.get(0).getId()).isFromEt(true).shipmentIds(detachShipIds).build();
                 consolidationService.detachShipments(request);
             }
         }
