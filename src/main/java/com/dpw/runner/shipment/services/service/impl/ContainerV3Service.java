@@ -389,26 +389,26 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void processContainerDG(List<ContainerV3Request> containerRequestList, String module) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
+        boolean isHazardous = containerRequestList.stream().anyMatch(c -> Boolean.TRUE.equals(c.getHazardous()));
+        if(!isHazardous) return;
         if (SHIPMENT.equalsIgnoreCase(module)) {
             validateAndSaveDGShipment(containerRequestList);
         } else {
-            for (ContainerV3Request containerV3Request : containerRequestList) {
-                Long consolidationId = containerV3Request.getConsolidationId();
-                if (containerV3Request.getHazardous() != null && !containerV3Request.getHazardous()) continue;
+                Long consolidationId = containerRequestList.get(0).getConsolidationId();
                 ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
-                validateAndProcessDGConsolidation(containerV3Request, consolidationDetails);
-            }
+                validateAndProcessDGConsolidation(containerRequestList, consolidationDetails);
+
         }
     }
 
-    private void validateAndProcessDGConsolidation(ContainerV3Request containerV3Request, ConsolidationDetails consolidationDetails) throws RunnerException {
+    private void validateAndProcessDGConsolidation(List<ContainerV3Request> containerRequestList, ConsolidationDetails consolidationDetails) throws RunnerException {
         if (TRANSPORT_MODE_SEA.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
             consolidationDetails.setHazardous(true);
             if (!consolidationValidationV3Util.checkConsolidationTypeValidation(consolidationDetails)) {
                 throw new ValidationException("For Ocean LCL DG Consolidation, the consol type can only be AGT or CLD");
             }
             consolidationDetailsDao.update(consolidationDetails, false, false);
-            processDGShipmentDetailsFromContainer(containerV3Request);
+            processDGShipmentDetailsFromContainer(containerRequestList);
         }
     }
 
@@ -427,6 +427,85 @@ public class ContainerV3Service implements IContainerV3Service {
                     callChangeShipmentDGStatusFromContainer(shipmentDetails, containerV3Request);
                     shipmentDao.save(shipmentDetails, false);
                 }
+            }
+        }
+    }
+
+    public void processDGShipmentDetailsFromContainer(List<ContainerV3Request> containerRequestList) throws RunnerException {
+        for(ContainerV3Request containerV3Request : containerRequestList) {
+            if (containerV3Request.getId() != null && Boolean.TRUE.equals(containerV3Request.getHazardous())) {
+                List<ShipmentsContainersMapping> shipmentsContainersMappingList = iShipmentsContainersMappingDao.findByContainerId(containerV3Request.getId());
+
+                for (ShipmentsContainersMapping shipmentsContainersMapping : shipmentsContainersMappingList) {
+                    Long shipmentId = shipmentsContainersMapping.getShipmentId();
+                    Optional<ShipmentDetails> optionalShipmentDetails = shipmentService.findById(shipmentId);
+                    if (optionalShipmentDetails.isPresent()) {
+                        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+                        List<Containers> containersList = containerDao.findByShipmentId(shipmentId);
+                        updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isUpdateDGStatusRequired(ShipmentDetails shipmentDetails, List<Containers> containersList) {
+        if (shipmentDetails == null) return false;
+        if (CommonUtils.listIsNullOrEmpty(containersList)) return false;
+        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
+    }
+
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Containers> containersList, List<ContainerV3Request> containerRequestList) throws RunnerException {
+        if (!isUpdateDGStatusRequired(shipmentDetails, containersList)) {
+            return;
+        }
+
+        Set<Long> containerIds = containersList.stream().map(Containers::getId).collect(Collectors.toSet());
+
+        Set<Long> requestIds = containerRequestList.stream()
+                .map(ContainerV3Request::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, ContainerV3Request> updatedContainerRequestMap = containerRequestList.stream()
+                .filter(Objects::nonNull)
+                .filter(container -> container.getId() != null)
+                .collect(Collectors.toMap(
+                        ContainerV3Request::getId,
+                        Function.identity()
+                ));
+
+        Map<Long, Containers> oldContainerMap = containersList.stream()
+                .filter(Objects::nonNull)
+                .filter(container -> container.getId() != null)
+                .collect(Collectors.toMap(
+                        Containers::getId,
+                        Function.identity()
+                ));
+
+
+        Set<Long> commonIds = new HashSet<>(containerIds);
+        commonIds.retainAll(requestIds); // intersection
+
+        boolean isDG = false;
+        boolean isDGClass1Added = false;
+
+        for(Long containerId : commonIds){
+            Containers oldContainer = oldContainerMap.get(containerId);
+            ContainerV3Request updatedContainer = updatedContainerRequestMap.get(containerId);
+            if(commonUtils.checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer)){
+                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(updatedContainer.getDgClass());
+                isDG = true;
+            }
+        }
+
+        if(isDG){
+            boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+            if(saveShipment) {
+                shipmentDetails.setContainsHazardous(true);
+                shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+                String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
+                shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
             }
         }
     }

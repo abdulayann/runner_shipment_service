@@ -200,50 +200,102 @@ public class PackingV3Service implements IPackingV3Service {
 
         PackingResponse response = jsonHelper.convertValue(savedPacking, PackingResponse.class);
         log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
-        afterSave(List.of(savedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse);
+        afterSave(List.of(savedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, new ArrayList<>());
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(List.of(savedPacking), true, module);
         return response;
     }
 
     private void afterSave(List<Packing> packings, String module, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
-                           ShipmentWtVolResponse oldShipmentWtVolResponse) throws RunnerException {
+                           ShipmentWtVolResponse oldShipmentWtVolResponse, List<Packing> oldPackings) throws RunnerException {
         if (!CommonUtils.listIsNullOrEmpty(packings) && Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            boolean isDelete = shipmentDetails == null;
             shipmentDetails = getShipment(shipmentDetails, packings.get(0).getShipmentId());
             List<Packing> finalPackings = updateCargoDetailsInShipment(shipmentDetails);
             packingValidationV3Util.validatePackageAfterSave(shipmentDetails, finalPackings);
             if (checkIfLCLConsolidationEligible(shipmentDetails)) {
                 updateShipmentGateInDateAndStatusFromPacks(shipmentDetails, finalPackings);
             }
-            updateOceanDGStatus(shipmentDetails, finalPackings);
+            if(!isDelete) {
+                updateOceanDGStatus(shipmentDetails, oldPackings, packings);
+            }
             if(consolidationDetails != null)
                 consolidationV3Service.updateConsolidationCargoSummary(consolidationDetails, oldShipmentWtVolResponse);
             updateAttachedContainersData(packings, shipmentDetails);
         }
     }
 
-    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> packingList) throws RunnerException {
-        if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(packingList)
-                || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
+    private boolean isUpdateDGStatusRequired(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) {
+        if (shipmentDetails == null) return false;
+        if (CommonUtils.listIsNullOrEmpty(updatedPackings)) return false;
+        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
+    }
+
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Packing> oldPackings, List<Packing> updatedPackings) throws RunnerException {
+        if(!isUpdateDGStatusRequired(shipmentDetails, updatedPackings)) return;
+
+        Set<Long> requestIds = updatedPackings.stream()
+                .filter(Objects::nonNull)              // <-- filter out null elements first
+                .map(Packing::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+
+        Map<Long, Packing> updatedPackingMap = updatedPackings.stream()
+                .filter(Objects::nonNull)
+                .filter(packing -> packing.getId() != null)
+                .collect(Collectors.toMap(
+                        Packing::getId,
+                        Function.identity(),
+                        (existing, replacement) -> existing // or use `replacement` to keep the new one
+                ));
+
+        Map<Long, Packing> oldPackingMap = Optional.ofNullable(oldPackings)
+                .orElse(Collections.emptyList())
+                .stream()
+                .filter(Objects::nonNull)
+                .filter(packing -> packing.getId() != null)
+                .collect(Collectors.toMap(
+                        Packing::getId,
+                        Function.identity()
+                ));
+
 
         boolean isDG = false;
         boolean isDGClass1Added = false;
-        for (Packing packing : packingList) {
-            if (Boolean.TRUE.equals(packing.getHazardous())) {
-                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(packing.getDGClass());
+
+        for (Long packingId : requestIds) {
+            Packing updatedPacking = updatedPackingMap.get(packingId);
+            Packing oldPacking = oldPackingMap.get(packingId);
+
+            if (isnewDGPack(updatedPacking, oldPacking) || isDGUpdated(updatedPacking, oldPacking)) {
                 isDG = true;
+                if (commonUtils.checkIfDGClass1(updatedPacking.getDGClass())) {
+                    isDGClass1Added = true;
+                }
             }
         }
+
 
         if(isDG){
             boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
             if(saveShipment) {
+                shipmentDetails.setContainsHazardous(true);
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
                 shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
             }
         }
     }
+
+    private boolean isnewDGPack(Packing updated, Packing old) throws RunnerException {
+        return old == null && commonUtils.checkIfAnyDGClass(updated.getDGClass());
+    }
+
+    private boolean isDGUpdated(Packing updated, Packing old) {
+        return old != null && commonUtils.checkIfDGFieldsChangedInPackingV3(updated, old);
+    }
+
 
     private List<Packing> updateCargoDetailsInShipment(ShipmentDetails shipmentDetails) throws RunnerException {
         if (shipmentDetails == null)
@@ -302,7 +354,7 @@ public class PackingV3Service implements IPackingV3Service {
         }
 
         recordAuditLogs(List.of(oldConvertedPacking), List.of(updatedPacking), DBOperationType.UPDATE, parentResult);
-        afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse);
+        afterSave(List.of(updatedPacking), module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, List.of(oldConvertedPacking));
         boolean isAutoSell = false;
         if (!Objects.equals(oldConvertedPacking.getPacksType(), updatedPacking.getPacksType()) || !Objects.equals(oldConvertedPacking.getPacks(), updatedPacking.getPacks())) {
             isAutoSell = true;
@@ -349,7 +401,7 @@ public class PackingV3Service implements IPackingV3Service {
 
         String packs = packing.getPacks();
         String packsType = packing.getPacksType();
-        afterSave(List.of(packing), module, null, consolidationDetails, oldShipmentWtVolResponse);
+        afterSave(List.of(packing), module, null, consolidationDetails, oldShipmentWtVolResponse, new ArrayList<>());
 
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(List.of(packing), true, module);
@@ -446,7 +498,7 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
-        afterSave(allSavedPackings, module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse);
+        afterSave(allSavedPackings, module, shipmentDetails, consolidationDetails, oldShipmentWtVolResponse, oldConvertedPackings);
 
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(allSavedPackings, isAutoSell, module);
@@ -554,7 +606,7 @@ public class PackingV3Service implements IPackingV3Service {
         // Record audit logs for the deletion operation
         recordAuditLogs(packingsToDelete, null, DBOperationType.DELETE, parentResult);
 
-        afterSave(packingsToDelete, module, null, consolidationDetails, oldShipmentWtVolResponse);
+        afterSave(packingsToDelete, module, null, consolidationDetails, oldShipmentWtVolResponse, new ArrayList<>());
 
         // Triggering Event for shipment and console for DependentServices update
         pushToDependentServices(packingsToDelete, true, module);
