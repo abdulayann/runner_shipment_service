@@ -5084,4 +5084,214 @@ class CommonUtilsTest {
         String expected = "Company XYZ";
         assertEquals(expected, result);
     }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_NoChanges() {
+        // Test case when all fields are identical - should return false
+        Packing oldPack = createTestPacking();
+        Packing newPack = createTestPacking();
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_HazardousChanged() {
+        // Test case when Hazardous field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setHazardous(true);
+
+        Packing newPack = createTestPacking();
+        newPack.setHazardous(false);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_DGClassChanged() {
+        // Test case when DGClass field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setDGClass("Class1");
+
+        Packing newPack = createTestPacking();
+        newPack.setDGClass("Class2");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_DGClassNullToValue() {
+        // Test case when DGClass changes from null to value - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setDGClass(null);
+
+        Packing newPack = createTestPacking();
+        newPack.setDGClass("Class1");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_DGClassValueToNull() {
+        // Test case when DGClass changes from value to null - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setDGClass("Class1");
+
+        Packing newPack = createTestPacking();
+        newPack.setDGClass(null);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_UnNumberChanged() {
+        // Test case when UnNumber field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setUnNumber("UN1001");
+
+        Packing newPack = createTestPacking();
+        newPack.setUnNumber("UN1002");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_ProperShippingNameChanged() {
+        // Test case when ProperShippingName field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setProperShippingName("Old Name");
+
+        Packing newPack = createTestPacking();
+        newPack.setProperShippingName("New Name");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_PackingGroupChanged() {
+        // Test case when PackingGroup field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setPackingGroup("I");
+
+        Packing newPack = createTestPacking();
+        newPack.setPackingGroup("II");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MinimumFlashPointChanged() {
+        // Test case when MinimumFlashPoint field changes - should return true
+        // Assuming compareBigDecimals returns false when values are different
+        Packing oldPack = createTestPacking();
+        oldPack.setMinimumFlashPoint(new BigDecimal("10.5"));
+
+        Packing newPack = createTestPacking();
+        newPack.setMinimumFlashPoint(new BigDecimal("15.5"));
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MinimumFlashPointUnitChanged() {
+        // Test case when MinimumFlashPointUnit field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setMinimumFlashPointUnit("C");
+
+        Packing newPack = createTestPacking();
+        newPack.setMinimumFlashPointUnit("F");
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MarinePollutantChanged() {
+        // Test case when MarinePollutant field changes - should return true
+        Packing oldPack = createTestPacking();
+        oldPack.setMarinePollutant(true);
+
+        Packing newPack = createTestPacking();
+        newPack.setMarinePollutant(false);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_AllFieldsNull() {
+        // Test case when all nullable fields are null in both objects - should return false
+        Packing oldPack = new Packing();
+        oldPack.setHazardous(false);
+        oldPack.setMarinePollutant(false);
+        oldPack.setDGClass(null);
+        oldPack.setUnNumber(null);
+        oldPack.setProperShippingName(null);
+        oldPack.setPackingGroup(null);
+        oldPack.setMinimumFlashPoint(null);
+        oldPack.setMinimumFlashPointUnit(null);
+
+        Packing newPack = new Packing();
+        newPack.setHazardous(false);
+        newPack.setMarinePollutant(false);
+        newPack.setDGClass(null);
+        newPack.setUnNumber(null);
+        newPack.setProperShippingName(null);
+        newPack.setPackingGroup(null);
+        newPack.setMinimumFlashPoint(null);
+        newPack.setMinimumFlashPointUnit(null);
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testCheckIfDGFieldsChangedInPackingV3_MultipleFieldsChanged() {
+        // Test case when multiple fields change - should return true (early return on first change)
+        Packing oldPack = createTestPacking();
+        oldPack.setHazardous(true);
+        oldPack.setDGClass("Class1");
+
+        Packing newPack = createTestPacking();
+        newPack.setHazardous(false); // This will cause early return
+        newPack.setDGClass("Class2"); // This won't be evaluated due to early return
+
+        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
+
+        assertTrue(result);
+    }
+
+    // Helper method to create a test packing object with default values
+    private Packing createTestPacking() {
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+        packing.setDGClass("TestClass");
+        packing.setUnNumber("UN1234");
+        packing.setProperShippingName("Test Shipping Name");
+        packing.setPackingGroup("I");
+        packing.setMinimumFlashPoint(new BigDecimal("20.0"));
+        packing.setMinimumFlashPointUnit("C");
+        packing.setMarinePollutant(false);
+        return packing;
+    }
 }

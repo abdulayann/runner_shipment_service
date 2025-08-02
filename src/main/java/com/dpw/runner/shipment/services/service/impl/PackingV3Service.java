@@ -250,14 +250,15 @@ public class PackingV3Service implements IPackingV3Service {
                         (existing, replacement) -> existing // or use `replacement` to keep the new one
                 ));
 
-        Map<Long, Packing> oldPackingMap = oldPackings.stream()
+        Map<Long, Packing> oldPackingMap = Optional.ofNullable(oldPackings)
+                .orElse(Collections.emptyList())
+                .stream()
                 .filter(Objects::nonNull)
                 .filter(packing -> packing.getId() != null)
                 .collect(Collectors.toMap(
                         Packing::getId,
                         Function.identity()
                 ));
-
 
 
         boolean isDG = false;
@@ -279,6 +280,7 @@ public class PackingV3Service implements IPackingV3Service {
         if(isDG){
             boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
             if(saveShipment) {
+                shipmentDetails.setContainsHazardous(true);
                 shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
                 String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
                 shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());

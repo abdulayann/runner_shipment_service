@@ -449,13 +449,18 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Containers> containersList, List<ContainerV3Request> containerRequestList) throws RunnerException {
-        if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(containersList)
-                || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
+    private boolean isUpdateDGStatusRequired(ShipmentDetails shipmentDetails, List<Containers> containersList) {
+        if (shipmentDetails == null) return false;
+        if (CommonUtils.listIsNullOrEmpty(containersList)) return false;
+        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
+    }
 
-        Set<Long> containerIds = containersList.stream()
-                .map(Containers::getId)
-                .collect(Collectors.toSet());
+    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Containers> containersList, List<ContainerV3Request> containerRequestList) throws RunnerException {
+        if (!isUpdateDGStatusRequired(shipmentDetails, containersList)) {
+            return;
+        }
+
+        Set<Long> containerIds = containersList.stream().map(Containers::getId).collect(Collectors.toSet());
 
         Set<Long> requestIds = containerRequestList.stream()
                 .map(ContainerV3Request::getId)

@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -1385,5 +1386,324 @@ class ContainerV3ServiceTest extends CommonMocks {
         containersList.add(container);
 
         return containersList;
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WhenContainerIdIsNull() throws RunnerException {
+        // Test case when container ID is null - should skip processing
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(null);
+        container.setHazardous(true);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        // Verify that no repository calls are made
+        verify(iShipmentsContainersMappingDao, never()).findByContainerId(any());
+        verify(shipmentService, never()).findById(any());
+        verify(containerDao, never()).findByShipmentId(any());
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WhenHazardousIsFalse() throws RunnerException {
+        // Test case when hazardous is false - should skip processing
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(1L);
+        container.setHazardous(false);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        // Verify that no repository calls are made
+        verify(iShipmentsContainersMappingDao, never()).findByContainerId(any());
+        verify(shipmentService, never()).findById(any());
+        verify(containerDao, never()).findByShipmentId(any());
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WhenHazardousIsNull() throws RunnerException {
+        // Test case when hazardous is null - should skip processing
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(1L);
+        container.setHazardous(null);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        // Verify that no repository calls are made
+        verify(iShipmentsContainersMappingDao, never()).findByContainerId(any());
+        verify(shipmentService, never()).findById(any());
+        verify(containerDao, never()).findByShipmentId(any());
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WhenNoShipmentsContainersMappingFound() throws RunnerException {
+        // Test case when no shipments containers mapping is found
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(1L);
+        container.setHazardous(true);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(Collections.emptyList());
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        verify(iShipmentsContainersMappingDao).findByContainerId(1L);
+        verify(shipmentService, never()).findById(any());
+        verify(containerDao, never()).findByShipmentId(any());
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_WhenShipmentNotFound() throws RunnerException {
+        // Test case when shipment is not found by ID
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(1L);
+        container.setHazardous(true);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(10L);
+        List<ShipmentsContainersMapping> mappingList = Arrays.asList(mapping);
+
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(mappingList);
+        when(shipmentService.findById(10L)).thenReturn(Optional.empty());
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        verify(iShipmentsContainersMappingDao).findByContainerId(1L);
+        verify(shipmentService).findById(10L);
+        verify(containerDao, never()).findByShipmentId(any());
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_SuccessfulProcessing() throws RunnerException {
+        // Test case for successful processing with all conditions met
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(1L);
+        container.setHazardous(true);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(10L);
+        List<ShipmentsContainersMapping> mappingList = Arrays.asList(mapping);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+
+        Containers containerEntity = new Containers();
+        List<Containers> containersList = Arrays.asList(containerEntity);
+
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(mappingList);
+        when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.findByShipmentId(10L)).thenReturn(containersList);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        verify(iShipmentsContainersMappingDao).findByContainerId(1L);
+        verify(shipmentService).findById(10L);
+        verify(containerDao).findByShipmentId(10L);
+        // Verify updateOceanDGStatus is called - you may need to add a spy or mock for this
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_MultipleContainers() throws RunnerException {
+        // Test case with multiple containers - some valid, some invalid
+        ContainerV3Request validContainer = new ContainerV3Request();
+        validContainer.setId(1L);
+        validContainer.setHazardous(true);
+
+        ContainerV3Request invalidContainer = new ContainerV3Request();
+        invalidContainer.setId(null);
+        invalidContainer.setHazardous(true);
+
+        List<ContainerV3Request> containerRequestList = Arrays.asList(validContainer, invalidContainer);
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(10L);
+        List<ShipmentsContainersMapping> mappingList = Arrays.asList(mapping);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+
+        Containers containerEntity = new Containers();
+        List<Containers> containersList = Arrays.asList(containerEntity);
+
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(mappingList);
+        when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.findByShipmentId(10L)).thenReturn(containersList);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        // Verify only valid container is processed
+        verify(iShipmentsContainersMappingDao).findByContainerId(1L);
+        verify(iShipmentsContainersMappingDao, never()).findByContainerId(isNull());
+        verify(shipmentService).findById(10L);
+        verify(containerDao).findByShipmentId(10L);
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_MultipleShipmentMappings() throws RunnerException {
+        // Test case with multiple shipment mappings for one container
+        ContainerV3Request container = new ContainerV3Request();
+        container.setId(1L);
+        container.setHazardous(true);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(container);
+
+        ShipmentsContainersMapping mapping1 = new ShipmentsContainersMapping();
+        mapping1.setShipmentId(10L);
+        ShipmentsContainersMapping mapping2 = new ShipmentsContainersMapping();
+        mapping2.setShipmentId(20L);
+        List<ShipmentsContainersMapping> mappingList = Arrays.asList(mapping1, mapping2);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(10L);
+        ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        shipmentDetails2.setId(20L);
+
+        Containers containerEntity = new Containers();
+        List<Containers> containersList = Arrays.asList(containerEntity);
+
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(mappingList);
+        when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails1));
+        when(shipmentService.findById(20L)).thenReturn(Optional.of(shipmentDetails2));
+        when(containerDao.findByShipmentId(10L)).thenReturn(containersList);
+        when(containerDao.findByShipmentId(20L)).thenReturn(containersList);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        verify(iShipmentsContainersMappingDao).findByContainerId(1L);
+        verify(shipmentService).findById(10L);
+        verify(shipmentService).findById(20L);
+        verify(containerDao).findByShipmentId(10L);
+        verify(containerDao).findByShipmentId(20L);
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_EmptyContainerRequestList() throws RunnerException {
+        // Test case with empty container request list
+        List<ContainerV3Request> containerRequestList = Collections.emptyList();
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        // Verify no repository calls are made
+        verify(iShipmentsContainersMappingDao, never()).findByContainerId(any());
+        verify(shipmentService, never()).findById(any());
+        verify(containerDao, never()).findByShipmentId(any());
+    }
+
+    @Test
+    void testProcessDGShipmentDetailsFromContainer_MixedHazardousValues() throws RunnerException {
+        // Test case with containers having different hazardous values
+        ContainerV3Request hazardousContainer = new ContainerV3Request();
+        hazardousContainer.setId(1L);
+        hazardousContainer.setHazardous(true);
+
+        ContainerV3Request nonHazardousContainer = new ContainerV3Request();
+        nonHazardousContainer.setId(2L);
+        nonHazardousContainer.setHazardous(false);
+
+        List<ContainerV3Request> containerRequestList = Arrays.asList(hazardousContainer, nonHazardousContainer);
+
+        ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+        mapping.setShipmentId(10L);
+        List<ShipmentsContainersMapping> mappingList = Arrays.asList(mapping);
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(10L);
+
+        Containers containerEntity = new Containers();
+        List<Containers> containersList = Arrays.asList(containerEntity);
+
+        when(iShipmentsContainersMappingDao.findByContainerId(1L)).thenReturn(mappingList);
+        when(shipmentService.findById(10L)).thenReturn(Optional.of(shipmentDetails));
+        when(containerDao.findByShipmentId(10L)).thenReturn(containersList);
+
+        containerV3Service.processDGShipmentDetailsFromContainer(containerRequestList);
+
+        // Verify only hazardous container is processed
+        verify(iShipmentsContainersMappingDao).findByContainerId(1L);
+        verify(iShipmentsContainersMappingDao, never()).findByContainerId(2L);
+        verify(shipmentService).findById(10L);
+        verify(containerDao).findByShipmentId(10L);
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_WhenUpdateNotRequired() throws RunnerException {
+        // Test case when isUpdateDGStatusRequired returns false - should return early
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode("ROAD"); // Not SEA transport mode
+
+        List<Containers> containersList = Arrays.asList(new Containers());
+        List<ContainerV3Request> containerRequestList = Arrays.asList(new ContainerV3Request());
+
+        containerV3Service.updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+
+        // Verify no further processing happens
+        verify(commonUtils, never()).changeShipmentDGStatusToReqd(any(), anyBoolean());
+        verify(shipmentDao, never()).updateDgStatusInShipment(anyBoolean(), any(), any());
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_WhenDGFieldsChangedAndSaveRequired() throws RunnerException {
+        // Test case for successful DG status update with DG Class 1
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(100L);
+        shipmentDetails.setTransportMode("SEA");
+        shipmentDetails.setOceanDGStatus(OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED); // Assuming enum exists
+
+        Containers oldContainer = new Containers();
+        oldContainer.setId(1L);
+
+        ContainerV3Request updatedContainer = new ContainerV3Request();
+        updatedContainer.setId(1L);
+        updatedContainer.setDgClass("1");
+
+        List<Containers> containersList = Arrays.asList(oldContainer);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(updatedContainer);
+
+        when(commonUtils.checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer)).thenReturn(true);
+        when(commonUtils.checkIfDGClass1("1")).thenReturn(true);
+        when(commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, true)).thenReturn(true);
+
+        containerV3Service.updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+
+        verify(commonUtils).checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer);
+        verify(commonUtils).checkIfDGClass1("1");
+        verify(commonUtils).changeShipmentDGStatusToReqd(shipmentDetails, true);
+        verify(shipmentValidationV3Util).processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+
+        // Verify shipment details is updated
+        assertTrue(shipmentDetails.getContainsHazardous());
+    }
+
+    @Test
+    void testUpdateOceanDGStatus_WhenDGFieldsChangedButSaveNotRequired() throws RunnerException {
+        // Test case when DG fields changed but save is not required
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(100L);
+        shipmentDetails.setTransportMode("SEA");
+
+        Containers oldContainer = new Containers();
+        oldContainer.setId(1L);
+
+        ContainerV3Request updatedContainer = new ContainerV3Request();
+        updatedContainer.setId(1L);
+        updatedContainer.setDgClass("2");
+
+        List<Containers> containersList = Arrays.asList(oldContainer);
+        List<ContainerV3Request> containerRequestList = Arrays.asList(updatedContainer);
+
+        when(commonUtils.checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer)).thenReturn(true);
+        when(commonUtils.checkIfDGClass1("2")).thenReturn(false);
+        when(commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, false)).thenReturn(false);
+
+        containerV3Service.updateOceanDGStatus(shipmentDetails, containersList, containerRequestList);
+
+        verify(commonUtils).checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer);
+        verify(commonUtils).checkIfDGClass1("2");
+        verify(commonUtils).changeShipmentDGStatusToReqd(shipmentDetails, false);
+        // Verify that shipment is not saved
+        verify(shipmentValidationV3Util, never()).processDGValidations(any(), any(), any());
+        verify(shipmentDao, never()).updateDgStatusInShipment(anyBoolean(), any(), any());
     }
 }

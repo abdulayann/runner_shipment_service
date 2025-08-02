@@ -1528,41 +1528,51 @@ public class CommonUtils {
         return false;
     }
 
+
     public boolean checkIfDGFieldsChangedInPacking(PackingRequest newPack, Packing oldPack) {
-        if (!oldPack.getHazardous().equals(newPack.getHazardous()))
-            return true;
-        if (!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
-            return true;
-        if (!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
-            return true;
-        if (!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
-            return true;
-        if (!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
-            return true;
-        if (!compareBigDecimals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
-            return true;
-        if (!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
-            return true;
-        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+        return isDGChanged(
+                newPack.getHazardous(), oldPack.getHazardous(),
+                newPack.getDGClass(), oldPack.getDGClass(),
+                newPack.getUnNumber(), oldPack.getUnNumber(),
+                newPack.getProperShippingName(), oldPack.getProperShippingName(),
+                newPack.getPackingGroup(), oldPack.getPackingGroup(),
+                newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint(),
+                newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit(),
+                newPack.getMarinePollutant(), oldPack.getMarinePollutant()
+        );
     }
 
     public boolean checkIfDGFieldsChangedInPackingV3(Packing newPack, Packing oldPack) {
-        if (!oldPack.getHazardous().equals(newPack.getHazardous()))
-            return true;
-        if (!Objects.equals(newPack.getDGClass(), oldPack.getDGClass()))
-            return true;
-        if (!Objects.equals(newPack.getUnNumber(), oldPack.getUnNumber()))
-            return true;
-        if (!Objects.equals(newPack.getProperShippingName(), oldPack.getProperShippingName()))
-            return true;
-        if (!Objects.equals(newPack.getPackingGroup(), oldPack.getPackingGroup()))
-            return true;
-        if (!compareBigDecimals(newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint()))
-            return true;
-        if (!Objects.equals(newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit()))
-            return true;
-        return !oldPack.getMarinePollutant().equals(newPack.getMarinePollutant());
+        return isDGChanged(
+                newPack.getHazardous(), oldPack.getHazardous(),
+                newPack.getDGClass(), oldPack.getDGClass(),
+                newPack.getUnNumber(), oldPack.getUnNumber(),
+                newPack.getProperShippingName(), oldPack.getProperShippingName(),
+                newPack.getPackingGroup(), oldPack.getPackingGroup(),
+                newPack.getMinimumFlashPoint(), oldPack.getMinimumFlashPoint(),
+                newPack.getMinimumFlashPointUnit(), oldPack.getMinimumFlashPointUnit(),
+                newPack.getMarinePollutant(), oldPack.getMarinePollutant()
+        );
     }
+
+    private boolean isDGChanged(Boolean newHaz, Boolean oldHaz,
+                                String newClass, String oldClass,
+                                String newUn, String oldUn,
+                                String newName, String oldName,
+                                String newGroup, String oldGroup,
+                                BigDecimal newFlash, BigDecimal oldFlash,
+                                String newFlashUnit, String oldFlashUnit,
+                                Boolean newPollutant, Boolean oldPollutant) {
+        if (!Objects.equals(oldHaz, newHaz)) return true;
+        if (!Objects.equals(newClass, oldClass)) return true;
+        if (!Objects.equals(newUn, oldUn)) return true;
+        if (!Objects.equals(newName, oldName)) return true;
+        if (!Objects.equals(newGroup, oldGroup)) return true;
+        if (!compareBigDecimals(newFlash, oldFlash)) return true;
+        if (!Objects.equals(newFlashUnit, oldFlashUnit)) return true;
+        return !Objects.equals(oldPollutant, newPollutant);
+    }
+
 
     public boolean compareBigDecimals(BigDecimal bd1, BigDecimal bd2) {
         // Check if both are null, they are considered equal

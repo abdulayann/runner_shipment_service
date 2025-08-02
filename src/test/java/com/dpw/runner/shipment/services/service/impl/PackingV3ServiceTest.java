@@ -722,7 +722,14 @@ class PackingV3ServiceTest extends CommonMocks {
         Map<String, Object> responseMap = packingV3Service.fetchAllMasterDataByKey(packingResponse);
 
         // Validate map contains all expected keys
-        assertNotNull(responseMap.size());
+        assertEquals(3, responseMap.size());
+        assertEquals("ok", responseMap.get("unlocation"));
+        assertEquals("ok", responseMap.get("commodity"));
+
+        verify(packingV3Util).addAllMasterDataInSingleCall(any(), any());
+        verify(packingV3Util).addAllUnlocationDataInSingleCall(any(), any());
+        verify(packingV3Util).addAllCommodityTypesInSingleCall(any(), any());
+
     }
 
     @Test
@@ -1054,5 +1061,17 @@ class PackingV3ServiceTest extends CommonMocks {
         );
     }
 
-
+    @Test
+    void testupdateOceanDGStatus() throws RunnerException {
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
+        Packing packing1 = new Packing();
+        packing1.setId(1L);
+        packing1.setDGClass("1L");
+        List<Packing> updatedPackings = List.of(packing1);
+        when(commonUtils.checkIfAnyDGClass(anyString())).thenReturn(true);
+        when(commonUtils.changeShipmentDGStatusToReqd(any(), anyBoolean())).thenReturn(true);
+        packingV3Service.updateOceanDGStatus(shipmentDetails, null, updatedPackings);
+        verify(commonUtils, times(1)).changeShipmentDGStatusToReqd(any(), anyBoolean());
+    }
 }
