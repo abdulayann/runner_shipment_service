@@ -5110,46 +5110,33 @@ class CommonUtilsTest {
         assertTrue(result);
     }
 
-    @Test
-    void testCheckIfDGFieldsChangedInPackingV3_DGClassChanged() {
-        // Test case when DGClass field changes - should return true
-        Packing oldPack = createTestPacking();
-        oldPack.setDGClass("Class1");
+    @ParameterizedTest
+    @MethodSource("provideDGClassChangeCases")
+    void testCheckIfDGFieldsChangedInPackingV3_DGClassChanges(String oldDGClass, String newDGClass) {
+        Packing oldPack = createDGTestPacking();
+        oldPack.setDGClass(oldDGClass);
 
-        Packing newPack = createTestPacking();
-        newPack.setDGClass("Class2");
+        Packing newPack = createDGTestPacking();
+        newPack.setDGClass(newDGClass);
 
         boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
-
         assertTrue(result);
     }
 
-    @Test
-    void testCheckIfDGFieldsChangedInPackingV3_DGClassNullToValue() {
-        // Test case when DGClass changes from null to value - should return true
-        Packing oldPack = createTestPacking();
-        oldPack.setDGClass(null);
-
-        Packing newPack = createTestPacking();
-        newPack.setDGClass("Class1");
-
-        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
-
-        assertTrue(result);
+    private static Stream<Arguments> provideDGClassChangeCases() {
+        return Stream.of(
+                Arguments.of("Class1", "Class2"), // value change
+                Arguments.of(null, "Class1"),     // null to value
+                Arguments.of("Class1", null)      // value to null
+        );
     }
 
-    @Test
-    void testCheckIfDGFieldsChangedInPackingV3_DGClassValueToNull() {
-        // Test case when DGClass changes from value to null - should return true
-        Packing oldPack = createTestPacking();
-        oldPack.setDGClass("Class1");
-
-        Packing newPack = createTestPacking();
-        newPack.setDGClass(null);
-
-        boolean result = commonUtils.checkIfDGFieldsChangedInPackingV3(newPack, oldPack);
-
-        assertTrue(result);
+    // Mocked or test utility method
+    private Packing createDGTestPacking() {
+        Packing packing = new Packing();
+        packing.setDGClass("Class1"); // default, can be overridden
+        // set other default fields if needed
+        return packing;
     }
 
     @Test
