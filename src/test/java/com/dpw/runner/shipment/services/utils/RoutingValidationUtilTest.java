@@ -345,6 +345,51 @@ class RoutingValidationUtilTest {
     }
 
     @Test
+    void testValidateMainCarriageRoutingLegs_ETDMoreThanETA() {
+
+        LocalDateTime now = LocalDateTime.now();
+        RoutingsRequest firstRoutingLegRequest = RoutingsRequest.builder()
+                .carriage(RoutingCarriage.MAIN_CARRIAGE)
+                .etd(now.plusDays(2))
+                .atd(now)
+                .build();
+
+        RoutingsRequest lastRoutingLegRequest = RoutingsRequest.builder()
+                .carriage(RoutingCarriage.MAIN_CARRIAGE)
+                .eta(now)
+                .ata(now)
+                .build();
+
+        Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(firstRoutingLegRequest, lastRoutingLegRequest));
+        ValidationException exception = assertThrows(ValidationException.class, executable);
+        assertEquals("ETD cannot be more than ETA. " +
+                "Please Update the date entered correctly.", exception.getMessage());
+
+    }
+
+    @Test
+    void testValidateMainCarriageRoutingLegs_ATALessThanATD() {
+
+        RoutingsRequest firstRoutingLegRequest = RoutingsRequest.builder()
+                .carriage(RoutingCarriage.MAIN_CARRIAGE)
+                .etd(LocalDateTime.now())
+                .atd(LocalDateTime.now())
+                .build();
+
+        RoutingsRequest lastRoutingLegRequest = RoutingsRequest.builder()
+                .carriage(RoutingCarriage.MAIN_CARRIAGE)
+                .eta(LocalDateTime.now().plusHours(10))
+                .ata(LocalDateTime.now().minusHours(30))
+                .build();
+
+        Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(firstRoutingLegRequest, lastRoutingLegRequest));
+        ValidationException exception = assertThrows(ValidationException.class, executable);
+        assertEquals("ATA cannot be less than ATD. " +
+                "Please Update the date entered correctly.", exception.getMessage());
+
+    }
+
+    @Test
     void testValidateMainCarriageRoutingLegs_ATASetInFuture() {
 
         RoutingsRequest firstRoutingLegRequest = RoutingsRequest.builder()

@@ -83,6 +83,7 @@ public class RoutingValidationUtil {
     public void validateMainCarriageRoutingLegs(List<RoutingsRequest> routingsList) {
         RoutingsRequest firstMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, true);
         RoutingsRequest lastMainCarriageRoutingLeg = findMainCarriageLeg(routingsList, false);
+        if (Objects.isNull(firstMainCarriageRoutingLeg) || Objects.isNull(lastMainCarriageRoutingLeg)) return;
 
         validateMainCarriageRoutingLegs(firstMainCarriageRoutingLeg.getEtd(), lastMainCarriageRoutingLeg.getEta(),
                 firstMainCarriageRoutingLeg.getAtd(), lastMainCarriageRoutingLeg.getAta());
@@ -116,9 +117,6 @@ public class RoutingValidationUtil {
                 else currMainCarriageRoutingLeg = routingsRequest;
             }
         }
-        if (Objects.isNull(currMainCarriageRoutingLeg))
-            throw new ValidationException("Main Carriage Leg not found");
-
         return currMainCarriageRoutingLeg;
     }
 
