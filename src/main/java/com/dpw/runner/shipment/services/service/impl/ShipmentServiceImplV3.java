@@ -1252,6 +1252,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
         shipmentsV3Util.processVoyageAndFlightNumber(shipmentDetails);
         shipmentValidationV3Util.validateShippedOnBoardDate(shipmentDetails);
+        shipmentValidationV3Util.validateCarrierDetailsDates(shipmentDetails);
 
         if (Objects.isNull(shipmentDetails.getSourceTenantId()))
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
