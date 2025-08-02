@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.enums.TransportInfoStatus;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -3627,8 +3626,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
             for(Long shipId : removedShipmentIds) {
                 ShipmentDetails shipmentDetail = shipmentDetailsMap.get(shipId);
-                if(!Boolean.TRUE.equals(isFromEt))
-                    validateDetachedShipment(shipmentDetail);
+                validateShipmentContainersAndPack(isFromEt, shipmentDetail);
 
                 if(shipmentDetail != null) {
                     packingList = getPackingList(shipmentDetail, packingList);
@@ -3667,6 +3665,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         processInterConsoleDetachShipment(consol, shipmentIdList);
 
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    private void validateShipmentContainersAndPack(Boolean isFromEt, ShipmentDetails shipmentDetail) {
+        if(!Boolean.TRUE.equals(isFromEt))
+            validateDetachedShipment(shipmentDetail);
     }
 
     protected void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
