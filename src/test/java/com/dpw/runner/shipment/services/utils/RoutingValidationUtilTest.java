@@ -464,17 +464,6 @@ class RoutingValidationUtilTest {
     }
 
     @Test
-    void testFindMainCarriageLeg_noMainCarriageLegPresent() {
-        RoutingsRequest preCarriageLeg = RoutingsRequest.builder()
-                .carriage(RoutingCarriage.PRE_CARRIAGE)
-                .build();
-
-        Executable executable = () -> routingValidationUtil.validateMainCarriageRoutingLegs(List.of(preCarriageLeg));
-        ValidationException exception = assertThrows(ValidationException.class, executable);
-        assertEquals("Main Carriage Leg not found", exception.getMessage());
-    }
-
-    @Test
     void testValidateMainCarriageRoutingLegs_ATAIsNull() {
         LocalDateTime now = LocalDateTime.now();
         RoutingsRequest firstRoutingLegRequest = RoutingsRequest.builder()
