@@ -452,7 +452,7 @@ public class Constants {
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
-            GROSS_WEIGHT,"grossWeightUnit",GROSS_VOLUME, GROSS_VOLUME_UNIT,"tareWeight","tareWeightUnit",
+            GROSS_WEIGHT,GROSS_WEIGHT_UNIT,GROSS_VOLUME, GROSS_VOLUME_UNIT,"tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
