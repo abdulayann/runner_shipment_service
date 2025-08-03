@@ -260,7 +260,4 @@ public class ShipmentRetrieveLiteResponse implements IRunnerResponse {
     private Boolean isCargoSummaryEditable = Boolean.FALSE;
     private ShipmentSummaryWarningsResponse summaryWarningsResponse;
     private List<RoutingsLiteResponse> routingsLiteResponses;
-    private Boolean isVolumeEditable = Boolean.FALSE;
-    private Boolean isCargoSummaryEditable = Boolean.FALSE;
-    private ShipmentSummaryWarningsResponse summaryWarningsResponse;
 }
