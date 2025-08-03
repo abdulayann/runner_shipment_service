@@ -415,6 +415,10 @@ public class Constants {
     public static final String CONTAINER_NUMBER = "containerNumber";
     public static final String NET_WEIGHT = "netWeight";
     public static final String GROSS_WEIGHT = "grossWeight";
+    public static final String GROSS_WEIGHT_UNIT = "grossWeightUnit";
+    public static final String GROSS_VOLUME = "grossVolume";
+    public static final String GROSS_VOLUME_UNIT = "grossVolumeUnit";
+    public static final String PACKS_TYPE = "packsType";
     public static final String PACKS = "packs";
     public static final String UNLOCATIONS = "Unlocations";
     public static final String ORGANIZATIONS = "Organizations";
@@ -448,7 +452,7 @@ public class Constants {
 
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
-            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
+            GROSS_WEIGHT,"grossWeightUnit",GROSS_VOLUME, GROSS_VOLUME_UNIT,"tareWeight","tareWeightUnit",
             "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
             "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
             "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",

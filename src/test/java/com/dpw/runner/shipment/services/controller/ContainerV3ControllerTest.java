@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.List;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -208,7 +209,7 @@ class ContainerV3ControllerTest {
     MultipartFile file = new BASE64DecodedMultipartFile("dummy content".getBytes());
     BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
     doThrow(new RuntimeException("RuntimeException"))
-            .when(containerV3Util).uploadContainers(any());
+            .when(containerV3Util).uploadContainers(any(), eq(CONSOLIDATION));
     ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request, "SHIPMENT");
     assertEquals(HttpStatus.EXPECTATION_FAILED, response.getStatusCode());
   }

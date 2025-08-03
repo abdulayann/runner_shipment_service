@@ -56,6 +56,7 @@ import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
@@ -555,14 +556,14 @@ class ContainerV3UtilTest extends CommonMocks {
     @Test
     void uploadContainers_shouldThrowValidationException_whenRequestIsNull() {
         assertThrows(ValidationException.class,
-                () -> containerV3Util.uploadContainers(null));
+                () -> containerV3Util.uploadContainers(null, CONSOLIDATION));
     }
 
     @Test
     void uploadContainers_shouldThrowValidationException_whenConsolidationIdIsNull() {
         requestData.setConsolidationId(null);
         assertThrows(ValidationException.class,
-                () -> containerV3Util.uploadContainers(requestData));
+                () -> containerV3Util.uploadContainers(requestData, CONSOLIDATION));
     }
 
     @Test
@@ -572,7 +573,7 @@ class ContainerV3UtilTest extends CommonMocks {
         DependentServiceResponse mockResponse = new DependentServiceResponse();
         when(mdmServiceAdapter.getContainerTypes()).thenReturn(mockResponse);
         requestData.setConsolidationId(123L);
-        containerV3Util.uploadContainers(requestData);
+        containerV3Util.uploadContainers(requestData, CONSOLIDATION);
         verify(containerV3FacadeService, never()).createUpdateContainer(any(), any());
     }
 

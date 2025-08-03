@@ -120,19 +120,19 @@ public class ContainerV3Util {
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
             "hblDeliveryMode", "containerNumber", "containerCount", "descriptionOfGoods", "handlingInfo",
-            "hazardous", "dgClass", "hazardousUn", "packs", "packsType", "marksNums", "minTemp", "minTempUnit",
-            "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "grossVolume",
-            "grossVolumeUnit", "measurement", "measurementUnit", "commodityCode", "hsCode", "customsReleaseCode",
+            "hazardous", "dgClass", "hazardousUn", Constants.PACKS, Constants.PACKS_TYPE, "marksNums", "minTemp", "minTempUnit",
+            "netWeight", "netWeightUnit", Constants.GROSS_WEIGHT, Constants.GROSS_WEIGHT_UNIT, "tareWeight", "tareWeightUnit", Constants.GROSS_VOLUME,
+            Constants.GROSS_VOLUME_UNIT, "measurement", "measurementUnit", "commodityCode", "hsCode", "customsReleaseCode",
             "containerStuffingLocation", "pacrNumber", "containerComments", "sealNumber", "carrierSealNumber",
             "shipperSealNumber", "terminalOperatorSealNumber", "veterinarySealNumber", "customsSealNumber"
     );
 
     private final List<String> columnsSequenceForExcelDownloadForAir = List.of(
-            "guid", "hblDeliveryMode", "descriptionOfGoods", "hazardous", "hazardousUn", "packs", "packsType",
+            "guid", "hblDeliveryMode", "descriptionOfGoods", "hazardous", "hazardousUn", Constants.PACKS, Constants.PACKS_TYPE,
             "marksNums", "serialNumber", "innerPackageNumber", "innerPackageType", "packageLength", "packageBreadth",
             "packageHeight", "innerPackageMeasurementUnit", "isTemperatureMaintained", "minTemp", "minTempUnit",
-            "netWeight", "netWeightUnit", "grossWeight", "grossWeightUnit", "tareWeight", "tareWeightUnit", "chargeable",
-            "chargeableUnit", "grossVolume", "grossVolumeUnit", "commodityCode", "hsCode", "customsReleaseCode", "pacrNumber",
+            "netWeight", "netWeightUnit", Constants.GROSS_WEIGHT, Constants.GROSS_WEIGHT_UNIT, "tareWeight", "tareWeightUnit", "chargeable",
+            "chargeableUnit", Constants.GROSS_VOLUME, Constants.GROSS_VOLUME_UNIT, "commodityCode", "hsCode", "customsReleaseCode", "pacrNumber",
             "containerComments"
     );
 
@@ -551,10 +551,6 @@ public class ContainerV3Util {
         }
         throw new ValidationException(String.format("Module: %s; not found", module));
     }
-    @Transactional(rollbackFor = Exception.class)
-    public void uploadContainers(BulkUploadRequest request) throws IOException, RunnerException {
-        uploadContainers(request, CONSOLIDATION);
-    }
     public void validateIfPacksOrVolume(Map<UUID, Map<String, Object>> from, Map<UUID, Map<String, Object>> to, BulkUploadRequest request, String module, List<Containers> containersList) {
         boolean isValidationRequired = module.equalsIgnoreCase(CONSOLIDATION);
         if (module.equalsIgnoreCase(SHIPMENT)) {
@@ -588,12 +584,12 @@ public class ContainerV3Util {
         Map<UUID, Map<String, Object>> map = new HashMap<>();
         for (Containers containers : consolContainers) {
             map.putIfAbsent(containers.getGuid(), new HashMap<>());
-            map.get(containers.getGuid()).put("grossVolume", containers.getGrossVolume());
-            map.get(containers.getGuid()).put("grossVolumeUnit", containers.getGrossVolumeUnit());
-            map.get(containers.getGuid()).put("grossWeight", containers.getGrossWeight());
-            map.get(containers.getGuid()).put("grossWeightUnit", containers.getGrossWeightUnit());
-            map.get(containers.getGuid()).put("packs", containers.getPacks());
-            map.get(containers.getGuid()).put("packsType", containers.getPacksType());
+            map.get(containers.getGuid()).put(Constants.GROSS_VOLUME, containers.getGrossVolume());
+            map.get(containers.getGuid()).put(Constants.GROSS_VOLUME_UNIT, containers.getGrossVolumeUnit());
+            map.get(containers.getGuid()).put(Constants.GROSS_WEIGHT, containers.getGrossWeight());
+            map.get(containers.getGuid()).put(Constants.GROSS_WEIGHT_UNIT, containers.getGrossWeightUnit());
+            map.get(containers.getGuid()).put(Constants.PACKS, containers.getPacks());
+            map.get(containers.getGuid()).put(Constants.PACKS_TYPE, containers.getPacksType());
         }
         return map;
     }
