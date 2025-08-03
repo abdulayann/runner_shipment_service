@@ -227,7 +227,7 @@ public class ContainerV3Service implements IContainerV3Service {
         log.debug("Converted container request to entity | Entity: {}", container);
 
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(containerRequest.getConsolidationId(), containerBeforeSaveRequest);
+        containerBeforeSave(containerRequest.getConsolidationId(), containerBeforeSaveRequest, List.of(containerRequest), module, shipmentDetails, true);
 
         // Save container to database
         Containers savedContainer = containerDao.save(container);
@@ -295,14 +295,12 @@ public class ContainerV3Service implements IContainerV3Service {
                         false
                 ));
 
-        List<Containers> shipmentContainers = new ArrayList<>();
+
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentsId());
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequest.getShipmentsId());
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
-
-        processContainerDG(List.of(containerRequest), module, shipmentContainers, shipmentDetails);
 
         // Update consolidation cargo summary
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
@@ -388,7 +386,7 @@ public class ContainerV3Service implements IContainerV3Service {
         }
         // before save operations
         ContainerBeforeSaveRequest containerBeforeSaveRequest = new ContainerBeforeSaveRequest();
-        containerBeforeSave(containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest);
+        containerBeforeSave(containerRequestList.get(0).getConsolidationId(), containerBeforeSaveRequest, containerRequestList, module, shipmentDetails, false);
 
         for(ContainerV3Request containerRequest : containerRequestList){
             List<Containers> containers = new ArrayList<>(containersList);
@@ -403,14 +401,11 @@ public class ContainerV3Service implements IContainerV3Service {
         // Save the updated containers to the database
         List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
-        List<Containers> shipmentContainers = new ArrayList<>();
         // Update shipment cargo details if module is SHIPMENT
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            List<Containers> shipmentContainers =  containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
             updateShipmentCargoDetails(shipmentDetails, new HashSet<>(shipmentContainers));
         }
-
-        processContainerDG(containerRequestList, module, shipmentContainers, shipmentDetails);
 
         // update console achieved data
         consolidationV3Service.updateConsolidationCargoSummary(containerBeforeSaveRequest.getConsolidationDetails(),
@@ -500,16 +495,19 @@ public class ContainerV3Service implements IContainerV3Service {
                 .build();
     }
 
-    private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest) throws RunnerException {
+    private void containerBeforeSave(Long consolidationId, ContainerBeforeSaveRequest containerBeforeSaveRequest,
+                                     List<ContainerV3Request> containerRequestList, String module, ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
+        processContainerDG(containerRequestList, module, shipmentDetails, isCreate);
         getConsoleAchievedDataBefore(consolidationId, containerBeforeSaveRequest);
     }
 
-    protected void processContainerDG(List<ContainerV3Request> containerRequestList, String module, List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
+    protected void processContainerDG(List<ContainerV3Request> containerRequestList, String module, ShipmentDetails shipmentDetails, boolean isCreate) throws RunnerException {
         if (!Set.of(SHIPMENT, CONSOLIDATION).contains(module)) return;
         if(!containsHazardousContainer(containerRequestList)) return;
 
         if (SHIPMENT.equalsIgnoreCase(module)) {
-            validateAndSaveDGShipment(shipmentContainers, shipmentDetails);
+            List<Containers> oldShipmentContainers = containerDao.findByShipmentId(containerRequestList.get(0).getShipmentsId());
+            validateAndSaveDGShipment(oldShipmentContainers, shipmentDetails, containerRequestList, isCreate);
         } else {
                 Long consolidationId = containerRequestList.get(0).getConsolidationId();
                 ConsolidationDetails consolidationDetails = consolidationV3Service.fetchConsolidationDetails(consolidationId);
@@ -540,17 +538,15 @@ public class ContainerV3Service implements IContainerV3Service {
                     if (optionalShipmentDetails.isPresent()) {
                         ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
                         List<Containers> containersList = containerDao.findByShipmentId(shipmentId);
-                        updateOceanDGStatus(shipmentDetails, containersList);
+                        updateOceanDgStatus(shipmentDetails, containersList, containerRequestList, false);
                     }
                 }
             }
         }
     }
 
-    private void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails) throws RunnerException {
-            if (TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) {
-                updateOceanDGStatus(shipmentDetails, shipmentContainers);
-            }
+    private void validateAndSaveDGShipment(List<Containers> shipmentContainers, ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList, boolean isCreate) throws RunnerException {
+        updateOceanDgStatus(shipmentDetails, shipmentContainers, containerRequestList, isCreate);
     }
 
 
@@ -559,27 +555,91 @@ public class ContainerV3Service implements IContainerV3Service {
                 .anyMatch(request -> Boolean.TRUE.equals(request.getHazardous()));
     }
 
-    protected void updateOceanDGStatus(ShipmentDetails shipmentDetails, List<Containers> containersList) throws RunnerException {
-        if(shipmentDetails == null || CommonUtils.listIsNullOrEmpty(containersList)
-                || !TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode())) return;
+    private boolean isUpdateDGStatusRequired(ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList) {
+        if (shipmentDetails == null) return false;
+        if (CommonUtils.listIsNullOrEmpty(containerRequestList)) return false;
+        return TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode());
+    }
+
+    private void updateOceanDGStatusCreate(ShipmentDetails shipmentDetails, List<ContainerV3Request> containerRequestList) throws RunnerException {
+        boolean isDG = false;
+        boolean isDGClass1Added = false;
+        for(ContainerV3Request containerV3Request : containerRequestList){
+            if(Boolean.TRUE.equals(containerV3Request.getHazardous())){
+                isDG = true;
+                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(containerV3Request.getDgClass());
+            }
+        }
+
+        if(isDG){
+            saveOceanDgStatus(shipmentDetails, isDGClass1Added);
+        }
+    }
+
+    private void updateOceanDGStatusUpdate(ShipmentDetails shipmentDetails, List<Containers> oldContainers, List<ContainerV3Request> containerRequestList) throws RunnerException{
+
+        Set<Long> containerIds = oldContainers.stream().map(Containers::getId).collect(Collectors.toSet());
+
+        Set<Long> requestIds = containerRequestList.stream()
+                .map(ContainerV3Request::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, ContainerV3Request> updatedContainerRequestMap = containerRequestList.stream()
+                .filter(Objects::nonNull)
+                .filter(container -> container.getId() != null)
+                .collect(Collectors.toMap(
+                        ContainerV3Request::getId,
+                        Function.identity()
+                ));
+
+        Map<Long, Containers> oldContainerMap = oldContainers.stream()
+                .filter(Objects::nonNull)
+                .filter(container -> container.getId() != null)
+                .collect(Collectors.toMap(
+                        Containers::getId,
+                        Function.identity()
+                ));
+
+        // as containerRequest can be from consolidation
+        Set<Long> commonIds = new HashSet<>(containerIds);
+        commonIds.retainAll(requestIds); // intersection
 
         boolean isDG = false;
         boolean isDGClass1Added = false;
-        for (Containers containers : containersList) {
-            if (Boolean.TRUE.equals(containers.getHazardous())) {
-                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(containers.getDgClass());
+
+        for(Long containerId : commonIds){
+            Containers oldContainer = oldContainerMap.get(containerId);
+            ContainerV3Request updatedContainer = updatedContainerRequestMap.get(containerId);
+            if(commonUtils.checkIfDGFieldsChangedInContainer(updatedContainer, oldContainer)){
+                isDGClass1Added = isDGClass1Added || commonUtils.checkIfDGClass1(updatedContainer.getDgClass());
                 isDG = true;
             }
         }
 
         if(isDG){
-            boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
-            if(saveShipment) {
-                shipmentDetails.setContainsHazardous(true);
-                shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
-                String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
-                shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
-            }
+            saveOceanDgStatus(shipmentDetails, isDGClass1Added);
+        }
+    }
+
+    protected void updateOceanDgStatus(ShipmentDetails shipmentDetails, List<Containers> oldContainers
+            , List<ContainerV3Request> containerRequestList, boolean isCreate) throws RunnerException {
+        if(!isUpdateDGStatusRequired(shipmentDetails, containerRequestList)) return;
+
+        if(isCreate){
+            updateOceanDGStatusCreate(shipmentDetails, containerRequestList);
+        }else{
+            updateOceanDGStatusUpdate(shipmentDetails, oldContainers, containerRequestList);
+        }
+    }
+
+    private void saveOceanDgStatus(ShipmentDetails shipmentDetails, boolean isDGClass1Added) throws RunnerException {
+        boolean saveShipment = commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1Added);
+        if(saveShipment) {
+            shipmentDetails.setContainsHazardous(true);
+            shipmentValidationV3Util.processDGValidations(shipmentDetails, null, shipmentDetails.getConsolidationList());
+            String oceanDGStatus = shipmentDetails.getOceanDGStatus() != null ? shipmentDetails.getOceanDGStatus().name() : null;
+            shipmentDao.updateDgStatusInShipment(true, oceanDGStatus, shipmentDetails.getId());
         }
     }
 
@@ -1813,7 +1873,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     private void handleUnAssignmentLogicWhenAllPacksAreRemoved(UnAssignContainerParams unAssignContainerParams, Containers container, ShipmentDetails shipmentDetails,
-                                                               List<Long> shipmentIdsForDetachment, List<Packing> packingList, Set<Long> removePackIds) throws RunnerException {
+                                                               List<Long> shipmentIdsForDetachment, List<Packing> packingList, Set<Long> removePackIds) {
         Long shipmentId = shipmentDetails.getId();
 
         // in case of FCL/FTL shipment, container is not detached from shipment and wt/vol remains as it is
