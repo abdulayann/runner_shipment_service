@@ -278,4 +278,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Integer dgPacksCount;
     private String dgPacksUnit;
     private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 }

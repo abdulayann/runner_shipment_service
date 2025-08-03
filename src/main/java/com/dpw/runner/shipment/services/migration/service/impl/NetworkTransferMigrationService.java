@@ -180,6 +180,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
             ShipmentDetails v2Shipment = shipmentMigrationV3Service.mapShipmentV3ToV2(v3Shipment, null);
             log.info("Mapping completed for Network Transfer for V3 to V2 -> Shipment [id={}]", networkTransfer.getId());
             v2Shipment.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+            v2Shipment.setTriggerMigrationWarning(Boolean.FALSE);
             Map<String, Object> stringObjectMap = getCommonShipmentPayload(v2Shipment, entityPayload);
             networkTransfer.setEntityPayload(stringObjectMap);
             networkTransfer.setMigrationStatus(MigrationStatus.NT_PROCESSED_FOR_V3);
@@ -216,6 +217,7 @@ public class NetworkTransferMigrationService implements INetworkTransferMigratio
         if(v2Consol.getShipmentsList()!=null && !v2Consol.getShipmentsList().isEmpty()){
             for(ShipmentDetails shipmentDetails: v2Consol.getShipmentsList()){
                 shipmentDetails.setMigrationStatus(MigrationStatus.MIGRATED_FROM_V3);
+                shipmentDetails.setTriggerMigrationWarning(Boolean.FALSE);
             }
         }
 
