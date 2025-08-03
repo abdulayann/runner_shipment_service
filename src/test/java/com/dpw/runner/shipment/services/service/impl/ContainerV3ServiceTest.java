@@ -58,10 +58,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -299,7 +296,6 @@ class ContainerV3ServiceTest extends CommonMocks {
                 .containerCount(1L)
                 .commodityGroup("Metals")
                 .consolidationId(101L)
-                .hazardous(Boolean.FALSE)
                 .build();
 
         List<ContainerV3Request> containerRequests = List.of(request1, request2);
@@ -356,7 +352,7 @@ class ContainerV3ServiceTest extends CommonMocks {
             argument.run();
             return mockRunnable;
         });
-        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
 
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(new ContainerResponse());
         ContainerResponse response = containerV3Service.create(containerV3Request, "CONSOLIDATION");
@@ -368,7 +364,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         ContainerV3Request containerV3Request =ContainerV3Request.builder().id(1L).containerCode("Code").commodityGroup("FCR").containerCount(2L).consolidationId(1L).containerNumber("12345678910").build();
         when(containerDao.findByConsolidationId(containerV3Request.getConsolidationId())).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
-        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class)));
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATION");
@@ -404,7 +400,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(List.of(testContainer));
         when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).
                 thenReturn(List.of(objectMapper.convertValue(testContainer, ContainerResponse.class), objectMapper.convertValue(testContainer, ContainerResponse.class)));
-        when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
+        lenient().when(consolidationValidationV3Util.checkConsolidationTypeValidation(any())).thenReturn(true);
         when(consolidationV3Service.fetchConsolidationDetails(any())).thenReturn(testConsole);
         BulkContainerResponse response = containerV3Service.updateBulk(new ArrayList<>(List.of(containerV3Request)), "CONSOLIDATION");
         assertNotNull(response);
@@ -1258,6 +1254,7 @@ class ContainerV3ServiceTest extends CommonMocks {
         Long shipmentId = 123L;
         ContainerV3Request containerRequest = new ContainerV3Request();
         containerRequest.setId(containerId);
+        containerRequest.setHazardous(true);
         ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
         mapping.setId(shipmentId);
         ShipmentDetails shipmentDetails = new ShipmentDetails();

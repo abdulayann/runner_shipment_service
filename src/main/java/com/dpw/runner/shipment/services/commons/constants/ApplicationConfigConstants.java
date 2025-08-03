@@ -10,4 +10,5 @@ public class ApplicationConfigConstants {
   public static final String DELETE_BY_ID = "/delete/{id}";
 
   public static final String EXPORT_EXCEL_LIMIT = "EXPORT_EXCEL_LIMIT";
+  public static final String HS_CODE_BATCH_PROCESS_LIMIT = "HS_CODE_BATCH_PROCESS_LIMIT";
 }

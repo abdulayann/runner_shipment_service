@@ -145,7 +145,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFilePacking(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String>locCodeToLocationReferenceGuidMap) throws IOException {
+                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
 
         Set<String> mandatoryColumns = new HashSet<>();
         mandatoryColumns.add("shipmentNumber");
@@ -249,7 +249,7 @@ public class CSVParsingUtil<T> {
         if (dgSubstanceIdPos != -1) {
             try {
                 String dgSubstanceIdCell = getCellValueAsString(row.getCell(dgSubstanceIdPos));
-                if(!StringUtils.isEmpty(dgSubstanceIdCell)) {
+                if (!StringUtils.isEmpty(dgSubstanceIdCell)) {
                     Long dgSubstanceIdVal = Long.parseLong(dgSubstanceIdCell);
                     dgSubstanceIdList.add(dgSubstanceIdVal);
                 }
@@ -486,7 +486,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request,
-                                         Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
+                                        Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
         if (request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
@@ -596,7 +596,7 @@ public class CSVParsingUtil<T> {
                                                             Map<String, String> existingContainerNumbers) throws ValidationException {
         String guid = guidPos == -1 ? "" : getCellValueAsString(row.getCell(guidPos));
         if (isUpdate && !StringUtility.isEmpty(containerNumber) && existingContainerNumbers.containsKey(containerNumber)
-                    && !existingContainerNumbers.get(containerNumber).equals(guid)) {
+                && !existingContainerNumbers.get(containerNumber).equals(guid)) {
             throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
         }
         if (existingContainerNumbers.containsKey(containerNumber) && !isUpdate) {
@@ -653,12 +653,12 @@ public class CSVParsingUtil<T> {
         }
         validateWeightUnit(masterListsMap, column, cellValue, rowNum);
         if (column.toLowerCase().contains("tempunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.TEMPERATURE_UNIT.getDescription()) &&
-                    !masterListsMap.get(MasterDataType.TEMPERATURE_UNIT.getDescription()).contains(cellValue)) {
+                !masterListsMap.get(MasterDataType.TEMPERATURE_UNIT.getDescription()).contains(cellValue)) {
             throw new ValidationException("Temp Unit is invalid at row: " + rowNum);
         }
 
         if (column.toLowerCase().contains("packstype") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT.getDescription())
-                    && !masterListsMap.get(MasterDataType.PACKS_UNIT.getDescription()).contains(cellValue)) {
+                && !masterListsMap.get(MasterDataType.PACKS_UNIT.getDescription()).contains(cellValue)) {
             throw new ValidationException("Packs Type is invalid at row: " + rowNum);
         }
 
@@ -683,7 +683,7 @@ public class CSVParsingUtil<T> {
 
     private void validateContainers(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode) {
         if (column.toLowerCase().contains("hbldeliverymode") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.HBL_DELIVERY_MODE.getDescription()) &&
-                    !masterListsMap.get(MasterDataType.HBL_DELIVERY_MODE.getDescription()).contains(cellValue)) {
+                !masterListsMap.get(MasterDataType.HBL_DELIVERY_MODE.getDescription()).contains(cellValue)) {
             throw new ValidationException("Container Mode is invalid at row: " + rowNum);
         }
 
@@ -698,7 +698,7 @@ public class CSVParsingUtil<T> {
 
     private void validateCountryCode(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum) {
         if (column.toLowerCase().contains("countrycode") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.COUNTRIES.getDescription()) &&
-                    !masterListsMap.get(MasterDataType.COUNTRIES.getDescription()).contains(cellValue)) {
+                !masterListsMap.get(MasterDataType.COUNTRIES.getDescription()).contains(cellValue)) {
             throw new ValidationException(String.format("Country Code %s is invalid at row: %d", cellValue, rowNum));
         }
     }
@@ -709,15 +709,15 @@ public class CSVParsingUtil<T> {
         }
         if (column.toLowerCase().contains("lengthunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
                 !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Length unit is invalid at row: " + rowNum);
+            throw new ValidationException("Length unit is invalid at row: " + rowNum);
         }
         if (column.toLowerCase().contains("widthunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
-                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
+                !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
             throw new ValidationException("Width unit is invalid at row: " + rowNum);
         }
 
         if (column.toLowerCase().contains("heightunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
-                    !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
+                !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
             throw new ValidationException("Height unit is invalid at row: " + rowNum);
         }
     }
@@ -891,16 +891,16 @@ public class CSVParsingUtil<T> {
     }
 
     private void raiseException(String attributeName, int rowNum, Class<?> fieldType) {
-        if(fieldType == Long.class || fieldType == long.class) {
+        if (fieldType == Long.class || fieldType == long.class) {
             throw new ValidationException(attributeName.toUpperCase() + " is invalid at row: " + rowNum + ". Please provide integer value and within the range of integer");
         }
         throw new ValidationException(attributeName + " is invalid at row: " + rowNum + ". Please provide correct value");
     }
 
     public void setFieldForEvents(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
-        if(attributeName.equals("containerNumber"))
+        if (attributeName.equals("containerNumber"))
             return;
-        if(attributeName.equals("publicTrackingEvent"))
+        if (attributeName.equals("publicTrackingEvent"))
             attributeName = "isPublicTrackingEvent";
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);
@@ -1031,14 +1031,9 @@ public class CSVParsingUtil<T> {
 
     public void fetchCommodityData(List<String> commodityCodesList, Map<String, Set<String>> masterDataMap) {
         try {
-            CommonV1ListRequest request = new CommonV1ListRequest();
             if (commodityCodesList.isEmpty())
                 return;
-            List<Object> field = new ArrayList<>(List.of("Code"));
-            String operator = Operators.IN.getValue();
-            List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
-            request.setCriteriaRequests(criteria);
-            V1DataResponse response = v1Service.fetchCommodityData(request);
+            V1DataResponse response = getCommodityDataResponse(commodityCodesList);
             if (response != null && response.entities instanceof List<?>) {
                 List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
                 if (commodityList != null && !commodityList.isEmpty()) {
@@ -1049,6 +1044,15 @@ public class CSVParsingUtil<T> {
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchCommodityData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CSVParsingUtil.class.getSimpleName(), ex.getMessage());
         }
+    }
+
+    public V1DataResponse getCommodityDataResponse(List<String> commodityCodesList) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of("Code"));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
+        request.setCriteriaRequests(criteria);
+        return v1Service.fetchCommodityData(request);
     }
 
     public void setUNDGContactMasterDataAndFlashPointMasterData(List<Long> dgSubstanceIdList,
