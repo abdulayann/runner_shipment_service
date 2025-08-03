@@ -218,6 +218,7 @@ public class EntityTransferV3ShipmentDetails implements IEntityTranferBaseEntity
     private TransportInfoStatus transportInfoStatus;
     private Boolean isVesselVoyageOrCarrierFlightNumberAvailable = Boolean.FALSE;
     private MigrationStatus migrationStatus;
+    private Boolean triggerMigrationWarning;
 
 
 }
