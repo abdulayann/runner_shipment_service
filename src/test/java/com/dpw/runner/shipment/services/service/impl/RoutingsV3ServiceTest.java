@@ -216,6 +216,7 @@ class RoutingsV3ServiceTest extends CommonMocks {
         assertEquals(response.getId(), resp.getId());
     }
 
+
     @Test
     void testUpdate_DaoError() {
         routingsRequest.setShipmentId(1L);
@@ -336,6 +337,8 @@ class RoutingsV3ServiceTest extends CommonMocks {
         doNothing().when(auditLogService).addAuditLog(any());
 
         BulkRoutingResponse result = routingsService.updateBulk(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
+        doNothing().when(routingValidationUtil).checkIfMainCarriageAllowed(routingsRequest);
+        routingsService.bulkUpdateWithValidateWrapper(bulkUpdateRoutingsRequest, Constants.SHIPMENT);
 
         assertNotNull(result.getRoutingsResponseList());
         assertEquals(1, result.getRoutingsResponseList().size());
