@@ -2,10 +2,8 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -19,10 +17,8 @@ import com.dpw.runner.shipment.services.dto.shipment_console_dtos.UnAssignContai
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ContainerV3FacadeService;
-import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.ContainerV3Util;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -32,15 +28,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ContainerV3ControllerTest {
@@ -59,9 +51,6 @@ class ContainerV3ControllerTest {
 
   @Mock
   private JsonHelper jsonHelper;
-
-  @Mock
-  private IContainerService containerService;
 
   @Test
   void testCreateFromShipment() throws RunnerException {
@@ -230,37 +219,11 @@ class ContainerV3ControllerTest {
 
 
   @Test
-  void downloadCSV() {
+  void downloadCSV() throws RunnerException {
     boolean isSuccess = true;
     containerV3Controller.downloadCSV(new MockHttpServletResponse(), new BulkDownloadRequest());
     assertTrue(isSuccess);
   }
-
-  @Test
-  void uploadCSV() throws IOException {
-    var responseEntity = containerV3Controller.uploadCSV(BulkUploadRequest.builder().build(), "SHIPMENT");
-    assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-  }
-
-  @Test
-  void uploadCSV_shouldReturnExpectationFailed_onUploadError() throws IOException, RunnerException {
-    MultipartFile file = new BASE64DecodedMultipartFile("dummy content".getBytes());
-    BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
-    doThrow(new RuntimeException("RuntimeException"))
-            .when(containerV3Util).uploadContainers(any(), eq(CONSOLIDATION));
-    ResponseEntity<IRunnerResponse> response = containerV3Controller.uploadCSV(request, "SHIPMENT");
-    assertEquals(HttpStatus.EXPECTATION_FAILED, response.getStatusCode());
-  }
-
-  @Test
-  void uploadCSV2() throws IOException, RunnerException {
-    MultipartFile file = new BASE64DecodedMultipartFile(StringUtility.getRandomString(11).getBytes());
-    BulkUploadRequest request = BulkUploadRequest.builder().file(file).build();
-    doNothing().when(containerV3Util).uploadContainers(any(), anyString());
-    var responseEntity = containerV3Controller.uploadCSV(request, "SHIPMENT");
-    assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-  }
-
 
   @Test
   void testFetchConsolidationContainersForPackageAssignment() throws RunnerException {
