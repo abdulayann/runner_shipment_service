@@ -46,7 +46,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
-import com.google.common.annotations.VisibleForTesting;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -143,11 +142,6 @@ public class PackingV3Service implements IPackingV3Service {
     private ShipmentValidationV3Util shipmentValidationV3Util;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
-
-    @VisibleForTesting
-    PackingContext createPackingContextForTest(Long consolidationId, String xSource) throws AuthenticationException, RunnerException {
-        return createConsolidationContext(consolidationId, xSource);
-    }
 
     @Data
     @AllArgsConstructor
