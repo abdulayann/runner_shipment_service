@@ -1623,4 +1623,20 @@ class ContainerV3ServiceTest extends CommonMocks {
         verify(commonUtils).checkIfDGClass1(any());
     }
 
+    @Test
+    void testProcessContainerDG_WhenModuleIsShipment_ThenValidateAndSaveDGShipmentCalled() throws RunnerException {
+        boolean isCreate = true;
+        Long shipmentId = 1L;
+        ContainerV3Request containerRequest = new ContainerV3Request();
+        containerRequest.setShipmentsId(shipmentId);
+        List<ContainerV3Request> containerRequestList = List.of(containerRequest);
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        List<Containers> oldContainers = List.of(new Containers());
+        ContainerV3Service spyService = Mockito.spy(containerV3Service);
+        Mockito.doReturn(true).when(spyService).containsHazardousContainer(containerRequestList);
+        Mockito.when(containerDao.findByShipmentId(shipmentId)).thenReturn(oldContainers);
+        spyService.processContainerDG(containerRequestList, SHIPMENT, shipmentDetails, isCreate);
+        Mockito.verify(containerDao).findByShipmentId(shipmentId);
+        Mockito.verify(spyService).validateAndSaveDGShipment(oldContainers, shipmentDetails, containerRequestList, isCreate);
+    }
 }

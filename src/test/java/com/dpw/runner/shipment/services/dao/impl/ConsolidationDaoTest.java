@@ -1258,4 +1258,14 @@ class ConsolidationDaoTest extends CommonMocks {
         assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
     }
 
+    @Test
+    void testGetAllowAttachmentFromConsol_ReturnsExpectedValue() {
+        Long consolidationId = 123L;
+        Boolean expectedValue = true;
+        Mockito.when(consolidationRepository.getAllowAttachMentFromConsol(consolidationId))
+                .thenReturn(expectedValue);
+        Boolean result = consolidationsDao.getAllowAttachMentFromConsol(consolidationId);
+        assertEquals(expectedValue, result);
+        Mockito.verify(consolidationRepository).getAllowAttachMentFromConsol(consolidationId);
+    }
 }

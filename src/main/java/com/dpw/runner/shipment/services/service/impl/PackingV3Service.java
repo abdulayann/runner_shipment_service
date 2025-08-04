@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
 import com.dpw.runner.shipment.services.utils.v3.ShipmentValidationV3Util;
+import com.google.common.annotations.VisibleForTesting;
 import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -142,6 +143,11 @@ public class PackingV3Service implements IPackingV3Service {
     private ShipmentValidationV3Util shipmentValidationV3Util;
 
     private List<String> defaultIncludeColumns = new ArrayList<>();
+
+    @VisibleForTesting
+    PackingContext createPackingContextForTest(Long consolidationId, String xSource) throws AuthenticationException, RunnerException {
+        return createConsolidationContext(consolidationId, xSource);
+    }
 
     @Data
     @AllArgsConstructor
@@ -898,7 +904,7 @@ public class PackingV3Service implements IPackingV3Service {
                 .build();
     }
 
-    private ConsolidationDetails getConsolidationDetails(Long consolidationId, String xSource) throws RunnerException, AuthenticationException {
+    public ConsolidationDetails getConsolidationDetails(Long consolidationId, String xSource) throws RunnerException, AuthenticationException {
         Optional<ConsolidationDetails> optionalConsolidationDetails;
         if (Objects.equals(xSource, NETWORK_TRANSFER)){
             optionalConsolidationDetails = consolidationV3Service.retrieveForNte(consolidationId);
@@ -1514,6 +1520,10 @@ public class PackingV3Service implements IPackingV3Service {
             containerV3Service.unAssignContainers(unAssignContainerRequest, module, unAssignContainerParams);
         }
         // update shipments and consolidations data only for FCL/FTL shipments
+        updateShipmentAndContainerDataForFCLAndFTLShipments(unAssignContainerParams);
+    }
+
+    public void updateShipmentAndContainerDataForFCLAndFTLShipments(UnAssignContainerParams unAssignContainerParams) throws RunnerException {
         if(!setIsNullOrEmpty(unAssignContainerParams.getFclOrFtlShipmentIds())) {
             for(Long shipmentId: unAssignContainerParams.getFclOrFtlShipmentIds()) {
                 ShipmentDetails shipmentDetails = unAssignContainerParams.getShipmentDetailsMap().get(shipmentId);
