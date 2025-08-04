@@ -12,9 +12,9 @@ import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequ
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequestV3;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
-import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksUnAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v3.request.ShipmentEtV3Request;
@@ -27,12 +27,13 @@ import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import org.apache.http.auth.AuthenticationException;
+import org.springframework.http.ResponseEntity;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.http.auth.AuthenticationException;
-import org.springframework.http.ResponseEntity;
 
 public interface IShipmentServiceV3 {
 
@@ -102,4 +103,5 @@ public interface IShipmentServiceV3 {
 
     String sendOceanDGApprovalEmail(OceanDGApprovalRequest dgApprovalRequest) throws RunnerException;
     String dgApprovalResponse(OceanDGRequestV3 request) throws RunnerException;
+    void cancel(Long id) throws RunnerException;
 }
