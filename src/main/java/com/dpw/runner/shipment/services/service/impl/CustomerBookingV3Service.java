@@ -381,7 +381,6 @@ public class CustomerBookingV3Service implements ICustomerBookingV3Service {
         }
         Map<String, BigDecimal> containerTeuMap = containerTeuMapFuture.join();
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()), containerTeuMap);
-        updateCargoInformation(customerBooking, containerTeuMap, oldEntity.get());
         try {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();

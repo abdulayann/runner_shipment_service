@@ -52,7 +52,6 @@ public class CargoService implements ICargoService {
     @Override
     public CargoDetailsResponse getCargoDetails(CargoDetailsRequest request) throws RunnerException {
         CargoDetailsResponse response = new CargoDetailsResponse();
-        String entityType = request.getEntityType();
         Long entityId = Long.valueOf(request.getEntityId());
         Optional<CustomerBooking> optionalCustomerBooking = customerBookingDao.findById(entityId);
         if(optionalCustomerBooking.isEmpty()) {

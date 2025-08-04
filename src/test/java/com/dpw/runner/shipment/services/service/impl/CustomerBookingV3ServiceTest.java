@@ -1953,7 +1953,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(response);
         assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
     }
 
@@ -2020,7 +2020,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(response);
         assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
         verify(dependentServiceHelper, times(1)).pushToKafkaForDownStream(any(), any());
     }
@@ -2093,7 +2093,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         // Assert
         assertNotNull(response);
         assertEquals(bookingId, response.getId());
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
         verify(eventDao, times(1)).findByEntityIdAndEntityType(bookingId, Constants.BOOKING);
     }
 
@@ -2158,7 +2158,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(3)).save(any());
+        verify(customerBookingDao, times(2)).save(any());
     }
 
     @Test
@@ -2187,7 +2187,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
     }
 
     @Test
@@ -2217,7 +2217,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
     }
 
     @Test
@@ -2250,7 +2250,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
     }
 
     @Test
@@ -2282,7 +2282,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
     }
 
     @Test
@@ -2313,7 +2313,7 @@ class CustomerBookingV3ServiceTest extends CommonMocks {
         CustomerBookingV3Response response = customerBookingService.update(request);
         // Assert
         assertNotNull(response);
-        verify(customerBookingDao, times(2)).save(any());
+        verify(customerBookingDao, times(1)).save(any());
     }
 
     @Test
