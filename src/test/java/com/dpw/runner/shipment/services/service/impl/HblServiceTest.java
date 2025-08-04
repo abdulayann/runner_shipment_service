@@ -1422,6 +1422,29 @@ void testValidateSealNumberWarning_containersMissingSeals() {
         assertEquals(200, response.getStatusCodeValue());
         assertNull(responseBody.getWarning()); // No warning expected
     }
+    @Test
+    void testValidateSealNumberWarning_shipmentNotFound() {
+        Long shipmentId = 1L;
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () ->
+                hblService.validateSealNumberWarning(shipmentId));
+    }
+    @Test
+    void testValidateSealNumberWarning_notSeaExportOrNoContainers() {
+        Long shipmentId = 2L;
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_AIR); // Not SEA
+        shipment.setDirection(Constants.DIRECTION_EXP);
+        shipment.setContainersList(Collections.emptySet());
+
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipment));
+
+        ResponseEntity<IRunnerResponse> response = hblService.validateSealNumberWarning(shipmentId);
+        RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNull(responseBody.getWarning());
+    }
 
     @Test
      void testNegativeCasesForSelaVal() {
@@ -1455,13 +1478,6 @@ void testValidateSealNumberWarning_containersMissingSeals() {
             RunnerResponse<?> responseBody = (RunnerResponse<?>) response.getBody();
             assertEquals(200, response.getStatusCodeValue());
             assertNull(responseBody.getWarning());
-        });
-    }
-    @Test
-     void testErrorCaseForSealVal() {
-        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> {
-            hblService.validateSealNumberWarning(1L);
         });
     }
 
