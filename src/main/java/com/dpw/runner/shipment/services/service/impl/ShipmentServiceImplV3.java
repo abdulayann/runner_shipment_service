@@ -9,7 +9,12 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.requests.AibActionShipment;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -4316,6 +4321,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             boolean isEmptyWeightPackAvailable = packings.stream()
                     .anyMatch(packing -> packing.getWeight() == null);
             shipmentDetails.setNoOfPacks(oldShipment.getNoOfPacks());
+            shipmentDetails.setPacksUnit(oldShipment.getPacksUnit());
             BigDecimal weight = shipmentDetails.getWeight();
             String weightUnit = shipmentDetails.getWeightUnit();
             shipmentDetails.setWeight(oldShipment.getWeight());

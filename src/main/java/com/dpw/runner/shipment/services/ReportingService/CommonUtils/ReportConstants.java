@@ -41,6 +41,7 @@ public class ReportConstants {
     public static final String TRANSPORT_ORDER_V3 = "TransportOrderV3";
     public static final String CONTACT = "Contact";
     public static final String TI_TRANSPORTER_NAME = "TI_TransporterName";
+    public static final String TI_REFERENCE_NUMBER = "TI_ReferenceNumber";
     public static final String EXA_TYPE = "EXA";
     public static final String TI_EXPORT_AGENT_NAME = "TI_ExportAgentName";
     public static final String IMA_TYPE = "IMA";
@@ -54,7 +55,7 @@ public class ReportConstants {
     public static final String TI_TRANSPORTER_CONTACT = "TI_TransporterContact";
     public static final String TI_ORIGIN_EMAIL = "TI_OriginEmail";
     public static final String TI_ORIGIN_CONTACT = "TI_OriginContact";
-    public static final String TI_DESINATION_EMAIL = "TI_DestinationEmail";
+    public static final String TI_DESTINATION_EMAIL = "TI_DestinationEmail";
     public static final String TI_DESTINATION_CONTACT = "TI_DestinationContact";
     public static final String COMM = ",";
     public static final String TI_ORIGIN_ADDRESS = "TI_Origin_Address";

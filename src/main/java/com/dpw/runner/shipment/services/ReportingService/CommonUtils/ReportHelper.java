@@ -267,6 +267,10 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
+        return getCompleteAddress(partyAddress);
+    }
+
+    public static List<String> getCompleteAddress( Map<String, Object> partyAddress) {
         List<String> list = new ArrayList<>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
@@ -278,7 +282,7 @@ public class ReportHelper {
             list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
         if(getValueFromMap(partyAddress,ReportConstants.EMAIL) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.EMAIL));
-        if(getValueFromMap(party.getAddressData(),ZIP_POST_CODE) != null)
+        if(getValueFromMap(partyAddress,ZIP_POST_CODE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.ZIP_POST_CODE));
         if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
