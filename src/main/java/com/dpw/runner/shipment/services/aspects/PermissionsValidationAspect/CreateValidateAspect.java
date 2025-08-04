@@ -21,15 +21,15 @@ public class CreateValidateAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.create(..)) && args(commonRequestModel)")
     public void validateShipmentCreateV2(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
-        this.validateShipmentCreate(joinPoint, commonRequestModel);
+        this.validateShipmentCreate(commonRequestModel);
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentServiceImplV3.create(..)) && args(commonRequestModel)")
     public void validateShipmentCreateV3(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
-        this.validateShipmentCreate(joinPoint, commonRequestModel);
+        this.validateShipmentCreate(commonRequestModel);
     }
 
-    private void validateShipmentCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
+    private void validateShipmentCreate(CommonRequestModel commonRequestModel) throws ValidationException {
         ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CREATE_PERMISSION);
         int retrieveValidationFields = 4;
