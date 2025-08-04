@@ -146,16 +146,6 @@ public class CustomerBookingValidationsV3 {
         }
     }
 
-    private void validateCargoContents(CustomerBooking entity) {
-        String cargoType = entity.getCargoType();
-        if (Set.of(Constants.CARGO_TYPE_FCL, Constants.CARGO_TYPE_FTL).contains(cargoType) && entity.getContainersList().isEmpty()) {
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one container"));
-        }
-        if (Set.of(Constants.CARGO_TYPE_LTL, Constants.CARGO_TYPE_LCL).contains(cargoType) && entity.getPackingList().isEmpty()) {
-            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "At least one Package"));
-        }
-    }
-
     private void validateDateFields(CustomerBooking entity) {
         LocalDateTime cargoReadyDate = entity.getCargoReadinessDate();
         LocalDateTime pickupAtOriginDate = entity.getPickupAtOriginDate();
